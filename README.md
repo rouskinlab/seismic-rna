@@ -21,8 +21,8 @@ clustering mutations to infer RNA structural ensembles.
 
 ### Contributors
 
-SEISMIC RNA has been developed in the lab of Silvi Rouskin at Harvard Medical
-School by the following individuals:
+SEISMIC RNA has been developed in [Silvi Rouskin's lab](https://rouskinlab.com)
+at Harvard Medical School by the following individuals:
 
 - [Matty Allan](https://github.com/matthewfallan)
 - [Yves Martin](https://github.com/yvesmartindestaillades)
