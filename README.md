@@ -4,10 +4,6 @@
 RNA Structure Ensemble Inference via Sequencing, Mutation Identification, and
 Clustering
 
-Version 1.0.0
-
-2023-06-30
-
 
 ## About
 
