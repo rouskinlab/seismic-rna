@@ -21,7 +21,7 @@ classifiers = [
 ]
 
 [project.scripts]
-srna = "seismic-rna.main:main_cli"
+srna = "seismic_rna.main:main_cli"
 
 [project.urls]
 "Homepage" = "https://github.com/rouskinlab/seismic-rna"
