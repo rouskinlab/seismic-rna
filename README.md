@@ -11,7 +11,7 @@ Version 1.0.0
 
 ## About
 
-SEISMIC RNA analyzes next-generation sequencing data from RNA chemical probing
+SEISMIC RNA analyzes deep sequencing datasets from RNA mutational profiling
 experiments, such as [DMS-MaPseq](https://www.nature.com/articles/nmeth.4057)
 and [SHAPE-MaP](https://www.nature.com/articles/nmeth.3029).
 This software introduces an optimized implementation of the original algorithm
@@ -48,6 +48,6 @@ Write me.
 ## Issues
 
 The [issue page](https://github.com/rouskinlab/seismic-rna/issues) of the GitHub
-repository should be used for reporting bugs and other issues. Before reporting
-an issue, please check if a similar issue has already been opened.
+repository is the official location for reporting bugs and other issues. Before
+opening a new issue, please check if a similar issue already exists.
 
