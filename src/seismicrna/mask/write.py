@@ -1,5 +1,5 @@
 """
-DREEM -- Mask Module
+Mask -- Write Module
 """
 
 from logging import getLogger

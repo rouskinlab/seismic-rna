@@ -1,9 +1,6 @@
-import os, sys
-import pandas as pd
-sys.path.append(os.path.abspath(os.path.join(__file__,'../../../..')))
-import dreem
+import os
 
-gallery_path = os.path.join(os.path.dirname(__file__), 'gallery.rst')
+from seismicrna import draw
 
 def beautify_title(title):
     title = title.replace('_', ' ')
@@ -23,14 +20,14 @@ def write_plot(plot):
 {beautify_title(name)}
 {"-"*len(name)}
 
-{docstring_header(getattr(dreem.draw.Study, name))}
+{docstring_header(getattr(draw.Study, name))}
                 
 .. raw:: html
     :file: plots_figs/{plot}
     
 .. dropdown:: :fa:`eye,mr-1` **DOCSTRING**: {name}
 
-    .. autofunction:: dreem.draw.study.Study.{name}
+    .. autofunction:: seismicrna.draw.study.Study.{name}
     
 
     """
@@ -58,9 +55,9 @@ def generate_rst():
 
 def generate_html():
 
-    data = dreem.draw.load_dataset()
+    data = draw.load_dataset()
 
-    study = dreem.draw.Study()
+    study = draw.Study()
     study.df = data
     sample, reference, section, family = study.df.iloc[0][['sample', 'reference', 'section', 'family']]
 

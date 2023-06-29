@@ -1,28 +1,12 @@
 """
-Logging configuration module of DREEM
+Core -- Logging Module
 
 Purpose
 -------
 Central manager of logging.
 """
 
-
-from functools import wraps
 import logging
-# import os
-from subprocess import CompletedProcess
-# import sys
-from typing import Any, Callable
-
-# import pkg_resources
-
-# pkg_version = pkg_resources.get_distribution("dreem").version
-
-# WELCOME = f"""
-# Welcome to DREEM version {pkg_version}
-# running on {sys.platform}
-# with {os.cpu_count()} processors.
-# """
 
 
 MAX_VERBOSE = 2
@@ -31,13 +15,13 @@ FILE_MSG_FORMAT = "LOGMSG>\t%(asctime)s\t%(name)s\t%(levelname)s\n%(message)s\n"
 STREAM_MSG_FORMAT = "%(levelname)s\t%(message)s"
 
 
-def get_dreem_logger():
-    """ Return the main DREEM logger. """
-    if __name__ != (expect_name := "dreem.core.logs"):
+def get_top_logger():
+    """ Return the top-level logger. """
+    if __name__ != (expect_name := "seismicrna.core.logs"):
         raise ValueError(
             f"{__file__} is named '{__name__}' (expected '{expect_name}')")
-    dreem_logger_name = __name__.split(".")[0]
-    return logging.getLogger(dreem_logger_name)
+    top_logger_name = __name__.split(".")[0]
+    return logging.getLogger(top_logger_name)
 
 
 def get_verbosity(verbose: int = 0, quiet: int = 0):
@@ -78,15 +62,15 @@ def get_verbosity(verbose: int = 0, quiet: int = 0):
     if (verbose, quiet) == (0, 2):
         return logging.CRITICAL
 
-    get_dreem_logger().warning(f"Invalid options: verbose={verbose}, "
+    get_top_logger().warning(f"Invalid options: verbose={verbose}, "
                                f"quiet={quiet}. Setting both to 0")
     return get_verbosity(0, 0)
 
 
 def config(verbose: int, quiet: int, log_file: str | None = None):
-    """ Configure the main DREEM logger with handlers and verbosity. """
+    """ Configure the main logger with handlers and verbosity. """
     # Set up logger.
-    logger = get_dreem_logger()
+    logger = get_top_logger()
     logger.setLevel(get_verbosity(verbose=MAX_VERBOSE))
     # Add stream handler.
     stream_handler = logging.StreamHandler()

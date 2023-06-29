@@ -1,5 +1,6 @@
 """
-DREEM -- Bit Vector Module
+Core -- Bit Vector Module
+========================================================================
 """
 
 from __future__ import annotations

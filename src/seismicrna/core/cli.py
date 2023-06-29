@@ -474,41 +474,6 @@ opt_dms_quantile = Option(("--dms-quantile", "-q"),
                           default=0.9,
                           help="Quantile of DMS reactivities for normalization")
 
-# Aggregation
-
-
-opt_rnastructure_path = Option(("--rnastructure-path",),
-                               type=Path(),
-                               help='Path to the RNAstructure executable folder (e.g. /home/user/RNAstructure/exe/). Use this option if RNAstructure is not in your PATH.',
-                               default='')
-opt_rnastructure_use_temp = Option(("--rnastructure-use-temp",),
-                                   type=bool, default=False,
-                                   help='Use the temperature signal to make predictions with RNAstructure')
-opt_rnastructure_fold_args = Option(("--rnastructure-fold-args",),
-                                    type=str,
-                                    default='',
-                                    help="Additional arguments to pass to RNAstructure's Fold command")
-
-opt_rnastructure_use_dms = Option(("--rnastructure-use-dms",),
-                                  type=bool,
-                                  default=False,
-                                  help="Use the DMS signal to make predictions with RNAstructure")
-opt_rnastructure_dms_min_unpaired_value = Option(("--rnastructure-dms-min-unpaired-value",),
-                                                 type=int,
-                                                 default=0.07,
-                                                 help="Minimum unpaired value for using the dms signal as an input for RNAstructure")
-opt_rnastructure_dms_max_paired_value = Option(("--rnastructure-dms-max-paired-value",),
-                                               type=int,
-                                               default=0.01,
-                                               help="Maximum paired value for using the dms signal as an input for RNAstructure")
-opt_rnastructure_deltag_ensemble = Option(("--rnastructure-deltag-ensemble",),
-                                          type=bool,
-                                          default=False,
-                                          help="Use RNAstructure partition function to predict free energy")
-opt_rnastructure_probability = Option(("--rnastructure_probability",),
-                                      type=bool,
-                                      default=False,
-                                      help="Use RNAstructure partition function to predict per-base pairing probability")
 
 # Graphing
 
@@ -553,48 +518,6 @@ opt_pdf = Option(("--pdf/--no-pdf",),
                  type=bool,
                  help="Whether to output each graph as a PDF file")
 
-# Drawing options
-
-opt_draw_input = Option(("--inpt",),
-                        multiple=True,
-                        type=Path(exists=True, dir_okay=False),
-                        default=(),
-                        help="Path to a dreem output format file. Can be specified multiple times.")
-
-opt_section = Option(("--section",),
-                     multiple=True,
-                     default=('full',),
-                     help="Section to draw. Can be specified multiple times.")
-
-opt_flat = Option(("--flat/--no-flat",),
-                  is_flag=True,
-                  default=True,
-                  help="Flatten the output folder structure. This names your files [reference]__[section]__[plot_name].html")
-
-opt_mutation_fraction = Option(("--mutation_fraction",),
-                               is_flag=True,
-                               default=True,
-                               help="Plot mutation_fraction plot. See Plots/gallery.")
-
-opt_mutation_fraction_identity = Option(("--mutation_fraction_identity", "-mfi"),
-                                        is_flag=True,
-                                        default=True,
-                                        help="Plot mutation_fraction_identity plot. See Plots/gallery.")
-
-opt_base_coverage = Option(("--base_coverage", "-bc"),
-                           is_flag=True,
-                           default=True,
-                           help="Plot base_coverage plot. See Plots/gallery.")
-
-opt_mutations_in_barcodes = Option(("--mutations_in_barcodes", "-mib"),
-                                   is_flag=True,
-                                   default=False,
-                                   help="Plot mutations_in_barcodes plot. See Plots/gallery.")
-
-opt_mutations_per_read_per_sample = Option(("--mutation_per_read_per_reference", "-mprps"),
-                                           is_flag=True,
-                                           default=True,
-                                           help="Plot mutation_per_read_per_reference plot. See Plots/gallery.")
 
 # Logging options
 opt_verbose = Option(("--verbose", "-v"),
@@ -606,7 +529,7 @@ opt_quiet = Option(("--quiet", "-q"),
 opt_log = Option(("--log",),
                  type=Path(exists=False, dir_okay=False),
                  default=os.path.join(CWD, "log", datetime.now().strftime(
-                     "dreem_%Y-%m-%d_%H-%M-%S.log")),
+                     "seismic-rna_%Y-%m-%d_%H-%M-%S.log")),
                  help="File in which to log all messages (except profiling)")
 opt_profile = Option(("--profile",),
                      type=Path(exists=False, dir_okay=False),

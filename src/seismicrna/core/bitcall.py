@@ -1,5 +1,5 @@
 """
-DREEM -- Bit Caller Module
+Core -- Bit Caller Module
 """
 
 from __future__ import annotations

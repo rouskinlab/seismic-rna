@@ -27,9 +27,10 @@ from ..core.cli import (opt_fasta,
                         opt_bt2_score_min_loc, opt_bt2_score_min_e2e,
                         opt_bt2_s, opt_bt2_l, opt_bt2_d, opt_bt2_r,
                         opt_bt2_gbar, opt_bt2_dpad, opt_bt2_orient)
-from ..core.dependencies import (check_bowtie2_exists, check_cutadapt_exists,
-                                 check_fastqc_exists, check_samtools_exists)
+from ..core.depend import confirm_dependency
 from ..core.parallel import lock_temp_dir
+from ..core.shell import (BOWTIE2_CMD, BOWTIE2_BUILD_CMD, CUTADAPT_CMD,
+                          FASTQC_CMD, SAMTOOLS_CMD)
 
 logger = getLogger(__name__)
 
@@ -165,11 +166,12 @@ def run(*,
 
     # Check for external dependencies.
     if fastqc:
-        check_fastqc_exists()
+        confirm_dependency(FASTQC_CMD, __name__)
     if cut:
-        check_cutadapt_exists()
-    check_bowtie2_exists()
-    check_samtools_exists()
+        confirm_dependency(CUTADAPT_CMD, __name__)
+    confirm_dependency(BOWTIE2_CMD, __name__)
+    confirm_dependency(BOWTIE2_BUILD_CMD, __name__)
+    confirm_dependency(SAMTOOLS_CMD, __name__)
 
     if not fasta:
         logger.critical(f"No FASTA file given to {path.MOD_ALIGN}")

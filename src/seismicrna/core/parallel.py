@@ -9,25 +9,26 @@ from typing import Any, Callable, Iterable
 
 logger = getLogger(__name__)
 
-# DREEM lock directory (for function lock_output)
-LOCK_DIR = ".dreem-lock"
+# Lock directory (for function lock_output)
+LOCK_DIR = ".seismic-rna-lock"
 
 
 def lock_temp_dir(run: Callable):
     @wraps(run)
     def wrapper(*args, temp_dir: str | Path, save_temp: bool, **kwargs):
         lock_error = (f"The directory {temp_dir} is currently being used by "
-                      f"another run of DREEM. If possible, use a different "
-                      f"temporary directory that is not in use. If another "
-                      f"run of DREEM crashed and left this directory locked, "
-                      f"then please delete {temp_dir} with 'rm -r {temp_dir}'.")
+                      f"another instance of SEISMIC-RNA. If possible, please "
+                      f"name a temporary directory that does not yet exist "
+                      f"with '--temp-dir /path/to/new/temp-dir/'. If a former "
+                      f"run of SEISMIC-RNA failed to unlock this directory, "
+                      f"then please delete it with 'rm -r {temp_dir}'.")
         # Determine whether the temporary directory and the lock exist.
         lock = os.path.join(temp_dir, LOCK_DIR)
         try:
             os.mkdir(lock)
         except FileExistsError:
             # The lock already exists, which means another instance of
-            # DREEM is using this temporary directory.
+            # SEISMIC-RNA is using this temporary directory.
             raise SystemExit(lock_error)
         except FileNotFoundError:
             # The temporary directory does not exist yet, so create it
@@ -36,10 +37,10 @@ def lock_temp_dir(run: Callable):
                 os.makedirs(lock, exist_ok=False)
             except FileExistsError:
                 # If this error happens, it is due to a very unlikely
-                # race condition wherein another run of DREEM raises a
-                # FileNotFoundError from the step os.mkdir(lock), then
-                # this run of DREEM does the same, then the first run
-                # creates the directory with the step os.makedirs(lock),
+                # race condition wherein another instance of SEISMIC-RNA
+                # raises a FileNotFoundError from os.mkdir(lock), then
+                # this instance of SEISMIC-RNA does the same, then the
+                # first run makes the directory with os.makedirs(lock),
                 # and then this run tries to do the same thing but fails
                 # because the directory was created moments before.
                 raise SystemExit(lock_error)
@@ -49,10 +50,10 @@ def lock_temp_dir(run: Callable):
             # The temporary directory had existed, but the lock had not.
             temp_dir_existed_before = True
             logger.debug(f"Locked temporary directory: {temp_dir}")
-        # The lock now exists, and any other run of DREEM that tires to
-        # use the same lock will exit before it can use the temporary
-        # directory or delete the lock. Thus, this run must delete the
-        # lock when it exits, regardless of the circumstances.
+        # The lock now exists, so any other instance of SEISMIC-RNA that
+        # tries to use the same lock will exit before it can use the
+        # temporary directory or delete the lock. Thus, this run must
+        # delete the lock upon exiting, regardless of the circumstances.
         try:
             if temp_dir_existed_before and not save_temp:
                 raise SystemExit(f"The temporary directory {temp_dir} exists. "
@@ -60,15 +61,9 @@ def lock_temp_dir(run: Callable):
                                  f"then please specify a nonexistent temporary "
                                  f"directory with '--temp-dir /new/temp/dir'. "
                                  f"Otherwise, please delete the directory "
-                                 f"with 'rm -r {temp_dir}' and rerun DREEM.")
-            # Run the wrapped function and capture its result.
-            res = run(*args, temp_dir=temp_dir, save_temp=save_temp, **kwargs)
-            if not save_temp:
-                # If the run completes successfully and the temporary
-                # directory should not be saved, then delete it.
-                rmtree(temp_dir, ignore_errors=True)
-                logger.debug(f"Deleted temporary directory: {temp_dir}")
-            return res
+                                 f"with 'rm -r {temp_dir}' and then rerun.")
+            # Run the wrapped function and return its result.
+            return run(*args, temp_dir=temp_dir, save_temp=save_temp, **kwargs)
         finally:
             # Always ensure that the temporary directory is unlocked
             # upon exiting.
@@ -77,6 +72,11 @@ def lock_temp_dir(run: Callable):
                 logger.debug(f"Unlocked temporary directory: {temp_dir}")
             except FileNotFoundError:
                 pass
+            if not save_temp:
+                # If the run completes successfully and the temporary
+                # directory should not be saved, then delete it.
+                rmtree(temp_dir, ignore_errors=True)
+                logger.debug(f"Deleted temporary directory: {temp_dir}")
 
     # Return the decorator.
     return wrapper

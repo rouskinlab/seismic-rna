@@ -10,11 +10,12 @@ from ..core.cli import (opt_temp_dir, opt_save_temp, opt_table,
                         opt_coords, opt_primers, opt_primer_gap,
                         opt_dms_quantile,
                         opt_max_procs, opt_parallel, opt_rerun)
-from ..core.dependencies import check_rnastructure_exists
+from ..core.depend import confirm_dependency
 from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
 from ..core.rna import RnaProfile
 from ..core.sect import RefSections, Section, encode_primers
 from ..core.seq import parse_fasta
+from ..core.shell import RNASTRUCTURE_FOLD_CMD
 from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader
 
 logger = getLogger(__name__)
@@ -60,7 +61,8 @@ def run(table: tuple[str, ...],
     """
     Run the structure module.
     """
-    check_rnastructure_exists()
+
+    confirm_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
 
     if not fasta:
         logger.critical(f"No FASTA file given to {path.MOD_STRUCT}")

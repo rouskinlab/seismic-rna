@@ -11,16 +11,6 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-import sys
-#from unittest.mock import MagicMock
-
-sys.path.insert(0, os.path.abspath('../../dreem/dreem'))
-
-
-
-sys.path.append(os.path.abspath("..")+'/..')
-#sys.path.insert(os.path.abspath('../..')) 	
-sys.path.insert(0, os.path.abspath("../../"))
  
 # Fix matplotlib non import
 MOCK_MODULES = ['yaml']
@@ -47,7 +37,6 @@ release = '28.02.2023'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 
-from recommonmark.parser import CommonMarkParser
 
 source_parsers = {
     '.md': CommonMarkParser,
@@ -116,6 +105,5 @@ autosectionlabel_prefix_document = True
 nitpick_ignore = [('py:class', 'type')]
 
 # Generate the plots for the gallery
-sys.path.append(os.path.abspath(""))
 from plots import gallery_generator
 gallery_generator.main()

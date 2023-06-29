@@ -585,7 +585,7 @@ def lookup_title(title: str) -> Field:
 # Report classes
 
 class Report(ABC):
-    """ Abstract base class for reports from steps in DREEM. """
+    """ Abstract base class for a report from a step. """
     __slots__ = "out_dir",
 
     def __init__(self, **kwargs: Any | Callable[[Report], Any]):

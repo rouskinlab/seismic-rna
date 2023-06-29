@@ -1,5 +1,5 @@
 """
-DREEM RNAstructure module.
+Struct -- RNAstructure Module
 
 Wrapper around RNAstructure from the Mathews Lab at U of Rochester:
 https://rna.urmc.rochester.edu/RNAstructure.html
@@ -10,7 +10,7 @@ from pathlib import Path
 
 from ..core import path
 from ..core.rna import RnaProfile
-from ..core.shell import run_cmd
+from ..core.shell import run_cmd, RNASTRUCTURE_FOLD_CMD
 
 logger = getLogger(__name__)
 
@@ -22,7 +22,7 @@ def fold(rna: RnaProfile, *,
     """ Run the 'Fold' program of RNAstructure. """
     ct_file = rna.ct_file(out_dir)
     if rerun or not ct_file.is_file():
-        cmd = ["Fold"]
+        cmd = [RNASTRUCTURE_FOLD_CMD]
         if dms_quantile > 0.:
             # Write the DMS reactivities file for the RNA.
             cmd.extend(["--DMS", rna.to_dms(temp_dir, dms_quantile)])

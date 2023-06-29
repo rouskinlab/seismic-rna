@@ -33,7 +33,7 @@ def _get_kwonly(func: Callable):
 
 
 class DataLoader(ABC):
-    """ Base class for loading data from a step of DREEM. """
+    """ Base class for loading data from a step. """
 
     def __init__(self, report: Report | BatchReport):
         if not isinstance(report, self.get_report_type()):

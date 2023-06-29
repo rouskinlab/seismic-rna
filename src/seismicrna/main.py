@@ -16,6 +16,7 @@ from .core import docdef, logs
 from .core.cli import (merge_params, opt_demultiplex,
                        opt_verbose, opt_quiet, opt_log, opt_profile,
                        opt_version, opt_fold)
+from .meta import __version__
 
 misc_params = [
     opt_version,
@@ -137,9 +138,10 @@ def run(*,
         dms_quantile: float,
         # Misc
         version: bool):
-    """ Run entire DREEM pipeline. """
+    """ Run entire pipeline. """
     if version:
-        # print(f"DREEM version {__version__}")
+        # Just print the version and exit.
+        print(__version__)
         return
     # Demultiplexing
     if demult_on:
@@ -294,13 +296,13 @@ main_params = [
 ]
 
 
-# Group for all DREEM commands
+# Group for main commands
 @group(params=main_params,
        context_settings={"show_default": True})
 @pass_context
 def main_cli(ctx: Context, verbose: int, quiet: int, log: str, profile: str,
              **kwargs):
-    """ DREEM command line interface """
+    """ SEISMIC-RNA command line interface """
     # Configure logging.
     os.makedirs(os.path.dirname(log), exist_ok=True)
     logs.config(verbose, quiet, log_file=log)
@@ -321,7 +323,7 @@ def main_cli(ctx: Context, verbose: int, quiet: int, log: str, profile: str,
             run(**kwargs)
 
 
-# Add all commands to the DREEM CLI command group.
+# Add all commands to the main CLI command group.
 main_cli.add_command(all_cli)
 main_cli.add_command(demultiplex_mod.cli)
 main_cli.add_command(align_mod.cli)

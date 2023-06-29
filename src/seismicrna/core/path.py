@@ -5,21 +5,21 @@ Auth: Matty
 
 Purpose
 ========================================================================
-Several modules in DREEM produce files used by other modules.
-For example, the alignment module creates alignment map files,
-from which the vectoring module generates mutation vector files,
-from which the aggregate module computes statistics and generates plots.
+Several steps in SEISMIC-RNA produce files that other steps use. For
+example, the 'align' step writes alignment map (BAM) files, from which
+the 'relate' step writes mutation vector files, which both the 'mask'
+and 'table' steps use.
 
-Modules that pass files to each other must agree on
-- the path to the file, so that the second module can find the file
-- the meaning of each part of the path, so that the second module can
+Steps that pass files to each other must agree on
+- the path to the file, so that the second step can find the file
+- the meaning of each part of the path, so that the second step can
   parse information contained in the path
 
 Although these path conventions could be written separately in each
-module this strategy is not ideal for several reasons:
+subpackage or module, this strategy is not ideal for several reasons:
 - It would risk inconsistencies among the modules, causing bugs.
-- Changing the conventions would require modifying every module,
-  which would be not only tedious but also risky for the first reason.
+- Changing the conventions would require modifying every module, which
+  would be not only tedious but also risky for the first reason.
 - Defining all the conventions in one place would reduce the size of the
   code base, improving readability, maintainability, and distribution.  
 

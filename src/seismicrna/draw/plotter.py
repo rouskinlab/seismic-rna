@@ -1,14 +1,9 @@
-import pandas as pd
-import numpy as np
-
-from dreem.draw.util import *
+from .util import *
 
 import plotly.graph_objects as go
-from plotly.offline import plot, iplot
 
 from ..draw import util
 from itertools import cycle
-from typing import Tuple, List
 from sklearn import metrics
 from sklearn.linear_model import LogisticRegression
 from plotly.subplots import make_subplots
@@ -181,7 +176,7 @@ def mutations_in_barcodes(data):
     return {'fig': fig, 'data': data[['sample', 'reference', 'sub_hist']]}
 
 
-def deltaG_vs_sub_rate(df: pd.DataFrame, models: List[str] = [], savefile=None, auto_open=False, use_iplot=True,
+def deltaG_vs_sub_rate(df: pd.DataFrame, models: list[str] = [], savefile=None, auto_open=False, use_iplot=True,
                        title=None) -> dict:
     df_temp = pd.DataFrame()
     for _, row in df.iterrows():
