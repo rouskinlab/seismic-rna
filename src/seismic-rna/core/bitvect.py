@@ -1,0 +1,518 @@
+"""
+DREEM -- Bit Vector Module
+"""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from collections import Counter
+from functools import cached_property
+from logging import getLogger
+from typing import Callable, Iterable
+
+import numpy as np
+import pandas as pd
+
+from .sect import Section
+
+logger = getLogger(__name__)
+
+BIT_VECTOR_NAME = "Bit Vector"
+
+
+class FeedClosedBitAccumError(Exception):
+    """ Feed another batch to a closed BitAccum. """
+
+
+class InconsistentSectionError(Exception):
+    """ Sections do not match. """
+
+
+class DuplicateIndexError(Exception):
+    """ A value in an index is duplicated. """
+
+
+class UniqMutBits(object):
+    """ Collection of unique bit vectors indicating only mutations. """
+
+    def __init__(self, muts: np.ndarray):
+        """ Find the unique bit vectors. """
+        if muts.ndim != 2:
+            raise ValueError(f"muts needs 2 dimensions, but got {muts.ndim}")
+        # Count each unique bit vector.
+        uniq, self._inv, self._count = np.unique(muts, axis=0,
+                                                 return_inverse=True,
+                                                 return_counts=True)
+        # For each position, find the indexes of the unique bit vectors
+        # with a mutation. Storing only the mutations requires much less
+        # memory than storing the entire sparse matrix (uniq) because
+        # mutations are relatively rare.
+        self._uniq_idxs = tuple(map(np.flatnonzero, uniq.T))
+
+    @property
+    def indexes(self):
+        """ For each position, the indexes of all unique bit vectors
+        that have a mutation at that position. """
+        return self._uniq_idxs
+
+    @property
+    def counts(self) -> np.ndarray:
+        """ Number of times each unique bit vector occurs in the given
+        set of possibly redundant bit vectors. """
+        return self._count
+
+    @property
+    def inverse(self) -> np.ndarray:
+        """ Indexes to map the unique bit vectors back to the given set
+        of possibly redundant bit vectors. """
+        return self._inv
+
+    @property
+    def n_uniq(self):
+        """ Number of unique bit vectors. """
+        return self.counts.size
+
+    @property
+    def n_pos(self):
+        """ Number of positions in each bit vector. """
+        return len(self.indexes)
+
+    def get_full(self):
+        """ Full boolean matrix of the unique bit vectors. """
+        # Initialize an all-False matrix with one row for each unique
+        # bit vector and one column for each position.
+        full = np.zeros((self.n_uniq, self.n_pos), dtype=bool)
+        # For each position (j), set the mutated elements to True.
+        for j, indexes in enumerate(self.indexes):
+            full[indexes, j] = True
+        return full
+
+    def get_uniq_names(self):
+        """ Return the unique bit vectors as byte strings. """
+        # Get the full boolean matrix of the unique bit vectors and cast
+        # the data from boolean to unsigned 8-bit integer type.
+        chars = self.get_full().astype(np.uint8, copy=False)
+        if chars.size > 0:
+            # Add ord('0') to transform every 0 into b'0' and every 1
+            # into # b'1', and convert each row (bit vector) into a
+            # bytes object of b'0' and b'1' characters.
+            names = np.apply_along_axis(np.ndarray.tobytes, 1, chars + ord('0'))
+        else:
+            # If there are no unique bit vectors, then apply_along_axis
+            # will fail, so set names to an empty list.
+            names = list()
+        return pd.Index(names, name=BIT_VECTOR_NAME)
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return (self.n_pos == other.n_pos
+                and np.array_equal(self.counts, other.counts)
+                and np.array_equal(self.inverse, other.inverse)
+                and all(np.array_equal(self_idxs, other_idxs)
+                        for self_idxs, other_idxs in zip(self.indexes,
+                                                         other.indexes,
+                                                         strict=True)))
+
+
+class BitVectorBase(ABC):
+    """ Base class for bit vectors. """
+
+    def __init__(self, section: Section):
+        self._section = section
+
+    @property
+    def section(self):
+        """ Section from which the bit vectors came. """
+        return self._section
+
+    @property
+    @abstractmethod
+    def nmasked(self) -> Counter[str]:
+        """ Number of reads removed for each mask. """
+        return Counter()
+
+    @property
+    @abstractmethod
+    def reads(self):
+        """ Names of the reads (after masking). """
+        return pd.Index()
+
+    @property
+    def nreads(self):
+        """ Number of reads (after masking). """
+        return self.reads.size
+
+    @property
+    def nreads_given(self):
+        """ Number of reads given (before masking). """
+        return self.nreads + self.nmasked.total()
+
+    @property
+    @abstractmethod
+    def n_info_per_pos(self) -> pd.Series:
+        """ Number of informative bits at each position. """
+        return pd.Series(0, index=self.section.unmasked)
+
+    @property
+    @abstractmethod
+    def n_info_per_read(self) -> pd.Series:
+        """ Number of informative bits in each read. """
+        return pd.Series([], dtype=int)
+
+    @property
+    @abstractmethod
+    def n_affi_per_pos(self) -> pd.Series:
+        """ Number of affirmative bits at each position. """
+        return pd.Series(0, index=self.section.unmasked)
+
+    @property
+    @abstractmethod
+    def n_affi_per_read(self) -> pd.Series:
+        """ Number of affirmative bits in each read. """
+        return pd.Series([], dtype=int)
+
+    @property
+    def f_info_per_pos(self):
+        """ Fraction of informative bits at each position. """
+        return self.n_info_per_pos / self.nreads
+
+    @property
+    def f_info_per_read(self):
+        """ Fraction of informative bits in each read. """
+        return self.n_info_per_read / self.section.size
+
+    @property
+    def f_affi_per_pos(self):
+        """ Fraction of affirmative bits at each position. """
+        return self.n_affi_per_pos / self.n_info_per_pos
+
+    @property
+    def f_affi_per_read(self):
+        """ Fraction of affirmative bits for each read. """
+        return self.n_affi_per_read / self.n_info_per_read
+
+    def _check_duplicate_reads(self):
+        """ Verify that no read name occurs more than once. """
+        if self.reads.has_duplicates:
+            dups = self.reads[self.reads.duplicated(keep="first")]
+            raise DuplicateIndexError(f"Duplicate read names: {dups}")
+
+
+class BitMatrix(BitVectorBase, ABC):
+    """ Bit vectors represented with two explicit boolean matrices of
+    informative and affirmative bits. """
+
+    @property
+    @abstractmethod
+    def info(self):
+        """ Boolean DataFrame indicating informative bits. """
+        return pd.DataFrame()
+
+    @property
+    @abstractmethod
+    def affi(self):
+        """ Boolean DataFrame indicating affirmative bits. """
+        return pd.DataFrame()
+
+    @property
+    def reads(self):
+        return self.info.index
+
+    @property
+    def n_info_per_pos(self):
+        """ Number of informative bits for each position. """
+        return pd.Series(np.count_nonzero(self.info, axis=0),
+                         index=self.section.unmasked)
+
+    @property
+    def n_info_per_read(self):
+        """ Number of informative bits for each read. """
+        return pd.Series(np.count_nonzero(self.info, axis=1),
+                         index=self.reads)
+
+    @property
+    def n_affi_per_pos(self):
+        """ Number of affirmative bits for each position. """
+        return pd.Series(np.count_nonzero(self.affi, axis=0),
+                         index=self.section.unmasked)
+
+    @property
+    def n_affi_per_read(self):
+        """ Number of affirmative bits for each read. """
+        return pd.Series(np.count_nonzero(self.affi, axis=1),
+                         index=self.reads)
+
+
+class BitBatch(BitMatrix):
+    """ One batch of bit vectors. """
+
+    def __init__(self, section: Section,
+                 info: pd.DataFrame, affi: pd.DataFrame,
+                 mask: dict[str, Callable[[BitBatch], pd.Index]] | None = None):
+        super().__init__(section)
+        # Initialize the reads.
+        self._info = info
+        self._affi = affi
+        # Validate the reads.
+        self._check_indexes()
+        self._check_duplicate_reads()
+        # Mask the reads.
+        self._masked = Counter(self._mask(mask or dict()))
+
+    def _check_indexes(self):
+        """ Verify that the read names and positions in info and muts
+        are consistent with each other and with the section. """
+        logger.debug(f"Checking indexes of {self}")
+        if not self.info.index.equals(self.affi.index):
+            raise InconsistentSectionError(
+                f"Read names for informative\n{self.info.index}\nand "
+                f"affirmative\n{self.affi.index}\nbits did not match")
+        if not self.info.columns.equals(self.affi.columns):
+            raise InconsistentSectionError(
+                f"Positions for informative\n{self.info.columns}\nand "
+                f"affirmative\n{self.affi.columns}\nbits did not match")
+        if not self.info.columns.equals(self.section.unmasked):
+            raise InconsistentSectionError(
+                f"Positions for bits\n{self.info.columns}\nand section\n"
+                f"{self.section.unmasked}\ndid not match")
+
+    @property
+    def info(self):
+        """ DataFrame of informative bits. """
+        return self._info
+
+    @property
+    def affi(self):
+        """ DataFrame of affirmative bits. """
+        return self._affi
+
+    @property
+    def nmasked(self):
+        return self._masked
+
+    def _drop(self, drop: pd.Index):
+        """ Drop the reads in `drop`; return the number dropped. """
+        logger.debug(f"Dropping {drop} from {self}")
+        self._info.drop(index=drop, inplace=True)
+        self._affi.drop(index=drop, inplace=True)
+        return drop.size
+
+    def _mask(self, masks: dict[str, Callable[[BitBatch], np.ndarray]]):
+        """ Drop reads selected by any of the masks, which should be
+        boolean NumPy arrays. """
+        logger.debug(f"Masking {self} with {masks}")
+        return {name: self._drop(self.reads[mask(self)])
+                for name, mask in masks.items()}
+
+
+class ClusterBitBatch(BitBatch):
+    """ One batch of bit vectors with cluster membership weights. """
+
+    def __init__(self, section: Section,
+                 info: pd.DataFrame, affi: pd.DataFrame,
+                 resps: pd.DataFrame):
+        super().__init__(section, info, affi)
+        self._resps = resps
+
+    @property
+    def clusters(self):
+        """ Index of the clusters. """
+        return self._resps.columns
+
+    @property
+    def n_info_per_pos(self):
+        # Informative bits per position (row) and cluster (column).
+        return self.info.T @ self._resps
+
+    @property
+    def n_affi_per_pos(self):
+        # Affirmative bits per position (row) and cluster (column).
+        return self.affi.T @ self._resps
+
+    @property
+    def n_info_per_read(self):
+        # Informative bits per read (row) and cluster (column).
+        return self._resps.mul(super().n_info_per_read, axis=0)
+
+    @property
+    def n_affi_per_read(self):
+        # Affirmative bits per read (row) and cluster (column).
+        return self._resps.mul(super().n_affi_per_read, axis=0)
+
+
+class BitAccum(BitVectorBase, ABC):
+    """ Accumulates batches of bit vectors. """
+
+    def __init__(self, section: Section, batches: Iterable[BitBatch]):
+        super().__init__(section)
+        # Initialize the number of batches given.
+        self._nbatches = 0
+        # Initialize the numbers of reads masked.
+        self._masked: Counter[str] = Counter()
+        for batch in batches:
+            logger.debug(f"Add batch {self.nbatches + 1} ({batch}) to {self}")
+            # Confirm that the sections from which the batch derives
+            # matches the section from which the accumulator derives.
+            if batch.section != self.section:
+                raise InconsistentSectionError(
+                    f"Sections of the batch ({batch.section}) and accumulator "
+                    f"({self.section}) do not match")
+            # Update the counts of the numbers of reads masked.
+            self._masked += batch.nmasked
+            logger.debug(f"Current masked counts for {self}: {self.nmasked}")
+            # Add the counts of informative and affirmative bits.
+            self._count_info_affi(batch)
+            # Increment the number of batches given.
+            self._nbatches += 1
+
+    @abstractmethod
+    def _empty_accum(self):
+        """ Empty BitAccum. """
+
+    @abstractmethod
+    def _count_info_affi(self, batch: BitBatch):
+        """ Count the informative and affirmative bits and add them to
+        the accumulator. """
+
+    @property
+    def nmasked(self):
+        return self._masked
+
+    @property
+    def nbatches(self):
+        """ Number of batches given to the accumulator. """
+        return self._nbatches
+
+
+class BitMonolith(BitAccum, BitMatrix):
+    """ Accumulates batches of bit vectors into one monolithic unit. """
+
+    def __init__(self, section: Section, batches: Iterable[BitBatch]):
+        # Initialize lists of each batch's total and affirmative bits.
+        self._info: list[pd.DataFrame] | pd.DataFrame = list()
+        self._affi: list[pd.DataFrame] | pd.DataFrame = list()
+        super().__init__(section, batches)
+        if self.nbatches > 0:
+            # Merge the informative and affirmative bits to DataFrames.
+            self._info = pd.concat(self._info, axis=0)
+            self._affi = pd.concat(self._affi, axis=0)
+        else:
+            # No batches were given.
+            self._info = self._empty_accum()
+            self._affi = self._empty_accum()
+        # Check for duplicate read names among all batches.
+        self._check_duplicate_reads()
+
+    def _empty_accum(self):
+        """ Empty DataFrame whose columns are the section indexes. """
+        return pd.DataFrame(index=[], columns=self.section.unmasked,
+                            dtype=int)
+
+    def _count_info_affi(self, batch: BitBatch):
+        # Add the informative and affirmative bits from this batch to
+        # the totals among all batches.
+        self._info.append(batch.info)
+        self._affi.append(batch.affi)
+
+    @property
+    def info(self) -> pd.DataFrame:
+        return self._info
+
+    @property
+    def affi(self) -> pd.DataFrame:
+        return self._affi
+
+    def get_uniq_muts(self):
+        return UniqMutBits(self.affi.values)
+
+
+class BitCounter(BitAccum):
+    """ Accumulates batches of bit vectors into counts of informative
+    and affirmative bits per position and per read. """
+
+    def __init__(self, section: Section, batches: Iterable[BitBatch]):
+        # Initialize the counts of informative and affirmative bits.
+        self._info_per_pos = self._init_per_pos(section)
+        self._affi_per_pos = self._init_per_pos(section)
+        self._info_per_read: list[pd.Series] = list()
+        self._affi_per_read: list[pd.Series] = list()
+        super().__init__(section, batches)
+        # Check for duplicate read names among all batches.
+        self._check_duplicate_reads()
+
+    def _init_per_pos(self, section: Section):
+        """ Initialize a count of 0 for each position. """
+        return pd.Series(0, index=section.unmasked)
+
+    def _empty_accum(self):
+        return pd.Series([], dtype=int)
+
+    def _count_info_affi(self, batch: BitBatch):
+        # Add the counts for this batch to the totals.
+        self._info_per_pos += batch.n_info_per_pos
+        self._affi_per_pos += batch.n_affi_per_pos
+        self._info_per_read.append(batch.n_info_per_read)
+        self._affi_per_read.append(batch.n_affi_per_read)
+        logger.debug(f"Added batch {len(self._info_per_read)} to {self}")
+        logger.debug(f"Counts:\n{self._info_per_pos}\n{self._affi_per_pos}")
+
+    @property
+    def n_info_per_pos(self):
+        return self._info_per_pos
+
+    @cached_property
+    def n_info_per_read(self):
+        if self.nbatches == 0:
+            # No batches were given.
+            return self._empty_accum()
+        return pd.concat(self._info_per_read, axis=0)
+
+    @property
+    def n_affi_per_pos(self):
+        return self._affi_per_pos
+
+    @cached_property
+    def n_affi_per_read(self) -> pd.Series:
+        if self.nbatches == 0:
+            # No batches were given.
+            return self._empty_accum()
+        return pd.concat(self._affi_per_read, axis=0)
+
+    @property
+    def reads(self):
+        """ Read names. """
+        return self.n_info_per_read.index
+
+    @property
+    def nreads(self):
+        return sum(read_batch.size for read_batch in self._info_per_read)
+
+    @property
+    def read_batches(self):
+        """ Read names in each batch. """
+        for read_batch in self._info_per_read:
+            yield read_batch.index
+
+
+class ClustBitCounter(BitCounter):
+    """ Accumulates batches of bit vectors and cluster memberships into
+    counts of informative and affirmative bits per position and per read
+    for each cluster. """
+
+    def __init__(self, section: Section, clusters: pd.Index,
+                 batches: Iterable[ClusterBitBatch]):
+        self._clusters = clusters
+        super().__init__(section, batches)
+
+    @property
+    def clusters(self):
+        """ Cluster orders and numbers. """
+        return self._clusters
+
+    def _init_per_pos(self, section: Section):
+        """ Initialize a count of 0 for each position and cluster. """
+        return pd.DataFrame(0, index=section.unmasked, columns=self.clusters)
+
+    def _empty_accum(self):
+        return pd.DataFrame(columns=self.clusters, dtype=int)

@@ -2,21 +2,28 @@
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.poetry]
-name = "dreem"
-description = "Implementation of Prof Silvi Rouskin's DREEM algorithm by Yves Martin, Scott Grote, Matty Allan and Alberic de Lajarte"
+[project]
+name = "seismic-rna"
+version = "1.0.0"
 authors = [
-    "Yves Martin des Taillades <yves@martin.yt>",
-    "Scott Grote",
-    "Matty Allan",
-    "Alberic de Lajarte"
+    {name="Matty Allan", email="allan.matt.f@gmail.com"},
+    {name="Yves Martin", email="yves@martin.yt"},
+    {name="Scott Grote"},
+    {name="Alberic de Lajarte"},
 ]
-license = "MIT"
-repository = "https://github.com/rouskinlab/dreem"
+description = "RNA Structure Ensemble Inference via Sequencing, Mutation Identification, and Clustering"
 readme = "README.md"
-homepage = "https://github.com/rouskinlab/dreem"
-keywords = ["dreem", "Rouskin", "rnastructure"]
+requires-python = "==3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU GPLv3 License",
+    "Operating System :: OS Independent",
+]
 
-[tool.poetry.dependencies]
-python = "3.10"
-dreem = {path = ".", develop = true}
+[project.scripts]
+srna = "seismic-rna.main:main_cli"
+
+[project.urls]
+"Homepage" = "https://github.com/rouskinlab/seismic-rna"
+"Bug Tracker" = "https://github.com/rouskinlab/seismic-rna/issues"
+
