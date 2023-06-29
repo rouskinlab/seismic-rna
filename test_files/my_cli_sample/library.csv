@@ -1,9 +1,0 @@
-reference,section_start,section_end,section,some_random_attribute,some_other_column
-reference_1,1,50,1-50,some_random_value_reference_1,
-reference_2,1,50,1-50,some_random_value_reference_2,
-reference_3,70,81,roi,,some_other_value
-reference_3,20,41,ms2,,some_other_value
-reference_4,70,81,roi,,some_other_value
-reference_4,20,41,ms2,,some_other_value
-reference_5,70,81,roi,,some_other_value
-reference_5,20,41,ms2,,some_other_value
