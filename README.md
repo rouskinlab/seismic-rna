@@ -14,9 +14,9 @@ Version 1.0.0
 SEISMIC RNA analyzes next-generation sequencing data from RNA chemical probing
 experiments, such as [DMS-MaPseq](https://www.nature.com/articles/nmeth.4057)
 and [SHAPE-MaP](https://www.nature.com/articles/nmeth.3029).
-This software introduces an optimized implementation of the [DREEM algorithm]
-(https://www.nature.com/articles/s41586-020-2253-5) for calling and clustering
-mutations to infer RNA structural ensembles.
+This software introduces an optimized implementation of the original algorithm
+[DREEM](https://www.nature.com/articles/s41586-020-2253-5) for quantifying and
+clustering mutations to infer RNA structural ensembles.
 
 
 ### Contributors
