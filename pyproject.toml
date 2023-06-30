@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "seismic-rna"
-version = "1.0.9"
+version = "0.1.0"
 authors = [
-    {name="Matty Allan", email="allan.matt.f@gmail.com"},
-    {name="Yves Martin", email="yves@martin.yt"},
+    {name="Matty Allan"},
+    {name="Yves Martin"},
     {name="Scott Grote"},
     {name="Alberic de Lajarte"},
 ]
