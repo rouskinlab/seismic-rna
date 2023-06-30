@@ -17,7 +17,7 @@ from ..core import docdef, path
 from ..core.cli import (opt_fasta, opt_bam,
                         opt_out_dir, opt_temp_dir,
                         opt_phred_enc, opt_min_phred,
-                        opt_ambrel, opt_batch_size,
+                        opt_min_reads, opt_batch_size, opt_ambrel,
                         opt_parallel, opt_max_procs,
                         opt_rerun, opt_save_temp)
 from ..core.parallel import lock_temp_dir
@@ -36,8 +36,9 @@ params = [
     opt_phred_enc,
     opt_min_phred,
     # Vectoring options
-    opt_ambrel,
+    opt_min_reads,
     opt_batch_size,
+    opt_ambrel,
     # Parallelization
     opt_max_procs,
     opt_parallel,
@@ -63,8 +64,9 @@ def run(fasta: str,
         temp_dir: str,
         phred_enc: int,
         min_phred: int,
-        ambrel: bool,
+        min_reads: int,
         batch_size: float,
+        ambrel: bool,
         max_procs: int,
         parallel: bool,
         rerun: bool,
@@ -82,21 +84,23 @@ def run(fasta: str,
         logger.critical(f"No FASTA file given to {path.MOD_REL}")
         return list()
 
-    # For each BAM file, create an
-    writers = get_relaters(Path(fasta),
-                           path.find_files_chain(map(Path, bam),
-                                                 [path.SampSeg, path.XamSeg]))
+    # For each BAM file, create a relation writer.
+    relaters = get_relaters(path.find_files_chain(map(Path, bam),
+                                                  [path.SampSeg, path.XamSeg]),
+                            Path(fasta),
+                            min_reads=min_reads,
+                            max_procs=max_procs,
+                            parallel=parallel)
 
-    # Compute and write mutation vectors for each BAM file.
-    profiles = relate_all(relaters=writers,
-                          out_dir=Path(out_dir),
-                          temp_dir=Path(temp_dir),
-                          phred_enc=phred_enc,
-                          min_phred=min_phred,
-                          ambrel=ambrel,
-                          batch_size=batch_size,
-                          max_procs=max_procs,
-                          parallel=parallel,
-                          rerun=rerun,
-                          save_temp=save_temp)
-    return profiles
+    # Compute and write relation vectors for each relation writer.
+    return relate_all(relaters=relaters,
+                      out_dir=Path(out_dir),
+                      temp_dir=Path(temp_dir),
+                      phred_enc=phred_enc,
+                      min_phred=min_phred,
+                      ambrel=ambrel,
+                      batch_size=batch_size,
+                      max_procs=max_procs,
+                      parallel=parallel,
+                      rerun=rerun,
+                      save_temp=save_temp)

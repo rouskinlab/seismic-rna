@@ -4,10 +4,9 @@ from pathlib import Path
 from typing import Iterable
 
 from .fqutil import FastqUnit, run_fastqc, run_cutadapt, run_bowtie2
-from .xamutil import dedup_sam, index_bam, sort_xam, view_xam
-from .xamutil import (FLAG_PAIRED, FLAG_UNMAP,
-                      FLAG_SECONDARY, FLAG_QCFAIL,
-                      FLAG_DUPLICATE, FLAG_SUPPLEMENTARY)
+from ..core.xam import (dedup_sam, index_bam, sort_xam, view_xam,
+                        FLAG_PAIRED, FLAG_UNMAP, FLAG_SECONDARY, FLAG_QCFAIL,
+                        FLAG_DUPLICATE, FLAG_SUPPLEMENTARY)
 from ..core import path
 from ..core.parallel import dispatch
 from ..core.seq import parse_fasta, write_fasta

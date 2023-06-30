@@ -199,6 +199,18 @@ def parse_fasta(fasta: Path, rna: bool = False):
     logger.info(f"Ended parsing {len(names)} {seq_type} sequences from {fasta}")
 
 
+def get_ref_seq(fasta: Path, ref: str):
+    """ Return the sequence of the reference named `ref` in the FASTA
+    file; raise ValueError if not found. """
+    for curr_ref, curr_seq in parse_fasta(fasta):
+        if curr_ref == ref:
+            # The reference was found.
+            return curr_seq
+    # The reference sequence was not found.
+    raise ValueError(f"Reference '{ref}' is not in {fasta}")
+
+
+
 def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]]):
     """ Write an iterable of reference names and DNA sequences to a
     FASTA file. """

@@ -342,9 +342,14 @@ opt_primer_gap = Option(("--primer-gap",),
                               "end of a primer and the end of the section"))
 
 # Relate
+opt_min_reads = Option(("--min-reads", "-n"),
+                       type=int,
+                       default=1000,
+                       help=("Do not analyze datasets with fewer than this "
+                             "minimum number of reads"))
 opt_batch_size = Option(("--batch-size",),
                         type=float,
-                        default=30.,
+                        default=256.,
                         help=("Target size of each batch of mutation vectors, "
                               "in millions of base calls"))
 opt_ambrel = Option(("--ambrel/--no-ambrel",),

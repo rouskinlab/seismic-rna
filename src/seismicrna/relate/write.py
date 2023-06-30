@@ -25,12 +25,12 @@ from .relate import relate_line, relate_pair, RelateError
 from .report import RelateReport
 from .sam import iter_batch_indexes, iter_records
 from .seqpos import format_seq_pos
-from ..align.xamutil import view_xam
 from ..core import path
 from ..core.files import digest_file
-from ..core.parallel import dispatch
+from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rel import NOCOV
-from ..core.seq import DNA, parse_fasta
+from ..core.seq import DNA, get_ref_seq
+from ..core.xam import count_xam, view_xam
 
 logger = getLogger(__name__)
 
@@ -42,14 +42,14 @@ def mb_to_bytes(batch_size: float):
     Parameters
     ----------
     batch_size: float
-        Size of the batch in megabytes
+        Size of the batch in mebibytes (2^20 = 1,048,576 bytes)
 
     Return
     ------
     int
         Number of bytes per batch, to the nearest integer
     """
-    return round(batch_size * 1e6)
+    return round(batch_size * 1048576)
 
 
 def write_batch(batch: int,
@@ -223,10 +223,10 @@ class RelationWriter(object):
         sam_file = open(temp_sam, "rb")
         try:
             # Compute number of records per batch.
-            n_recs = max(1, mb_to_bytes(batch_size) // len(self.seq))
+            n_per_bat = max(1, mb_to_bytes(batch_size) // len(self.seq))
             # Compute the batch indexes.
             disp_args = [(batch, start, stop) for batch, (start, stop)
-                         in enumerate(iter_batch_indexes(sam_file, n_recs))]
+                         in enumerate(iter_batch_indexes(sam_file, n_per_bat))]
             # Collect the keyword arguments.
             disp_kwargs = dict(temp_sam=temp_sam, out_dir=out_dir,
                                sample=self.sample, ref=self.ref,
@@ -305,25 +305,30 @@ def get_min_qual(min_phred: int, phred_enc: int):
     return min_phred + phred_enc
 
 
-def get_relaters(fasta: Path, bam_files: Iterable[Path]):
-    logger.info("Began creating relaters")
-    refseqs = dict(parse_fasta(fasta))
-    writers: list[RelationWriter] = list()
-    for bam_file in set(bam_files):
-        try:
-            # Parse the fields of the input BAM file.
-            ref = path.parse(bam_file, path.SampSeg, path.XamSeg)[path.REF]
-            try:
-                seq = refseqs[ref]
-            except KeyError:
-                logger.error(f"Reference '{ref}' for {bam_file} does not exist")
-                continue
-            writers.append(RelationWriter(bam_file, seq))
-            logger.debug(f"Created relater writer for {bam_file}")
-        except Exception as error:
-            logger.error(f"Failed to create writer for {bam_file}: {error}")
-    logger.info(f"Ended creating {len(writers)} relation vector writer(s)")
-    return writers
+def get_relater(bam_file: Path, fasta: Path, *, min_reads: int, n_procs: int):
+    """ Return a RelationWriter for the BAM file. """
+    # Count the records in the BAM file.
+    n_reads = count_xam(bam_file, n_procs)
+    if n_reads < min_reads:
+        raise ValueError(f"{bam_file} has {n_reads} reads (< {min_reads})")
+    # Determine the name of the reference from the BAM path.
+    ref = path.parse(bam_file, path.SampSeg, path.XamSeg)[path.REF]
+    # Get the sequence of the reference.
+    seq = get_ref_seq(fasta, ref)
+    # Create a RelationWriter.
+    return RelationWriter(bam_file, seq)
+
+
+def get_relaters(bam_files: Iterable[Path], fasta: Path, *,
+                 min_reads: int, max_procs: int, parallel: bool):
+    """ Return a RelationWriter for every BAM file with a reference in
+    the given FASTA file and with a sufficient number of reads. """
+    logger.info("Began creating relation writers")
+    relaters = dispatch(get_relater, max_procs, parallel,
+                        args=as_list_of_tuples(set(bam_files)),
+                        kwargs=dict(fasta=fasta, min_reads=min_reads))
+    logger.info(f"Ended creating {len(relaters)} relation writer(s)")
+    return relaters
 
 
 def relate_all(relaters: list[RelationWriter], *,

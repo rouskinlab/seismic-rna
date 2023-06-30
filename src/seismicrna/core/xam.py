@@ -4,12 +4,10 @@ from math import isnan, nan
 import re
 from typing import BinaryIO
 
-from ..core import path
-from ..core.shell import run_cmd, SAMTOOLS_CMD
-
+from . import path
+from .shell import run_cmd, SAMTOOLS_CMD
 
 logger = getLogger(__name__)
-
 
 # SAM file format specifications
 SAM_HEADER = b"@"
@@ -102,6 +100,44 @@ def view_xam(xam_inp: Path,
     # View the SAM/BAM file.
     run_cmd(cmd, check_created=[xam_out])
     logger.info(f"Ended viewing {xam_inp} as {xam_out}")
+
+
+def get_flagstat(xam_inp: Path, n_procs: int = 1):
+    """ Return a dict of the output from `samtools flagstat`. """
+    logger.info(f"Began computing flag statistics on {xam_inp}")
+    # Use samtools flagstat to compute the flag statistics.
+    cmd = [SAMTOOLS_CMD, "flagstat", "-@", n_procs - 1, xam_inp]
+    output = run_cmd(cmd, check_is_before=[xam_inp]).stdout
+    # Convert the output into a dict with one entry per line.
+    stat_pattern = b"([0-9]+) [+] ([0-9]+) ([A-Za-z0-9 ]+)"
+    stats = {stat.strip(): (int(n1), int(n2))
+             for n1, n2, stat in map(re.Match.groups,
+                                     re.finditer(stat_pattern, output))}
+    logger.debug(f"Flag statistics for {xam_inp}:\n{stats}")
+    logger.info(f"Ended computing flag statistics on {xam_inp}")
+    return stats
+
+
+def count_xam(xam_inp: Path, n_procs: int = 1):
+    """ Count the unique records in a SAM/BAM file. """
+    logger.info(f"Began counting records in {xam_inp}")
+    # Compute the flag statistics.
+    flagstat = get_flagstat(xam_inp, n_procs)
+    mapped, _ = flagstat[b"mapped"]
+    # Count paired-end reads with both mates in the file.
+    paired_two, _ = flagstat[b"with itself and mate mapped"]
+    # Count paired-end reads with only one mate in the file.
+    paired_one, _ = flagstat[b"singletons"]
+    # Count single-end reads.
+    singles = mapped - (paired_one + paired_two)
+    # Count unique reads (two mates of one pair count as one).
+    unique = singles + paired_one + paired_two // 2
+    logger.debug(f"Number of records in {xam_inp}:\n"
+                 f"Single-end: {singles}\n"
+                 f"Paired-end, one mate: {paired_one}\n"
+                 f"Paired-end, two mates: {paired_two // 2}")
+    logger.info(f"Ended counting {unique} records in {xam_inp}")
+    return unique
 
 
 def dedup_sam(sam_inp: Path, sam_out: Path):
@@ -304,13 +340,3 @@ def dedup_sam(sam_inp: Path, sam_out: Path):
     if not sam_out.is_file():
         raise FileNotFoundError(f"Failed to deduplicate {sam_inp} to {sam_out}")
     logger.info(f"Ended deduplicating {sam_inp} to {sam_out}")
-
-
-'''
-primer1 = "CAGCACTCAGAGCTAATACGACTCACTATA"
-primer1rc = "TATAGTGAGTCGTATTAGCTCTGAGTGCTG"
-primer2 = "TGAAGAGCTGGAACGCTTCACTGA"
-primer2rc = "TCAGTGAAGCGTTCCAGCTCTTCA"
-adapters5 = (primer1, primer2rc)
-adapters3 = (primer2, primer1rc)
-'''

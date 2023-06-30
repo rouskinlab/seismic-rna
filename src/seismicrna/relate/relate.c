@@ -1,11 +1,10 @@
 /*
 
-DREEM Relate Module
-===================
-    C Extension
-
+Relate -- Relate C Extension Module
+========================================================================
 Auth: Matty
-Date: 2023-03-26
+
+Compute relation vectors.
 
 */
 
@@ -23,9 +22,9 @@ Date: 2023-03-26
 
 // Exceptions
 
-static PyObject *VectorError;
+static PyObject *RelateError;
 
-/* Return a description of each error code, for VectorError. */
+/* Return a description of each error code, for RelateError. */
 static const char *error_text(int error_code)
 {
     printf("ERROR %d\n", error_code);
@@ -376,34 +375,7 @@ static int get_next_cigar_op(CigarOp *cigar)
 
 
 /*
-Truncate any part of the current operation that lies before (5' of) the
-beginning (5' end) of the section of interest.
-*/
-static void truncate_before_start(uint32_t *op_len,
-                                  char **op_start_read,
-                                  char **op_start_qual,
-                                  char **op_start_muts,
-                                  char *muts)
-{
-    // Check if any portion of the operation lies before (5' of) the
-    // beginning (5' end) of the section of interest.
-    if (*op_start_muts < muts)
-    {
-        // Compute the length to truncate.
-        uint32_t trunc = muts - *op_start_muts;
-        // Decrease the remaining length of the operation.
-        *op_len -= trunc;
-        // Advance the start (5' end) of the operation in the read.
-        *op_start_read += trunc;
-        *op_start_qual += trunc;
-        // Advance the start (5' end) of the operation in the section.
-        *op_start_muts = muts;
-    }
-}
-
-
-/*
-Compute the mutation vector of a SamRead.
+Compute the relation vector of a SamRead.
 
 Parameters
 ----------
@@ -622,7 +594,7 @@ static int vectorize_read(SamRead *read,
     if (op_end_read < read->end) {return 405;}
     // Deallocate all recorded insertions and deletions (if any).
     free(indels);
-    // The read was parsed to a mutation vector successfully.
+    // The read was related to the reference sequence successfully.
     return 0;
 }
 
@@ -685,11 +657,11 @@ static int vectorize_pair(char *line1,
     if (!(&read1)->is1st) {return 305;}
     if (!(&read2)->is2nd) {return 306;}
     if ((&read1)->rev == (&read2)->rev) {return 307;}
-    // Vectorize read 1; if it fails, return an error code.
+    // Relate read 1; if it fails, return an error code.
     error = vectorize_read(&read1, muts, sect_seq, sect_len, sect_end5,
                            min_qual, ambid);
     if (error) {return error;}
-    // Vectorize read 2; if it fails, return an error code.
+    // Relate read 2; if it fails, return an error code.
     return vectorize_read(&read2, muts, sect_seq, sect_len, sect_end5,
                           min_qual, ambid);
 }
@@ -719,7 +691,7 @@ static PyObject *py_vecline(PyObject *self, PyObject *args)
                                min_qual, ambid);
     if (error)
     {
-        PyErr_SetString(VectorError, error_text(error));
+        PyErr_SetString(RelateError, error_text(error));
         return NULL;
     }
     // Vectoring completed successfully.
@@ -755,7 +727,7 @@ static PyObject *py_vecpair(PyObject *self, PyObject *args)
                                min_qual, ambid);
     if (error)
     {
-        PyErr_SetString(VectorError, error_text(error));
+        PyErr_SetString(RelateError, error_text(error));
         return NULL;
     }
     // Vectoring completed successfully.
@@ -795,14 +767,14 @@ PyMODINIT_FUNC PyInit_vector(void)
     if (module == NULL) {return NULL;}
 
     // Define a new type of Python exception for vectoring.
-    VectorError = PyErr_NewException("vectorc.VectorError", NULL, NULL);
+    RelateError = PyErr_NewException("vectorc.RelateError", NULL, NULL);
     // Add the exception type to the module.
-    Py_XINCREF(VectorError);
-    if (PyModule_AddObject(module, "VectorError", VectorError) < 0)
+    Py_XINCREF(RelateError);
+    if (PyModule_AddObject(module, "RelateError", RelateError) < 0)
     {
         // Adding the exception type failed. Stop and return NULL.
-        Py_XDECREF(VectorError);
-        Py_CLEAR(VectorError);
+        Py_XDECREF(RelateError);
+        Py_CLEAR(RelateError);
         Py_DECREF(module);
         return NULL;
     }

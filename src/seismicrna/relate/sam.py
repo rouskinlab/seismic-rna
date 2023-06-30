@@ -3,7 +3,7 @@ from functools import cache, wraps
 from logging import getLogger
 from typing import BinaryIO, Callable
 
-from ..align.xamutil import SAM_DELIMITER, SAM_HEADER, FLAG_PAIRED
+from ..core.xam import SAM_DELIMITER, SAM_HEADER, FLAG_PAIRED
 
 
 logger = getLogger(__name__)
