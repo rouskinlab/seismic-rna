@@ -1,0 +1,15 @@
+cff-version: 1.1.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Allan
+    given-names: Matthew
+    orcid: https://orcid.org/0000-0001-8182-7402
+  - family-names: Martin
+    given-names: Yves
+  - family-names: Grote
+    given-names: Scott
+  - family-names: De Lajarte
+    given-names: Albéric
+title: rouskinlab/seismic-rna: Initial Release
+version: v0.1.0
+date-released: 2023-06-30
