@@ -464,6 +464,9 @@ def get_bam_files(fq_units: list[FastqUnit],
                   **kwargs) -> list[Path]:
     """ Run the alignment pipeline and return a tuple of all BAM files
     from the pipeline. """
+    if not fq_units:
+        logger.warning("No FASTQ files or pairs of FASTQ files were given")
+        return list()
     if rerun:
         # Rerun all alignments.
         fqs_to_align = fq_units

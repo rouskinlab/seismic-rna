@@ -28,6 +28,7 @@ def run(verbose: int):
     # treat seismicrna as a package, so that the relative imports work.
     # Omitting this line leads to an ImportError during every test.
     suite = ut.TestLoader().discover(main_dir,
+                                     pattern="*test.py",
                                      top_level_dir=dirname(main_dir))
     # Run all unit tests.
     runner = ut.TextTestRunner(verbosity=verbose)

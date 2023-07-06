@@ -249,14 +249,12 @@ opt_cut_m = Option(("--cut-m",),
 # Alignment options with Bowtie2
 opt_bt2_local = Option(("--bt2-local/--bt2-end-to-end",),
                        type=bool,
-                       default=False,
+                       default=True,
                        help="Whether to perform local or end-to-end alignment. "
-                            "Note that during local alignment, mutations at or "
-                            "very close to the ends of reads will be clipped "
-                            "off because clipping avoids the penalty for the "
-                            "mutation, thus giving a higher alignment score. "
-                            "As a result, mutations will be under-counted near "
-                            "the ends of reads; if the reads ")
+                            "Use local with fragmented samples, on which "
+                            "end-to-end yields false positives at read ends. "
+                            "Use end-to-end with amplicon-based samples, on "
+                            "which local yields false negatives at read ends.")
 opt_bt2_discordant = Option(("--bt2-discordant/--bt2-no-discordant",),
                             type=bool,
                             default=False,

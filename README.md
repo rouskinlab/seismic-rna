@@ -20,7 +20,7 @@ clustering mutations to infer RNA structural ensembles.
 SEISMIC RNA has been developed in [Silvi Rouskin's lab](https://rouskinlab.com)
 at Harvard Medical School by the following individuals:
 
-- [Matty Allan](https://github.com/matthewfallan)
+- [Matthew "Matty" Allan](https://github.com/matthewfallan)
 - [Yves Martin](https://github.com/yvesmartindestaillades)
 - [Scott Grote](https://github.com/heWhosShouldersBlockTheSun)
 - [Albéric de Lajarte](https://github.com/AlbericDeLajarte)
@@ -46,4 +46,3 @@ Write me.
 The [issue page](https://github.com/rouskinlab/seismic-rna/issues) of the GitHub
 repository is the official location for reporting bugs and other issues. Before
 opening a new issue, please check if a similar issue already exists.
-

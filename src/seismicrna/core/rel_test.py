@@ -1,20 +1,17 @@
 """
-Core -- Testing Module
+Core -- Relation Testing Module
 ========================================================================
 Auth: Matty
 
-Unit tests for all functions in package `core`.
+Unit tests for `core.rel`.
 """
 
-from itertools import chain, combinations, product
-from string import printable
-from typing import Generator, Sequence
 import unittest as ut
+from itertools import chain
+from typing import Generator, Sequence
 
 import numpy as np
-import pandas as pd
 
-from .mu import calc_mu_adj, calc_mu_obs
 from .rel import (IRREC, MATCH, DELET,
                   INS_5, INS_3, INS_8, MINS5, MINS3, ANY_8,
                   SUB_A, SUB_C, SUB_G, SUB_T, SUB_N,
@@ -25,250 +22,10 @@ from .rel import (IRREC, MATCH, DELET,
                   parse_cigar, count_cigar_muts, find_cigar_op_pos,
                   validate_relvec, iter_relvecs_q53, iter_relvecs_all,
                   relvec_to_read, as_sam)
-from .sect import encode_primer, index_to_pos, index_to_seq, seq_pos_to_index
-from .seq import BASES, BASES_ARR, RBASE, DNA, RNA, expand_degenerate_seq
-from .sim import rand_dna
+from .seq import DNA, expand_degenerate_seq
 
 
-# General functions ####################################################
-
-def has_close_muts(bitvec: np.ndarray, min_gap: int):
-    """ Return True if the bit vector has two mutations separated by
-    fewer than `min_gap` non-mutated bits, otherwise False. """
-    if bitvec.ndim != 1:
-        raise ValueError(f"bitvec must have 1 dimension, but got {bitvec.ndim}")
-    if min_gap < 0:
-        raise ValueError(f"min_gap must be ≥ 0, but got {min_gap}")
-    if min_gap == 0:
-        # Two mutations cannot be separated by fewer than 0 positions.
-        return False
-    # Close mutations are separated from each other by less than min_gap
-    # non-mutated bits. Equivalently, the difference in their positions
-    # (their distance) is < min_gap + 1, or ≤ min_gap. These distances
-    # are computed as the differences (using np.diff) in the positions
-    # of consecutive mutations (using np.flatnonzero).
-    dists = np.diff(np.flatnonzero(bitvec))
-    return dists.size > 0 and np.min(dists) <= min_gap
-
-
-def label_close_muts(bitvecs: np.ndarray, min_gap: int):
-    """ Return a 1D vector that is True for every row in `bitvecs` that
-    has two mutations that are too close, and otherwise False. """
-    if bitvecs.ndim != 2:
-        raise ValueError(
-            f"bitvects must have 2 dimensions, but got {bitvecs.ndim}")
-    return np.array([has_close_muts(bitvec, min_gap) for bitvec in bitvecs])
-
-
-def drop_close_muts(bitvecs: np.ndarray, min_gap: int):
-    """ Return a new array without every row in `bitvecs` that has two
-    mutations that are too close. """
-    return bitvecs[np.logical_not(label_close_muts(bitvecs, min_gap))]
-
-
-# General function tests ###############################################
-
-class TestTestHasCloseMuts(ut.TestCase):
-    """ Test function `test.has_close_muts`. """
-
-    def test_no_muts(self):
-        """ Test that a bit vector with no mutations returns False. """
-        bitvec = np.zeros(5, dtype=bool)
-        for g in range(bitvec.size):
-            self.assertFalse(has_close_muts(bitvec, g))
-
-    def test_one_mut(self):
-        """ Test that a bit vector with one mutation returns False. """
-        for i in range(5):
-            bitvec = np.zeros(5, dtype=bool)
-            bitvec[i] = 1
-            for g in range(bitvec.size):
-                self.assertFalse(has_close_muts(bitvec, g))
-
-    def test_more_muts(self):
-        """ Test every bit vector with 2 - 5 mutations. """
-        bitvecs_gaps = {
-            # 2 mutations (n = 10)
-            (0, 0, 0, 1, 1): 0,
-            (0, 0, 1, 0, 1): 1,
-            (0, 0, 1, 1, 0): 0,
-            (0, 1, 0, 0, 1): 2,
-            (0, 1, 0, 1, 0): 1,
-            (0, 1, 1, 0, 0): 0,
-            (1, 0, 0, 0, 1): 3,
-            (1, 0, 0, 1, 0): 2,
-            (1, 0, 1, 0, 0): 1,
-            (1, 1, 0, 0, 0): 0,
-            # 3 mutations (n = 10)
-            (0, 0, 1, 1, 1): 0,
-            (0, 1, 0, 1, 1): 0,
-            (0, 1, 1, 0, 1): 0,
-            (0, 1, 1, 1, 0): 0,
-            (1, 0, 0, 1, 1): 0,
-            (1, 0, 1, 0, 1): 1,
-            (1, 0, 1, 1, 0): 0,
-            (1, 1, 0, 0, 1): 0,
-            (1, 1, 0, 1, 0): 0,
-            (1, 1, 1, 0, 0): 0,
-            # 4 mutations (n = 5)
-            (0, 1, 1, 1, 1): 0,
-            (1, 0, 1, 1, 1): 0,
-            (1, 1, 0, 1, 1): 0,
-            (1, 1, 1, 0, 1): 0,
-            (1, 1, 1, 1, 0): 0,
-            # 5 mutations (n = 1)
-            (1, 1, 1, 1, 1): 0,
-        }
-        for bitvec, bit_gap in bitvecs_gaps.items():
-            for min_gap in range(len(bitvec)):
-                self.assertEqual(has_close_muts(np.array(bitvec), min_gap),
-                                 bit_gap < min_gap)
-
-
-# Module: mu ###########################################################
-
-class TestMuCalcMuAdj(ut.TestCase):
-    """ Test function `mu.calc_mu_adj`. """
-
-    def test_mu_multiplex(self):
-        """ Test that running 1 - 5 clusters simultaneously produces the
-        same results as running each cluster separately. """
-        n_pos = 16
-        min_k, max_k = 1, 5
-        min_g, max_g = 0, 4
-        max_m = 0.1
-        # Test each number of clusters (k).
-        for k in range(min_k, max_k + 1):
-            # Test each minimum gap between mutations (g).
-            for g in range(min_g, max_g + 1):
-                with self.subTest(k=k, g=g):
-                    # Generate random observed mutation rates.
-                    mus_obs = np.random.default_rng().random((n_pos, k)) * max_m
-                    # Adjust all rates simultaneously.
-                    mus_adj_sim = calc_mu_adj(mus_obs, g)
-                    # Adjust the rates of each cluster (i) separately.
-                    mus_adj_sep = np.empty_like(mus_obs)
-                    for i in range(k):
-                        mus_obs_i = mus_obs[:, i].reshape((n_pos, 1))
-                        mus_adj_i = calc_mu_adj(mus_obs_i, g).reshape(n_pos)
-                        mus_adj_sep[:, i] = mus_adj_i
-                    # Compare the results.
-                    self.assertTrue(np.allclose(mus_adj_sim, mus_adj_sep))
-
-    def test_inv_calc_mu_obs(self):
-        """ Test that this function inverts `mu.calc_mu_obs`. """
-        n_pos = 16
-        min_k, max_k = 1, 5
-        min_g, max_g = 0, 4
-        max_m = 0.2
-        # Test each number of clusters (k).
-        for k in range(min_k, max_k + 1):
-            # Generate random real mutation rates.
-            mus = np.random.default_rng().random((n_pos, k)) * max_m
-            # Test each minimum gap between mutations (g).
-            for g in range(min_g, max_g + 1):
-                with self.subTest(k=k, g=g):
-                    # Compute the observed mutation rates.
-                    mus_obs = calc_mu_obs(mus, g)
-                    # Adjust the observed mutation rates.
-                    mus_adj = calc_mu_adj(mus_obs, g)
-                    # Test if adjusted and initial mutation rates match.
-                    self.assertTrue(np.allclose(mus_adj, mus))
-
-
-class TestMuCalcMuObs(ut.TestCase):
-    """ Test function `mu.calc_mu_obs`. """
-
-    @ut.skip("Takes a long time to run: burdensome while debugging other tests")
-    def test_obs_empirical(self):
-        """ Test that this function accurately predicts the mutation
-        rates that are actually observed when simulated bit vectors are
-        filtered to remove mutations that are too close. """
-        n_pos = 10
-        min_g, max_g = 0, 4
-        min_m, max_m = 0.01, 0.1
-        # Choose the number of vectors to simulate as follows:
-        # The number of mutations at each position in the simulated bit
-        # vectors follows a binomial distribution, whose std. dev. is
-        # sqrt(p * (1 - p) * n).
-        # The proportion of mutations is this quantity divided by n:
-        # sqrt(p * (1 - p) / n).
-        # Choosing a tolerance of 3 std. dev. around the mean yields
-        # 3 * sqrt(p * (1 - p) / n) ≤ tol
-        # Solving for n (the number of vectors) gives
-        # n ≥ p * (1 - p) / (tol / 3)^2 = p * (1 - p) * (2 / tol)^2
-        nstdev = 3.  # number of standard deviations on each side
-        tol = 5.e-4  # absolute tolerance for np.allclose
-        n_vec = round(max_m * (1. - max_m) * (nstdev / tol) ** 2)
-        # Generate random real mutation rates.
-        mus = min_m + np.random.default_rng().random(n_pos) * (max_m - min_m)
-        # Generate random bit vectors with the expected mutation rates.
-        bvecs = None
-        while bvecs is None or not np.allclose(np.mean(bvecs, axis=0), mus,
-                                               atol=tol, rtol=0.):
-            bvecs = np.less(np.random.default_rng().random((n_vec, n_pos)), mus)
-        # Test each minimum gap between mutations (g).
-        for g in range(min_g, max_g + 1):
-            with self.subTest(g=g):
-                # Drop bit vectors with mutations too close.
-                bvecs_g = drop_close_muts(bvecs, g)
-                # Compute the empirically observed mutation rates.
-                mus_obs_emp = np.mean(bvecs_g, axis=0)
-                # Predict the observed mutation rates with calc_mu_obs.
-                mus_obs_prd = calc_mu_obs(mus.reshape((-1, 1)), g).reshape(-1)
-                # Compare the empirical and predicted mutation rates.
-                self.assertTrue(np.allclose(mus_obs_emp, mus_obs_prd,
-                                            atol=tol, rtol=0.))
-
-    def test_mu_multiplex(self):
-        """ Test that running 1 - 5 clusters simultaneously produces the
-        same results as running each cluster separately. """
-        n_pos = 16
-        min_k, max_k = 1, 5
-        min_g, max_g = 0, 4
-        max_m = 0.2
-        # Test each number of clusters (k).
-        for k in range(min_k, max_k + 1):
-            # Test each minimum gap between mutations (g).
-            for g in range(min_g, max_g + 1):
-                with self.subTest(k=k, g=g):
-                    # Generate random real mutation rates.
-                    mus = np.random.default_rng().random((n_pos, k)) * max_m
-                    # Adjust all rates simultaneously.
-                    mus_obs_sim = calc_mu_obs(mus, g)
-                    # Adjust the rates of each cluster (i) separately.
-                    mus_obs_sep = np.empty_like(mus)
-                    for i in range(k):
-                        mus_i = mus[:, i].reshape((n_pos, 1))
-                        mus_obs_i = calc_mu_obs(mus_i, g).reshape(n_pos)
-                        mus_obs_sep[:, i] = mus_obs_i
-                    # Compare the results.
-                    self.assertTrue(np.allclose(mus_obs_sim, mus_obs_sep))
-
-    def test_inv_calc_mu_adj(self):
-        """ Test that this function inverts `mu.calc_mu_adj`. """
-        n_pos = 16
-        min_k, max_k = 1, 5
-        min_g, max_g = 0, 4
-        max_m = 0.1
-        # Test each number of clusters (k).
-        for k in range(min_k, max_k + 1):
-            # Generate random observed mutation rates.
-            mus_obs = np.random.default_rng().random((n_pos, k)) * max_m
-            # Test each minimum gap between mutations (g).
-            for g in range(min_g, max_g + 1):
-                with self.subTest(k=k, g=g):
-                    # Compute the adjusted mutation rates.
-                    mus_adj = calc_mu_adj(mus_obs, g)
-                    # Recompute the observed mutation rates.
-                    mus_reobs = calc_mu_obs(mus_adj, g)
-                    # Compare observed and reobserved mutation rates.
-                    self.assertTrue(np.allclose(mus_obs, mus_reobs))
-
-
-# Module: rel ##########################################################
-
-class TestRelConstants(ut.TestCase):
+class TestConstants(ut.TestCase):
     """ Test constants of `rel` module. """
 
     def test_primary_codes(self):
@@ -290,8 +47,8 @@ class TestRelConstants(ut.TestCase):
         self.assertEqual(NOCOV, 255)
 
 
-class TestRelParseCigar(ut.TestCase):
-    """ Test function `rel.parse_cigar`. """
+class TestParseCigar(ut.TestCase):
+    """ Test function `parse_cigar`. """
 
     def test_cigar_match_subst_valid(self):
         """ Parse a valid CIGAR string with match and subst codes. """
@@ -310,16 +67,16 @@ class TestRelParseCigar(ut.TestCase):
         self.assertEqual(list(parse_cigar(cigar)), expect)
 
 
-class TestRelCountCigarMuts(ut.TestCase):
-    """ Test function `rel.count_cigar_muts`. """
+class TestCountCigarMuts(ut.TestCase):
+    """ Test function `count_cigar_muts`. """
 
     def test_cigar_match_subst_valid(self):
         """ Count mutations in a valid CIGAR string. """
         self.assertEqual(count_cigar_muts(b"9S23=1X13=1D9=2I56=3S"), 4)
 
 
-class TestRelFindCigarOpPos(ut.TestCase):
-    """ Test function `rel.find_cigar_op_pos`. """
+class TestFindCigarOpPos(ut.TestCase):
+    """ Test function `find_cigar_op_pos`. """
 
     def test_cigar_xeq_ins_valid(self):
         """ Find insertions in a CIGAR string with =/X codes. """
@@ -328,8 +85,8 @@ class TestRelFindCigarOpPos(ut.TestCase):
                          [25, 26, 27, 50, 51, 83])
 
 
-class TestRelValidateRelVec(ut.TestCase):
-    """ Test function `rel.validate_relvecs`. """
+class TestValidateRelVec(ut.TestCase):
+    """ Test function `validate_relvecs`. """
 
     def test_matches(self):
         """ Test that a relation vector of all matches is valid. """
@@ -364,8 +121,8 @@ class TestRelValidateRelVec(ut.TestCase):
         self.assertRaises(TypeError, validate_relvec, np.ones(8, np.int8))
 
 
-class TestRelIterRelvecsQ53(ut.TestCase):
-    """ Test function `rel.iter_relvecs_q53`. """
+class TestIterRelvecsQ53(ut.TestCase):
+    """ Test function `iter_relvecs_q53`. """
 
     @staticmethod
     def list_rels(seq: str, low_qual: Sequence[int] = (),
@@ -768,8 +525,8 @@ class TestRelIterRelvecsQ53(ut.TestCase):
                           [SUB_T, DELET, SUB_T]])
 
 
-class TestRelIterRelvecsAll(ut.TestCase):
-    """ Test function `rel.iter_relvecs_all`. """
+class TestIterRelvecsAll(ut.TestCase):
+    """ Test function `iter_relvecs_all`. """
 
     def assert_equal(self, ref: DNA, expects: list):
         """ Check that the expected and actual results match. """
@@ -833,8 +590,8 @@ class TestRelIterRelvecsAll(ut.TestCase):
             self.assert_equal(ref, expects)
 
 
-class TestRelRelvecToRead(ut.TestCase):
-    """ Test function `rel.relvec_to_read`. """
+class TestRelvecToRead(ut.TestCase):
+    """ Test function `relvec_to_read`. """
 
     def assert_equal(self, ref: DNA,
                      relvecs: list[list[int]],
@@ -1180,8 +937,8 @@ class TestRelRelvecToRead(ut.TestCase):
         self.assert_equal(ref, relvecs, expects)
 
 
-class TestRelAsSam(ut.TestCase):
-    """ Test function `rel.as_sam`. """
+class TestAsSam(ut.TestCase):
+    """ Test function `as_sam`. """
 
     def test_line_in_sam_format(self):
         line = as_sam(b"FS10000136:77:BPG61616-2310:1:1101:1000:1300", 99,
@@ -1201,368 +958,3 @@ class TestRelAsSam(ut.TestCase):
                   b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
                   b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:\n")
         self.assertEqual(line, expect)
-
-
-# Module: sect #########################################################
-
-
-class TestSectEncodePrimer(ut.TestCase):
-    """ Test function `sect.encode_primer`. """
-
-    def test_valid_primers(self):
-        """ Test that valid primers can be encoded. """
-        ref = "myref"
-        primer1 = "ACTACGACGTGACTAGCT"
-        primer2 = "TCTACTCCATTTTCAATACT"
-        result = encode_primer(ref, primer1, primer2)
-        expected_value = ref, DNA(primer1.encode()), DNA(primer2.encode())
-        expected_type = str, DNA, DNA
-        self.assertEqual(result, expected_value)
-        self.assertEqual(tuple(map(type, result)), expected_type)
-
-
-class TestSectIndexToPos(ut.TestCase):
-    """ Test function `sect.index_to_pos`. """
-
-    def test_valid_full(self):
-        """ Test with a valid full sequence. """
-        seq = DNA(b"ACGT")
-        pos = [1, 2, 3, 4]
-        start = 1
-        result = index_to_pos(seq_pos_to_index(seq, pos, start))
-        self.assertTrue(isinstance(result, np.ndarray))
-        self.assertTrue(np.array_equal(pos, result))
-
-    def test_valid_slice(self):
-        """ Test with a valid slice of a sequence. """
-        seq = DNA(b"ACAGCCTAG")
-        pos = [7, 8, 9, 10, 11]
-        start = 6
-        result = index_to_pos(seq_pos_to_index(seq, pos, start))
-        self.assertTrue(isinstance(result, np.ndarray))
-        self.assertTrue(np.array_equal(pos, result))
-
-    def test_valid_noncontig(self):
-        """ Test with non-contiguous sequence. """
-        seq = DNA(b"ACAGCCTAG")
-        pos = [4, 5, 7, 9]
-        start = 2
-        result = index_to_pos(seq_pos_to_index(seq, pos, start))
-        self.assertTrue(isinstance(result, np.ndarray))
-        self.assertTrue(np.array_equal(pos, result))
-
-
-class TestSectIndexToSeq(ut.TestCase):
-    """ Test function `sect.index_to_seq`. """
-
-    def test_valid_full(self):
-        """ Test with a valid full sequence. """
-        seq = DNA(b"ACGT")
-        pos = [1, 2, 3, 4]
-        start = 1
-        result = index_to_seq(seq_pos_to_index(seq, pos, start))
-        self.assertTrue(isinstance(result, DNA))
-        self.assertEqual(seq, result)
-
-    def test_valid_slice(self):
-        """ Test with a valid slice of a sequence. """
-        seq = DNA(b"ACAGCCTAG")
-        pos = [7, 8, 9, 10, 11]
-        start = 6
-        result = index_to_seq(seq_pos_to_index(seq, pos, start))
-        self.assertTrue(isinstance(result, DNA))
-        self.assertEqual(DNA(b"CAGCC"), result)
-
-    def test_valid_noncontig(self):
-        """ Test with non-contiguous sequence, allowing gaps. """
-        seq = DNA(b"ACAGCCTAG")
-        pos = [4, 5, 7, 9]
-        start = 2
-        result = index_to_seq(seq_pos_to_index(seq, pos, start),
-                              allow_gaps=True)
-        self.assertTrue(isinstance(result, DNA))
-        self.assertEqual(DNA(b"AGCA"), result)
-
-    def test_invalid_noncontig(self):
-        """ Test with non-contiguous sequence, forbidding gaps. """
-        seq = DNA(b"ACAGCCTAG")
-        pos = [4, 5, 7, 9]
-        start = 2
-        self.assertRaisesRegex(ValueError,
-                               ("A sequence cannot be assembled from an index "
-                                "with missing positions"),
-                               index_to_seq,
-                               seq_pos_to_index(seq, pos, start))
-
-
-class TestSectSeqPosToIndex(ut.TestCase):
-    """ Test function `sect.seq_pos_to_index`. """
-
-    def test_valid_full_1(self):
-        """ Test with every position in the sequence, starting at 1. """
-        seq = DNA(b"ACGT")
-        pos = [1, 2, 3, 4]
-        start = 1
-        expected = pd.MultiIndex.from_arrays([pos, ["A", "C", "G", "T"]])
-        self.assertTrue(expected.equals(seq_pos_to_index(seq, pos, start)))
-
-    def test_valid_full_9(self):
-        """ Test with every position in the sequence, starting at 9. """
-        seq = DNA(b"ACGT")
-        pos = [9, 10, 11, 12]
-        start = 9
-        expected = pd.MultiIndex.from_arrays([pos, ["A", "C", "G", "T"]])
-        self.assertTrue(expected.equals(seq_pos_to_index(seq, pos, start)))
-
-    def test_valid_slice_6(self):
-        """ Test with a slice of the sequence, starting at 6. """
-        seq = DNA(b"ACAGCCTAG")
-        pos = [7, 8, 9, 10, 11]
-        start = 6
-        expected = pd.MultiIndex.from_arrays([pos, ["C", "A", "G", "C", "C"]])
-        self.assertTrue(expected.equals(seq_pos_to_index(seq, pos, start)))
-
-    def test_valid_noncontig_2(self):
-        """ Test with non-contiguous sequence, starting at 2. """
-        seq = DNA(b"ACAGCCTAG")
-        pos = [4, 5, 7, 9]
-        start = 2
-        expected = pd.MultiIndex.from_arrays([pos, ["A", "G", "C", "A"]])
-        self.assertTrue(expected.equals(seq_pos_to_index(seq, pos, start)))
-
-    def test_valid_empty_1(self):
-        """ Test with no positions, starting at 1. """
-        seq = DNA(b"ACGT")
-        pos = []
-        start = 1
-        expected = pd.MultiIndex.from_arrays([[], []])
-        self.assertTrue(expected.equals(seq_pos_to_index(seq, pos, start)))
-
-    def test_invalid_full_0(self):
-        """ Test with every position in the sequence, starting at 0. """
-        seq = DNA(b"ACGT")
-        pos = [1, 2, 3, 4]
-        start = 0
-        self.assertRaisesRegex(ValueError,
-                               "The start position must be ≥ 1, but got 0",
-                               seq_pos_to_index,
-                               seq, pos, start)
-
-    def test_invalid_less_start_2(self):
-        """ Test with a position less than start (= 2). """
-        seq = DNA(b"ACGT")
-        pos = [1, 2, 3, 4]
-        start = 2
-        self.assertRaisesRegex(ValueError,
-                               ("All positions must be ≥ start .*, "
-                                "but got .*"),
-                               seq_pos_to_index,
-                               seq, pos, start)
-
-    def test_invalid_greater_end_9(self):
-        """ Test with a position greater than end, starting at 9. """
-        seq = DNA(b"ACGT")
-        pos = [9, 10, 11, 13]
-        start = 9
-        self.assertRaisesRegex(ValueError,
-                               ("All positions must be ≤ end .*, "
-                                "but got .*"),
-                               seq_pos_to_index,
-                               seq, pos, start)
-
-    def test_invalid_dup_1(self):
-        """ Test with duplicated positions, starting at 1. """
-        seq = DNA(b"ACGT")
-        pos = [1, 2, 2, 4]
-        start = 1
-        self.assertRaisesRegex(ValueError,
-                               "Duplicated positions: .*",
-                               seq_pos_to_index,
-                               seq, pos, start)
-
-    def test_invalid_unsort_1(self):
-        """ Test with unsorted positions, starting at 1. """
-        seq = DNA(b"ACGT")
-        pos = [4, 3, 2, 1]
-        start = 1
-        self.assertRaisesRegex(ValueError,
-                               "Unsorted positions: .*",
-                               seq_pos_to_index,
-                               seq, pos, start)
-
-
-# Module: seq ##########################################################
-
-class TestSeqConstants(ut.TestCase):
-    """ Test constants of `seq` module. """
-
-    def test_bases(self):
-        """ Test that `BASES` contains the four DNA letters. """
-        self.assertEqual(BASES, b"ACGT")
-
-    def test_rbase(self):
-        """ Test that `RBASE` contains the four RNA letters. """
-        self.assertEqual(RBASE, b"ACGU")
-
-    def test_bases_arr(self):
-        """ Test that `BASES` contains the four DNA ASCII codes. """
-        self.assertTrue(isinstance(BASES_ARR, np.ndarray))
-        self.assertIs(BASES_ARR.dtype.type, np.uint8)
-        self.assertEqual(BASES_ARR.tolist(), [65, 67, 71, 84])
-
-
-class TestSeqDna(ut.TestCase):
-    """ Test class `DNA`. """
-
-    def test_valid(self):
-        """ Test whether valid DNA sequences can be created. """
-        for length in range(1, 5):
-            for bases in product(*(["ACGT"] * length)):
-                dna = DNA("".join(bases).encode())
-                self.assertEqual(len(dna), length)
-                self.assertEqual(dna.decode(), "".join(bases))
-
-    def test_slice(self):
-        """ Test slicing DNA sequences. """
-        dnaseq = "GATTACA"
-        dna = DNA(dnaseq.encode())
-        for i, j in combinations(range(len(dna) + 1), r=2):
-            subseq = dna[i: j]
-            self.assertTrue(isinstance(subseq, DNA))
-            self.assertEqual(subseq.decode(), dnaseq[i: j])
-
-    def test_reverse_complement(self):
-        """ Test reverse complementing DNA sequences. """
-        seqs = ["ACGT", "GTCAGCTGCATGCATG", "TAAAGTGGGGGGACATCATCATACT"]
-        recs = ["ACGT", "CATGCATGCAGCTGAC", "AGTATGATGATGTCCCCCCACTTTA"]
-        for seq, rec in zip(seqs, recs, strict=True):
-            with self.subTest(seq=seq, rec=rec):
-                fwd = DNA(seq.encode())
-                rev = DNA(rec.encode())
-                self.assertTrue(isinstance(fwd.rc, DNA))
-                self.assertTrue(isinstance(rev.rc, DNA))
-                self.assertEqual(fwd.rc, rev)
-                self.assertEqual(rev.rc, fwd)
-                self.assertEqual(fwd.rc.rc, fwd)
-                self.assertEqual(rev.rc.rc, rev)
-
-    def test_transcribe(self):
-        """ Test transcribing DNA sequences. """
-        dseqs = ["ACGT", "GTCAGCTGCATGCATG", "TAAAGTGGGGGGACATCATCATACT"]
-        rseqs = ["ACGU", "GUCAGCUGCAUGCAUG", "UAAAGUGGGGGGACAUCAUCAUACU"]
-        for dna, rna in zip(dseqs, rseqs, strict=True):
-            with self.subTest(dna=dna, rna=rna):
-                tr = DNA(dna.encode()).tr()
-                self.assertTrue(isinstance(tr, RNA))
-                self.assertEqual(tr, RNA(rna.encode()))
-
-    def test_invalid_bases(self):
-        """ Test whether invalid characters raise ValueError. """
-        for char in printable:
-            if char not in "ACGT":
-                self.assertRaises(ValueError, DNA, char.encode())
-
-    def test_zero(self):
-        """ Test that zero-length DNA sequences raise ValueError. """
-        self.assertRaises(ValueError, DNA, b"")
-
-
-class TestSeqRna(ut.TestCase):
-    """ Test class `RNA`. """
-
-    def test_valid(self):
-        """ Test whether valid RNA sequences can be created. """
-        for length in range(1, 5):
-            for bases in product(*(["ACGU"] * length)):
-                rna = RNA("".join(bases).encode())
-                self.assertEqual(len(rna), length)
-                self.assertEqual(rna.decode(), "".join(bases))
-
-    def test_slice(self):
-        """ Test slicing RNA sequences. """
-        rnaseq = "GAUUACA"
-        rna = RNA(rnaseq.encode())
-        for i, j in combinations(range(len(rna) + 1), r=2):
-            subseq = rna[i: j]
-            self.assertTrue(isinstance(subseq, RNA))
-            self.assertEqual(subseq.decode(), rnaseq[i: j])
-
-    def test_reverse_complement(self):
-        """ Test reverse complementing RNA sequences. """
-        seqs = ["ACGU", "GUCAGCUGCAUGCAUG", "UAAAGUGGGGGGACAUCAUCAUACU"]
-        recs = ["ACGU", "CAUGCAUGCAGCUGAC", "AGUAUGAUGAUGUCCCCCCACUUUA"]
-        for seq, rec in zip(seqs, recs, strict=True):
-            with self.subTest(seq=seq, rec=rec):
-                fwd = RNA(seq.encode())
-                rev = RNA(rec.encode())
-                self.assertTrue(isinstance(fwd.rc, RNA))
-                self.assertTrue(isinstance(rev.rc, RNA))
-                self.assertEqual(fwd.rc, rev)
-                self.assertEqual(rev.rc, fwd)
-                self.assertEqual(fwd.rc.rc, fwd)
-                self.assertEqual(rev.rc.rc, rev)
-
-    def test_reverse_transcribe(self):
-        """ Test reverse transcribing RNA sequences. """
-        rseqs = ["ACGU", "GUCAGCUGCAUGCAUG", "UAAAGUGGGGGGACAUCAUCAUACU"]
-        dseqs = ["ACGT", "GTCAGCTGCATGCATG", "TAAAGTGGGGGGACATCATCATACT"]
-        for rna, dna in zip(rseqs, dseqs, strict=True):
-            with self.subTest(rna=rna, dna=dna):
-                rt = RNA(rna.encode()).rt()
-                self.assertTrue(isinstance(rt, DNA))
-                self.assertEqual(rt, DNA(dna.encode()))
-
-    def test_invalid_bases(self):
-        """ Test whether invalid characters raise ValueError. """
-        for char in printable:
-            if char not in "ACGU":
-                self.assertRaises(ValueError, RNA, char.encode())
-
-    def test_zero(self):
-        """ Test that zero-length RNA sequences raise ValueError. """
-        self.assertRaises(ValueError, RNA, b"")
-
-
-class TestSeqExpandDegenerateSeq(ut.TestCase):
-    """ Test function `seq.expand_degenerate_seq`. """
-
-    def test_zero_degenerate(self):
-        """ Test that the original sequence is returned. """
-        self.assertEqual(list(expand_degenerate_seq(b"ACGT")),
-                         [b"ACGT"])
-
-    def test_one_degenerate(self):
-        """ Test that one sequence is returned for each DNA base. """
-        self.assertEqual(list(expand_degenerate_seq(b"ACNT")),
-                         [b"ACAT", b"ACCT", b"ACGT", b"ACTT"])
-
-    def test_two_degenerate(self):
-        """ Test that one sequence is returned for every combination of
-        two DNA bases. """
-        self.assertEqual(list(expand_degenerate_seq(b"NCGN")),
-                         [b"ACGA", b"ACGC", b"ACGG", b"ACGT",
-                          b"CCGA", b"CCGC", b"CCGG", b"CCGT",
-                          b"GCGA", b"GCGC", b"GCGG", b"GCGT",
-                          b"TCGA", b"TCGC", b"TCGG", b"TCGT"])
-
-
-# Module: sim ##########################################################
-
-class TestSimRandDna(ut.TestCase):
-    """ Test function `sim.rand_dna`. """
-
-    def test_type(self):
-        """ Test that the type of the return value is DNA. """
-        self.assertIs(type(rand_dna(1)), DNA)
-
-    def test_length(self):
-        """ Test that the length of the DNA sequence is as expected. """
-        for length in range(1, 10):
-            with self.subTest(length=length):
-                self.assertEqual(len(rand_dna(length)), length)
-
-    def test_invalid_length(self):
-        """ Test that lengths ≤ 0 raise ValueError. """
-        for length in range(0, -10, -1):
-            with self.subTest(length=length):
-                self.assertRaises(ValueError, rand_dna, length)
