@@ -718,6 +718,11 @@ class BatchReport(Report, ABC):
             raise ValueError(f"Invalid MD5 checksums: {files}")
         return report
 
+    @property
+    def num_batches(self):
+        """ Number of batches associated with the report. """
+        return self.get_field(NumBatchF)
+
     @classmethod
     @abstractmethod
     def get_batch_seg(cls):

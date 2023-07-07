@@ -8,6 +8,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import Counter
 from functools import cached_property
+from itertools import chain
 from logging import getLogger
 from typing import Callable, Iterable
 
@@ -396,8 +397,25 @@ class BitAccum(BitVectorBase, ABC):
         """ Number of batches given to the accumulator. """
         return self._nbatches
 
+    @property
+    @abstractmethod
+    def _accum_info(self):
+        """ Return the accumulated informative bits. """
+
+    def _get_accum_read_names(self):
+        """ Names of the reads accumulated so far. """
+        if isinstance(self._accum_info, pd.DataFrame):
+            # The read names are the index of the DataFrame.
+            return self._accum_info.index.to_list()
+        if self.nbatches > 0:
+            # At least one batch of reads has been given.
+            return list(chain.from_iterable(batch.index for batch
+                                            in self._accum_info))
+        # No reads have been given.
+        return list()
+
     def _drop_duplicate_reads(self, batch: BitBatch):
-        dups = batch.reads.intersection(self.reads)
+        dups = batch.reads.intersection(self._get_accum_read_names())
         if batch.drop_reads(dups):
             logger.warning(f"{self} got read(s) in {batch} with name(s) seen "
                            f"in a previous batch: {dups.to_list()}")
@@ -431,6 +449,10 @@ class BitMonolith(BitAccum, BitMatrix):
         # the totals among all batches.
         self._info.append(batch.info)
         self._affi.append(batch.affi)
+
+    @property
+    def _accum_info(self):
+        return self._info
 
     @property
     def info(self) -> pd.DataFrame:
@@ -471,6 +493,10 @@ class BitCounter(BitAccum):
         self._affi_per_read.append(batch.n_affi_per_read)
         logger.debug(f"Added batch {len(self._info_per_read)} to {self}")
         logger.debug(f"Counts:\n{self._info_per_pos}\n{self._affi_per_pos}")
+
+    @property
+    def _accum_info(self):
+        return self._info_per_read
 
     @property
     def n_info_per_pos(self):

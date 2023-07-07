@@ -536,11 +536,6 @@ opt_profile = Option(("--profile",),
                      default="",
                      help="Profile code performance and log results to the given file")
 
-# Misc
-opt_version = Option(("--version",),
-                     is_flag=True,
-                     help="Show the version and exit.")
-
 
 def merge_params(*param_lists: list[Parameter]):
     """ Merge lists of Click parameters, dropping duplicates. """

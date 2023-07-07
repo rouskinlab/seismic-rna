@@ -1,7 +1,7 @@
 import cProfile
 import os
 
-from click import command, group, version_option
+from click import Context, command, group, pass_context, version_option
 
 from . import (demult as demultiplex_mod,
                align as align_mod,
@@ -14,9 +14,7 @@ from . import (demult as demultiplex_mod,
                test as test_mod)
 from .core import docdef, logs
 from .core.cli import (merge_params, opt_demultiplex,
-                       opt_verbose, opt_quiet, opt_log, opt_profile,
-                       opt_version, opt_fold)
-from .meta import __version__
+                       opt_verbose, opt_quiet, opt_log, opt_profile, opt_fold)
 
 all_params = merge_params([opt_demultiplex],
                           demultiplex_mod.params,
@@ -131,14 +129,8 @@ def run(*,
         table_cols: str,
         # Folding
         fold: bool,
-        dms_quantile: float,
-        # Misc
-        version: bool):
+        dms_quantile: float):
     """ Run entire pipeline. """
-    if version:
-        # Just print the version and exit.
-        print(__version__)
-        return
     # Demultiplexing
     if demult_on:
         for dms, dmi, dmm in demultiplex_mod.run(
@@ -290,32 +282,34 @@ main_params = [
     opt_quiet,
     opt_log,
     opt_profile,
-    opt_version,
 ]
 
 
 # Group for main commands
-@group(params=main_params,
-       context_settings={"show_default": True})
-@version_option(__version__)
-def main_cli(verbose: int, quiet: int, log: str, profile: str, **kwargs):
+@group(params=main_params, context_settings={"show_default": True})
+@version_option()
+@pass_context
+def main_cli(ctx: Context, verbose: int, quiet: int, log: str, profile: str,
+             **kwargs):
     """ SEISMIC-RNA command line interface """
     # Configure logging.
     os.makedirs(os.path.dirname(log), exist_ok=True)
     logs.config(verbose, quiet, log_file=log)
-    if profile:
-        profile_path = os.path.abspath(profile)
-        # Profile the program as it runs and write results to the
-        # file given in the parameter profile.
-        os.makedirs(os.path.dirname(profile_path), exist_ok=True)
-        cProfile.runctx("run(**kwargs)",
-                        globals=globals(),
-                        locals=locals(),
-                        filename=profile_path,
-                        sort="time")
-    else:
-        # Run without profiling.
-        run(**kwargs)
+    # If no subcommand was given, then run the entire pipeline.
+    if ctx.invoked_subcommand is None:
+        if profile:
+            profile_path = os.path.abspath(profile)
+            # Profile the program as it runs and write results to the
+            # file given in the parameter profile.
+            os.makedirs(os.path.dirname(profile_path), exist_ok=True)
+            cProfile.runctx("run(**kwargs)",
+                            globals=globals(),
+                            locals=locals(),
+                            filename=profile_path,
+                            sort="time")
+        else:
+            # Run without profiling.
+            run(**kwargs)
 
 
 # Add all commands to the main CLI command group.

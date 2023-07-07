@@ -73,12 +73,11 @@ class MaskLoader(BatchChainLoader):
 
     def get_read_names(self):
         """ Return an array naming all reads that were kept. """
-        try:
+        if self.num_batches > 0:
             # Concatenate all indexes, which have the read names.
             return np.hstack(self.iter_read_batches())
-        except ValueError:
-            # If there are no batches, return an empty array.
-            return np.array([], dtype=str)
+        # If there are no batches, return an empty array.
+        return np.array([], dtype=str)
 
     def process_batch(self, imported_batch: pd.DataFrame,
                       private_batch: pd.Series, *,

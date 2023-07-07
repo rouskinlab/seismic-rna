@@ -1,5 +1,5 @@
 
-# SEISMIC RNA
+# SEISMIC-RNA
 
 RNA Structure Ensemble Inference via Sequencing, Mutation Identification, and
 Clustering
@@ -7,7 +7,7 @@ Clustering
 
 ## About
 
-SEISMIC RNA analyzes deep sequencing datasets from RNA mutational profiling
+SEISMIC-RNA analyzes deep sequencing datasets from RNA mutational profiling
 experiments, such as [DMS-MaPseq](https://www.nature.com/articles/nmeth.4057)
 and [SHAPE-MaP](https://www.nature.com/articles/nmeth.3029).
 This software introduces an optimized implementation of the original algorithm
@@ -28,7 +28,7 @@ at Harvard Medical School by the following individuals:
 
 ## Installation
 
-Write me.
+Instructions for installing SEISMIC-RNA are in `INSTALL.md`.
 
 
 ## Usage

@@ -144,6 +144,10 @@ class DataLoader(ABC):
 class BatchLoader(DataLoader, ABC):
     """ Load a dataset that is split into batches. """
 
+    @property
+    def num_batches(self):
+        return self._report.num_batches
+
     def build_batch_path(self, batch: int):
         """ Path to the batch with the given number. """
         return self._report.build_batch_path(self.out_dir, batch,

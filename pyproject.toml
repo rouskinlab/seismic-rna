@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "seismic-rna"
-version = "0.1.2"
+version = "0.1.3"
 authors = [
     {name="Matty Allan"},
     {name="Yves Martin"},
@@ -20,6 +20,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
+    "click>=8.1",
     "cutadapt>=4.4",
     "fastqsplitter>=1.2",
     "matplotlib>=3.6",
