@@ -1,7 +1,7 @@
 import cProfile
 import os
 
-from click import Context, command, group, pass_context
+from click import command, group, version_option
 
 from . import (demult as demultiplex_mod,
                align as align_mod,
@@ -18,10 +18,6 @@ from .core.cli import (merge_params, opt_demultiplex,
                        opt_version, opt_fold)
 from .meta import __version__
 
-misc_params = [
-    opt_version,
-]
-
 all_params = merge_params([opt_demultiplex],
                           demultiplex_mod.params,
                           align_mod.params,
@@ -30,8 +26,7 @@ all_params = merge_params([opt_demultiplex],
                           cluster_mod.params,
                           table_mod.params,
                           [opt_fold],
-                          fold_mod.params,
-                          misc_params)
+                          fold_mod.params)
 
 
 @command("all", params=all_params)
@@ -295,34 +290,32 @@ main_params = [
     opt_quiet,
     opt_log,
     opt_profile,
+    opt_version,
 ]
 
 
 # Group for main commands
 @group(params=main_params,
        context_settings={"show_default": True})
-@pass_context
-def main_cli(ctx: Context, verbose: int, quiet: int, log: str, profile: str,
-             **kwargs):
+@version_option(__version__)
+def main_cli(verbose: int, quiet: int, log: str, profile: str, **kwargs):
     """ SEISMIC-RNA command line interface """
     # Configure logging.
     os.makedirs(os.path.dirname(log), exist_ok=True)
     logs.config(verbose, quiet, log_file=log)
-    # If no subcommand was given, then run the entire pipeline.
-    if ctx.invoked_subcommand is None:
-        if profile:
-            profile_path = os.path.abspath(profile)
-            # Profile the program as it runs and write results to the
-            # file given in the parameter profile.
-            os.makedirs(os.path.dirname(profile_path), exist_ok=True)
-            cProfile.runctx("run(**kwargs)",
-                            globals=globals(),
-                            locals=locals(),
-                            filename=profile_path,
-                            sort="time")
-        else:
-            # Run without profiling.
-            run(**kwargs)
+    if profile:
+        profile_path = os.path.abspath(profile)
+        # Profile the program as it runs and write results to the
+        # file given in the parameter profile.
+        os.makedirs(os.path.dirname(profile_path), exist_ok=True)
+        cProfile.runctx("run(**kwargs)",
+                        globals=globals(),
+                        locals=locals(),
+                        filename=profile_path,
+                        sort="time")
+    else:
+        # Run without profiling.
+        run(**kwargs)
 
 
 # Add all commands to the main CLI command group.

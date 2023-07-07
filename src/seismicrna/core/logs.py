@@ -8,7 +8,6 @@ Central manager of logging.
 
 import logging
 
-
 MAX_VERBOSE = 2
 MAX_QUIET = 2
 FILE_MSG_FORMAT = "LOGMSG>\t%(asctime)s\t%(name)s\t%(levelname)s\n%(message)s\n"
@@ -63,7 +62,7 @@ def get_verbosity(verbose: int = 0, quiet: int = 0):
         return logging.CRITICAL
 
     get_top_logger().warning(f"Invalid options: verbose={verbose}, "
-                               f"quiet={quiet}. Setting both to 0")
+                             f"quiet={quiet}. Setting both to 0")
     return get_verbosity(0, 0)
 
 
@@ -83,4 +82,3 @@ def config(verbose: int, quiet: int, log_file: str | None = None):
         file_handler.setLevel(get_verbosity(verbose=MAX_VERBOSE))
         file_handler.setFormatter(logging.Formatter(FILE_MSG_FORMAT))
         logger.addHandler(file_handler)
-    # logger.info(WELCOME)
