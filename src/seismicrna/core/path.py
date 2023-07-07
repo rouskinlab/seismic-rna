@@ -414,7 +414,7 @@ BamIndexSeg = Segment("bai", {REF: NameField, EXT: BamIndexExt})
 AlignRepSeg = Segment("align-rep", {EXT: ReportExt}, frmt="report-align{ext}")
 # Relation Vectors
 RelateBatSeg = Segment("rel-bat", {BATCH: IntField, EXT: RelVecBatExt},
-                       frmt="batch-rel-{batch}{ext}")
+                       frmt="batch-relate-{batch}{ext}")
 RelateRepSeg = Segment("rel-rep", {EXT: ReportExt}, frmt="report-relate{ext}")
 # Masking
 MaskBatSeg = Segment("mask-bat", {BATCH: IntField, EXT: MaskBatExt},
@@ -428,7 +428,7 @@ ClustTabSeg = Segment("clust-tab", {TABLE: ClustTabField,
                       frmt="{table}-k{k}-r{run}{ext}")
 ClustCountSeg = Segment("clust-count", {EXT: ClustCountExt}, frmt="counts{ext}")
 ClustBatSeg = Segment("clust-bat", {BATCH: IntField, EXT: ClustBatExt},
-                      frmt="batch-clust-{batch}{ext}")
+                      frmt="batch-cluster-{batch}{ext}")
 ClustRepSeg = Segment("clust-rep", {EXT: ReportExt},
                       frmt="report-cluster{ext}")
 # Mutation Tables

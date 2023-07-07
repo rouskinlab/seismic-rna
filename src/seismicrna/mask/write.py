@@ -307,7 +307,7 @@ class BitMasker(object):
         )
 
     def __str__(self):
-        return f"Mask {self.section} with {self.bit_caller}"
+        return f"Mask {self.sample} over {self.section} with {self.bit_caller}"
 
 
 def mask_section(loader: RelateLoader,

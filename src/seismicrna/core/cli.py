@@ -464,7 +464,6 @@ opt_table_cols = Option(("--table-cols", "-c"),
                         type=str,
                         help="Output columns of these relationships")
 
-
 # RNA structure prediction
 
 opt_fold = Option(("--fold/--no-fold",),
@@ -476,7 +475,6 @@ opt_dms_quantile = Option(("--dms-quantile", "-q"),
                           type=float,
                           default=0.9,
                           help="Quantile of DMS reactivities for normalization")
-
 
 # Graphing
 
@@ -520,7 +518,6 @@ opt_pdf = Option(("--pdf/--no-pdf",),
                  default=False,
                  type=bool,
                  help="Whether to output each graph as a PDF file")
-
 
 # Logging options
 opt_verbose = Option(("--verbose", "-v"),

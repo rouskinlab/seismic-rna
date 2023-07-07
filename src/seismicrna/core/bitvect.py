@@ -193,11 +193,9 @@ class BitVectorBase(ABC):
         """ Fraction of affirmative bits for each read. """
         return self.n_affi_per_read / self.n_info_per_read
 
-    def _check_duplicate_reads(self):
-        """ Verify that no read name occurs more than once. """
-        if self.reads.has_duplicates:
-            dups = self.reads[self.reads.duplicated(keep="first")]
-            raise DuplicateIndexError(f"Duplicate read names: {dups}")
+    @abstractmethod
+    def _drop_duplicate_reads(self, *args):
+        """ Drop any read with a duplicate name. """
 
 
 class BitMatrix(BitVectorBase, ABC):
@@ -244,6 +242,20 @@ class BitMatrix(BitVectorBase, ABC):
         return pd.Series(np.count_nonzero(self.affi, axis=1),
                          index=self.reads)
 
+    def _drop(self, drop: pd.Index):
+        """ Drop the reads in `drop`; return the number dropped. """
+        if drop.size > 0:
+            logger.debug(f"Dropping {drop} from {self}")
+            self.info.drop(index=drop, inplace=True)
+            self.affi.drop(index=drop, inplace=True)
+        return drop.size
+
+    def _drop_duplicate_reads(self):
+        dups = self.reads[self.reads.duplicated(keep="first")]
+        if self._drop(dups):
+            logger.warning(f"{self} got duplicate read names: {dups.to_list()}")
+        return dups
+
 
 class BitBatch(BitMatrix):
     """ One batch of bit vectors. """
@@ -257,7 +269,7 @@ class BitBatch(BitMatrix):
         self._affi = affi
         # Validate the reads.
         self._check_indexes()
-        self._check_duplicate_reads()
+        self._drop_duplicate_reads()
         # Mask the reads.
         self._masked = Counter(self._mask(mask or dict()))
 
@@ -288,16 +300,13 @@ class BitBatch(BitMatrix):
         """ DataFrame of affirmative bits. """
         return self._affi
 
+    def drop_reads(self, drop: pd.Index):
+        """ Drop the reads in `drop`; return the number dropped. """
+        return self._drop(drop)
+
     @property
     def nmasked(self):
         return self._masked
-
-    def _drop(self, drop: pd.Index):
-        """ Drop the reads in `drop`; return the number dropped. """
-        logger.debug(f"Dropping {drop} from {self}")
-        self._info.drop(index=drop, inplace=True)
-        self._affi.drop(index=drop, inplace=True)
-        return drop.size
 
     def _mask(self, masks: dict[str, Callable[[BitBatch], np.ndarray]]):
         """ Drop reads selected by any of the masks, which should be
@@ -359,6 +368,8 @@ class BitAccum(BitVectorBase, ABC):
                 raise InconsistentSectionError(
                     f"Sections of the batch ({batch.section}) and accumulator "
                     f"({self.section}) do not match")
+            # Drop any reads whose names match reads that already exist.
+            self._drop_duplicate_reads(batch)
             # Update the counts of the numbers of reads masked.
             self._masked += batch.nmasked
             logger.debug(f"Current masked counts for {self}: {self.nmasked}")
@@ -385,6 +396,13 @@ class BitAccum(BitVectorBase, ABC):
         """ Number of batches given to the accumulator. """
         return self._nbatches
 
+    def _drop_duplicate_reads(self, batch: BitBatch):
+        dups = batch.reads.intersection(self.reads)
+        if batch.drop_reads(dups):
+            logger.warning(f"{self} got read(s) in {batch} with name(s) seen "
+                           f"in a previous batch: {dups.to_list()}")
+        return dups
+
 
 class BitMonolith(BitAccum, BitMatrix):
     """ Accumulates batches of bit vectors into one monolithic unit. """
@@ -402,8 +420,6 @@ class BitMonolith(BitAccum, BitMatrix):
             # No batches were given.
             self._info = self._empty_accum()
             self._affi = self._empty_accum()
-        # Check for duplicate read names among all batches.
-        self._check_duplicate_reads()
 
     def _empty_accum(self):
         """ Empty DataFrame whose columns are the section indexes. """
@@ -439,8 +455,6 @@ class BitCounter(BitAccum):
         self._info_per_read: list[pd.Series] = list()
         self._affi_per_read: list[pd.Series] = list()
         super().__init__(section, batches)
-        # Check for duplicate read names among all batches.
-        self._check_duplicate_reads()
 
     def _init_per_pos(self, section: Section):
         """ Initialize a count of 0 for each position. """
