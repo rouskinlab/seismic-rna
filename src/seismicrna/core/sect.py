@@ -32,7 +32,7 @@ FIELD_END3 = "3' End"
 FIELD_PFWD = "Forward Primer"
 FIELD_PREV = "Reverse Primer"
 
-SectionTuple = namedtuple("PrimerTuple", ["pos5", "pos3"])
+SectionTuple = namedtuple("PrimerTuple", ("pos5", "pos3"))
 
 
 def encode_primer(ref: str, fwd: str, rev: str):
@@ -56,14 +56,39 @@ def encode_primers(primers: Iterable[tuple[str, str, str]]):
     return list(filter(None, enc_primers.values()))
 
 
-def get_section_coords_primers(library_file: Path):
-    """ Return a map from the names of """
+def get_sect_coords_primers(sects_file: Path):
+    """
+    Parse a file defining each section by the name of its reference and
+    either its 5' and 3' coordinates or its forward and reverse primer
+    sequences. Return one map from each reference and 5'/3' coordinate
+    pair to the name of the corresponding section, and another from each
+    reference and primer pair to the name of the corresponding section.
+
+    Parameters
+    ----------
+    sects_file: Path
+        CSV file of a table that defines the sections. The table must
+        have columns labeled "Reference", "Section", "5' End", "3' End",
+        "Forward Primer", and "Reverse Primer". Others are ignored.
+
+    Returns
+    -------
+    tuple[dict[tuple[str, int, int], str],
+          dict[tuple[str, DNA, DNA], str]]
+        Two mappings, the first from (ref name, 5' coord, 3' coord) to
+        each section, the second from (ref name, fwd primer, rev primer)
+        to each section. If the section is named in the "Section" column
+        of the table, then that name will be used as the section name.
+        Otherwise, the section name will be an empty string.
+    """
+
     # Initialize dictionaries mapping references and coordinates/primers
     # to section names.
     coords: dict[tuple[str, int, int], str] = dict()
     primers: dict[tuple[str, DNA, DNA], str] = dict()
 
     def map_sect(mapping: dict[tuple, str], key: tuple, value: str):
+        """ Add one section to the map if not already present. """
         # Check whether the mapping already contains the key.
         try:
             prev = mapping[key]
@@ -81,11 +106,11 @@ def get_section_coords_primers(library_file: Path):
                 # which value to use.
                 raise ValueError(f"Key {key} mapped to '{prev}' and '{value}'")
 
-    # Read every row of the library file data.
-    library = pd.read_csv(library_file)
-    lines = zip(library[FIELD_REF], library[FIELD_SECT],
-                library[FIELD_END5], library[FIELD_END3],
-                library[FIELD_PFWD], library[FIELD_PREV])
+    # Read every row of the sections file.
+    sections = pd.read_csv(sects_file)
+    lines = zip(sections[FIELD_REF], sections[FIELD_SECT],
+                sections[FIELD_END5], sections[FIELD_END3],
+                sections[FIELD_PFWD], sections[FIELD_PREV])
     for i, (ref, sect, end5, end3, fwd, rev) in enumerate(lines, start=1):
         try:
             # The reference name must have a value.
@@ -111,7 +136,7 @@ def get_section_coords_primers(library_file: Path):
                 raise ValueError(f"Got neither coordinates nor primers")
         except Exception as error:
             logger.error(f"Failed to make a section from line {i} of "
-                         f"{library_file}: {error}")
+                         f"{sects_file}: {error}")
     return coords, primers
 
 
@@ -553,22 +578,22 @@ class RefSections(object):
 
     def __init__(self,
                  refseqs: Iterable[tuple[str, DNA]], *,
-                 library: Path | None = None,
+                 sects_file: Path | None = None,
                  coords: Iterable[tuple[str, int, int]] = (),
                  primers: Iterable[tuple[str, DNA, DNA]] = (),
                  primer_gap: int):
-        # Get the names of the sections from the library, if any.
+        # Get the names of the sections from the sections file, if any.
         sect_coords = dict()
         sect_primers = dict()
-        if library is not None:
+        if sects_file is not None:
             try:
-                sect_coords, sect_primers = get_section_coords_primers(library)
-                # Combines the coordinates from the library and from the
+                sect_coords, sect_primers = get_sect_coords_primers(sects_file)
+                # Combines the coordinates from the sections_file and from the
                 # coord parameter.
                 coords = list(coords) + list(sect_coords)
                 primers = list(primers) + list(sect_primers)
             except Exception as error:
-                logger.error(f"Failed to add coordinates from library: {error}")
+                logger.error(f"Failed to add coordinates from sections_file: {error}")
 
         # Group coordinates and primers by reference.
         ref_coords = get_coords_by_ref(coords)

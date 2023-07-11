@@ -6,7 +6,7 @@ from typing import Iterable
 import pandas as pd
 
 from .base import (MUTAT_REL, POPAVG_TITLE, CLUST_INDEX_NAMES,
-                   Table, PosTable, ReadTable,
+                   Table, RelTypeTable, PosTable, ReadTable,
                    RelPosTable, RelReadTable,
                    MaskPosTable, MaskReadTable,
                    ClustPosTable, ClustReadTable, ClustFreqTable)
@@ -64,6 +64,10 @@ class TableLoader(Table, ABC):
                            header=self.header_row())
 
 
+class RelTypeTableLoader(TableLoader, RelTypeTable, ABC):
+    """ Load a table of relationship types. """
+
+
 # Load by Index (position/read/frequency) ##############################
 
 class PosTableLoader(TableLoader, PosTable, ABC):
@@ -90,21 +94,21 @@ class ReadTableLoader(TableLoader, ReadTable, ABC):
 
 # Load by Source (relate/mask/cluster) #################################
 
-class RelTableLoader(TableLoader, ABC):
+class RelTableLoader(RelTypeTableLoader, ABC):
 
     @classmethod
     def header_row(cls):
         return [0]
 
 
-class MaskTableLoader(TableLoader, ABC):
+class MaskTableLoader(RelTypeTableLoader, ABC):
 
     @classmethod
     def header_row(cls):
         return [0]
 
 
-class ClustTableLoader(TableLoader, ABC):
+class ClustTableLoader(RelTypeTableLoader, ABC):
 
     @classmethod
     def header_row(cls):

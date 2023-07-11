@@ -86,7 +86,8 @@ def write_batch(batch: int,
     # Build the path to the batch file.
     batch_path = RelateReport.build_batch_path(out_dir, batch, sample=sample,
                                                ref=ref, ext=path.PARQ_EXTS[0])
-    relframe.to_parquet(batch_path, index=True)
+    relframe.to_parquet(batch_path, index=True, engine="pyarrow",
+                        compression="brotli")
     logger.info(f"Ended writing sample '{sample}' reference '{ref}' "
                 f"batch {batch} to {batch_path}")
     return batch_path

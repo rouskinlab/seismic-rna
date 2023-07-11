@@ -6,7 +6,10 @@ Auth: Matty
 Collect and compare the results from independent runs of EM clustering.
 """
 
+from __future__ import annotations
+
 from itertools import combinations
+from typing import Callable, Iterable
 
 import numpy as np
 import pandas as pd
@@ -212,3 +215,89 @@ def calc_mean_var_info(runs: list[EmClustering]):
     return sum(calc_var_info_run_pair(runs[i1].output_resps(),
                                       runs[i2].output_resps())
                for i1, i2 in pairs) / len(pairs)
+
+
+def iter_all_likelihoods(p: np.ndarray):
+    """ Yield every bit vector likelihood from greatest to least. """
+    if p.ndim != 1:
+        raise ValueError(f"p must have 1 dimension, but got {p.ndim}")
+    # If no bits remain, then just return the base value.
+    if p.size == 0:
+        return iter([0.])
+    if np.min(p) < 0. or np.max(p) > 1.:
+        raise ValueError(f"p must all be in [0, 1], but got {p}")
+    # Remove any bits that are certain to be 0 or 1.
+    p = p[np.logical_not(np.logical_or(p == 0., p == 1.))]
+    # If no bits remain, then just return the base value.
+    if p.size == 0:
+        return iter([0.])
+    # Compute the log probabilities (p) and anti-probabilities (q).
+    log_p = np.log(p)
+    log_q = np.log(1. - p)
+    # Sum the larger of the two as the "base" weight.
+    log_base = float(np.sum(np.maximum(log_p, log_q)))
+    # Compute the difference in logs and sort from least to greatest.
+    log_diffs = np.abs(log_p - log_q)
+    log_diffs.sort()
+
+    class LikelihoodSeries(object):
+
+        def __init__(self, weight: float, inner: Callable[[], Iterable]):
+            self._weight = weight
+            self._inner = inner
+            self._values = list()
+
+        def _cache(self, value: float):
+            """ Store a value in the values list. """
+            self._values.append(value)
+            return value
+
+        def iter(self):
+            """ Iterate over the values. """
+            # Check if the values were already computed.
+            if self._values:
+                # If the values were already computed, then yield them.
+                yield from self._values
+            else:
+                # Otherwise, make iterators for the inner series and the
+                # weighted series.
+                inner = iter(self._inner())
+                weighted = iter(ival - self._weight for ival in self._inner())
+                # Get the first element from each iterator. Both should
+                # have > 0 items and should not raise StopIteration.
+                ival = next(inner)
+                wval = next(weighted)
+                # Yield elements until the both iterators are exhausted.
+                while True:
+                    # Yield the larger value and advance its iterator.
+                    if ival is not None and ival >= wval:
+                        # Yield the inner value.
+                        yield self._cache(ival)
+                        # Get the next inner value, or None if empty.
+                        ival = next(inner, None)
+                    else:
+                        # Yield the weighted value.
+                        yield self._cache(wval)
+                        try:
+                            # Get the next weighted value, if any.
+                            wval = next(weighted)
+                        except StopIteration:
+                            # There are no more weighted values.
+                            break
+                # Confirm that there are no more inner values.
+                try:
+                    next(inner)
+                except StopIteration:
+                    # There are no more inner values: success.
+                    return
+                # There were more inner values: failure.
+                raise ValueError(
+                    "Weighted values were exhausted before inner values")
+
+    # Make series of log likelihoods.
+    series = LikelihoodSeries(log_diffs[0], lambda: [0.])
+    for log_diff in log_diffs[1:]:
+        series = LikelihoodSeries(log_diff, series.iter)
+
+    # Return an iterator of log likelihood values adjusted by the base.
+    return iter(value + log_base for value in series.iter())

@@ -176,7 +176,7 @@ class Task(object):
         try:
             result = self._func(*args, **kwargs)
         except Exception as error:
-            logger.error(f"Failed task {task}:\n{error}\n", exc_info=True)
+            logger.error(f"Failed task {task}:\n{error}\n")
         else:
             logger.debug(f"Ended task {task}:\n{result}\n")
             return result

@@ -7,8 +7,8 @@ from .fq2bam import get_bam_files
 from .fqutil import FastqUnit
 from ..core import docdef, path
 from ..core.cli import (opt_fasta,
-                        opt_fastqs, opt_fastqi, opt_fastqm,
-                        opt_dmfastqs, opt_dmfastqi, opt_dmfastqm,
+                        opt_fastqs, opt_fastqi, opt_fastqp,
+                        opt_dmfastqs, opt_dmfastqi, opt_dmfastqp,
                         opt_phred_enc,
                         opt_out_dir, opt_temp_dir,
                         opt_rerun, opt_save_temp,
@@ -40,10 +40,10 @@ params = [
     opt_fasta,
     opt_fastqs,
     opt_fastqi,
-    opt_fastqm,
+    opt_fastqp,
     opt_dmfastqs,
     opt_dmfastqi,
-    opt_dmfastqm,
+    opt_dmfastqp,
     opt_phred_enc,
     # Outputs
     opt_out_dir,
@@ -106,10 +106,10 @@ def run(*,
         fasta: str,
         fastqs: tuple[str, ...],
         fastqi: tuple[str, ...],
-        fastqm: tuple[str, ...],
+        fastqp: tuple[str, ...],
         dmfastqs: tuple[str, ...],
         dmfastqi: tuple[str, ...],
-        dmfastqm: tuple[str, ...],
+        dmfastqp: tuple[str, ...],
         phred_enc: int,
         # Outputs
         out_dir: str,
@@ -183,10 +183,10 @@ def run(*,
     # together pairs of FASTQ files containing mate 1 and mate 2 reads.
     fq_units = list(FastqUnit.from_paths(fastqs=list(map(Path, fastqs)),
                                          fastqi=list(map(Path, fastqi)),
-                                         fastqm=list(map(Path, fastqm)),
+                                         fastqp=list(map(Path, fastqp)),
                                          dmfastqs=list(map(Path, dmfastqs)),
                                          dmfastqi=list(map(Path, dmfastqi)),
-                                         dmfastqm=list(map(Path, dmfastqm)),
+                                         dmfastqp=list(map(Path, dmfastqp)),
                                          phred_enc=phred_enc))
 
     # Generate and return a BAM file for every FASTQ-reference pair.

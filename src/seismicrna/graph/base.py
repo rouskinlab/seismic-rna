@@ -2,10 +2,10 @@ from abc import ABC, abstractmethod
 from logging import getLogger
 from functools import cache, cached_property
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
-import pandas as pd
 from plotly import graph_objects as go
+from plotly.subplots import make_subplots
 
 from .color import ColorMap, get_cmap
 from ..core import path
@@ -30,38 +30,20 @@ class GraphBase(ABC):
     def __init__(self, cmap: str | None = None):
         self._cmap_name = cmap
 
-    @classmethod
-    @abstractmethod
-    def get_data_type(cls) -> type | tuple[type, ...]:
-        """ Type of the data. """
-        return tuple()
-
-    @abstractmethod
-    def _get_data(self) -> pd.DataFrame | pd.Series:
-        """ Get the data of the graph. """
-        return pd.DataFrame()
-
     @cached_property
+    @abstractmethod
     def data(self) -> Any:
         """ Data of the graph. """
-        data = self._get_data()
-        if not isinstance(data, self.get_data_type()):
-            raise TypeError(f"{self.__class__.__name__} expected data "
-                            f"of type '{self.get_data_type().__name__}', "
-                            f"but got type '{type(data).__name__}'")
-        return data
 
     @property
     @abstractmethod
-    def title(self):
+    def title(self) -> str:
         """ Title of the graph. """
-        return ""
 
     @classmethod
     @abstractmethod
-    def get_cmap_type(cls):
+    def get_cmap_type(cls) -> type[ColorMap]:
         """ Type of the color map. """
-        return ColorMap
 
     @property
     def cmap(self) -> ColorMap:
@@ -69,15 +51,13 @@ class GraphBase(ABC):
         return get_cmap(self.get_cmap_type(), self._cmap_name)
 
     @abstractmethod
-    def get_traces(self):
+    def get_traces(self) -> Iterable[tuple[tuple[int, int], go.Trace]]:
         """ Data traces of the graph. """
-        return list()
 
     @property
     @abstractmethod
-    def out_dir(self):
+    def out_dir(self) -> Path:
         """ Output directory. """
-        return Path()
 
     @property
     @abstractmethod
@@ -101,11 +81,27 @@ class GraphBase(ABC):
                              **self.get_path_fields(),
                              ext=ext)
 
-    def _init_figure(self):
-        """ Initialize the figure. """
-        return go.Figure(data=self.get_traces())
+    @property
+    @abstractmethod
+    def nrows(self) -> int:
+        """ Number of rows of subplots. """
 
-    def _layout_figure(self, fig: go.Figure):
+    @property
+    @abstractmethod
+    def ncols(self) -> int:
+        """ Number of columns of subplots. """
+
+    def _figure_init(self):
+        """ Initialize the figure. """
+        return make_subplots(rows=self.nrows, cols=self.ncols,
+                             shared_xaxes="all", shared_yaxes="all")
+
+    def _figure_data(self, fig: go.Figure):
+        """ Add data to the figure. """
+        for (row, col), trace in self.get_traces():
+            fig.add_trace(trace, row=row, col=col)
+
+    def _figure_layout(self, fig: go.Figure):
         """ Update the figure's layout. """
         fig.update_layout(title=self.title,
                           plot_bgcolor="#ffffff",
@@ -117,12 +113,14 @@ class GraphBase(ABC):
                          linewidth=1,
                          linecolor="#000000",
                          autorange=True)
-        return fig
 
     @cache
     def get_figure(self):
         """ Figure object. """
-        return self._layout_figure(self._init_figure())
+        fig = self._figure_init()
+        self._figure_data(fig)
+        self._figure_layout(fig)
+        return fig
 
     def write_csv(self):
         """ Write the graph's source data to a CSV file. """
@@ -276,20 +274,20 @@ class OneTableSeqGraph(OneTableGraph, OneSeqGraph, ABC):
 class CartesianGraph(GraphBase, ABC):
     """ Graph with one pair of x and y axes. """
 
+    @property
     @abstractmethod
-    def get_xattr(self):
+    def xattr(self) -> str:
         """ Name of the x-axis attribute. """
-        return ""
 
+    @property
     @abstractmethod
-    def get_yattr(self):
+    def yattr(self) -> str:
         """ Name of the y-axis attribute. """
-        return ""
 
-    def _layout_figure(self, fig: go.Figure):
-        fig = super()._layout_figure(fig)
-        fig.update_layout(xaxis=dict(title=self.get_xattr()),
-                          yaxis=dict(title=self.get_yattr()))
+    def _figure_layout(self, fig: go.Figure):
+        super()._figure_layout(fig)
+        fig.update_layout(xaxis=dict(title=self.xattr),
+                          yaxis=dict(title=self.yattr))
         return fig
 
 

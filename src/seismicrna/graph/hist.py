@@ -13,7 +13,7 @@ from .base import (find_tables, GraphWriter, CartesianGraph, OneTableGraph,
                    OneSampGraph)
 from .color import RelColorMap
 from ..core import docdef
-from ..core.cli import (opt_table, opt_table_cols,
+from ..core.cli import (opt_table, opt_rels,
                         opt_yfrac, opt_hist_bins,
                         opt_csv, opt_html, opt_pdf,
                         opt_max_procs, opt_parallel)
@@ -27,7 +27,7 @@ PRECISION = 6
 
 params = [
     opt_table,
-    opt_table_cols,
+    opt_rels,
     opt_hist_bins,
     opt_yfrac,
     opt_csv,

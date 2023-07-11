@@ -64,10 +64,10 @@ class FastqUnit(object):
 
     KEY_SINGLE = "fastqs"
     KEY_INTER = "fastqi"
-    KEY_MATED = "fastqm"
+    KEY_MATED = "fastqp"
     KEY_DSINGLE = "dmfastqs"
     KEY_DINTER = "dmfastqi"
-    KEY_DMATED = "dmfastqm"
+    KEY_DMATED = "dmfastqp"
     KEY_MATE1 = "fastq1"
     KEY_MATE2 = "fastq2"
 
@@ -279,10 +279,10 @@ class FastqUnit(object):
             FASTQ files, given as lists of paths:
             - fastqs: FASTQ files of single-end reads
             - fastqi: FASTQ files of interleaved paired-end reads
-            - fastqm: mated FASTQ files of paired-end reads
+            - fastqp: mated FASTQ files of paired-end reads
             - dmfastqs: demultiplexed FASTQ files of single-end reads
             - dmfastqi: demultiplexed FASTQ files of interleaved paired-end reads
-            - dmfastqm: demultiplexed mated FASTQ files of paired-end reads
+            - dmfastqp: demultiplexed mated FASTQ files of paired-end reads
 
         Yield
         -----

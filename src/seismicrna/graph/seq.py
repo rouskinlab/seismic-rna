@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from functools import cache
+from functools import cache, cached_property
 from itertools import chain
 from logging import getLogger
 import os
@@ -13,8 +13,9 @@ from .base import (PRECISION, find_tables, GraphWriter, CartesianGraph,
                    OneTableSeqGraph, OneSampGraph)
 from .color import RelColorMap, SeqColorMap
 from ..core import docdef
-from ..core.cli import (opt_table, opt_table_cols, opt_stack, opt_yfrac,
-                        opt_csv, opt_html, opt_pdf, opt_max_procs, opt_parallel)
+from ..core.cli import (opt_input_file, opt_rels, opt_stack, opt_yfrac,
+                        opt_csv, opt_html, opt_pdf, opt_max_procs, opt_parallel,
+                        STACK_REL)
 from ..core.parallel import dispatch
 from ..core.sect import BASE_NAME, POS_NAME
 from ..core.seq import BASES
@@ -28,8 +29,8 @@ logger = getLogger(__name__)
 # Number of digits to which to round decimals.
 
 params = [
-    opt_table,
-    opt_table_cols,
+    opt_input_file,
+    opt_rels,
     opt_stack,
     opt_yfrac,
     opt_csv,
@@ -47,31 +48,34 @@ def cli(*args, **kwargs):
 
 
 @docdef.auto()
-def run(table: tuple[str, ...],
-        table_cols: str,
-        stack: bool,
-        yfrac: bool, *,
+def run(input_file: tuple[str, ...],
+        rels: str,
+        sub: str,
+        stack: str,
+        yf: bool, *,
         csv: bool,
         html: bool,
         pdf: bool,
         max_procs: int,
         parallel: bool) -> list[Path]:
     """ Run the graph pos module. """
-    writers = list(map(SeqGraphWriter, find_tables(table)))
+    writers = list(map(SeqGraphWriter, find_tables(input_file)))
     return list(chain(*dispatch([writer.write for writer in writers],
                                 max_procs, parallel, pass_n_procs=False,
-                                kwargs=dict(rels=table_cols, stack=stack,
-                                            yfrac=yfrac, csv=csv,
+                                kwargs=dict(rels=rels, sub=sub, stack=stack,
+                                            yfrac=yf, csv=csv,
                                             html=html, pdf=pdf))))
 
 
 class SeqGraphWriter(GraphWriter):
 
     def iter(self, rels: str, stack: str, yfrac: bool):
-        for rel in rels:
-            for graph_type in get_subclasses_module(SerialSeqGraph, __name__):
-                if type(self.table) in graph_type.sources():
-                    yield graph_type(table=self.table, codes=rel, yfrac=yfrac)
+        if stack == STACK_REL:
+            # For each position, stack the relationships.
+            for rel in rels:
+                for graph_type in get_subclasses_module(IdentitySeqGraph, __name__):
+                    if type(self.table) in graph_type.sources():
+                        yield graph_type(table=self.table, codes=rel, yfrac=yfrac)
         if stack:
             for graph_type in get_subclasses_module(StackedSeqGraph, __name__):
                 if type(self.table) in graph_type.sources():
@@ -114,16 +118,18 @@ class SeqGraph(CartesianGraph, OneTableSeqGraph, OneSampGraph, ABC):
     def get_cmap_type(cls):
         return SeqColorMap
 
-    def get_xattr(self):
+    @property
+    def xattr(self):
         return POS_NAME
 
-    def get_yattr(self):
+    @property
+    def yattr(self):
         return "Fraction" if self.yfrac else "Count"
 
     @property
     def title(self):
         fields = '/'.join(sorted(REL_CODES[c] for c in self.codes))
-        return (f"{self.get_yattr()}s of {fields} bases in {self.source} reads "
+        return (f"{self.yattr} of {fields} bases in {self.source} reads "
                 f"from {self.sample} per position in {self.ref}:{self.sect}")
 
     @property
@@ -133,11 +139,11 @@ class SeqGraph(CartesianGraph, OneTableSeqGraph, OneSampGraph, ABC):
 
     @property
     def graph_filename(self):
-        return f"{self.source}_{self.sort_codes}_{self.get_yattr()}".lower()
+        return f"{self.source}_{self.sort_codes}_{self.yattr}".lower()
 
-    def get_table_field(self, table: RelTypeTable | TableLoader, code: str):
-        return (table.fract_rel(code).round(PRECISION) if self.yfrac
-                else table.count_rel(code))
+    def get_table_rel(self, table: RelTypeTable | TableLoader, rel: str):
+        return (table.fract_rel(rel).round(PRECISION) if self.yfrac
+                else table.count_rel(rel))
 
 
 # Sequence Graphs by Source ############################################
@@ -146,8 +152,7 @@ class PopAvgSeqGraph(SeqGraph, ABC):
 
     @classmethod
     def sources(cls) -> dict[type[TableLoader], str]:
-        return {RelPosTableLoader: "Related",
-                MaskPosTableLoader: "Masked"}
+        return {RelPosTableLoader: "Related", MaskPosTableLoader: "Masked"}
 
 
 class ClustSeqGraph(SeqGraph, ABC):
@@ -156,15 +161,11 @@ class ClustSeqGraph(SeqGraph, ABC):
     def sources(cls) -> dict[type[TableLoader], str]:
         return {ClustPosTableLoader: "Clustered"}
 
-    @classmethod
-    def get_data_type(cls):
-        return pd.DataFrame
-
 
 # Sequence Graphs by Series Type #######################################
 
-class SerialSeqGraph(SeqGraph, ABC):
-    """ Bar graph with a single series of data. """
+class IdentitySeqGraph(SeqGraph, ABC):
+    """ Bar graph where each bar shows the identity of the base. """
 
     def get_traces(self):
         traces = list()
@@ -189,18 +190,8 @@ class SerialSeqGraph(SeqGraph, ABC):
         return traces
 
     @property
-    def code(self):
-        """ The code of the field to graph. """
-        if len(self.codes) != 1:
-            raise ValueError(f"Expected 1 code, but got {len(self.codes)}")
-        return self.codes[0]
-
-    @property
     def sort_codes(self):
-        return "-".join(["serial", super().sort_codes])
-
-    def _get_data(self) -> pd.Series:
-        return self.get_table_field(self.table, self.code)
+        return "-".join(["ident", super().sort_codes])
 
 
 class StackedSeqGraph(SeqGraph, ABC):
@@ -215,10 +206,11 @@ class StackedSeqGraph(SeqGraph, ABC):
     def sort_codes(self):
         return "-".join(["stacked", super().sort_codes])
 
-    def _get_data(self):
+    @cached_property
+    def data(self):
         data = dict()
         for code in self.codes:
-            series = self.get_table_field(self.table, code)
+            series = self.get_table_rel(self.table, code)
             data[series.name] = series
         return pd.DataFrame.from_dict(data)
 
@@ -249,15 +241,9 @@ class StackedSeqGraph(SeqGraph, ABC):
 
 # Instantiable Sequence Graphs #########################################
 
-class PopAvgSerialSeqGraph(PopAvgSeqGraph, SerialSeqGraph):
-
-    @classmethod
-    def get_data_type(cls):
-        return pd.Series
+class PopAvgIdentitySeqGraph(PopAvgSeqGraph, IdentitySeqGraph):
+    pass
 
 
 class PopAvgStackedSeqGraph(PopAvgSeqGraph, StackedSeqGraph):
-
-    @classmethod
-    def get_data_type(cls):
-        return pd.DataFrame
+    pass

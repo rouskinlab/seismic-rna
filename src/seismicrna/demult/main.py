@@ -5,15 +5,15 @@ from ..demult.demultiplex import demultiplex_run
 from ..align.fqutil import FastqUnit
 from ..core.cli import (
     opt_barcode_length, opt_barcode_start, opt_parallel_demultiplexing, opt_clipped_demultiplexing,
-    opt_mismatch_tolerence, opt_index_tolerence, opt_demulti_overwrite, opt_fasta, opt_library, opt_fastqm, opt_out_dir,
+    opt_mismatch_tolerence, opt_index_tolerence, opt_demulti_overwrite, opt_fasta, opt_sections_file, opt_fastqp, opt_out_dir,
     opt_phred_enc)
 
 params = [
     # Inputs
     opt_fasta,
-    opt_fastqm,
+    opt_fastqp,
     opt_phred_enc,
-    opt_library,
+    opt_sections_file,
     opt_barcode_start,
     opt_barcode_length,
     opt_out_dir,
@@ -36,12 +36,12 @@ def cli(*args, **kwargs):
     return run(*args, **kwargs)
 
 
-def run(library: str, out_dir: str, temp_dir: str, fastqm: tuple[str, ...], phred_enc: int, fasta: str, barcode_start=0,
+def run(sections_file: str, out_dir: str, temp_dir: str, fastqp: tuple[str, ...], phred_enc: int, fasta: str, barcode_start=0,
         barcode_length=0, clipped: int = 0, index_tolerance: int = 0, parallel_demultiplexing: bool = False,
         mismatch_tolerence: int = 0, demulti_overwrite: bool = False):
-    fq_units = list(FastqUnit.from_paths(fastqm=list(map(Path, fastqm)),
+    fq_units = list(FastqUnit.from_paths(fastqp=list(map(Path, fastqp)),
                                          phred_enc=phred_enc))
-    return [demultiplex_run(library_csv=library,
+    return [demultiplex_run(sections_file_csv=sections_file,
                             overwrite=demulti_overwrite,
                             demulti_workspace=temp_dir,
                             report_folder=out_dir,

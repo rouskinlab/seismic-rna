@@ -10,7 +10,7 @@ import pandas as pd
 from ..align.fqutil import FastqUnit
 from ..core.cli import (
     opt_barcode_length, opt_barcode_start, opt_parallel_demultiplexing, opt_clipped_demultiplexing,
-    opt_mismatch_tolerence, opt_index_tolerence, opt_demulti_overwrite, opt_fasta, opt_library, opt_fastqm)
+    opt_mismatch_tolerence, opt_index_tolerence, opt_demulti_overwrite, opt_fasta, opt_sections_file, opt_fastqp)
 
 # from scipy import signal
 
@@ -18,8 +18,8 @@ from ..core.cli import (
 params = [
     # Inputs
     opt_fasta,
-    opt_fastqm,
-    opt_library,
+    opt_fastqp,
+    opt_sections_file,
     opt_barcode_start,
     opt_barcode_length,
 
@@ -446,7 +446,7 @@ def make_dict_from_fasta(fasta_path) -> dict:
 
 
 """
-input csv, library that represents each sequence to be dumultiplexed with many different coloumns 
+input csv, sections_file that represents each sequence to be dumultiplexed with many different coloumns 
 
 workspace directory that demultiplexing is being done in 
 
@@ -1018,13 +1018,13 @@ def create_report(sequence_objects: dict, fq1: str, fq2: str, working_directory:
 
 """
 split is default to 10. disregarding extremes, the higher the split the lighter the memeory load
-library csv 
+sections_file csv 
     each construct must have a secondary signiture start index and len in order to process, 
     barcode given in main arguements 
 """
 
 
-def demultiplex_run(library_csv, demulti_workspace, report_folder, fq_unit: FastqUnit, fasta, barcode_start=0,
+def demultiplex_run(sections_file_csv, demulti_workspace, report_folder, fq_unit: FastqUnit, fasta, barcode_start=0,
                     barcode_length=0, split: int = 10, clipped: int = 0, rev_clipped: int = 0, index_tolerance: int = 0,
                     parallel: bool = False, mismatch_tolerence: int = 0, overwrite: bool = False):
     sample_name = fq_unit.sample
@@ -1050,7 +1050,7 @@ def demultiplex_run(library_csv, demulti_workspace, report_folder, fq_unit: Fast
     os.makedirs(seq_data_folder, exist_ok=True)
 
     sequence_objects = make_sequence_objects_from_csv(
-        input_csv=library_csv,
+        input_csv=sections_file_csv,
         barcode_start=barcode_start,
         barcode_length=barcode_length,
         fasta=fasta,

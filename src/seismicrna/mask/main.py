@@ -7,8 +7,8 @@ from click import command
 from .write import mask_section
 from ..relate.load import open_reports
 from ..core import docdef, path
-from ..core.cli import (opt_report,
-                        opt_coords, opt_primers, opt_primer_gap, opt_library,
+from ..core.cli import (opt_input_file,
+                        opt_coords, opt_primers, opt_primer_gap, opt_sections_file,
                         opt_count_del, opt_count_ins, opt_discount_mut,
                         opt_exclude_polya, opt_exclude_gu, opt_exclude_pos,
                         opt_min_finfo_read, opt_max_fmut_read, opt_min_mut_gap,
@@ -22,9 +22,9 @@ logger = getLogger(__name__)
 
 params = [
     # Input/output paths
-    opt_report,
+    opt_input_file,
     # Sections
-    opt_coords, opt_primers, opt_primer_gap, opt_library,
+    opt_coords, opt_primers, opt_primer_gap, opt_sections_file,
     # Mutation counting
     opt_count_del, opt_count_ins, opt_discount_mut,
     # Filtering
@@ -46,12 +46,12 @@ def cli(*args, **kwargs):
 
 
 @docdef.auto()
-def run(report: tuple[str, ...], *,
+def run(input_file: tuple[str, ...], *,
         # Sections
         coords: tuple[tuple[str, int, int], ...],
         primers: tuple[tuple[str, str, str], ...],
         primer_gap: int,
-        library: str,
+        sections_file: str,
         # Mutation counting
         count_del: bool,
         count_ins: bool,
@@ -72,12 +72,13 @@ def run(report: tuple[str, ...], *,
         rerun: bool) -> list[Path]:
     """ Run the filtering module. """
     # Open all relation vector loaders and get the sections for each.
-    loaders, sections = open_sections(map(Path, report),
+    loaders, sections = open_sections(map(Path, input_file),
                                       coords=coords,
                                       primers=encode_primers(primers),
                                       primer_gap=primer_gap,
-                                      library=(Path(library) if library
-                                               else None))
+                                      sections_file=(Path(sections_file)
+                                                     if sections_file
+                                                     else None))
     # List the relation loaders and their sections.
     args = [(loader, section) for loader in loaders
             for section in sections.list(loader.ref)]
@@ -104,11 +105,11 @@ def open_sections(report_paths: Iterable[Path],
                   coords: Iterable[tuple[str, int, int]],
                   primers: Iterable[tuple[str, DNA, DNA]],
                   primer_gap: int,
-                  library: Path | None = None):
+                  sections_file: Path | None = None):
     """ Open sections of relate reports. """
     report_files = path.find_files_chain(report_paths, [path.RelateRepSeg])
     loaders = open_reports(report_files)
     sections = RefSections({(rep.ref, rep.seq) for rep in loaders},
                            coords=coords, primers=primers, primer_gap=primer_gap,
-                           library=library)
+                           sects_file=sections_file)
     return loaders, sections

@@ -75,7 +75,7 @@ class MaskLoader(BatchChainLoader):
         """ Return an array naming all reads that were kept. """
         if self.num_batches > 0:
             # Concatenate all indexes, which have the read names.
-            return np.hstack(self.iter_read_batches())
+            return np.hstack(list(self.iter_read_batches()))
         # If there are no batches, return an empty array.
         return np.array([], dtype=str)
 

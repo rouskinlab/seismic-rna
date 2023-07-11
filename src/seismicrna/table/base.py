@@ -125,6 +125,9 @@ class Table(ABC):
         """ Path of the table's CSV file (possibly gzipped). """
         return path.buildpar(*self.path_segs(), **self.path_fields)
 
+    def __str__(self):
+        return f"{self.__class__.__name__} at {self.path}"
+
 
 class RelTypeTable(Table, ABC):
     """ Table with multiple types of relationships. """
@@ -132,7 +135,12 @@ class RelTypeTable(Table, ABC):
     @abstractmethod
     def _count_col(self, col: str):
         """ Get the counts from a column in the data table. """
-        return self.data[col]
+        try:
+            return self.data[col]
+        except KeyError:
+            # Suppress exception chaining.
+            pass
+        raise ValueError(f"{self} was not built with relationship '{col}'")
 
     def _count_rel(self, rel: str):
         """ Count the bits for a relationship. """

@@ -5,10 +5,10 @@ from click import command
 
 from .rnastructure import fold, ct2dot
 from ..core import docdef, path
-from ..core.cli import (opt_temp_dir, opt_save_temp, opt_table,
-                        opt_fasta, opt_library,
+from ..core.cli import (opt_temp_dir, opt_save_temp, opt_input_file,
+                        opt_fasta, opt_sections_file,
                         opt_coords, opt_primers, opt_primer_gap,
-                        opt_dms_quantile,
+                        opt_quantile,
                         opt_max_procs, opt_parallel, opt_rerun)
 from ..core.depend import confirm_dependency
 from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
@@ -21,13 +21,13 @@ from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader
 logger = getLogger(__name__)
 
 params = [
-    opt_table,
+    opt_input_file,
     opt_fasta,
-    opt_library,
+    opt_sections_file,
     opt_coords,
     opt_primers,
     opt_primer_gap,
-    opt_dms_quantile,
+    opt_quantile,
     opt_temp_dir,
     opt_save_temp,
     opt_max_procs,
@@ -45,14 +45,14 @@ def cli(*args, **kwargs):
 
 @lock_temp_dir
 @docdef.auto()
-def run(table: tuple[str, ...],
+def run(input_file: tuple[str, ...],
         *,
         fasta: str,
-        library: str | None,
+        sections_file: str | None,
         coords: tuple[tuple[str, int, int], ...],
         primers: tuple[tuple[str, str, str], ...],
         primer_gap: int,
-        dms_quantile: float,
+        quantile: float,
         temp_dir: str,
         save_temp: bool,
         max_procs: int,
@@ -70,23 +70,23 @@ def run(table: tuple[str, ...],
 
     # Get the sections for every reference sequence.
     ref_sections = RefSections(parse_fasta(Path(fasta)),
-                               library=Path(library) if library else None,
+                               sects_file=(Path(sections_file) if sections_file
+                                           else None),
                                coords=coords,
                                primers=encode_primers(primers),
                                primer_gap=primer_gap)
     # Initialize the table loaders.
-    files = path.find_files_chain(map(Path, table), [path.MutTabSeg])
+    tab_files = path.find_files_chain(map(Path, input_file), [path.MutTabSeg])
     loaders = [loader for loader in dispatch(load, max_procs, parallel,
-                                             args=as_list_of_tuples(files),
+                                             args=as_list_of_tuples(tab_files),
                                              pass_n_procs=False)
-               if isinstance(loader, (MaskPosTableLoader,
-                                      ClustPosTableLoader))]
+               if isinstance(loader, (MaskPosTableLoader, ClustPosTableLoader))]
     # Fold the RNA profiles.
     return dispatch(fold_rna, max_procs, parallel,
                     args=[(loader, ref_sections.list(loader.ref))
                           for loader in loaders],
                     kwargs=dict(temp_dir=Path(temp_dir), save_temp=save_temp,
-                                dms_quantile=dms_quantile, rerun=rerun),
+                                quantile=quantile, rerun=rerun),
                     pass_n_procs=True)
 
 
@@ -100,9 +100,9 @@ def fold_rna(loader: MaskPosTableLoader | ClustPosTableLoader,
                     pass_n_procs=False)
 
 
-def fold_profile(rna: RnaProfile, out_dir: Path, dms_quantile: float, **kwargs):
+def fold_profile(rna: RnaProfile, out_dir: Path, quantile: float, **kwargs):
     """ Fold a section of an RNA from one mutational profile. """
-    ct_file = fold(rna, out_dir=out_dir, dms_quantile=dms_quantile, **kwargs)
+    ct_file = fold(rna, out_dir=out_dir, quantile=quantile, **kwargs)
     dot_file = ct2dot(ct_file)
-    varnac_file = rna.to_varnac(out_dir, dms_quantile)
+    varnac_file = rna.to_varnac(out_dir, quantile)
     return ct_file, dot_file, varnac_file

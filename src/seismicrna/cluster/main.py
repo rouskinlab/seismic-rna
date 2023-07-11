@@ -5,16 +5,18 @@ from click import command
 
 from .krun import cluster
 from ..core import docdef, path
-from ..core.cli import (opt_report, opt_max_clusters, opt_em_runs,
+from ..core.cli import (opt_input_file, opt_max_clusters, opt_em_runs,
                         opt_min_em_iter, opt_max_em_iter, opt_em_thresh,
                         opt_parallel, opt_max_procs, opt_rerun)
 from ..core.parallel import as_list_of_tuples, dispatch
 
 logger = getLogger(__name__)
 
+DEFAULT_ORDER = 2
+
 params = [
     # Input files
-    opt_report,
+    opt_input_file,
     # Clustering options
     opt_max_clusters,
     opt_em_runs,
@@ -30,10 +32,18 @@ params = [
 
 
 @command(path.MOD_CLUST, params=params)
-def cli(*args, **kwargs):
+def cli(*args, max_clusters: int, **kwargs):
     """ Cluster reads from 'mask' using Expectation-Maximization to find
     alternative structures in the RNA ensemble. """
-    return run(*args, **kwargs)
+    # When cluster is called via the command "cluster" (instead of via
+    # the run() function), assume that clustering is intentional. Thus,
+    # override the default max_clusters == 0 (which disables clustering)
+    # by setting it to 2 (the minimum non-trivial order of clustering).
+    if max_clusters <= 0:
+        logger.warning(f"Command '{path.MOD_CLUST}' got a maximum clustering "
+                       f"order of {max_clusters}: setting to {DEFAULT_ORDER}")
+        max_clusters = DEFAULT_ORDER
+    return run(*args, max_clusters=max_clusters, **kwargs)
 
 
 @docdef.auto()
