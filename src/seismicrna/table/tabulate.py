@@ -97,24 +97,27 @@ class AvgTabulator(Tabulator, ABC):
 
     @property
     def columns(self):
-        return pd.MultiIndex.from_arrays([TABLE_COLUMNS], names=[REL_NAME])
+        return pd.Index(TABLE_COLUMNS, name=REL_NAME)
 
     def tabulate_by_pos(self):
+        # Assemble the DataFrame from the bit counts.
         data = pd.DataFrame.from_dict({rel: counter.n_affi_per_pos
                                        for rel, counter
                                        in self.bit_counts.items()})
+        # Rename the index of the positions and bases.
         data.index.rename(INDEX_NAMES, inplace=True)
-        data.columns = self.columns
-        return data
+        # Include all columns of relationships, even those not counted.
+        return data.reindex(columns=self.columns)
 
     def tabulate_by_read(self):
         """ Count the bits per read. """
         data = pd.DataFrame.from_dict({rel: counter.n_affi_per_read
                                        for rel, counter
                                        in self.bit_counts.items()})
+        # Rename the index of the read names.
         data.index.rename(READ_TITLE, inplace=True)
-        data.columns = self.columns
-        return data
+        # Include all columns of relationships, even those not counted.
+        return data.reindex(columns=self.columns)
 
 
 class NullableTabulator(Tabulator, ABC):
@@ -156,18 +159,10 @@ class MaskTabulator(AvgTabulator, NullableTabulator):
 
     def tabulate_by_pos(self):
         # Count every type of relationship at each position, in the same
-        # way as for the superclass.
-        counts_obs = super().tabulate_by_pos()
-        # Replace the columns with a flat Index.
-        columns = counts_obs.columns
-        counts_obs.columns = columns.get_level_values(REL_NAME)
-        # Adjust the counts to correct for observer bias.
-        counts_adj = adjust_counts(counts_obs,
-                                   self._loader.section,
-                                   self._loader.min_mut_gap)
-        # Replace the columns with a MultiIndex.
-        counts_adj.columns = columns
-        return counts_adj
+        # way as for the superclass, then adjust for observer bias.
+        return adjust_counts(super().tabulate_by_pos(),
+                             self._loader.section,
+                             self._loader.min_mut_gap)
 
 
 class ClustTabulator(NullableTabulator):
@@ -286,8 +281,8 @@ def iter_bit_callers(section: Section, rel_codes: str):
     """ Yield a BitCaller for each type of relationship to tabulate. """
     # Determine which types of relationships to call.
     if rel_codes:
-        # Use only the selected types of relationships plus two required
-        # relationships: MATCH, and MUTAT.
+        # Use the selected relationships and two required relationships:
+        # MATCH and MUTAT.
         call_rels = {REL_CODES[code] for code in rel_codes}
         call_rels.update(REQUIRED_RELS)
     else:

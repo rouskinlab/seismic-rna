@@ -5,7 +5,7 @@ from typing import Iterable
 
 import pandas as pd
 
-from .base import (MUTAT_REL, ENS_AVG_TITLE, CLUST_INDEX_NAMES,
+from .base import (MUTAT_REL, ENS_AVG_TITLE, CLUST_INDEX_NAMES, REL_NAME,
                    Table, RelTypeTable, PosTable, ReadTable,
                    RelPosTable, RelReadTable,
                    MaskPosTable, MaskReadTable,
@@ -58,6 +58,7 @@ class TableLoader(Table, ABC):
         """ Row(s) of the file to use as the columns. """
 
     @cached_property
+    @abstractmethod
     def data(self):
         return pd.read_csv(self.path,
                            index_col=self.index_col(),
@@ -75,7 +76,7 @@ class PosTableLoader(TableLoader, PosTable, ABC):
 
     @classmethod
     def index_col(cls):
-        return tuple(range(len(INDEX_NAMES)))
+        return list(range(len(INDEX_NAMES)))
 
     @abstractmethod
     def iter_profiles(self, sections: Iterable[Section]):
@@ -89,23 +90,33 @@ class ReadTableLoader(TableLoader, ReadTable, ABC):
 
     @classmethod
     def index_col(cls):
-        return [0]
+        return 0
 
 
 # Load by Source (relate/mask/cluster) #################################
 
-class RelTableLoader(RelTypeTableLoader, ABC):
+
+class AvgTableLoader(RelTypeTableLoader, ABC):
 
     @classmethod
     def header_row(cls):
-        return [0]
+        return 0
+
+    @cached_property
+    def data(self):
+        # Load the data in the same manner as the superclass.
+        data = super().data
+        # Rename the column level of the relationships.
+        data.columns.rename(REL_NAME, inplace=True)
+        return data
 
 
-class MaskTableLoader(RelTypeTableLoader, ABC):
+class RelTableLoader(AvgTableLoader, ABC):
+    pass
 
-    @classmethod
-    def header_row(cls):
-        return [0]
+
+class MaskTableLoader(AvgTableLoader, ABC):
+    pass
 
 
 class ClustTableLoader(RelTypeTableLoader, ABC):
@@ -113,6 +124,14 @@ class ClustTableLoader(RelTypeTableLoader, ABC):
     @classmethod
     def header_row(cls):
         return list(range(len(CLUST_INDEX_NAMES)))
+
+    @cached_property
+    def data(self):
+        # Load the data in the same manner as the superclass.
+        data = super().data
+        # Reformat the columns of clusters.
+        data.columns = reformat_cluster_index(data.columns)
+        return data
 
 
 # Instantiable Table Loaders ###########################################
@@ -152,8 +171,8 @@ class ClustPosTableLoader(ClustTableLoader, PosTableLoader, ClustPosTable):
     def iter_profiles(self, sections: Iterable[Section]):
         """ Yield RNA mutational profiles from a table. """
         for section in sections:
-            for (order, k), fmut in self._ratio_col(MUTAT_REL).items():
-                yield RnaProfile(f"Cluster_{order}-{k}",
+            for (order, cluster), fmut in self._ratio_col(MUTAT_REL).items():
+                yield RnaProfile(f"Cluster_{order}-{cluster}",
                                  section=section,
                                  sample=self.sample,
                                  data_sect=self.sect,
@@ -173,7 +192,15 @@ class ClustFreqTableLoader(TableLoader, ClustFreqTable):
 
     @classmethod
     def header_row(cls):
-        return [0]
+        return 0
+
+    @cached_property
+    def data(self):
+        # Load the data in the same manner as the superclass.
+        data = super().data
+        # Reformat the index of clusters.
+        data.index = reformat_cluster_index(data.index)
+        return data
 
 
 # Helper Functions #####################################################
@@ -192,3 +219,13 @@ def load(table_file: Path):
             pass
     # None of the TableLoader types were able to open the file.
     raise ValueError(f"Failed to open table: {table_file}")
+
+
+def reformat_cluster_index(index: pd.MultiIndex):
+    """ Ensure that the columns are a MultiIndex and that the order and
+    cluster numbers are integers, not strings. """
+    return pd.MultiIndex.from_arrays(
+        [index.get_level_values(n).astype(int if n in ORD_CLS_NAME else str)
+         for n in index.names],
+        names=index.names
+    )
