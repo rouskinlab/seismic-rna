@@ -47,7 +47,7 @@ def cli(*args, max_clusters: int, **kwargs):
 
 
 @docdef.auto()
-def run(report: tuple[str, ...], *,
+def run(input_file: tuple[str, ...], *,
         max_clusters: int,
         em_runs: int,
         min_em_iter: int,
@@ -61,7 +61,7 @@ def run(report: tuple[str, ...], *,
         # Exit immediately if the maximum number of clusters is 0.
         return list()
     # Run clustering on each set of called mutations.
-    files = path.find_files_chain(map(Path, report), [path.MaskRepSeg])
+    files = path.find_files_chain(map(Path, input_file), [path.MaskRepSeg])
     return dispatch(cluster, max_procs, parallel,
                     args=as_list_of_tuples(files),
                     kwargs=dict(max_order=max_clusters,

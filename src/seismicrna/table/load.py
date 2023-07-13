@@ -5,7 +5,7 @@ from typing import Iterable
 
 import pandas as pd
 
-from .base import (MUTAT_REL, POPAVG_TITLE, CLUST_INDEX_NAMES,
+from .base import (MUTAT_REL, ENS_AVG_TITLE, CLUST_INDEX_NAMES,
                    Table, RelTypeTable, PosTable, ReadTable,
                    RelPosTable, RelReadTable,
                    MaskPosTable, MaskReadTable,
@@ -135,11 +135,11 @@ class MaskPosTableLoader(MaskTableLoader, PosTableLoader, MaskPosTable):
 
     def iter_profiles(self, sections: Iterable[Section]):
         for section in sections:
-            yield RnaProfile(title=path.fill_whitespace(POPAVG_TITLE),
+            yield RnaProfile(title=path.fill_whitespace(ENS_AVG_TITLE),
                              section=section,
                              sample=self.sample,
                              data_sect=self.sect,
-                             reacts=self._fract_rel(MUTAT_REL))
+                             reacts=self._ratio_col(MUTAT_REL))
 
 
 class MaskReadTableLoader(MaskTableLoader, ReadTableLoader, MaskReadTable):
@@ -152,7 +152,7 @@ class ClustPosTableLoader(ClustTableLoader, PosTableLoader, ClustPosTable):
     def iter_profiles(self, sections: Iterable[Section]):
         """ Yield RNA mutational profiles from a table. """
         for section in sections:
-            for (order, k), fmut in self._fract_rel(MUTAT_REL).items():
+            for (order, k), fmut in self._ratio_col(MUTAT_REL).items():
                 yield RnaProfile(f"Cluster_{order}-{k}",
                                  section=section,
                                  sample=self.sample,

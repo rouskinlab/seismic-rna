@@ -44,14 +44,12 @@ def run(*,
         max_procs: int,
         parallel: bool,
         # Input files
+        input_file: tuple[str, ...],
         fasta: str,
         fastqs: tuple[str, ...],
         fastqi: tuple[str, ...],
         fastqp: tuple[str, ...],
         phred_enc: int,
-        bam: tuple[str, ...],
-        report: tuple[str, ...],
-        table: tuple[str, ...],
         # Demultiplexing
         demulti_overwrite: bool,
         demult_on: bool,
@@ -126,7 +124,7 @@ def run(*,
         max_em_iter: int,
         em_thresh: float,
         # Tabulation
-        table_cols: str,
+        rels: str,
         # Folding
         fold: bool,
         quantile: float):
@@ -151,7 +149,7 @@ def run(*,
             dmfastqi = dmfastqi + dmi
             dmfastqp = dmfastqp + dmm
     # Alignment
-    bam += tuple(map(str, align_mod.run(
+    input_file += tuple(map(str, align_mod.run(
         out_dir=out_dir,
         temp_dir=temp_dir,
         save_temp=save_temp,
@@ -201,9 +199,9 @@ def run(*,
         bt2_orient=bt2_orient
     )))
     # Relating
-    report += tuple(map(str, relate_mod.run(
+    input_file += tuple(map(str, relate_mod.run(
         fasta=fasta,
-        bam=bam,
+        input_file=input_file,
         out_dir=out_dir,
         temp_dir=temp_dir,
         phred_enc=phred_enc,
@@ -217,8 +215,8 @@ def run(*,
         save_temp=save_temp,
     )))
     # Masking
-    report += tuple(map(str, mask_mod.run(
-        report=report,
+    input_file += tuple(map(str, mask_mod.run(
+        input_file=input_file,
         coords=coords,
         primers=primers,
         primer_gap=primer_gap,
@@ -239,8 +237,8 @@ def run(*,
         rerun=rerun,
     )))
     # Clustering
-    report += tuple(map(str, cluster_mod.run(
-        report=report,
+    input_file += tuple(map(str, cluster_mod.run(
+        input_file=input_file,
         max_clusters=max_clusters,
         em_runs=em_runs,
         min_em_iter=min_em_iter,
@@ -251,9 +249,9 @@ def run(*,
         rerun=rerun,
     )))
     # Table
-    table += tuple(map(str, table_mod.run(
-        report=report,
-        table_cols=table_cols,
+    input_file += tuple(map(str, table_mod.run(
+        input_file=input_file,
+        rels=rels,
         max_procs=max_procs,
         parallel=parallel,
         rerun=rerun,
@@ -261,7 +259,7 @@ def run(*,
     # Fold
     if fold:
         fold_mod.run(
-            table=table,
+            input_file=input_file,
             fasta=fasta,
             sections_file=sections_file,
             coords=coords,

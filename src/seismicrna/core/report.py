@@ -25,16 +25,6 @@ logger = getLogger(__name__)
 
 # Field class
 
-def identity(value: Any):
-    """ Identity function. """
-    return value
-
-
-def truthy(*_: Any):
-    """ Truthy function. """
-    return True
-
-
 class Field(object):
     __slots__ = ["key", "title", "dtype", "iconv", "oconv",
                  "check_val", "check_rep_val"]
@@ -77,9 +67,9 @@ class Field(object):
         self.title = title
         self.dtype = dtype
         self.iconv = self.dtype if iconv is None else iconv
-        self.oconv = identity if oconv is None else oconv
-        self.check_val = truthy if check_val is None else check_val
-        self.check_rep_val = truthy if check_rep_val is None else check_rep_val
+        self.oconv = oconv
+        self.check_val = check_val
+        self.check_rep_val = check_rep_val
 
     def validate(self, report: Report, value: Any):
         # Validate the type.
@@ -87,10 +77,12 @@ class Field(object):
             raise TypeError(f"{self} expected value to be {self.dtype}, "
                             f"but got {type(value)}")
         # Validate the value.
-        if not self.check_val(value):
-            raise ValueError(f"{self} got invalid value: {value}")
-        if not self.check_rep_val(report, value):
-            raise ValueError(f"{self} got invalid value: {value}")
+        if self.check_val is not None:
+            if not self.check_val(value):
+                raise ValueError(f"{self} got invalid value: {value}")
+        if self.check_rep_val is not None:
+            if not self.check_rep_val(report, value):
+                raise ValueError(f"{self} got invalid value: {value}")
 
     def __str__(self):
         return f"Report Field '{self.title}' ({self.key})"
@@ -570,7 +562,9 @@ def lookup_key(key: str) -> Field:
     try:
         return field_keys()[key]
     except KeyError:
-        raise ValueError(f"No Report Field is keyed '{key}'")
+        # Suppress exception chaining.
+        pass
+    raise ValueError(f"No Report Field is keyed '{key}'")
 
 
 def lookup_title(title: str) -> Field:
@@ -579,7 +573,9 @@ def lookup_title(title: str) -> Field:
     try:
         return field_titles()[title]
     except KeyError:
-        raise ValueError(f"No field is titled '{title}'")
+        # Suppress exception chaining.
+        pass
+    raise ValueError(f"No Report Field is titled '{title}'")
 
 
 # Report classes
@@ -643,7 +639,11 @@ class Report(ABC):
             field = lookup_key(key)
             if field.title:
                 # Output only the fields with non-blank titles.
-                odata[field.title] = field.oconv(self.get_field(field))
+                value = self.get_field(field)
+                if field.oconv is not None:
+                    # Convert the value to the proper output value.
+                    value = field.oconv(value)
+                odata[field.title] = value
         return odata
 
     def save(self):

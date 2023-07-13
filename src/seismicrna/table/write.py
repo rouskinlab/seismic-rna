@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .base import (READ_TITLE, Table, PosTable, ReadTable,
+from .base import (Table, PosTable, ReadTable,
                    RelPosTable, RelReadTable, MaskPosTable, MaskReadTable,
                    ClustPosTable, ClustReadTable, ClustFreqTable)
 from .tabulate import (Tabulator, RelTabulator, MaskTabulator, ClustTabulator,
@@ -75,11 +75,7 @@ class PosTableWriter(TableWriter, PosTable, ABC):
 class ReadTableWriter(TableWriter, ReadTable, ABC):
 
     def load_data(self):
-        # Load the data for each read.
-        data = self._tab.tabulate_by_read()
-        # Rename the index.
-        data.index.rename(READ_TITLE, inplace=True)
-        return data
+        return self._tab.tabulate_by_read()
 
 
 # Instantiable Table Writers ###########################################
@@ -152,14 +148,14 @@ def get_tabulator_writers(tabulator: Tabulator):
         yield writer_type(tabulator)
 
 
-def write(report_file: Path, table_cols: str, rerun: bool):
+def write(report_file: Path, rels: str, rerun: bool):
     """ Helper function to write a table from a report file. """
     # Determine the needed type of report loader.
     report_loader_type = infer_report_loader_type(report_file)
     # Load the report.
     report_loader = report_loader_type.open(report_file)
     # Create the tabulator for the report's data.
-    tabulator = tabulate_loader(report_loader, table_cols)
+    tabulator = tabulate_loader(report_loader, rels)
     # For each table associated with this tabulator, create the table,
     # write it, and return the path to the table output file.
     return [table.write(rerun) for table in get_tabulator_writers(tabulator)]

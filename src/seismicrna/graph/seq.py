@@ -1,27 +1,26 @@
+import os
 from abc import ABC, abstractmethod
 from functools import cache, cached_property
 from itertools import chain
 from logging import getLogger
-import os
 from pathlib import Path
 
-from click import command
 import pandas as pd
+from click import command
 from plotly import graph_objects as go
 
 from .base import (PRECISION, find_tables, GraphWriter, CartesianGraph,
                    OneTableSeqGraph, OneSampGraph)
-from .color import RelColorMap, SeqColorMap
+from .color import ColorMap, RelColorMap, SeqColorMap
 from ..core import docdef
 from ..core.cli import (opt_input_file, opt_rels, opt_stack, opt_yfrac,
                         opt_csv, opt_html, opt_pdf, opt_max_procs, opt_parallel,
-                        STACK_REL)
+                        SUBPLOT_CLUST, SUBPLOT_ORDER, SUBPLOT_NONE)
 from ..core.parallel import dispatch
 from ..core.sect import BASE_NAME, POS_NAME
 from ..core.seq import BASES
-from ..core.types import get_subclasses_module
-from ..table.base import RelTypeTable, REL_CODES
-from ..table.load import (TableLoader, RelPosTableLoader,
+from ..table.base import REL_CODES
+from ..table.load import (RelTypeTableLoader, RelPosTableLoader,
                           MaskPosTableLoader, ClustPosTableLoader)
 
 logger = getLogger(__name__)
@@ -49,10 +48,10 @@ def cli(*args, **kwargs):
 
 @docdef.auto()
 def run(input_file: tuple[str, ...],
-        rels: str,
-        sub: str,
-        stack: str,
-        yf: bool, *,
+        rels: str, *,
+        subplot: str,
+        stack: bool,
+        yf: bool,
         csv: bool,
         html: bool,
         pdf: bool,
@@ -62,27 +61,104 @@ def run(input_file: tuple[str, ...],
     writers = list(map(SeqGraphWriter, find_tables(input_file)))
     return list(chain(*dispatch([writer.write for writer in writers],
                                 max_procs, parallel, pass_n_procs=False,
-                                kwargs=dict(rels=rels, sub=sub, stack=stack,
-                                            yfrac=yf, csv=csv,
-                                            html=html, pdf=pdf))))
+                                kwargs=dict(rels=rels, stack=stack,
+                                            subplot=subplot, yfrac=yf,
+                                            csv=csv, html=html, pdf=pdf))))
 
+
+# Helper Functions #####################################################
+
+def get_base_trace(data: pd.Series, cmap: ColorMap, base_int: int):
+    # Validate the base.
+    base = chr(base_int)
+    if base not in BASES.decode():
+        raise ValueError(f"Invalid DNA base: '{base}'")
+    # Find the position of every base of that type.
+    seq_mask = data.index.get_level_values(BASE_NAME) == base
+    # Get the values at those positions, excluding NaN values.
+    vals = data.loc[seq_mask].dropna()
+    # Set the index of the values to the numerical positions.
+    vals.index = vals.index.get_level_values(POS_NAME)
+    # Define the text shown on hovering over a bar.
+    hovertext = [f"{base}{x}: {y}" for x, y in vals.items()]
+    # Create a trace comprising all bars for this base type.
+    return go.Bar(name=base, x=vals.index, y=vals,
+                  marker_color=cmap[base_int],
+                  hovertext=hovertext,
+                  hoverinfo="text")
+
+
+def iter_base_traces(data: pd.Series, cmap: ColorMap):
+    for base in BASES:
+        yield get_base_trace(data, cmap, base)
+
+
+def get_stack_trace(data: pd.Series, cmap: ColorMap):
+    rel = str(data.name)
+    # Get the sequence and positions.
+    bases = data.index.get_level_values(BASE_NAME)
+    pos = data.index.get_level_values(POS_NAME)
+    # Define the text shown on hovering over a bar.
+    hovertext = [f"{base}{x} {rel}: {y}"
+                 for base, x, y in zip(bases, pos, data, strict=True)]
+    # Create a trace comprising all bars for this field.
+    return go.Bar(name=rel, x=pos, y=data,
+                  marker_color=cmap[rel],
+                  hovertext=hovertext,
+                  hoverinfo="text")
+
+
+def iter_stack_traces(data: pd.DataFrame, cmap: ColorMap):
+    for field, series in data.items():
+        yield get_stack_trace(series, cmap)
+
+
+# Sequence Graph Writer ################################################
 
 class SeqGraphWriter(GraphWriter):
 
-    def iter(self, rels: str, stack: str, yfrac: bool):
-        if stack == STACK_REL:
-            # For each position, stack the relationships.
-            for rel in rels:
-                for graph_type in get_subclasses_module(IdentitySeqGraph, __name__):
-                    if type(self.table) in graph_type.sources():
-                        yield graph_type(table=self.table, codes=rel, yfrac=yfrac)
-        if stack:
-            for graph_type in get_subclasses_module(StackedSeqGraph, __name__):
-                if type(self.table) in graph_type.sources():
-                    yield graph_type(table=self.table, codes=stack, yfrac=yfrac)
+    def iter(self, rels: str, subplot: str, stack: bool, yfrac: bool):
+        if type(self.table) in PopAvgSeqGraph.sources():
+            if stack:
+                yield PopAvgMultiRelSeqGraph(table=self.table,
+                                             rels=rels,
+                                             yfrac=yfrac)
+            else:
+                for rel in rels:
+                    yield PopAvgSingleRelSeqGraph(table=self.table,
+                                                  rels=rel,
+                                                  yfrac=yfrac)
+        elif type(self.table) in ClustSeqGraph.sources():
+            if subplot == SUBPLOT_NONE:
+                # Create one file per cluster.
+                clusters_params = [dict(order=order, cluster=cluster)
+                                   for order, cluster in self.table.ord_clust]
+            elif subplot == SUBPLOT_ORDER:
+                # Create one file per order: each cluster is a subplot.
+                orders = sorted(self.table.orders)
+                clusters_params = [dict(order=order) for order in orders]
+            elif subplot == SUBPLOT_CLUST:
+                # Create one file: each cluster is a subplot.
+                clusters_params = [dict()]
+            else:
+                raise ValueError(f"Invalid value for subplot: '{subplot}'")
+            for cluster_params in clusters_params:
+                if stack:
+                    yield ClustMultiRelSeqGraph(table=self.table,
+                                                rels=rels,
+                                                yfrac=yfrac,
+                                                **cluster_params)
+                else:
+                    for rel in rels:
+                        yield ClustSingleRelSeqGraph(table=self.table,
+                                                     rels=rel,
+                                                     yfrac=yfrac,
+                                                     **cluster_params)
+        else:
+            logger.error(f"{self} cannot graph {self.table}")
 
 
-# Base Sequence Graphs #################################################
+# Base Sequence Graph ##################################################
 
 class SeqGraph(CartesianGraph, OneTableSeqGraph, OneSampGraph, ABC):
     """ Bar graph wherein each bar represents one sequence position. """
@@ -91,19 +167,30 @@ class SeqGraph(CartesianGraph, OneTableSeqGraph, OneSampGraph, ABC):
                  table: (RelPosTableLoader
                          | MaskPosTableLoader
                          | ClustPosTableLoader),
-                 codes: str,
+                 rels: str,
                  yfrac: bool,
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.table = table
-        self.codes = codes
-        self.yfrac = yfrac
+        self.rels = rels
+        self.yratio = yfrac
+        # Verify that the table type is valid.
+        _ = self.source
+
+    @property
+    def nrows(self):
+        # Each column of the data is plotted on a separate row.
+        return self.data.shape[1]
+
+    @property
+    def ncols(self):
+        # There is only one column of plots in this graph.
+        return 1
 
     @classmethod
     @abstractmethod
-    def sources(cls) -> dict[type[TableLoader], str]:
+    def sources(cls) -> dict[type[RelTypeTableLoader], str]:
         """ Names of the sources of data. """
-        return dict()
 
     @property
     def source(self):
@@ -124,112 +211,79 @@ class SeqGraph(CartesianGraph, OneTableSeqGraph, OneSampGraph, ABC):
 
     @property
     def yattr(self):
-        return "Fraction" if self.yfrac else "Count"
+        return "Ratio" if self.yratio else "Count"
 
     @property
     def title(self):
-        fields = '/'.join(sorted(REL_CODES[c] for c in self.codes))
+        fields = '/'.join(sorted(REL_CODES[c] for c in self.rels))
         return (f"{self.yattr} of {fields} bases in {self.source} reads "
                 f"from {self.sample} per position in {self.ref}:{self.sect}")
 
     @property
-    @abstractmethod
-    def sort_codes(self):
-        return "".join(sorted(self.codes))
-
-    @property
     def graph_filename(self):
-        return f"{self.source}_{self.sort_codes}_{self.yattr}".lower()
-
-    def get_table_rel(self, table: RelTypeTable | TableLoader, rel: str):
-        return (table.fract_rel(rel).round(PRECISION) if self.yfrac
-                else table.count_rel(rel))
+        return f"{self.source}_{self.rels}_{self.yattr}".lower()
 
 
 # Sequence Graphs by Source ############################################
 
 class PopAvgSeqGraph(SeqGraph, ABC):
 
+    @cached_property
+    def data(self):
+        return self.table.select(self.yratio, PRECISION, rels=self.rels)
+
     @classmethod
-    def sources(cls) -> dict[type[TableLoader], str]:
+    def sources(cls):
         return {RelPosTableLoader: "Related", MaskPosTableLoader: "Masked"}
+
+    @property
+    def nrows(self):
+        return 1
 
 
 class ClustSeqGraph(SeqGraph, ABC):
 
+    def __init__(self, *args, order: int = 0, cluster: int = 0, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._orders = [order] if order > 0 else None
+        self._clusters = [cluster] if cluster > 0 else None
+
+    @cached_property
+    def data(self):
+        return self.table.select(self.yratio, PRECISION,
+                                 rels=self.rels,
+                                 orders=self._orders,
+                                 clusters=self._clusters)
+
     @classmethod
-    def sources(cls) -> dict[type[TableLoader], str]:
+    def sources(cls):
         return {ClustPosTableLoader: "Clustered"}
 
 
 # Sequence Graphs by Series Type #######################################
 
-class IdentitySeqGraph(SeqGraph, ABC):
-    """ Bar graph where each bar shows the identity of the base. """
-
-    def get_traces(self):
-        traces = list()
-        # Construct a trace for each type of base.
-        for base in BASES:
-            letter = chr(base)
-            # Find the position of every base of that type.
-            seq_mask = self.data.index.get_level_values(BASE_NAME) == letter
-            # Get the values at those positions, excluding NaN values.
-            vals = self.data.loc[seq_mask].dropna()
-            # Set the index of the values to the numerical positions.
-            vals.index = vals.index.get_level_values(POS_NAME)
-            # Check if there are any values to graph.
-            if vals.size > 0:
-                # Define the text shown on hovering over a bar.
-                hovertext = [f"{letter}{x}: {y}" for x, y in vals.items()]
-                # Create a trace comprising all bars for this base type.
-                traces.append(go.Bar(name=letter, x=vals.index, y=vals,
-                                     marker_color=self.cmap[base],
-                                     hovertext=hovertext,
-                                     hoverinfo="text"))
-        return traces
+class SingleRelSeqGraph(SeqGraph, ABC):
+    """ Bar graph where each bar shows one relationship of the base. """
 
     @property
-    def sort_codes(self):
-        return "-".join(["ident", super().sort_codes])
+    def rel(self):
+        """ Relationship of the identity sequence graph. """
+        if len(self.rels) != 1:
+            raise ValueError(
+                f"Expected exactly 1 relationship, but got {len(self.rels)}")
+        return self.rels[0]
 
 
-class StackedSeqGraph(SeqGraph, ABC):
+class MultiRelSeqGraph(SeqGraph, ABC):
     """ Stacked bar graph wherein each stacked bar represents multiple
-    outcomes for a base in a sequence. """
+    relationships for a base in a sequence. """
 
     @classmethod
     def get_cmap_type(cls):
         return RelColorMap
 
-    @property
-    def sort_codes(self):
-        return "-".join(["stacked", super().sort_codes])
-
-    @cached_property
-    def data(self):
-        data = dict()
-        for code in self.codes:
-            series = self.get_table_rel(self.table, code)
-            data[series.name] = series
-        return pd.DataFrame.from_dict(data)
-
     def get_traces(self):
-        traces = list()
-        # Construct a trace for each field.
-        for field, vals in self.data.items():
-            # Get the sequence and positions.
-            bases = vals.index.get_level_values(BASE_NAME)
-            pos = vals.index.get_level_values(POS_NAME)
-            # Define the text shown on hovering over a bar.
-            hovertext = [f"{base}{x} {field}: {y}"
-                         for base, x, y in zip(bases, pos, vals, strict=True)]
-            # Create a trace comprising all bars for this field.
-            traces.append(go.Bar(name=field, x=pos, y=vals,
-                                 marker_color=self.cmap[field],
-                                 hovertext=hovertext,
-                                 hoverinfo="text"))
-        return traces
+        yield from iter_stack_traces(self.data, self.cmap)
 
     @cache
     def get_figure(self):
@@ -241,9 +295,26 @@ class StackedSeqGraph(SeqGraph, ABC):
 
 # Instantiable Sequence Graphs #########################################
 
-class PopAvgIdentitySeqGraph(PopAvgSeqGraph, IdentitySeqGraph):
+class PopAvgSingleRelSeqGraph(PopAvgSeqGraph, SingleRelSeqGraph):
+
+    def get_traces(self):
+        if self.nrows != 1:
+            raise ValueError(f"Expected 1 series of data, but got {self.nrows}")
+        for trace in iter_base_traces(self.data.squeeze(axis=1), self.cmap):
+            yield 0, 0, trace
+
+
+class ClustSingleRelSeqGraph(ClustSeqGraph, SingleRelSeqGraph):
+
+    def get_traces(self):
+        for row, (_, values) in enumerate(self.data.items()):
+            for trace in iter_base_traces(values, self.cmap):
+                yield row, 0, trace
+
+
+class PopAvgMultiRelSeqGraph(PopAvgSeqGraph, MultiRelSeqGraph):
     pass
 
 
-class PopAvgStackedSeqGraph(PopAvgSeqGraph, StackedSeqGraph):
+class ClustMultiRelSeqGraph(ClustSeqGraph, MultiRelSeqGraph):
     pass

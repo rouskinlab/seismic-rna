@@ -39,9 +39,9 @@ class SeqColorMap(ColorMap):
 class RelColorMap(ColorMap):
     """ Color map for relationships. """
 
-    def __init__(self, name: str, b: str, n: str, r: str, m: str,
+    def __init__(self, name: str, v: str, n: str, r: str, m: str,
                  d: str, i: str, s: str, a: str, c: str, g: str, t: str):
-        super().__init__(name, b=b, n=n, r=r, m=m,
+        super().__init__(name, v=v, n=n, r=r, m=m,
                          d=d, i=i, s=s, a=a, c=c, g=g, t=t)
 
     def _set_colors(self, **kwargs):
@@ -58,7 +58,7 @@ water = SeqColorMap("water", a="#A15252", c="#3D427D", g="#E3CC7B", t="#76B887")
 earth = SeqColorMap("earth", a="#D17777", c="#464EA6", g="#E3CC7B", t="#336140")
 steel = SeqColorMap("steel", a="#663328", c="#716B80", g="#91B8AC", t="#D9D5B4")
 
-crayons = RelColorMap("crayons", b="#424242", n="#A9A9A9", r="#942193",
+crayons = RelColorMap("crayons", v="#424242", n="#A9A9A9", r="#942193",
                       m="#929000", d="#FF2600", i="#00FA92", s="#FF40FF",
                       a="#73FCD6", c="#FFD479", g="#7A81FF", t="#FF8AD8")
 

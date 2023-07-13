@@ -74,5 +74,5 @@ class CanonicalGraphWriter(GraphWriter):
                         yield MaskFracSerialPosBarGraph(table=self.table,
                                                         codes=field)
         elif isinstance(self.table, ClusterPosTableLoader):
-            for cluster in self.table.clusters:
+            for cluster in self.table.ord_clust:
                 yield ClustPosBarGraph(table=self.table, cluster=cluster)

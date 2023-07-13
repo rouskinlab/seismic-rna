@@ -28,16 +28,10 @@ BOWTIE2_ORIENT = BOWTIE2_ORIENT_FR, BOWTIE2_ORIENT_RF, BOWTIE2_ORIENT_FF
 
 ADAPTER_SEQ_ILLUMINA_3P = "AGATCGGAAGAGC"
 
-STACK_REL = "rel"
-STACK_CLUST = "clust"
-STACK_NONE = "none"
-GRAPH_STACKS = STACK_REL, STACK_CLUST, STACK_NONE
-
-SUBPLOT_REL = "rel"
 SUBPLOT_ORDER = "order"
 SUBPLOT_CLUST = "clust"
 SUBPLOT_NONE = "none"
-GRAPH_SUBPLOTS = SUBPLOT_REL, SUBPLOT_ORDER, SUBPLOT_CLUST, SUBPLOT_NONE
+GRAPH_SUBPLOTS = SUBPLOT_ORDER, SUBPLOT_CLUST, SUBPLOT_NONE
 
 
 # Configuration options
@@ -603,9 +597,9 @@ opt_em_thresh = Option(
 
 opt_rels = Option(
     ("--rels", "-r"),
-    default="nm",
+    default="",
     type=str,
-    help="Use these relationships")
+    help="Output these relationships between the read and the reference")
 
 # RNA structure prediction
 
@@ -625,16 +619,16 @@ opt_quantile = Option(
 # Graphing
 
 opt_stack = Option(
-    ("--stack",),
-    type=Choice(GRAPH_STACKS, case_sensitive=False),
-    default=STACK_NONE,
-    help="Graph stacked relationships, clusters, or nothing")
+    ("--stack/--no-stack",),
+    type=bool,
+    default=False,
+    help="Whether to stack relationships")
 
-opt_csp = Option(
-    ("--sub",),
+opt_subplot = Option(
+    ("--subplot",),
     type=Choice(GRAPH_SUBPLOTS),
     default=SUBPLOT_CLUST,
-    help="Graph subplots of relationships, orders, clusters, or nothing")
+    help="Graph subplots of orders, clusters, or nothing")
 
 opt_xfrac = Option(
     ("--xf/--xn",),

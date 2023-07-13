@@ -5,20 +5,22 @@ from logging import getLogger
 import numpy as np
 import pandas as pd
 
-from .base import (TOTAL_REL, DELET_REL, INSRT_REL, MATCH_REL, MUTAT_REL,
+from .base import (COVER_REL, DELET_REL, INSRT_REL, MATCH_REL, MUTAT_REL,
                    SUBST_REL, SUB_A_REL, SUB_C_REL, SUB_G_REL, SUB_T_REL,
                    CLUST_INDEX_NAMES, REL_NAME, R_ADJ_TITLE, R_OBS_TITLE,
-                   REL_CODES)
-from ..cluster.names import READ_NAME
+                   READ_TITLE, REL_CODES, TABLE_COLUMNS)
 from ..cluster.load import ClustLoader
 from ..core.bitcall import BitCaller, SemiBitCaller
 from ..core.bitvect import BitCounter, ClustBitCounter
 from ..core.mu import calc_f_obs_df, calc_mu_adj_df
-from ..core.sect import Section
+from ..core.sect import Section, INDEX_NAMES
 from ..mask.load import MaskLoader
 from ..relate.load import RelateLoader
 
 logger = getLogger(__name__)
+
+# These relationships must be computed, else adjust_counts() will fail.
+REQUIRED_RELS = MATCH_REL, MUTAT_REL
 
 
 # Tabulator Classes ####################################################
@@ -30,6 +32,7 @@ class Tabulator(ABC):
     def __init__(self, loader: RelateLoader | MaskLoader | ClustLoader,
                  rel_codes: str):
         self._loader = loader
+        # The table must contain COVER, MATCH, and MUTAT.
         self._rel_codes = rel_codes
 
     @property
@@ -61,11 +64,6 @@ class Tabulator(ABC):
         """ Yield a BitCaller for each relationship in the table. """
         yield from iter_bit_callers(self.section, self._rel_codes)
 
-    @cached_property
-    def rels(self):
-        """ Relationships counted in the table. """
-        return [rel for rel, _, _ in self.iter_bit_callers()]
-
     @property
     def seq_array(self):
         """ Array of the bases of the section at unmasked positions. """
@@ -86,26 +84,51 @@ class Tabulator(ABC):
     def get_null_value(cls) -> int | float:
         """ The null value for a count: either 0 or NaN. """
 
+    @abstractmethod
     def tabulate_by_pos(self):
-        return pd.DataFrame.from_dict({rel: counter.n_affi_per_pos
+        """ Count the bits per position. """
+
+    @abstractmethod
+    def tabulate_by_read(self):
+        """ Count the bits per read. """
+
+
+class AvgTabulator(Tabulator, ABC):
+
+    @property
+    def columns(self):
+        return pd.MultiIndex.from_arrays([TABLE_COLUMNS], names=[REL_NAME])
+
+    def tabulate_by_pos(self):
+        data = pd.DataFrame.from_dict({rel: counter.n_affi_per_pos
                                        for rel, counter
                                        in self.bit_counts.items()})
+        data.index.rename(INDEX_NAMES, inplace=True)
+        data.columns = self.columns
+        return data
 
     def tabulate_by_read(self):
-        return pd.DataFrame.from_dict({rel: counter.n_affi_per_read
+        """ Count the bits per read. """
+        data = pd.DataFrame.from_dict({rel: counter.n_affi_per_read
                                        for rel, counter
                                        in self.bit_counts.items()})
+        data.index.rename(READ_TITLE, inplace=True)
+        data.columns = self.columns
+        return data
 
 
-class RelTabulator(Tabulator):
+class NullableTabulator(Tabulator, ABC):
+
+    @classmethod
+    def get_null_value(cls):
+        return np.nan
+
+
+class RelTabulator(AvgTabulator):
 
     @classmethod
     def get_null_value(cls):
         return 0
-
-    @property
-    def columns(self):
-        return pd.Index(self.rels, name=REL_NAME)
 
     @cached_property
     def bit_counts(self):
@@ -120,15 +143,7 @@ class RelTabulator(Tabulator):
         return bit_counts
 
 
-class MaskTabulator(Tabulator):
-
-    @classmethod
-    def get_null_value(cls):
-        return np.nan
-
-    @property
-    def columns(self):
-        return pd.Index(self.rels, name=REL_NAME)
+class MaskTabulator(AvgTabulator, NullableTabulator):
 
     @cached_property
     def bit_counts(self):
@@ -143,20 +158,22 @@ class MaskTabulator(Tabulator):
         # Count every type of relationship at each position, in the same
         # way as for the superclass.
         counts_obs = super().tabulate_by_pos()
+        # Replace the columns with a flat Index.
+        columns = counts_obs.columns
+        counts_obs.columns = columns.get_level_values(REL_NAME)
         # Adjust the counts to correct for observer bias.
-        return adjust_counts(counts_obs,
-                             self._loader.section,
-                             self._loader.min_mut_gap)
+        counts_adj = adjust_counts(counts_obs,
+                                   self._loader.section,
+                                   self._loader.min_mut_gap)
+        # Replace the columns with a MultiIndex.
+        counts_adj.columns = columns
+        return counts_adj
 
 
-class ClustTabulator(Tabulator):
-
-    @classmethod
-    def get_null_value(cls):
-        return np.nan
+class ClustTabulator(NullableTabulator):
 
     @property
-    def clusters(self):
+    def ord_clust(self):
         """ Order and number of each cluster. """
         return self._loader.clusters
 
@@ -166,8 +183,8 @@ class ClustTabulator(Tabulator):
     @cached_property
     def columns(self):
         return pd.MultiIndex.from_tuples([(order, cluster, rel)
-                                          for order, cluster in self.clusters
-                                          for rel in self.rels],
+                                          for order, cluster in self.ord_clust
+                                          for rel in TABLE_COLUMNS],
                                          names=CLUST_INDEX_NAMES)
 
     @cached_property
@@ -175,7 +192,7 @@ class ClustTabulator(Tabulator):
         return dict(
             (rel, ClustBitCounter(
                 self.section,
-                self.clusters,
+                self.ord_clust,
                 self._loader.iter_batches_processed(bit_caller=bc, **kwargs)
             )) for rel, bc, kwargs in self.iter_bit_callers()
         )
@@ -183,23 +200,25 @@ class ClustTabulator(Tabulator):
     @cache
     def tabulate_by_pos(self):
         """ DataFrame of the bit count for each position and caller. """
-        # Initialize an empty DataFrame.
-        counts_obs = pd.DataFrame(self.get_null_value(),
+        # Initialize an empty DataFrame of adjusted counts.
+        counts_adj = pd.DataFrame(self.get_null_value(),
                                   index=self._loader.section.unmasked,
                                   columns=self.columns)
-        # Fill in the DataFrame column by column.
-        for col in self.columns:
-            nk, k, rel = col
-            counts_obs[col] = self.bit_counts[rel].n_affi_per_pos.loc[:, (nk, k)]
-        # Adjust the counts to correct for observer bias.
-        counts_adj = dict()
-        for order, k in self.clusters:
-            for rel, adj in adjust_counts(counts_obs.loc[:, (order, k)],
-                                          self._loader.section,
-                                          self._loader.min_mut_gap).items():
-                counts_adj[order, k, rel] = adj
-        counts_adj = pd.DataFrame.from_dict(counts_adj)
-        counts_adj.columns.rename(counts_obs.columns.names, inplace=True)
+        # Fill in the DataFrame one cluster at a time.
+        for order, k in self.ord_clust:
+            # Initialize a DataFrame of observed counts for the cluster.
+            counts_obs = pd.DataFrame(self.get_null_value(),
+                                      index=self._loader.section.unmasked,
+                                      columns=TABLE_COLUMNS)
+            # Fill in the observed counts column by column.
+            for rel in counts_obs.columns.to_list():
+                counts = self.bit_counts[rel].n_affi_per_pos.loc[:, (order, k)]
+                counts_obs.loc[:, rel] = counts
+            # Adjust the counts to correct for observer bias.
+            counts = adjust_counts(counts_obs,
+                                   self._loader.section,
+                                   self._loader.min_mut_gap)
+            counts_adj.loc[:, (order, k)] = counts.values
         return counts_adj
 
     def tabulate_by_read(self):
@@ -207,16 +226,17 @@ class ClustTabulator(Tabulator):
         # Initialize an empty DataFrame.
         counts = pd.DataFrame(self.get_null_value(),
                               index=pd.Index(self.get_read_names(),
-                                             name=READ_NAME),
+                                             name=READ_TITLE),
                               columns=self.columns)
         # Fill in the DataFrame column by column.
         for col in self.columns:
             # Split the column label into the clustering order, cluster
-            # number, and type of relationship.
+            # number (k), and type of relationship (rel).
             order, k, rel = col
+            ok = order, k
             # Get the bit counter for the relationship and select the
             # column for the clustering order and cluster number.
-            counts[col] = self.bit_counts[rel].n_affi_per_read.loc[:, (order, k)]
+            counts.loc[:, col] = self.bit_counts[rel].n_affi_per_read.loc[:, ok]
         return counts
 
     def tabulate_by_clust(self):
@@ -229,7 +249,6 @@ class ClustTabulator(Tabulator):
 
 
 # Helper functions #####################################################
-
 
 def iter_mut_semi_callers():
     """ Yield a SemiBitCaller for each type of mutation to tabulate. """
@@ -253,7 +272,7 @@ def _iter_bit_callers(section: Section):
     # Create a standard bit caller for all matches and mutations.
     bitc = BitCaller(section, mutc, refc)
     # Count all base calls (everything but the bytes 0 and 255).
-    yield TOTAL_REL, bitc, dict(merge=True)
+    yield COVER_REL, bitc, dict(merge=True)
     # Count matches to the reference sequence.
     yield MATCH_REL, bitc, dict(invert=True)
     # Count all types of mutations, relative to reference matches.
@@ -267,11 +286,13 @@ def iter_bit_callers(section: Section, rel_codes: str):
     """ Yield a BitCaller for each type of relationship to tabulate. """
     # Determine which types of relationships to call.
     if rel_codes:
-        # Use only the selected types of relationships.
+        # Use only the selected types of relationships plus two required
+        # relationships: MATCH, and MUTAT.
         call_rels = {REL_CODES[code] for code in rel_codes}
+        call_rels.update(REQUIRED_RELS)
     else:
         # Use all types of relationships.
-        call_rels = set(REL_CODES.values())
+        call_rels = set(TABLE_COLUMNS)
     # Yield a BitCaller for each selected type of relationship.
     for rel, bit_caller, kwargs in _iter_bit_callers(section):
         if rel in call_rels:
@@ -296,6 +317,11 @@ def adjust_counts(counts_obs: pd.DataFrame,
         Minimum number of non-mutated bases permitted between mutations.
     """
     logger.debug(f"Adjusting mutation counts of table\n{counts_obs}")
+    # Initialize an empty DataFrame of the adjusted counts with the same
+    # index and columns as the observed counts.
+    counts_adj = pd.DataFrame(np.nan,
+                              index=counts_obs.index,
+                              columns=counts_obs.columns)
     # Compute the observed fraction of mutations at each position.
     nrefs_obs = counts_obs.loc[:, MATCH_REL]
     nmuts_obs = counts_obs.loc[:, MUTAT_REL]
@@ -307,16 +333,15 @@ def adjust_counts(counts_obs: pd.DataFrame,
     # Fill missing NaN values with zero.
     fmuts_obs.fillna(0., inplace=True)
     # Adjust the fraction of mutations to correct the observer bias.
-    mu_adj = calc_mu_adj_df(fmuts_obs.to_frame(),
-                            section, min_mut_gap).squeeze(axis=1)
+    fmuts_adj = calc_mu_adj_df(fmuts_obs.to_frame(), section,
+                               min_mut_gap).squeeze()
     # Compute the fraction of reads that would be observed.
-    f_obs = float(calc_f_obs_df(mu_adj.to_frame(), section, min_mut_gap)[0])
-    # Initialize new data for the adjusted counts.
-    counts_adj = dict()
+    f_obs = float(calc_f_obs_df(fmuts_adj.to_frame(), section,
+                                min_mut_gap)[0])
     # Assume that the total number of base calls including unobserved
     # reads is the number observed divided by the fraction of the total
     # reads that were observed.
-    counts_adj[TOTAL_REL] = counts_obs.loc[:, TOTAL_REL] / f_obs
+    counts_adj.loc[:, COVER_REL] = counts_obs.loc[:, COVER_REL] / f_obs
     # Two conditions must be met:
     # : The number of informative bases (matches + mutations) after
     #   adjustment must equal the number before adjustment divided
@@ -325,40 +350,46 @@ def adjust_counts(counts_obs: pd.DataFrame,
     # : The fraction of mutations at each position after adjustment
     #   must equal the adjusted number of mutations divided by the
     #   adjusted number of informative bases:
-    #   nmuts_adj / (nrefs_adj + nmuts_adj) = mu_adj
+    #   nmuts_adj / (nrefs_adj + nmuts_adj) = fmuts_adj
     # The two unknown variables (nrefs_adj and nmuts_adj) can be
     # solved using the above system of two equations. By solving for
     # (nrefs_adj + nmuts_adj) in both equations, we get:
     # : (nrefs_adj + nmuts_adj) = (nrefs_obs + nmuts_obs) / f_obs
-    # : (nrefs_adj + nmuts_adj) = nmuts_adj / mu_adj, if mu_adj > 0
+    # : (nrefs_adj + nmuts_adj) = nmuts_adj / fmuts_adj {fmuts_adj > 0}
     # Setting both right hand sides equal, nmuts_adj is solved:
-    # : (nrefs_obs + nmuts_obs) / f_obs = nmuts_adj / mu_adj
-    # : nmuts_adj = (nrefs_obs + nmuts_obs) * (mu_adj / f_obs)
-    nmuts_adj = ninfo_obs * (mu_adj / f_obs)
+    # : (nrefs_obs + nmuts_obs) / f_obs = nmuts_adj / fmuts_adj
+    # : nmuts_adj = (nrefs_obs + nmuts_obs) * (fmuts_adj / f_obs)
+    nmuts_adj = ninfo_obs * (fmuts_adj / f_obs)
     # Then, plugging this solution into the second equation:
-    # : nrefs_adj = nmuts_adj / mu_adj - nmuts_adj
-    #             = nmuts_adj * (1 / mu_adj - 1), if mu_adj > 0
-    # If, on the other hand, mu_adj = 0, then
-    # : nmuts_adj = mu_adj * (nrefs_adj + nmuts_adj) = 0
+    # : nrefs_adj = nmuts_adj / fmuts_adj - nmuts_adj
+    #             = nmuts_adj * (1 / fmuts_adj - 1) {fmuts_adj > 0}
+    # If, on the other hand, fmuts_adj = 0, then
+    # : nmuts_adj = fmuts_adj * (nrefs_adj + nmuts_adj) = 0
     # Thus, we solve for nrefs_adj using the first equation instead:
     # : (nrefs_adj + nmuts_adj) = (nrefs_obs + nmuts_obs) / f_obs
     # : nrefs_adj = nrefs_obs / f_obs
     with np.errstate(divide="ignore"):
         # Ignore division-by-zero warnings in np.reciprocal because
-        # positions where mu_adj = 0 are just skipped by np.where.
-        nrefs_adj = np.where(mu_adj > 0.,
-                             nmuts_adj * (np.reciprocal(mu_adj) - 1.),
+        # positions where fmuts_adj = 0 are just skipped by np.where.
+        nrefs_adj = np.where(fmuts_adj > 0.,
+                             nmuts_adj * (np.reciprocal(fmuts_adj) - 1.),
                              nrefs_obs / f_obs)
-    counts_adj[MATCH_REL] = nrefs_adj
-    counts_adj[MUTAT_REL] = nmuts_adj
-    # Compute the factor by which nmuts was adjusted:
-    nmuts_fac = nmuts_adj / nmuts_obs
+        # Compute the factor by which nmuts was adjusted. Division by 0
+        # is possible if no mutations were observed, resulting in NaN
+        # values. Fill them with 1 so that the NaNs do not propagate
+        # when multiplying the number of mutations by nmuts_fac.
+        nmuts_fac = (nmuts_adj / nmuts_obs).fillna(1.)
+    counts_adj.loc[:, MATCH_REL] = nrefs_adj
+    counts_adj.loc[:, MUTAT_REL] = nmuts_adj
     # Adjust every type of mutation by this factor.
     for mut in (SUBST_REL, SUB_A_REL, SUB_C_REL, SUB_G_REL, SUB_T_REL,
                 DELET_REL, INSRT_REL):
-        counts_adj[mut] = counts_obs.loc[:, mut] * nmuts_fac
-    # Assemble the adjusted counts into a new DataFrame.
-    return pd.DataFrame.from_dict(counts_adj)
+        try:
+            counts_adj.loc[:, mut] = counts_obs.loc[:, mut] * nmuts_fac
+        except KeyError:
+            # The mutation was not in the table.
+            pass
+    return counts_adj
 
 
 def tabulate_loader(report_loader: RelateLoader | MaskLoader | ClustLoader,

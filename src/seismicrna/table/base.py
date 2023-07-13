@@ -14,11 +14,11 @@ READ_TITLE = "Read Name"
 R_OBS_TITLE = "Reads Observed"
 R_ADJ_TITLE = "Reads Adjusted"
 REL_NAME = "Relationship"
-POPAVG_TITLE = "pop-avg"
+ENS_AVG_TITLE = "ens-avg"
 CLUST_INDEX_NAMES = ORD_NAME, CLS_NAME, REL_NAME
 
 # Count relationships
-TOTAL_REL = "Called"
+COVER_REL = "Covered"
 INFOR_REL = "Informed"
 MATCH_REL = "Matched"
 MUTAT_REL = "Mutated"
@@ -32,18 +32,21 @@ SUB_T_REL = "Subbed-T"
 
 # One-letter codes for each type of relationship
 REL_CODES = {
-    'b': TOTAL_REL,
+    'v': COVER_REL,
     'n': INFOR_REL,
     'r': MATCH_REL,
     'm': MUTAT_REL,
-    'd': DELET_REL,
-    'i': INSRT_REL,
     's': SUBST_REL,
     'a': SUB_A_REL,
     'c': SUB_C_REL,
     'g': SUB_G_REL,
     't': SUB_T_REL,
+    'd': DELET_REL,
+    'i': INSRT_REL,
 }
+
+# Columns of each relation-based table
+TABLE_COLUMNS = [rel for rel in REL_CODES.values() if rel != INFOR_REL]
 
 
 # Table Base Classes ###################################################
@@ -132,85 +135,121 @@ class Table(ABC):
 class RelTypeTable(Table, ABC):
     """ Table with multiple types of relationships. """
 
-    @abstractmethod
-    def _count_col(self, col: str):
-        """ Get the counts from a column in the data table. """
+    @property
+    def _rel_level_index(self):
+        """ Index of the column level indicating the relationship. """
+        return self.data.columns.names.index(REL_NAME)
+
+    def _switch_rel(self, column: tuple, new_rel: str):
+        """ Switch the relationship in a column label. """
+        return (column[: self._rel_level_index]
+                + (new_rel,)
+                + column[self._rel_level_index + 1:])
+
+    @cache
+    def _count_col(self, column: tuple):
+        """ Count the bits for a column. """
+        # Determine the relationship to count.
+        if column[self._rel_level_index] == INFOR_REL:
+            # Sum the matched and mutated bits.
+            match_col = self._switch_rel(column, MATCH_REL)
+            mutat_col = self._switch_rel(column, MUTAT_REL)
+            return self._count_col(match_col) + self._count_col(mutat_col)
         try:
-            return self.data[col]
+            # The relationship should appear in the table, so return it.
+            return self._count_col(column)
         except KeyError:
             # Suppress exception chaining.
             pass
-        raise ValueError(f"{self} was not built with relationship '{col}'")
+        raise ValueError(f"{self} was not built with column {column}")
 
-    def _count_rel(self, rel: str):
-        """ Count the bits for a relationship. """
-        if rel == INFOR_REL:
-            # Sum the matched and mutated bits.
-            return self._count_col(MATCH_REL) + self._count_col(MUTAT_REL)
-        # The relationship should appear in the table, so return it.
-        return self._count_col(rel)
-
-    @abstractmethod
-    def _fract_rel(self, rel: str):
-        """ Compute the fraction for a relationship. """
+    @cache
+    def _ratio_col(self, column: tuple, precision: int | None = None):
+        """ Compute the ratio for a column. """
+        # Determine the relationship to use as the numerator.
+        numer_rel = column[self._rel_level_index]
         # Determine the relationship to use as the denominator.
-        denom = TOTAL_REL if rel == INFOR_REL else INFOR_REL
+        denom_rel = COVER_REL if numer_rel == INFOR_REL else INFOR_REL
+        # Determine the column to use as the denominator.
+        denom_col = self._switch_rel(column, denom_rel)
         # Compute the ratio of the numerator and the denominator.
-        return self._count_rel(rel) / self._count_rel(denom)
+        ratio = self._count_col(column) / self._count_col(denom_col)
+        # Round the ratio to the desired precision.
+        if precision is not None:
+            ratio = ratio.round(precision)
+        return ratio
 
-    def count_rel(self, code: str):
-        """ Count the bits for a relationship given its code. """
-        return self._count_rel(REL_CODES[code])
+    def _format_selection(self, rels: str | None = None) -> dict[str, list]:
+        """ Format keyword arguments into a valid column selection. """
+        return {REL_NAME: (list(REL_CODES.values()) if rels is None
+                           else [REL_CODES[rel] for rel in rels])}
 
-    def fract_rel(self, code: str):
-        """ Compute the fraction for a relationship given its code. """
-        return self._fract_rel(REL_CODES[code])
+    def _select_columns(self, selection: dict[str, list]):
+        """ Return a MultiIndex of the selected column(s) for each level
+        of the table columns. If a level is absent from the selection
+        specifier, then use all columns from that level. """
+        # Copy the selection so that the original will not be mutated.
+        selection = selection.copy()
+        # Determine which columns to select by taking the product of the
+        # values selected in each level of the column index.
+        print("DATA")
+        print(self.data)
+        level_names = self.data.columns.names
+        columns = pd.MultiIndex.from_product([selection.pop(level)
+                                              for level in level_names],
+                                             names=level_names)
+        # Check that no extra levels were selected.
+        if selection:
+            raise ValueError(f"Invalid levels: {list(selection)}")
+        return columns
+
+    def select(self, ratio: bool, precision: int | None = None, **kwargs):
+        """ Output selected data from the table as a DataFrame. """
+        # Instantiate an empty DataFrame with the index and columns.
+        columns = self._select_columns(self._format_selection(**kwargs))
+        data = pd.DataFrame(index=self.data.index, columns=columns, dtype=float)
+        # Fill in the DataFrame one column at a time.
+        for column in columns:
+            data.loc[:, column] = (self._ratio_col(column, precision) if ratio
+                                   else self._count_col(column))
+        return data
 
 
 # Table by Source (relate/mask/cluster) ################################
 
 class RelTable(RelTypeTable, ABC):
-
-    @cache
-    def _count_col(self, col: str):
-        return super()._count_col(col).rename(col)
-
-    @cache
-    def _fract_rel(self, rel: str):
-        return super()._fract_rel(rel).rename(rel)
+    pass
 
 
 class MaskTable(RelTypeTable, ABC):
-
-    @cache
-    def _count_col(self, col: str):
-        return super()._count_col(col).rename(col)
-
-    @cache
-    def _fract_rel(self, rel: str):
-        return super()._fract_rel(rel).rename(rel)
+    pass
 
 
 class ClustTable(RelTypeTable, ABC):
 
     @cached_property
+    def ord_clust(self):
+        """ MultiIndex of all order-cluster pairs. """
+        return self.data.columns.droplevel(REL_NAME).drop_duplicates()
+
+    @cached_property
+    def orders(self):
+        """ Index of all order numbers. """
+        return self.data.columns.get_level_values(ORD_NAME).drop_duplicates()
+
+    @cached_property
     def clusters(self):
-        """ MultiIndex of all clusters. """
-        return self.data.columns.droplevel(-1).drop_duplicates()
+        """ Index of all cluster numbers. """
+        return self.data.columns.get_level_values(CLS_NAME).drop_duplicates()
 
-    @cache
-    def _count_col(self, col: str):
-        # Make a slicer that pulls the given column from all clusters.
-        slicer = (slice(None),) * self.clusters.nlevels + (col,)
-        # Copy the given column from all clusters into a new DataFrame.
-        counts = self.data.loc[:, slicer].copy()
-        # Drop the last level (the given column) from the column index.
-        counts.columns = counts.columns.droplevel(-1)
-        return counts
-
-    @cache
-    def _fract_rel(self, rel: str):
-        return super()._fract_rel(rel)
+    def _format_selection(self, rels: str | None = None, *,
+                          orders: list | None = None,
+                          clusters: list | None = None):
+        return {
+            **super()._format_selection(rels),
+            ORD_NAME: list(self.orders) if orders is None else orders,
+            CLS_NAME: list(self.clusters) if orders is None else orders,
+        }
 
 
 # Table by Index (position/read/frequency) #############################
