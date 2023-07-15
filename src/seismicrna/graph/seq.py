@@ -16,9 +16,9 @@ from ..cluster.names import (ENSEMBLE_NAME, CLS_NAME, ORD_NAME, ORD_CLS_NAME,
                              fmt_clust_name, validate_order_cluster)
 from ..core import docdef
 from ..core.cli import (opt_input_file, opt_rels,
-                        opt_stack, opt_subplot, opt_y_ratio,
+                        opt_stack, opt_arrange, opt_y_ratio,
                         opt_csv, opt_html, opt_pdf, opt_max_procs, opt_parallel,
-                        SUBPLOT_CLUST, SUBPLOT_ORDER, SUBPLOT_NONE)
+                        CLUST_INDIV, CLUST_UNITE, CLUST_ORDER)
 from ..core.parallel import dispatch
 from ..core.sect import BASE_NAME, POS_NAME
 from ..core.seq import BASES
@@ -34,7 +34,7 @@ params = [
     opt_input_file,
     opt_rels,
     opt_stack,
-    opt_subplot,
+    opt_arrange,
     opt_y_ratio,
     opt_csv,
     opt_html,
@@ -54,7 +54,7 @@ def cli(*args, **kwargs):
 def run(input_file: tuple[str, ...],
         rels: str, *,
         stack: bool,
-        subplot: str,
+        arrange: str,
         y_ratio: bool,
         csv: bool,
         html: bool,
@@ -66,7 +66,7 @@ def run(input_file: tuple[str, ...],
     return list(chain(*dispatch([writer.write for writer in writers],
                                 max_procs, parallel, pass_n_procs=False,
                                 kwargs=dict(rels=rels, stack=stack,
-                                            subplot=subplot, y_ratio=y_ratio,
+                                            arrange=arrange, y_ratio=y_ratio,
                                             csv=csv, html=html, pdf=pdf))))
 
 
@@ -122,7 +122,7 @@ def iter_stack_traces(data: pd.DataFrame, cmap: ColorMap):
 
 class SeqGraphWriter(GraphWriter):
 
-    def iter(self, rels: str, subplot: str, stack: bool, y_ratio: bool):
+    def iter(self, rels: str, arrange: str, stack: bool, y_ratio: bool):
         if type(self.table) in EnsembleSeqGraph.sources():
             if stack:
                 yield EnsembleMultiRelSeqGraph(table=self.table,
@@ -134,19 +134,19 @@ class SeqGraphWriter(GraphWriter):
                                                     rels=rel,
                                                     y_ratio=y_ratio)
         elif type(self.table) in ClusterSeqGraph.sources():
-            if subplot == SUBPLOT_NONE:
-                # Create one file per cluster.
+            if arrange == CLUST_INDIV:
+                # One file per cluster, with no subplots.
                 clusters_params = [dict(order=order, cluster=cluster)
                                    for order, cluster in self.table.ord_clust]
-            elif subplot == SUBPLOT_ORDER:
-                # Create one file per order: each cluster is a subplot.
+            elif arrange == CLUST_ORDER:
+                # One file per order, with a subplot for each cluster.
                 orders = sorted(self.table.orders)
                 clusters_params = [dict(order=order) for order in orders]
-            elif subplot == SUBPLOT_CLUST:
-                # Create one file: each cluster is a subplot.
+            elif arrange == CLUST_UNITE:
+                # One file, with subplots of all clusters of all orders.
                 clusters_params = [dict()]
             else:
-                raise ValueError(f"Invalid value for subplot: '{subplot}'")
+                raise ValueError(f"Invalid value for arrange: '{arrange}'")
             for cluster_params in clusters_params:
                 if stack:
                     yield ClusterMultiRelSeqGraph(table=self.table,

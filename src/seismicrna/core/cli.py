@@ -28,10 +28,10 @@ BOWTIE2_ORIENT = BOWTIE2_ORIENT_FR, BOWTIE2_ORIENT_RF, BOWTIE2_ORIENT_FF
 
 ADAPTER_SEQ_ILLUMINA_3P = "AGATCGGAAGAGC"
 
-SUBPLOT_ORDER = "order"
-SUBPLOT_CLUST = "cluster"
-SUBPLOT_NONE = "none"
-GRAPH_SUBPLOTS = SUBPLOT_ORDER, SUBPLOT_CLUST, SUBPLOT_NONE
+CLUST_INDIV = "indiv"
+CLUST_ORDER = "order"
+CLUST_UNITE = "unite"
+CLUST_ARRANGE_OPTIONS = CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
 
 
 # Configuration options
@@ -624,11 +624,13 @@ opt_stack = Option(
     default=False,
     help="Whether to stack relationships")
 
-opt_subplot = Option(
-    ("--subplot",),
-    type=Choice(GRAPH_SUBPLOTS),
-    default=SUBPLOT_CLUST,
-    help="Graph subplots of orders, clusters, or nothing")
+opt_arrange = Option(
+    ("--arrange",),
+    type=Choice(CLUST_ARRANGE_OPTIONS),
+    default=CLUST_ORDER,
+    help="Whether to graph each INDIVidual cluster in its own file, "
+         "graph each ORDER of clusters in its own file, "
+         "or UNITE all clusters in one file containing all orders.")
 
 opt_x_ratio = Option(
     ("--x-ratio/--x-count",),
