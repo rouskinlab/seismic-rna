@@ -585,10 +585,10 @@ def ref_to_alignments(refseq: DNA,
             if n_ins > 0:
                 # If there are insertions, find their positions.
                 ins_pos = list(find_cigar_op_pos(cigar, CIG_INSRT))
-                # Remove the quality codes of inserted bases because for
+                # Remove quality codes of inserted bases because -- for
                 # the purpose of aggregating reads based on sequence,
-                # quality score, and position, the "fake" quality scores
-                # of inserted bases should not be considered.
+                # quality score, and position -- the "fake" quality
+                # scores of inserted bases should not be considered.
                 qual_no_ins = bytes(q for i, q in enumerate(qual, start=1)
                                     if i not in ins_pos)
             else:

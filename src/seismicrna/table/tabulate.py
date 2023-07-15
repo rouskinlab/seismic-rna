@@ -165,7 +165,7 @@ class MaskTabulator(AvgTabulator, NullableTabulator):
                              self._loader.min_mut_gap)
 
 
-class ClustTabulator(NullableTabulator):
+class ClusterTabulator(NullableTabulator):
 
     @property
     def ord_clust(self):
@@ -396,5 +396,5 @@ def tabulate_loader(report_loader: RelateLoader | MaskLoader | ClustLoader,
     if isinstance(report_loader, MaskLoader):
         return MaskTabulator(report_loader, rel_codes)
     if isinstance(report_loader, ClustLoader):
-        return ClustTabulator(report_loader, rel_codes)
+        return ClusterTabulator(report_loader, rel_codes)
     raise TypeError(f"Invalid loader type: {type(report_loader).__name__}")

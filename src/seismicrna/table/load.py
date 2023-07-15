@@ -5,12 +5,12 @@ from typing import Iterable
 
 import pandas as pd
 
-from .base import (MUTAT_REL, ENS_AVG_TITLE, CLUST_INDEX_NAMES, REL_NAME,
+from .base import (MUTAT_REL, CLUST_INDEX_NAMES, REL_NAME,
                    Table, RelTypeTable, PosTable, ReadTable,
                    RelPosTable, RelReadTable,
                    MaskPosTable, MaskReadTable,
                    ClustPosTable, ClustReadTable, ClustFreqTable)
-from ..cluster.names import ORD_CLS_NAME
+from ..cluster.names import ENSEMBLE_NAME, ORD_CLS_NAME, fmt_clust_name
 from ..core import path
 from ..core.rna import RnaProfile
 from ..core.sect import Section, INDEX_NAMES
@@ -154,7 +154,7 @@ class MaskPosTableLoader(MaskTableLoader, PosTableLoader, MaskPosTable):
 
     def iter_profiles(self, sections: Iterable[Section]):
         for section in sections:
-            yield RnaProfile(title=path.fill_whitespace(ENS_AVG_TITLE),
+            yield RnaProfile(path.fill_whitespace(ENSEMBLE_NAME),
                              section=section,
                              sample=self.sample,
                              data_sect=self.sect,
@@ -171,8 +171,8 @@ class ClustPosTableLoader(ClustTableLoader, PosTableLoader, ClustPosTable):
     def iter_profiles(self, sections: Iterable[Section]):
         """ Yield RNA mutational profiles from a table. """
         for section in sections:
-            for (order, cluster), fmut in self._ratio_col(MUTAT_REL).items():
-                yield RnaProfile(f"Cluster_{order}-{cluster}",
+            for ok, fmut in self._ratio_col(MUTAT_REL).items():
+                yield RnaProfile(path.fill_whitespace(fmt_clust_name(*ok)),
                                  section=section,
                                  sample=self.sample,
                                  data_sect=self.sect,

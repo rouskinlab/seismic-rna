@@ -29,7 +29,7 @@ BOWTIE2_ORIENT = BOWTIE2_ORIENT_FR, BOWTIE2_ORIENT_RF, BOWTIE2_ORIENT_FF
 ADAPTER_SEQ_ILLUMINA_3P = "AGATCGGAAGAGC"
 
 SUBPLOT_ORDER = "order"
-SUBPLOT_CLUST = "clust"
+SUBPLOT_CLUST = "cluster"
 SUBPLOT_NONE = "none"
 GRAPH_SUBPLOTS = SUBPLOT_ORDER, SUBPLOT_CLUST, SUBPLOT_NONE
 
@@ -630,17 +630,17 @@ opt_subplot = Option(
     default=SUBPLOT_CLUST,
     help="Graph subplots of orders, clusters, or nothing")
 
-opt_xfrac = Option(
-    ("--xf/--xn",),
+opt_x_ratio = Option(
+    ("--x-ratio/--x-count",),
     default=False,
     type=bool,
-    help="Whether the x-axis shows counts (n) or fractions (f)")
+    help="Whether the x-axis depicts counts or ratios")
 
-opt_yfrac = Option(
-    ("--yf/--yn",),
+opt_y_ratio = Option(
+    ("--y-ratio/--y-count",),
     default=True,
     type=bool,
-    help="Whether the y-axis shows counts (n) or fractions (f)")
+    help="Whether the y-axis depicts counts or ratios")
 
 opt_hist_bins = Option(
     ("--hist-bins",),

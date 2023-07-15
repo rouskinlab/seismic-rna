@@ -57,15 +57,18 @@ basic = SeqColorMap("basic", a="#FF0000", c="#0000FF", g="#FFC000", t="#008000")
 water = SeqColorMap("water", a="#A15252", c="#3D427D", g="#E3CC7B", t="#76B887")
 earth = SeqColorMap("earth", a="#D17777", c="#464EA6", g="#E3CC7B", t="#336140")
 steel = SeqColorMap("steel", a="#663328", c="#716B80", g="#91B8AC", t="#D9D5B4")
+tetra = SeqColorMap("tetra", a="#C05F15", c="#597DE4", g="#743B4A", t="#9BD1D0")
 
 crayons = RelColorMap("crayons", v="#424242", n="#A9A9A9", r="#942193",
                       m="#929000", d="#FF2600", i="#00FA92", s="#FF40FF",
                       a="#73FCD6", c="#FFD479", g="#7A81FF", t="#FF8AD8")
-
+sexta = RelColorMap("sexta", v="#FBED94", n="#C05F15", r="#597DE4",
+                    m="#0F155F", d="#FBED94", i="#0F155F", s="#743B4A",
+                    a="#C05F15", c="#597DE4", g="#743B4A", t="#9BD1D0")
 
 DEFAULTS: dict[type[ColorMap], ColorMap] = {
-    RelColorMap: crayons,
-    SeqColorMap: earth,
+    RelColorMap: sexta,
+    SeqColorMap: tetra,
 }
 
 

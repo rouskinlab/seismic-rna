@@ -14,7 +14,6 @@ READ_TITLE = "Read Name"
 R_OBS_TITLE = "Reads Observed"
 R_ADJ_TITLE = "Reads Adjusted"
 REL_NAME = "Relationship"
-ENS_AVG_TITLE = "ens-avg"
 CLUST_INDEX_NAMES = ORD_NAME, CLS_NAME, REL_NAME
 
 # Count relationships
@@ -142,9 +141,7 @@ class RelTypeTable(Table, ABC):
 
     def _switch_rel(self, column: tuple, new_rel: str):
         """ Switch the relationship in a column label. """
-        return (column[: self._rel_level_index]
-                + (new_rel,)
-                + column[self._rel_level_index + 1:])
+        return new_rel,
 
     @cache
     def _count_col(self, column: tuple):
@@ -156,8 +153,9 @@ class RelTypeTable(Table, ABC):
             mutat_col = self._switch_rel(column, MUTAT_REL)
             return self._count_col(match_col) + self._count_col(mutat_col)
         try:
-            # The relationship should appear in the table, so return it.
-            return self._count_col(column)
+            # The relationship should appear in the table, so return it
+            # as a Series.
+            return self.data.loc[:, column].squeeze()
         except KeyError:
             # Suppress exception chaining.
             pass
@@ -179,34 +177,28 @@ class RelTypeTable(Table, ABC):
             ratio = ratio.round(precision)
         return ratio
 
-    def _format_selection(self, rels: str | None = None) -> dict[str, list]:
+    @staticmethod
+    def _format_selection(**kwargs) -> dict[str, list]:
         """ Format keyword arguments into a valid column selection. """
-        return {REL_NAME: (list(REL_CODES.values()) if rels is None
-                           else [REL_CODES[rel] for rel in rels])}
+        selection = dict()
+        for key, level in dict(order=ORD_NAME,
+                               cluster=CLS_NAME,
+                               rels=REL_NAME).items():
+            try:
+                selection[level] = kwargs[key]
+            except KeyError:
+                pass
+        return selection
 
-    def _select_columns(self, selection: dict[str, list]):
-        """ Return a MultiIndex of the selected column(s) for each level
-        of the table columns. If a level is absent from the selection
-        specifier, then use all columns from that level. """
-        # Copy the selection so that the original will not be mutated.
-        selection = selection.copy()
-        # Determine which columns to select by taking the product of the
-        # values selected in each level of the column index.
-        print("DATA")
-        print(self.data)
-        level_names = self.data.columns.names
-        columns = pd.MultiIndex.from_product([selection.pop(level)
-                                              for level in level_names],
-                                             names=level_names)
-        # Check that no extra levels were selected.
-        if selection:
-            raise ValueError(f"Invalid levels: {list(selection)}")
-        return columns
+    def _get_indexer(self, selection: dict[str, list]):
+        """ Format a column selection into a column indexer. """
+        return selection.get(REL_NAME, slice(None))
 
-    def select(self, ratio: bool, precision: int | None = None, **kwargs):
+    def select(self, ratio: bool, precision: int | None = None, **kwargs: list):
         """ Output selected data from the table as a DataFrame. """
         # Instantiate an empty DataFrame with the index and columns.
-        columns = self._select_columns(self._format_selection(**kwargs))
+        indexer = self._get_indexer(self._format_selection(**kwargs))
+        columns = self.data.loc[:, indexer].columns
         data = pd.DataFrame(index=self.data.index, columns=columns, dtype=float)
         # Fill in the DataFrame one column at a time.
         for column in columns:
@@ -237,19 +229,19 @@ class ClustTable(RelTypeTable, ABC):
         """ Index of all order numbers. """
         return self.data.columns.get_level_values(ORD_NAME).drop_duplicates()
 
-    @cached_property
-    def clusters(self):
-        """ Index of all cluster numbers. """
-        return self.data.columns.get_level_values(CLS_NAME).drop_duplicates()
+    def get_clusters(self, orders: list):
+        """ Index of cluster numbers for the given orders. """
+        data = self.data.loc[:, orders]
+        return data.columns.get_level_values(CLS_NAME).drop_duplicates()
 
-    def _format_selection(self, rels: str | None = None, *,
-                          orders: list | None = None,
-                          clusters: list | None = None):
-        return {
-            **super()._format_selection(rels),
-            ORD_NAME: list(self.orders) if orders is None else orders,
-            CLS_NAME: list(self.clusters) if orders is None else orders,
-        }
+    def _switch_rel(self, column: tuple, new_rel: str):
+        return (column[: self._rel_level_index]
+                + (new_rel,)
+                + column[self._rel_level_index + 1:])
+
+    def _get_indexer(self, selection: dict[str, list]):
+        return tuple(selection.get(level, slice(None))
+                     for level in self.data.columns.names)
 
 
 # Table by Index (position/read/frequency) #############################

@@ -62,7 +62,7 @@ class GraphBase(ABC):
     @property
     @abstractmethod
     def graph_filename(self):
-        return ""
+        """ Name of the graph file. """
 
     @classmethod
     def get_path_segs(cls):
@@ -91,10 +91,14 @@ class GraphBase(ABC):
     def ncols(self) -> int:
         """ Number of columns of subplots. """
 
+    @property
+    @abstractmethod
+    def subplot_titles(self):
+        """ Titles of the subplots. """
+
     def _figure_init(self):
         """ Initialize the figure. """
-        return make_subplots(rows=self.nrows, cols=self.ncols,
-                             shared_xaxes="all", shared_yaxes="all")
+        return make_subplots(rows=self.nrows, cols=self.ncols)
 
     def _figure_data(self, fig: go.Figure):
         """ Add data to the figure. """
@@ -276,19 +280,19 @@ class CartesianGraph(GraphBase, ABC):
 
     @property
     @abstractmethod
-    def xattr(self) -> str:
-        """ Name of the x-axis attribute. """
+    def x_title(self) -> str:
+        """ Title of the x-axis. """
 
     @property
     @abstractmethod
-    def yattr(self) -> str:
-        """ Name of the y-axis attribute. """
+    def y_title(self) -> str:
+        """ Title of the y-axis. """
 
-    def _figure_layout(self, fig: go.Figure):
-        super()._figure_layout(fig)
-        fig.update_layout(xaxis=dict(title=self.xattr),
-                          yaxis=dict(title=self.yattr))
-        return fig
+    def _figure_init(self):
+        return make_subplots(rows=self.nrows, cols=self.ncols,
+                             shared_xaxes="all", shared_yaxes="all",
+                             x_title=self.x_title, y_title=self.y_title,
+                             subplot_titles=self.subplot_titles)
 
 
 class GraphWriter(ABC):

@@ -14,7 +14,7 @@ from .base import (find_tables, GraphWriter, CartesianGraph, OneTableGraph,
 from .color import RelColorMap
 from ..core import docdef
 from ..core.cli import (opt_table, opt_rels,
-                        opt_yfrac, opt_hist_bins,
+                        opt_y_ratio, opt_hist_bins,
                         opt_csv, opt_html, opt_pdf,
                         opt_max_procs, opt_parallel)
 from ..core.parallel import dispatch
@@ -29,7 +29,7 @@ params = [
     opt_table,
     opt_rels,
     opt_hist_bins,
-    opt_yfrac,
+    opt_y_ratio,
     opt_csv,
     opt_html,
     opt_pdf,
@@ -48,7 +48,7 @@ def cli(*args, **kwargs):
 def run(table: tuple[str, ...],
         fields: str,
         hist_bins: int,
-        yfrac: bool, *,
+        y_ratio: bool, *,
         csv: bool,
         html: bool,
         pdf: bool,
@@ -58,7 +58,7 @@ def run(table: tuple[str, ...],
     writers = list(map(ReadHistogramWriter, find_tables(table)))
     return list(chain(*dispatch([writer.write for writer in writers],
                                 max_procs, parallel, pass_n_procs=False,
-                                kwargs=dict(fields=fields, count=yfrac,
+                                kwargs=dict(fields=fields, count=y_ratio,
                                             group=group, bins=hist_bins,
                                             csv=csv, html=html, pdf=pdf))))
 
@@ -69,19 +69,19 @@ class ReadHistogramWriter(GraphWriter):
         if isinstance(self.table, RelReadTableLoader):
             if group:
                 yield RelReadHist(table=self.table, codes=fields,
-                                  xfrac=bins, yfrac=count)
+                                  x_ratio=bins, y_ratio=count)
             else:
                 for field in fields:
                     yield RelReadHist(table=self.table, codes=field,
-                                      xfrac=bins, yfrac=count)
+                                      x_ratio=bins, y_ratio=count)
         elif isinstance(self.table, MaskReadTableLoader):
             if group:
                 yield MaskReadHist(table=self.table, codes=fields,
-                                   xfrac=bins, yfrac=count)
+                                   x_ratio=bins, y_ratio=count)
             else:
                 for field in fields:
                     yield MaskReadHist(table=self.table, codes=field,
-                                       xfrac=bins, yfrac=count)
+                                       x_ratio=bins, y_ratio=count)
 
 
 class ReadHistogram(CartesianGraph, OneTableGraph, OneSampGraph, ABC):
@@ -116,17 +116,17 @@ class ReadHistogram(CartesianGraph, OneTableGraph, OneSampGraph, ABC):
 class FieldReadHist(ReadHistogram, ABC):
     """ Read histogram of fields from a table. """
 
-    def __init__(self, *args, codes: str, xfrac: int, yfrac: bool, **kwargs):
+    def __init__(self, *args, codes: str, x_ratio: int, y_ratio: bool, **kwargs):
         super().__init__(*args, **kwargs)
         self.codes = codes
-        self.xfrac = xfrac
-        self.yfrac = yfrac
+        self.x_ratio = x_ratio
+        self.y_ratio = y_ratio
 
     def get_xattr(self):
-        return "Fraction" if self.xfrac else "Count"
+        return "Fraction" if self.x_ratio else "Count"
 
     def get_yattr(self):
-        return "Read" + ("Fraction" if self.yfrac else "Count")
+        return "Read" + ("Fraction" if self.y_ratio else "Count")
 
     @property
     def title(self):
@@ -143,7 +143,7 @@ class FieldReadHist(ReadHistogram, ABC):
     def get_table_field(self, field_code: str):
         """ Load the data for one field from the table. """
         return (self.table.fract_rel(field_code).round(PRECISION)
-                if self.xfrac else self.table.count_rel(field_code))
+                if self.x_ratio else self.table.count_rel(field_code))
 
     @cache
     def _find_data_max(self):
@@ -153,17 +153,17 @@ class FieldReadHist(ReadHistogram, ABC):
     @cache
     def _get_bins(self):
         """ Get the bin edges for the histogram. """
-        if self.xfrac < 0:
-            raise ValueError(f"xfrac must be ≥ 0, but got {self.xfrac}")
-        if self.xfrac == 0:
+        if self.x_ratio < 0:
+            raise ValueError(f"x_ratio must be ≥ 0, but got {self.x_ratio}")
+        if self.x_ratio == 0:
             # Each bin has width 1, with the maximum being the smallest
             # integer larger than every value in the data set.
             max_bin = int(self._find_data_max()) + 1
             n_bins = max_bin
         else:
-            # The maximum value is 1, and the number of bins is xfrac.
+            # The maximum value is 1, and the number of bins is x_ratio.
             max_bin = 1
-            n_bins = self.xfrac
+            n_bins = self.x_ratio
         return np.linspace(0, max_bin, n_bins + 1)
 
     def _get_data(self):

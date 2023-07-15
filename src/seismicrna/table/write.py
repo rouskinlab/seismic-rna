@@ -7,7 +7,7 @@ import pandas as pd
 from .base import (Table, PosTable, ReadTable,
                    RelPosTable, RelReadTable, MaskPosTable, MaskReadTable,
                    ClustPosTable, ClustReadTable, ClustFreqTable)
-from .tabulate import (Tabulator, RelTabulator, MaskTabulator, ClustTabulator,
+from .tabulate import (Tabulator, RelTabulator, MaskTabulator, ClusterTabulator,
                        tabulate_loader)
 from ..cluster.load import ClustLoader
 from ..core import path
@@ -24,7 +24,7 @@ PRECISION = 1
 class TableWriter(Table, ABC):
     """ Write a table to a file. """
 
-    def __init__(self, tabulator: Tabulator | ClustTabulator):
+    def __init__(self, tabulator: Tabulator | ClusterTabulator):
         self._tab = tabulator
 
     @property
@@ -138,7 +138,7 @@ def get_tabulator_writer_types(tabulator: Tabulator):
         return RelPosTableWriter, RelReadTableWriter
     if isinstance(tabulator, MaskTabulator):
         return MaskPosTableWriter, MaskReadTableWriter
-    if isinstance(tabulator, ClustTabulator):
+    if isinstance(tabulator, ClusterTabulator):
         return ClustPosTableWriter, ClustReadTableWriter, ClustFreqTableWriter
     raise TypeError(f"Invalid tabulator type: {type(tabulator).__name__}")
 

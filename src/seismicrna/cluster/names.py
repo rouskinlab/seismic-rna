@@ -18,3 +18,25 @@ READ_NAME = "Read Name"
 # Bit vector counts
 OBS_NAME = "Log Observed"
 EXP_NAME = "Log Expected"
+
+# Ensemble name
+ENSEMBLE_NAME = "Ensemble"
+
+
+def validate_order_cluster(order: int, cluster: int, allow_zero: bool = False):
+    if not isinstance(order, int):
+        raise TypeError(f"order must be an int, not {type(order).__name__}")
+    if not isinstance(cluster, int):
+        raise TypeError(f"cluster must be an int, not {type(cluster).__name__}")
+    ineq = '≥' if allow_zero else '>'
+    if order < 0 or (order == 0 and not allow_zero):
+        raise ValueError(f"order must be {ineq} 0, but got {order}")
+    if cluster < 0 or (cluster == 0 and not allow_zero):
+        raise ValueError(f"cluster must be {ineq} 0, but got {cluster}")
+    if cluster > order:
+        raise ValueError(f"cluster ({cluster}) must be ≤ order ({order})")
+
+
+def fmt_clust_name(order: int, cluster: int):
+    validate_order_cluster(order, cluster)
+    return f"Cluster {order}-{cluster}"
