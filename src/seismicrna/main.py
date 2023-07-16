@@ -15,6 +15,7 @@ from . import (demult as demultiplex_mod,
 from .core import docdef, logs
 from .core.cli import (merge_params, opt_demultiplex,
                        opt_verbose, opt_quiet, opt_log, opt_profile, opt_fold)
+from .meta import __version__
 
 all_params = merge_params([opt_demultiplex],
                           demultiplex_mod.params,
@@ -286,7 +287,7 @@ main_params = [
 
 # Group for main commands
 @group(params=main_params, context_settings={"show_default": True})
-@version_option()
+@version_option(__version__)
 @pass_context
 def main_cli(ctx: Context, verbose: int, quiet: int, log: str, profile: str,
              **kwargs):
