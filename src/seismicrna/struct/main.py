@@ -5,7 +5,7 @@ from click import command
 
 from .rnastructure import fold, ct2dot
 from ..core import docdef, path
-from ..core.cli import (opt_temp_dir, opt_save_temp, opt_input_file,
+from ..core.cli import (arg_input_file, opt_temp_dir, opt_save_temp,
                         opt_fasta, opt_sections_file,
                         opt_coords, opt_primers, opt_primer_gap,
                         opt_quantile,
@@ -21,7 +21,7 @@ from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader
 logger = getLogger(__name__)
 
 params = [
-    opt_input_file,
+    arg_input_file,
     opt_fasta,
     opt_sections_file,
     opt_coords,

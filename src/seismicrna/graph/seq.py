@@ -15,7 +15,7 @@ from .color import ColorMap, RelColorMap, SeqColorMap
 from ..cluster.names import (ENSEMBLE_NAME, CLS_NAME, ORD_NAME, ORD_CLS_NAME,
                              fmt_clust_name, validate_order_cluster)
 from ..core import docdef
-from ..core.cli import (opt_input_file, opt_rels,
+from ..core.cli import (arg_input_file, opt_rels,
                         opt_stack, opt_arrange, opt_y_ratio,
                         opt_csv, opt_html, opt_pdf, opt_max_procs, opt_parallel,
                         CLUST_INDIV, CLUST_UNITE, CLUST_ORDER)
@@ -31,7 +31,7 @@ logger = getLogger(__name__)
 # Number of digits to which to round decimals.
 
 params = [
-    opt_input_file,
+    arg_input_file,
     opt_rels,
     opt_stack,
     opt_arrange,

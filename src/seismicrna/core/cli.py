@@ -10,7 +10,7 @@ from datetime import datetime
 import logging
 import os
 
-from click import Choice, Option, Parameter, Path
+from click import Argument, Choice, Option, Parameter, Path
 
 # System information
 CWD = os.getcwd()
@@ -42,12 +42,10 @@ opt_config = Option(
 
 # Input/output options
 
-opt_input_file = Option(
-    ("--input-file", "-i"),
+arg_input_file = Argument(
+    ("input-file",),
     type=Path(exists=True),
-    multiple=True,
-    default=(),
-    help="File containing input data")
+    nargs=-1)
 
 opt_out_dir = Option(
     ("--out-dir", "-o"),

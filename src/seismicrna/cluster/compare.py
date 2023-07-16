@@ -8,7 +8,7 @@ Collect and compare the results from independent runs of EM clustering.
 
 from __future__ import annotations
 
-from itertools import combinations
+from itertools import combinations, islice
 from typing import Callable, Iterable
 
 import numpy as np
@@ -90,7 +90,7 @@ def format_exp_count_col(order: int):
 
 
 def get_log_exp_obs_counts(ord_runs: dict[int, RunOrderResults]):
-    """ Compute the expected and observed log counts. """
+    """ Get the expected and observed log counts of each bit vector. """
     # Retrieve the unique bit vectors from the clusters.
     uniq_muts = get_common_best_run_attr(ord_runs, "muts")
     # Compute the observed log counts of the bit vectors.
@@ -267,7 +267,7 @@ def iter_all_likelihoods(p: np.ndarray):
                 # have > 0 items and should not raise StopIteration.
                 ival = next(inner)
                 wval = next(weighted)
-                # Yield elements until the both iterators are exhausted.
+                # Yield elements until both iterators are exhausted.
                 while True:
                     # Yield the larger value and advance its iterator.
                     if ival is not None and ival >= wval:
@@ -301,3 +301,13 @@ def iter_all_likelihoods(p: np.ndarray):
 
     # Return an iterator of log likelihood values adjusted by the base.
     return iter(value + log_base for value in series.iter())
+
+
+def max_n_likelihoods(p: np.ndarray, n: int | None = None):
+    """ Return the top n bit vector likelihoods. """
+    return np.array(list(islice(iter_all_likelihoods(p), n)))
+
+
+def cum_log_exp_obs_counts():
+    """ Get the cumulative expected and observed log counts per bit
+    vector. """

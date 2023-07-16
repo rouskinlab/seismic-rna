@@ -6,13 +6,13 @@ from click import command
 
 from .write import write
 from ..core import docdef, path
-from ..core.cli import (opt_input_file, opt_rels,
+from ..core.cli import (arg_input_file, opt_rels,
                         opt_max_procs, opt_parallel, opt_rerun)
 from ..core.parallel import dispatch
 
 logger = getLogger(__name__)
 
-params = [opt_input_file, opt_rels, opt_max_procs, opt_parallel, opt_rerun]
+params = [arg_input_file, opt_rels, opt_max_procs, opt_parallel, opt_rerun]
 
 
 @command(path.MOD_TABLE, params=params)

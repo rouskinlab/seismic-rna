@@ -5,7 +5,7 @@ from click import command
 
 from .krun import cluster
 from ..core import docdef, path
-from ..core.cli import (opt_input_file, opt_max_clusters, opt_em_runs,
+from ..core.cli import (arg_input_file, opt_max_clusters, opt_em_runs,
                         opt_min_em_iter, opt_max_em_iter, opt_em_thresh,
                         opt_parallel, opt_max_procs, opt_rerun)
 from ..core.parallel import as_list_of_tuples, dispatch
@@ -16,7 +16,7 @@ DEFAULT_ORDER = 2
 
 params = [
     # Input files
-    opt_input_file,
+    arg_input_file,
     # Clustering options
     opt_max_clusters,
     opt_em_runs,

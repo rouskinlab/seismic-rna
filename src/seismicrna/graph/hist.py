@@ -13,7 +13,7 @@ from .base import (find_tables, GraphWriter, CartesianGraph, OneTableGraph,
                    OneSampGraph)
 from .color import RelColorMap
 from ..core import docdef
-from ..core.cli import (opt_table, opt_rels,
+from ..core.cli import (arg_input_file, opt_rels,
                         opt_y_ratio, opt_hist_bins,
                         opt_csv, opt_html, opt_pdf,
                         opt_max_procs, opt_parallel)
@@ -26,7 +26,7 @@ from ..table.load import (RelReadTableLoader,
 PRECISION = 6
 
 params = [
-    opt_table,
+    arg_input_file,
     opt_rels,
     opt_hist_bins,
     opt_y_ratio,

@@ -36,6 +36,8 @@ def all_cli(*args, **kwargs):
 
 @docdef.auto()
 def run(*,
+        # Arguments
+        input_file: tuple[str, ...],
         # General options
         out_dir: str,
         temp_dir: str,
@@ -43,14 +45,13 @@ def run(*,
         rerun: bool,
         max_procs: int,
         parallel: bool,
-        # Input files
-        input_file: tuple[str, ...],
+        # FASTQ options
         fasta: str,
         fastqs: tuple[str, ...],
         fastqi: tuple[str, ...],
         fastqp: tuple[str, ...],
         phred_enc: int,
-        # Demultiplexing
+        # Demultiplexing options
         demulti_overwrite: bool,
         demult_on: bool,
         parallel_demultiplexing: bool,
@@ -59,7 +60,7 @@ def run(*,
         index_tolerance: int,
         barcode_start: int,
         barcode_length: int,
-        # Alignment
+        # Align options
         dmfastqs: tuple[str, ...],
         dmfastqi: tuple[str, ...],
         dmfastqp: tuple[str, ...],
@@ -96,12 +97,12 @@ def run(*,
         bt2_r: int,
         bt2_dpad: int,
         bt2_orient: str,
-        # Relating
+        # Relate options
         min_phred: int,
         min_reads: int,
         ambrel: bool,
         batch_size: float,
-        # Masking
+        # Mask options
         coords: tuple[tuple[str, int, int], ...],
         primers: tuple[tuple[str, str, str], ...],
         primer_gap: int,
@@ -117,15 +118,15 @@ def run(*,
         min_mut_gap: int,
         min_ninfo_pos: int,
         max_fmut_pos: float,
-        # Clustering
+        # Cluster options
         max_clusters: int,
         em_runs: int,
         min_em_iter: int,
         max_em_iter: int,
         em_thresh: float,
-        # Tabulation
+        # Table options
         rels: str,
-        # Folding
+        # Fold options
         fold: bool,
         quantile: float):
     """ Run entire pipeline. """

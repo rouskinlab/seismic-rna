@@ -51,7 +51,7 @@ class BitMasker(object):
                  bit_caller: BitCaller, *,
                  exclude_polya: int = 0,
                  exclude_gu: bool = False,
-                 exclude_pos: Iterable[int] = (),
+                 exclude_pos: Iterable[tuple[str, int]] = (),
                  min_mut_gap: int = 0,
                  min_finfo_read: float = 0.,
                  max_fmut_read: float = 1.,
@@ -71,8 +71,9 @@ class BitMasker(object):
             If 0, exclude no bases. Must be ≥ 0.
         exclude_gu: bool = False
             Whether to exclude G and U bases.
-        exclude_pos: Iterable[int] = ()
-            Additional, arbitrary positions to exclude.
+        exclude_pos: Iterable[tuple[str, int]] = ()
+            Additional, arbitrary positions to exclude. Each position
+            must be a tuple of (reference name, 1-indexed position).
         min_mut_gap: int = 0
             Filter out reads with any two mutations separated by fewer
             than `min_mut_gap` positions. Adjacent mutations have a
@@ -102,7 +103,9 @@ class BitMasker(object):
         # Set the parameters for excluding positions from the section.
         self.exclude_polya = exclude_polya
         self.exclude_gu = exclude_gu
-        self.exclude_pos = np.array(exclude_pos, dtype=int)
+        self.exclude_pos = np.array([pos for ref, pos in exclude_pos
+                                     if ref == self.ref],
+                                    dtype=int)
         # Set the parameters for filtering reads.
         self.min_mut_gap = min_mut_gap
         self.min_finfo_read = min_finfo_read
