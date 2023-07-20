@@ -3,7 +3,7 @@
 
 ## List of steps in the pipeline
 
-![Flowchart of SEISMIC-RNA](flowchart.pdf "Flowchart")
+![Flowchart of SEISMIC-RNA](flowchart.png "Flowchart")
 
 1. `align`: (optional) Align sequencing reads to one or more references, after optional quality control and trimming.
 2. `relate`: Determine the relationship (e.g. match, substitution, not covered) between each position in the reference and the base call to which it aligned in each read.
