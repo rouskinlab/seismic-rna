@@ -14,7 +14,7 @@ from click import command
 
 from .write import relate_all, get_relaters
 from ..core import docdef, path
-from ..core.cli import (arg_input_file, opt_fasta,
+from ..core.cli import (arg_input_file, arg_fasta,
                         opt_out_dir, opt_temp_dir,
                         opt_phred_enc, opt_min_phred,
                         opt_min_reads, opt_batch_size, opt_ambrel,
@@ -27,8 +27,8 @@ logger = getLogger(__name__)
 # Parameters for command line interface
 params = [
     # Input files
+    arg_fasta,
     arg_input_file,
-    opt_fasta,
     # Output directories
     opt_out_dir,
     opt_temp_dir,
@@ -57,8 +57,8 @@ def cli(**kwargs):
 
 @lock_temp_dir
 @docdef.auto()
-def run(input_file: tuple[str, ...],
-        fasta: str,
+def run(fasta: str,
+        input_file: tuple[str, ...],
         *,
         out_dir: str,
         temp_dir: str,

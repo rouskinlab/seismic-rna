@@ -30,17 +30,17 @@ at Harvard Medical School by the following individuals:
 
 ## Installation
 
-Instructions for installing SEISMIC-RNA are in `INSTALL.md`.
+See `INSTALL.md`.
 
 
 ## Usage
 
-Write me.
+See `USER-MANUAL.md`.
 
 
 ## Development
 
-Write me.
+See `DEV-MANUAL.md`.
 
 
 ## Issues

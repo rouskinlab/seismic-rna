@@ -6,7 +6,7 @@ from click import command
 from .rnastructure import fold, ct2dot
 from ..core import docdef, path
 from ..core.cli import (arg_input_file, opt_temp_dir, opt_save_temp,
-                        opt_fasta, opt_sections_file,
+                        arg_fasta, opt_sections_file,
                         opt_coords, opt_primers, opt_primer_gap,
                         opt_quantile,
                         opt_max_procs, opt_parallel, opt_rerun)
@@ -21,8 +21,8 @@ from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader
 logger = getLogger(__name__)
 
 params = [
+    arg_fasta,
     arg_input_file,
-    opt_fasta,
     opt_sections_file,
     opt_coords,
     opt_primers,
@@ -45,9 +45,9 @@ def cli(*args, **kwargs):
 
 @lock_temp_dir
 @docdef.auto()
-def run(input_file: tuple[str, ...],
+def run(fasta: str,
+        input_file: tuple[str, ...],
         *,
-        fasta: str,
         sections_file: str | None,
         coords: tuple[tuple[str, int, int], ...],
         primers: tuple[tuple[str, str, str], ...],
@@ -63,10 +63,6 @@ def run(input_file: tuple[str, ...],
     """
 
     confirm_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
-
-    if not fasta:
-        logger.critical(f"No FASTA file given to {path.MOD_STRUCT}")
-        return list()
 
     # Get the sections for every reference sequence.
     ref_sections = RefSections(parse_fasta(Path(fasta)),

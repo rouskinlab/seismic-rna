@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "seismic-rna"
-version = "0.3.0"
+version = "0.4.0"
 authors = [
     {name="Matty Allan"},
     {name="Yves Martin"},
@@ -36,7 +36,7 @@ dependencies = [
 ]
 
 [project.scripts]
-srna = "seismicrna.main:main_cli"
+seismic = "seismicrna.main:main_cli"
 
 [project.urls]
 "Homepage" = "https://github.com/rouskinlab/seismic-rna"

@@ -33,12 +33,18 @@ CLUST_ORDER = "order"
 CLUST_UNITE = "unite"
 CLUST_ARRANGE_OPTIONS = CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
 
-
 # Configuration options
 opt_config = Option(
     ("--config", "-g"),
     type=Path(exists=True, dir_okay=False),
     help="Configuration file for parameters")
+
+# Reference sequence (FASTA) files
+arg_fasta = Argument(
+    ("fasta",),
+    type=Path(exists=True, dir_okay=False),
+    nargs=1,
+    required=True)
 
 # Input/output options
 
@@ -99,15 +105,9 @@ opt_rerun = Option(
     default=False,
     help="Whether to regenerate files that already exist")
 
-# Reference sequence (FASTA) files
-opt_fasta = Option(
-    ("--fasta", "-a"),
-    type=Path(exists=True, dir_okay=False),
-    help="FASTA file of all reference sequences")
-
 # Sequencing read (FASTQ) files
 opt_fastqs = Option(
-    ("--fastqs", "-x"),
+    ("--fastqs", "-z"),
     type=Path(exists=True),
     multiple=True,
     default=(),
@@ -121,7 +121,7 @@ opt_fastqi = Option(
     help="FASTQ files of paired-end reads interleaved in 1 file")
 
 opt_fastqp = Option(
-    ("--fastqp", "-z"),
+    ("--fastqp", "-x"),
     type=Path(exists=True),
     multiple=True,
     default=(),
@@ -206,7 +206,7 @@ opt_demulti_overwrite = Option(
 
 # Demultiplexed sequencing read (FASTQ) directories
 opt_dmfastqs = Option(
-    ("--dmfastqs", "-X"),
+    ("--dmfastqs", "-Z"),
     type=Path(exists=True, file_okay=False),
     multiple=True,
     default=(),
@@ -220,7 +220,7 @@ opt_dmfastqi = Option(
     help="Demultiplexed FASTQ files of paired-end reads interleaved in one file")
 
 opt_dmfastqp = Option(
-    ("--dmfastqp", "-Z"),
+    ("--dmfastqp", "-X"),
     type=Path(exists=True, file_okay=False),
     multiple=True,
     default=(),
@@ -511,7 +511,6 @@ opt_exclude_pos = Option(
     multiple=True,
     help="Exclude arbitrary positions, given as (reference, position).")
 
-
 opt_min_ncall_read = Option(
     ("--min-ncall-read",),
     type=int,
@@ -612,7 +611,6 @@ opt_quantile = Option(
     type=float,
     default=0.9,
     help="Quantile of reactivities for normalization")
-
 
 # Graphing
 

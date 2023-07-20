@@ -6,7 +6,7 @@ from click import command
 from .fq2bam import get_bam_files
 from .fqutil import FastqUnit
 from ..core import docdef, path
-from ..core.cli import (opt_fasta,
+from ..core.cli import (arg_fasta,
                         opt_fastqs, opt_fastqi, opt_fastqp,
                         opt_dmfastqs, opt_dmfastqi, opt_dmfastqp,
                         opt_phred_enc,
@@ -37,13 +37,13 @@ logger = getLogger(__name__)
 # Parameters for command line interface
 params = [
     # Inputs
-    opt_fasta,
-    opt_fastqs,
-    opt_fastqi,
+    arg_fasta,
     opt_fastqp,
-    opt_dmfastqs,
-    opt_dmfastqi,
+    opt_fastqi,
+    opt_fastqs,
     opt_dmfastqp,
+    opt_dmfastqi,
+    opt_dmfastqs,
     opt_phred_enc,
     # Outputs
     opt_out_dir,

@@ -5,12 +5,12 @@ from ..demult.demultiplex import demultiplex_run
 from ..align.fqutil import FastqUnit
 from ..core.cli import (
     opt_barcode_length, opt_barcode_start, opt_parallel_demultiplexing, opt_clipped_demultiplexing,
-    opt_mismatch_tolerence, opt_index_tolerence, opt_demulti_overwrite, opt_fasta, opt_sections_file, opt_fastqp, opt_out_dir,
+    opt_mismatch_tolerence, opt_index_tolerence, opt_demulti_overwrite, arg_fasta, opt_sections_file, opt_fastqp, opt_out_dir,
     opt_phred_enc)
 
 params = [
     # Inputs
-    opt_fasta,
+    arg_fasta,
     opt_fastqp,
     opt_phred_enc,
     opt_sections_file,
