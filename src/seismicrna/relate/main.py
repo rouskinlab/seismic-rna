@@ -80,10 +80,6 @@ def run(fasta: str,
     base, is deleted, or has one or more extra bases inserted beside it.
     """
 
-    if not fasta:
-        logger.critical(f"No FASTA file given to {path.MOD_REL}")
-        return list()
-
     # For each BAM file, create a relation writer.
     relaters = get_relaters(path.find_files_chain(map(Path, input_file),
                                                   [path.SampSeg, path.XamSeg]),

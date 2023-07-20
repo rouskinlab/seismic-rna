@@ -173,10 +173,6 @@ def run(*,
     confirm_dependency(BOWTIE2_BUILD_CMD, __name__)
     confirm_dependency(SAMTOOLS_CMD, __name__)
 
-    if not fasta:
-        logger.critical(f"No FASTA file given to {path.MOD_ALIGN}")
-        return list()
-
     # FASTQ files of read sequences may come from up to seven different
     # sources (i.e. each argument beginning with "fq_unit"). This step
     # collects all of them into one list (fq_units) and also bundles
