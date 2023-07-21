@@ -45,7 +45,7 @@ REL_CODES = {
 }
 
 # Columns of each relation-based table
-TABLE_COLUMNS = [rel for rel in REL_CODES.values() if rel != INFOR_REL]
+TABLE_RELS = list(REL_CODES.values())
 
 
 # Table Base Classes ###################################################
