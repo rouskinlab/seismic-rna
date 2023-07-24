@@ -9,8 +9,8 @@ import pandas as pd
 from click import command
 from plotly import graph_objects as go
 
-from .base import (find_tables, GraphWriter, CartesianGraph, OneTableGraph,
-                   OneSampGraph)
+from .base import (find_tables, OneTableGraphWriter, CartesianGraph, OneTableGraph,
+                   OneSampleGraph)
 from .color import RelColorMap
 from ..core import docdef
 from ..core.cli import (arg_input_file, opt_rels,
@@ -63,7 +63,7 @@ def run(table: tuple[str, ...],
                                             csv=csv, html=html, pdf=pdf))))
 
 
-class ReadHistogramWriter(GraphWriter):
+class ReadHistogramWriter(OneTableGraphWriter):
 
     def iter(self, fields: str, bins: int, count: bool, group: bool):
         if isinstance(self.table, RelReadTableLoader):
@@ -84,7 +84,7 @@ class ReadHistogramWriter(GraphWriter):
                                        x_ratio=bins, y_ratio=count)
 
 
-class ReadHistogram(CartesianGraph, OneTableGraph, OneSampGraph, ABC):
+class ReadHistogram(CartesianGraph, OneTableGraph, OneSampleGraph, ABC):
     """ Histogram of an attribute of reads. """
 
     def __init__(self, *args,

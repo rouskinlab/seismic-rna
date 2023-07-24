@@ -126,7 +126,7 @@ def run(*,
         max_em_iter: int,
         em_thresh: float,
         # Table options
-        rels: str,
+        rels: tuple[str, ...],
         # Fold options
         fold: bool,
         quantile: float):

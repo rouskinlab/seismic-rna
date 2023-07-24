@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from . import path
+from .mu import winsorize
 from .sect import Section
 from .seq import write_fasta
 
@@ -30,7 +31,7 @@ class RnaSection(object):
 
     @cached_property
     def seq(self):
-        """ Sequence in RNA format. """
+        """ Sequence as RNA. """
         return self.section.seq.tr()
 
     @property
@@ -49,22 +50,6 @@ class RnaProfile(RnaSection):
         if np.any(reacts < 0.) or np.any(reacts > 1.):
             raise ValueError(f"Got reactivities outside [0, 1]: {reacts}")
         self.reacts = reacts.reindex(self.section.range)
-
-    def get_ceiling(self, quantile: float) -> float:
-        """ Compute the maximum reactivity given a quantile. """
-        if not 0. < quantile <= 1.:
-            raise ValueError("Quantile for reactivity ceiling must be in "
-                             f"(0, 1], but got {quantile}")
-        return np.nanquantile(self.reacts.values, quantile)
-
-    def normalize(self, quantile: float):
-        """ Normalize the reactivities to a given quantile. """
-        return self.reacts / self.get_ceiling(quantile)
-
-    def winsorize(self, quantile: float):
-        """ Normalize and winsorize the reactivities. """
-        return pd.Series(np.clip(self.normalize(quantile), 0., 1.),
-                         index=self.reacts.index)
 
     @cache
     def get_dir(self, out_dir: Path):
@@ -100,7 +85,7 @@ class RnaProfile(RnaSection):
         return self.get_file(out_dir, path.DmsReactsSeg,
                              reacts=self.title, ext=path.DMS_EXT)
 
-    def varnac_file(self, out_dir: Path):
+    def varna_color_file(self, out_dir: Path):
         """ Get the path to the VARNA color file of the RNA. """
         return self.get_file(out_dir, path.VarnaColorSeg,
                              reacts=self.title, ext=path.TXT_EXT)
@@ -116,7 +101,7 @@ class RnaProfile(RnaSection):
         # The DMS reactivities must be numbered starting from 1 at the
         # beginning of the section, even if the section does not start
         # at 1. Renumber the section from 1.
-        dms = pd.Series(self.winsorize(quantile).values,
+        dms = pd.Series(winsorize(self.reacts, quantile).values,
                         index=self.section.range_int_one)
         # Drop bases with missing data to make RNAstructure ignore them.
         dms.dropna(inplace=True)
@@ -125,25 +110,25 @@ class RnaProfile(RnaSection):
         dms.to_csv(dms_file, sep="\t", header=False)
         return dms_file
 
-    def to_varnac(self, out_dir: Path, quantile: float):
+    def to_varna_color_file(self, out_dir: Path, quantile: float):
         """ Write the VARNA colors to a file. """
         # Normalize and winsorize the DMS reactivities.
-        varnac = self.winsorize(quantile)
+        varna_color = winsorize(self.reacts, quantile)
         # Fill missing values with -1, to signify no data.
-        varnac.fillna(-1., inplace=True)
+        varna_color.fillna(-1., inplace=True)
         # Write the values to the VARNA color file.
-        varnac_file = self.varnac_file(out_dir)
-        varnac.to_csv(varnac_file, header=False, index=False)
-        return varnac_file
+        varna_color_file = self.varna_color_file(out_dir)
+        varna_color.to_csv(varna_color_file, header=False, index=False)
+        return varna_color_file
 
 
 class Rna2dStructure(RnaSection):
     """ RNA secondary structure. """
 
-    IDX_FIELD = "n"
+    IDX_FIELD = "Index"
     BASE_FIELD = "Base"
-    PRIOR_FIELD = "n-1"
-    NEXT_FIELD = "n+1"
+    PREV_FIELD = "Prev"
+    NEXT_FIELD = "Next"
     PAIR_FIELD = "Pair"
     POS_FIELD = "Position"
 
@@ -196,7 +181,7 @@ class Rna2dStructure(RnaSection):
         """ Return the connectivity table as a DataFrame. """
         # Make an index the same length as the section and starting
         # from 1 (CT files must start at index 1).
-        index = pd.RangeIndex(1, self.section.length + 1, name=self.IDX_FIELD)
+        index = pd.Index(self.section.range_int_one, name=self.IDX_FIELD)
         # Adjust the numbers of the paired bases (i.e. pairs > 0) such
         # that they also index from 1.
         pairs = self.partners.values.copy()
@@ -204,10 +189,10 @@ class Rna2dStructure(RnaSection):
         # Generate the data for the connectivity table.
         data = {
             self.BASE_FIELD: self.seq.to_str_array(),
-            self.PRIOR_FIELD: index.values - 1,
+            self.PREV_FIELD: index.values - 1,
             self.NEXT_FIELD: index.values + 1,
             self.PAIR_FIELD: pairs,
-            self.POS_FIELD: self.section.range,
+            self.POS_FIELD: self.section.range_int,
         }
         # Assemble the data into a DataFrame.
         return pd.DataFrame.from_dict({field: pd.Series(values, index=index)

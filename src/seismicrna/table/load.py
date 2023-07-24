@@ -10,7 +10,8 @@ from .base import (MUTAT_REL, CLUST_INDEX_NAMES, REL_NAME,
                    RelPosTable, RelReadTable,
                    MaskPosTable, MaskReadTable,
                    ClustPosTable, ClustReadTable, ClustFreqTable)
-from ..cluster.names import ENSEMBLE_NAME, ORD_CLS_NAME, fmt_clust_name
+from ..cluster.names import (ENSEMBLE_NAME, ORD_NAME, CLS_NAME, ORD_CLS_NAME,
+                             fmt_clust_name)
 from ..core import path
 from ..core.rna import RnaProfile
 from ..core.sect import Section, INDEX_NAMES
@@ -71,7 +72,7 @@ class RelTypeTableLoader(TableLoader, RelTypeTable, ABC):
 
 # Load by Index (position/read/frequency) ##############################
 
-class PosTableLoader(TableLoader, PosTable, ABC):
+class PosTableLoader(RelTypeTableLoader, PosTable, ABC):
     """ Load data indexed by position. """
 
     @classmethod
@@ -85,7 +86,7 @@ class PosTableLoader(TableLoader, PosTable, ABC):
             yield RnaProfile("", section, "", "", pd.Series())
 
 
-class ReadTableLoader(TableLoader, ReadTable, ABC):
+class ReadTableLoader(RelTypeTableLoader, ReadTable, ABC):
     """ Load data indexed by read. """
 
     @classmethod
@@ -205,6 +206,11 @@ class ClustFreqTableLoader(TableLoader, ClustFreqTable):
 
 # Helper Functions #####################################################
 
+def find_tables(tables: tuple[str, ...]):
+    """ Return a file for each given file/directory of a table. """
+    return path.find_files_chain(map(Path, tables), [path.MutTabSeg])
+
+
 def load(table_file: Path):
     """ Helper function to load a TableLoader from a table file. """
     for loader_type in (RelPosTableLoader, RelReadTableLoader,
@@ -229,3 +235,20 @@ def reformat_cluster_index(index: pd.MultiIndex):
          for n in index.names],
         names=index.names
     )
+
+
+def get_clusters(columns: pd.Index | pd.MultiIndex, allow_zero: bool = False):
+    """ Return a MultiIndex of non-redundant orders and cluster numbers
+    from columns with order and cluster numbers as levels. """
+    try:
+        return pd.MultiIndex.from_arrays([columns.get_level_values(level)
+                                          for level in ORD_CLS_NAME],
+                                         names=ORD_CLS_NAME).drop_duplicates()
+    except KeyError:
+        # The index did not contain levels named "order" and "cluster".
+        if allow_zero:
+            # Default to an index of zero for each level.
+            return pd.MultiIndex.from_tuples([(0,) * len(ORD_CLS_NAME)],
+                                             names=ORD_CLS_NAME)
+        # Re-raise the error.
+        raise

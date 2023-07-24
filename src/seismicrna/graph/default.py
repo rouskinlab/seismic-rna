@@ -3,8 +3,8 @@ from pathlib import Path
 
 from click import command
 
-from .base import find_tables, GraphWriter
-from .seq import run as run_pos
+from .base import find_tables, OneTableGraphWriter
+from .seqbar import run as run_pos
 from ..core import docdef, path
 from ..core.cli import (opt_table, opt_csv, opt_html, opt_pdf,
                         opt_max_procs, opt_parallel)
@@ -38,7 +38,7 @@ def run(table: tuple[str, ...],
     run_pos()
 
 
-class CanonicalGraphWriter(GraphWriter):
+class CanonicalGraphWriter(OneTableGraphWriter):
 
     def iter(self, fields: str, count: bool, stack: bool):
         if isinstance(self.table, RelPosTableLoader):

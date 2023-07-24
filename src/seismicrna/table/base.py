@@ -7,6 +7,7 @@ import pandas as pd
 
 from ..cluster.names import CLS_NAME, ORD_NAME
 from ..core import path
+from ..core.mu import winsorize
 from ..core.sect import index_to_pos, index_to_seq
 
 # General fields
@@ -146,23 +147,10 @@ class RelTypeTable(Table, ABC):
     @cache
     def _count_col(self, column: tuple):
         """ Count the bits for a column. """
-        # Determine the relationship to count.
-        if column[self._rel_level_index] == INFOR_REL:
-            # Sum the matched and mutated bits.
-            match_col = self._switch_rel(column, MATCH_REL)
-            mutat_col = self._switch_rel(column, MUTAT_REL)
-            return self._count_col(match_col) + self._count_col(mutat_col)
-        try:
-            # The relationship should appear in the table, so return it
-            # as a Series.
-            return self.data.loc[:, column].squeeze()
-        except KeyError:
-            # Suppress exception chaining.
-            pass
-        raise ValueError(f"{self} was not built with column {column}")
+        return self.data.loc[:, column].squeeze()
 
     @cache
-    def _ratio_col(self, column: tuple, precision: int | None = None):
+    def _ratio_col(self, column: tuple, quantile: float, precision: int | None):
         """ Compute the ratio for a column. """
         # Determine the relationship to use as the numerator.
         numer_rel = column[self._rel_level_index]
@@ -172,6 +160,8 @@ class RelTypeTable(Table, ABC):
         denom_col = self._switch_rel(column, denom_rel)
         # Compute the ratio of the numerator and the denominator.
         ratio = self._count_col(column) / self._count_col(denom_col)
+        # If a quantile was given, then winsorize to it.
+        ratio = winsorize(ratio, quantile)
         # Round the ratio to the desired precision.
         if precision is not None:
             ratio = ratio.round(precision)
@@ -194,7 +184,10 @@ class RelTypeTable(Table, ABC):
         """ Format a column selection into a column indexer. """
         return selection.get(REL_NAME, slice(None))
 
-    def select(self, ratio: bool, precision: int | None = None, **kwargs: list):
+    def select(self, ratio: bool,
+               quantile: float = -1.,
+               precision: int | None = None,
+               **kwargs: list):
         """ Output selected data from the table as a DataFrame. """
         # Instantiate an empty DataFrame with the index and columns.
         indexer = self._get_indexer(self._format_selection(**kwargs))
@@ -202,8 +195,8 @@ class RelTypeTable(Table, ABC):
         data = pd.DataFrame(index=self.data.index, columns=columns, dtype=float)
         # Fill in the DataFrame one column at a time.
         for column in columns:
-            data.loc[:, column] = (self._ratio_col(column, precision) if ratio
-                                   else self._count_col(column))
+            data.loc[:, column] = (self._ratio_col(column, quantile, precision)
+                                   if ratio else self._count_col(column))
         return data
 
 

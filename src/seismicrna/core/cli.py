@@ -594,8 +594,9 @@ opt_em_thresh = Option(
 
 opt_rels = Option(
     ("--rels", "-r"),
-    default="",
     type=str,
+    multiple=True,
+    default=("m",),
     help="Output these relationships between the read and the reference")
 
 # RNA structure prediction
@@ -609,16 +610,11 @@ opt_fold = Option(
 opt_quantile = Option(
     ("--quantile", "-q"),
     type=float,
-    default=0.9,
-    help="Quantile of reactivities for normalization")
+    default=-1.,
+    help="Quantile of mutation rates for normalization and winsorization "
+         "(-1 to disable both). Must be -1 or in [0, 1].")
 
 # Graphing
-
-opt_stack = Option(
-    ("--stack/--no-stack",),
-    type=bool,
-    default=False,
-    help="Whether to stack relationships")
 
 opt_arrange = Option(
     ("--arrange",),

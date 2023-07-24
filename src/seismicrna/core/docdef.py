@@ -170,8 +170,8 @@ def autodoc(extra_docs: dict[str, str] | None = None, return_doc: str = ""):
     """ Call `paramdoc` and automatically infer descriptions and
     type annotations about all parameters from the CLI and API.
     Documentation of any extra parameters may also be given. """
-    return paramdoc(cli_docs if extra_docs is None
-                    else {**cli_docs, **extra_docs},
+    return paramdoc((cli_docs if extra_docs is None
+                     else {**cli_docs, **extra_docs}),
                     return_doc)
 
 

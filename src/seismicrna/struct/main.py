@@ -100,5 +100,5 @@ def fold_profile(rna: RnaProfile, out_dir: Path, quantile: float, **kwargs):
     """ Fold a section of an RNA from one mutational profile. """
     ct_file = fold(rna, out_dir=out_dir, quantile=quantile, **kwargs)
     dot_file = ct2dot(ct_file)
-    varnac_file = rna.to_varnac(out_dir, quantile)
-    return ct_file, dot_file, varnac_file
+    varna_color_file = rna.to_varna_color_file(out_dir, quantile)
+    return ct_file, dot_file, varna_color_file

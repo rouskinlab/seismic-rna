@@ -309,3 +309,22 @@ def calc_mu_adj_df(mu_obs: pd.DataFrame, section: Section, min_gap: int):
                                     min_gap),
                         index=section.range,
                         columns=mu_obs.columns).loc[mu_obs.index]
+
+
+def get_mu_quantile(mus: pd.Series, quantile: float) -> float:
+    """ Compute the mutation rate at a quantile. """
+    return np.nanquantile(mus.values, quantile)
+
+
+def normalize(mus: pd.Series, quantile: float):
+    """ Normalize the mutation rates to a quantile. """
+    if quantile == -1.:
+        # Do not normalize the mutation rates if quantile == -1.
+        return mus.copy()
+    return mus / get_mu_quantile(mus, quantile)
+
+
+def winsorize(mus: pd.Series, quantile: float):
+    """ Normalize and winsorize the mutation rates to a quantile. """
+    return pd.Series(np.clip(normalize(mus, quantile), 0., 1.),
+                     index=mus.index)

@@ -37,6 +37,6 @@ def validate_order_cluster(order: int, cluster: int, allow_zero: bool = False):
         raise ValueError(f"cluster ({cluster}) must be ≤ order ({order})")
 
 
-def fmt_clust_name(order: int, cluster: int):
-    validate_order_cluster(order, cluster)
-    return f"Cluster {order}-{cluster}"
+def fmt_clust_name(order: int, cluster: int, allow_zero: bool = False):
+    validate_order_cluster(order, cluster, allow_zero)
+    return f"Cluster {order}-{cluster}" if order > 0 else ENSEMBLE_NAME

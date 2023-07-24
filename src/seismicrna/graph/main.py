@@ -1,7 +1,8 @@
 from click import group
 
-#from . import canon as canon_mod
-from . import seq as seq_mod#, hist as read_mod
+from . import seqbar as seqbar_mod
+from . import delbar as delbar_mod
+from . import scatter as scatter_mod
 from ..core import path
 
 
@@ -12,5 +13,6 @@ def cli():
 
 
 # Add graph commands to the CLI.
-cli.add_command(seq_mod.cli)
-#cli.add_command(read_mod.cli)
+cli.add_command(seqbar_mod.cli)
+cli.add_command(delbar_mod.cli)
+cli.add_command(scatter_mod.cli)
