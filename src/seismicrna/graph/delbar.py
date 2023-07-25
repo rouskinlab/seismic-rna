@@ -19,6 +19,10 @@ from ..table.load import (find_tables)
 
 logger = getLogger(__name__)
 
+
+COMMAND = __name__.split(os.path.extsep)[-1]
+
+
 # Number of digits to which to round decimals.
 
 params = [
@@ -35,7 +39,7 @@ params = [
 ]
 
 
-@command(__name__.split(os.path.extsep)[-1], params=params)
+@command(COMMAND, params=params)
 def cli(*args, **kwargs):
     """ Create bar graphs of differences between pairs of samples at
     each position in a sequence. """
@@ -70,7 +74,7 @@ class SeqDeltaGraph(SeqPairGraph):
 
     @classmethod
     def graph_type(cls):
-        return "del-bar"
+        return COMMAND
 
     @property
     def x_title(self) -> str:
@@ -78,7 +82,7 @@ class SeqDeltaGraph(SeqPairGraph):
 
     @property
     def y_title(self):
-        return f"{self.quantity} 2 minus {self.quantity} 1"
+        return f"{self.quantity}-2 minus {self.quantity}-1"
 
     @cached_property
     def col_titles(self):

@@ -34,7 +34,10 @@ params = [
 ]
 
 
-@command(__name__.split(os.path.extsep)[-1], params=params)
+COMMAND = __name__.split(os.path.extsep)[-1]
+
+
+@command(COMMAND, params=params)
 def cli(*args, **kwargs):
     """ Create scatter plots between pairs of samples at each position
     in a sequence. """
@@ -69,7 +72,7 @@ class SeqScatterGraph(SeqPairGraph):
 
     @classmethod
     def graph_type(cls):
-        return "scatter"
+        return COMMAND
 
     @property
     def x_title(self) -> str:

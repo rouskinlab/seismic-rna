@@ -337,10 +337,6 @@ class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
         return self._get_common_attribute("out_dir")
 
     @property
-    def sample(self):
-        return self._get_common_attribute("sample")
-
-    @property
     def ref(self):
         return self._get_common_attribute("ref")
 
@@ -355,6 +351,12 @@ class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
     @property
     def sample2(self):
         return self.table2.sample
+
+    @property
+    def sample(self):
+        if self.sample1 == self.sample2:
+            return self.sample1
+        return f"{self.sample1}__and__{self.sample2}"
 
 
 class OneTableSeqGraph(OneTableGraph, OneSeqGraph, ABC):

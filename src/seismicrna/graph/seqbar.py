@@ -27,6 +27,8 @@ from ..table.load import (PosTableLoader, RelPosTableLoader, MaskPosTableLoader,
 
 logger = getLogger(__name__)
 
+COMMAND = __name__.split(os.path.extsep)[-1]
+
 # Number of digits to which to round decimals.
 
 params = [
@@ -43,7 +45,7 @@ params = [
 ]
 
 
-@command(__name__.split(os.path.extsep)[-1], params=params)
+@command(COMMAND, params=params)
 def cli(*args, **kwargs):
     """ Create bar graphs of positions in a sequence. """
     return run(*args, **kwargs)
@@ -156,7 +158,7 @@ class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
 
     @property
     def graph_filename(self):
-        return f"{self.subject}_{self.predicate}".lower()
+        return f"{self.subject}_{self.predicate}_{COMMAND}".lower()
 
     def _figure_layout(self, fig: go.Figure):
         super()._figure_layout(fig)

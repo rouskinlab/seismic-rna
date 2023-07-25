@@ -95,20 +95,20 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
         if isinstance(self.table1, ClustPosTableLoader):
             osym = 'x' if self._order1 is None else self._order1[0]
             ksym = 'x' if self._cluster1 is None else self._cluster1[0]
-            return f"{self.sample1}_{self.source1}-{osym}-{ksym}"
-        return f"{self.sample1}_{self.source1}"
+            return f"{self.source1}-{osym}-{ksym}"
+        return self.source1
 
     @property
     def subject2(self):
         if isinstance(self.table2, ClustPosTableLoader):
             osym = 'x' if self._order2 is None else self._order2[0]
             ksym = 'x' if self._cluster2 is None else self._cluster2[0]
-            return f"{self.sample2}_{self.source2}-{osym}-{ksym}"
-        return f"{self.sample2}_{self.source2}"
+            return f"{self.source2}-{osym}-{ksym}"
+        return self.source2
 
     @property
     def subject(self):
-        return f"{self.subject1}_vs_{self.subject2}"
+        return f"{self.subject1}__and__{self.subject2}"
 
     @property
     def quantity(self):
