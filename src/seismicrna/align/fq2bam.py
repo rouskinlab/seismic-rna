@@ -131,7 +131,7 @@ def fq_pipeline(fq_inp: FastqUnit,
         # Run FASTQC on the input FASTQ files.
         fqc_out = path.build(*fqc_segs, **fqc_vals, step=path.STEPS_QC[0])
         try:
-            run_fastqc(fq_inp, fqc_out, qc_extract)
+            run_fastqc(fq_inp, fqc_out, extract=qc_extract, n_procs=n_procs)
         except Exception as error:
             logger.error(f"Failed to run FASTQC on {fq_inp}: {error}")
     if cut:
@@ -158,7 +158,7 @@ def fq_pipeline(fq_inp: FastqUnit,
             # Run FASTQC after trimming with Cutadapt.
             fqc_out = path.build(*fqc_segs, **fqc_vals, step=path.STEPS_QC[1])
             try:
-                run_fastqc(fq_cut, fqc_out, qc_extract)
+                run_fastqc(fq_cut, fqc_out, extract=qc_extract, n_procs=n_procs)
             except Exception as error:
                 logger.error(f"Failed to run FASTQC on {fq_inp}: {error}")
     else:

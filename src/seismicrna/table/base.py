@@ -150,7 +150,9 @@ class RelTypeTable(Table, ABC):
         return self.data.loc[:, column].squeeze()
 
     @cache
-    def _ratio_col(self, column: tuple, quantile: float, precision: int | None):
+    def _ratio_col(self, column: tuple,
+                   quantile: float | None = None,
+                   precision: int | None = None):
         """ Compute the ratio for a column. """
         # Determine the relationship to use as the numerator.
         numer_rel = column[self._rel_level_index]
@@ -161,7 +163,8 @@ class RelTypeTable(Table, ABC):
         # Compute the ratio of the numerator and the denominator.
         ratio = self._count_col(column) / self._count_col(denom_col)
         # If a quantile was given, then winsorize to it.
-        ratio = winsorize(ratio, quantile)
+        if quantile is not None:
+            ratio = winsorize(ratio, quantile)
         # Round the ratio to the desired precision.
         if precision is not None:
             ratio = ratio.round(precision)

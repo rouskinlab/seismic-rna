@@ -321,18 +321,21 @@ class FastqUnit(object):
         return f"{self.kind} {' and '.join(map(str, self.paths.values()))}"
 
 
-def run_fastqc(fq_unit: FastqUnit, out_dir: Path, extract: bool):
+def run_fastqc(fq_unit: FastqUnit, out_dir: Path, *,
+               extract: bool, n_procs: int):
     """ Run FASTQC on the given FASTQ unit. """
     logger.info(f"Began FASTQC of {fq_unit}")
-    # FASTQC command, including whether to extract automatically
-    cmd = [FASTQC_CMD, "--extract" if extract else "--noextract"]
-    # FASTQC output directory
+    # Create FASTQC output directory.
     out_dir.mkdir(parents=True, exist_ok=True)
     logger.debug(f"Created directory: {out_dir}")
-    cmd.extend(["-o", out_dir])
-    # Input FASTQ files
+    # Create FASTQC command.
+    cmd = [FASTQC_CMD,
+           "--threads", n_procs,
+           "--extract" if extract else "--noextract",
+           "--outdir", out_dir]
+    # Add input FASTQ files.
     cmd.extend(fq_unit.paths.values())
-    # Run FASTQC
+    # Run FASTQC.
     run_cmd(cmd)
     logger.info(f"Ended FASTQC of {fq_unit}")
 

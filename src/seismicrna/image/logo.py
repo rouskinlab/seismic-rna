@@ -96,8 +96,6 @@ def colors():
     """ Return the color of each segment. """
     cmap = get_cmap("inferno")
     return list(cmap(np.linspace(0., 1., SEGMENTS)))
-    return list(cmap(np.hstack([np.linspace(1., 0., SEGMENTS // 2),
-                                np.linspace(0., 1., SEGMENTS // 2)])))
 
 
 def draw():

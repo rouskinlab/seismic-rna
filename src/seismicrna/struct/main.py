@@ -87,18 +87,19 @@ def run(fasta: str,
 
 
 def fold_rna(loader: MaskPosTableLoader | ClustPosTableLoader,
-             sections: list[Section], n_procs: int, **kwargs):
+             sections: list[Section], n_procs: int, quantile: float, **kwargs):
     """ Fold an RNA molecule from one table of reactivities. """
     return dispatch(fold_profile, n_procs, parallel=True,
                     args=[(profile,)
-                          for profile in loader.iter_profiles(sections)],
+                          for profile in loader.iter_profiles(sections,
+                                                              quantile)],
                     kwargs=dict(out_dir=loader.out_dir, **kwargs),
                     pass_n_procs=False)
 
 
-def fold_profile(rna: RnaProfile, out_dir: Path, quantile: float, **kwargs):
+def fold_profile(rna: RnaProfile, out_dir: Path, **kwargs):
     """ Fold a section of an RNA from one mutational profile. """
-    ct_file = fold(rna, out_dir=out_dir, quantile=quantile, **kwargs)
+    ct_file = fold(rna, out_dir=out_dir, **kwargs)
     dot_file = ct2dot(ct_file)
-    varna_color_file = rna.to_varna_color_file(out_dir, quantile)
+    varna_color_file = rna.to_varna_color_file(out_dir)
     return ct_file, dot_file, varna_color_file

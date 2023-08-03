@@ -16,14 +16,13 @@ logger = getLogger(__name__)
 
 
 def fold(rna: RnaProfile, *,
-         out_dir: Path, temp_dir: Path, save_temp: bool,
-         quantile: float, rerun: bool):
+         out_dir: Path, temp_dir: Path, save_temp: bool, rerun: bool):
     """ Run the 'Fold' program of RNAstructure. """
     ct_file = rna.ct_file(out_dir)
     if rerun or not ct_file.is_file():
         cmd = [RNASTRUCTURE_FOLD_CMD]
         # Write the DMS reactivities file for the RNA.
-        cmd.extend(["--DMS", rna.to_dms(temp_dir, quantile)])
+        cmd.extend(["--DMS", rna.to_dms(temp_dir)])
         # Write a temporary FASTA file for the RNA.
         cmd.append(fasta := rna.to_fasta(temp_dir))
         try:

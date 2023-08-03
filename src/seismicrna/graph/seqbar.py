@@ -11,7 +11,7 @@ from plotly import graph_objects as go
 from .color import RelColorMap, SeqColorMap
 from .base import CartesianGraph, OneTableSeqGraph, PRECISION
 from .seq import get_table_params
-from .traces import iter_base_bar_traces, iter_stack_bar_traces
+from .traces import iter_seq_base_bar_traces, iter_seq_stack_bar_traces
 from .write import OneTableGraphWriter
 from ..cluster.names import (ENSEMBLE_NAME, CLS_NAME, ORD_NAME, fmt_clust_name,
                              validate_order_cluster)
@@ -62,7 +62,7 @@ def run(input_file: tuple[str, ...],
         pdf: bool,
         max_procs: int,
         parallel: bool) -> list[Path]:
-    """ Run the graph pos module. """
+    """ Run the graph seqbar module. """
     writers = list(map(SeqBarGraphWriter, find_tables(input_file)))
     return list(chain(*dispatch([writer.write for writer in writers],
                                 max_procs, parallel, pass_n_procs=False,
@@ -274,7 +274,7 @@ class EnsembleSingleRelSeqBarGraph(EnsembleSeqBarGraph, SingleRelSeqBarGraph):
     def get_traces(self):
         if self.nrows != 1:
             raise ValueError(f"Expected 1 series of data, but got {self.nrows}")
-        for trace in iter_base_bar_traces(self.data.squeeze(axis=1), self.cmap):
+        for trace in iter_seq_base_bar_traces(self.data.squeeze(axis=1), self.cmap):
             yield (1, 1), trace
 
 
@@ -282,7 +282,7 @@ class ClusterSingleRelSeqBarGraph(ClusterSeqBarGraph, SingleRelSeqBarGraph):
 
     def get_traces(self):
         for row, (_, values) in enumerate(self.data.items(), start=1):
-            for trace in iter_base_bar_traces(values, self.cmap):
+            for trace in iter_seq_base_bar_traces(values, self.cmap):
                 yield (row, 1), trace
 
 
@@ -297,7 +297,7 @@ class EnsembleMultiRelSeqBarGraph(EnsembleSeqBarGraph, MultiRelSeqBarGraph):
                 f"Expected 1 level of columns, but got {data.columns.names}")
         # Replace the columns with a single index.
         data.columns = data.columns.get_level_values(REL_NAME)
-        for trace in iter_stack_bar_traces(self.data, self.cmap):
+        for trace in iter_seq_stack_bar_traces(self.data, self.cmap):
             yield (1, 1), trace
 
 
@@ -305,5 +305,5 @@ class ClusterMultiRelSeqBarGraph(ClusterSeqBarGraph, MultiRelSeqBarGraph):
 
     def get_traces(self):
         for row, ok in enumerate(self.clusters, start=1):
-            for trace in iter_stack_bar_traces(self.data.loc[:, ok], self.cmap):
+            for trace in iter_seq_stack_bar_traces(self.data.loc[:, ok], self.cmap):
                 yield (row, 1), trace

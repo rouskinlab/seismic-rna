@@ -79,7 +79,7 @@ def view_xam(xam_inp: Path,
         # Write a binary (BAM) file.
         cmd.append("-b")
     # Input and output files
-    cmd.extend(("-o", xam_out, xam_inp))
+    cmd.extend(["-o", xam_out, xam_inp])
     # Reference and section specification
     if ref is not None:
         if end5 is not None and end3 is not None:

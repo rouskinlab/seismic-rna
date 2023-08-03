@@ -332,7 +332,7 @@ class Section(object):
         return self.range_int[self.unmasked_bool]
 
     @property
-    def unmasked_int_zero(self):
+    def unmasked_zero(self):
         """ Unmasked 0-indexed positions as integers. """
         # Do not cache this method since self.unmasked_int can change.
         return self.unmasked_int - self.end5
@@ -349,7 +349,7 @@ class Section(object):
         return np.arange(self.end5, self.end3 + 1, dtype=int)
 
     @cached_property
-    def range_int_one(self):
+    def range_one(self):
         """ All 1-indexed positions in the section as integers. """
         return np.arange(1, self.length + 1, dtype=int)
 

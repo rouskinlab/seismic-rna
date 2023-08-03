@@ -8,7 +8,6 @@ import numpy as np
 
 from . import path
 
-
 logger = getLogger(__name__)
 
 # FASTA format
@@ -42,7 +41,7 @@ class Seq(bytes):
     def __init__(self, seq: bytes):
         self.validate_seq(seq)
         super().__init__()
-    
+
     @classmethod
     def validate_seq(cls, seq: bytes | bytearray):
         if not isinstance(seq, (bytes, bytearray)):
@@ -161,7 +160,7 @@ def parse_fasta(fasta: Path, rna: bool = False):
             # reference or the end of the file, whichever comes first.
             seqarray = bytearray()
             while (line := f.readline()) and not line.startswith(FASTA_NAMESYM):
-                seqarray.extend(line.rstrip())
+                seqarray.extend(line.rstrip().upper())
             # Confirm that the sequence is valid.
             try:
                 seq = RNA(seqarray) if rna else DNA(seqarray)
@@ -208,7 +207,6 @@ def get_ref_seq(fasta: Path, ref: str):
             return curr_seq
     # The reference sequence was not found.
     raise ValueError(f"Reference '{ref}' is not in {fasta}")
-
 
 
 def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]]):

@@ -10,8 +10,7 @@ from .base import (MUTAT_REL, CLUST_INDEX_NAMES, REL_NAME,
                    RelPosTable, RelReadTable,
                    MaskPosTable, MaskReadTable,
                    ClustPosTable, ClustReadTable, ClustFreqTable)
-from ..cluster.names import (ENSEMBLE_NAME, ORD_NAME, CLS_NAME, ORD_CLS_NAME,
-                             fmt_clust_name)
+from ..cluster.names import ENSEMBLE_NAME, ORD_CLS_NAME, fmt_clust_name
 from ..core import path
 from ..core.rna import RnaProfile
 from ..core.sect import Section, INDEX_NAMES
@@ -80,10 +79,13 @@ class PosTableLoader(RelTypeTableLoader, PosTable, ABC):
         return list(range(len(INDEX_NAMES)))
 
     @abstractmethod
-    def iter_profiles(self, sections: Iterable[Section]):
+    def iter_profiles(self, sections: Iterable[Section], quantile: float):
         """ Yield RNA mutational profiles from the table. """
         for section in sections:
-            yield RnaProfile("", section, "", "", pd.Series())
+            yield RnaProfile(section=section,
+                             sample=self.sample,
+                             data_sect=self.sect,
+                             reacts=pd.Series())
 
 
 class ReadTableLoader(RelTypeTableLoader, ReadTable, ABC):
@@ -140,7 +142,7 @@ class ClustTableLoader(RelTypeTableLoader, ABC):
 class RelPosTableLoader(RelTableLoader, PosTableLoader, RelPosTable):
     """ Load relation data indexed by position. """
 
-    def iter_profiles(self, sections: Iterable[Section]):
+    def iter_profiles(self, *args, **kwargs):
         # Relation table loaders have unmasked, unfiltered reads and are
         # thus unsuitable for making RNA profiles. Yield no profiles.
         yield from ()
@@ -153,13 +155,13 @@ class RelReadTableLoader(RelTableLoader, ReadTableLoader, RelReadTable):
 class MaskPosTableLoader(MaskTableLoader, PosTableLoader, MaskPosTable):
     """ Load masked bit vector data indexed by position. """
 
-    def iter_profiles(self, sections: Iterable[Section]):
+    def iter_profiles(self, sections: Iterable[Section], quantile: float):
         for section in sections:
             yield RnaProfile(path.fill_whitespace(ENSEMBLE_NAME),
                              section=section,
                              sample=self.sample,
                              data_sect=self.sect,
-                             reacts=self._ratio_col(MUTAT_REL))
+                             reacts=self._ratio_col(MUTAT_REL, quantile))
 
 
 class MaskReadTableLoader(MaskTableLoader, ReadTableLoader, MaskReadTable):
@@ -169,10 +171,10 @@ class MaskReadTableLoader(MaskTableLoader, ReadTableLoader, MaskReadTable):
 class ClustPosTableLoader(ClustTableLoader, PosTableLoader, ClustPosTable):
     """ Load cluster data indexed by position. """
 
-    def iter_profiles(self, sections: Iterable[Section]):
+    def iter_profiles(self, sections: Iterable[Section], quantile: float):
         """ Yield RNA mutational profiles from a table. """
         for section in sections:
-            for ok, fmut in self._ratio_col(MUTAT_REL).items():
+            for ok, fmut in self._ratio_col(MUTAT_REL, quantile).items():
                 yield RnaProfile(path.fill_whitespace(fmt_clust_name(*ok)),
                                  section=section,
                                  sample=self.sample,

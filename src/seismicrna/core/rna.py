@@ -7,11 +7,20 @@ import numpy as np
 import pandas as pd
 
 from . import path
-from .mu import winsorize
-from .sect import Section
+from .sect import Section, POS_NAME
 from .seq import write_fasta
+from .pair import pairs_to_partners, parse_ct_pairs
 
 logger = getLogger(__name__)
+
+IDX_FIELD = "Index"
+BASE_FIELD = "Base"
+PREV_FIELD = "Prev"
+NEXT_FIELD = "Next"
+PAIR_FIELD = "Pair"
+
+
+# RNA Structure classes ################################################
 
 
 class RnaSection(object):
@@ -42,11 +51,11 @@ class RnaSection(object):
 class RnaProfile(RnaSection):
     """ Mutational profile of an RNA from a specific sample. """
 
-    def __init__(self, title: str, section: Section,
-                 sample: str, data_sect: str, reacts: pd.Series):
-        super().__init__(title, section)
+    def __init__(self, *args, sample: str, data_sect: str, reacts: pd.Series,
+                 **kwargs):
+        super().__init__(*args, **kwargs)
         self.sample = sample
-        self.dms_sect = data_sect
+        self.data_sect = data_sect
         if np.any(reacts < 0.) or np.any(reacts > 1.):
             raise ValueError(f"Got reactivities outside [0, 1]: {reacts}")
         self.reacts = reacts.reindex(self.section.range)
@@ -58,7 +67,7 @@ class RnaProfile(RnaSection):
                              path.SectSeg, path.FoldSectSeg,
                              top=out_dir, module=path.MOD_STRUCT,
                              sample=self.sample, ref=self.ref,
-                             sect=self.dms_sect, fold_sect=self.sect)
+                             sect=self.data_sect, fold_sect=self.sect)
 
     @cache
     def get_file(self, out_dir: Path, segment: path.Segment, **kwargs):
@@ -96,13 +105,13 @@ class RnaProfile(RnaSection):
         write_fasta(fasta, [self.seq_record])
         return fasta
 
-    def to_dms(self, out_dir: Path, quantile: float):
+    def to_dms(self, out_dir: Path):
         """ Write the DMS reactivities to a DMS file. """
         # The DMS reactivities must be numbered starting from 1 at the
         # beginning of the section, even if the section does not start
         # at 1. Renumber the section from 1.
-        dms = pd.Series(winsorize(self.reacts, quantile).values,
-                        index=self.section.range_int_one)
+        dms = self.reacts.copy()
+        dms.index = self.section.range_one
         # Drop bases with missing data to make RNAstructure ignore them.
         dms.dropna(inplace=True)
         # Write the DMS reactivities to the DMS file.
@@ -110,12 +119,10 @@ class RnaProfile(RnaSection):
         dms.to_csv(dms_file, sep="\t", header=False)
         return dms_file
 
-    def to_varna_color_file(self, out_dir: Path, quantile: float):
+    def to_varna_color_file(self, out_dir: Path):
         """ Write the VARNA colors to a file. """
-        # Normalize and winsorize the DMS reactivities.
-        varna_color = winsorize(self.reacts, quantile)
-        # Fill missing values with -1, to signify no data.
-        varna_color.fillna(-1., inplace=True)
+        # Fill missing reactivities with -1, to signify no data.
+        varna_color = self.reacts.fillna(-1.)
         # Write the values to the VARNA color file.
         varna_color_file = self.varna_color_file(out_dir)
         varna_color.to_csv(varna_color_file, header=False, index=False)
@@ -125,74 +132,36 @@ class RnaProfile(RnaSection):
 class Rna2dStructure(RnaSection):
     """ RNA secondary structure. """
 
-    IDX_FIELD = "Index"
-    BASE_FIELD = "Base"
-    PREV_FIELD = "Prev"
-    NEXT_FIELD = "Next"
-    PAIR_FIELD = "Pair"
-    POS_FIELD = "Position"
+    def __init__(self, *args, pairs: Iterable[tuple[int, int]], **kwargs):
+        super().__init__(*args, **kwargs)
+        self.partners = pairs_to_partners(pairs, self.section)
 
-    def __init__(self,
-                 title: str,
-                 section: Section,
-                 pairs: Iterable[tuple[int, int]]):
-        super().__init__(title, section)
-        self.title = title
-        self.pairs = set(pairs)
+    @cached_property
+    def pairs(self):
+        """ List of tuples of the 5' and 3' position in each pair. """
+        return [(i, j) for i, j in self.partners.items() if i < j]
 
     @property
     def header(self):
         return f"{self.section.length}\t{self.title}"
 
     @cached_property
-    def partners(self):
-        """ Return a Series of every position in the section and the
-        position to which it pairs, or 0 if it does not pair. """
-        # Initialize the series of pairs to 0 for every position.
-        partners = pd.Series(0, index=pd.Index(self.section.range,
-                                               name=self.POS_FIELD))
-
-        def add_pair(at: int, to: int):
-            """ Add a base pair at position `at` to position `to`. """
-            # Find the current pairing partner at this position.
-            try:
-                to2 = partners.loc[at]
-            except KeyError:
-                raise ValueError(f"Position {at} is not in {self.section}")
-            if to2 == 0:
-                # There is no pairing partner at this position: add it.
-                partners.loc[at] = to
-            elif to2 == to:
-                # A previous partner matches the current partner.
-                logger.warning(f"Pair {at}-{to} was given twice")
-            else:
-                # A previous partner conflicts with the current partner.
-                raise ValueError(f"Position {at} was given pairs with both "
-                                 f"{to2} and {to}")
-
-        # Add all base pairs (in both directions) to the table.
-        for pos1, pos2 in self.pairs:
-            add_pair(pos1, pos2)
-            add_pair(pos2, pos1)
-        return partners
-
-    @property
     def ct_data(self):
         """ Return the connectivity table as a DataFrame. """
         # Make an index the same length as the section and starting
         # from 1 (CT files must start at index 1).
-        index = pd.Index(self.section.range_int_one, name=self.IDX_FIELD)
+        index = pd.Index(self.section.range_one, name=IDX_FIELD)
         # Adjust the numbers of the paired bases (i.e. pairs > 0) such
         # that they also index from 1.
         pairs = self.partners.values.copy()
         pairs[pairs > 0] -= self.section.end5 - 1
         # Generate the data for the connectivity table.
         data = {
-            self.BASE_FIELD: self.seq.to_str_array(),
-            self.PREV_FIELD: index.values - 1,
-            self.NEXT_FIELD: index.values + 1,
-            self.PAIR_FIELD: pairs,
-            self.POS_FIELD: self.section.range_int,
+            BASE_FIELD: self.seq.to_str_array(),
+            PREV_FIELD: index.values - 1,
+            NEXT_FIELD: index.values + 1,
+            PAIR_FIELD: pairs,
+            POS_NAME: self.section.range_int,
         }
         # Assemble the data into a DataFrame.
         return pd.DataFrame.from_dict({field: pd.Series(values, index=index)
@@ -205,32 +174,57 @@ class Rna2dStructure(RnaSection):
         return f"{self.header}\n{data.to_string(index=False, header=False)}\n"
 
 
-class RnaState(Rna2dStructure):
-    """ RNA sequence and mutation rates. """
+class RnaState(Rna2dStructure, RnaProfile):
+    """ RNA secondary structure with mutation rates. """
 
-    def __init__(self,
-                 title: str,
-                 section: Section,
-                 pairs: Iterable[tuple[int, int]],
-                 sample: str,
-                 mus: pd.Series):
-        """
-        Parameters
-        ----------
-        mus: pd.DataFrame
-            Mutation rates of the RNA molecule.
-        """
-        super().__init__(title, section, pairs)
-        self.sample = sample
-        self.mus = mus
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @cached_property
+    def roc(self):
+        return compute_roc_curve(self.partners != 0, self.reacts)
+
+    @cached_property
+    def auc(self):
+        fpr, tpr = self.roc
+        return compute_auc_roc(fpr, tpr)
 
 
-class RnaEnsemble(RnaSection):
-    # FIXME: write this
-    pass
+# Helper functions #####################################################
 
 
-def parse_ct_file(ct_file: Path):
-    """ Yield RNA secondary structures from a CT file. """
-    # FIXME: write this
-    return
+def parse_ct_structures(ct_file: Path, section: Section):
+    section_rna_seq = section.seq.tr()
+    for title, seq, pairs in parse_ct_pairs(ct_file, section.end5):
+        if seq != section_rna_seq:
+            raise ValueError(f"Expected {section_rna_seq}, but got {seq}")
+        yield Rna2dStructure(title=title, section=section, pairs=pairs)
+
+
+def compute_roc_curve(paired: pd.Series, reacts: pd.Series):
+    """ Compute the receiver operating characteristic (ROC) curve to
+    compute how well chemical reactivities agree with a structure. """
+    # Use only positions with non-missing reactivities.
+    reacts_use = reacts.loc[np.logical_not(np.isnan(reacts.values))]
+    # Count the number of positions with non-missing reactivities.
+    n_use = reacts_use.size
+    # Sort the positions in ascending order by reactivity.
+    order = reacts_use.sort_values().index.get_level_values(POS_NAME)
+    paired_use = paired.loc[order].astype(bool, copy=False)
+    # Compute the cumulative number of paired bases at each threshold.
+    paired_cumsum = np.hstack([[0], np.cumsum(paired_use)])
+    # Count the paired positions.
+    n_paired = paired_cumsum[-1]
+    # Get the false positive rate: (paired and reactive) / paired.
+    fpr = 1. - paired_cumsum / n_paired
+    # Get the true positive rate: (unpaired and reactive) / unpaired.
+    tpr = 1. - (np.arange(n_use + 1) - paired_cumsum) / (n_use - n_paired)
+    # Traditionally, false positive rate is plotted on the x-axis and
+    # true positive rate on the y-axis of an ROC curve.
+    return fpr, tpr
+
+
+def compute_auc_roc(fpr: np.ndarray, tpr: np.ndarray):
+    """ Compute the area under the curve (AUC) of the receiver operating
+    characteristic (ROC). """
+    return -np.vdot(np.diff(fpr), tpr[1:])

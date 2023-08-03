@@ -123,7 +123,7 @@ class EmClustering(object):
         self.mus = np.empty((self.loader.section.size, self.order), dtype=float)
         # Positions of the section that will be used for clustering
         # (0-indexed from the beginning of the section)
-        self.sparse_pos = self.loader.section.unmasked_int_zero
+        self.sparse_pos = self.loader.section.unmasked_zero
         # Mutation rates of all positions, including those not used for
         # clustering (row), in each cluster (col). The rate for every
         # unused position always remains zero.

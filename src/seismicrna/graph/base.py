@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from functools import cache, cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
@@ -17,6 +17,15 @@ logger = getLogger(__name__)
 
 # Number of digits behind the decimal point to be kept.
 PRECISION = 6
+
+
+def _write_graph(writer: Callable[[Path], Any], file: Path):
+    """ Write an image or raw data for a graph to a file. """
+    if file.is_file():
+        logger.warning(f"File exists: {file}")
+    else:
+        writer(file)
+    return file
 
 
 class GraphBase(ABC):
@@ -131,30 +140,18 @@ class GraphBase(ABC):
 
     def write_csv(self):
         """ Write the graph's source data to a CSV file. """
-        file = self.get_path(ext=path.CSV_EXT)
-        if file.is_file():
-            logger.warning(f"File exists: {file}")
-        else:
-            self.data.to_csv(file)
-        return file
+        return _write_graph(self.data.to_csv,
+                            self.get_path(ext=path.CSV_EXT))
 
     def write_html(self):
         """ Write the graph to an HTML file. """
-        file = self.get_path(ext=path.HTML_EXT)
-        if file.is_file():
-            logger.warning(f"File exists: {file}")
-        else:
-            self.get_figure().write_html(file)
-        return file
+        return _write_graph(self.get_figure().write_html,
+                            self.get_path(ext=path.HTML_EXT))
 
     def write_pdf(self):
         """ Write the graph to a PDF file. """
-        file = self.get_path(ext=path.PDF_EXT)
-        if file.is_file():
-            logger.warning(f"File exists: {file}")
-        else:
-            self.get_figure().write_image(file)
-        return file
+        return _write_graph(self.get_figure().write_image,
+                            self.get_path(ext=path.PDF_EXT))
 
     def write(self, csv: bool, html: bool, pdf: bool):
         """ Write the selected files. """

@@ -11,8 +11,8 @@ from ..core.seq import BASES
 logger = getLogger(__name__)
 
 
-def get_base_scatter_trace(xdata: pd.Series, ydata: pd.Series,
-                           cmap: ColorMap, base_int: int):
+def get_seq_base_scatter_trace(xdata: pd.Series, ydata: pd.Series,
+                               cmap: ColorMap, base_int: int):
     # Validate the indexes.
     if not xdata.index.equals(ydata.index):
         raise ValueError("Indexes of x and y data must match, "
@@ -42,13 +42,13 @@ def get_base_scatter_trace(xdata: pd.Series, ydata: pd.Series,
                       hovertext=hovertext, hoverinfo="text")
 
 
-def iter_base_scatter_traces(xdata: pd.Series, ydata: pd.Series,
-                             cmap: ColorMap):
+def iter_seq_base_scatter_traces(xdata: pd.Series, ydata: pd.Series,
+                                 cmap: ColorMap):
     for base in BASES:
-        yield get_base_scatter_trace(xdata, ydata, cmap, base)
+        yield get_seq_base_scatter_trace(xdata, ydata, cmap, base)
 
 
-def get_base_bar_trace(data: pd.Series, cmap: ColorMap, base_int: int):
+def get_seq_base_bar_trace(data: pd.Series, cmap: ColorMap, base_int: int):
     # Validate the base.
     base = chr(base_int)
     if base not in BASES.decode():
@@ -68,12 +68,12 @@ def get_base_bar_trace(data: pd.Series, cmap: ColorMap, base_int: int):
                   hoverinfo="text")
 
 
-def iter_base_bar_traces(data: pd.Series, cmap: ColorMap):
+def iter_seq_base_bar_traces(data: pd.Series, cmap: ColorMap):
     for base in BASES:
-        yield get_base_bar_trace(data, cmap, base)
+        yield get_seq_base_bar_trace(data, cmap, base)
 
 
-def get_stack_bar_trace(data: pd.Series, cmap: ColorMap):
+def get_seq_stack_bar_trace(data: pd.Series, cmap: ColorMap):
     # Get the relationship from the name of the data series.
     rel = data.name
     # Get the sequence and positions.
@@ -89,6 +89,23 @@ def get_stack_bar_trace(data: pd.Series, cmap: ColorMap):
                   hoverinfo="text")
 
 
-def iter_stack_bar_traces(data: pd.DataFrame, cmap: ColorMap):
+def iter_seq_stack_bar_traces(data: pd.DataFrame, cmap: ColorMap):
     for rel, series in data.items():
-        yield get_stack_bar_trace(series, cmap)
+        yield get_seq_stack_bar_trace(series, cmap)
+
+
+def get_seq_line_trace(data: pd.Series, description: str):
+    # Get the relationship from the name of the data series.
+    rel = data.name
+    # Get the positions.
+    pos = data.index.get_level_values(POS_NAME)
+    # Create a trace comprising all bars for this base type.
+    return go.Scatter(name="correlation",
+                      x=data.index.get_level_values(POS_NAME),
+                      y=data)
+                      #mode="lines",)
+                      #hoverinfo="text")
+
+
+def iter_seq_line_traces(data: pd.Series, description: str):
+    yield get_seq_line_trace(data, description)
