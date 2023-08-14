@@ -161,7 +161,7 @@ class MaskPosTableLoader(MaskTableLoader, PosTableLoader, MaskPosTable):
                              section=section,
                              sample=self.sample,
                              data_sect=self.sect,
-                             reacts=self._ratio_col(MUTAT_REL, quantile))
+                             reacts=self._ratio_col((MUTAT_REL,), quantile))
 
 
 class MaskReadTableLoader(MaskTableLoader, ReadTableLoader, MaskReadTable):
@@ -174,12 +174,13 @@ class ClustPosTableLoader(ClustTableLoader, PosTableLoader, ClustPosTable):
     def iter_profiles(self, sections: Iterable[Section], quantile: float):
         """ Yield RNA mutational profiles from a table. """
         for section in sections:
-            for ok, fmut in self._ratio_col(MUTAT_REL, quantile).items():
+            for ok in self.ord_clust:
                 yield RnaProfile(path.fill_whitespace(fmt_clust_name(*ok)),
                                  section=section,
                                  sample=self.sample,
                                  data_sect=self.sect,
-                                 reacts=fmut)
+                                 reacts=self._ratio_col(ok + (MUTAT_REL,),
+                                                        quantile))
 
 
 class ClustReadTableLoader(ClustTableLoader, ReadTableLoader, ClustReadTable):
