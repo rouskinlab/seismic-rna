@@ -137,9 +137,11 @@ class Rna2dStructure(RnaSection):
         self.partners = pairs_to_partners(pairs, self.section)
 
     @cached_property
-    def pairs(self):
+    def pairs(self) -> list[tuple[int, int]]:
         """ List of tuples of the 5' and 3' position in each pair. """
-        return [(i, j) for i, j in self.partners.items() if i < j]
+        order_5to3 = np.logical_and(self.partners != 0,
+                                    self.partners > self.partners.index)
+        return list(self.partners.loc[order_5to3].items())
 
     @property
     def header(self):

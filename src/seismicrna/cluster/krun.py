@@ -14,8 +14,8 @@ logger = getLogger(__name__)
 
 
 def cluster(call_report: Path, max_order: int, n_runs: int, *,
-            min_iter: int, max_iter: int, conv_thresh: float, n_procs: int,
-            rerun: bool):
+            min_iter: int, max_iter: int, conv_thresh: float, min_muts: int,
+            n_procs: int, rerun: bool):
     """ Run all processes of clustering reads from one filter. """
     # Load the vector calling report.
     loader = MaskLoader.open(Path(call_report))

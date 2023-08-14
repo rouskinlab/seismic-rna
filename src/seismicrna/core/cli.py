@@ -529,6 +529,13 @@ opt_max_fmut_read = Option(
     default=0.05,
     help="Filter reads with more than this fraction of mutated positions.")
 
+opt_max_nmut_read = Option(
+    ("--max-nmut-read",),
+    type=int,
+    default=-1,
+    help="Filter reads with more than this number of mutated positions "
+         "(-1 to disable).")
+
 opt_min_mut_gap = Option(
     ("--min-mut-gap",),
     type=int,
@@ -589,6 +596,13 @@ opt_em_thresh = Option(
     help="Consider an EM run to have converged when the log "
          "likelihood value has increased by less than this "
          "threshold between two consecutive iterations.")
+
+opt_min_nmut_read = Option(
+    ("--min-nmut-read",),
+    type=int,
+    default=0,
+    help="Ignore reads with less than this number of mutated positions"
+         "during clustering.")
 
 # Tables
 
