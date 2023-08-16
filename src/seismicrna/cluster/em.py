@@ -7,12 +7,11 @@ from scipy.special import logsumexp
 from scipy.stats import dirichlet
 
 from .names import CLS_NAME
-from ..core.bitvect import UniqMutBits
+from ..core.bitvect import UniqMutBits, iter_all_bit_vectors
 from ..core.mu import calc_mu_adj, calc_f_obs
 from ..mask.load import MaskLoader
 
 logger = getLogger(__name__)
-
 
 LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
 
@@ -139,6 +138,11 @@ class EmClustering(object):
         self.iter = 0
         # Whether the algorithm has converged.
         self.converged = False
+
+    @cached_property
+    def nreads_total(self):
+        """ Total number of reads, including redundant ones. """
+        return int(round(self.muts.counts.sum()))
 
     def update_sparse_mus(self):
         """ Update the sparse mutation rates using the current mutation
@@ -352,14 +356,20 @@ class EmClustering(object):
             # number of iterations.
             logger.warning(f"{self} failed to converge within {self.max_iter} "
                            f"iterations: last log likelihood = {self.log_like}")
+        #FIXME
+
+        logps = self.logp_contig
+        print("LOG PS")
+        print(logps)
+
         # Return this instance so that any code that runs multiple
         # EmClustering objects can create and run them in one line.
         return self
 
     @property
-    def log_exp_counts(self):
+    def logn_exp(self):
         """ Log number of expected observations of each bit vector. """
-        return np.log(self.muts.counts.sum()) + self.log_marginals
+        return np.log(self.nreads_total) + self.log_marginals
 
     def output_props(self):
         """ Return a DataFrame of the real and observed log proportion
@@ -380,6 +390,101 @@ class EmClustering(object):
         return pd.DataFrame(self.resps.T[self.muts.inverse],
                             index=self.loader.get_read_names(),
                             columns=self.cluster_nums)
+
+    @property
+    def logp_contig(self):
+        """ Log probability of every bit vector from the most likely to
+        the rarest observed bit vector, including any bit vector with an
+        intermediate probability that had an observed count of 0. """
+        # Find the log probability of the rarest observed bit vector.
+        min_logp = np.min(self.log_marginals)
+        print("Computing logp contig until", min_logp)
+        # Initialize a bit vector iterator for each cluster.
+        bvecs = {clust: iter_all_bit_vectors(cmus, self.loader.section,
+                                             self.loader.min_mut_gap)
+                 for clust, cmus in self.output_mus().items()}
+        # For each cluster, iterate through the bit vectors up to and
+        # including the rarest observed bit vector; record the log
+        # probability of each bit vector encountered.
+        logps = dict()
+        cump = 0.
+        for clust, clust_bvecs in bvecs.items():
+            print(clust)
+            # Initialize the map of bit vectors to log probabilities
+            # for this cluster.
+            logps[clust] = dict()
+            while True:
+                # Find the next bit vector; record its log probability.
+                bvec, logp = next(clust_bvecs)
+                logps[clust][bvec.tobytes().decode()] = logp
+                cump += np.exp(logp)
+                print(cump)
+                # Iterate until the log probability falls below that of
+                # the rarest bit vector.
+                if logp <= min_logp:
+                    break
+        # Find all "non-rare" bit vectors that had a higher probability
+        # than the rarest bit vector in any cluster.
+        bvecs_non_rare = set.union(*map(set, logps.values()))
+        # For each cluster, compute the log probability of all non-rare
+        # bit vectors that were not already encountered in the cluster.
+        for clust, clust_bvecs in bvecs.items():
+            print(clust)
+            # Find the non-rare bit vectors that were not encountered
+            # already in the cluster.
+            unseen_non_rare = bvecs_non_rare - set(logps[clust])
+            # Iterate until all such bit vectors are encountered.
+            while unseen_non_rare:
+                # Find the next bit vector; record its log probability.
+                bvec, logp = next(clust_bvecs)
+                bvec_str = bvec.tobytes().decode()
+                logps[clust][bvec_str] = logp
+                if bvec_str in unseen_non_rare:
+                    # This bit vector is no longer unseen.
+                    unseen_non_rare.remove(bvec_str)
+        # Now that all necessary bit vectors have been encountered, join
+        # the maps into a single DataFrame (taking the intersection of
+        # the indexes) of bit vectors (indexes) and clusters (columns).
+        logps_df = pd.concat([pd.Series(clust_logps, name=clust)
+                              for clust, clust_logps in logps.items()],
+                             join="inner")
+        # Compute the joint probability that a random bit vector would
+        # match the bit vector corresponding to a row in logps_df and
+        # come from the cluster corresponding to a column in logps_df.
+        logps_joint = logps_df + np.log(self.output_props()[self.ADJUSTED])
+        # Compute the marginal probability of observing each bit vector,
+        # regardless of the cluster from which it came.
+        logps_marginal = logsumexp(logps_joint, axis=0)
+        # Sort the bit vectors by decreasing log probability.
+        return logps_marginal.sort_values(ascending=False)
+
+    def output_cdf(self):
+        """ Return the cumulative fraction of reads in descending order
+        of likelihood. """
+
+        # Map each bit vector to its log probability and observed count.
+        ns_obs: dict[str, int] = dict()
+        logps: dict[int, dict[str, float]] = {c: dict() for c in bvecs}
+        # Iterate through each unique bit vector that was observed.
+        for bvec_arr, n_obs in zip(self.muts.get_full(), self.muts.counts,
+                                   strict=True):
+            # Convert the bit vector from an array to a str so that it
+            # becomes hashable and internable (unlike bytes).
+            bvec_str = bvec_arr.tobytes().decode()
+            # Map the bit vector to its observed count.
+            ns_obs[bvec_str] = n_obs
+            # For each cluster, check if the bit vector has appeared.
+            for clust, clogps in logps.items():
+                # If the bit vector has not yet appeared, then iterate
+                # through the bit vectors until finding it.
+                while bvec_str not in clogps:
+                    # Get the next bit vector and its log likelihood.
+                    bvec, logp = next(bvecs[clust])
+                    # Map the bit vector to its log probability.
+                    clogps[bvec.tobytes().decode()] = logp
+        # Find the bit vectors that are
+        # Compute the adjusted proportion of each cluster.
+        props = self.output_props()[self.ADJUSTED]
 
     def __str__(self):
         return f"Clustering {self.loader} to order {self.order}"

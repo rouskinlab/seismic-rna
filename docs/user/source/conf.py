@@ -10,11 +10,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
- 
+
 # Fix matplotlib non import
 MOCK_MODULES = ['yaml']
-with open('../requirements.txt') as f:
+with open('../../requirements.txt') as f:
     for line in f:
         MOCK_MODULES.append(line.strip().split('=')[0])
         

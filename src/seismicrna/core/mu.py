@@ -64,6 +64,9 @@ def _calc_obs(mu_adj: np.ndarray, min_gap: int):
         return np.ones(ncls), mu_adj.copy()
     # Compute the adjusted non-mutation rates (nu = 1 - mu).
     nu_adj = 1. - mu_adj
+    # Verify that all positions mutate with probabilty < 1.
+    if np.count_nonzero(nu_adj) < nu_adj.size:
+        raise ValueError(f"Got mutation rates of 1.0 in {mu_adj}")
     # Compute the cumulative sums of the log non-mutation rates.
     # Sum logarithms instead of multiply for better numerical stability.
     # The cumulative sums are split into three sections:

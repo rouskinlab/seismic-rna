@@ -8,15 +8,13 @@ Collect and compare the results from independent runs of EM clustering.
 
 from __future__ import annotations
 
-from itertools import combinations, islice
-from typing import Callable, Iterable
+from itertools import combinations
 
 import numpy as np
 import pandas as pd
 
 from .em import EmClustering
 from .names import EXP_NAME, OBS_NAME, ORD_NAME
-
 
 EXP_COUNT_PRECISION = 3  # Number of digits to round expected log counts
 
@@ -98,7 +96,7 @@ def get_log_exp_obs_counts(ord_runs: dict[int, RunOrderResults]):
                         index=uniq_muts.get_uniq_names())
     # For each order of clustering, compute the expected log counts.
     log_exp = ((format_exp_count_col(order),
-                pd.Series(runs.best.log_exp_counts, index=log_obs.index))
+                pd.Series(runs.best.logn_exp, index=log_obs.index))
                for order, runs in ord_runs.items())
     # Assemble all log counts into one DataFrame.
     log_counts = pd.DataFrame.from_dict({OBS_NAME: log_obs, **dict(log_exp)})
@@ -171,42 +169,40 @@ def calc_var_info_pqr(p: np.ndarray, q: np.ndarray, r: np.ndarray,
     return float(np.sum(r * (log_pq_grid - 2. * np.log(r))))
 
 
-def calc_var_info_run_pair(clusts1: pd.DataFrame, clusts2: pd.DataFrame,
-                           validate: bool = True):
-    """ Calculate the variation of information between two EM runs. """
+def calc_var_info_pair(resps1: pd.DataFrame, resps2: pd.DataFrame,
+                       validate: bool = True):
+    """ Calculate the variation of information for a pair of clustering
+    results. """
     # Find the number of reads and clusters.
-    n_reads, n_clusts = clusts1.shape
-    if clusts2.shape != (n_reads, n_clusts):
-        raise ValueError(f"Dimensions of clusts1 {clusts1.shape} "
-                         f"and clusts2 {clusts2.shape} differ")
+    n_reads, n_clusts = resps1.shape
+    if resps2.shape != (n_reads, n_clusts):
+        raise ValueError(f"Dimensions of resps1 {resps1.shape} "
+                         f"and resps2 {resps2.shape} differ")
     if n_clusts <= 0:
         raise ValueError(f"Number of clusters must be ≥ 1, but got {n_clusts}")
     if n_reads == 0:
         # There is zero variation if there are zero reads.
         return 0.
     if validate:
-        # Verify that run1 and run2 have the same reads (indexes) and
-        # clusters (columns).
-        if not clusts1.index.equals(clusts2.index):
-            raise ValueError("Read names of clusts1 and clusts2 differ")
-        if not clusts1.columns.equals(clusts2.columns):
-            raise ValueError("Clusters of clusts1 and clusts2 differ")
+        # Verify that resps1 and resps2 have the same reads (indexes).
+        if not resps1.index.equals(resps2.index):
+            raise ValueError("Read names of resps1 and clusts2 differ")
         # Verify that the probability that each read belongs to any
         # cluster equals 1.
-        if not np.allclose(clusts1.sum(axis=1), 1.):
+        if not np.allclose(resps1.sum(axis=1), 1.):
             raise ValueError(
-                "Probabilities of reads in clusts1 did not all sum to 1")
-        if not np.allclose(clusts2.sum(axis=1), 1.):
+                "Probabilities of reads in resps1 did not all sum to 1")
+        if not np.allclose(resps2.sum(axis=1), 1.):
             raise ValueError(
-                "Probabilities of reads in clusts2 did not all sum to 1")
+                "Probabilities of reads in resps2 did not all sum to 1")
     # For each run, compute the proportion of reads in each cluster.
-    props1 = clusts1.mean(axis=0).values
-    props2 = clusts2.mean(axis=0).values
+    props1 = resps1.mean(axis=0).values
+    props2 = resps2.mean(axis=0).values
     # For each pair of clusters, compute the proportion of reads in both
     # clusters.
-    props12 = np.array([[np.vdot(clusts1[c1], clusts2[c2]) / n_reads
-                         for c2 in clusts2.columns]
-                        for c1 in clusts1.columns])
+    props12 = np.array([[np.vdot(resps1[c1], resps2[c2]) / n_reads
+                         for c2 in resps2.columns]
+                        for c1 in resps1.columns])
     # Compute the variation of information.
     return calc_var_info_pqr(props1, props2, props12, validate=validate)
 
@@ -221,103 +217,7 @@ def calc_mean_var_info(runs: list[EmClustering]):
         return 0.
     # Compute and cache the responsibilities of each run.
     resps = [run.output_resps() for run in runs]
-    # Find the mean variation of information among pairs of EM runs.
-    sum_var_info = sum(calc_var_info_run_pair(resps[i1], resps[i1])
-                       for i1, i2 in pairs)
-    return sum_var_info / len(pairs)
-
-
-def iter_all_likelihoods(p: np.ndarray):
-    """ Yield every bit vector likelihood from greatest to least. """
-    if p.ndim != 1:
-        raise ValueError(f"p must have 1 dimension, but got {p.ndim}")
-    # If no bits remain, then just return the base value.
-    if p.size == 0:
-        return iter([0.])
-    if np.min(p) < 0. or np.max(p) > 1.:
-        raise ValueError(f"p must all be in [0, 1], but got {p}")
-    # Remove any bits that are certain to be 0 or 1.
-    p = p[np.logical_not(np.logical_or(p == 0., p == 1.))]
-    # If no bits remain, then just return the base value.
-    if p.size == 0:
-        return iter([0.])
-    # Compute the log probabilities (p) and anti-probabilities (q).
-    log_p = np.log(p)
-    log_q = np.log(1. - p)
-    # Sum the larger of the two as the "base" weight.
-    log_base = float(np.sum(np.maximum(log_p, log_q)))
-    # Compute the difference in logs and sort from least to greatest.
-    log_diffs = np.abs(log_p - log_q)
-    log_diffs.sort()
-
-    class LikelihoodSeries(object):
-
-        def __init__(self, weight: float, inner: Callable[[], Iterable]):
-            self._weight = weight
-            self._inner = inner
-            self._values = list()
-
-        def _cache(self, value: float):
-            """ Store a value in the values list. """
-            self._values.append(value)
-            return value
-
-        def iter(self):
-            """ Iterate over the values. """
-            # Check if the values were already computed.
-            if self._values:
-                # If the values were already computed, then yield them.
-                yield from self._values
-            else:
-                # Otherwise, make iterators for the inner series and the
-                # weighted series.
-                inner = iter(self._inner())
-                weighted = iter(ival - self._weight for ival in self._inner())
-                # Get the first element from each iterator. Both should
-                # have > 0 items and should not raise StopIteration.
-                ival = next(inner)
-                wval = next(weighted)
-                # Yield elements until both iterators are exhausted.
-                while True:
-                    # Yield the larger value and advance its iterator.
-                    if ival is not None and ival >= wval:
-                        # Yield the inner value.
-                        yield self._cache(ival)
-                        # Get the next inner value, or None if empty.
-                        ival = next(inner, None)
-                    else:
-                        # Yield the weighted value.
-                        yield self._cache(wval)
-                        try:
-                            # Get the next weighted value, if any.
-                            wval = next(weighted)
-                        except StopIteration:
-                            # There are no more weighted values.
-                            break
-                # Confirm that there are no more inner values.
-                try:
-                    next(inner)
-                except StopIteration:
-                    # There are no more inner values: success.
-                    return
-                # There were more inner values: failure.
-                raise ValueError(
-                    "Weighted values were exhausted before inner values")
-
-    # Make series of log likelihoods.
-    series = LikelihoodSeries(log_diffs[0], lambda: [0.])
-    for log_diff in log_diffs[1:]:
-        series = LikelihoodSeries(log_diff, series.iter)
-
-    # Return an iterator of log likelihood values adjusted by the base.
-    return iter(value + log_base for value in series.iter())
-
-
-def max_n_likelihoods(p: np.ndarray, n: int | None = None):
-    """ Return the top n bit vector likelihoods. """
-    return np.array(list(islice(iter_all_likelihoods(p), n)))
-
-
-def cum_log_exp_obs_counts():
-    """ Get the cumulative expected and observed log counts per bit
-    vector. """
+    # Compute the variation of information for each pair of EM runs.
+    vinfo = {(i, j): calc_var_info_pair(resps[i], resps[j]) for i, j in pairs}
+    # Return the mean variation of information among pairs of EM runs.
+    return sum(vinfo.values()) / len(vinfo)

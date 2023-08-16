@@ -10,11 +10,12 @@ from collections import Counter
 from functools import cached_property
 from itertools import chain
 from logging import getLogger
-from typing import Callable, Iterable
+from typing import Callable, Generator, Iterable
 
 import numpy as np
 import pandas as pd
 
+from .mu import calc_f_obs_df
 from .sect import Section
 
 logger = getLogger(__name__)
@@ -557,3 +558,126 @@ class ClustBitCounter(BitCounter):
 
     def _empty_accum(self):
         return pd.DataFrame(columns=self.clusters, dtype=int)
+
+
+def iter_all_bit_vectors(mu: pd.Series, section: Section, min_mut_gap: int):
+    """ Yield every bit vector in decreasing order of likelihood. """
+    # Determine the number of positions.
+    if mu.size == 0:
+        # If there are no mutation rates, then return an empty iterator.
+        return iter(list())
+    # Compute the log probability that a random bit vector would have no
+    # pair of mutations too close together.
+    logf_obs = float(np.log(calc_f_obs_df(mu.to_frame(),
+                                          section,
+                                          min_mut_gap).squeeze(axis=0)))
+    with np.errstate(divide="ignore"):
+        # For each position, compute the log probability that the base
+        # is mutated (mu) or is not mutated (nu). Ignore warnings about
+        # taking the log of 0 because any positions for which mu or nu
+        # equals 0 will be skipped later by checking for np.isfinite.
+        log_mu = np.log(mu.values)
+        log_nu = np.log(1. - mu.values)
+    # Determine the base bit for each position: 1 if mu > 0.5, else 0.
+    base_bits = np.greater(log_mu, log_nu)
+    if min_mut_gap > 0 and np.any(base_bits):
+        raise ValueError("Mutation rates > 0.5 are not currently supported "
+                         "when min_mut_gap > 0")
+    # Compute the log probability that a random bit vector will be the
+    # base bit vector.
+    base_logp = float(np.where(base_bits, log_mu, log_nu).sum()) - logf_obs
+    # Compute the absolute difference in log probability between the two
+    # states of each bit (i.e. 0 and 1).
+    diff_logp = np.abs(log_mu - log_nu)
+
+    class BitVectorSeries(object):
+
+        def __init__(self, bit: int, logp: float,
+                     sub: Callable[[], Iterable[tuple[np.ndarray, float]]]):
+            if not 0 <= bit < mu.size:
+                raise ValueError(
+                    f"bit must be in [0, {mu.size}), but got {bit}")
+            self._bit = bit
+            self._onehot = np.zeros(mu.size, dtype=bool)
+            self._onehot[bit] = 1
+            self._logp = logp
+            self._sub = sub
+            self._bvecs: list[np.ndarray] = list()
+            self._logps: list[float] = list()
+
+        def _cache(self, bvec: np.ndarray, logp: float):
+            """ Cache a bit vector and its log probability. """
+            self._bvecs.append(bvec)
+            self._logps.append(logp)
+
+        def iter(self) -> Generator[tuple[np.ndarray, float], None, None]:
+            """ Iterate over the values. """
+            # Check if any bit vectors have already been computed.
+            if self._bvecs:
+                # If so, then yield them.
+                yield from zip(self._bvecs, self._logps, strict=True)
+            else:
+                # Otherwise, make iterators for the subordinate series
+                # and the current series.
+                sub = iter(self._sub())
+                if min_mut_gap > 0:
+                    # Exclude any bit vectors with two mutations closer
+                    # than min_mut_gap positions.
+                    new = iter((np.logical_xor(bvec, self._onehot),
+                                logp - self._logp)
+                               for bvec, logp in self._sub()
+                               if np.all(np.abs(np.flatnonzero(bvec)
+                                                - self._bit)
+                                         > min_mut_gap))
+                else:
+                    new = iter((np.logical_xor(bvec, self._onehot),
+                                logp - self._logp)
+                               for bvec, logp in self._sub())
+                # Get the first bit vector from each iterator.
+                sub_bvec, sub_logp = next(sub, (None, None))
+                new_bvec, new_logp = next(new, (None, None))
+                # Yield the most likely of the new and subordinate bit
+                # vectors until either iterator is exhausted.
+                while new_bvec is not None and sub_bvec is not None:
+                    if new_logp > sub_logp:
+                        # Yield the new bit vector and iterate.
+                        self._cache(new_bvec, new_logp)
+                        yield new_bvec, new_logp
+                        new_bvec, new_logp = next(new, (None, None))
+                    else:
+                        # Yield the subordinate bit vector and iterate.
+                        self._cache(sub_bvec, sub_logp)
+                        yield sub_bvec, sub_logp
+                        sub_bvec, sub_logp = next(sub, (None, None))
+                # Yield the remaining bit vectors from the iterator that
+                # has not been exhausted.
+                while sub_bvec is not None:
+                    # Yield the subordinate bit vector and iterate.
+                    self._cache(sub_bvec, sub_logp)
+                    yield sub_bvec, sub_logp
+                    sub_bvec, sub_logp = next(sub, (None, None))
+                while new_bvec is not None:
+                    # Yield the new bit vector and iterate.
+                    self._cache(new_bvec, new_logp)
+                    yield new_bvec, new_logp
+                    new_bvec, new_logp = next(new, (None, None))
+
+    bvs = None
+    # Iterate through the positions in increasing order of the absolute
+    # difference of the log probabilities of the two states of the bit.
+    # In this order, the first positions encountered have probabilities
+    # close to 0.5 (such that flipping the bit has the smallest effect
+    # on the probability of obtaining the bit vector), while the latest
+    # positions encountered have probabilities close to 0 or 1.
+    for index in np.argsort(diff_logp):
+        # Determine the absolute difference in log probability between
+        # the two states for the bit at the current index.
+        index_logp = diff_logp[index]
+        if np.isfinite(index_logp):
+            # Create a bit vector series for this index iff the absolute
+            # difference in log probability is not infinite, i.e. the
+            # probability is neither 0 nor 1.
+            bvs = BitVectorSeries(bit=index, logp=index_logp,
+                                  sub=((lambda: [(base_bits, base_logp)])
+                                       if bvs is None else bvs.iter))
+    return iter(bvs.iter() if bvs is not None else list())
