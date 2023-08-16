@@ -356,12 +356,6 @@ class EmClustering(object):
             # number of iterations.
             logger.warning(f"{self} failed to converge within {self.max_iter} "
                            f"iterations: last log likelihood = {self.log_like}")
-        #FIXME
-
-        logps = self.logp_contig
-        print("LOG PS")
-        print(logps)
-
         # Return this instance so that any code that runs multiple
         # EmClustering objects can create and run them in one line.
         return self
@@ -398,7 +392,6 @@ class EmClustering(object):
         intermediate probability that had an observed count of 0. """
         # Find the log probability of the rarest observed bit vector.
         min_logp = np.min(self.log_marginals)
-        print("Computing logp contig until", min_logp)
         # Initialize a bit vector iterator for each cluster.
         bvecs = {clust: iter_all_bit_vectors(cmus, self.loader.section,
                                              self.loader.min_mut_gap)
@@ -409,7 +402,6 @@ class EmClustering(object):
         logps = dict()
         cump = 0.
         for clust, clust_bvecs in bvecs.items():
-            print(clust)
             # Initialize the map of bit vectors to log probabilities
             # for this cluster.
             logps[clust] = dict()
@@ -418,7 +410,6 @@ class EmClustering(object):
                 bvec, logp = next(clust_bvecs)
                 logps[clust][bvec.tobytes().decode()] = logp
                 cump += np.exp(logp)
-                print(cump)
                 # Iterate until the log probability falls below that of
                 # the rarest bit vector.
                 if logp <= min_logp:
@@ -429,7 +420,6 @@ class EmClustering(object):
         # For each cluster, compute the log probability of all non-rare
         # bit vectors that were not already encountered in the cluster.
         for clust, clust_bvecs in bvecs.items():
-            print(clust)
             # Find the non-rare bit vectors that were not encountered
             # already in the cluster.
             unseen_non_rare = bvecs_non_rare - set(logps[clust])
