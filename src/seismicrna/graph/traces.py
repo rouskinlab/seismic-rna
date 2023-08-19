@@ -6,20 +6,19 @@ from plotly import graph_objects as go
 from .base import PRECISION
 from .color import ColorMap
 from ..core.sect import BASE_NAME, POS_NAME
-from ..core.seq import BASES
+from ..core.seq import DNA
 
 logger = getLogger(__name__)
 
 
 def get_seq_base_scatter_trace(xdata: pd.Series, ydata: pd.Series,
-                               cmap: ColorMap, base_int: int):
+                               cmap: ColorMap, base: str):
     # Validate the indexes.
     if not xdata.index.equals(ydata.index):
         raise ValueError("Indexes of x and y data must match, "
                          f"but got {xdata.index} and {ydata.index}")
     # Validate the base.
-    base = chr(base_int)
-    if base not in BASES.decode():
+    if base not in DNA.alph:
         raise ValueError(f"Invalid DNA base: '{base}'")
     # Find the position of every base of that type.
     seq_mask = xdata.index.get_level_values(BASE_NAME) == base
@@ -38,20 +37,19 @@ def get_seq_base_scatter_trace(xdata: pd.Series, ydata: pd.Series,
                  for i, x, y in zip(vals.index, vals.x, vals.y)]
     # Create a trace comprising all bars for this base type.
     return go.Scatter(name=base, x=vals.x, y=vals.y,
-                      mode="markers", marker_color=cmap[base_int],
+                      mode="markers", marker_color=cmap[base],
                       hovertext=hovertext, hoverinfo="text")
 
 
 def iter_seq_base_scatter_traces(xdata: pd.Series, ydata: pd.Series,
                                  cmap: ColorMap):
-    for base in BASES:
+    for base in DNA.alph:
         yield get_seq_base_scatter_trace(xdata, ydata, cmap, base)
 
 
-def get_seq_base_bar_trace(data: pd.Series, cmap: ColorMap, base_int: int):
+def get_seq_base_bar_trace(data: pd.Series, cmap: ColorMap, base: str):
     # Validate the base.
-    base = chr(base_int)
-    if base not in BASES.decode():
+    if base not in DNA.alph:
         raise ValueError(f"Invalid DNA base: '{base}'")
     # Find the position of every base of that type.
     seq_mask = data.index.get_level_values(BASE_NAME) == base
@@ -63,13 +61,13 @@ def get_seq_base_bar_trace(data: pd.Series, cmap: ColorMap, base_int: int):
     hovertext = [f"{base}{x}: {round(y, PRECISION)}" for x, y in vals.items()]
     # Create a trace comprising all bars for this base type.
     return go.Bar(name=base, x=vals.index, y=vals,
-                  marker_color=cmap[base_int],
+                  marker_color=cmap[base],
                   hovertext=hovertext,
                   hoverinfo="text")
 
 
 def iter_seq_base_bar_traces(data: pd.Series, cmap: ColorMap):
-    for base in BASES:
+    for base in DNA.alph:
         yield get_seq_base_bar_trace(data, cmap, base)
 
 
@@ -94,18 +92,11 @@ def iter_seq_stack_bar_traces(data: pd.DataFrame, cmap: ColorMap):
         yield get_seq_stack_bar_trace(series, cmap)
 
 
-def get_seq_line_trace(data: pd.Series, description: str):
-    # Get the relationship from the name of the data series.
-    rel = data.name
-    # Get the positions.
-    pos = data.index.get_level_values(POS_NAME)
-    # Create a trace comprising all bars for this base type.
+def get_seq_line_trace(data: pd.Series):
     return go.Scatter(name="correlation",
                       x=data.index.get_level_values(POS_NAME),
                       y=data)
-                      #mode="lines",)
-                      #hoverinfo="text")
 
 
-def iter_seq_line_traces(data: pd.Series, description: str):
-    yield get_seq_line_trace(data, description)
+def iter_seq_line_traces(data: pd.Series, *_, **__):
+    yield get_seq_line_trace(data)

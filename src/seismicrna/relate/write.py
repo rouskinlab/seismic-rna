@@ -12,10 +12,9 @@ from __future__ import annotations
 
 from datetime import datetime
 from functools import cached_property
-from itertools import starmap as itsmap
+from itertools import starmap
 from logging import getLogger
 from pathlib import Path
-from sys import byteorder
 from typing import Iterable
 
 import numpy as np
@@ -28,36 +27,36 @@ from .seqpos import format_seq_pos
 from ..core import path
 from ..core.files import digest_file
 from ..core.parallel import as_list_of_tuples, dispatch
-from ..core.rel import NOCOV
+from ..core.rel import blank_relvec
 from ..core.seq import DNA, get_ref_seq
 from ..core.xam import count_xam, view_xam
 
 logger = getLogger(__name__)
 
 
-def mb_to_bytes(batch_size: float):
+def mib_to_bytes(batch_size: float):
     """
-    Return the number of bytes per batch of a given size in megabytes.
+    Return the number of bytes per batch of a given size in mebibytes.
 
     Parameters
     ----------
     batch_size: float
-        Size of the batch in mebibytes (2^20 = 1,048,576 bytes)
+        Size of the batch in mebibytes (MiB): 1 MiB = 2^20 bytes
 
     Return
     ------
     int
         Number of bytes per batch, to the nearest integer
     """
-    return round(batch_size * 1048576)
+    return round(batch_size * 2**20)
 
 
 def write_batch(batch: int,
                 relvecs: tuple[bytearray, ...],
-                read_names: list[bytes], *,
+                read_names: list[str], *,
                 sample: str,
                 ref: str,
-                seq: bytes,
+                seq: DNA,
                 out_dir: Path):
     """ Write a batch of relation vectors to an ORC file. """
     logger.info(
@@ -65,7 +64,7 @@ def write_batch(batch: int,
     # Process the relation vectors into a 2D NumPy array (matrix).
     # Ideally, this step would use the NumPy unsigned 8-bit integer
     # (np.uint8) data type because the data must be read back from the
-    # file as this type. But the PyArrow backend of to_orc does not
+    # file as this type. But the PyArrow backend of to_parquet does not
     # currently support uint8, so we are using np.byte, which works.
     relmatrix = np.frombuffer(b"".join(relvecs), dtype=np.byte)
     relmatrix.shape = relmatrix.size // len(seq), len(seq)
@@ -76,7 +75,7 @@ def write_batch(batch: int,
     # sequence into the column labels themselves. Subsequent tasks can
     # then obtain the entire reference sequence without needing to read
     # the report file: relate.export.as_iter(), for example.
-    columns = format_seq_pos(DNA(seq), positions, 1)
+    columns = format_seq_pos(seq, positions, 1)
     # Data must be converted to pd.DataFrame for PyArrow to write.
     # Set copy=False to prevent copying the relation vectors.
     relframe = pd.DataFrame(data=relmatrix,
@@ -93,55 +92,49 @@ def write_batch(batch: int,
     return batch_path
 
 
-def _relate_record(read_name: bytes, line1: bytes, line2: bytes, *,
-                   blank_rv: bytearray, refseq: bytes, ref: str,
-                   min_qual: int, ambrel: bool):
+def _relate_record(relvec: bytearray, line1: str, line2: str, refseq: DNA, *,
+                   min_qual: str, ambrel: bool):
     """ Compute the relation vector of a record in a SAM file. """
-    # Initialize a blank relation vector.
-    relvec = blank_rv.copy()
     # Fill the relation vector with data from the SAM line(s).
     if line2:
-        relate_pair(line1, line2, relvec, refseq, len(refseq),
-                    ref, min_qual, ambrel)
+        relate_pair(relvec, line1, line2, refseq, len(refseq), min_qual, ambrel)
     else:
-        relate_line(line1, relvec, refseq, len(refseq),
-                    ref, min_qual, ambrel)
-    # Check whether the relation vector is still blank.
-    if relvec == blank_rv:
-        raise RelateError(f"Relation vector is blank")
-    return read_name, relvec
+        relate_line(relvec, line1, refseq, len(refseq), min_qual, ambrel)
 
 
 def _relate_batch(batch: int, start: int, stop: int, *,
                   temp_sam: Path, out_dir: Path,
-                  sample: str, ref: str, refseq: bytes,
-                  min_qual: int, ambrel: bool):
+                  sample: str, ref: str, refseq: DNA,
+                  min_qual: str, ambrel: bool):
     """ Compute relation vectors for every SAM record in one batch,
     write the vectors to a batch file, and return its MD5 checksum
     and the number of vectors. """
     logger.info(f"Began computing relation vectors for batch {batch} of "
                 f"{temp_sam} (file indexes {start} - {stop})")
-    # Define a blank relation vector.
-    blank_rv = bytearray(NOCOV.to_bytes(1, byteorder)) * len(refseq)
+    # Cache a blank relation vector as a template.
+    blank = bytearray(blank_relvec(len(refseq)).tobytes())
 
     # Wrap self._relate_record with keyword arguments and a
     # try-except block so that if one record fails to vectorize,
     # it does not crash all the others.
 
-    def relate_record(read_name: bytes, line1: bytes, line2: bytes):
+    def relate_record(read_name: str, line1: str, line2: str):
+        # Copy the blank template to get a new relation vector.
+        relvec = blank.copy()
         try:
-            return _relate_record(read_name, line1, line2,
-                                  blank_rv=blank_rv, refseq=refseq,
-                                  ref=ref, min_qual=min_qual, ambrel=ambrel)
-        except Exception as err:
-            logger.error(
-                f"Failed to vectorize read '{read_name.decode()}': {err}")
-            return b"", bytearray()
+            _relate_record(relvec, line1, line2, refseq,
+                           min_qual=min_qual, ambrel=ambrel)
+        except RelateError as err:
+            logger.error(f"Failed to relate read '{read_name}': {err}")
+            # Return an empty read name and relation vector.
+            return "", bytearray()
+        else:
+            return read_name, relvec
 
-    with open(temp_sam, "rb") as sam_file:
+    with open(temp_sam) as sam_file:
         # Vectorize every record in the batch.
         records = iter_records(sam_file, start, stop)
-        read_names, relvecs = zip(*itsmap(relate_record, records))
+        read_names, relvecs = zip(*starmap(relate_record, records))
         # For every read for which creating a relation vector failed, an
         # empty string was returned as the read name and an empty
         # bytearray as the relation vector. The empty read names must be
@@ -150,14 +143,14 @@ def _relate_batch(batch: int, start: int, stop: int, *,
         # when concatenated with the other vectors into a 1D array.
         read_names = list(filter(None, read_names))
     # Compute the number of reads that passed and failed.
-    n_total = len(relvecs)  # has empty byte for each failed read
+    n_total = len(relvecs)  # has an empty byte for each failed read
     n_pass = len(read_names)  # has no item for any failed read
     n_fail = n_total - n_pass  # difference between total and passed
     if not n_pass:
         logger.warning(f"Batch {batch} of {temp_sam} yielded 0 vectors")
     # Write the names and vectors to a file.
-    batch_file = write_batch(batch, relvecs, read_names, sample=sample, ref=ref,
-                             seq=refseq, out_dir=out_dir)
+    batch_file = write_batch(batch, relvecs, read_names, sample=sample,
+                             ref=ref, seq=refseq, out_dir=out_dir)
     # Compute the MD5 checksum of the file.
     checksum = digest_file(batch_file)
     logger.info(f"Ended computing relation vectors for batch {batch} of "
@@ -173,7 +166,7 @@ class RelationWriter(object):
 
     def __init__(self, bam_file: Path, seq: DNA):
         self.bam = bam_file
-        self.seq = bytes(seq)
+        self.seq = seq
 
     @cached_property
     def sample_ref(self):
@@ -190,7 +183,7 @@ class RelationWriter(object):
 
     def _write_report(self, *, out_dir: Path, **kwargs):
         report = RelateReport(out_dir=out_dir,
-                              seq=DNA(self.seq),
+                              seq=self.seq,
                               sample=self.sample,
                               ref=self.ref,
                               **kwargs)
@@ -221,10 +214,10 @@ class RelationWriter(object):
                               ext=path.SAM_EXT)
         # Create the temporary SAM file.
         view_xam(self.bam, temp_sam, n_procs=n_procs)
-        sam_file = open(temp_sam, "rb")
+        sam_file = open(temp_sam)
         try:
             # Compute number of records per batch.
-            n_per_bat = max(1, mb_to_bytes(batch_size) // len(self.seq))
+            n_per_bat = max(1, mib_to_bytes(batch_size) // len(self.seq))
             # Compute the batch indexes.
             disp_args = [(batch, start, stop) for batch, (start, stop)
                          in enumerate(iter_batch_indexes(sam_file, n_per_bat))]
@@ -284,15 +277,23 @@ class RelationWriter(object):
 def get_min_qual(min_phred: int, phred_enc: int):
     """
     Return the minimum quality for a base in a read to be considered
-    informative, as the ASCII integer corresponding to the character
-    in the FASTQ file that is the minimum valid quality.
+    informative, as the character in the FASTQ file encoding that would
+    be the minimum valid quality.
+
+    Parameters
+    ----------
+    min_phred: int
+        The minimum Phred score needed to use the value of a base call.
+    phred_enc: int
+        The encoding offset for Phred scores. A Phred score is encoded
+        as the character whose ASCII value is the sum of the phred score
+        and the encoding offset.
 
     Return
     ------
-    int
-        The ASCII value corresponding to the character in the FASTQ
-        file read quality string that represents the minimum quality
-        for a base to be considered informative
+    str
+        The character whose ASCII code, in the encoding scheme of the
+        FASTQ file, represents the minimum valid quality.
 
     Examples
     --------
@@ -303,7 +304,7 @@ def get_min_qual(min_phred: int, phred_enc: int):
     = 53, which is character '5'. If `min_phred` were 37, then
     `min_qual` would be 37 + 33 = 70, which is character 'F'.
     """
-    return min_phred + phred_enc
+    return chr(min_phred + phred_enc)
 
 
 def get_relater(bam_file: Path, fasta: Path, *, min_reads: int, n_procs: int):

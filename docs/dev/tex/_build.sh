@@ -8,7 +8,7 @@ PREFIX=main
 
 build_main () {
     clear
-    pdflatex $PREFIX.tex
+    pdflatex --shell-escape $PREFIX.tex
 }
 
 

@@ -1,6 +1,9 @@
 """
-Core -- Bit Vector Module
+
+Bit Vector core module
+
 ========================================================================
+
 """
 
 from __future__ import annotations
@@ -16,6 +19,7 @@ import numpy as np
 import pandas as pd
 
 from .mu import calc_f_obs_df
+from .rel import NP_TYPE
 from .sect import Section
 
 logger = getLogger(__name__)
@@ -94,7 +98,7 @@ class UniqMutBits(object):
         """ Return the unique bit vectors as byte strings. """
         # Get the full boolean matrix of the unique bit vectors and cast
         # the data from boolean to unsigned 8-bit integer type.
-        chars = self.get_full().astype(np.uint8, copy=False)
+        chars = self.get_full().astype(NP_TYPE, copy=False)
         if chars.size > 0:
             # Add ord('0') to transform every 0 into b'0' and every 1
             # into # b'1', and convert each row (bit vector) into a

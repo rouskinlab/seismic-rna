@@ -5,7 +5,7 @@ import pandas as pd
 
 from ..core.sect import (index_to_pos, index_to_seq, seq_pos_to_index,
                          INDEX_NAMES)
-from ..core.seq import BASES, DNA
+from ..core.seq import DNA
 
 
 def format_seq_pos(seq: DNA, positions: Sequence[int], start: int):
@@ -54,7 +54,7 @@ def _parse_seq_pos(index: Sequence[str]):
         raise ValueError("Got empty index")
     # Regex pattern "^([ACGT])([0-9]+)$" finds the base and position
     # in each index name.
-    pattern = re.compile(f"^([{BASES.decode()}])([0-9]+)$")
+    pattern = re.compile(f"^([{''.join(DNA.alph)}])([0-9]+)$")
     try:
         # Match each index name using the pattern.
         matches = list(map(pattern.match, index))

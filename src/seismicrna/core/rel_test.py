@@ -22,7 +22,7 @@ from .rel import (IRREC, MATCH, DELET,
                   parse_cigar, count_cigar_muts, find_cigar_op_pos,
                   validate_relvec, iter_relvecs_q53, iter_relvecs_all,
                   relvec_to_read, as_sam)
-from .seq import DNA, expand_degenerate_seq
+from .seq import DNA, DNAmbig, expand_degenerate_seq
 
 
 class TestConstants(ut.TestCase):
@@ -52,7 +52,7 @@ class TestParseCigar(ut.TestCase):
 
     def test_cigar_match_subst_valid(self):
         """ Parse a valid CIGAR string with match and subst codes. """
-        cigar = b"9S23=1X13=1D9=2I56=3S"
+        cigar = "9S23=1X13=1D9=2I56=3S"
         expect = [(CIG_SCLIP, 9), (CIG_MATCH, 23), (CIG_SUBST, 1),
                   (CIG_MATCH, 13), (CIG_DELET, 1), (CIG_MATCH, 9),
                   (CIG_INSRT, 2), (CIG_MATCH, 56), (CIG_SCLIP, 3)]
@@ -60,7 +60,7 @@ class TestParseCigar(ut.TestCase):
 
     def test_cigar_align_valid(self):
         """ Parse a valid CIGAR string with align codes. """
-        cigar = b"9S37M1D9M2I56M3S"
+        cigar = "9S37M1D9M2I56M3S"
         expect = [(CIG_SCLIP, 9), (CIG_ALIGN, 37), (CIG_DELET, 1),
                   (CIG_ALIGN, 9), (CIG_INSRT, 2), (CIG_ALIGN, 56),
                   (CIG_SCLIP, 3)]
@@ -72,7 +72,7 @@ class TestCountCigarMuts(ut.TestCase):
 
     def test_cigar_match_subst_valid(self):
         """ Count mutations in a valid CIGAR string. """
-        self.assertEqual(count_cigar_muts(b"9S23=1X13=1D9=2I56=3S"), 4)
+        self.assertEqual(count_cigar_muts("9S23=1X13=1D9=2I56=3S"), 4)
 
 
 class TestFindCigarOpPos(ut.TestCase):
@@ -80,7 +80,7 @@ class TestFindCigarOpPos(ut.TestCase):
 
     def test_cigar_xeq_ins_valid(self):
         """ Find insertions in a CIGAR string with =/X codes. """
-        self.assertEqual(list(find_cigar_op_pos(b"9S23=1X3I13=1D9=2I31=1I25=",
+        self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
                                                 CIG_INSRT)),
                          [25, 26, 27, 50, 51, 83])
 
@@ -130,34 +130,33 @@ class TestIterRelvecsQ53(ut.TestCase):
         """ Convenience function to run `rel.iter_relvecs_q53` from a
         sequence of str and return a list of lists of ints. """
         return list(map(np.ndarray.tolist,
-                        iter_relvecs_q53(DNA(seq.encode()),
-                                         low_qual, end5, end3)))
+                        iter_relvecs_q53(DNA(seq), low_qual, end5, end3)))
 
     def test_type(self):
         """ Test that the result is a Generator of NumPy arrays. """
-        self.assertTrue(isinstance(iter_relvecs_q53(DNA(b"A")), Generator))
+        self.assertTrue(isinstance(iter_relvecs_q53(DNA('A')), Generator))
         self.assertTrue(all(isinstance(relvec, np.ndarray)
-                            for relvec in iter_relvecs_q53(DNA(b"A"))))
-        self.assertIs(list(iter_relvecs_q53(DNA(b"A")))[0].dtype.type, np.uint8)
+                            for relvec in iter_relvecs_q53(DNA('A'))))
+        self.assertIs(list(iter_relvecs_q53(DNA('A')))[0].dtype.type, np.uint8)
 
     def test_a(self):
         """ Test with sequence 'A'. """
-        self.assertEqual(self.list_rels("A"),
+        self.assertEqual(self.list_rels('A'),
                          [[MATCH], [SUB_C], [SUB_G], [SUB_T]])
 
     def test_c(self):
         """ Test with sequence 'C'. """
-        self.assertEqual(self.list_rels("C"),
+        self.assertEqual(self.list_rels('C'),
                          [[SUB_A], [MATCH], [SUB_G], [SUB_T]])
 
     def test_g(self):
         """ Test with sequence 'G'. """
-        self.assertEqual(self.list_rels("G"),
+        self.assertEqual(self.list_rels('G'),
                          [[SUB_A], [SUB_C], [MATCH], [SUB_T]])
 
     def test_t(self):
         """ Test with sequence 'T'. """
-        self.assertEqual(self.list_rels("T"),
+        self.assertEqual(self.list_rels('T'),
                          [[SUB_A], [SUB_C], [SUB_G], [MATCH]])
 
     def test_aa(self):
@@ -538,7 +537,7 @@ class TestIterRelvecsAll(ut.TestCase):
 
     def test_length_1(self):
         """ Test with all length-1 DNA sequences. """
-        for ref in expand_degenerate_seq(b"N"):
+        for ref in expand_degenerate_seq(DNAmbig("N")):
             expects = [
                 iter_relvecs_q53(ref, [], 1, 1),
                 iter_relvecs_q53(ref, [1], 1, 1),
@@ -547,7 +546,7 @@ class TestIterRelvecsAll(ut.TestCase):
 
     def test_length_2(self):
         """ Test with all length-2 DNA sequences. """
-        for ref in expand_degenerate_seq(b"NN"):
+        for ref in expand_degenerate_seq(DNAmbig("NN")):
             expects = [
                 iter_relvecs_q53(ref, [], 1, 1),
                 iter_relvecs_q53(ref, [1], 1, 1),
@@ -562,7 +561,7 @@ class TestIterRelvecsAll(ut.TestCase):
 
     def test_length_3(self):
         """ Test with all length-3 DNA sequences. """
-        for ref in expand_degenerate_seq(b"NNN"):
+        for ref in expand_degenerate_seq(DNAmbig("NNN")):
             expects = [
                 iter_relvecs_q53(ref, [], 1, 1),
                 iter_relvecs_q53(ref, [1], 1, 1),
@@ -595,14 +594,14 @@ class TestRelvecToRead(ut.TestCase):
 
     def assert_equal(self, ref: DNA,
                      relvecs: list[list[int]],
-                     expects: list[tuple[bytes, bytes, bytes, int, int]]):
+                     expects: list[tuple[str, str, str, int, int]]):
         """ Assert that the actual and expected outputs match. """
         for relvec, expect in zip(relvecs, expects, strict=True):
             with self.subTest(relvec=relvec, expect=expect):
                 self.assertEqual(relvec_to_read(ref, np.array(relvec,
                                                               dtype=np.uint8),
                                                 MAX_QUAL, MIN_QUAL),
-                                 expect)
+                                 (DNAmbig(expect[0]),) + expect[1:])
 
     def assert_raise(self, ref: DNA,
                      relvecs: list[list[int]],
@@ -618,15 +617,15 @@ class TestRelvecToRead(ut.TestCase):
 
     def test_all_match(self):
         """ Test when the read has four matching bases. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [[MATCH, MATCH, MATCH, MATCH]]
-        expects = [(b"ACGT", b"IIII", b"4=", 1, 4)]
+        expects = [("ACGT", "IIII", "4=", 1, 4)]
         self.assert_equal(ref, relvecs, expects)
 
     def test_nocov_valid(self):
         """ Test when the read does not cover one or both ends of the
         reference. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             [NOCOV, MATCH, MATCH, MATCH],
             [MATCH, MATCH, MATCH, NOCOV],
@@ -635,17 +634,17 @@ class TestRelvecToRead(ut.TestCase):
             [MATCH, MATCH, NOCOV, NOCOV],
         ]
         expects = [
-            (b"CGT", b"III", b"3=", 2, 4),
-            (b"ACG", b"III", b"3=", 1, 3),
-            (b"CG", b"II", b"2=", 2, 3),
-            (b"GT", b"II", b"2=", 3, 4),
-            (b"AC", b"II", b"2=", 1, 2),
+            ("CGT", "III", "3=", 2, 4),
+            ("ACG", "III", "3=", 1, 3),
+            ("CG", "II", "2=", 2, 3),
+            ("GT", "II", "2=", 3, 4),
+            ("AC", "II", "2=", 1, 2),
         ]
         self.assert_equal(ref, relvecs, expects)
 
     def test_nocov_middle_invalid(self):
         """ Test when the read does not cover a middle position. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             [MATCH, NOCOV, MATCH, MATCH],
             [MATCH, MATCH, NOCOV, MATCH],
@@ -656,14 +655,14 @@ class TestRelvecToRead(ut.TestCase):
 
     def test_nocov_all_invalid(self):
         """ Test when the read does not cover any positions. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [[NOCOV, NOCOV, NOCOV, NOCOV]]
         self.assert_raise(ref, relvecs, ValueError,
                           "Relation vector is blank")
 
     def test_low_qual_valid(self):
         """ Test when the read has a low-quality base. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             [ANY_N - SUB_A, MATCH, MATCH, MATCH],
             [MATCH, ANY_N - SUB_C, MATCH, MATCH],
@@ -671,16 +670,16 @@ class TestRelvecToRead(ut.TestCase):
             [MATCH, MATCH, MATCH, ANY_N - SUB_T],
         ]
         expects = [
-            (b"NCGT", b"!III", b"1M3=", 1, 4),
-            (b"ANGT", b"I!II", b"1=1M2=", 1, 4),
-            (b"ACNT", b"II!I", b"2=1M1=", 1, 4),
-            (b"ACGN", b"III!", b"3=1M", 1, 4),
+            ("NCGT", "!III", "1M3=", 1, 4),
+            ("ANGT", "I!II", "1=1M2=", 1, 4),
+            ("ACNT", "II!I", "2=1M1=", 1, 4),
+            ("ACGN", "III!", "3=1M", 1, 4),
         ]
         self.assert_equal(ref, relvecs, expects)
 
     def test_low_qual_invalid(self):
         """ Test when the read has an invalid low-quality base. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             [ANY_N, MATCH, MATCH, MATCH],
             [MATCH, ANY_N, MATCH, MATCH],
@@ -692,7 +691,7 @@ class TestRelvecToRead(ut.TestCase):
 
     def test_subst_valid(self):
         """ Test when the read has a substitution. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             [SUB_C, MATCH, MATCH, MATCH],
             [SUB_G, MATCH, MATCH, MATCH],
@@ -708,24 +707,24 @@ class TestRelvecToRead(ut.TestCase):
             [MATCH, MATCH, MATCH, SUB_G],
         ]
         expects = [
-            (b"CCGT", b"IIII", b"1X3=", 1, 4),
-            (b"GCGT", b"IIII", b"1X3=", 1, 4),
-            (b"TCGT", b"IIII", b"1X3=", 1, 4),
-            (b"AAGT", b"IIII", b"1=1X2=", 1, 4),
-            (b"AGGT", b"IIII", b"1=1X2=", 1, 4),
-            (b"ATGT", b"IIII", b"1=1X2=", 1, 4),
-            (b"ACAT", b"IIII", b"2=1X1=", 1, 4),
-            (b"ACCT", b"IIII", b"2=1X1=", 1, 4),
-            (b"ACTT", b"IIII", b"2=1X1=", 1, 4),
-            (b"ACGA", b"IIII", b"3=1X", 1, 4),
-            (b"ACGC", b"IIII", b"3=1X", 1, 4),
-            (b"ACGG", b"IIII", b"3=1X", 1, 4),
+            ("CCGT", "IIII", "1X3=", 1, 4),
+            ("GCGT", "IIII", "1X3=", 1, 4),
+            ("TCGT", "IIII", "1X3=", 1, 4),
+            ("AAGT", "IIII", "1=1X2=", 1, 4),
+            ("AGGT", "IIII", "1=1X2=", 1, 4),
+            ("ATGT", "IIII", "1=1X2=", 1, 4),
+            ("ACAT", "IIII", "2=1X1=", 1, 4),
+            ("ACCT", "IIII", "2=1X1=", 1, 4),
+            ("ACTT", "IIII", "2=1X1=", 1, 4),
+            ("ACGA", "IIII", "3=1X", 1, 4),
+            ("ACGC", "IIII", "3=1X", 1, 4),
+            ("ACGG", "IIII", "3=1X", 1, 4),
         ]
         self.assert_equal(ref, relvecs, expects)
 
     def test_subst_invalid(self):
         """ Test when the read has an invalid substitution. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             [SUB_A, MATCH, MATCH, MATCH],
             [MATCH, SUB_C, MATCH, MATCH],
@@ -737,7 +736,7 @@ class TestRelvecToRead(ut.TestCase):
 
     def test_delete_valid(self):
         """ Test when the read has deletions. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             # 1 deletion
             [MATCH, DELET, MATCH, MATCH],
@@ -747,16 +746,16 @@ class TestRelvecToRead(ut.TestCase):
         ]
         expects = [
             # 1 deletion
-            (b"AGT", b"III", b"1=1D2=", 1, 4),
-            (b"ACT", b"III", b"2=1D1=", 1, 4),
+            ("AGT", "III", "1=1D2=", 1, 4),
+            ("ACT", "III", "2=1D1=", 1, 4),
             # 2 deletions
-            (b"AT", b"II", b"1=2D1=", 1, 4),
+            ("AT", "II", "1=2D1=", 1, 4),
         ]
         self.assert_equal(ref, relvecs, expects)
 
     def test_delete_invalid(self):
         """ Test when the read has a deletion at either end. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             [DELET, MATCH, MATCH, MATCH],
             [NOCOV, DELET, MATCH, MATCH],
@@ -774,7 +773,7 @@ class TestRelvecToRead(ut.TestCase):
 
     def test_insert_valid(self):
         """ Test when the read has insertions. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             # 1 insertion
             [MINS5, MINS3, MATCH, MATCH],
@@ -795,27 +794,27 @@ class TestRelvecToRead(ut.TestCase):
         ]
         expects = [
             # 1 insertion
-            (b"ANCGT", b"IIIII", b"1=1I3=", 1, 4),
-            (b"ACNGT", b"IIIII", b"2=1I2=", 1, 4),
-            (b"ACGNT", b"IIIII", b"3=1I1=", 1, 4),
-            (b"ANCG", b"IIII", b"1=1I2=", 1, 3),
-            (b"ACNG", b"IIII", b"2=1I1=", 1, 3),
-            (b"CNGT", b"IIII", b"1=1I2=", 2, 4),
-            (b"CGNT", b"IIII", b"2=1I1=", 2, 4),
-            (b"CNG", b"III", b"1=1I1=", 2, 3),
+            ("ANCGT", "IIIII", "1=1I3=", 1, 4),
+            ("ACNGT", "IIIII", "2=1I2=", 1, 4),
+            ("ACGNT", "IIIII", "3=1I1=", 1, 4),
+            ("ANCG", "IIII", "1=1I2=", 1, 3),
+            ("ACNG", "IIII", "2=1I1=", 1, 3),
+            ("CNGT", "IIII", "1=1I2=", 2, 4),
+            ("CGNT", "IIII", "2=1I1=", 2, 4),
+            ("CNG", "III", "1=1I1=", 2, 3),
             # 2 insertions, 1 base apart
-            (b"ANCNGT", b"IIIIII", b"1=1I1=1I2=", 1, 4),
-            (b"ACNGNT", b"IIIIII", b"2=1I1=1I1=", 1, 4),
+            ("ANCNGT", "IIIIII", "1=1I1=1I2=", 1, 4),
+            ("ACNGNT", "IIIIII", "2=1I1=1I1=", 1, 4),
             # 2 insertions, 2 bases apart
-            (b"ANCGNT", b"IIIIII", b"1=1I2=1I1=", 1, 4),
+            ("ANCGNT", "IIIIII", "1=1I2=1I1=", 1, 4),
             # 3 insertions, 1 base apart
-            (b"ANCNGNT", b"IIIIIII", b"1=1I1=1I1=1I1=", 1, 4),
+            ("ANCNGNT", "IIIIIII", "1=1I1=1I1=1I1=", 1, 4),
         ]
         self.assert_equal(ref, relvecs, expects)
 
     def test_insert_end5_invalid(self):
         """ Test when the read has an insertion at the 5' end. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             [MATCH, MATCH, MATCH, MINS5],
             [MATCH, MATCH, MINS5, ANY_8],
@@ -829,7 +828,7 @@ class TestRelvecToRead(ut.TestCase):
 
     def test_insert_end3_invalid(self):
         """ Test when the read has an insertion at the 3' end. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             [MINS3, MATCH, MATCH, MATCH],
             [ANY_8, MINS3, MATCH, MATCH],
@@ -843,7 +842,7 @@ class TestRelvecToRead(ut.TestCase):
 
     def test_insert_dangling_5_invalid(self):
         """ Test when the read has an unmatched 5' insertion. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             [MINS5, MATCH, MATCH, MATCH],
             [MATCH, MINS5, MATCH, MATCH],
@@ -857,7 +856,7 @@ class TestRelvecToRead(ut.TestCase):
 
     def test_insert_dangling_3_invalid(self):
         """ Test when the read has an unmatched 3' insertion. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             [MATCH, MINS3, MATCH, MATCH],
             [MATCH, MATCH, MINS3, MATCH],
@@ -870,7 +869,7 @@ class TestRelvecToRead(ut.TestCase):
     def test_insert_bare_invalid(self):
         """ Test when the read has bare insertions (with no underlying
         relationship). """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             # 1 bare insertion
             [MINS5, INS_3, MATCH, MATCH],
@@ -890,7 +889,7 @@ class TestRelvecToRead(ut.TestCase):
 
     def test_insert_deletion_invalid(self):
         """ Test when the read has an insertion next to a deletion. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             [MINS5, INS_3 + DELET, MATCH, MATCH],
             [MATCH, MINS5, INS_3 + DELET, MATCH],
@@ -905,7 +904,7 @@ class TestRelvecToRead(ut.TestCase):
     def test_insert_non_match_valid(self):
         """ Test when the read has insertions next to substitutions or
         low-quality base calls. """
-        ref = DNA(b"ACGT")
+        ref = DNA("ACGT")
         relvecs = [
             # 1 insertion next to 1 substitution
             [SUB_C + INS_5, MINS3, MATCH, MATCH],
@@ -922,17 +921,17 @@ class TestRelvecToRead(ut.TestCase):
         ]
         expects = [
             # 1 insertion next to 1 substitution
-            (b"CNCGT", b"IIIII", b"1X1I3=", 1, 4),
-            (b"CCNGT", b"IIIII", b"1X1=1I2=", 1, 4),
-            (b"ANTGT", b"IIIII", b"1=1I1X2=", 1, 4),
-            (b"ATNGT", b"IIIII", b"1=1X1I2=", 1, 4),
-            (b"ATGNT", b"IIIII", b"1=1X1=1I1=", 1, 4),
+            ("CNCGT", "IIIII", "1X1I3=", 1, 4),
+            ("CCNGT", "IIIII", "1X1=1I2=", 1, 4),
+            ("ANTGT", "IIIII", "1=1I1X2=", 1, 4),
+            ("ATNGT", "IIIII", "1=1X1I2=", 1, 4),
+            ("ATGNT", "IIIII", "1=1X1=1I1=", 1, 4),
             # 1 insertion next to 1 low-quality base call
-            (b"NNCGT", b"!IIII", b"1M1I3=", 1, 4),
-            (b"NCNGT", b"!IIII", b"1M1=1I2=", 1, 4),
-            (b"ANNGT", b"II!II", b"1=1I1M2=", 1, 4),
-            (b"ANNGT", b"I!III", b"1=1M1I2=", 1, 4),
-            (b"ANGNT", b"I!III", b"1=1M1=1I1=", 1, 4),
+            ("NNCGT", "!IIII", "1M1I3=", 1, 4),
+            ("NCNGT", "!IIII", "1M1=1I2=", 1, 4),
+            ("ANNGT", "II!II", "1=1I1M2=", 1, 4),
+            ("ANNGT", "I!III", "1=1M1I2=", 1, 4),
+            ("ANGNT", "I!III", "1=1M1=1I1=", 1, 4),
         ]
         self.assert_equal(ref, relvecs, expects)
 
@@ -941,20 +940,20 @@ class TestAsSam(ut.TestCase):
     """ Test function `as_sam`. """
 
     def test_line_in_sam_format(self):
-        line = as_sam(b"FS10000136:77:BPG61616-2310:1:1101:1000:1300", 99,
-                      "SARS2_FSE", 1, 42, b"151=", "=", 133, 283,
-                      DNA(b"CCCTGTGGGTTTTACACTTAAAAACACAGTCTGTACCGTCTGCGGTATGTG"
-                          b"GAAAGGTTATGGCTGTAGTTGTGATCAACTCCGCGAACCCATGCTTCAGTC"
-                          b"AGCTGATGCACAATCGTTTTTAAACGGGTTTGCGGTGTAAGTGCAGCCC"),
-                      b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-                      b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-                      b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:")
-        expect = (b"FS10000136:77:BPG61616-2310:1:1101:1000:1300\t99\tSARS2_FSE"
-                  b"\t1\t42\t151=\t=\t133\t283\t"
-                  b"CCCTGTGGGTTTTACACTTAAAAACACAGTCTGTACCGTCTGCGGTATGTGGAAAGGTT"
-                  b"ATGGCTGTAGTTGTGATCAACTCCGCGAACCCATGCTTCAGTCAGCTGATGCACAATCG"
-                  b"TTTTTAAACGGGTTTGCGGTGTAAGTGCAGCCC\t"
-                  b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-                  b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-                  b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:\n")
+        line = as_sam("FS10000136:77:BPG61616-2310:1:1101:1000:1300", 99,
+                      "SARS2_FSE", 1, 42, "151=", "=", 133, 283,
+                      DNA("CCCTGTGGGTTTTACACTTAAAAACACAGTCTGTACCGTCTGCGGTATGTG"
+                          "GAAAGGTTATGGCTGTAGTTGTGATCAACTCCGCGAACCCATGCTTCAGTC"
+                          "AGCTGATGCACAATCGTTTTTAAACGGGTTTGCGGTGTAAGTGCAGCCC"),
+                      "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+                      "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+                      "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:")
+        expect = ("FS10000136:77:BPG61616-2310:1:1101:1000:1300\t99\tSARS2_FSE"
+                  "\t1\t42\t151=\t=\t133\t283\t"
+                  "CCCTGTGGGTTTTACACTTAAAAACACAGTCTGTACCGTCTGCGGTATGTGGAAAGGTT"
+                  "ATGGCTGTAGTTGTGATCAACTCCGCGAACCCATGCTTCAGTCAGCTGATGCACAATCG"
+                  "TTTTTAAACGGGTTTGCGGTGTAAGTGCAGCCC\t"
+                  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+                  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+                  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:\n")
         self.assertEqual(line, expect)

@@ -1,9 +1,9 @@
 from __future__ import annotations
 from functools import cache, wraps
 from logging import getLogger
-from typing import BinaryIO, Callable
+from typing import Callable, TextIO
 
-from ..core.xam import SAM_DELIMITER, SAM_HEADER, FLAG_PAIRED
+from ..core.xam import SAM_DELIM, SAM_HEADER, FLAG_PAIRED
 
 
 logger = getLogger(__name__)
@@ -13,7 +13,7 @@ def _reset_seek(func: Callable):
     """ Decorator to reset the position in the SAM file after the
     decorated function returns. """
     @wraps(func)
-    def wrapper(sam_file: BinaryIO, *args, **kwargs):
+    def wrapper(sam_file: TextIO, *args, **kwargs):
         prev_pos = sam_file.tell()
         try:
             return func(sam_file, *args, **kwargs)
@@ -24,7 +24,7 @@ def _reset_seek(func: Callable):
 
 def _range_of_records(get_records_func: Callable):
     @wraps(get_records_func)
-    def wrapper(sam_file: BinaryIO, start: int, stop: int):
+    def wrapper(sam_file: TextIO, start: int, stop: int):
         logger.debug(
             f"Reading records from {sam_file.name} from {start} to {stop}")
         sam_file.seek(start)
@@ -45,32 +45,32 @@ def _range_of_records(get_records_func: Callable):
 
 
 @_range_of_records
-def _iter_records_single(sam_file: BinaryIO):
+def _iter_records_single(sam_file: TextIO):
     """ Yield the read name and line for every read in the file. """
     while line := sam_file.readline():
-        yield line.split(SAM_DELIMITER, 1)[0], line, b""
+        yield line.split(SAM_DELIM, 1)[0], line, ""
 
 
 @_range_of_records
-def _iter_records_paired(sam_file: BinaryIO):
-    prev_line: bytes = b""
-    prev_name: bytes = b""
+def _iter_records_paired(sam_file: TextIO):
+    prev_line: str = ""
+    prev_name: str = ""
     while line := sam_file.readline():
         if prev_line:
             # Read name is the first field of the line.
-            name = line.split(SAM_DELIMITER, 1)[0]
+            name = line.split(SAM_DELIM, 1)[0]
             # The previous read has not yet been yielded.
             if prev_name == name:
                 # The current read is the mate of the previous read.
                 yield prev_name, prev_line, line
-                prev_line = b""
-                prev_name = b""
+                prev_line = ""
+                prev_name = ""
             else:
                 # The previous read is paired, but its mate is not in
                 # the SAM file. This situation can occur if Bowtie2 is
                 # run in mixed alignment mode and two paired mates fail
                 # to align as a pair but one mate aligns individually.
-                yield prev_name, prev_line, b""
+                yield prev_name, prev_line, ""
                 # Save the current read so that if its mate is the next
                 # read, it will be returned as a pair.
                 prev_line = line
@@ -79,15 +79,15 @@ def _iter_records_paired(sam_file: BinaryIO):
             # Save the current read so that if its mate is the next
             # read, it will be returned as a pair.
             prev_line = line
-            prev_name = line.split(SAM_DELIMITER, 1)[0]
+            prev_name = line.split(SAM_DELIM, 1)[0]
     if prev_line:
         # In case the last read has not yet been yielded, do so.
-        yield prev_name, prev_line, b""
+        yield prev_name, prev_line, ""
 
 
 @cache
 @_reset_seek
-def _find_first_record(sam_file: BinaryIO):
+def _find_first_record(sam_file: TextIO):
     """ Return the position of the first record in the SAM file. """
     sam_file.seek(0)
     while (line := sam_file.readline()).startswith(SAM_HEADER):
@@ -97,12 +97,12 @@ def _find_first_record(sam_file: BinaryIO):
 
 @cache
 @_reset_seek
-def is_paired(sam_file: BinaryIO):
+def is_paired(sam_file: TextIO):
     """ Return whether the reads in the SAM file are paired-end. """
     sam_file.seek(_find_first_record(sam_file))
     first_line = sam_file.readline()
     try:
-        flag = first_line.split(SAM_DELIMITER, 2)[1]
+        flag = first_line.split(SAM_DELIM, 2)[1]
         paired = bool(int(flag) & FLAG_PAIRED)
     except (IndexError, ValueError):
         logger.critical(f"Failed to determine whether {sam_file.name} has "
@@ -114,14 +114,14 @@ def is_paired(sam_file: BinaryIO):
     return paired
 
 
-def iter_records(sam_file: BinaryIO, start: int, stop: int):
+def iter_records(sam_file: TextIO, start: int, stop: int):
     """ Return an iterator of records between positions start and stop
     in the SAM file. """
     return (_iter_records_paired(sam_file, start, stop) if is_paired(sam_file)
             else _iter_records_single(sam_file, start, stop))
 
 
-def iter_batch_indexes(sam_file: BinaryIO, records_per_batch: int):
+def iter_batch_indexes(sam_file: TextIO, records_per_batch: int):
     """ Yield the start and end positions of every batch in the SAM
     file, where each batch should have about `records_per_batch`
     records. Assume that for nearly all records in paired-end SAM
@@ -159,7 +159,7 @@ def iter_batch_indexes(sam_file: BinaryIO, records_per_batch: int):
             end_curr = sam_file.tell()
             # Try to get the name of the read in the current line.
             try:
-                name_curr = line.split(SAM_DELIMITER, 1)[0]
+                name_curr = line.split(SAM_DELIM, 1)[0]
             except IndexError:
                 # Getting the read name failed, so it is impossible
                 # to tell whether this read is the mate of the next
@@ -183,7 +183,7 @@ def iter_batch_indexes(sam_file: BinaryIO, records_per_batch: int):
             end_next = sam_file.tell()
             # Try to get the name of the read in the next line.
             try:
-                name_next = line.split(SAM_DELIMITER, 1)[0]
+                name_next = line.split(SAM_DELIM, 1)[0]
             except IndexError:
                 # Getting the read name failed, so it is impossible
                 # to tell whether this next read is the mate of the

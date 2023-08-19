@@ -15,7 +15,7 @@ from ..core.cli import (arg_input_file,
                         opt_min_ninfo_pos, opt_max_fmut_pos,
                         opt_max_procs, opt_parallel, opt_rerun)
 from ..core.parallel import dispatch
-from ..core.sect import encode_primers, RefSections
+from ..core.sect import RefSections
 from ..core.seq import DNA
 
 logger = getLogger(__name__)
@@ -49,7 +49,7 @@ def cli(*args, **kwargs):
 def run(input_file: tuple[str, ...], *,
         # Sections
         coords: tuple[tuple[str, int, int], ...],
-        primers: tuple[tuple[str, str, str], ...],
+        primers: tuple[tuple[str, DNA, DNA], ...],
         primer_gap: int,
         sections_file: str,
         # Mutation counting
@@ -74,7 +74,7 @@ def run(input_file: tuple[str, ...], *,
     # Open all relation vector loaders and get the sections for each.
     loaders, sections = open_sections(map(Path, input_file),
                                       coords=coords,
-                                      primers=encode_primers(primers),
+                                      primers=primers,
                                       primer_gap=primer_gap,
                                       sections_file=(Path(sections_file)
                                                      if sections_file

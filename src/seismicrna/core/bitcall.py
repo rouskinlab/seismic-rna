@@ -4,7 +4,7 @@ Core -- Bit Caller Module
 
 from __future__ import annotations
 
-from functools import cache as ftcache, reduce
+from functools import cache, reduce
 from itertools import product
 from logging import getLogger
 import re
@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from .bitvect import BitBatch
-from .rel import MATCH, DELET, INS_5, INS_3, SUB_A, SUB_C, SUB_G, SUB_T
+from .rel import MATCH, DELET, INS_5, INS_3, SUB_A, SUB_C, SUB_G, SUB_T, NP_TYPE
 from .sect import Section, index_to_seq
 from .seq import DNA
 
@@ -140,18 +140,18 @@ class SemiBitCaller(object):
         logger.debug(f"Instantiated new {self.__class__.__name__}"
                      f"From: {codes}\nTo: {self.queries}")
 
-    @ftcache
+    @cache
     def seq_query(self, seq: DNA):
         """ Convert the query dictionary into an array with one element
         per position in the sequence. """
         # Initialize an empty query array: one element per base in seq.
-        query = np.zeros_like(seq.to_int_array(), dtype=np.uint8)
+        query = np.zeros(len(seq), dtype=NP_TYPE)
         # Set the elements of the query array for each type of ref base.
         for ref_base, ref_query in self.queries.items():
             # Locate all elements of seq with the given type of ref base
             # and set the corresponding positions in query to the query
             # byte for the ref base.
-            query[np.equal(seq.to_int_array(), ord(ref_base))] = ref_query
+            query[np.equal(seq.to_array(), ref_base)] = ref_query
         return query
 
     def call(self, relvecs: pd.DataFrame) -> pd.DataFrame:

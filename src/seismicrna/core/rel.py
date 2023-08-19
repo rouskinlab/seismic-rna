@@ -12,10 +12,15 @@ from sys import byteorder
 from typing import Sequence
 
 import numpy as np
+import pandas as pd
 
-from .sect import Section
-from .seq import (BASES, A_INT, C_INT, G_INT, T_INT, N_INT, DNA,
+from .sect import Section, seq_pos_to_index
+from .seq import (BASEA, BASEC, BASEG, BASET, BASEN, DNA, DNAmbig,
                   expand_degenerate_seq)
+from .sim import rng
+
+# Data type for NumPy and NumPy-like arrays of relation vectors.
+NP_TYPE = np.uint8
 
 # Minimum number of non-indel bases between an insertion and a deletion.
 MIN_INDEL_GAP = 1
@@ -48,30 +53,30 @@ MINS3 = INS_3 | MATCH
 ANY_8 = INS_8 | MATCH
 
 # Map bases to integer encodings and vice versa.
-BASE_ENCODINGS = {A_INT: SUB_A, C_INT: SUB_C, G_INT: SUB_G, T_INT: SUB_T}
+BASE_ENCODINGS = {BASEA: SUB_A, BASEC: SUB_C, BASEG: SUB_G, BASET: SUB_T}
 BASE_DECODINGS = {code: base for base, code in BASE_ENCODINGS.items()}
 
 # Number of unique bytes
 N_BYTES = 256  # = 2^8
 # Map each common byte in the vector encoding (e.g. MATCH) to a byte of
 # human-readable text.
-BYTE_SYMBOLS = {NOCOV: b"_",
-                MATCH: b"=",
-                DELET: b".",
-                INS_5 | MATCH: b"{",
-                INS_5 | MATCH | INS_3: b"+",
-                INS_3 | MATCH: b"}",
-                SUB_A: b"A",
-                SUB_C: b"C",
-                SUB_G: b"G",
-                SUB_T: b"T",
-                SUB_A | SUB_C | SUB_G | MATCH: b"N",
-                SUB_T | SUB_A | SUB_C | MATCH: b"N",
-                SUB_G | SUB_T | SUB_A | MATCH: b"N",
-                SUB_C | SUB_G | SUB_T | MATCH: b"N",
-                IRREC: b"!"}
+BYTE_SYMBOLS = {NOCOV: b'_',
+                MATCH: b'=',
+                DELET: b'.',
+                INS_5 | MATCH: b'{',
+                INS_5 | MATCH | INS_3: b'+',
+                INS_3 | MATCH: b'}',
+                SUB_A: b'A',
+                SUB_C: b'C',
+                SUB_G: b'G',
+                SUB_T: b'T',
+                SUB_A | SUB_C | SUB_G | MATCH: b'N',
+                SUB_T | SUB_A | SUB_C | MATCH: b'N',
+                SUB_G | SUB_T | SUB_A | MATCH: b'N',
+                SUB_C | SUB_G | SUB_T | MATCH: b'N',
+                IRREC: b'!'}
 # Default for uncommon bytes in the vector encoding.
-OTHER_SYMBOL = b"?"
+OTHER_SYMBOL = b'?'
 # Create an array that maps each vector byte to its readable character.
 map_array = bytearray(OTHER_SYMBOL) * N_BYTES
 for byte, symbol in BYTE_SYMBOLS.items():
@@ -80,56 +85,55 @@ for byte, symbol in BYTE_SYMBOLS.items():
 map_table = bytes.maketrans(bytes(range(N_BYTES)), map_array)
 
 # CIGAR string operation codes
-CIG_ALIGN = b"M"  # alignment match
-CIG_MATCH = b"="  # sequence match
-CIG_SUBST = b"X"  # substitution
-CIG_DELET = b"D"  # deletion
-CIG_INSRT = b"I"  # insertion
-CIG_SCLIP = b"S"  # soft clipping
+CIG_ALIGN = 'M'  # alignment match
+CIG_MATCH = '='  # sequence match
+CIG_SUBST = 'X'  # substitution
+CIG_DELET = 'D'  # deletion
+CIG_INSRT = 'I'  # insertion
+CIG_SCLIP = 'S'  # soft clipping
 
 # Regular expression pattern that matches a single CIGAR operation
 # (length ≥ 1 and operation code, defined above)
-CIG_PATTERN = re.compile(b"".join([rb"(\d+)([",
-                                   CIG_ALIGN,
-                                   CIG_MATCH,
-                                   CIG_SUBST,
-                                   CIG_DELET,
-                                   CIG_INSRT,
-                                   CIG_SCLIP,
-                                   b"])"]))
+CIG_PATTERN = re.compile("".join([r"(\d+)([",
+                                  CIG_ALIGN,
+                                  CIG_MATCH,
+                                  CIG_SUBST,
+                                  CIG_DELET,
+                                  CIG_INSRT,
+                                  CIG_SCLIP,
+                                  "])"]))
 
 # Define default values for low-, medium-, and high-quality base calls.
-MIN_QUAL = b'!'[0]
-MED_QUAL = b'5'[0]
-MAX_QUAL = b'I'[0]
+MIN_QUAL = '!'
+MED_QUAL = '5'
+MAX_QUAL = 'I'
 
 
 class CigarOp(object):
     """ Represent one operation in a CIGAR string. """
 
-    def __init__(self, op: bytes):
+    def __init__(self, op: str):
         if op not in (CIG_ALIGN, CIG_MATCH, CIG_SUBST,
                       CIG_DELET, CIG_INSRT, CIG_SCLIP):
-            raise ValueError(f"Invalid CIGAR operation: '{op.decode()}'")
+            raise ValueError(f"Invalid CIGAR operation: '{op}'")
         self._op = op
         self._len = 1
 
     @property
     def op(self):
-        """ CIGAR operation as a 1-character byte. """
+        """ CIGAR operation as a character. """
         return self._op
-
-    @property
-    def text(self):
-        """ Text for this operation that goes into the CIGAR string. """
-        return b"%d%c" % (self._len, self._op)
 
     def lengthen(self):
         """ Lengthen the operation by 1 base call. """
         self._len += 1
 
+    def __str__(self):
+        """ Text that goes into the CIGAR string. """
+        return f"{self._len}{self._op}"
 
-def parse_cigar(cigar_string: bytes):
+
+def parse_cigar(cigar_string: str):
     """
     Yield the fields of a CIGAR string as pairs of (operation, length),
     where operation is 1 byte indicating the CIGAR operation and length
@@ -161,34 +165,34 @@ def parse_cigar(cigar_string: bytes):
     # the number of bytes matched is smaller than the length of the
     # CIGAR string, then some bytes must have been skipped, indicating
     # that the CIGAR string contained at least one invalid byte.
-    num_bytes_matched = 0
+    num_chars_matched = 0
     # Find every operation in the CIGAR string that matches the regular
     # expression.
     for match in CIG_PATTERN.finditer(cigar_string):
-        length_bytes, operation = match.groups()
-        # Convert the length field from bytes to int and verify that it
+        length_str, operation = match.groups()
+        # Convert the length field from str to int and verify that it
         # is a positive integer.
-        if (length_int := int(length_bytes)) < 1:
+        if (length_int := int(length_str)) < 1:
             raise ValueError("length of CIGAR operation must be ≥ 1")
-        # Add the total number of bytes in the current operation to the
-        # count of the number of bytes matched from the CIGAR string.
-        num_bytes_matched += len(length_bytes) + len(operation)
+        # Add the total number of characters in the current operation to
+        # the total number of characters matched from the CIGAR string.
+        num_chars_matched += len(length_str) + len(operation)
         # Note that the fields are yielded as (operation, length), but
         # in the CIGAR string itself, the order is (length, operation).
         yield operation, length_int
     # Confirm that all bytes in the CIGAR string were matched by the
     # regular expression.
-    if num_bytes_matched != len(cigar_string):
-        raise ValueError(f"Invalid CIGAR: '{cigar_string.decode()}'")
+    if num_chars_matched != len(cigar_string):
+        raise ValueError(f"Invalid CIGAR: '{cigar_string}'")
 
 
-def count_cigar_muts(cigar_string: bytes):
+def count_cigar_muts(cigar_string: str):
     """ Return the total number of mutations in a CIGAR string. """
     return sum(olen for op, olen in parse_cigar(cigar_string)
                if op in (CIG_SUBST, CIG_DELET, CIG_INSRT))
 
 
-def find_cigar_op_pos(cigar_string: bytes, find_op: bytes):
+def find_cigar_op_pos(cigar_string: str, find_op: str):
     """ Yield the position of every inserted base in a CIGAR string. """
     consume_read = (CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_INSRT)
     if find_op not in consume_read:
@@ -210,8 +214,8 @@ def validate_relvec(relvec: np.ndarray):
     """ Confirm that a relation vector is valid, then return it. """
     if not isinstance(relvec, np.ndarray):
         raise TypeError(f"Expected {np.ndarray}, but got {type(relvec)}")
-    if relvec.dtype.type is not np.uint8:
-        raise TypeError(f"Expected an array of type {np.uint8}, but got "
+    if relvec.dtype.type is not NP_TYPE:
+        raise TypeError(f"Expected an array of type {NP_TYPE}, but got "
                         f"type {relvec.dtype.type}")
     if relvec.ndim != 1:
         raise ValueError("Expected an array with 1 dimension, but got "
@@ -234,7 +238,132 @@ def translate_relvec(relvec: np.ndarray):
     return relvec.tobytes().translate(map_table)
 
 
-def encode_relate(ref_base: int, read_base: int, read_qual: int, min_qual: int):
+def blank_relvec(bases: int | DNA,
+                 reads: int | list | np.ndarray | pd.Index | None = None):
+    """
+    Return blank relation vector(s) of a given length.
+
+    Parameters
+    ----------
+    bases: int | DNA
+        The reference sequence (if DNA) or just its length (if int).
+        If the sequence itself is given, then return a Series/DataFrame
+        whose main index (index for Series, columns for DataFrame) is a
+        MultiIndex of 1-indexed positions and bases in the sequence.
+        If only the sequence length is given, then return a NumPy array.
+    reads: int | list | np.ndarray | pd.Index | None = None
+        Optional names of the relation vectors. If given, then return a
+        DataFrame whose indexes are the read names if bases is DNA,
+        otherwise a 2D NumPy array with one row for each name in reads.
+        If None, then return a Series if bases is DNA, otherwise a 1D
+        NumPy array.
+
+    Returns
+    -------
+    np.ndarray | pd.Series | pd.DataFrame
+        The blank relation vector(s).
+    """
+    # Ensure that reads is either None or a sequence of bytes objects.
+    if reads is not None:
+        if isinstance(reads, int):
+            reads = [b"Read_%d" % i for i in range(1, reads + 1)]
+        else:
+            reads = [read if isinstance(read, bytes)
+                     else (read.encode() if isinstance(read, str)
+                           else str(read).encode())
+                     for read in reads]
+    # Determine whether to return a Pandas or NumPy object.
+    if isinstance(bases, DNA):
+        # Make a Series or DataFrame with the sequence as its main axis.
+        sequence = seq_pos_to_index(bases, np.arange(1, len(bases) + 1), 1)
+        if reads is None:
+            # Return a Series representing just one relation vector.
+            return pd.Series(NOCOV, index=sequence, dtype=NP_TYPE)
+        # Return a DataFrame with one row per relation vector.
+        return pd.DataFrame(NOCOV, index=reads, columns=sequence, dtype=NP_TYPE)
+    # Make a NumPy array: 2D if reads is an Index, otherwise 1D.
+    return np.full(bases if reads is None else (len(reads), bases),
+                   fill_value=NOCOV, dtype=NP_TYPE)
+
+
+def random_relvecs(refseq: DNA, reads: pd.Index | np.ndarray | list | int,
+                   ploq: pd.Series, pmut: pd.Series,
+                   ptri: float = 0.50, ptrc: float = 0.25, ptrn: float = 0.25):
+    """
+    Return random relation vectors.
+
+    Parameters
+    ----------
+    refseq: DNA
+        Sequence of the reference.
+    reads: pd.Index | np.ndarray | list | int
+        Names of the reads or number of reads (if int).
+    ploq: Series
+        Probability that each position is low-quality.
+    pmut: Series
+        Mutation rate of each position.
+    ptri: float = 0.25
+        Probability that a mutation is a transition.
+    ptrc: float = 0.25
+        Probability that a mutation is a complementary transversion.
+    ptrn: float = 0.25
+        Probability that a mutation is a non-complementary transversion.
+
+    Returns
+    -------
+    """
+    # Validate ploq and pmut.
+    if not ploq.index.equals(pmut.index):
+        raise ValueError(f"Indexes differ between ploq ({ploq.index}) "
+                         f"and pmut ({pmut.index})")
+    if np.any(ploq < 0.) or np.any(ploq >= 1.):
+        raise ValueError(f"All ploq must be in [0, 1), but got {ploq}")
+    if np.any(pmut < 0.) or np.any(pmut >= 1.):
+        raise ValueError(f"All pmut must be in [0, 1), but got {pmut}")
+    # Validate ptri, ptrc, and ptrn.
+    if not 0. <= ptri <= 1.:
+        raise ValueError(f"ptri must be in [0, 1], but got {ptri}")
+    if not 0. <= ptrc <= 1.:
+        raise ValueError(f"ptrc must be in [0, 1], but got {ptrc}")
+    if not 0. <= ptrn <= 1.:
+        raise ValueError(f"ptrn must be in [0, 1], but got {ptrn}")
+    # The sum of the probabilities cannot exceed 1.
+    if (qdel := ptri + ptrc + ptrn) > 1.:
+        raise ValueError(f"(ptri + ptrc + ptrn) must be ≤ 1, but got {qdel}")
+    # Compute the probability that a mutation is a deletion.
+    pdel = 1. - qdel
+    # Initialize a DataFrame of blank relation vectors.
+    relvecs = blank_relvec(refseq, reads)
+    n_reads, n_pos = relvecs.shape
+    # Initially set all relationships within the section to matches.
+    relvecs.loc[:, ploq.index] = MATCH
+    # Simulate whether each position is low-quality.
+    is_loq = rng.random((n_reads, ploq.size)) < ploq
+    # Find the indexes of the low-quality positions.
+    loq_rows, loq_cols = np.nonzero(is_loq)
+    n_loqs = loq_rows.size
+    if n_loqs != loq_cols.size:
+        raise ValueError(f"Counts differ for low-quality rows ({n_loqs}) "
+                         f"and columns ({loq_cols.size})")
+    # Mark every low-quality base.
+    for base, code in BASE_ENCODINGS.items():
+        pass
+    # Simulate whether each high-quality position is mutated.
+    is_mut = np.logical_and(rng.random((n_reads, pmut.size)) < pmut,
+                            np.logical_not(is_loq))
+    # Find the indexes of the mutated positions.
+    mut_rows, mut_cols = np.nonzero(is_mut)
+    n_muts = mut_rows.size
+    if n_muts != mut_cols.size:
+        raise ValueError(f"Counts differ for mutated rows ({n_muts}) "
+                         f"and columns ({mut_cols.size})")
+    # Simulate the type of each mutation.
+    pmut_types = [pdel, ptrc, ptri, ptrn]
+    is_mut_types = rng.choice(np.arange(len(pmut_types)), n_muts, p=pmut_types)
+    #
+
+
+def encode_relate(ref_base: str, read_base: str, read_qual: str, min_qual: str):
     """
     Encode the relation between a base in the read and a base in the
     reference sequence. If the read quality is sufficient, then return
@@ -247,13 +376,13 @@ def encode_relate(ref_base: int, read_base: int, read_qual: int, min_qual: int):
 
     Parameters
     ----------
-    ref_base: int
-        ASCII encoding for the base in the reference sequence.
-    read_base: int
-        ASCII encoding for the base in the read sequence.
-    read_qual: int
+    ref_base: DNA
+        Base in the reference sequence.
+    read_base: DNA
+        Base in the read sequence.
+    read_qual: str
         ASCII encoding for the Phred quality score of the read base.
-    min_qual: int
+    min_qual: str
         Minimum value of `read_qual` to not call the relation ambiguous.
     """
     return ((MATCH if ref_base == read_base
@@ -261,7 +390,7 @@ def encode_relate(ref_base: int, read_base: int, read_qual: int, min_qual: int):
             else ANY_N ^ BASE_ENCODINGS[ref_base])
 
 
-def encode_match(read_base: int, read_qual: int, min_qual: int):
+def encode_match(read_base: str, read_qual: str, min_qual: str):
     """
     A more efficient version of `encode_compare` given prior knowledge
     from the CIGAR string that the read and reference match at this
@@ -312,11 +441,11 @@ def iter_relvecs_q53(refseq: DNA, low_qual: Sequence[int] = (),
         ref_base = refseq[pos - 1]
         if low_qual:
             # The only option is low-quality.
-            opts = encode_relate(ref_base, ref_base, 0, 1),
+            opts = encode_relate(ref_base, ref_base, '0', '1'),
         else:
             # The options are a match and three substitutions.
-            opts = tuple(encode_relate(ref_base, read_base, 1, 1)
-                         for read_base in BASES)
+            opts = tuple(encode_relate(ref_base, read_base, '1', '1')
+                         for read_base in DNA.alph)
         # A deletion is an option at every position except the ends of
         # the covered region.
         if sect.end5 < pos < sect.end3:
@@ -326,7 +455,7 @@ def iter_relvecs_q53(refseq: DNA, low_qual: Sequence[int] = (),
     margin = MIN_INDEL_GAP + 1
     for rel in product(*rel_opts):
         # Generate a relation vector from the relationships.
-        relvec = np.array(rel, dtype=np.uint8)
+        relvec = np.array(rel, dtype=NP_TYPE)
         yield relvec
         if max_ins == 0:
             # Do not introduce any insertions into the read.
@@ -383,23 +512,57 @@ def iter_relvecs_all(refseq: DNA, max_ins: int = 2):
                                             max_ins)
 
 
-def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: int, lo_qual: int,
+def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: str, lo_qual: str,
                    ins_len: int | Sequence[int] = 1):
-    """ Make a read sequence from a reference and relation vector. """
+    """
+    Infer a read sequence and quality string from a reference sequence
+    and relation vector.
+
+    Parameters
+    ----------
+    refseq: DNA
+        Sequence of the reference.
+    relvec: ndarray
+        Relation vector.
+    hi_qual: str
+        Character to put in the quality string at every position that is
+        high-quality according to the relation vector.
+    lo_qual: str
+        Character to put in the quality string at every position that is
+        low-quality according to the relation vector.
+    ins_len: int | Sequence[int] = 1
+        Number of bases to insert into the read and quality strings upon
+        finding an insertion in the relation vector. If an integer, then
+        insert that number of bases for every insertion. If a sequence
+        of integers, then the ith insertion gets a number of bases equal
+        to the ith element of ins_len.
+
+    Returns
+    -------
+
+    """
     # Validate the relation vector and reference sequence.
     end5, end3 = validate_relvec(relvec)
     if len(refseq) != len(relvec):
         raise ValueError(f"Reference sequence has {len(refseq)} nt, "
                          f"but relation vector has {len(relvec)} nt")
+    if hi_qual < lo_qual:
+        raise ValueError(f"The high-quality score ({hi_qual}) is less than "
+                         f"than the low-quality score ({lo_qual})")
+    # Validate the quality codes.
+    if len(hi_qual) != 1:
+        raise ValueError(f"hi_qual must be 1 character, but got {len(hi_qual)}")
+    if len(lo_qual) != 1:
+        raise ValueError(f"lo_qual must be 1 character, but got {len(hi_qual)}")
     # Build the read sequence, quality scores, and CIGAR string one base
     # at a time.
-    read: list[int] = list()
-    qual: list[int] = list()
+    read: list[str] = list()
+    qual: list[str] = list()
     cigars: list[CigarOp] = list()
     ins3_next = False
     ins_count = 0
 
-    def add_cigar(op: bytes):
+    def add_cigar(op: str):
         """ Add one base of the relation vector to the CIGAR string. """
         if cigars and cigars[-1].op == op:
             # The current operation matches that of the last CigarOp:
@@ -411,7 +574,7 @@ def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: int, lo_qual: int,
             cigars.append(CigarOp(op))
 
     for pos in range(end5, end3 + 1):
-        base = refseq[pos - 1]
+        ref_base = refseq[pos - 1]
         rel = relvec[pos - 1]
         if rel == NOCOV:
             raise ValueError(f"Position {pos} in {end5}-{end3} is not covered")
@@ -439,9 +602,9 @@ def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: int, lo_qual: int,
                 else:
                     # Add a number of bases for this specific insertion.
                     n_ins = ins_len[ins_count]
+                read.append(BASEN * n_ins)
+                qual.append(hi_qual * n_ins)
                 for _ in range(n_ins):
-                    read.append(N_INT)
-                    qual.append(hi_qual)
                     add_cigar(CIG_INSRT)
                 ins_count += 1
                 # Being 3' of an insertion is not allowed until the next
@@ -469,50 +632,43 @@ def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: int, lo_qual: int,
             raise ValueError(f"Missing 3' ins at {pos} in {relvec}")
         if rel == MATCH:
             # Match: Add the reference base to the read.
-            read.append(base)
+            read.append(ref_base)
             qual.append(hi_qual)
             add_cigar(CIG_MATCH)
-        elif rel ^ ANY_N in (SUB_A, SUB_C, SUB_G, SUB_T):
-            # Ambiguous Sub: Add any nucleotide as low quality.
-            read.append(N_INT)
-            qual.append(lo_qual)
-            add_cigar(CIG_ALIGN)
-        elif rel == SUB_T:
-            # Substitution to T.
-            if base == T_INT:
-                raise ValueError(f"Cannot substitute T to itself in {relvec}")
-            read.append(T_INT)
-            qual.append(hi_qual)
-            add_cigar(CIG_SUBST)
-        elif rel == SUB_G:
-            # Substitution to G.
-            if base == G_INT:
-                raise ValueError(f"Cannot substitute G to itself in {relvec}")
-            read.append(G_INT)
-            qual.append(hi_qual)
-            add_cigar(CIG_SUBST)
-        elif rel == SUB_C:
-            # Substitution to C.
-            if base == C_INT:
-                raise ValueError(f"Cannot substitute C to itself in {relvec}")
-            read.append(C_INT)
-            qual.append(hi_qual)
-            add_cigar(CIG_SUBST)
-        elif rel == SUB_A:
-            # Substitution to A.
-            if base == A_INT:
-                raise ValueError(f"Cannot substitute A to itself in {relvec}")
-            read.append(A_INT)
-            qual.append(hi_qual)
-            add_cigar(CIG_SUBST)
         elif rel == DELET:
             # Deletion from the read.
             if not end5 < pos < end3:
                 raise ValueError(
                     f"Deletion cannot be at position {pos} in {end5}-{end3}")
             add_cigar(CIG_DELET)
+        elif rel ^ ANY_N in (SUB_A, SUB_C, SUB_G, SUB_T):
+            # Ambiguous substitution: Add any nucleotide as low quality.
+            read.append(BASEN)
+            qual.append(lo_qual)
+            add_cigar(CIG_ALIGN)
         else:
-            raise ValueError(f"Invalid relation {rel} in {relvec}")
+            # Unambiguous substitution: Add the substituted nucleotide
+            # as high quality.
+            if rel == SUB_T:
+                # Substitution to T.
+                read_base = BASET
+            elif rel == SUB_G:
+                # Substitution to G.
+                read_base = BASEG
+            elif rel == SUB_C:
+                # Substitution to C.
+                read_base = BASEC
+            elif rel == SUB_A:
+                # Substitution to A.
+                read_base = BASEA
+            else:
+                raise ValueError(f"Invalid relation {rel} in {relvec}")
+            if ref_base == read_base:
+                raise ValueError(
+                    f"Cannot substitute {ref_base} to itself in {relvec}")
+            read.append(read_base)
+            qual.append(hi_qual)
+            add_cigar(CIG_SUBST)
     # Check that the 5' end was found.
     if end5 == 0:
         raise ValueError(f"Relation vector had no 5' end: {relvec}")
@@ -522,8 +678,10 @@ def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: int, lo_qual: int,
     if not read:
         raise ValueError("Read contained no bases")
     # Assemble and return the read, quality, and CIGAR strings.
-    cigar_string = b"".join(cigar.text for cigar in cigars)
-    return bytes(read), bytes(qual), cigar_string, end5, end3
+    read_seq = DNAmbig("".join(read))
+    qual_string = "".join(qual)
+    cigar_string = "".join(map(str, cigars))
+    return read_seq, qual_string, cigar_string, end5, end3
 
 
 def ref_to_alignments(refseq: DNA,
@@ -552,7 +710,7 @@ def ref_to_alignments(refseq: DNA,
     quals = dict()
     cigars = defaultdict(lambda: defaultdict(list))
     relvecs = defaultdict(lambda: defaultdict(lambda: np.zeros(len(refseq),
-                                                               dtype=np.uint8)))
+                                                               dtype=NP_TYPE)))
     if max_ins < 0:
         raise ValueError(f"max_ins must be ≥ 0, but got {max_ins}")
     if max_ins > 0:
@@ -589,8 +747,8 @@ def ref_to_alignments(refseq: DNA,
                 # the purpose of aggregating reads based on sequence,
                 # quality score, and position -- the "fake" quality
                 # scores of inserted bases should not be considered.
-                qual_no_ins = bytes(q for i, q in enumerate(qual, start=1)
-                                    if i not in ins_pos)
+                qual_no_ins = "".join(q for i, q in enumerate(qual, start=1)
+                                      if i not in ins_pos)
             else:
                 qual_no_ins = qual
             # Count the mutations in the CIGAR string.
@@ -629,14 +787,14 @@ def iter_alignments(*args, **kwargs):
             yield read, qual, cigar, end5, end3, relvec
 
 
-def as_sam(name: bytes, flag: int, ref: str, end5: int, mapq: int, cigar: bytes,
-           rnext: str, pnext: int, tlen: int, read: DNA, qual: bytes):
+def as_sam(name: str, flag: int, ref: str, end5: int, mapq: int, cigar: str,
+           rnext: str, pnext: int, tlen: int, read: DNA, qual: str):
     """
     Return a line in SAM format from the given fields.
 
     Parameters
     ----------
-    name: bytes
+    name: str
         Name of the read.
     flag: int
         SAM flag. Must be in [0, 4096).
@@ -646,7 +804,7 @@ def as_sam(name: bytes, flag: int, ref: str, end5: int, mapq: int, cigar: bytes,
         Most 5' position to which the read mapped (1-indexed).
     mapq: int
         Mapping quality score.
-    cigar: bytes
+    cigar: str
         CIGAR string. Not checked for compatibility with the read.
     rnext: str
         Name of the mate's reference (if paired-end).
@@ -656,13 +814,13 @@ def as_sam(name: bytes, flag: int, ref: str, end5: int, mapq: int, cigar: bytes,
         Length of the template.
     read: DNA
         Base calls in the read. Must be equal in length to `read`.
-    qual: bytes
+    qual: str
         Phred quality score string of the base calls. Must be equal in
         length to `read`.
 
     Returns
     -------
-    bytes
+    str
         A line in SAM format containing the given fields.
     """
     if not name:
@@ -682,9 +840,5 @@ def as_sam(name: bytes, flag: int, ref: str, end5: int, mapq: int, cigar: bytes,
     if not len(read) == len(qual):
         raise ValueError(
             f"Lengths of read ({len(read)}) and qual ({len(qual)}) disagree")
-    return b"%b\t%d\t%b\t%d\t%d\t%b\t%b\t%d\t%d\t%b\t%b\n" % (name, flag,
-                                                              ref.encode(),
-                                                              end5, mapq, cigar,
-                                                              rnext.encode(),
-                                                              pnext, tlen,
-                                                              read, qual)
+    return (f"{name}\t{flag}\t{ref}\t{end5}\t{mapq}\t{cigar}\t"
+            f"{rnext}\t{pnext}\t{tlen}\t{read}\t{qual}\n")

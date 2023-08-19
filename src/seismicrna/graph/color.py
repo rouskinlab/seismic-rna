@@ -4,7 +4,7 @@ from inspect import getmembers
 from sys import modules
 from typing import Any, Hashable
 
-from ..core.seq import A_INT, C_INT, G_INT, T_INT
+from ..core.seq import BASEA, BASEC, BASEG, BASET
 from ..table.base import REL_CODES
 
 
@@ -33,7 +33,7 @@ class SeqColorMap(ColorMap):
         super().__init__(name, a=a, c=c, g=g, t=t)
 
     def _set_colors(self, *, a: str, c: str, g: str, t: str):
-        return {A_INT: a, C_INT: c, G_INT: g, T_INT: t}
+        return {BASEA: a, BASEC: c, BASEG: g, BASET: t}
 
 
 class RelColorMap(ColorMap):

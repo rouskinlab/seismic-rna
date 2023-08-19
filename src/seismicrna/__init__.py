@@ -1,7 +1,48 @@
+"""
+
+Initialization module for SEISMIC-RNA.
+
+========================================================================
+
+Expose the sub-packages demult, align, relate, cluster, and table, plus
+the __version__ attribute, at the top level so that they can be imported
+from external modules and scripts in either of the following manners:
+
+>>> import seismicrna
+>>> seismicrna.__version__
+
+or
+
+>>> from seismicrna import __version__
+
+------------------------------------------------------------------------
+
+©2023, the Rouskin Lab.
+
+This file is part of SEISMIC-RNA.
+
+SEISMIC-RNA is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+SEISMIC-RNA is distributed in the hope that it will be useful, but WITH-
+OUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+for more details.
+
+You should have received a copy of the GNU General Public License along
+with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
+
+========================================================================
+
+"""
+
+
 import warnings
 
-from . import demult, align, relate, cluster, table, draw
-from .main import run, main_cli
-from .meta import __version__
+from . import demult, align, relate, cluster, table
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+__version__ = "0.7.0"

@@ -62,7 +62,7 @@ def points():
             tau_x = tau * x
             a = tau * np.cos(tau_x) - x * np.sin(tau_x)
             # Compute the time derivative of x as a function of x.
-            return c / np.sqrt((tau * np.exp(-x * x) * a * a) + 1.)
+            return c / np.sqrt((tau * np.exp(-x**2) * a**2) + 1.)
 
         # Integrate the differential equation numerically.
         t_span = t_eval[0], t_eval[-1]

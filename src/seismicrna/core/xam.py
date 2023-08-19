@@ -2,7 +2,7 @@ from logging import getLogger
 from pathlib import Path
 from math import isnan, nan
 import re
-from typing import BinaryIO
+from typing import TextIO
 
 from . import path
 from .shell import run_cmd, SAMTOOLS_CMD
@@ -10,10 +10,10 @@ from .shell import run_cmd, SAMTOOLS_CMD
 logger = getLogger(__name__)
 
 # SAM file format specifications
-SAM_HEADER = b"@"
-SAM_DELIMITER = b"\t"
-SAM_ALIGN_SCORE = b"AS:i:"
-SAM_EXTRA_SCORE = b"XS:i:"
+SAM_HEADER = '@'
+SAM_DELIM = '\t'
+SAM_ALIGN_SCORE = 'AS:i:'
+SAM_EXTRA_SCORE = 'XS:i:'
 FLAG_PAIRED = 2 ** 0
 FLAG_PROPER = 2 ** 1
 FLAG_UNMAP = 2 ** 2
@@ -107,9 +107,9 @@ def get_flagstat(xam_inp: Path, n_procs: int = 1):
     logger.info(f"Began computing flag statistics on {xam_inp}")
     # Use samtools flagstat to compute the flag statistics.
     cmd = [SAMTOOLS_CMD, "flagstat", "-@", n_procs - 1, xam_inp]
-    output = run_cmd(cmd, check_is_before=[xam_inp]).stdout
+    output = run_cmd(cmd, check_is_before=[xam_inp]).stdout.decode()
     # Convert the output into a dict with one entry per line.
-    stat_pattern = b"([0-9]+) [+] ([0-9]+) ([A-Za-z0-9 ]+)"
+    stat_pattern = "([0-9]+) [+] ([0-9]+) ([A-Za-z0-9 ]+)"
     stats = {stat.strip(): (int(n1), int(n2))
              for n1, n2, stat in map(re.Match.groups,
                                      re.finditer(stat_pattern, output))}
@@ -123,11 +123,11 @@ def count_xam(xam_inp: Path, n_procs: int = 1):
     logger.info(f"Began counting records in {xam_inp}")
     # Compute the flag statistics.
     flagstat = get_flagstat(xam_inp, n_procs)
-    mapped, _ = flagstat[b"mapped"]
+    mapped, _ = flagstat["mapped"]
     # Count paired-end reads with both mates in the file.
-    paired_two, _ = flagstat[b"with itself and mate mapped"]
+    paired_two, _ = flagstat["with itself and mate mapped"]
     # Count paired-end reads with only one mate in the file.
-    paired_one, _ = flagstat[b"singletons"]
+    paired_one, _ = flagstat["singletons"]
     # Count single-end reads.
     singles = mapped - (paired_one + paired_two)
     # Count unique reads (two mates of one pair count as one).
@@ -145,22 +145,22 @@ def dedup_sam(sam_inp: Path, sam_out: Path):
 
     logger.info(f"Began deduplicating {sam_inp}")
 
-    pattern_a = re.compile(SAM_ALIGN_SCORE + rb"([-0-9]+)")
-    pattern_x = re.compile(SAM_EXTRA_SCORE + rb"([-0-9]+)")
+    pattern_a = re.compile(SAM_ALIGN_SCORE + "([-0-9]+)")
+    pattern_x = re.compile(SAM_EXTRA_SCORE + "([-0-9]+)")
 
     min_fields = 11
     max_flag = 4095  # 2^12 - 1
 
-    def get_score(line: bytes, ptn: re.Pattern[bytes]):
+    def get_score(line: str, ptn: re.Pattern[str]):
         """ Get the alignment score from a line in a SAM file. """
         return float(match.groups()[0]) if (match := ptn.search(line)) else nan
 
-    def is_best_align(line: bytes):
+    def is_best_align(line: str):
         """ Return whether the line contains the best alignment of the
         read it contains. """
         try:
             if isnan(score_a := get_score(line, pattern_a)):
-                logger.warning(f"Missing alignment score for {line.decode()}")
+                logger.warning(f"Missing alignment score for {line}")
                 return True
             # Compare using "not >=" instead of "<" because, if score x
             # is missing (NaN), the comparison will be False, but this
@@ -171,10 +171,10 @@ def dedup_sam(sam_inp: Path, sam_out: Path):
             raise ValueError(f"Failed to determine if line {line} in {sam_inp} "
                              f"is the best alignment: {error}")
 
-    def read_is_paired(line: bytes):
+    def read_is_paired(line: str):
         info = line.split()
         if len(info) < min_fields:
-            raise ValueError(f"Invalid line in {sam_inp}:\n{line.decode()}")
+            raise ValueError(f"Invalid line in {sam_inp}:\n{line}")
         flag = int(info[1])
         if flag < 0 or flag > max_flag:
             raise ValueError(f"Invalid flag in {sam_inp}: {flag}")
@@ -217,7 +217,7 @@ def dedup_sam(sam_inp: Path, sam_out: Path):
                 f"Multiply-mapped (skipped):  {pskip:>12} ({fs:>6.2f}%)\n"
                 f"Pairs w/ errors (skipped):  {perro:>12} ({fe:>6.2f}%)\n\n")
 
-    def iter_single(sam: BinaryIO, line: bytes):
+    def iter_single(sam: TextIO, line: str):
         """ For each read, yield the best-scoring alignment, excluding
         reads that aligned equally well to multiple locations. """
         n_copy = 0
@@ -236,7 +236,7 @@ def dedup_sam(sam_inp: Path, sam_out: Path):
             line = sam.readline()
         logger.info(write_summary_single(n_copy, n_skip, n_erro))
 
-    def iter_paired(sam: BinaryIO, line1: bytes):
+    def iter_paired(sam: TextIO, line1: str):
         """ For each pair of reads, yield the pair of alignments for
         which both the forward alignment and the reverse alignment in
         the pair scored best among all alignments for the forward and
@@ -251,15 +251,15 @@ def dedup_sam(sam_inp: Path, sam_out: Path):
         n_mates_skipped = 0
         n_mates_errors = 0
         while line1:
-            if SAM_DELIMITER not in line1:
+            if SAM_DELIM not in line1:
                 # If the line is blank, skip it.
                 line1 = sam.readline()
                 continue
             # Check if there is at least one more line in the file.
-            if (line2 := sam.readline()) and SAM_DELIMITER in line2:
+            if (line2 := sam.readline()) and SAM_DELIM in line2:
                 # Check if the reads on lines 1 and 2 are mates.
-                if (line1.split(SAM_DELIMITER, 1)[0]
-                        == line2.split(SAM_DELIMITER, 1)[0]):
+                if (line1.split(SAM_DELIM, 1)[0]
+                        == line2.split(SAM_DELIM, 1)[0]):
                     # If they are mates of each other, check if the
                     # lines represent the best alignment for both.
                     try:
@@ -311,7 +311,7 @@ def dedup_sam(sam_inp: Path, sam_out: Path):
     logger.debug(f"Creating directory: {sam_out.parent}")
 
     # Deduplicate the alignments.
-    with (open(sam_inp, "rb") as sami, open(sam_out, "xb") as samo):
+    with (open(sam_inp) as sami, open(sam_out, 'x') as samo):
         # Copy the entire header from the input to the output SAM file.
         n_header = 0
         while (line_ := sami.readline()).startswith(SAM_HEADER):

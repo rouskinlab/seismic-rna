@@ -2,12 +2,12 @@ from logging import getLogger
 from pathlib import Path
 from typing import Iterable, Sequence
 
-import numpy as np
 import pandas as pd
 
 from .report import RelateReport
 from .seqpos import format_seq_pos, parse_pos
 from ..core.load import BatchLoader
+from ..core.rel import NP_TYPE
 from ..core.report import SeqF
 from ..core.sect import seq_pos_to_index
 
@@ -59,12 +59,12 @@ class RelateLoader(BatchLoader):
         # Convert the columns to a MultiIndex of positions and bases.
         vectors.columns = seq_pos_to_index(self.seq, parse_pos(vectors.columns),
                                            self.end5)
-        # Name the index and convert its labels from bytes to str.
-        vectors.index = pd.Index(vectors.index.map(bytes.decode), name=READ)
+        # Name the index.
+        vectors.index.rename(READ, inplace=True)
         # The vectors are stored as signed 8-bit integers (np.int8) and
         # must be cast to unsigned 8-bit integers (np.uint8) so that the
         # bitwise operations work.
-        return vectors.astype(np.uint8, copy=False)
+        return vectors.astype(NP_TYPE, copy=False)
 
     def iter_batches_personal(self, *, positions: Sequence[int] | None = None):
         yield from super().iter_batches_personal(positions=positions)

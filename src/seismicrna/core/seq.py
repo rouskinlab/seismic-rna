@@ -1,4 +1,36 @@
-from functools import cache
+"""
+
+Sequence core module.
+
+========================================================================
+
+Define alphabets and classes for nucleic acid sequences, and functions
+for reading them from and writing them to FASTA files.
+
+------------------------------------------------------------------------
+
+©2023, the Rouskin Lab.
+
+This file is part of SEISMIC-RNA.
+
+SEISMIC-RNA is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+SEISMIC-RNA is distributed in the hope that it will be useful, but WITH
+NO WARRANTY; not even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along
+with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
+
+========================================================================
+
+"""
+
+from functools import cache, cached_property
 from itertools import chain, product
 from logging import getLogger
 from pathlib import Path
@@ -7,131 +39,173 @@ from typing import Iterable
 import numpy as np
 
 from . import path
+from .sim import rng
 
 logger = getLogger(__name__)
 
-# FASTA format
-FASTA_NAMESYM = b">"
+# FASTA record mark.
+FASTA_RECORD = '>'
 
-# Byte encodings for nucleic acid alphabets
-BASES = b"ACGT"
-COMPS = b"TGCA"
-RBASE = b"ACGU"
-RCOMP = b"UGCA"
-BASEN = b"N"
-BASES_LIST = [chr(base).encode() for base in BASES]
-BASES_ARR = np.frombuffer(BASES, dtype=np.uint8)
-
-# Integer encodings for nucleic acid alphabets
-A_INT = BASES[0]
-C_INT = BASES[1]
-G_INT = BASES[2]
-T_INT = BASES[3]
-N_INT = BASEN[0]
+# Nucleic acid sequence alphabets.
+BASEA = 'A'
+BASEC = 'C'
+BASEG = 'G'
+BASET = 'T'
+BASEU = 'U'
+BASEN = 'N'
 
 
-class Seq(bytes):
+class Seq(str):
     __slots__ = []
 
-    alph = b""
-    comp = b""
-    alphaset = set(alph)
-    comptrans = alph.maketrans(alph, comp)
+    alph: tuple[str, str, str, str]
 
-    def __init__(self, seq: bytes):
+    def __init__(self, seq: str):
         self.validate_seq(seq)
         super().__init__()
 
+    @cached_property
+    def rc(self):
+        """ Reverse complement. """
+        return self.__class__(self[::-1].translate(self.get_comptrans()))
+
+    @cache
+    def to_array(self):
+        """ NumPy array of Unicode characters for the sequence. """
+        return np.array(list(self))
+
     @classmethod
-    def validate_seq(cls, seq: bytes | bytearray):
-        if not isinstance(seq, (bytes, bytearray)):
-            raise TypeError(
-                f"Expected bytes or bytearray, but got '{type(seq).__name__}'")
+    @cache
+    def get_alphaset(cls):
+        """ Get the alphabet as a set. """
+        return set(cls.alph)
+
+    @classmethod
+    @cache
+    def validate_seq(cls, seq: str):
+        if not isinstance(seq, str):
+            raise TypeError(f"Expected str, but got {type(seq).__name__}")
         if not seq:
             raise ValueError("seq is empty")
-        if set(seq) - cls.alphaset:
-            raise ValueError(f"Invalid characters in seq: '{seq.decode()}'")
+        if invalid := set(seq) - cls.get_alphaset():
+            raise ValueError(f"Invalid {cls.__name__} bases: {sorted(invalid)}")
 
     @classmethod
-    def is_valid(cls, seq: bytes | bytearray):
-        """ Whether the given sequence is valid for the class. """
-        # Check if validate_seq raises ValueError (but not TypeError).
-        try:
-            cls.validate_seq(seq)
-        except ValueError:
-            # Instantiation raised ValueError: sequence is invalid.
-            return False
-        # Instantiation succeeded: sequence is valid.
-        return True
-
-    @property
-    def rc(self):
-        return self.__class__(self[::-1].translate(self.comptrans))
-
     @cache
-    def to_int_array(self):
-        """ NumPy array of ASCII integers for the sequence. """
-        return np.frombuffer(self, dtype=np.uint8)
+    def get_comp(cls):
+        """ Get the complementary alphabet as a tuple. """
+        return tuple(reversed(cls.alph))
 
+    @classmethod
     @cache
-    def to_str_array(self):
-        """ NumPy array of Unicode characters for the sequence. """
-        return np.array(list(self.decode()))
+    def get_comptrans(cls):
+        """ Get the translation table for complementary bases. """
+        return str.maketrans(dict(zip(cls.alph, cls.get_comp(), strict=True)))
+
+    @classmethod
+    def random(cls, nt: int,
+               a: float = 0.25, c: float = 0.25,
+               g: float = 0.25, tu: float = 0.25):
+        """
+        Return a random sequence of the given length.
+
+        Parameters
+        ----------
+        nt: int
+            Number of nucleotides to simulate. Must be ≥ 1.
+        a: float = 0.25
+            Expected proportion of A.
+        c: float = 0.25
+            Expected proportion of C.
+        g: float = 0.25
+            Expected proportion of G.
+        tu: float = 0.25
+            Expected proportion of T (for DNA) or U (for RNA).
+
+        Returns
+        -------
+        Seq
+            A random sequence.
+        """
+        return cls("".join(rng.choice(cls.alph, size=nt, p=(a, c, g, tu))))
 
     def __getitem__(self, item):
-        value = super().__getitem__(item)
-        # If a single index is selected, then value will be an int.
-        # If a slice is selected, then value will be bytes.
-        return value if isinstance(value, int) else self.__class__(value)
+        if isinstance(item, slice):
+            # For slices, return an instance of the class, not of str.
+            return self.__class__(super().__getitem__(item))
+        # Otherwise, return an instance of str.
+        return super().__getitem__(item)
 
-    @classmethod
-    def parse(cls, seq: str):
-        return cls(seq.encode())
+    def __repr__(self):
+        """ Encapsulate the sequence string with DNA(). """
+        return f"{self.__class__.__name__}({super().__repr__()})"
 
-    def __str__(self):
-        return self.decode()
+    def __eq__(self, other):
+        """ Return True if both the type of the sequence and the bases
+        in the sequence match, otherwise False. """
+        return other.__class__ is self.__class__ and super().__eq__(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        """ Define __hash__ so that Seq subclasses can be used as keys
+        for dict-like mappings. Use the hash of the plain string. """
+        return super().__hash__()
 
 
 class DNA(Seq):
-    alph = BASES
-    comp = COMPS
-    alphaset = set(alph)
-    comptrans = alph.maketrans(alph, comp)
+    alph = BASEA, BASEC, BASEG, BASET
 
+    @cache
     def tr(self):
         """ Transcribe DNA to RNA. """
-        return RNA(self.replace(b"T", b"U"))
+        return RNA(self.replace(BASET, BASEU))
 
 
 class RNA(Seq):
-    alph = RBASE
-    comp = RCOMP
-    alphaset = set(alph)
-    comptrans = alph.maketrans(alph, comp)
+    alph = BASEA, BASEC, BASEG, BASEU
 
+    @cache
     def rt(self):
         """ Reverse transcribe RNA to DNA. """
-        return DNA(self.replace(b"U", b"T"))
+        return DNA(self.replace(BASEU, BASET))
 
 
-def expand_degenerate_seq(seq: bytes):
+class DNAmbig(DNA):
+    alph = BASEA, BASEC, BASEN, BASEG, BASET
+
+    @cache
+    def tr(self):
+        """ Transcribe DNAmbig to RNAmbig. """
+        return RNAmbig(self.replace(BASET, BASEU))
+
+
+class RNAmbig(RNA):
+    alph = BASEA, BASEC, BASEN, BASEG, BASEU
+
+    @cache
+    def rt(self):
+        """ Reverse transcribe RNAmbig to DNAmbig. """
+        return DNAmbig(self.replace(BASEU, BASET))
+
+
+def expand_degenerate_seq(seq: DNAmbig):
     """ Given a (possibly degenerate) sequence, yield every definite
     sequence that could derive from it. Only the degenerate base N is
     supported by this function; other IUPAC codes (e.g. R) are not. """
     # Split the sequence into every segment that does not have an N.
     segs = seq.split(BASEN)
-    seg0 = segs[0]
     # The number of N bases is one less than the number of segments.
-    ns = len(segs) - 1
-    if ns:
+    if ns := len(segs) - 1:
         # If the sequence contains at least one N, then yield every
         # possible sequence by replacing each N with each base.
-        for bases in product(BASES_LIST, repeat=ns):
-            yield DNA(b"".join(chain((seg0,), *zip(bases, segs[1:],
-                                                   strict=True))))
+        for bases in product(DNA.alph, repeat=ns):
+            yield DNA("".join(chain((segs[0],), *zip(bases, segs[1:],
+                                                     strict=True))))
     else:
         # If the sequence contains no N bases, then yield it as DNA.
-        yield DNA(seg0)
+        yield DNA(segs[0])
 
 
 def parse_fasta(fasta: Path, rna: bool = False):
@@ -139,31 +213,31 @@ def parse_fasta(fasta: Path, rna: bool = False):
     sequences. """
     if not fasta:
         raise TypeError("No FASTA file given")
-    seq_type = "RNA" if rna else "DNA"
+    seq_type = RNA if rna else DNA
     logger.info(f"Began parsing FASTA of {seq_type}: {fasta}")
     # Get the name of the set of references.
     refset = path.parse(fasta, path.FastaSeg)[path.REF]
     has_ref_named_refset = False
     # Record the names of all the references.
     names = set()
-    with open(fasta, "rb") as f:
+    with open(fasta) as f:
         line = f.readline()
         while line:
             # Read the name from the current line.
-            if not line.startswith(FASTA_NAMESYM):
+            if not line.startswith(FASTA_RECORD):
                 logger.error(f"Name line '{line.strip()}' in {fasta} does not "
-                             f"start with name symbol '{FASTA_NAMESYM}'")
+                             f"start with name symbol '{FASTA_RECORD}'")
                 continue
             # Get the name of the reference up to the first whitespace.
-            name = line.split(maxsplit=1)[0][len(FASTA_NAMESYM):].decode()
+            name = line.split(maxsplit=1)[0][len(FASTA_RECORD):]
             # Read the sequence of the reference up until the next
             # reference or the end of the file, whichever comes first.
-            seqarray = bytearray()
-            while (line := f.readline()) and not line.startswith(FASTA_NAMESYM):
-                seqarray.extend(line.rstrip().upper())
+            segments = list()
+            while (line := f.readline()) and not line.startswith(FASTA_RECORD):
+                segments.append(line.rstrip().upper())
             # Confirm that the sequence is valid.
             try:
-                seq = RNA(seqarray) if rna else DNA(seqarray)
+                seq = seq_type("".join(segments))
             except Exception as error:
                 logger.error(
                     f"Failed to parse {seq_type} sequence in {fasta}: {error}")
@@ -192,10 +266,11 @@ def parse_fasta(fasta: Path, rna: bool = False):
                                  f"but it also had {', '.join(names)}")
             # Yield the validated name and sequence.
             names.add(name)
-            logger.debug(f"Read {seq_type} reference '{name}' of length "
-                         f"{len(seq)} from {fasta}")
+            logger.debug(f"Read {seq_type.__name__} reference '{name}' "
+                         f"of length {len(seq)} from {fasta}")
             yield name, seq
-    logger.info(f"Ended parsing {len(names)} {seq_type} sequences from {fasta}")
+    logger.info(f"Ended parsing {len(names)} {seq_type.__name__} sequence(s) "
+                f"from {fasta}")
 
 
 def get_ref_seq(fasta: Path, ref: str):
@@ -209,7 +284,8 @@ def get_ref_seq(fasta: Path, ref: str):
     raise ValueError(f"Reference '{ref}' is not in {fasta}")
 
 
-def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]]):
+def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]],
+                overwrite: bool = False):
     """ Write an iterable of reference names and DNA sequences to a
     FASTA file. """
     if not fasta:
@@ -220,7 +296,7 @@ def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]]):
     has_ref_named_refset = False
     # Record the names of all the references.
     names = set()
-    with open(fasta, "xb") as f:
+    with open(fasta, 'w' if overwrite else 'x') as f:
         for name, seq in refs:
             # Confirm that the name is not blank.
             if not name:
@@ -245,8 +321,7 @@ def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]]):
                                  f"not allowed to get any other references, "
                                  f"but it also got {', '.join(names)}")
             try:
-                f.write(b"".join([FASTA_NAMESYM, name.encode(), b"\n",
-                                  seq, b"\n"]))
+                f.write("".join([FASTA_RECORD, name, '\n', seq, '\n']))
             except Exception as error:
                 logger.error(
                     f"Error writing reference '{name}' to {fasta}: {error}")
@@ -254,4 +329,4 @@ def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]]):
                 logger.debug(f"Wrote reference '{name}' of length {len(seq)}"
                              f"to {fasta}")
                 names.add(name)
-    logger.info(f"Wrote {len(names)} references to {fasta}")
+    logger.info(f"Wrote {len(names)} sequences(s) to {fasta}")

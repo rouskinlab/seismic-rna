@@ -3,19 +3,20 @@ import os
 
 from click import Context, command, group, pass_context, version_option
 
-from . import (demult as demultiplex_mod,
+from . import (__version__,
+               demult as demultiplex_mod,
                align as align_mod,
                relate as relate_mod,
                mask as mask_mod,
                cluster as cluster_mod,
                table as table_mod,
-               struct as fold_mod,
+               fold as fold_mod,
                graph as graph_mod,
                test as test_mod)
 from .core import docdef, logs
 from .core.cli import (merge_params, opt_demultiplex,
                        opt_verbose, opt_quiet, opt_log, opt_profile, opt_fold)
-from .meta import __version__
+from .core.seq import DNA
 
 all_params = merge_params([opt_demultiplex],
                           demultiplex_mod.params,
@@ -105,7 +106,7 @@ def run(*,
         batch_size: float,
         # Mask options
         coords: tuple[tuple[str, int, int], ...],
-        primers: tuple[tuple[str, str, str], ...],
+        primers: tuple[tuple[str, DNA, DNA], ...],
         primer_gap: int,
         sections_file: str,
         count_del: bool,

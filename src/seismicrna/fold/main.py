@@ -13,8 +13,8 @@ from ..core.cli import (arg_input_file, opt_temp_dir, opt_save_temp,
 from ..core.depend import confirm_dependency
 from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
 from ..core.rna import RnaProfile
-from ..core.sect import RefSections, Section, encode_primers
-from ..core.seq import parse_fasta
+from ..core.sect import RefSections, Section
+from ..core.seq import DNA, parse_fasta
 from ..core.shell import RNASTRUCTURE_FOLD_CMD
 from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader
 
@@ -36,7 +36,7 @@ params = [
 ]
 
 
-@command(path.MOD_STRUCT, params=params)
+@command(path.MOD_FOLD, params=params)
 def cli(*args, **kwargs):
     """ Predict the structure(s) of an RNA using mutation rates from the
     individual clusters or the ensemble average ('mask' step). """
@@ -50,7 +50,7 @@ def run(fasta: str,
         *,
         sections_file: str | None,
         coords: tuple[tuple[str, int, int], ...],
-        primers: tuple[tuple[str, str, str], ...],
+        primers: tuple[tuple[str, DNA, DNA], ...],
         primer_gap: int,
         quantile: float,
         temp_dir: str,
@@ -69,7 +69,7 @@ def run(fasta: str,
                                sects_file=(Path(sections_file) if sections_file
                                            else None),
                                coords=coords,
-                               primers=encode_primers(primers),
+                               primers=primers,
                                primer_gap=primer_gap)
     # Initialize the table loaders.
     tab_files = path.find_files_chain(map(Path, input_file), [path.MutTabSeg])

@@ -60,11 +60,12 @@ MOD_REL = "relate"
 MOD_MASK = "mask"
 MOD_CLUST = "cluster"
 MOD_TABLE = "table"
-MOD_STRUCT = "struct"
+MOD_FOLD = "fold"
 MOD_GRAPH = "graph"
+MOD_SIM = "sim"
 MOD_TEST = "test"
 MODULES = (MOD_DEMULT, MOD_QC, MOD_ALIGN, MOD_REL, MOD_MASK, MOD_CLUST,
-           MOD_TABLE, MOD_STRUCT, MOD_GRAPH, MOD_TEST)
+           MOD_TABLE, MOD_FOLD, MOD_GRAPH, MOD_SIM, MOD_TEST)
 
 STEPS_QC = "input", "trimmed"
 STEPS_ALIGN = ("align-0_refs", "align-1_trim", "align-2_align",

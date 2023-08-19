@@ -6,22 +6,55 @@
 
 \begin{titlepage}
 
+
 \begin{center}
 
+% Title.
+\huge
 \textbf{SEISMIC-RNA Developer Manual}
+\normalsize
 
 \vspace{0.5cm}
 
-Version 0.6.2
+% Version of software (import and print using Python).
+\Large
+\begin{python}
+import seismicrna
+print(f"Version {seismicrna.__version__}")
+\end{python}
+\normalsize
 
-2023-08-16
+\vspace{0.25cm}
+
+% Date of typesetting (YYYY-MM-DD).
+\Large
+\begin{python}
+from datetime import datetime
+now = datetime.now()
+# Format the date manually (avoiding datetime.strftime)
+# because datetime.strftime uses percent symbols,
+# which begin comments in LaTeX.
+print(f"{now.year:0>4d}-{now.month:0>2d}-{now.day:0>2d}")
+\end{python}
+\normalsize
 
 \end{center}
 
 \vspace{1cm}
 
+
+% Logo.
+\begin{figure}[h]
+    \includegraphics[width=0.8\textwidth, center]{../../../logo.png}
+\end{figure}
+
+\vfill
+
+
+% Copyright.
+
 \noindent
-\copyright 2023, Matthew F. Allan.
+\copyright 2023, the Rouskin Lab.
 
 \vspace{0.5cm}
 
@@ -42,6 +75,7 @@ SEISMIC-RNA is distributed in the hope that it will be useful, but WITHOUT ANY W
 
 \noindent
 You should have received a copy of the GNU General Public License along with SEISMIC-RNA. If not, see \url{https://www.gnu.org/licenses/}.
+
 
 \end{titlepage}
 

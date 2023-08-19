@@ -240,7 +240,7 @@ class OneSeqGraph(OneRefGraph, ABC):
     @abstractmethod
     def seq(self):
         """ Reference sequence as a DNA object. """
-        return DNA(b"")
+        return DNA("")
 
 
 class OneTableGraph(OneSampleGraph, OneRefGraph, ABC):

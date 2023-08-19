@@ -24,15 +24,15 @@
 
 ### Command
 ```commandline
-seismic all refs.fa -x paired_R1.fq.gz -x paired_R2.fq.gz  [ALL OPTIONS]
+seismic all refs.fa -x paired_R1.fq.gz -x paired_R2.fq.gz
 ```
 or
 ```commandline
-seismic all refs.fa -y interleaved.fq.gz  [ALL OPTIONS]
+seismic all refs.fa -y interleaved.fq.gz
 ```
 or
 ```commandline
-seismic all refs.fa -z single.fq.gz  [ALL OPTIONS]
+seismic all refs.fa -z single.fq.gz
 ```
 
 Any option for one of the individual steps (described below) can be given as an option to `all`.
@@ -42,15 +42,15 @@ Any option for one of the individual steps (described below) can be given as an 
 
 ### Command
 ```commandline
-seismic all refs.fa -x paired_R1.fq.gz -x paired_R2.fq.gz  [ALIGN OPTIONS]
+seismic all refs.fa -x paired_R1.fq.gz -x paired_R2.fq.gz
 ```
 or
 ```commandline
-seismic all refs.fa -y interleaved.fq.gz  [ALIGN OPTIONS]
+seismic all refs.fa -y interleaved.fq.gz
 ```
 or
 ```commandline
-seismic all refs.fa -z single.fq.gz  [ALIGN OPTIONS]
+seismic all refs.fa -z single.fq.gz
 ```
 
 ### Descriptions
@@ -76,7 +76,7 @@ seismic all refs.fa -z single.fq.gz  [ALIGN OPTIONS]
 
 ### Command
 ```commandline
-seismic relate refs.fa sample1.bam ...  [RELATE OPTIONS]
+seismic relate refs.fa sample1.bam ...
 ```
 
 ### Descriptions
@@ -97,7 +97,7 @@ seismic relate refs.fa sample1.bam ...  [RELATE OPTIONS]
 
 ### Command
 ```commandline
-seismic mask report-relate.json ...  [MASK OPTIONS]
+seismic mask report-relate.json ...
 ```
 
 ### Descriptions
@@ -117,7 +117,7 @@ seismic mask report-relate.json ...  [MASK OPTIONS]
 
 ### Command
 ```commandline
-seismic cluster report-mask.json ... -k 2  [CLUSTER OPTIONS]
+seismic cluster report-mask.json ... -k 2
 ```
 
 ### Descriptions
@@ -138,7 +138,7 @@ seismic cluster report-mask.json ... -k 2  [CLUSTER OPTIONS]
 
 ### Command
 ```commandline
-seismic cluster report-*.json ...  [CLUSTER OPTIONS]
+seismic cluster report-*.json ...
 ```
 
 ### Descriptions
@@ -169,7 +169,7 @@ seismic cluster report-*.json ...  [CLUSTER OPTIONS]
 
 ### Command
 ```commandline
-seismic struct table.csv ...   [STRUCT OPTIONS]
+seismic struct table.csv ... 
 ```
 
 ### Descriptions
@@ -189,7 +189,7 @@ seismic struct table.csv ...   [STRUCT OPTIONS]
 
 ### Command
 ```commandline
-seismic graph seq table.csv ...   [GRAPH OPTIONS]
+seismic graph seq table.csv ... 
 ```
 
 ### Descriptions

@@ -339,8 +339,7 @@ def oconv_datetime(dtime: datetime):
 OutDirF = Field("out_dir", "", Path, check_val=check_dir)
 SampleF = Field("sample", "Name of Sample", str, check_val=check_name)
 RefF = Field("ref", "Name of Reference", str, check_val=check_name)
-SeqF = Field("seq", "Sequence of Reference", DNA,
-             iconv=DNA.parse, oconv=DNA.__str__)
+SeqF = Field("seq", "Sequence of Reference", DNA)
 SectF = Field("sect", "Name of Section", str, check_val=check_name)
 End5F = Field("end5", "5' end of Section", int, check_val=check_pos_int)
 End3F = Field("end3", "3' end of Section", int, check_val=check_pos_int)

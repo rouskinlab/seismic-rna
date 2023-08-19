@@ -12,6 +12,8 @@ import os
 
 from click import Argument, Choice, Option, Parameter, Path
 
+from .seq import DNA
+
 # System information
 CWD = os.getcwd()
 if (NUM_CPUS := os.cpu_count()) is None:
@@ -433,7 +435,7 @@ opt_coords = Option(
 
 opt_primers = Option(
     ("--primers", "-p"),
-    type=(str, str, str),
+    type=(str, DNA, DNA),
     multiple=True,
     default=(),
     help=("Reference name, forward primer, and reverse primer "

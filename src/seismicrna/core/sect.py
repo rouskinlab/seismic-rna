@@ -16,7 +16,7 @@ from typing import Iterable, Sequence
 import numpy as np
 import pandas as pd
 
-from .seq import DNA, A_INT, C_INT
+from .seq import DNA, BASEA, BASEC
 
 logger = getLogger(__name__)
 
@@ -33,27 +33,6 @@ FIELD_PFWD = "Forward Primer"
 FIELD_PREV = "Reverse Primer"
 
 SectionTuple = namedtuple("PrimerTuple", ("pos5", "pos3"))
-
-
-def encode_primer(ref: str, fwd: str, rev: str):
-    """ Convert a pair of primers from strings to DNA objects. """
-    return ref, DNA.parse(fwd), DNA.parse(rev)
-
-
-def encode_primers(primers: Iterable[tuple[str, str, str]]):
-    """ Convert pairs of primers from strings to DNA objects. """
-    enc_primers = dict()
-    for primer in primers:
-        if primer in enc_primers:
-            logger.warning(f"Skipping duplicate primer: {primer}")
-        else:
-            try:
-                enc_primers[primer] = encode_primer(*primer)
-            except Exception as error:
-                logger.error(f"Failed to encode primer {primer}: {error}")
-                enc_primers[primer] = None
-    # Return a list of all encoded primers with None values removed.
-    return list(filter(None, enc_primers.values()))
 
 
 def get_sect_coords_primers(sects_file: Path):
@@ -131,7 +110,7 @@ def get_sect_coords_primers(sects_file: Path):
                 map_sect(coords, (ref, int(end5), int(end3)), sect)
             elif has_primers:
                 # Map the reference and primers to the section.
-                map_sect(primers, (ref, DNA.parse(fwd), DNA.parse(rev)), sect)
+                map_sect(primers, (ref, DNA(fwd), DNA(rev)), sect)
             else:
                 raise ValueError(f"Got neither coordinates nor primers")
         except Exception as error:
@@ -179,7 +158,7 @@ def seq_pos_to_index(seq: DNA, positions: Sequence[int], start: int):
             f"All positions must be ≤ end ({end}), but got {positions}")
     # Create a 2-level MultiIndex from the positions and the bases in
     # the sequence at those positions.
-    index = pd.MultiIndex.from_arrays([pos, seq.to_str_array()[pos - start]],
+    index = pd.MultiIndex.from_arrays([pos, seq.to_array()[pos - start]],
                                       names=INDEX_NAMES)
     if index.has_duplicates:
         raise ValueError(f"Duplicated positions: {positions}")
@@ -211,8 +190,8 @@ def index_to_seq(index: pd.MultiIndex, allow_gaps: bool = False):
     if not (allow_gaps or np.array_equal(pos, np.arange(pos[0], pos[-1] + 1))):
         raise ValueError("A sequence cannot be assembled from an index with "
                          f"missing positions:\n{pos}")
-    # Join the bases in the index and parse them as a DNA sequence.
-    return DNA.parse("".join(index.get_level_values(BASE_NAME)))
+    # Join the bases in the index and convert them to a DNA sequence.
+    return DNA("".join(index.get_level_values(BASE_NAME)))
 
 
 class Section(object):
@@ -269,7 +248,7 @@ class Section(object):
                              f"len(refseq) = {len(refseq)}")
         self.end5: int = end5
         self.end3: int = end3
-        self.seq: DNA = refseq[end5 - 1: end3]
+        self.seq = DNA(refseq[end5 - 1: end3])
         self.full = end5 == 1 and end3 == len(refseq)
         if name is None:
             self.name = self.hyphen
@@ -383,10 +362,9 @@ class Section(object):
     def _find_gu(self, exclude_gu: bool = True) -> np.ndarray:
         """ Array of each position whose base is neither A nor C. """
         if exclude_gu:
-            # Convert the sequence to an array for broadcasting.
-            seq_array = self.seq.to_int_array()
             # Mark whether each position is neither A nor C.
-            gu_pos = np.logical_and(seq_array != A_INT, seq_array != C_INT)
+            gu_pos = np.logical_and(self.seq.to_array() != BASEA,
+                                    self.seq.to_array() != BASEC)
             # Return the integer positions.
             return self.range_int[gu_pos]
         # Mask no positions.
@@ -406,7 +384,7 @@ class Section(object):
         if min_length > 0:
             # Generate a pattern that matches stretches of consecutive
             # adenines that are at least as long as min_length.
-            polya_pattern = b"%c{%i,}" % (A_INT, min_length)
+            polya_pattern = "%c{%d,}" % (BASEA, min_length)
             # Add the 0-indexed positions in every poly(A) sequence.
             for polya in re.finditer(polya_pattern, self.seq):
                 polya_pos.extend(range(polya.start(), polya.end()))

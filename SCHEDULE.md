@@ -2,27 +2,30 @@
 
 ## Planned updates
 
-### Functionality
-Addition of new functions into the software (use sparingly).
+### Functions
+Introduce new capabilities (use sparingly).
 
 #### v0.7.0
-- Introduce variation of information to quantify the reproducibility of clusters.
-- Introduce option to filter out reads with less than an integer number of informative positions: `min_ninfo_read`.
 - Introduce functions to simulate entire datasets for each step of the pipeline (primarily for testing purposes).
+
+#### v0.9.0
+- Introduce an option to filter out reads with less than an integer number of informative positions: `min_ninfo_read`.
+- Introduce variation of information to quantify the reproducibility of clusters.
 
 
 ### Performance
-Optimization of existing functions to improve speed, memory, disk usage, etc.
-
-#### v0.7.1
-- Decrease the sizes of the relation vector batch files by storing relation vectors as sparse data structures, i.e. `pandas.arrays.SparseArray`.
-
-#### 
-
-### Interface
-Additions or updates to the command line and/or application programming interface for existing functions.
+Reduce runtime, memory usage, or disk usage; or increase readability or maintainability.
 
 #### v0.7.0
+- Convert all `Seq` classes (`DNA` and `RNA`) from `bytes` to `str`, in order to reduce confusion about when sequences are Unicode and when they are binary and to eliminate some awkward type conversions outside the `relate` subpackage.
+
+#### v0.8.0
+- Decrease the sizes of the relation vector batch files by storing relation vectors as sparse data structures, i.e. `pandas.arrays.SparseArray`.
+
+### Interfaces
+Additions or updates to the command line (CLI) or application programming (API) interface.
+
+#### v0.9.0
 - Introduce "amplicon mode" and "random mode" (default) that each bundles a set of default options.
   - Defaults for random mode (suitable for randomly fragmented and/or primed libraries):
     - `bt2_local=True`: Use local mode in `align` so that any extra flanking sequences are not misinterpreted as mutations (causing false positives).
@@ -34,14 +37,15 @@ Additions or updates to the command line and/or application programming interfac
     - `min_mut_gap=3`: Remove any reads that have a pair of mutations separated by fewer than 3 non-mutated positions during `mask`.
     - Additionally, `mask` will not default to the full reference if no coordinates or primers are given because this behavior is generally unsuitable for amplicons, whose ends are obscured by primers.
 
-### Debugging
+
+### Bugs
 Fixes for buggy parts of the software.
 
 #### v0.7.0
 - Fix the version attribute so that `seismicrna.__version__` returns the version instead of `unknown`.
 
 
-### Testing
+### Tests
 Additions or upgrades to the test suite.
 
 #### v0.7.0

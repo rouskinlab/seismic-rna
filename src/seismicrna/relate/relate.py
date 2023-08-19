@@ -4,6 +4,7 @@ from ..core.rel import (DELET, INS_5, INS_3, SUB_N,
                         CIG_ALIGN, CIG_MATCH, CIG_SUBST,
                         CIG_DELET, CIG_INSRT, CIG_SCLIP,
                         parse_cigar, encode_match, encode_relate)
+from ..core.seq import DNA
 
 
 class RelateError(Exception):
@@ -148,8 +149,8 @@ class Indel(object):
     def _try_swap(self, *args, **kwargs) -> bool:
         raise RelateNotImplementedError
 
-    def sweep(self, muts: bytearray, ref: bytes, read: bytes, qual: bytes,
-              min_qual: int, dels: list[Deletion], inns: list[Insertion],
+    def sweep(self, muts: bytearray, ref: DNA, read: DNA, qual: str,
+              min_qual: str, dels: list[Deletion], inns: list[Insertion],
               from3to5: bool, tunnel: bool):
         # Move the indel as far as possible in either the 5' or 3' direction.
         while self._try_swap(muts, ref, read, qual, min_qual, dels, inns,
@@ -164,8 +165,8 @@ class Deletion(Indel):
         return self._ins_idx
 
     @classmethod
-    def _encode_swap(cls, ref_base: int, swap_base: int, read_base: int,
-                     read_qual: int, min_qual: int):
+    def _encode_swap(cls, ref_base: str, swap_base: str, read_base: str,
+                     read_qual: str, min_qual: str):
         curr_rel = encode_relate(ref_base, read_base, read_qual, min_qual)
         swap_rel = encode_relate(swap_base, read_base, read_qual, min_qual)
         return cls._consistent_rels(curr_rel, swap_rel)
@@ -191,19 +192,21 @@ class Deletion(Indel):
         muts[swap_idx] |= DELET
         self._step(swap_idx)
 
-    def _try_swap(self, muts: bytearray, ref: bytes, read: bytes, qual: bytes,
-                  min_qual: int, dels: list[Deletion], inns: list[Insertion],
+    def _try_swap(self, relvec: bytearray, refseq: DNA, read: DNA, qual: str,
+                  min_qual: str, dels: list[Deletion], inns: list[Insertion],
                   from3to5: bool, tunnel: bool) -> bool:
         swap_idx, tunneled_indels = self._peek_out_of_indel(dels, from3to5)
         read_idx = self.del_idx5 if from3to5 else self.del_idx3
-        if (1 <= swap_idx < len(ref) - 1 and 1 <= read_idx < len(read) - 1
+        if (1 <= swap_idx < len(refseq) - 1 and 1 <= read_idx < len(read) - 1
                 and (tunnel or not self.tunneled)
                 and not self._collisions(inns, swap_idx)):
-            relation = self._encode_swap(ref[self.ins_idx], ref[swap_idx],
-                                         read[read_idx], qual[read_idx],
+            relation = self._encode_swap(refseq[self.ins_idx],
+                                         refseq[swap_idx],
+                                         read[read_idx],
+                                         qual[read_idx],
                                          min_qual)
             if relation:
-                self._swap(muts, swap_idx, relation)
+                self._swap(relvec, swap_idx, relation)
                 for indel in tunneled_indels:
                     indel.step_del_idx(swap_idx)
                 return True
@@ -223,8 +226,8 @@ class Insertion(Indel):
             muts[self.del_idx3] |= INS_3
 
     @classmethod
-    def _encode_swap(cls, ref_base: int, read_base: int, read_qual: int,
-                     swap_base: int, swap_qual: int, min_qual: int):
+    def _encode_swap(cls, ref_base: str, read_base: str, read_qual: str,
+                     swap_base: str, swap_qual: str, min_qual: str):
         curr_rel = encode_relate(ref_base, read_base, read_qual, min_qual)
         swap_rel = encode_relate(ref_base, swap_base, swap_qual, min_qual)
         return cls._consistent_rels(curr_rel, swap_rel)
@@ -246,15 +249,15 @@ class Insertion(Indel):
         # Mark the new positions of the insertion.
         self.stamp(muts)
 
-    def _try_swap(self, muts: bytearray, ref: bytes, read: bytes, qual: bytes,
-                  min_qual: int, dels: list[Deletion], inns: list[Insertion],
+    def _try_swap(self, muts: bytearray, refseq: DNA, read: DNA, qual: str,
+                  min_qual: str, dels: list[Deletion], inns: list[Insertion],
                   from3to5: bool, tunnel: bool) -> bool:
         swap_idx, tunneled_indels = self._peek_out_of_indel(inns, from3to5)
         ref_idx = self.del_idx5 if from3to5 else self.del_idx3
-        if (1 <= swap_idx < len(read) - 1 and 1 <= ref_idx < len(ref) - 1
+        if (1 <= swap_idx < len(read) - 1 and 1 <= ref_idx < len(refseq) - 1
                 and (tunnel or not self.tunneled)
                 and not self._collisions(dels, swap_idx)):
-            relation = self._encode_swap(ref[ref_idx], read[self.ins_idx],
+            relation = self._encode_swap(refseq[ref_idx], read[self.ins_idx],
                                          qual[self.ins_idx], read[swap_idx],
                                          qual[swap_idx], min_qual)
             if relation:
@@ -265,8 +268,8 @@ class Insertion(Indel):
         return False
 
 
-def sweep_indels(muts: bytearray, ref: bytes, read: bytes, qual: bytes,
-                 min_qual: int, dels: list[Deletion], inns: list[Insertion],
+def sweep_indels(muts: bytearray, refseq: DNA, read: DNA, qual: str,
+                 min_qual: str, dels: list[Deletion], inns: list[Insertion],
                  from3to5: bool, tunnel: bool):
     """
     For every insertion and deletion,
@@ -274,7 +277,7 @@ def sweep_indels(muts: bytearray, ref: bytes, read: bytes, qual: bytes,
     ----------
     muts: bytearray
         Mutation vector
-    ref: bytes
+    refseq: bytes
         Reference sequence
     read: bytes
         Sequence of the read
@@ -310,7 +313,7 @@ def sweep_indels(muts: bytearray, ref: bytes, read: bytes, qual: bytes,
     indels.sort(key=lambda idl: idl.rank, reverse=sort_rev)
     while indels:
         indel = indels.pop()
-        indel.sweep(muts, ref, read, qual, min_qual,
+        indel.sweep(muts, refseq, read, qual, min_qual,
                     dels, inns, from3to5, tunnel)
         i = len(indels)
         if sort_rev:
@@ -323,22 +326,22 @@ def sweep_indels(muts: bytearray, ref: bytes, read: bytes, qual: bytes,
             indels.insert(i, indel)
 
 
-def find_ambrels(muts: bytearray, ref: bytes, read: bytes, qual: bytes,
-                 min_qual: int, dels: list[Deletion], inns: list[Insertion]):
+def find_ambrels(relvec: bytearray, refseq: DNA, read: DNA, qual: str,
+                 min_qual: str, dels: list[Deletion], inns: list[Insertion]):
     """
     Find and label all positions in the vector that are ambiguous due to
     insertions and deletions.
     Parameters
     ----------
-    muts: bytearray
+    relvec: bytearray
         Mutation vector
-    ref: bytes
+    refseq: DNA
         Reference sequence
-    read: bytes
+    read: DNA
         Sequence of the read
-    qual: bytes
+    qual: str
         Phred quality scores of the read, encoded as ASCII characters
-    min_qual: int
+    min_qual: str
         The minimum Phred quality score needed to consider a base call
         informative: integer value of the ASCII character
     dels: list[Deletion]
@@ -354,11 +357,11 @@ def find_ambrels(muts: bytearray, ref: bytes, read: bytes, qual: bytes,
         # direction indicated by from3to5. Allow tunneling so that any
         # runs of consecutive insertions or consecutive deletions can
         # effectively move together.
-        sweep_indels(muts, ref, read, qual, min_qual,
+        sweep_indels(relvec, refseq, read, qual, min_qual,
                      dels, inns, from3to5, tunnel=True)
         if any(d.tunneled for d in dels) or any(i.tunneled for i in inns):
             # If any indel tunneled,
-            sweep_indels(muts, ref, read, qual, min_qual,
+            sweep_indels(relvec, refseq, read, qual, min_qual,
                          dels, inns, from3to5, tunnel=False)
 
 
@@ -412,17 +415,17 @@ class SamRead(object):
     # Minimum number of fields in a valid SAM record
     MIN_FIELDS = 11
 
-    def __init__(self, line: bytes):
-        fields = line.rstrip().split(b"\t")
+    def __init__(self, line: str):
+        fields = line.rstrip().split('\t')
         if len(fields) < self.MIN_FIELDS:
             raise RelateValueError(f"Invalid SAM line:\n{line}")
         self.qname = fields[0]
         self.flag = SamFlag(int(fields[1]))
-        self.rname = fields[2].decode()
+        self.rname = fields[2]
         self.pos = int(fields[3])
         self.mapq = int(fields[4])
         self.cigar = fields[5]
-        self.seq = fields[9]
+        self.seq = DNA(fields[9])
         self.qual = fields[10]
         if len(self.seq) != len(self.qual):
             raise RelateValueError(f"Lengths of seq ({len(self.seq)}) and qual "
@@ -430,14 +433,14 @@ class SamRead(object):
 
     def __str__(self):
         attrs = {attr: self.__getattribute__(attr) for attr in self.__slots__[1:]}
-        return f"Read '{self.qname.decode()}' {attrs}"
+        return f"Read '{self.qname}' {attrs}"
 
 
-def relate_read(read: SamRead,
-                muts: bytearray,
-                refseq: bytes,
+def relate_read(relvec: bytearray,
+                read: SamRead,
+                refseq: DNA,
                 length: int,
-                min_qual: int,
+                min_qual: str,
                 ambrel: bool):
     """
     Generate a relation vector of a read aligned to a reference.
@@ -446,10 +449,10 @@ def relate_read(read: SamRead,
     ----------
     read: SamRead
         Read from SAM file to be related
-    muts: bytearray
+    relvec: bytearray
         Relation vector (initially blank) into which to write bytes;
         muts and refseq must have the same length.
-    refseq: bytes
+    refseq: str
         Reference sequence; refseq and muts must have the same length.
     length: int (≥ 1)
         Length of the reference; must equal len(refseq) and len(muts)
@@ -458,9 +461,9 @@ def relate_read(read: SamRead,
     ambrel: bool
         Whether to find and label all ambiguous insertions and deletions
     """
-    if len(muts) != length:
+    if len(relvec) != length:
         raise ValueError(
-            f"Expected muts to have length {length}, but got {len(muts)}")
+            f"Expected relvec to have length {length}, but got {len(relvec)}")
     if len(refseq) != length:
         raise ValueError(
             f"Expected refseq to have length {length}, but got {len(refseq)}")
@@ -490,9 +493,9 @@ def relate_read(read: SamRead,
             if read_idx + op_length > len(read.seq):
                 raise ValueError("CIGAR operation overshot the read")
             for _ in range(op_length):
-                muts[ref_idx] &= encode_match(read.seq[read_idx],
-                                              read.qual[read_idx],
-                                              min_qual)
+                relvec[ref_idx] &= encode_match(read.seq[read_idx],
+                                                read.qual[read_idx],
+                                                min_qual)
                 ref_idx += 1
                 read_idx += 1
         elif cigar_op == CIG_ALIGN or cigar_op == CIG_SUBST:
@@ -504,10 +507,10 @@ def relate_read(read: SamRead,
             if read_idx + op_length > len(read.seq):
                 raise ValueError("CIGAR operation overshot the read")
             for _ in range(op_length):
-                muts[ref_idx] &= encode_relate(refseq[ref_idx],
-                                               read.seq[read_idx],
-                                               read.qual[read_idx],
-                                               min_qual)
+                relvec[ref_idx] &= encode_relate(refseq[ref_idx],
+                                                 read.seq[read_idx],
+                                                 read.qual[read_idx],
+                                                 min_qual)
                 ref_idx += 1
                 read_idx += 1
         elif cigar_op == CIG_DELET:
@@ -523,7 +526,7 @@ def relate_read(read: SamRead,
                 if not 1 <= ref_idx < length - 1:
                     raise ValueError(f"Deletion in {read}, ref {ref_idx + 1}")
                 dels.append(Deletion(ref_idx, read_idx))
-                muts[ref_idx] &= DELET
+                relvec[ref_idx] &= DELET
                 ref_idx += 1
         elif cigar_op == CIG_INSRT:
             # The read contains an insertion of one or more bases
@@ -586,58 +589,51 @@ def relate_read(read: SamRead,
     # operation was added to read_idx.
     if read_idx != len(read.seq):
         raise RelateValueError(
-            f"CIGAR string '{read.cigar.decode()}' consumed {read_idx} "
-            f"bases from read, but read is {len(read.seq)} bases long.")
+            f"CIGAR string '{read.cigar}' consumed {read_idx} bases "
+            f"from read, but read is {len(read.seq)} bases long.")
     # Add insertions to muts.
     for ins in inns:
-        ins.stamp(muts)
+        ins.stamp(relvec)
     # Find and label all relationships that are ambiguous due to indels.
     if ambrel and (dels or inns):
-        find_ambrels(muts, refseq, read.seq, read.qual, min_qual, dels, inns)
+        find_ambrels(relvec, refseq, read.seq, read.qual, min_qual, dels, inns)
 
 
-def relate_line(line: bytes, muts: bytearray, refseq: bytes,
-                length: int, ref: str, qmin: int, ambrel: bool):
-    read = SamRead(line)
-    if read.rname != ref:
-        raise RelateValueError(f"Read '{read.qname.decode()}' had reference "
-                               f"'{read.rname}' (≠ '{ref}')")
-    relate_read(read, muts, refseq, length, qmin, ambrel)
+def relate_line(relvec: bytearray, line: str,
+                refseq: DNA, length: int, qmin: str, ambrel: bool):
+    relate_read(relvec, SamRead(line), refseq, length, qmin, ambrel)
 
 
-def relate_pair(line1: bytes, line2: bytes, muts: bytearray, refseq: bytes,
-                length: int, ref: str, qmin: int, ambrel: bool):
+def relate_pair(relvec: bytearray, line1: str, line2: str,
+                refseq: DNA, length: int, qmin: str, ambrel: bool):
     # Parse lines 1 and 2 into SAM reads.
     read1 = SamRead(line1)
     read2 = SamRead(line2)
     # Ensure that reads 1 and 2 are compatible mates.
     if not read1.flag.paired:
-        raise RelateValueError(f"Read 1 ({read1.qname.decode()}) was not "
-                               f"paired, but read 2 ('{read2.qname.decode()}') "
+        raise RelateValueError(f"Read 1 ({read1.qname}) was not "
+                               f"paired, but read 2 ('{read2.qname}') "
                                f"was given")
     if not read2.flag.paired:
-        raise RelateValueError(f"Read 2 ({read2.qname.decode()}) was not "
-                               f"paired, but read 1 ({read1.qname.decode()}) "
+        raise RelateValueError(f"Read 2 ({read2.qname}) was not "
+                               f"paired, but read 1 ({read1.qname}) "
                                f"was given")
     if read1.qname != read2.qname:
-        raise RelateValueError(f"Reads 1 ({read1.qname.decode()}) and 2 "
-                               f"({read2.qname.decode()}) had different names")
+        raise RelateValueError(f"Reads 1 ({read1.qname}) and 2 "
+                               f"({read2.qname}) had different names")
     if read1.rname != read2.rname:
-        raise RelateValueError(f"Read '{read1.qname.decode()}' had "
+        raise RelateValueError(f"Read '{read1.qname}' had "
                                "different references for mates 1 "
                                f"('{read1.rname}') and 2 "
                                f"('{read2.rname}')")
-    if read1.rname != ref:
-        raise RelateValueError(f"Read '{read1.qname.decode()}' had reference "
-                               f"'{read1.rname}' (≠ '{ref}')")
     if not (read1.flag.first and read2.flag.second):
-        raise RelateValueError(f"Read '{read1.qname.decode()}' had mate 1 "
+        raise RelateValueError(f"Read '{read1.qname}' had mate 1 "
                                f"labeled {2 - read1.flag.first} and mate 2 "
                                f"labeled {1 + read2.flag.second}")
     if read1.flag.rev == read2.flag.rev:
-        raise RelateValueError(f"Read '{read1.qname.decode()}' had "
+        raise RelateValueError(f"Read '{read1.qname}' had "
                                "mates 1 and 2 facing the same way")
     # Vectorize read 1.
-    relate_read(read1, muts, refseq, length, qmin, ambrel)
+    relate_read(relvec, read1, refseq, length, qmin, ambrel)
     # Vectorize read 2.
-    relate_read(read2, muts, refseq, length, qmin, ambrel)
+    relate_read(relvec, read2, refseq, length, qmin, ambrel)
