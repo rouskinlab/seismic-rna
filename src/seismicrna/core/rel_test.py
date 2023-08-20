@@ -11,6 +11,7 @@ from itertools import chain
 from typing import Generator, Sequence
 
 import numpy as np
+import pandas as pd
 
 from .rel import (IRREC, MATCH, DELET,
                   INS_5, INS_3, INS_8, MINS5, MINS3, ANY_8,
@@ -18,10 +19,14 @@ from .rel import (IRREC, MATCH, DELET,
                   ANY_B, ANY_D, ANY_H, ANY_V, ANY_N,
                   INDEL, NOCOV,
                   MIN_QUAL, MAX_QUAL,
-                  CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_DELET, CIG_INSRT, CIG_SCLIP,
+                  CIG_ALIGN, CIG_MATCH, CIG_SUBST,
+                  CIG_DELET, CIG_INSRT, CIG_SCLIP,
                   parse_cigar, count_cigar_muts, find_cigar_op_pos,
+                  translate_relvec, blank_relvec, random_relvecs,
+                  encode_relate, encode_match,
                   validate_relvec, iter_relvecs_q53, iter_relvecs_all,
-                  relvec_to_read, as_sam)
+                  relvec_to_read, ref_to_alignments, iter_alignments, as_sam)
+from .sect import seq_pos_to_index
 from .seq import DNA, DNAmbig, expand_degenerate_seq
 
 
@@ -45,6 +50,42 @@ class TestConstants(ut.TestCase):
         self.assertEqual(SUB_N, 240)
         self.assertEqual(ANY_N, 241)
         self.assertEqual(NOCOV, 255)
+        self.assertEqual(ANY_B, ANY_N - SUB_A)
+        self.assertEqual(ANY_D, ANY_N - SUB_C)
+        self.assertEqual(ANY_H, ANY_N - SUB_G)
+        self.assertEqual(ANY_V, ANY_N - SUB_T)
+
+
+class TestEncodeRelate(ut.TestCase):
+    """ Test function `encode_relate`. """
+
+    def test_encode_relate_hi_qual(self):
+        """ Test when the quality is at least the minimum. """
+        for ref in DNA.alph:
+            for read, sub in zip(DNA.alph, [SUB_A, SUB_C, SUB_G, SUB_T]):
+                code = encode_relate(ref, read, MAX_QUAL, MAX_QUAL)
+                self.assertEqual(code, MATCH if read == ref else sub)
+
+    def test_encode_relate_lo_qual(self):
+        """ Test when the quality is less than the minimum. """
+        for ref, sub in zip(DNA.alph, [ANY_B, ANY_D, ANY_H, ANY_V]):
+            for read in DNA.alph:
+                self.assertEqual(encode_relate(ref, read, MIN_QUAL, MAX_QUAL),
+                                 sub)
+
+
+class TestEncodeMatch(ut.TestCase):
+    """ Test function `encode_match`. """
+
+    def test_encode_match_hi_qual(self):
+        """ Test when the quality is at least the minimum. """
+        for read in DNA.alph:
+            self.assertEqual(encode_match(read, MAX_QUAL, MAX_QUAL), MATCH)
+
+    def test_encode_match_lo_qual(self):
+        """ Test when the quality is less than the minimum. """
+        for read, sub in zip(DNA.alph, [ANY_B, ANY_D, ANY_H, ANY_V]):
+            self.assertEqual(encode_match(read, MIN_QUAL, MAX_QUAL), sub)
 
 
 class TestParseCigar(ut.TestCase):
@@ -78,11 +119,93 @@ class TestCountCigarMuts(ut.TestCase):
 class TestFindCigarOpPos(ut.TestCase):
     """ Test function `find_cigar_op_pos`. """
 
+    def test_cigar_xeq_aln_valid(self):
+        """ Find aligned positions in a CIGAR string with =/X codes. """
+        self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
+                                                CIG_ALIGN)),
+                         [])
+
+    def test_cigar_m_aln_valid(self):
+        """ Find aligned positions in a CIGAR string with M codes. """
+        self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
+                                                CIG_ALIGN)),
+                         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+                          15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 28, 29,
+                          30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+                          42, 43, 44, 45, 46, 47, 48, 49, 52, 53, 54, 55,
+                          56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67,
+                          68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+                          80, 81, 82, 84, 85, 86, 87, 88, 89, 90, 91, 92,
+                          93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103,
+                          104, 105, 106, 107, 108])
+
+    def test_cigar_xeq_mat_valid(self):
+        """ Find matches in a CIGAR string with =/X codes. """
+        self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
+                                                CIG_MATCH)),
+                         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+                          15, 16, 17, 18, 19, 20, 21, 22, 23, 28, 29, 30,
+                          31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,
+                          43, 44, 45, 46, 47, 48, 49, 52, 53, 54, 55, 56,
+                          57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68,
+                          69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+                          81, 82, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93,
+                          94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104,
+                          105, 106, 107, 108])
+
+    def test_cigar_m_mat_valid(self):
+        """ Find matches in a CIGAR string with M codes. """
+        self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
+                                                CIG_MATCH)),
+                         [])
+
+    def test_cigar_xeq_sub_valid(self):
+        """ Find substitutions in a CIGAR string with =/X codes. """
+        self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
+                                                CIG_SUBST)),
+                         [24])
+
+    def test_cigar_m_sub_valid(self):
+        """ Find substitutions in a CIGAR string with M codes. """
+        self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
+                                                CIG_SUBST)),
+                         [])
+
+    def test_cigar_xeq_del_valid(self):
+        """ Find deletions in a CIGAR string with =/X codes. """
+        self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
+                                                CIG_DELET)),
+                         [])
+
+    def test_cigar_m_del_valid(self):
+        """ Find deletions in a CIGAR string with M codes. """
+        self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
+                                                CIG_DELET)),
+                         [])
+
     def test_cigar_xeq_ins_valid(self):
         """ Find insertions in a CIGAR string with =/X codes. """
         self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
                                                 CIG_INSRT)),
                          [25, 26, 27, 50, 51, 83])
+
+    def test_cigar_m_ins_valid(self):
+        """ Find insertions in a CIGAR string with M codes. """
+        self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
+                                                CIG_INSRT)),
+                         [25, 26, 27, 50, 51, 83])
+
+    def test_cigar_xeq_scl_valid(self):
+        """ Find soft clippings in a CIGAR string with =/X codes. """
+        self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
+                                                CIG_SCLIP)),
+                         [])
+
+    def test_cigar_m_scl_valid(self):
+        """ Find soft clippings in a CIGAR string with M codes. """
+        self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
+                                                CIG_SCLIP)),
+                         [])
 
 
 class TestValidateRelVec(ut.TestCase):
@@ -119,6 +242,84 @@ class TestValidateRelVec(ut.TestCase):
     def test_not_uint8(self):
         """ Test that a non-uint8 relation vector is invalid. """
         self.assertRaises(TypeError, validate_relvec, np.ones(8, np.int8))
+
+
+class TestBlankRelvec(ut.TestCase):
+    """ Test function `blank_relvec`. """
+
+    def compare_numpy(self, result, expect: np.ndarray):
+        self.assertIsInstance(result, np.ndarray)
+        self.assertIs(type(result), type(expect))
+        self.assertIs(result.dtype, expect.dtype)
+        self.assertTrue(np.array_equal(result, expect))
+
+    def compare_pandas(self, result, expect: pd.Series | pd.DataFrame):
+        self.assertIsInstance(result, (pd.Series, pd.DataFrame))
+        self.assertIs(type(result), type(expect))
+        self.assertTrue(expect.equals(result))
+
+    def test_numpy_1d(self):
+        """ Test returning a 1D NumPy array. """
+        for length in range(10):
+            self.compare_numpy(blank_relvec(length),
+                               np.full(shape=(length,),
+                                       fill_value=NOCOV,
+                                       dtype=np.uint8))
+
+    def test_numpy_2d_int(self):
+        """ Test returning a 2D NumPy array with integer reads. """
+        for length in range(10):
+            for n_reads in range(10):
+                self.compare_numpy(blank_relvec(length, n_reads),
+                                   np.full(shape=(n_reads, length),
+                                           fill_value=NOCOV,
+                                           dtype=np.uint8))
+
+    def test_numpy_2d_list(self):
+        """ Test returning a 2D NumPy array with a list of reads. """
+        for length in range(10):
+            for n_reads in range(10):
+                for list_func in [list, np.array, pd.Index]:
+                    reads = list_func(list(map(str, range(n_reads))))
+                    self.compare_numpy(blank_relvec(length, reads),
+                                       np.full(shape=(n_reads, length),
+                                               fill_value=NOCOV,
+                                               dtype=np.uint8))
+
+    def test_pandas_series(self):
+        """ Test returning a Pandas Series. """
+        for length in range(1, 10):
+            seq = DNA.random(length)
+            index = seq_pos_to_index(seq, list(range(1, length + 1)), 1)
+            self.compare_pandas(blank_relvec(seq),
+                                pd.Series(NOCOV, index=index, dtype=np.uint8))
+
+    def test_pandas_dataframe_int(self):
+        """ Test returning a Pandas DataFrame with integer reads. """
+        for length in range(1, 10):
+            seq = DNA.random(length)
+            index = seq_pos_to_index(seq, list(range(1, length + 1)), 1)
+            for n_reads in range(10):
+                reads = [f"Read_{i + 1}" for i in range(n_reads)]
+                self.compare_pandas(blank_relvec(seq, n_reads),
+                                    pd.DataFrame(NOCOV,
+                                                 index=reads,
+                                                 columns=index,
+                                                 dtype=np.uint8))
+
+    def test_pandas_dataframe_list(self):
+        """ Test returning a Pandas DataFrame with integer reads. """
+        for length in range(1, 10):
+            seq = DNA.random(length)
+            index = seq_pos_to_index(seq, list(range(1, length + 1)), 1)
+            for n_reads in range(10):
+                for list_func in [list, np.array, pd.Index]:
+                    reads = list_func(list(map(str, range(n_reads))))
+                    self.compare_pandas(blank_relvec(seq, reads),
+                                        pd.DataFrame(NOCOV,
+                                                     index=reads,
+                                                     columns=index,
+                                                     dtype=np.uint8))
 
 
 class TestIterRelvecsQ53(ut.TestCase):

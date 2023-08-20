@@ -58,7 +58,7 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
                                                                      max_ins):
             result = self.relate("ref", refseq, read, qual, cigar, end5)
             with self.subTest(relvec=relvec, result=result):
-                self.assertEqual(relvec, result)
+                self.assertEqual(relvec.tobytes(), result)
 
     def test_aaaa_0ins(self):
         """ Test all possible reads with 0 insertions from AAAA. """

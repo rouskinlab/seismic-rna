@@ -14,6 +14,7 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 
+from .cli import opt_phred_enc
 from .sect import Section, seq_pos_to_index
 from .seq import (BASEA, BASEC, BASEG, BASET, BASEN, DNA, DNAmbig,
                   expand_degenerate_seq)
@@ -104,9 +105,9 @@ CIG_PATTERN = re.compile("".join([r"(\d+)([",
                                   "])"]))
 
 # Define default values for low-, medium-, and high-quality base calls.
-MIN_QUAL = '!'
-MED_QUAL = '5'
-MAX_QUAL = 'I'
+MIN_QUAL = chr(opt_phred_enc.default)
+MED_QUAL = chr(opt_phred_enc.default + 20)
+MAX_QUAL = chr(opt_phred_enc.default + 40)
 
 
 class CigarOp(object):
@@ -188,26 +189,27 @@ def parse_cigar(cigar_string: str):
 
 def count_cigar_muts(cigar_string: str):
     """ Return the total number of mutations in a CIGAR string. """
+    mutation_types = CIG_SUBST, CIG_DELET, CIG_INSRT
     return sum(olen for op, olen in parse_cigar(cigar_string)
-               if op in (CIG_SUBST, CIG_DELET, CIG_INSRT))
+               if op in mutation_types)
 
 
 def find_cigar_op_pos(cigar_string: str, find_op: str):
-    """ Yield the position of every inserted base in a CIGAR string. """
-    consume_read = (CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_INSRT)
-    if find_op not in consume_read:
-        # These operations do not consume the read.
-        return
-    # Check each CIGAR operation, starting at position 1.
-    pos = 1
-    for op, olen in parse_cigar(cigar_string):
-        if op == find_op:
-            # If the operation matches the code, then yield the position
-            # of every base consumed by that operation.
-            yield from range(pos, pos := (pos + olen))
-        elif op in consume_read:
-            # Advance the position by the length of the operation.
-            pos += olen
+    """ Yield the position in the read of every base with a particular
+    type of operation specified by a CIGAR string. """
+    consume_read = CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_INSRT
+    if find_op in consume_read:
+        # Only these operations correspond to positions in the read.
+        pos = 1
+        # Check each CIGAR operation, starting at position 1.
+        for op, olen in parse_cigar(cigar_string):
+            if op == find_op:
+                # If the operation matches the code, then yield the position
+                # of every base consumed by that operation.
+                yield from range(pos, pos := (pos + olen))
+            elif op in consume_read:
+                # Advance the position by the length of the operation.
+                pos += olen
 
 
 def validate_relvec(relvec: np.ndarray):
@@ -263,15 +265,6 @@ def blank_relvec(bases: int | DNA,
     np.ndarray | pd.Series | pd.DataFrame
         The blank relation vector(s).
     """
-    # Ensure that reads is either None or a sequence of bytes objects.
-    if reads is not None:
-        if isinstance(reads, int):
-            reads = [b"Read_%d" % i for i in range(1, reads + 1)]
-        else:
-            reads = [read if isinstance(read, bytes)
-                     else (read.encode() if isinstance(read, str)
-                           else str(read).encode())
-                     for read in reads]
     # Determine whether to return a Pandas or NumPy object.
     if isinstance(bases, DNA):
         # Make a Series or DataFrame with the sequence as its main axis.
@@ -279,11 +272,18 @@ def blank_relvec(bases: int | DNA,
         if reads is None:
             # Return a Series representing just one relation vector.
             return pd.Series(NOCOV, index=sequence, dtype=NP_TYPE)
+        # Ensure that names is a sequence of read names as str objects.
+        if isinstance(reads, int):
+            names = [f"Read_{i}" for i in range(1, reads + 1)]
+        else:
+            names = list(map(str, reads))
         # Return a DataFrame with one row per relation vector.
-        return pd.DataFrame(NOCOV, index=reads, columns=sequence, dtype=NP_TYPE)
-    # Make a NumPy array: 2D if reads is an Index, otherwise 1D.
-    return np.full(bases if reads is None else (len(reads), bases),
-                   fill_value=NOCOV, dtype=NP_TYPE)
+        return pd.DataFrame(NOCOV, index=names, columns=sequence, dtype=NP_TYPE)
+    # Determine the size of the NumPy array.
+    size = (bases if reads is None
+            else ((reads, bases) if isinstance(reads, int)
+                  else (len(reads), bases)))
+    return np.full(size, fill_value=NOCOV, dtype=NP_TYPE)
 
 
 def random_relvecs(refseq: DNA, reads: pd.Index | np.ndarray | list | int,
@@ -763,14 +763,14 @@ def ref_to_alignments(refseq: DNA,
                 relvecs[key][nmuts] |= relvec
     # For every read-quality-end5-end3 key, keep only the CIGAR strings
     # and relation vector with the fewest mutations.
-    cigars_best: dict[tuple[DNA, bytes, int, int], list[bytes]] = dict()
-    relvec_best: dict[tuple[DNA, bytes, int, int], bytes] = dict()
+    cigars_best: dict[tuple[DNA, str, int, int], list[str]] = dict()
+    relvec_best: dict[tuple[DNA, str, int, int], np.ndarray] = dict()
     for key, cig_key in cigars.items():
         # Find the minimum number of mutations for this key.
         min_nmuts = min(cig_key)
         # Export the results with the fewest mutations.
         cigars_best[key] = cigars[key][min_nmuts]
-        relvec_best[key] = relvecs[key][min_nmuts].tobytes()
+        relvec_best[key] = relvecs[key][min_nmuts]
     return quals, cigars_best, relvec_best
 
 

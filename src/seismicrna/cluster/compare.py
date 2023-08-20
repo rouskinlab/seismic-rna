@@ -105,7 +105,13 @@ def get_log_exp_obs_counts(ord_runs: dict[int, RunOrderResults]):
                                   ascending=False).round(EXP_COUNT_PRECISION)
 
 
-def calc_var_info_pqr(p: np.ndarray, q: np.ndarray, r: np.ndarray,
+def calc_information_entropy(x: np.ndarray, validate: bool = True):
+    """
+    Calculate the information entropy of a set of observations, x.
+    """
+
+
+def calc_var_info_pqr(x: np.ndarray, y: np.ndarray, xy: np.ndarray,
                       validate: bool = True):
     """
     Calculate the variation of information for two partitions, X and Y,
@@ -114,13 +120,13 @@ def calc_var_info_pqr(p: np.ndarray, q: np.ndarray, r: np.ndarray,
 
     Parameters
     ----------
-    p: ndarray
+    x: ndarray
         A 1-dimensional array of the fraction of the total elements in
         each partition of X. All must be in (0, 1] and sum to 1.
-    q: ndarray
+    y: ndarray
         A 1-dimensional array of the fraction of the total elements in
         each partition of Y. All must be in (0, 1] and sum to 1.
-    r: ndarray
+    xy: ndarray
         A 2-dimensional array (len(p) x len(q)) of the fraction of the
         total elements that are in each pair of partitions from X and Y.
         All must be in (0, 1] and sum to 1.
@@ -136,75 +142,72 @@ def calc_var_info_pqr(p: np.ndarray, q: np.ndarray, r: np.ndarray,
     # Validate dimensions (always done even if validate is False because
     # the dimensions must be correct or else the entire calculation will
     # fail, and this step is much faster than those that require math).
-    if p.ndim != 1:
-        raise ValueError(f"Dimension of p must be 1, but got {p.ndim}")
-    if p.size == 0:
-        raise ValueError(f"p contained no elements")
-    if q.ndim != 1:
-        raise ValueError(f"Dimension of q must be 1, but got {q.ndim}")
-    if q.size == 0:
-        raise ValueError(f"q contained no elements")
-    if r.ndim != 2:
-        raise ValueError(f"Dimension of r must be 2, but got {r.ndim}")
-    if r.shape != (p.size, q.size):
-        raise ValueError("r must have dimensions of p.size x q.size "
-                         f"{p.size, q.size}, but got {r.shape}")
+    if x.ndim != 1:
+        raise ValueError(f"Dimension of x must be 1, but got {x.ndim}")
+    if x.size == 0:
+        raise ValueError(f"x contained no elements")
+    if y.ndim != 1:
+        raise ValueError(f"Dimension of y must be 1, but got {y.ndim}")
+    if y.size == 0:
+        raise ValueError(f"y contained no elements")
+    if xy.ndim != 2:
+        raise ValueError(f"Dimension of xy must be 2, but got {xy.ndim}")
+    if xy.shape != (x.size, y.size):
+        raise ValueError(f"r must have dimensions of {x.size, y.size},"
+                         f"but got {xy.shape}")
     if validate:
         # Validate bounds.
-        if np.any(p <= 0.) or np.any(p > 1.):
-            raise ValueError(f"All values in p must be in (0, 1], but got {p}")
-        if np.any(q <= 0.) or np.any(q > 1.):
-            raise ValueError(f"All values in q must be in (0, 1], but got {q}")
-        if np.any(r <= 0.) or np.any(r > 1.):
-            raise ValueError(f"All values in r must be in (0, 1], but got {r}")
+        if np.any(x <= 0.) or np.any(x > 1.):
+            raise ValueError(f"All x must be in (0, 1], but got {x}")
+        if np.any(y <= 0.) or np.any(y > 1.):
+            raise ValueError(f"All y must be in (0, 1], but got {y}")
+        if np.any(xy <= 0.) or np.any(xy > 1.):
+            raise ValueError(f"All xy must be in (0, 1], but got {xy}")
         # Validate sums.
-        if not np.isclose(p.sum(), 1.):
-            raise ValueError(f"p must sum to 1, but got {p.sum()}")
-        if not np.isclose(q.sum(), 1.):
-            raise ValueError(f"q must sum to 1, but got {q.sum()}")
-        if not np.isclose(r.sum(), 1.):
-            raise ValueError(f"r must sum to 1, but got {r.sum()}")
-    # Compute the variation of information.
-    log_pq_grid = np.log(p)[:, np.newaxis] + np.log(q)[np.newaxis, :]
-    return float(np.sum(r * (log_pq_grid - 2. * np.log(r))))
+        if not np.isclose(x.sum(), 1.):
+            raise ValueError(f"x must sum to 1, but got {x.sum()}")
+        if not np.isclose(y.sum(), 1.):
+            raise ValueError(f"y must sum to 1, but got {y.sum()}")
+        if not np.isclose(xy.sum(), 1.):
+            raise ValueError(f"xy must sum to 1, but got {xy.sum()}")
+    # Compute the mutual information of X and Y.
+    log_pq_grid = np.log(x)[:, np.newaxis] + np.log(y)[np.newaxis, :]
+    return float(np.sum(xy * (log_pq_grid - 2. * np.log(xy))))
 
 
-def calc_var_info_pair(resps1: pd.DataFrame, resps2: pd.DataFrame,
-                       validate: bool = True):
+def calc_var_info_pair(resps1: pd.DataFrame, resps2: pd.DataFrame):
     """ Calculate the variation of information for a pair of clustering
     results. """
     # Find the number of reads and clusters.
-    n_reads, n_clusts = resps1.shape
-    if resps2.shape != (n_reads, n_clusts):
-        raise ValueError(f"Dimensions of resps1 {resps1.shape} "
-                         f"and resps2 {resps2.shape} differ")
-    if n_clusts <= 0:
-        raise ValueError(f"Number of clusters must be ≥ 1, but got {n_clusts}")
-    if n_reads == 0:
+    if not resps1.index.equals(resps2.index):
+        raise ValueError(f"Read names of resps1 {resps1.index} "
+                         f"and resps2 {resps2.index} differ")
+    if (n_reads := resps1.index.size) == 0:
         # There is zero variation if there are zero reads.
         return 0.
-    if validate:
-        # Verify that resps1 and resps2 have the same reads (indexes).
-        if not resps1.index.equals(resps2.index):
-            raise ValueError("Read names of resps1 and clusts2 differ")
-        # Verify that the probability that each read belongs to any
-        # cluster equals 1.
-        if not np.allclose(resps1.sum(axis=1), 1.):
-            raise ValueError(
-                "Probabilities of reads in resps1 did not all sum to 1")
-        if not np.allclose(resps2.sum(axis=1), 1.):
-            raise ValueError(
-                "Probabilities of reads in resps2 did not all sum to 1")
-    # For each run, compute the proportion of reads in each cluster.
-    props1 = resps1.mean(axis=0).values
-    props2 = resps2.mean(axis=0).values
-    # For each pair of clusters, compute the proportion of reads in both
-    # clusters.
-    props12 = np.array([[np.vdot(resps1[c1], resps2[c2]) / n_reads
+    # Verify that resps1 and resps2 have the same reads (indexes).
+    if not resps1.index.equals(resps2.index):
+        raise ValueError("Read names of resps1 and clusts2 differ")
+    # Verify that the probability that each read belongs to any
+    # cluster equals 1.
+    if not np.allclose(resps1.sum(axis=1), 1.):
+        raise ValueError("Probabilities of reads in resps1 did not sum to 1")
+    if not np.allclose(resps2.sum(axis=1), 1.):
+        raise ValueError("Probabilities of reads in resps2 did not sum to 1")
+    # For each run, compute the log proportion of reads in each cluster.
+    logp1 = np.log(resps1.values.mean(axis=0))
+    logp2 = np.log(resps2.values.mean(axis=0))
+    # For each pair of clusters, compute the proportion of reads that
+    # would be expected if the clusterings were independent.
+    logp12_exp = logp1[:, np.newaxis] + logp2[np.newaxis, :]
+    # For each pair of clusters, compute the proportion of reads that
+    # was actually observed in both clusters.
+    p12_obs = np.array([[np.vdot(resps1[c1], resps2[c2]) / n_reads
                          for c2 in resps2.columns]
                         for c1 in resps1.columns])
-    # Compute the variation of information.
-    return calc_var_info_pqr(props1, props2, props12, validate=validate)
+    logp12_obs = np.log(p12_obs)
+    # Compute the variation of information between X and Y.
+    return np.sum(p12_obs * (logp12_exp - 2 * logp12_obs))
 
 
 def calc_mean_var_info(runs: list[EmClustering]):
