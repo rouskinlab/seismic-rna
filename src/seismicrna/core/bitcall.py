@@ -156,8 +156,8 @@ class SemiBitCaller(object):
 
     def call(self, relvecs: pd.DataFrame) -> pd.DataFrame:
         """
-        Query the given mutation vectors. Return a boolean DataFrame
-        indicating which elements of mutation vectors matched the query.
+        Query the given relation vectors. Return a boolean DataFrame
+        indicating which elements of relation vectors matched the query.
 
         Parameters
         ----------
@@ -181,7 +181,7 @@ class SemiBitCaller(object):
         # if the relation vector byte is a bitwise subset of the query.
         # If not, it will have bits set to 1 that are not in the query.
         bits = np.equal(query, np.bitwise_or(relvecs, query))
-        logger.debug(f"Queried mutation vectors\n{relvecs}\nwith\n{query}\n"
+        logger.debug(f"Queried relation vectors\n{relvecs}\nwith\n{query}\n"
                      f"and returned\n{bits}")
         return bits
 

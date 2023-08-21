@@ -10,6 +10,7 @@ from .write import write
 from ..core import docdef, path
 from ..core.cli import (arg_input_file, opt_rels,
                         opt_max_procs, opt_parallel, opt_rerun)
+from ..core.cmd import CMD_TABLE
 from ..core.parallel import dispatch
 
 logger = getLogger(__name__)
@@ -17,7 +18,7 @@ logger = getLogger(__name__)
 params = [arg_input_file, opt_rels, opt_max_procs, opt_parallel, opt_rerun]
 
 
-@command(path.MOD_TABLE, params=params)
+@command(CMD_TABLE, params=params)
 def cli(*args, **kwargs):
     """ Tabulate per-base and per-read mutation counts from 'relate' and
     'mask', and mutation rates and read memberships from 'cluster'. """

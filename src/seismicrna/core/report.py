@@ -600,7 +600,7 @@ class Report(ABC):
     @abstractmethod
     def path_segs(cls):
         """ Return a tuple of the segments of the path. """
-        return path.ModSeg, path.SampSeg, path.RefSeg
+        return path.REPORT_CORE_SEGS
 
     @classmethod
     def auto_fields(cls) -> dict[str, Any]:
@@ -762,7 +762,7 @@ class BatchReport(Report, ABC):
         yield from map(self.get_batch_path, range(self.get_field(NumBatchF)))
 
     def find_invalid_batches(self):
-        """ Return all the batches of mutation vectors that either do
+        """ Return all the batches of relation vectors that either do
         not exist or do not match their expected checksums. """
         missing: list[int] = list()
         badsum: list[int] = list()

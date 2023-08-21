@@ -2,6 +2,7 @@ from __future__ import annotations
 from logging import getLogger
 
 from ..core import path
+from ..core.cmd import CMD_REL
 from ..core.report import (BatchReport, calc_seqlen, calc_time_taken,
                            calc_n_batches, calc_speed)
 
@@ -36,7 +37,7 @@ class RelateReport(BatchReport):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.MOD: path.MOD_REL}
+        return {**super().auto_fields(), path.CMD: CMD_REL}
 
     @classmethod
     def get_batch_seg(cls):

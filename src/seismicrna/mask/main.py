@@ -14,6 +14,7 @@ from ..core.cli import (arg_input_file,
                         opt_min_finfo_read, opt_max_fmut_read, opt_min_mut_gap,
                         opt_min_ninfo_pos, opt_max_fmut_pos,
                         opt_max_procs, opt_parallel, opt_rerun)
+from ..core.cmd import CMD_MASK
 from ..core.parallel import dispatch
 from ..core.sect import RefSections
 from ..core.seq import DNA
@@ -38,7 +39,7 @@ params = [
 ]
 
 
-@command(path.MOD_MASK, params=params)
+@command(CMD_MASK, params=params)
 def cli(*args, **kwargs):
     """ Select a section of the reference, define which relationships
     count as mutations, and filter out unusable positions and reads. """
@@ -70,7 +71,7 @@ def run(input_file: tuple[str, ...], *,
         parallel: bool,
         # Effort
         rerun: bool) -> list[Path]:
-    """ Run the filtering module. """
+    """ Run the mask command. """
     # Open all relation vector loaders and get the sections for each.
     loaders, sections = open_sections(map(Path, input_file),
                                       coords=coords,
@@ -95,7 +96,7 @@ def run(input_file: tuple[str, ...], *,
                   min_ninfo_pos=min_ninfo_pos,
                   max_fmut_pos=max_fmut_pos,
                   rerun=rerun)
-    # Call the mutations and filter the mutation vectors.
+    # Call the mutations and filter the relation vectors.
     reports = dispatch(mask_section, max_procs=max_procs, parallel=parallel,
                        pass_n_procs=False, args=args, kwargs=kwargs)
     return list(map(Path, reports))

@@ -20,6 +20,7 @@ from ..core.cli import (arg_input_file, arg_fasta,
                         opt_min_reads, opt_batch_size, opt_ambrel,
                         opt_parallel, opt_max_procs,
                         opt_rerun, opt_save_temp)
+from ..core.cmd import CMD_REL
 from ..core.parallel import lock_temp_dir
 
 logger = getLogger(__name__)
@@ -48,7 +49,7 @@ params = [
 ]
 
 
-@command(path.MOD_REL, params=params)
+@command(CMD_REL, params=params)
 def cli(**kwargs):
     """ For every read, find the relationship between each read base and
     the reference base to which it aligned. """
@@ -82,7 +83,7 @@ def run(fasta: str,
 
     # For each BAM file, create a relation writer.
     relaters = get_relaters(path.find_files_chain(map(Path, input_file),
-                                                  [path.SampSeg, path.XamSeg]),
+                                                  path.XAM_SEGS),
                             Path(fasta),
                             min_reads=min_reads,
                             max_procs=max_procs,

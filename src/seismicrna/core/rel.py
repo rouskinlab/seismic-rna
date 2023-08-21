@@ -1,7 +1,34 @@
 """
-Core -- Relation Module
+
+Relate Core Module
+
 ========================================================================
-Auth: Matty
+
+Convert the relationships between reads and a reference from SAM format
+(which encodes relationships implicitly as CIGAR strings) to vectorized
+format (which encodes relationships explicitly as elements of arrays).
+
+------------------------------------------------------------------------
+
+©2023, the Rouskin Lab.
+
+This file is part of SEISMIC-RNA.
+
+SEISMIC-RNA is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+SEISMIC-RNA is distributed in the hope that it will be useful, but WITH
+NO WARRANTY; not even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along
+with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
+
+========================================================================
+
 """
 
 from collections import defaultdict
@@ -562,7 +589,7 @@ def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: str, lo_qual: str,
     ins3_next = False
     ins_count = 0
 
-    def add_cigar(op: str):
+    def add_to_cigar(op: str):
         """ Add one base of the relation vector to the CIGAR string. """
         if cigars and cigars[-1].op == op:
             # The current operation matches that of the last CigarOp:
@@ -605,7 +632,7 @@ def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: str, lo_qual: str,
                 read.append(BASEN * n_ins)
                 qual.append(hi_qual * n_ins)
                 for _ in range(n_ins):
-                    add_cigar(CIG_INSRT)
+                    add_to_cigar(CIG_INSRT)
                 ins_count += 1
                 # Being 3' of an insertion is not allowed until the next
                 # position 5' of an insertion is reached.
@@ -634,18 +661,18 @@ def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: str, lo_qual: str,
             # Match: Add the reference base to the read.
             read.append(ref_base)
             qual.append(hi_qual)
-            add_cigar(CIG_MATCH)
+            add_to_cigar(CIG_MATCH)
         elif rel == DELET:
             # Deletion from the read.
             if not end5 < pos < end3:
                 raise ValueError(
                     f"Deletion cannot be at position {pos} in {end5}-{end3}")
-            add_cigar(CIG_DELET)
+            add_to_cigar(CIG_DELET)
         elif rel ^ ANY_N in (SUB_A, SUB_C, SUB_G, SUB_T):
             # Ambiguous substitution: Add any nucleotide as low quality.
             read.append(BASEN)
             qual.append(lo_qual)
-            add_cigar(CIG_ALIGN)
+            add_to_cigar(CIG_ALIGN)
         else:
             # Unambiguous substitution: Add the substituted nucleotide
             # as high quality.
@@ -668,7 +695,7 @@ def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: str, lo_qual: str,
                     f"Cannot substitute {ref_base} to itself in {relvec}")
             read.append(read_base)
             qual.append(hi_qual)
-            add_cigar(CIG_SUBST)
+            add_to_cigar(CIG_SUBST)
     # Check that the 5' end was found.
     if end5 == 0:
         raise ValueError(f"Relation vector had no 5' end: {relvec}")

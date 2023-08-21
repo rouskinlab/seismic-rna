@@ -7,6 +7,7 @@ import pandas as pd
 
 from ..cluster.names import CLS_NAME, ORD_NAME
 from ..core import path
+from ..core.cmd import CMD_TABLE
 from ..core.mu import winsorize
 from ..core.sect import index_to_pos, index_to_seq
 
@@ -99,8 +100,7 @@ class Table(ABC):
     @classmethod
     def path_segs(cls):
         """ Table's path segments. """
-        return (path.ModSeg, path.SampSeg, path.RefSeg, path.SectSeg,
-                path.MutTabSeg)
+        return path.TABLE_SEGS
 
     @classmethod
     def gzipped(cls):
@@ -116,7 +116,7 @@ class Table(ABC):
     def path_fields(self) -> dict[str, Any]:
         """ Table's path fields. """
         return {path.TOP: self.out_dir,
-                path.MOD: path.MOD_TABLE,
+                path.CMD: CMD_TABLE,
                 path.SAMP: self.sample,
                 path.REF: self.ref,
                 path.SECT: self.sect,

@@ -5,13 +5,14 @@ from click import command
 
 from ..core import docdef, path
 from ..core.cli import opt_verbose
+from ..core.cmd import CMD_TEST
 
 
 # Parameters for command line interface
 params = [opt_verbose]
 
 
-@command(path.MOD_TEST, params=params)
+@command(CMD_TEST, params=params)
 def cli(**kwargs):
     """ Run all unit tests. """
     return run(**kwargs)

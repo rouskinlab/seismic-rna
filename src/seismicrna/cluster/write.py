@@ -12,6 +12,7 @@ from .em import EmClustering
 from .names import ORD_CLS_NAME, READ_NAME
 from .report import ClustReport
 from ..core import path
+from ..core.cmd import CMD_CLUST
 from ..core.files import digest_file
 from ..mask.load import MaskLoader
 
@@ -23,10 +24,9 @@ PRECISION = 6  # number of digits behind the decimal point
 def get_table_path(out_dir: Path, sample: str, ref: str, sect: str,
                    table: str, k: int, run: int):
     """ Build a path for a table of clustering results. """
-    return path.buildpar(path.ModSeg, path.SampSeg, path.RefSeg, path.SectSeg,
-                         path.ClustTabSeg, top=out_dir, module=path.MOD_CLUST,
-                         sample=sample, ref=ref, sect=sect, table=table, k=k,
-                         run=run, ext=path.CSV_EXT)
+    return path.buildpar(*path.CLUST_TAB_SEGS,
+                         top=out_dir, cmd=CMD_CLUST, sample=sample, ref=ref,
+                         sect=sect, table=table, k=k, run=run, ext=path.CSV_EXT)
 
 
 def write_single_run_table(run: EmClustering,
@@ -92,9 +92,9 @@ def write_batches(ord_runs: dict[int, RunOrderResults]):
 
 def get_count_path(out_dir: Path, sample: str, ref: str, sect: str):
     """ Build a path for a table of bit vector counts. """
-    return path.buildpar(path.ModSeg, path.SampSeg, path.RefSeg, path.SectSeg,
-                         path.ClustCountSeg, top=out_dir, module=path.MOD_CLUST,
-                         sample=sample, ref=ref, sect=sect, ext=path.CSVZIP_EXT)
+    return path.buildpar(*path.CLUST_COUNT_SEGS,
+                         top=out_dir, cmd=CMD_CLUST, sample=sample, ref=ref,
+                         sect=sect, ext=path.CSVZIP_EXT)
 
 
 def write_log_counts(ord_runs: dict[int, RunOrderResults]):

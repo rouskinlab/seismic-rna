@@ -236,7 +236,7 @@ class Insertion(Indel):
               swap_idx: int, relation: int):
         """
         Arguments
-        mut_vectors (bytearray): mutation vector
+        mut_vectors (bytearray): relation vector
         swap_idx (int): the index in the read to which the deletion moves
                         during this swap
         swap_code (int): the relationship (match, sub, etc.) between the
@@ -535,7 +535,7 @@ def relate_read(relvec: bytearray,
             # sequence that is not present in the reference. Every
             # mutation needs to be assigned a coordinate in the
             # region in order to appear at that coordinate in the
-            # mutation vector. But each inserted base, being absent
+            # relation vector. But each inserted base, being absent
             # from the reference, does not correspond to a single
             # coordinate in the region; instead, each inserted base
             # lies between two coordinates in the region. Either of

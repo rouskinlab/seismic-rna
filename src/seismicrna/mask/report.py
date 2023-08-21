@@ -1,4 +1,5 @@
 from ..core import path
+from ..core.cmd import CMD_MASK
 from ..core.report import BatchReport
 
 
@@ -33,7 +34,7 @@ class MaskReport(BatchReport):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.MOD: path.MOD_MASK}
+        return {**super().auto_fields(), path.CMD: CMD_MASK}
 
     @classmethod
     def get_batch_seg(cls):

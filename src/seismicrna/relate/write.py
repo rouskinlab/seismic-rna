@@ -25,6 +25,7 @@ from .report import RelateReport
 from .sam import iter_batch_indexes, iter_records
 from .seqpos import format_seq_pos
 from ..core import path
+from ..core.cmd import CMD_REL
 from ..core.files import digest_file
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rel import blank_relvec
@@ -170,7 +171,7 @@ class RelationWriter(object):
 
     @cached_property
     def sample_ref(self):
-        fields = path.parse(self.bam, path.SampSeg, path.XamSeg)
+        fields = path.parse(self.bam, *path.XAM_SEGS)
         return fields[path.SAMP], fields[path.REF]
 
     @property
@@ -208,10 +209,10 @@ class RelationWriter(object):
         # The SAM file will remain open until exiting the with block.
         logger.info(f"Began running {self}")
         # Determine the path of the temporary SAM file.
-        temp_sam = path.build(path.StepSeg, path.SampSeg, path.XamSeg,
-                              top=temp_dir, step=path.STEPS_VECT[0],
-                              sample=self.sample, ref=self.ref,
-                              ext=path.SAM_EXT)
+        temp_sam = path.build(*path.XAM_STEP_SEGS,
+                              top=temp_dir, sample=self.sample,
+                              cmd=CMD_REL, step=path.STEPS_VECT[0],
+                              ref=self.ref, ext=path.SAM_EXT)
         # Create the temporary SAM file.
         view_xam(self.bam, temp_sam, n_procs=n_procs)
         sam_file = open(temp_sam)
@@ -314,7 +315,7 @@ def get_relater(bam_file: Path, fasta: Path, *, min_reads: int, n_procs: int):
     if n_reads < min_reads:
         raise ValueError(f"{bam_file} has {n_reads} reads (< {min_reads})")
     # Determine the name of the reference from the BAM path.
-    ref = path.parse(bam_file, path.SampSeg, path.XamSeg)[path.REF]
+    ref = path.parse(bam_file, *path.XAM_SEGS)[path.REF]
     # Get the sequence of the reference.
     seq = get_ref_seq(fasta, ref)
     # Create a RelationWriter.

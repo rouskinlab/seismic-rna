@@ -21,8 +21,8 @@ def as_iter(vectors: pd.DataFrame, reference: bool = False):
         of a .load.VectorLoader instance.
     reference: bool = False
         Whether to yield the reference sequence as the first item, prior
-        to any mutation vectors. The reference sequence will be the same
-        length as every mutation vector.
+        to any relation vectors. The reference sequence will be the same
+        length as every relation vector.
     """
     if reference:
         # Prepend the reference sequence to the lines of vectors.
@@ -32,7 +32,7 @@ def as_iter(vectors: pd.DataFrame, reference: bool = False):
 
 
 def as_block(vectors: pd.DataFrame, reference: bool = False):
-    """ Display all mutation vectors as a block of human-readable text,
+    """ Display all relation vectors as a block of human-readable text,
     with each vector on a new line and all the positions in the vector
     aligned vertically. Parameters are the same as those of as_iter. """
     return "\n".join(as_iter(vectors, reference=reference))

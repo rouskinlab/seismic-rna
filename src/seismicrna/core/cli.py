@@ -460,7 +460,7 @@ opt_batch_size = Option(
     ("--batch-size",),
     type=float,
     default=256.,
-    help=("Target size of each batch of mutation vectors, "
+    help=("Target size of each batch of relation vectors, "
           "in millions of base calls"))
 
 opt_ambrel = Option(

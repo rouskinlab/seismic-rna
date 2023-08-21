@@ -1,9 +1,32 @@
 """
-Logo Module
-========================================================================
-Auth: Matty
 
-Draw the logo for SEISMIC-RNA.
+Logo Core Module
+
+========================================================================
+
+Draw the logo for SEISMIC-RNA as a PNG file.
+
+------------------------------------------------------------------------
+
+©2023, the Rouskin Lab.
+
+This file is part of SEISMIC-RNA.
+
+SEISMIC-RNA is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+SEISMIC-RNA is distributed in the hope that it will be useful, but WITH
+NO WARRANTY; not even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along
+with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
+
+========================================================================
+
 """
 
 from pathlib import Path
@@ -20,6 +43,8 @@ SEGMENTS = 1080
 
 MIN_WIDTH = 3.
 MAX_WIDTH = 18.
+
+COLOR_MAP = "inferno"
 
 
 def points():
@@ -94,7 +119,7 @@ def widths():
 
 def colors():
     """ Return the color of each segment. """
-    cmap = get_cmap("inferno")
+    cmap = get_cmap(COLOR_MAP)
     return list(cmap(np.linspace(0., 1., SEGMENTS)))
 
 

@@ -2,6 +2,7 @@ from .compare import RunOrderResults, find_best_order
 from ..mask.load import MaskLoader
 from ..core import path
 from ..core.bitvect import UniqMutBits
+from ..core.cmd import CMD_CLUST
 from ..core.report import BatchReport
 
 
@@ -24,7 +25,7 @@ class ClustReport(BatchReport):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.MOD: path.MOD_CLUST}
+        return {**super().auto_fields(), path.CMD: CMD_CLUST}
 
     @classmethod
     def get_batch_seg(cls):

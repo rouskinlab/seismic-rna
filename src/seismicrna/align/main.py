@@ -27,6 +27,7 @@ from ..core.cli import (arg_fasta,
                         opt_bt2_score_min_loc, opt_bt2_score_min_e2e,
                         opt_bt2_s, opt_bt2_l, opt_bt2_d, opt_bt2_r,
                         opt_bt2_gbar, opt_bt2_dpad, opt_bt2_orient)
+from ..core.cmd import CMD_ALIGN
 from ..core.depend import confirm_dependency
 from ..core.parallel import lock_temp_dir
 from ..core.shell import (BOWTIE2_CMD, BOWTIE2_BUILD_CMD, CUTADAPT_CMD,
@@ -92,7 +93,7 @@ params = [
 ]
 
 
-@command(path.MOD_ALIGN, params=params)
+@command(CMD_ALIGN, params=params)
 def cli(*args, **kwargs):
     """ Trim FASTQ files with Cutadapt (optional), validate them with
     FASTQC (optional), and align them to a FASTA file with Bowtie2. """

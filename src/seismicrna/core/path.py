@@ -1,13 +1,12 @@
 """
-Core -- Path Module
-========================================================================
-Auth: Matty
 
-Purpose
+Path Core Module
+
 ========================================================================
-Several steps in SEISMIC-RNA produce files that other steps use. For
+
+Most of the steps in SEISMIC-RNA produce files that other steps use. For
 example, the 'align' step writes alignment map (BAM) files, from which
-the 'relate' step writes mutation vector files, which both the 'mask'
+the 'relate' step writes relation vector files, which both the 'mask'
 and 'table' steps use.
 
 Steps that pass files to each other must agree on
@@ -24,6 +23,28 @@ subpackage or module, this strategy is not ideal for several reasons:
   code base, improving readability, maintainability, and distribution.  
 
 This module defines all file path conventions for all other modules.
+
+------------------------------------------------------------------------
+
+©2023, the Rouskin Lab.
+
+This file is part of SEISMIC-RNA.
+
+SEISMIC-RNA is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+SEISMIC-RNA is distributed in the hope that it will be useful, but WITH
+NO WARRANTY; not even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along
+with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
+
+========================================================================
+
 """
 
 from __future__ import annotations
@@ -37,6 +58,8 @@ import pathlib as pl
 import re
 from string import ascii_letters, digits, printable
 from typing import Any, Iterable, Sequence
+
+from .cmd import COMMANDS
 
 # Constants ############################################################
 
@@ -53,21 +76,7 @@ STR_PATTERN = f"([{STR_CHARS}]+)"
 INT_PATTERN = f"([{INT_CHARS}]+)"
 RE_PATTERNS = {str: STR_PATTERN, int: INT_PATTERN, pl.Path: PATH_PATTERN}
 
-MOD_DEMULT = "demult"
-MOD_QC = "qc"
-MOD_ALIGN = "align"
-MOD_REL = "relate"
-MOD_MASK = "mask"
-MOD_CLUST = "cluster"
-MOD_TABLE = "table"
-MOD_FOLD = "fold"
-MOD_GRAPH = "graph"
-MOD_SIM = "sim"
-MOD_TEST = "test"
-MODULES = (MOD_DEMULT, MOD_QC, MOD_ALIGN, MOD_REL, MOD_MASK, MOD_CLUST,
-           MOD_TABLE, MOD_FOLD, MOD_GRAPH, MOD_SIM, MOD_TEST)
-
-STEPS_QC = "input", "trimmed"
+STEPS_QC = "init", "trim"
 STEPS_ALIGN = ("align-0_refs", "align-1_trim", "align-2_align",
                "align-3_dedup", "align-4_sort", "align-5_split")
 STEPS_VECT = "vector-0_bams",
@@ -141,7 +150,7 @@ class PathValueError(PathError, ValueError):
 
 # Path Functions #######################################################
 
-def fill_whitespace(path: str | Path, fill: str = "_"):
+def fill_whitespace(path: str | Path, fill: str = '_'):
     """ Replace all whitespace in `path` with `fill`. """
     return type(path)(fill.join(str(path).split()))
 
@@ -232,7 +241,7 @@ class Field(object):
 # Fields
 TopField = Field(pl.Path)
 NameField = Field(str)
-ModField = Field(str, MODULES)
+CmdField = Field(str, COMMANDS)
 StepField = Field(str, STEPS)
 IntField = Field(int)
 CountTabField = Field(str, COUNT_TABLES)
@@ -372,9 +381,10 @@ class Segment(object):
 
 
 # Field names
+
 TOP = "top"
 STEP = "step"
-MOD = "module"
+CMD = "cmd"
 SAMP = "sample"
 REF = "ref"
 SECT = "sect"
@@ -388,39 +398,49 @@ REACTS = "reacts"
 GRAPH = "graph"
 EXT = "ext"
 
+
 # Directory segments
+
 TopSeg = Segment("top-dir", {TOP: TopField}, order=-1)
-ModSeg = Segment("module-dir", {MOD: ModField}, order=60)
-StepSeg = Segment("step-dir", {STEP: StepField}, order=50)
-SampSeg = Segment("sample-dir", {SAMP: NameField}, order=40)
+SampSeg = Segment("sample-dir", {SAMP: NameField}, order=60)
+CmdSeg = Segment("command-dir", {CMD: CmdField}, order=50)
+StepSeg = Segment("step-dir", {STEP: StepField}, order=40)
 RefSeg = Segment("ref-dir", {REF: NameField}, order=30)
 SectSeg = Segment("section-dir", {SECT: NameField}, order=20)
 FoldSectSeg = Segment("fold-section-dir", {FOLD_SECT: NameField}, order=10)
 
+
 # File segments
+
 # FASTA
 FastaSeg = Segment("fasta", {REF: NameField, EXT: FastaExt})
 FastaIndexSeg = Segment("fasta-index", {REF: NameField, EXT: FastaIndexExt})
+
 # FASTQ
 FastqSeg = Segment("fastq", {SAMP: NameField, EXT: FastqExt})
 Fastq1Seg = Segment("fastq1", {SAMP: NameField, EXT: Fastq1Ext})
 Fastq2Seg = Segment("fastq2", {SAMP: NameField, EXT: Fastq2Ext})
+
 # Demultiplexed FASTQ
 DmFastqSeg = Segment("dm-fastq", {REF: NameField, EXT: FastqExt})
 DmFastq1Seg = Segment("dm-fastq1", {REF: NameField, EXT: Fastq1Ext})
 DmFastq2Seg = Segment("dm-fastq2", {REF: NameField, EXT: Fastq2Ext})
+
 # Alignment
 XamSeg = Segment("xam", {REF: NameField, EXT: XamExt})
 BamIndexSeg = Segment("bai", {REF: NameField, EXT: BamIndexExt})
 AlignRepSeg = Segment("align-rep", {EXT: ReportExt}, frmt="report-align{ext}")
+
 # Relation Vectors
 RelateBatSeg = Segment("rel-bat", {BATCH: IntField, EXT: RelVecBatExt},
                        frmt="batch-relate-{batch}{ext}")
 RelateRepSeg = Segment("rel-rep", {EXT: ReportExt}, frmt="report-relate{ext}")
+
 # Masking
 MaskBatSeg = Segment("mask-bat", {BATCH: IntField, EXT: MaskBatExt},
                      frmt="batch-mask-{batch}{ext}")
 MaskRepSeg = Segment("mask-rep", {EXT: ReportExt}, frmt="report-mask{ext}")
+
 # Clustering
 ClustTabSeg = Segment("clust-tab", {TABLE: ClustTabField,
                                     NCLUST: IntField,
@@ -432,17 +452,46 @@ ClustBatSeg = Segment("clust-bat", {BATCH: IntField, EXT: ClustBatExt},
                       frmt="batch-cluster-{batch}{ext}")
 ClustRepSeg = Segment("clust-rep", {EXT: ReportExt},
                       frmt="report-cluster{ext}")
-# Mutation Tables
-MutTabSeg = Segment("mut-tab", {TABLE: CountTabField, EXT: MutTabExt})
+
+# Tabulation
+TableSeg = Segment("mut-tab", {TABLE: CountTabField, EXT: MutTabExt})
+
 # RNA Structure Formats
 ConnectTableSeg = Segment("rna-ct", {STRUCT: NameField, EXT: ConnectTableExt})
 DotBracketSeg = Segment("rna-dot", {STRUCT: NameField, EXT: DotBracketExt})
 DmsReactsSeg = Segment("dms-reacts", {REACTS: NameField, EXT: DmsReactsExt})
 VarnaColorSeg = Segment("varna-color", {REACTS: NameField, EXT: TextExt},
                         frmt="{reacts}_varna-color{ext}")
+
 # Graphs
 GraphSeg = Segment("graph", {GRAPH: NameField, EXT: GraphExt})
 
+
+# Path segment patterns
+
+FASTA_STEP_SEGS = StepSeg, FastaSeg
+FASTA_INDEX_DIR_STEP_SEGS = StepSeg, RefSeg
+FASTQ_SEGS = FastqSeg,
+FASTQ1_SEGS = Fastq1Seg,
+FASTQ2_SEGS = Fastq2Seg,
+DMFASTQ_SEGS = SampSeg, DmFastqSeg
+DMFASTQ1_SEGS = SampSeg, DmFastq1Seg
+DMFASTQ2_SEGS = SampSeg, DmFastq2Seg
+FASTQC_SEGS = CmdSeg, StepSeg, SampSeg
+FASTQC_DEMULT_SEGS = CmdSeg, StepSeg, SampSeg, RefSeg
+XAM_SEGS = SampSeg, CmdSeg, XamSeg
+XAM_STEP_SEGS = SampSeg, CmdSeg, StepSeg, XamSeg
+CLUST_TAB_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, ClustTabSeg
+CLUST_COUNT_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, ClustCountSeg
+TABLE_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, TableSeg
+FOLD_SECT_DIR_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, FoldSectSeg
+REPORT_CORE_SEGS = SampSeg, CmdSeg, RefSeg
+
+
+# Paths ################################################################
+
+
+# Path class
 
 class Path(object):
     def __init__(self, *seg_types: Segment):
@@ -516,6 +565,8 @@ class Path(object):
         return fields
 
 
+# Path creation routines
+
 @cache
 def create_path_type(*segment_types: Segment):
     """ Create and cache a Path instance from the segment types. """
@@ -543,6 +594,8 @@ def buildpar(*segment_types: Segment, **field_values: Any):
     path.parent.mkdir(parents=True, exist_ok=True)
     return path
 
+
+# Path parsing routines
 
 def parse(path: str | pl.Path, /, *segment_types: Segment):
     """ Return the fields of a path given as a `str` based on the

@@ -4,11 +4,11 @@ from . import seqbar as seqbar_mod
 from . import seqcorr as seqcorr_mod
 from . import seqdiff as seqdiff_mod
 from . import scatter as scatter_mod
-from ..core import path
+from ..core.cmd import CMD_GRAPH
 
 
 # Group for all graph commands
-@group(path.MOD_GRAPH)
+@group(CMD_GRAPH)
 def cli():
     """ Graphing command line interface """
 

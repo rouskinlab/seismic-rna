@@ -9,6 +9,7 @@ from plotly.subplots import make_subplots
 
 from .color import ColorMap, get_cmap
 from ..core import path
+from ..core.cmd import CMD_GRAPH
 from ..core.seq import DNA
 from ..table.base import Table
 from ..table.load import TableLoader, PosTableLoader
@@ -70,12 +71,12 @@ class GraphBase(ABC):
     @classmethod
     def get_path_segs(cls):
         """ Path segments. """
-        return path.ModSeg, path.GraphSeg
+        return path.CmdSeg, path.GraphSeg
 
     def get_path_fields(self):
         """ Path fields. """
         return {path.TOP: self.out_dir,
-                path.MOD: path.MOD_GRAPH,
+                path.CMD: CMD_GRAPH,
                 path.GRAPH: self.graph_filename}
 
     def get_path(self, ext: str):

@@ -7,6 +7,8 @@ from ..core.cli import (
     opt_barcode_length, opt_barcode_start, opt_parallel_demultiplexing, opt_clipped_demultiplexing,
     opt_mismatch_tolerence, opt_index_tolerence, opt_demulti_overwrite, arg_fasta, opt_sections_file, opt_fastqp, opt_out_dir,
     opt_phred_enc)
+from ..core.cmd import CMD_DEMULT
+
 
 params = [
     # Inputs
@@ -30,7 +32,7 @@ params = [
 
 # Turn into DREEM command.
 
-@command("demultiplex", params=params)
+@command(CMD_DEMULT, params=params)
 def cli(*args, **kwargs):
     """ Split multiplexed FASTQ files by their barcodes. """
     return run(*args, **kwargs)

@@ -1,11 +1,31 @@
 """
-Core -- Relation Testing Module
-========================================================================
-Auth: Matty
 
-Unit tests for `core.rel`.
+Tests for the Relate Core Module
+
+========================================================================
+
+©2023, the Rouskin Lab.
+
+This file is part of SEISMIC-RNA.
+
+SEISMIC-RNA is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+SEISMIC-RNA is distributed in the hope that it will be useful, but WITH
+NO WARRANTY; not even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along
+with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
+
+========================================================================
+
 """
 
+import string
 import unittest as ut
 from itertools import chain
 from typing import Generator, Sequence
@@ -21,7 +41,7 @@ from .rel import (IRREC, MATCH, DELET,
                   MIN_QUAL, MAX_QUAL,
                   CIG_ALIGN, CIG_MATCH, CIG_SUBST,
                   CIG_DELET, CIG_INSRT, CIG_SCLIP,
-                  parse_cigar, count_cigar_muts, find_cigar_op_pos,
+                  CigarOp, parse_cigar, count_cigar_muts, find_cigar_op_pos,
                   translate_relvec, blank_relvec, random_relvecs,
                   encode_relate, encode_match,
                   validate_relvec, iter_relvecs_q53, iter_relvecs_all,
@@ -86,6 +106,44 @@ class TestEncodeMatch(ut.TestCase):
         """ Test when the quality is less than the minimum. """
         for read, sub in zip(DNA.alph, [ANY_B, ANY_D, ANY_H, ANY_V]):
             self.assertEqual(encode_match(read, MIN_QUAL, MAX_QUAL), sub)
+
+
+class TestCigarOp(ut.TestCase):
+    """ Test class `CigarOp`. """
+
+    ops = CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_DELET, CIG_INSRT, CIG_SCLIP
+
+    def test_cigar_init_valid(self):
+        """ Test that CigarOp instances can be created. """
+        for op in self.ops:
+            cigar_op = CigarOp(op)
+            self.assertIsInstance(cigar_op, CigarOp)
+            self.assertEqual(cigar_op.op, op)
+            self.assertEqual(cigar_op._len, 1)
+
+    def test_cigar_init_invalid(self):
+        """ Test that CigarOp instances cannot be created with invalid
+        operations. """
+        for op in string.printable:
+            if op not in self.ops:
+                self.assertRaisesRegex(ValueError, f"Invalid CIGAR operation: ",
+                                       CigarOp, op)
+
+    def test_cigar_lengthen(self):
+        """ Test lengthening CIGAR operations. """
+        for op in self.ops:
+            cigar_op = CigarOp(op)
+            for length in range(1, 10):
+                self.assertEqual(cigar_op._len, length)
+                cigar_op.lengthen()
+
+    def test_cigar_str(self):
+        """ Test string representations of CIGAR operations. """
+        for op in self.ops:
+            cigar_op = CigarOp(op)
+            for length in range(1, 10):
+                self.assertEqual(str(cigar_op), f"{length}{op}")
+                cigar_op.lengthen()
 
 
 class TestParseCigar(ut.TestCase):

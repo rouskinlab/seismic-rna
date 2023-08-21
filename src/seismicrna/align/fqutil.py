@@ -1,3 +1,71 @@
+"""
+
+Alignment FASTQ Utilities Module
+
+========================================================================
+
+Alignment Score Parameters for Bowtie2
+
+Consider this example: Ref = ACGT, Read = AG
+
+Assume that we want to minimize the number of edits needed to convert
+the reference into the read sequence. The smallest number of edits is
+two, specifically these two deletions (/) from the reference: [A/G/]
+which gets a score of (2 * match - 2 * gap_open - 2 * gap_extend).
+
+But there are two alternative alignments, each with 3 edits:
+[Ag//] and [A//g] (substitutions marked in lowercase). Each gets the
+score (match - substitution - gap_open - 2 * gap_extend).
+
+In order to favor the simpler alignment with two edits,
+(2 * match - 2 * gap_open - 2 * gap_extend) must be greater than
+(match - substitution - gap_open - 2 * gap_extend). This inequality
+simplifies to (substitution > gap_open - match).
+
+Thus, the substitution penalty and match bonus must be relatively large,
+and the gap open penalty small. We want to avoid introducing too many
+gaps, especially to prevent the introduction of an insertion and a
+deletion from scoring better than one substitution.
+
+Consider this example: Ref = ATAT, Read = ACTT
+
+The simplest alignment (the smallest number of mutations) is ActT, which
+gets a score of (2 * match - 2 * substitution). Another alignment with
+indels is A{C}T/T, where {C} means a C was inserted into the read and
+the / denotes an A deleted from the read. This alignment scores
+(3 * match - 2 * gap_open - 2 * gap_extend).
+
+Thus, (2 * match - 2 * substitution) must be greater than
+(3 * match - 2 * gap_open - 2 * gap_extend), which simplifies to
+(2 * gap_open + 2 * gap_extend > match + 2 * substitution).
+
+There are two easy solutions to these inequalities:
+- Bowtie v2.5 defaults: 6 > 5 - 2 and 2*5 + 2*3 > 2 + 2*6
+- Set every score to 1: 1 > 1 - 1 and 2*1 + 2*1 > 1 + 2*1
+
+------------------------------------------------------------------------
+
+©2023, the Rouskin Lab.
+
+This file is part of SEISMIC-RNA.
+
+SEISMIC-RNA is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+SEISMIC-RNA is distributed in the hope that it will be useful, but WITH
+NO WARRANTY; not even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along
+with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
+
+========================================================================
+
+"""
+
 from functools import cached_property
 from itertools import chain
 from logging import getLogger
@@ -10,33 +78,6 @@ from ..core.shell import run_cmd, BOWTIE2_CMD, CUTADAPT_CMD, FASTQC_CMD
 logger = getLogger(__name__)
 
 # Bowtie2 parameters
-# Consider this example: Ref = ACGT, Read = AG
-# Assume that we want to minimize the number of edits needed to convert
-# the reference into the read sequence. The smallest number of edits is
-# two, specifically these two deletions (/) from the reference: [A/G/]
-# which gets a score of (2 * match - 2 * gap_open - 2 * gap_extend).
-# But there are two alternative alignment, each with 3 edits:
-# [Ag//] and [A//g] (substitutions marked in lowercase). Each gets the
-# score (match - substitution - gap_open - 2 * gap_extend).
-# In order to favor the simpler alignment with two edits,
-# (2 * match - 2 * gap_open - 2 * gap_extend) must be greater than
-# (match - substitution - gap_open - 2 * gap_extend); this simplifies to
-# (substitution > gap_open - match). Thus, the substitution penalty and
-# match bonus must be relatively large, and the gap open penalty small.
-# We want to avoid introducing too many gaps, especially to prevent the
-# introduction of an insertion and a deletion from scoring better than
-# one substitution. Consider this example: Ref = ATAT, Read = ACTT
-# The simplest alignment (the smallest number of mutations) is ActT,
-# which gets a score of (2 * match - 2 * substitution).
-# Another alignment with indels is A{C}T/T, where {C} means a C was
-# inserted into the read and the / denotes an A deleted from the read.
-# This alignment scores (3 * match - 2 * gap_open - 2 * gap_extend).
-# Thus, (2 * match - 2 * substitution) must be greater than
-# (3 * match - 2 * gap_open - 2 * gap_extend), which simplifies to
-# (2 * gap_open + 2 * gap_extend > match + 2 * substitution).
-# There are two easy solutions to these inequalities:
-# - Bowtie v2.5 defaults: 6 > 5 - 2 and 2*5 + 2*3 > 2 + 2*6
-# - Set every value to 1: 1 > 1 - 1 and 2*1 + 2*1 > 1 + 2*1
 MATCH_BONUS = "1"
 MISMATCH_PENALTY = "1,1"
 N_PENALTY = "0"
@@ -139,15 +180,15 @@ class FastqUnit(object):
     @cached_property
     def seg_types(self) -> dict[str, tuple[path.Segment, ...]]:
         if self.one_ref:
-            seg_types = {self.KEY_SINGLE: (path.SampSeg, path.DmFastqSeg),
-                         self.KEY_INTER: (path.SampSeg, path.DmFastqSeg),
-                         self.KEY_MATE1: (path.SampSeg, path.DmFastq1Seg),
-                         self.KEY_MATE2: (path.SampSeg, path.DmFastq2Seg)}
+            seg_types = {self.KEY_SINGLE: path.DMFASTQ_SEGS,
+                         self.KEY_INTER: path.DMFASTQ_SEGS,
+                         self.KEY_MATE1: path.DMFASTQ1_SEGS,
+                         self.KEY_MATE2: path.DMFASTQ2_SEGS}
         else:
-            seg_types = {self.KEY_SINGLE: (path.FastqSeg,),
-                         self.KEY_INTER: (path.FastqSeg,),
-                         self.KEY_MATE1: (path.Fastq1Seg,),
-                         self.KEY_MATE2: (path.Fastq2Seg,)}
+            seg_types = {self.KEY_SINGLE: path.FASTQ_SEGS,
+                         self.KEY_INTER: path.FASTQ_SEGS,
+                         self.KEY_MATE1: path.FASTQ1_SEGS,
+                         self.KEY_MATE2: path.FASTQ2_SEGS}
         return {key: seg_types[key] for key in self.paths}
 
     def get_sample_ref_exts(self):
@@ -215,7 +256,7 @@ class FastqUnit(object):
                     fqs: list[Path], key: str):
         if key not in (cls.KEY_SINGLE, cls.KEY_INTER):
             raise ValueError(f"Invalid key: '{key}'")
-        segs = [path.SampSeg, path.DmFastqSeg] if one_ref else [path.FastqSeg]
+        segs = path.DMFASTQ_SEGS if one_ref else path.FASTQ_SEGS
         for fq in path.find_files_chain(fqs, segs):
             try:
                 yield cls(phred_enc=phred_enc, one_ref=one_ref, **{key: fq})
@@ -228,11 +269,11 @@ class FastqUnit(object):
         # Determine the key and segments based on whether the FASTQs are
         # demultiplexed.
         if one_ref:
-            seg1s = [path.SampSeg, path.DmFastq1Seg]
-            seg2s = [path.SampSeg, path.DmFastq2Seg]
+            seg1s = path.DMFASTQ1_SEGS
+            seg2s = path.DMFASTQ2_SEGS
         else:
-            seg1s = [path.Fastq1Seg]
-            seg2s = [path.Fastq2Seg]
+            seg1s = path.FASTQ1_SEGS
+            seg2s = path.FASTQ2_SEGS
         # List all FASTQ mate 1 and mate 2 files.
         fq1s = path.find_files_chain(fqs, seg1s)
         fq2s = path.find_files_chain(fqs, seg2s)

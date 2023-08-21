@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from . import path
+from .cmd import CMD_FOLD
 from .sect import Section, POS_NAME
 from .seq import write_fasta
 from .pair import pairs_to_partners, parse_ct_pairs
@@ -63,9 +64,8 @@ class RnaProfile(RnaSection):
     @cache
     def get_dir(self, out_dir: Path):
         """ Get the directory in which this RNA's files will go. """
-        return path.builddir(path.ModSeg, path.SampSeg, path.RefSeg,
-                             path.SectSeg, path.FoldSectSeg,
-                             top=out_dir, module=path.MOD_FOLD,
+        return path.builddir(*path.FOLD_SECT_DIR_SEGS,
+                             top=out_dir, cmd=CMD_FOLD,
                              sample=self.sample, ref=self.ref,
                              sect=self.data_sect, fold_sect=self.sect)
 

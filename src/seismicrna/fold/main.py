@@ -10,6 +10,7 @@ from ..core.cli import (arg_input_file, opt_temp_dir, opt_save_temp,
                         opt_coords, opt_primers, opt_primer_gap,
                         opt_quantile,
                         opt_max_procs, opt_parallel, opt_rerun)
+from ..core.cmd import CMD_FOLD
 from ..core.depend import confirm_dependency
 from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
 from ..core.rna import RnaProfile
@@ -36,7 +37,7 @@ params = [
 ]
 
 
-@command(path.MOD_FOLD, params=params)
+@command(CMD_FOLD, params=params)
 def cli(*args, **kwargs):
     """ Predict the structure(s) of an RNA using mutation rates from the
     individual clusters or the ensemble average ('mask' step). """
@@ -72,7 +73,7 @@ def run(fasta: str,
                                primers=primers,
                                primer_gap=primer_gap)
     # Initialize the table loaders.
-    tab_files = path.find_files_chain(map(Path, input_file), [path.MutTabSeg])
+    tab_files = path.find_files_chain(map(Path, input_file), [path.TableSeg])
     loaders = [loader for loader in dispatch(load, max_procs, parallel,
                                              args=as_list_of_tuples(tab_files),
                                              pass_n_procs=False)

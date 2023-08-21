@@ -9,6 +9,7 @@ from ..core.cli import (arg_input_file, opt_max_clusters,
                         opt_min_nmut_read, opt_em_runs, opt_em_thresh,
                         opt_min_em_iter, opt_max_em_iter,
                         opt_parallel, opt_max_procs, opt_rerun)
+from ..core.cmd import CMD_CLUST
 from ..core.parallel import as_list_of_tuples, dispatch
 
 logger = getLogger(__name__)
@@ -33,7 +34,7 @@ params = [
 ]
 
 
-@command(path.MOD_CLUST, params=params)
+@command(CMD_CLUST, params=params)
 def cli(*args, max_clusters: int, **kwargs):
     """ Cluster reads from 'mask' using Expectation-Maximization to find
     alternative structures in the RNA ensemble. """
@@ -42,7 +43,7 @@ def cli(*args, max_clusters: int, **kwargs):
     # override the default max_clusters == 0 (which disables clustering)
     # by setting it to 2 (the minimum non-trivial order of clustering).
     if max_clusters <= 0:
-        logger.warning(f"Command '{path.MOD_CLUST}' got a maximum clustering "
+        logger.warning(f"Command '{CMD_CLUST}' got a maximum clustering "
                        f"order of {max_clusters}: setting to {DEFAULT_ORDER}")
         max_clusters = DEFAULT_ORDER
     return run(*args, max_clusters=max_clusters, **kwargs)
