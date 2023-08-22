@@ -61,9 +61,13 @@ from typing import Any, Iterable, Sequence
 
 from .cmd import COMMANDS
 
+logger = getLogger(__name__)
+
 # Constants ############################################################
 
-logger = getLogger(__name__)
+IN_TEST_DIR = pl.Path.cwd().joinpath("test-in")
+OUT_TEST_DIR = pl.Path.cwd().joinpath("test-out")
+TEMP_TEST_DIR = pl.Path.cwd().joinpath("test-temp")
 
 # Valid/invalid characters in fields
 

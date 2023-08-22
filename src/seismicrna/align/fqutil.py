@@ -377,8 +377,9 @@ def run_fastqc(fq_unit: FastqUnit, out_dir: Path, *,
     # Add input FASTQ files.
     cmd.extend(fq_unit.paths.values())
     # Run FASTQC.
-    run_cmd(cmd)
+    process = run_cmd(cmd)
     logger.info(f"Ended FASTQC of {fq_unit}")
+    return process
 
 
 def run_cutadapt(fq_inp: FastqUnit,
@@ -439,8 +440,9 @@ def run_cutadapt(fq_inp: FastqUnit,
     fq_out.parent.mkdir(parents=True, exist_ok=True)
     logger.debug(f"Created directory: {fq_out.parent}")
     # Run Cutadapt.
-    run_cmd(cmd, check_created=[output for _, output in output_args])
+    process = run_cmd(cmd, check_created=[output for _, output in output_args])
     logger.info(f"Ended trimming {fq_inp}; output {fq_out}")
+    return process
 
 
 def run_bowtie2(fq_inp: FastqUnit,
@@ -526,5 +528,6 @@ def run_bowtie2(fq_inp: FastqUnit,
         if not fq_inp.one_ref:
             raise
     # Run alignment.
-    run_cmd(cmd, check_created=[sam_out])
+    process = run_cmd(cmd, check_created=[sam_out])
     logger.info(f"Ended aligning {fq_inp} and writing to {sam_out}")
+    return process

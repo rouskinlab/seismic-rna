@@ -1,3 +1,65 @@
+"""
+
+Mutation Rate Module
+
+========================================================================
+
+The functions in this module serve two main purposes:
+ 1. Adjust mutation rates to correct for observer bias.
+ 2. Normalize and winsorize mutation rates
+
+------------------------------------------------------------------------
+
+Adjust mutation rates to correct for observer bias
+
+Our lab has found that pairs of mutations in DMS-MaPseq data rarely have
+fewer than three non-mutated bases separating them. We suspect that the
+reverse transcriptase is prone to falling off or stalling at locations
+in the RNA where DMS has methylated bases that are too close.
+
+Regardless of the reason, mutations on nearby bases are not independent,
+which violates a core assumption of the Bernoulli mixture model that we
+use in the expectation-maximization clustering algorithm. Namely, that
+mutations occur independently of each other, such that the likelihood of
+observing a bit vector is the product of the mutation rate of each base
+that is mutated and one minus the mutation rate ("non-mutation rate") of
+each base that is not mutated.
+
+In order to use the Bernoulli mixture model for expectation-maximization
+clustering, we modify it such that bases separated by zero, one, or two
+other bases are no longer assumed to mutate independently. Specifically,
+since pairs of close mutations are rare, we add the assumption that no
+mutations separated by fewer than three non-mutated bases may occur, and
+exclude the few bit vectors that have such close mutations.
+
+When these bit vectors are assumed to exist in the original population
+of RNA molecules but not in the observed data,
+
+
+
+------------------------------------------------------------------------
+
+©2023, the Rouskin Lab.
+
+This file is part of SEISMIC-RNA.
+
+SEISMIC-RNA is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+SEISMIC-RNA is distributed in the hope that it will be useful, but WITH
+NO WARRANTY; not even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along
+with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
+
+========================================================================
+
+"""
+
 from logging import getLogger
 
 import numpy as np
@@ -16,9 +78,16 @@ MAX_MU = 1. - EPSILON
 def clip(mus: np.ndarray):
     """ Check if any mutation rates are < 0, ≥ 1, or NaN. If so, then
     fill any NaN values with 0 and clip all values to [0, 1). """
-    if not (np.min(mus) >= 0. and np.max(mus) <= MAX_MU):
-        logger.warning(f"Mutation rates outside bounds [0, {MAX_MU}]:\n{mus}")
-        return np.clip(np.nan_to_num(mus), 0., MAX_MU)
+    if mus.size == 0:
+        # There is nothing to clip.
+        return mus
+    mu_min = np.min(mus)
+    mu_max = np.max(mus)
+    if mu_min < 0. or mu_max > MAX_MU or np.isnan(mu_min) or np.isnan(mu_max):
+        clipped = np.clip(np.nan_to_num(mus), 0., MAX_MU)
+        logger.warning(f"Mutation rates outside [0, {MAX_MU}]:\n"
+                       f"{mus[np.nonzero(mus != clipped)]}")
+        return clipped
     return mus
 
 
@@ -55,10 +124,11 @@ def _calc_obs(mu_adj: np.ndarray, min_gap: int):
     # Determine the number of positions and clusters.
     dims = mu_adj.shape
     npos, ncls = dims
+    # The number of non-mutated bases next to a mutated base cannot
+    # exceed the total number of positions minus one.
     if min_gap >= npos:
-        raise ValueError(f"min_gap must be < number of positions ({npos}), "
-                         f"but got {min_gap}")
-    if min_gap == 0:
+        min_gap = npos - 1
+    if min_gap == 0 or npos == 0 or ncls == 0:
         # No mutations can be too close, so all observed probabilities
         # are 1.0 and the observed mutation rates equal the real rates.
         return np.ones(ncls), mu_adj.copy()
@@ -114,7 +184,7 @@ def _calc_obs(mu_adj: np.ndarray, min_gap: int):
     f_obs_win_prev = np.ones(dims, dtype=float)
     f_obs_win_next = np.ones(dims, dtype=float)
     # This recurrence relation has no simple closed-form solution, and
-    # likely no closed-form solution at all, so compute it via looping:
+    # likely no closed-form solution at all, so compute it iteratively:
     for jp in range(1, npos):
         # Probability that none of the preceding (min_gap) bases are
         # mutated and no mutations before them are too close.
@@ -160,26 +230,86 @@ def _calc_obs(mu_adj: np.ndarray, min_gap: int):
     return f_obs, mu_obs
 
 
-def calc_f_obs(mus_adj: np.ndarray, min_gap: int):
+def _calc_f_obs_clipped(mus_adj: np.ndarray, min_gap: int):
     """ Return a 1D array of the probability for each cluster that,
     given the real mutation rates for each position in each cluster, a
     randomly generated bit vector coming from the cluster would have no
     two mutations closer than min_gap positions. """
-    return _calc_obs(clip(mus_adj), min_gap)[0]
+    return _calc_obs(mus_adj, min_gap)[0]
+
+
+def calc_f_obs_numpy(mus_adj: np.ndarray, min_gap: int):
+    """ Return a 1D array of the probability for each cluster that,
+    given the real mutation rates for each position in each cluster, a
+    randomly generated bit vector coming from the cluster would have no
+    two mutations closer than min_gap positions. """
+    if mus_adj.ndim == 2:
+        return _calc_f_obs_clipped(clip(mus_adj), min_gap)
+    if mus_adj.ndim == 1:
+        return float(np.squeeze(calc_f_obs_numpy(mus_adj.reshape((-1, 1)),
+                                                 min_gap),
+                                axis=0))
+    raise ValueError(f"Expected 1 or 2 dimensions, but got {mus_adj.ndim}")
+
+
+def calc_f_obs_df(mu_adj: pd.DataFrame, section: Section, min_gap: int):
+    """
+    Calculate the observed fraction of reads in each cluster given their
+    mutation rates adjusted for observer bias.
+
+    Parameters
+    ----------
+    mu_adj: pd.DataFrame
+        Adjusted fraction of mutated bits at each non-excluded position
+        (index) in each cluster (column). All values must be in [0, 1).
+    section: Section
+        The section over which to compute mutation rates, including all
+        positions that were excluded.
+    min_gap: int
+        Minimum number of non-mutated bases between two mutations.
+        Must be ≥ 0.
+
+    Returns
+    -------
+    pd.Series
+        For each cluster, the fraction of all bit vectors coming from
+        that cluster that would be observed.
+    """
+    return pd.Series(calc_f_obs_numpy(mu_adj.reindex(index=section.range,
+                                                     fill_value=0.).values,
+                                      min_gap),
+                     index=mu_adj.columns)
+
+
+def calc_f_obs_series(mu_obs: pd.Series, section: Section, min_gap: int):
+    """
+    Calculate the observed fraction of reads.
+
+    Parameters
+    ----------
+    mu_obs: pd.Series
+        Fraction of mutated bits at each non-excluded position. All
+        values must be in [0, 1).
+    section: Section
+        The section over which to compute mutation rates, including all
+        positions that were excluded.
+    min_gap: int
+        Minimum number of non-mutated bases between two mutations.
+        Must be ≥ 0.
+
+    Returns
+    -------
+    float
+        The fraction of all bit vectors that would be observed.
+    """
+    return float(calc_f_obs_df(mu_obs.to_frame(), section, min_gap).squeeze())
 
 
 def _calc_mu_obs(mus_adj: np.ndarray, min_gap: int):
     """ A 2D (positions x clusters) array of the mutation rates that
     would be observed given the real mutation rates and the minimum gap
     between two mutations. """
-    return _calc_obs(mus_adj, min_gap)[1]
-
-
-def calc_mu_obs(mus_adj: np.ndarray, min_gap: int):
-    """ A 2D (positions x clusters) array of the mutation rates that
-    would be observed given the real mutation rates and the minimum gap
-    between two mutations. """
-    return _calc_mu_obs(clip(mus_adj), min_gap)
+    return _calc_obs(clip(mus_adj), min_gap)[1]
 
 
 def _diff_adj_obs(mus_adj: np.ndarray, mus_obs: np.ndarray, min_gap: int):
@@ -207,10 +337,10 @@ def _diff_adj_obs(mus_adj: np.ndarray, mus_obs: np.ndarray, min_gap: int):
     return _calc_mu_obs(mus_adj, min_gap) - mus_obs
 
 
-def calc_mu_adj(mus_obs: np.ndarray, min_gap: int,
-                mus_guess: np.ndarray | None = None,
-                f_tol: float = 5e-1, f_rtol: float = 5e-1,
-                x_tol: float = 1e-4, x_rtol: float = 5e-1):
+def calc_mu_adj_numpy(mus_obs: np.ndarray, min_gap: int,
+                      mus_guess: np.ndarray | None = None,
+                      f_tol: float = 5e-1, f_rtol: float = 5e-1,
+                      x_tol: float = 1e-4, x_rtol: float = 5e-1):
     """
     Given observed mutation rates `mus_obs` (which do not include
     any reads that dropped out because they had mutations closer than
@@ -243,14 +373,29 @@ def calc_mu_adj(mus_obs: np.ndarray, min_gap: int,
         A (positions x clusters) array of the real mutation rates that
         would be expected to yield the observed mutation rates.
     """
+    if mus_obs.ndim == 1:
+        # Expand the mutation rates from a vector into a matrix with one
+        # column (cluster), calculate, and squeeze back into a vector.
+        return np.squeeze(calc_mu_adj_numpy(mus_obs.reshape(-1, 1), min_gap),
+                          axis=1)
+    if mus_obs.ndim != 2:
+        # Only matrices (positions x clusters) are supported hereafter.
+        raise ValueError(f"Expected 1 or 2 dimensions, but got {mus_obs.ndim}")
     # Clip any invalid mutation rates.
     mus_obs = clip(mus_obs)
+    if mus_obs.size == 0:
+        # If the array is empty, then there are no real mutation rates.
+        return mus_obs
     # Determine the initial guess of the real mutation rates.
     if mus_guess is None:
         mus_guess = mus_obs
-    elif mus_guess.shape != mus_obs.shape:
-        raise ValueError(f"Dimensions of mus_guess {mus_guess.shape} and "
-                         f"mus_obs {mus_obs.shape} differed")
+    else:
+        # The dimensions of the guess and the mutation rates must match.
+        if mus_guess.shape != mus_obs.shape:
+            raise ValueError(f"Dimensions of mus_guess {mus_guess.shape} and "
+                             f"mus_obs {mus_obs.shape} differed")
+        # Clip any invalid guessed mutation rates.
+        mus_guess = clip(mus_guess)
     # Solve for the "real" mutation rates that yield minimal difference
     # between the mutation rates that would be expected to be observed
     # given the real mutation rates (i.e. when reads with mutations too
@@ -258,42 +403,17 @@ def calc_mu_adj(mus_obs: np.ndarray, min_gap: int,
     # observed mutation rates. Use Newton's method, which finds the
     # parameters of a function that make it evaluate to zero, with the
     # Krylov approximation of the Jacobian, which improves performance.
-    mus_adj = newton_krylov(lambda mus_iter: _diff_adj_obs(mus_iter,
-                                                           mus_obs,
-                                                           min_gap),
-                            mus_guess,
-                            f_tol=f_tol, f_rtol=f_rtol,
-                            x_tol=x_tol, x_rtol=x_rtol)
-    return clip(mus_adj)
-
-
-def calc_f_obs_df(mu_adj: pd.DataFrame, section: Section, min_gap: int):
-    """
-    Calculate the observed fraction of reads in each cluster given their
-    mutation rates adjusted for observer bias.
-
-    Parameters
-    ----------
-    mu_adj: pd.DataFrame
-        Adjusted fraction of mutated bits at each non-excluded position
-        (index) in each cluster (column). All values must be in [0, 1).
-    section: Section
-        The section over which to compute mutation rates, including all
-        positions that were excluded.
-    min_gap: int
-        Minimum number of non-mutated bases between two mutations.
-        Must be ≥ 0.
-    """
-    return pd.Series(calc_f_obs(mu_adj.reindex(index=section.range,
-                                               fill_value=0.).values,
-                                min_gap),
-                     index=mu_adj.columns)
+    return clip(newton_krylov(lambda mus_iter: _diff_adj_obs(mus_iter,
+                                                             mus_obs,
+                                                             min_gap),
+                              mus_guess,
+                              f_tol=f_tol, f_rtol=f_rtol,
+                              x_tol=x_tol, x_rtol=x_rtol))
 
 
 def calc_mu_adj_df(mu_obs: pd.DataFrame, section: Section, min_gap: int):
     """
-    Calculate the mutation rates of a DataFrame, adjusted for observer
-    bias.
+    Correct the mutation rates of a DataFrame for observer bias.
 
     Parameters
     ----------
@@ -306,12 +426,43 @@ def calc_mu_adj_df(mu_obs: pd.DataFrame, section: Section, min_gap: int):
     min_gap: int
         Minimum number of non-mutated bases between two mutations.
         Must be ≥ 0.
+
+    Returns
+    -------
+    pd.DataFrame
+        Data frame of the adjusted mutation rates with the same index
+        and columns as `mu_obs`.
     """
-    return pd.DataFrame(calc_mu_adj(mu_obs.reindex(index=section.range,
-                                                   fill_value=0.).values,
-                                    min_gap),
+    return pd.DataFrame(calc_mu_adj_numpy(mu_obs.reindex(index=section.range,
+                                                         fill_value=0.).values,
+                                          min_gap),
                         index=section.range,
                         columns=mu_obs.columns).loc[mu_obs.index]
+
+
+def calc_mu_adj_series(mu_obs: pd.Series, section: Section, min_gap: int):
+    """
+    Correct the mutation rates of a Series for observer bias.
+
+    Parameters
+    ----------
+    mu_obs: pd.Series
+        Fraction of mutated bits at each non-excluded position. All
+        values must be in [0, 1).
+    section: Section
+        The section over which to compute mutation rates, including all
+        positions that were excluded.
+    min_gap: int
+        Minimum number of non-mutated bases between two mutations.
+        Must be ≥ 0.
+
+    Returns
+    -------
+    pd.Series
+        Series of the adjusted mutation rates with the same index as
+        `mu_obs`.
+    """
+    return calc_mu_adj_df(mu_obs.to_frame(), section, min_gap).squeeze(axis=1)
 
 
 def get_mu_quantile(mus: pd.Series, quantile: float) -> float:

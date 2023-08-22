@@ -45,7 +45,7 @@ from .cli import opt_phred_enc
 from .sect import Section, seq_pos_to_index
 from .seq import (BASEA, BASEC, BASEG, BASET, BASEN, DNA, DNAmbig,
                   expand_degenerate_seq)
-from .sim import rng
+from .random import rng
 
 # Data type for NumPy and NumPy-like arrays of relation vectors.
 NP_TYPE = np.uint8

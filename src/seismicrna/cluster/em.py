@@ -8,7 +8,8 @@ from scipy.stats import dirichlet
 
 from .names import CLS_NAME
 from ..core.bitvect import UniqMutBits, iter_all_bit_vectors
-from ..core.mu import calc_mu_adj, calc_f_obs
+from ..core.mu import calc_mu_adj_numpy, calc_f_obs_numpy
+from ..core.random import rng
 from ..mask.load import MaskLoader
 
 logger = getLogger(__name__)
@@ -231,15 +232,15 @@ class EmClustering(object):
         # Solve for the real mutation rates that are expected to yield
         # the observed mutation rates after considering read drop-out.
         # Constrain the mutation rates to [min_mu, max_mu].
-        self.mus = calc_mu_adj(self.update_sparse_mus(),
-                               self.loader.min_mut_gap,
-                               sparse_mus_prev)[self.sparse_pos]
+        self.mus = calc_mu_adj_numpy(self.update_sparse_mus(),
+                                     self.loader.min_mut_gap,
+                                     sparse_mus_prev)[self.sparse_pos]
 
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
         # Update the log fraction observed of each cluster.
-        self.log_f_obs = np.log(calc_f_obs(self.update_sparse_mus(),
-                                           self.loader.min_mut_gap))
+        self.log_f_obs = np.log(calc_f_obs_numpy(self.update_sparse_mus(),
+                                                 self.loader.min_mut_gap))
         # Compute the logs of the mutation and non-mutation rates.
         with np.errstate(divide="ignore"):
             # Suppress warnings about taking the log of zero, which is a
@@ -320,7 +321,7 @@ class EmClustering(object):
         # so that they can explore much of the parameter space).
         # Use the half-open interval (0, 1] because the concentration
         # parameter of a Dirichlet distribution can be 1 but not 0.
-        conc_params = 1. - np.random.default_rng().random(self.order)
+        conc_params = 1. - rng.random(self.order)
         # Initialize cluster membership with a Dirichlet distribution.
         self.resps = dirichlet.rvs(conc_params, self.muts.n_uniq).T
         # Run EM until the log likelihood converges or the number of

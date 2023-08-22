@@ -39,7 +39,7 @@ from typing import Iterable
 import numpy as np
 
 from . import path
-from .sim import rng
+from .random import rng
 
 logger = getLogger(__name__)
 
@@ -85,8 +85,6 @@ class Seq(str):
     def validate_seq(cls, seq: str):
         if not isinstance(seq, str):
             raise TypeError(f"Expected str, but got {type(seq).__name__}")
-        if not seq:
-            raise ValueError("seq is empty")
         if invalid := set(seq) - cls.get_alphaset():
             raise ValueError(f"Invalid {cls.__name__} bases: {sorted(invalid)}")
 
@@ -152,6 +150,10 @@ class Seq(str):
         """ Define __hash__ so that Seq subclasses can be used as keys
         for dict-like mappings. Use the hash of the plain string. """
         return super().__hash__()
+
+    def __bool__(self):
+        """ Empty sequences return False; all else, True. """
+        return bool(len(self))
 
 
 class DNA(Seq):

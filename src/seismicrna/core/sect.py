@@ -143,17 +143,14 @@ def seq_pos_to_index(seq: DNA, positions: Sequence[int], start: int):
     """
     if start < 1:
         raise ValueError(f"The start position must be ≥ 1, but got {start}")
-    if len(positions) == 0:
-        # Checking min(positions) will fail if len(positions) == 0.
-        # Return an empty index because there are no positions.
-        return pd.Index([], dtype=str)
     # Cast positions to a NumPy integer array.
     pos = np.asarray(positions, dtype=int)
-    if np.min(pos) < start:
+    # Validate the positions.
+    if pos.size > 0 and np.min(pos) < start:
         raise ValueError(
             f"All positions must be ≥ start ({start}), but got {positions}")
     end = start + len(seq) - 1
-    if np.max(pos) > end:
+    if pos.size > 0 and np.max(pos) > end:
         raise ValueError(
             f"All positions must be ≤ end ({end}), but got {positions}")
     # Create a 2-level MultiIndex from the positions and the bases in
@@ -183,9 +180,11 @@ def index_to_pos(index: pd.MultiIndex):
 def index_to_seq(index: pd.MultiIndex, allow_gaps: bool = False):
     """ Get the DNA sequence from a MultiIndex of (pos, base) pairs. """
     # Get the numeric positions and verify that there is at least one.
+    if index.size == 0:
+        # Checks for sorted and contiguous positions will fail if there
+        # are no positions. Just return an empty sequence.
+        return DNA("")
     pos = index_to_pos(index)
-    if pos.size == 0:
-        raise ValueError("A sequence cannot be assembled from an empty index")
     # Verify that the positions are sorted and contiguous.
     if not (allow_gaps or np.array_equal(pos, np.arange(pos[0], pos[-1] + 1))):
         raise ValueError("A sequence cannot be assembled from an index with "

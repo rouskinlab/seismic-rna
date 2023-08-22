@@ -13,7 +13,7 @@ from .base import (COVER_REL, DELET_REL, INSRT_REL, MATCH_REL, MUTAT_REL,
 from ..cluster.load import ClustLoader
 from ..core.bitcall import BitCaller, SemiBitCaller
 from ..core.bitvect import BitCounter, ClustBitCounter
-from ..core.mu import calc_f_obs_df, calc_mu_adj_df
+from ..core.mu import calc_f_obs_series, calc_mu_adj_series
 from ..core.sect import Section, INDEX_NAMES
 from ..mask.load import MaskLoader
 from ..relate.load import RelateLoader
@@ -348,15 +348,13 @@ def adjust_counts(counts_obs: pd.DataFrame,
     with np.errstate(divide="ignore"):
         # Ignore division by zero, which is acceptable here because any
         # NaN values will be zeroed out subsequently.
-        fmuts_obs = counts_obs.loc[:, MUTAT_REL] / counts_obs.loc[:, INFOR_REL]
+        fmuts_obs = counts_obs[MUTAT_REL] / counts_obs[INFOR_REL]
     # Fill any missing (NaN) values with zero.
     fmuts_obs.fillna(0., inplace=True)
     # Adjust the fraction of mutations to correct the observer bias.
-    fmuts_adj = calc_mu_adj_df(fmuts_obs.to_frame(), section,
-                               min_mut_gap).squeeze()
+    fmuts_adj = calc_mu_adj_series(fmuts_obs, section, min_mut_gap)
     # Compute the fraction of all reads that would be observed.
-    f_obs = float(calc_f_obs_df(fmuts_adj.to_frame(), section,
-                                min_mut_gap)[0])
+    f_obs = calc_f_obs_series(fmuts_adj, section, min_mut_gap)
     # Assume that the observance bias affects the counts of covered and
     # informative bases equally, so that we can define f_obs as follows:
     # f_obs := ninfo_obs / ninfo_adj

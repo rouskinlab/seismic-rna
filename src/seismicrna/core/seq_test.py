@@ -99,9 +99,11 @@ class TestDna(ut.TestCase):
             if char not in "ACGT":
                 self.assertRaises(ValueError, DNA, char)
 
-    def test_zero(self):
-        """ Test that zero-length DNA sequences raise ValueError. """
-        self.assertRaises(ValueError, DNA, "")
+    def test_bool(self):
+        """ Test that only zero-length DNA sequences are falsy. """
+        self.assertFalse(DNA(""))
+        for length in range(1, 10):
+            self.assertTrue(DNA.random(length))
 
 
 class TestRna(ut.TestCase):
@@ -189,9 +191,11 @@ class TestRna(ut.TestCase):
             if char not in "ACGU":
                 self.assertRaises(ValueError, RNA, char)
 
-    def test_zero(self):
-        """ Test that zero-length RNA sequences raise ValueError. """
-        self.assertRaises(ValueError, RNA, "")
+    def test_bool(self):
+        """ Test that only zero-length RNA sequences are falsy. """
+        self.assertFalse(RNA(""))
+        for length in range(1, 10):
+            self.assertTrue(RNA.random(length))
 
 
 class TestSeq(ut.TestCase):
