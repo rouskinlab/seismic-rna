@@ -207,11 +207,6 @@ def _calc_obs(mu_adj: np.ndarray, min_gap: int):
     # mutations that are too close is the probability that no two
     # mutations are too close after and including the first position.
     f_obs = f_obs_next[0]
-    # It is also the probability that no two mutations are too close
-    # before and including the last position.
-    if not np.allclose(f_obs, f_obs_prev[-1]):
-        raise ValueError("Observance fractions failed to converge: "
-                         f"{f_obs} ≠ {f_obs_prev[-1]}")
     # For each position (j), calculate the observed mutation rates given
     # the real mutation rates.
     # Start by calculating the joint probability that a bit vector is

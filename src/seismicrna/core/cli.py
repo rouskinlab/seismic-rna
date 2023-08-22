@@ -459,7 +459,7 @@ opt_min_reads = Option(
 opt_batch_size = Option(
     ("--batch-size",),
     type=float,
-    default=256.,
+    default=64.,
     help=("Target size of each batch of relation vectors, "
           "in millions of base calls"))
 

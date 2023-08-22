@@ -15,6 +15,7 @@ from ..mask.load import MaskLoader
 logger = getLogger(__name__)
 
 LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
+FIRST_ITER = 1  # number of the first iteration
 
 
 def calc_bic(n_params: int, n_data: int, log_like: float,
@@ -124,11 +125,6 @@ class EmClustering(object):
         # Positions of the section that will be used for clustering
         # (0-indexed from the beginning of the section)
         self.sparse_pos = self.loader.section.unmasked_zero
-        # Mutation rates of all positions, including those not used for
-        # clustering (row), in each cluster (col). The rate for every
-        # unused position always remains zero.
-        self.sparse_mus = np.zeros((self.loader.section.length, self.order),
-                                   dtype=float)
         # Likelihood of each vector (col) coming from each cluster (row)
         self.resps = np.empty((self.order, self.muts.n_uniq), dtype=float)
         # Marginal probabilities of observing each bit vector.
@@ -145,13 +141,19 @@ class EmClustering(object):
         """ Total number of reads, including redundant ones. """
         return int(round(self.muts.counts.sum()))
 
-    def update_sparse_mus(self):
-        """ Update the sparse mutation rates using the current mutation
-        rates. """
-        # Copy mutation rates to the rows of sparse_mu that correspond
-        # to used positions (unused rows remain zero).
-        self.sparse_mus[self.sparse_pos] = self.mus
-        return self.sparse_mus
+    @property
+    def sparse_mus(self):
+        """ Mutation rates of all positions (row) in each cluster (col),
+        including positions that are not used for clustering. The rate
+        for every unused position always remains zero. """
+        # Initialize an array of zeros with one row for each position in
+        # the section and one column for each cluster.
+        sparse_mus = np.zeros((self.loader.section.length, self.order),
+                              dtype=float)
+        # Copy the rows of self.mus that correspond to used positions.
+        # The rows for unused positions remain zero (hence "sparse").
+        sparse_mus[self.sparse_pos] = self.mus
+        return sparse_mus
 
     @cached_property
     def cluster_nums(self):
@@ -218,9 +220,13 @@ class EmClustering(object):
         # count-weighted likelihood that each bit vector came from the
         # cluster.
         self.nreads = self.resps @ self.muts.counts
-        # Copy the sparse mutation rates from the previous iteration.
-        sparse_mus_prev = self.sparse_mus.copy()
+        # If this iteration is not the first, then use mutation rates
+        # from the previous iteration as the initial guess for this one.
+        mus_guess = self.sparse_mus if self.iter > FIRST_ITER else None
         # Compute the observed mutation rate at each position (j).
+        # To save memory and enable self.sparse_mus to use the observed
+        # rates of mutation, overwrite self.mus rather than allocate a
+        # new array.
         for j, muts_j in enumerate(self.muts.indexes):
             # Calculate the number of mutations at each position in each
             # cluster by summing the count-weighted likelihood that each
@@ -231,15 +237,14 @@ class EmClustering(object):
                            / self.nreads)
         # Solve for the real mutation rates that are expected to yield
         # the observed mutation rates after considering read drop-out.
-        # Constrain the mutation rates to [min_mu, max_mu].
-        self.mus = calc_mu_adj_numpy(self.update_sparse_mus(),
+        self.mus = calc_mu_adj_numpy(self.sparse_mus,
                                      self.loader.min_mut_gap,
-                                     sparse_mus_prev)[self.sparse_pos]
+                                     mus_guess)[self.sparse_pos]
 
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
         # Update the log fraction observed of each cluster.
-        self.log_f_obs = np.log(calc_f_obs_numpy(self.update_sparse_mus(),
+        self.log_f_obs = np.log(calc_f_obs_numpy(self.sparse_mus,
                                                  self.loader.min_mut_gap))
         # Compute the logs of the mutation and non-mutation rates.
         with np.errstate(divide="ignore"):
@@ -250,8 +255,8 @@ class EmClustering(object):
         log_nos = np.log(1. - self.mus)
         # Compute for each cluster and observed bit vector the joint
         # probability that a random read vector would both come from the
-        # same cluster and have exactly the same set of bits.
-        log_joints = np.empty_like(self.resps, dtype=float)
+        # same cluster and have exactly the same set of bits. To save
+        # memory, overwrite self.resps rather than allocate a new array.
         for k in range(self.order):
             # Compute the probability that a bit vector has no mutations
             # given that it comes from cluster (k), which is the sum of
@@ -264,7 +269,7 @@ class EmClustering(object):
             # no mutations given that it came from cluster (k).
             log_prob_no_muts_and_k = (np.log(self.prop_obs[k])
                                       + log_prob_no_muts_given_k)
-            log_joints[k].fill(log_prob_no_muts_and_k)
+            self.resps[k].fill(log_prob_no_muts_and_k)
             # Loop over each position (j); each iteration adds the log
             # PMF for one additional position in each bit vector to the
             # accumulating total log probability of each bit vector.
@@ -288,18 +293,18 @@ class EmClustering(object):
                 # probability that the base is mutated minus the log of
                 # the probability that the base is not mutated.
                 log_adjust_jk = log_mus[j, k] - log_nos[j, k]
-                log_joints[k][self.muts.indexes[j]] += log_adjust_jk
+                self.resps[k][self.muts.indexes[j]] += log_adjust_jk
         # For each observed bit vector, the marginal probability that a
         # random read would have the same series of bits (regardless of
         # which cluster it came from) is the sum over all clusters of
         # the joint probability of coming from the cluster and having
         # the specific series of bits.
-        self.log_marginals = logsumexp(log_joints, axis=0)
+        self.log_marginals = logsumexp(self.resps, axis=0)
         # Calculate the posterior probability that each bit vector came
         # from each cluster by dividing the joint probability (observing
         # the bit vector and coming from the cluster) by the marginal
         # probability (observing the bit vector in any cluster).
-        self.resps = np.exp(log_joints - self.log_marginals)
+        self.resps = np.exp(self.resps - self.log_marginals)
         # Calculate the log likelihood of observing all the bit vectors
         # by summing the log probability over all bit vectors, weighted
         # by the number of times each bit vector occurs. Cast to a float
