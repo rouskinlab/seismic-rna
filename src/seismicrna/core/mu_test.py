@@ -1,6 +1,6 @@
 """
 
-Tests for Mutation Rate Module
+Tests for Mutation Rate Core Module
 
 ========================================================================
 
