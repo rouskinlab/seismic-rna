@@ -39,7 +39,7 @@ from typing import Iterable
 import numpy as np
 
 from . import path
-from .random import rng
+from .sim import rng
 
 logger = getLogger(__name__)
 

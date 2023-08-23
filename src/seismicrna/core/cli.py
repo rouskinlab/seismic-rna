@@ -29,6 +29,7 @@ BOWTIE2_ORIENT_FF = "ff"
 BOWTIE2_ORIENT = BOWTIE2_ORIENT_FR, BOWTIE2_ORIENT_RF, BOWTIE2_ORIENT_FF
 
 ADAPTER_SEQ_ILLUMINA_3P = "AGATCGGAAGAGC"
+ADAPTER_SEQ_ILLUMINA_5P = "GCTCTTCCGATCT"
 
 CLUST_INDIV = "indiv"
 CLUST_ORDER = "order"
@@ -251,7 +252,7 @@ opt_cut_g1 = Option(
     ("--cut-g1",),
     type=str,
     multiple=True,
-    default=(),
+    default=(ADAPTER_SEQ_ILLUMINA_5P,),
     help="5' adapter for read 1")
 
 opt_cut_a1 = Option(
@@ -265,7 +266,7 @@ opt_cut_g2 = Option(
     ("--cut-g2",),
     type=str,
     multiple=True,
-    default=(),
+    default=(ADAPTER_SEQ_ILLUMINA_5P,),
     help="5' adapter for read 2")
 
 opt_cut_a2 = Option(

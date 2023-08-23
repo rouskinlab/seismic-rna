@@ -36,7 +36,7 @@ from .mu import (MAX_MU, clip, _calc_mu_obs,
                  calc_mu_adj_numpy, calc_mu_adj_df, calc_mu_adj_series,
                  calc_f_obs_numpy, calc_f_obs_df, calc_f_obs_series,
                  get_mu_quantile, normalize, winsorize)
-from .random import rng
+from .sim import rng
 from .sect import seq_pos_to_index, Section
 from .seq import DNA
 
