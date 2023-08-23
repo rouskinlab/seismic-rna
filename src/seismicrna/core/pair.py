@@ -1,6 +1,6 @@
 from logging import getLogger
 from pathlib import Path
-from typing import BinaryIO, Iterable
+from typing import TextIO, Iterable
 
 import pandas as pd
 
@@ -46,7 +46,7 @@ def parse_ct_pairs(ct_path: Path, start: int | None = None):
     from a connectivity table file. """
     n_cols = 6
 
-    def parse_int(text: bytes, name: str, zero: bool = False) -> int:
+    def parse_int(text: str, name: str, zero: bool = False) -> int:
         """ Try to parse the text into an integer/positive integer. """
         try:
             value = int(text)
@@ -55,10 +55,10 @@ def parse_ct_pairs(ct_path: Path, start: int | None = None):
         if value is None or value < 0 or (value == 0 and not zero):
             kind = "non-negative" if zero else "positive"
             raise ValueError(f"{name.capitalize()} must be a {kind} integer, "
-                             f"but got '{text.decode()}' in {ct_path}")
+                             f"but got '{text}' in {ct_path}")
         return value
 
-    def parse_ct_header_line(line: bytes):
+    def parse_ct_header_line(line: str):
         """ Get the title and sequence length from a CT header line. """
         content = line.strip()
         if not content:
@@ -69,10 +69,10 @@ def parse_ct_pairs(ct_path: Path, start: int | None = None):
         length = parse_int(length_str, "sequence length")
         # Determine the title, which is the part of the line following
         # the sequence length.
-        title = content[len(length_str):].lstrip().decode()
+        title = content[len(length_str):].lstrip()
         return title, length
 
-    def parse_ct_body_line(line: bytes, first: bool, last: bool):
+    def parse_ct_body_line(line: str, first: bool, last: bool):
         """ Get the position and pairing data from a CT body line. """
         content = line.strip()
         if not content:
@@ -104,11 +104,11 @@ def parse_ct_pairs(ct_path: Path, start: int | None = None):
         base = fields[1]
         return curr_idx, base, partner, position
 
-    def parse_ct_structure(ct_file: BinaryIO, length: int,
+    def parse_ct_structure(ct_file: TextIO, length: int,
                            index_offset: int | None = None):
         """ Return the sequence and pairs for the current structure. """
         # Initialize the bases, pairs, and position numbers.
-        bases: list[bytes] = list()
+        bases: list[str] = list()
         pairs: dict[int, int] = dict()
         reverse_pairs: dict[int, int] = dict()
         unpaired: set[int] = set()
@@ -192,7 +192,7 @@ def parse_ct_pairs(ct_path: Path, start: int | None = None):
             raise ValueError(f"Paired bases {is_paired} do not match bases "
                              f"expected to be paired {expect_paired}")
         # Assemble the list of bases into an RNA sequence.
-        seq = RNA(b"".join(bases))
+        seq = RNA("".join(bases))
         # Map all the indexes to their corresponding positions.
         pairs_list = [(positions_map[index1], positions_map[index2])
                       for index1, index2 in pairs.items()]
@@ -202,7 +202,7 @@ def parse_ct_pairs(ct_path: Path, start: int | None = None):
     # position minus 1 (because CT files are 1-indexed).
     offset = start if start is None else start - 1
     # Parse each structure in the CT file.
-    with open(ct_path, "rb") as file:
+    with open(ct_path) as file:
         while header_line := file.readline():
             # Get the title and length of the current structure.
             curr_title, curr_length = parse_ct_header_line(header_line)
