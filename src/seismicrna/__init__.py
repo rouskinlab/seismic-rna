@@ -4,19 +4,6 @@ SEISMIC-RNA Initialization Module
 
 ========================================================================
 
-Expose the sub-packages demult, align, relate, cluster, and table, plus
-the __version__ attribute, at the top level so that they can be imported
-from external modules and scripts in either of the following manners:
-
->>> import seismicrna
->>> seismicrna.__version__
-
-or
-
->>> from seismicrna import __version__
-
-------------------------------------------------------------------------
-
 ©2023, the Rouskin Lab.
 
 This file is part of SEISMIC-RNA.
@@ -35,6 +22,17 @@ You should have received a copy of the GNU General Public License along
 with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
 
 ========================================================================
+
+Expose the sub-packages demult, align, relate, cluster, and table, plus
+the __version__ attribute, at the top level so that they can be imported
+from external modules and scripts in either of the following manners:
+
+>>> import seismicrna
+>>> seismicrna.__version__
+
+or
+
+>>> from seismicrna import __version__
 
 """
 

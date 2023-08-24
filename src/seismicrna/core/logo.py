@@ -4,10 +4,6 @@ SEISMIC-RNA Logo Core Module
 
 ========================================================================
 
-Draw the logo for SEISMIC-RNA as a PNG file.
-
-------------------------------------------------------------------------
-
 ©2023, the Rouskin Lab.
 
 This file is part of SEISMIC-RNA.
@@ -26,6 +22,8 @@ You should have received a copy of the GNU General Public License along
 with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
 
 ========================================================================
+
+Draw the logo for SEISMIC-RNA as a PNG file.
 
 """
 

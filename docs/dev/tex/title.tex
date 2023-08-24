@@ -1,3 +1,28 @@
+%
+% SEISMIC-RNA Developer Manual: Title Page
+%
+% ======================================================================
+% 
+% ©2023, the Rouskin Lab.
+% 
+% This file is part of SEISMIC-RNA.
+% 
+% SEISMIC-RNA is free software: you can redistribute it and/or modify it
+% under the terms of the GNU General Public License as published by the
+% Free Software Foundation, either version 3 of the License, or (at your
+% option) any later version.
+% 
+% SEISMIC-RNA is distributed in the hope that it will be useful, but
+% WITH NO WARRANTY; not even the implied warranty of MERCHANTABILITY or
+% FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+% for more details.
+% 
+% You should have received a copy of the GNU General Public License
+% along with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
+% 
+% ======================================================================
+%
+
 \documentclass[main.tex]{subfiles}
 
 
@@ -31,27 +56,29 @@ print(f"Version {seismicrna.__version__}")
 \begin{python}
 from datetime import datetime
 now = datetime.now()
-# Format the date manually (avoiding datetime.strftime)
-# because datetime.strftime uses percent symbols,
-# which begin comments in LaTeX.
+# Format the date manually (avoiding datetime.strftime) because
+# datetime.strftime uses percent symbols, which begin comments in LaTeX.
 print(f"{now.year:0>4d}-{now.month:0>2d}-{now.day:0>2d}")
 \end{python}
 \normalsize
 
 \end{center}
 
-\vspace{1cm}
-
+\vspace{2cm}
 
 % Logo.
 \begin{figure}[h]
-    \includegraphics[width=0.8\textwidth, center]{../../../logo.png}
+    \includegraphics[width=\textwidth, center]{../../../logo.png}
 \end{figure}
 
-\vfill
+
+\end{titlepage}
 
 
-% Copyright.
+\pagebreak
+
+
+% Copyright page.
 
 \noindent
 \copyright 2023, the Rouskin Lab.
@@ -64,20 +91,27 @@ This file is part of SEISMIC-RNA.
 \vspace{0.25cm}
 
 \noindent
-SEISMIC-RNA is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+SEISMIC-RNA is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
 
 \vspace{0.25cm}
 
 \noindent
-SEISMIC-RNA is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+SEISMIC-RNA is distributed in the hope that it will be useful, but WITH
+NO WARRANTY; not even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
 
 \vspace{0.25cm}
 
 \noindent
-You should have received a copy of the GNU General Public License along with SEISMIC-RNA. If not, see \url{https://www.gnu.org/licenses/}.
+You should have received a copy of the GNU General Public License along
+with SEISMIC-RNA. If not, see \url{https://www.gnu.org/licenses/}.
 
 
-\end{titlepage}
+\pagebreak
 
 
 \end{document}

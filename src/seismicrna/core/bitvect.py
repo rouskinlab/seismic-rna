@@ -4,6 +4,25 @@ Bit Vector Core Module
 
 ========================================================================
 
+©2023, the Rouskin Lab.
+
+This file is part of SEISMIC-RNA.
+
+SEISMIC-RNA is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+SEISMIC-RNA is distributed in the hope that it will be useful, but WITH
+NO WARRANTY; not even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along
+with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
+
+========================================================================
+
 """
 
 from __future__ import annotations
@@ -277,7 +296,7 @@ class BitBatch(BitMatrix):
         self._check_indexes()
         self._drop_duplicate_reads()
         # Mask the reads.
-        self._masked = Counter(self._mask(mask or dict()))
+        self._masked = Counter(self._mask(mask))
 
     def _check_indexes(self):
         """ Verify that the read names and positions in info and muts
@@ -314,9 +333,11 @@ class BitBatch(BitMatrix):
     def nmasked(self):
         return self._masked
 
-    def _mask(self, masks: dict[str, Callable[[BitBatch], np.ndarray]]):
+    def _mask(self, masks: dict[str, Callable[[BitBatch], np.ndarray]] | None):
         """ Drop reads selected by any of the masks, which should be
         boolean NumPy arrays. """
+        if not masks:
+            return dict()
         logger.debug(f"Masking {self} with {masks}")
         return {name: self._drop(self.reads[mask(self)])
                 for name, mask in masks.items()}

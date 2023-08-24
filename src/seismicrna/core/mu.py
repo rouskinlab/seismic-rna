@@ -4,6 +4,25 @@ Mutation Rate Core Module
 
 ========================================================================
 
+©2023, the Rouskin Lab.
+
+This file is part of SEISMIC-RNA.
+
+SEISMIC-RNA is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+SEISMIC-RNA is distributed in the hope that it will be useful, but WITH
+NO WARRANTY; not even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along
+with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
+
+========================================================================
+
 The functions in this module serve two main purposes:
  1. Adjust mutation rates to correct for observer bias.
  2. Normalize and winsorize mutation rates
@@ -72,27 +91,6 @@ mutation rates may be exceptionally reactive bases, it is often helpful
 to cap the normalized mutation rates to a maximum of 1.0. The winsorize
 function in this module performs normalization and then sets any value
 greater than 1.0 to 1.0.
-
-------------------------------------------------------------------------
-
-©2023, the Rouskin Lab.
-
-This file is part of SEISMIC-RNA.
-
-SEISMIC-RNA is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License, or (at your
-option) any later version.
-
-SEISMIC-RNA is distributed in the hope that it will be useful, but WITH
-NO WARRANTY; not even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-details.
-
-You should have received a copy of the GNU General Public License along
-with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
-
-========================================================================
 
 """
 

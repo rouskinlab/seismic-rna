@@ -4,11 +4,6 @@ Sequence Core Module.
 
 ========================================================================
 
-Define alphabets and classes for nucleic acid sequences, and functions
-for reading them from and writing them to FASTA files.
-
-------------------------------------------------------------------------
-
 ©2023, the Rouskin Lab.
 
 This file is part of SEISMIC-RNA.
@@ -27,6 +22,9 @@ You should have received a copy of the GNU General Public License along
 with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
 
 ========================================================================
+
+Define alphabets and classes for nucleic acid sequences, and functions
+for reading them from and writing them to FASTA files.
 
 """
 
