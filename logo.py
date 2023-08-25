@@ -42,8 +42,8 @@ LOGO_PAR_DIR_NAME = "seismic-rna"
 LOGO_PAR_DIR = Path(__file__).parent
 LOGO_FILE = LOGO_PAR_DIR.joinpath("logo.png")
 
-SEGMENTS_PER_SIDE = 5040
-SEGMENTS_FOR_INTERPOLATION = 2 ** 25
+SEGMENTS_PER_SIDE = 5040  # = 7!
+SEGMENTS_FOR_INTERPOLATION = 362880  # = 9!
 MAX_X = 3.
 
 MIN_WIDTH = 3.
@@ -107,7 +107,7 @@ def calc_x_interval(x_min: float, x_max: float, n_segs: int, n_interp: int):
     Calculate the x values on the interval [x_min, x_max].
     """
     # Compute uniformly spaced x values for interpolating the distance.
-    x_uniform = np.linspace(x_min, x_max, n_interp)
+    x_uniform = np.linspace(x_min, x_max, n_interp + 1)
     # Compute the cumulative distance at each uniform x coordinate.
     cum_dist = calc_cum_dist(x_uniform)
     # Compute uniformly spaced cumulative distances, each pair of which

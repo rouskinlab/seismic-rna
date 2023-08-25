@@ -69,7 +69,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+doc/_build/
 _autosummary/
 *.html
 
@@ -146,7 +146,7 @@ custom_pipeline*
 pypi_pass.txt
 test_data
 test_output
-docs/user/src/plots/plots_figs/*
+doc/user/src/plots/plots_figs/*
 
 # PyCharm
 .idea*
