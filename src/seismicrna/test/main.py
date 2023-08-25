@@ -31,15 +31,14 @@ calls the function main_cli() defined in this module.
 
 """
 
-from os.path import dirname
 import unittest as ut
+from os.path import dirname
 
 from click import command
 
-from ..core import docdef, path
+from ..core import docdef
 from ..core.cli import opt_verbose
 from ..core.cmd import CMD_TEST
-
 
 # Parameters for command line interface
 params = [opt_verbose]

@@ -144,7 +144,7 @@ custom_pipeline*
 pypi_pass.txt
 test_data
 test_output
-docs/user/source/plots/plots_figs/*
+docs/user/src/plots/plots_figs/*
 
 # PyCharm
 .idea*
