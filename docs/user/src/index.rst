@@ -10,8 +10,9 @@ Welcome to the documentation for SEISMIC-RNA
     intro/index.rst
     install/index.rst
     tutorial/index.rst
-    cli/index.rst
-    api/index.rst
+    cli.rst
+    api.rst
     formats/index.rst
     algos/index.rst
     about/index.rst
+

@@ -29,12 +29,14 @@ the 'relate' step writes relation vector files, which both the 'mask'
 and 'table' steps use.
 
 Steps that pass files to each other must agree on
+
 - the path to the file, so that the second step can find the file
 - the meaning of each part of the path, so that the second step can
   parse information contained in the path
 
 Although these path conventions could be written separately in each
 subpackage or module, this strategy is not ideal for several reasons:
+
 - It would risk inconsistencies among the modules, causing bugs.
 - Changing the conventions would require modifying every module, which
   would be not only tedious but also risky for the first reason.

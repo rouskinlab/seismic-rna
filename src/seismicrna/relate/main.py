@@ -14,7 +14,7 @@ from click import command
 
 from .write import relate_all, get_relaters
 from ..core import docdef, path
-from ..core.cli import (arg_input_file, arg_fasta,
+from ..core.cli import (arg_input_path, arg_fasta,
                         opt_out_dir, opt_temp_dir,
                         opt_phred_enc, opt_min_phred,
                         opt_min_reads, opt_batch_size, opt_ambrel,
@@ -29,7 +29,7 @@ logger = getLogger(__name__)
 params = [
     # Input files
     arg_fasta,
-    arg_input_file,
+    arg_input_path,
     # Output directories
     opt_out_dir,
     opt_temp_dir,
@@ -59,7 +59,7 @@ def cli(**kwargs):
 @lock_temp_dir
 @docdef.auto()
 def run(fasta: str,
-        input_file: tuple[str, ...],
+        input_path: tuple[str, ...],
         *,
         out_dir: str,
         temp_dir: str,
@@ -82,7 +82,7 @@ def run(fasta: str,
     """
 
     # For each BAM file, create a relation writer.
-    relaters = get_relaters(path.find_files_chain(map(Path, input_file),
+    relaters = get_relaters(path.find_files_chain(map(Path, input_path),
                                                   path.XAM_SEGS),
                             Path(fasta),
                             min_reads=min_reads,

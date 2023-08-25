@@ -70,6 +70,8 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+_autosummary/
+*.html
 
 # PyBuilder
 target/
@@ -149,8 +151,6 @@ docs/user/src/plots/plots_figs/*
 # PyCharm
 .idea*
 test_temp
-test_output
-pypi_pass.txt
 
 #etc
 test_demulti_scott.py

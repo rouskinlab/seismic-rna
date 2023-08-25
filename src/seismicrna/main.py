@@ -72,7 +72,7 @@ def all_cli(*args, **kwargs):
 @docdef.auto()
 def run(*,
         # Arguments
-        input_file: tuple[str, ...],
+        input_path: tuple[str, ...],
         # General options
         out_dir: str,
         temp_dir: str,
@@ -186,7 +186,7 @@ def run(*,
             dmfastqi = dmfastqi + dmi
             dmfastqp = dmfastqp + dmm
     # Alignment
-    input_file += tuple(map(str, align_mod.run(
+    input_path += tuple(map(str, align_mod.run(
         out_dir=out_dir,
         temp_dir=temp_dir,
         save_temp=save_temp,
@@ -236,9 +236,9 @@ def run(*,
         bt2_orient=bt2_orient
     )))
     # Relating
-    input_file += tuple(map(str, relate_mod.run(
+    input_path += tuple(map(str, relate_mod.run(
         fasta=fasta,
-        input_file=input_file,
+        input_path=input_path,
         out_dir=out_dir,
         temp_dir=temp_dir,
         phred_enc=phred_enc,
@@ -252,8 +252,8 @@ def run(*,
         save_temp=save_temp,
     )))
     # Masking
-    input_file += tuple(map(str, mask_mod.run(
-        input_file=input_file,
+    input_path += tuple(map(str, mask_mod.run(
+        input_path=input_path,
         coords=coords,
         primers=primers,
         primer_gap=primer_gap,
@@ -274,8 +274,8 @@ def run(*,
         rerun=rerun,
     )))
     # Clustering
-    input_file += tuple(map(str, cluster_mod.run(
-        input_file=input_file,
+    input_path += tuple(map(str, cluster_mod.run(
+        input_path=input_path,
         max_clusters=max_clusters,
         min_nmut_read=min_nmut_read,
         em_runs=em_runs,
@@ -287,8 +287,8 @@ def run(*,
         rerun=rerun,
     )))
     # Table
-    input_file += tuple(map(str, table_mod.run(
-        input_file=input_file,
+    input_path += tuple(map(str, table_mod.run(
+        input_path=input_path,
         rels=rels,
         max_procs=max_procs,
         parallel=parallel,
@@ -297,7 +297,7 @@ def run(*,
     # Fold
     if fold:
         fold_mod.run(
-            input_file=input_file,
+            input_path=input_path,
             fasta=fasta,
             sections_file=sections_file,
             coords=coords,

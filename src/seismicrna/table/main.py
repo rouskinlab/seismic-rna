@@ -8,14 +8,14 @@ from click import command
 
 from .write import write
 from ..core import docdef, path
-from ..core.cli import (arg_input_file, opt_rels,
+from ..core.cli import (arg_input_path, opt_rels,
                         opt_max_procs, opt_parallel, opt_rerun)
 from ..core.cmd import CMD_TABLE
 from ..core.parallel import dispatch
 
 logger = getLogger(__name__)
 
-params = [arg_input_file, opt_rels, opt_max_procs, opt_parallel, opt_rerun]
+params = [arg_input_path, opt_rels, opt_max_procs, opt_parallel, opt_rerun]
 
 
 @command(CMD_TABLE, params=params)
@@ -26,12 +26,12 @@ def cli(*args, **kwargs):
 
 
 @docdef.auto()
-def run(input_file: tuple[str, ...], rels: tuple[str, ...],
+def run(input_path: tuple[str, ...], rels: tuple[str, ...],
         max_procs: int, parallel: bool, **kwargs):
     """
     Run the table module.
     """
-    report_files = list(map(Path, input_file))
+    report_files = list(map(Path, input_path))
     relate_reports = path.find_files_chain(report_files, [path.RelateRepSeg])
     if relate_reports:
         logger.debug(f"Found relate report files: {relate_reports}")

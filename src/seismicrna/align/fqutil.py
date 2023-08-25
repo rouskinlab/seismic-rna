@@ -214,19 +214,6 @@ class FastqUnit(object):
         fields[path.EXT] = self.exts[key]
         return fields
 
-    def is_compatible_fasta(self, fasta: Path, one_ref_fasta: bool):
-        """
-        Return whether a given FASTA file is compatible with the FASTQ,
-        which means one of the following is true:
-        - The FASTA has a set of references (one_ref_fasta=False) and
-          the FASTQ has reads from an entire sample.
-        - The FASTA has one reference (one_ref_fasta=True) and the FASTQ
-          has reads from only the same reference.
-        """
-        if one_ref_fasta:
-            return self.ref == path.parse(fasta, path.FastaSeg)[path.REF]
-        return self.ref is None
-
     @property
     def cutadapt_input_args(self):
         """ Return input file arguments for Cutadapt. """

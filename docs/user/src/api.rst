@@ -1,5 +1,11 @@
 ************************************************************************
-Command Line Interface
+Python Interface
 ************************************************************************
 
-.. include:: align.rst
+
+.. autosummary::
+    :toctree: _autosummary
+    :template: seismic-module.rst
+    :recursive:
+
+   seismicrna

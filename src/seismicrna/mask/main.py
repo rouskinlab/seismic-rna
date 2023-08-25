@@ -7,7 +7,7 @@ from click import command
 from .write import mask_section
 from ..relate.load import open_reports
 from ..core import docdef, path
-from ..core.cli import (arg_input_file,
+from ..core.cli import (arg_input_path,
                         opt_coords, opt_primers, opt_primer_gap, opt_sections_file,
                         opt_count_del, opt_count_ins, opt_discount_mut,
                         opt_exclude_polya, opt_exclude_gu, opt_exclude_pos,
@@ -23,7 +23,7 @@ logger = getLogger(__name__)
 
 params = [
     # Input/output paths
-    arg_input_file,
+    arg_input_path,
     # Sections
     opt_coords, opt_primers, opt_primer_gap, opt_sections_file,
     # Mutation counting
@@ -47,7 +47,7 @@ def cli(*args, **kwargs):
 
 
 @docdef.auto()
-def run(input_file: tuple[str, ...], *,
+def run(input_path: tuple[str, ...], *,
         # Sections
         coords: tuple[tuple[str, int, int], ...],
         primers: tuple[tuple[str, DNA, DNA], ...],
@@ -73,7 +73,7 @@ def run(input_file: tuple[str, ...], *,
         rerun: bool) -> list[Path]:
     """ Run the mask command. """
     # Open all relation vector loaders and get the sections for each.
-    loaders, sections = open_sections(map(Path, input_file),
+    loaders, sections = open_sections(map(Path, input_path),
                                       coords=coords,
                                       primers=primers,
                                       primer_gap=primer_gap,

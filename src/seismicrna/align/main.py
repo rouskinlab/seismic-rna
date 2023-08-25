@@ -5,7 +5,7 @@ from click import command
 
 from .fq2bam import get_bam_files
 from .fqutil import FastqUnit
-from ..core import docdef, path
+from ..core import docdef
 from ..core.cli import (arg_fasta,
                         opt_fastqs, opt_fastqi, opt_fastqp,
                         opt_dmfastqs, opt_dmfastqi, opt_dmfastqp,

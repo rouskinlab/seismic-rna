@@ -5,7 +5,7 @@ from click import command
 
 from .krun import cluster
 from ..core import docdef, path
-from ..core.cli import (arg_input_file, opt_max_clusters,
+from ..core.cli import (arg_input_path, opt_max_clusters,
                         opt_min_nmut_read, opt_em_runs, opt_em_thresh,
                         opt_min_em_iter, opt_max_em_iter,
                         opt_parallel, opt_max_procs, opt_rerun)
@@ -18,7 +18,7 @@ DEFAULT_ORDER = 2
 
 params = [
     # Input files
-    arg_input_file,
+    arg_input_path,
     # Clustering options
     opt_max_clusters,
     opt_min_nmut_read,
@@ -50,7 +50,7 @@ def cli(*args, max_clusters: int, **kwargs):
 
 
 @docdef.auto()
-def run(input_file: tuple[str, ...], *,
+def run(input_path: tuple[str, ...], *,
         max_clusters: int,
         min_nmut_read: int,
         em_runs: int,
@@ -65,7 +65,7 @@ def run(input_file: tuple[str, ...], *,
         # Exit immediately if the maximum number of clusters is 0.
         return list()
     # Run clustering on each set of called mutations.
-    files = path.find_files_chain(map(Path, input_file), [path.MaskRepSeg])
+    files = path.find_files_chain(map(Path, input_path), [path.MaskRepSeg])
     return dispatch(cluster, max_procs, parallel,
                     args=as_list_of_tuples(files),
                     kwargs=dict(max_order=max_clusters,

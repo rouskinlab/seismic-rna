@@ -14,7 +14,7 @@ from .write import TwoTableGraphWriter
 from ..cluster.names import (CLS_NAME, ORD_NAME, ORD_CLS_NAME,
                              validate_order_cluster)
 from ..core import docdef
-from ..core.cli import (arg_input_file, opt_rels,
+from ..core.cli import (arg_input_path, opt_rels,
                         opt_y_ratio, opt_quantile, opt_arrange,
                         opt_csv, opt_html, opt_pdf,
                         opt_max_procs, opt_parallel)
@@ -322,7 +322,7 @@ def get_titles(*, sample: str = "", source: str,
 
 class SeqPairGraphRunner(object):
     params = [
-        arg_input_file,
+        arg_input_path,
         opt_rels,
         opt_y_ratio,
         opt_quantile,
@@ -342,7 +342,7 @@ class SeqPairGraphRunner(object):
     @classmethod
     @docdef.auto()
     def run(cls,
-            input_file: tuple[str, ...],
+            input_path: tuple[str, ...],
             rels: tuple[str, ...], *,
             y_ratio: bool,
             quantile: float,
@@ -353,7 +353,7 @@ class SeqPairGraphRunner(object):
             max_procs: int,
             parallel: bool) -> list[Path]:
         """ Run the graph seqdiff module. """
-        tables = list(find_tables(input_file))
+        tables = list(find_tables(input_path))
         if len(tables) % 2 != 0:
             raise ValueError(
                 f"Number of files must be even, but got {len(tables)}")

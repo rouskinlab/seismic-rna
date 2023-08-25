@@ -5,7 +5,7 @@ from click import command
 
 from .rnastructure import fold, ct2dot
 from ..core import docdef, path
-from ..core.cli import (arg_input_file, opt_temp_dir, opt_save_temp,
+from ..core.cli import (arg_input_path, opt_temp_dir, opt_save_temp,
                         arg_fasta, opt_sections_file,
                         opt_coords, opt_primers, opt_primer_gap,
                         opt_quantile,
@@ -23,7 +23,7 @@ logger = getLogger(__name__)
 
 params = [
     arg_fasta,
-    arg_input_file,
+    arg_input_path,
     opt_sections_file,
     opt_coords,
     opt_primers,
@@ -47,7 +47,7 @@ def cli(*args, **kwargs):
 @lock_temp_dir
 @docdef.auto()
 def run(fasta: str,
-        input_file: tuple[str, ...],
+        input_path: tuple[str, ...],
         *,
         sections_file: str | None,
         coords: tuple[tuple[str, int, int], ...],
@@ -73,7 +73,7 @@ def run(fasta: str,
                                primers=primers,
                                primer_gap=primer_gap)
     # Initialize the table loaders.
-    tab_files = path.find_files_chain(map(Path, input_file), [path.TableSeg])
+    tab_files = path.find_files_chain(map(Path, input_path), [path.TableSeg])
     loaders = [loader for loader in dispatch(load, max_procs, parallel,
                                              args=as_list_of_tuples(tab_files),
                                              pass_n_procs=False)

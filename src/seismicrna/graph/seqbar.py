@@ -16,7 +16,7 @@ from .write import OneTableGraphWriter
 from ..cluster.names import (ENSEMBLE_NAME, CLS_NAME, ORD_NAME, fmt_clust_name,
                              validate_order_cluster)
 from ..core import docdef
-from ..core.cli import (arg_input_file, opt_rels, opt_y_ratio, opt_quantile,
+from ..core.cli import (arg_input_path, opt_rels, opt_y_ratio, opt_quantile,
                         opt_arrange, opt_csv, opt_html, opt_pdf,
                         opt_max_procs, opt_parallel)
 from ..core.parallel import dispatch
@@ -32,7 +32,7 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 # Number of digits to which to round decimals.
 
 params = [
-    arg_input_file,
+    arg_input_path,
     opt_rels,
     opt_y_ratio,
     opt_quantile,
@@ -52,7 +52,7 @@ def cli(*args, **kwargs):
 
 
 @docdef.auto()
-def run(input_file: tuple[str, ...],
+def run(input_path: tuple[str, ...],
         rels: tuple[str, ...], *,
         y_ratio: bool,
         quantile: float,
@@ -63,7 +63,7 @@ def run(input_file: tuple[str, ...],
         max_procs: int,
         parallel: bool) -> list[Path]:
     """ Run the graph seqbar module. """
-    writers = list(map(SeqBarGraphWriter, find_tables(input_file)))
+    writers = list(map(SeqBarGraphWriter, find_tables(input_path)))
     return list(chain(*dispatch([writer.write for writer in writers],
                                 max_procs, parallel, pass_n_procs=False,
                                 kwargs=dict(rels_sets=rels, y_ratio=y_ratio,

@@ -85,7 +85,8 @@ or a several lines of code that look like this::
 If it is not initialized, then you will get an error message that says
 ``conda`` was not found.
 
-Troubleshooting
+
+Troubleshooting ``conda`` installation/initialization
 ------------------------------------------------------------------------
 
 If you encounter any errors, refer to the ``conda`` documentation at

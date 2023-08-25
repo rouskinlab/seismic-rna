@@ -25,8 +25,10 @@ class Indel(object):
     It is used to find alternative positions for indels by keeping track
     of an indel's current coordinates (as it is moved) and determining
     whether a specific move is valid.
-    Arguments
-    ---------
+
+    Parameters
+    ----------
+
     rel_ins_idx: int
         The 0-indexed position of the indel with respect to the sequence
         (ref or read) with the relative insertion. This position points
@@ -39,18 +41,18 @@ class Indel(object):
         has a base that is not in the read), and rel_ins_idx is the
         0-based index of the deleted base in the coordinates of the
         reference sequence.
-    rel_del_idx (int):  The opposite of rel_ins_idx: the 0-indexed position
-                        of the indel with respect to the sequence with a
-                        relative deletion (that is, the read if the mutation
-                        is denoted a deletion, and the ref if an insertion).
-                        Because the deleted base does not actually exist
-                        within the sequence whose coordinates it is based on,
-                        rel_del_idx does not refer to a specific position in
-                        the sequence, but instead to the two extant positions
-                        in the sequence that flank the deleted position.
-                        It is most convenient for the algorithm to have this
-                        argument refer to the position 3' of the deleted base
-                        and define the 5' position as a property.
+    rel_del_idx (int):
+        The opposite of rel_ins_idx: the 0-indexed position of the indel
+        with respect to the sequence with a relative deletion (that is,
+        the read if the mutation is denoted a deletion, and the ref if
+        an insertion). Because the deleted base does not actually exist
+        in the sequence whose coordinates it is based on, rel_del_idx
+        does not refer to a specific position in the sequence, rather to
+        the two extant positions in the sequence that flank the deleted
+        position. It is most convenient for the algorithm to have this
+        argument refer to the position 3' of the deleted base and define
+        the 5' position as a property.
+
     """
 
     # Define __slots__ to improve speed and memory performance.
@@ -173,8 +175,8 @@ class Deletion(Indel):
 
     def _swap(self, muts: bytearray, swap_idx: int, relation: int):
         """
-        Arguments
-        ---------
+        Parameters
+        ----------
         muts: bytearray
             Mutation vector
         swap_idx: int
@@ -183,6 +185,7 @@ class Deletion(Indel):
         relation: int
             Relationship (match, sub, etc.) between the base located at
             swap_idx and the base in the read
+
         """
         # The base at swap_idx moves to self.ref_idx, so after the swap, the
         # relationship between self.ref_idx and the read base will be swap_code.
@@ -235,15 +238,19 @@ class Insertion(Indel):
     def _swap(self, muts: bytearray, ref_idx: int,
               swap_idx: int, relation: int):
         """
-        Arguments
-        mut_vectors (bytearray): relation vector
-        swap_idx (int): the index in the read to which the deletion moves
-                        during this swap
-        swap_code (int): the relationship (match, sub, etc.) between the
-                         base located at swap_idx and the base in the ref
+        Parameters
+        ----------
+        muts: bytearray:
+            Relation vector
+        swap_idx: int:
+            Index in the read to which the deletion is swapped
+        relation: int
+            Relationship (match, sub, etc.) between the base located at
+            swap_idx and the base in the ref
+
         """
-        # The base at ins_idx moves to swap_idx, so after the swap, the
-        # relationship between ref_idx and the read base will be relation.
+        # The base at ref_idx moves to swap_idx, so after the swap, the
+        # relationship between ref_idx and the read base is relation.
         muts[ref_idx] |= relation
         self._step(swap_idx)
         # Mark the new positions of the insertion.
@@ -273,6 +280,7 @@ def sweep_indels(muts: bytearray, refseq: DNA, read: DNA, qual: str,
                  from3to5: bool, tunnel: bool):
     """
     For every insertion and deletion,
+
     Parameters
     ----------
     muts: bytearray
@@ -295,6 +303,7 @@ def sweep_indels(muts: bytearray, refseq: DNA, read: DNA, qual: str,
         5' -> 3' direction (False)
     tunnel: bool
         Whether to allow tunneling
+
     """
     # Collect all indels into one list.
     indels: list[Indel] = list()
@@ -331,6 +340,7 @@ def find_ambrels(relvec: bytearray, refseq: DNA, read: DNA, qual: str,
     """
     Find and label all positions in the vector that are ambiguous due to
     insertions and deletions.
+
     Parameters
     ----------
     relvec: bytearray
@@ -348,6 +358,7 @@ def find_ambrels(relvec: bytearray, refseq: DNA, read: DNA, qual: str,
         List of deletions identified by `vectorize_read`
     inns: list[Insertion]
         List of insertions identified by `vectorize_read`
+
     """
     # Each indel might be able to be moved in the 5' -> 3' direction
     # (from3to5 is False) or 3' -> 5' direction (from3to5 is True).
@@ -395,6 +406,7 @@ class SamFlag(object):
         flag: int
             The integer value of the SAM flag. For documentation, see
             https://samtools.github.io/hts-specs/
+
         """
         if not 0 <= flag <= self.MAX_FLAG:
             raise RelateValueError(f"Invalid flag: '{flag}'")
@@ -460,6 +472,7 @@ def relate_read(relvec: bytearray,
         ASCII encoding of the minimum Phred score to accept a base call
     ambrel: bool
         Whether to find and label all ambiguous insertions and deletions
+
     """
     if len(relvec) != length:
         raise ValueError(

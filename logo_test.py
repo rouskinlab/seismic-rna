@@ -1,26 +1,8 @@
 """
 
-Alignment Initialization Module
+Tests for SEISMIC-RNA Logo Core Module
 
 ========================================================================
-
-Expose cli, params, and run at the level of the `align` sub-package, so
-that they can be imported in any of the following manners:
-
->>> import seismicrna
->>> seismicrna.align.run
-
-or
-
->>> from seismicrna import align
->>> align.run
-
-or
-
->>> from seismicrna.align import run
->>> run
-
-------------------------------------------------------------------------
 
 ©2023, the Rouskin Lab.
 
@@ -43,5 +25,8 @@ with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
 
 """
 
-from . import main, fq2bam, fqutil
-from .main import cli, params, run
+
+
+import numpy as np
+
+from .logo import SEGMENTS, points, segments, widths, colors

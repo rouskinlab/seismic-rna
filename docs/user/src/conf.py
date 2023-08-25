@@ -50,6 +50,15 @@ extensions = [
     "sphinx_rtd_theme",
 ]
 
+# Templates
+templates_path = ["_templates"]
+
+# Generate automatic summaries
+autosummary_generate = True
+
+# Exclude from autosummary
+exclude_patterns = ['_build', '_templates']
+
 # Fontpath for blockdiag (truetype font)
 blockdiag_fontpath = "/usr/share/fonts/truetype/ipafont/ipagp.ttf"
 
@@ -79,8 +88,6 @@ intersphinx_mapping = {
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
 }
 intersphinx_disabled_domains = ["std"]
-
-templates_path = ["_templates"]
 
 # -- Options for HTML output
 html_theme = "sphinx_rtd_theme"

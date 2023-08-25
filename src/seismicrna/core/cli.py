@@ -51,8 +51,8 @@ arg_fasta = Argument(
 
 # Input/output options
 
-arg_input_file = Argument(
-    ("input-file",),
+arg_input_path = Argument(
+    ("input-path",),
     type=Path(exists=True),
     nargs=-1)
 
@@ -627,9 +627,8 @@ opt_fold = Option(
 opt_quantile = Option(
     ("--quantile", "-q"),
     type=float,
-    default=-1.,
-    help="Quantile of mutation rates for normalization and winsorization "
-         "(-1 to disable both). Must be -1 or in [0, 1].")
+    default=0.,
+    help="Quantile of mutation rates for normalization. Must be in [0, 1].")
 
 # Graphing
 
