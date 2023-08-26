@@ -4,25 +4,6 @@ Tests for Mutation Rate Core Module
 
 ========================================================================
 
-©2023, the Rouskin Lab.
-
-This file is part of SEISMIC-RNA.
-
-SEISMIC-RNA is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License, or (at your
-option) any later version.
-
-SEISMIC-RNA is distributed in the hope that it will be useful, but WITH
-NO WARRANTY; not even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-details.
-
-You should have received a copy of the GNU General Public License along
-with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
-
-========================================================================
-
 """
 
 import unittest as ut
@@ -31,14 +12,14 @@ from logging import getLogger, Filter, LogRecord
 import numpy as np
 import pandas as pd
 
-from . import mu
-from .mu import (MAX_MU, clip, _calc_mu_obs,
-                 calc_mu_adj_numpy, calc_mu_adj_df, calc_mu_adj_series,
-                 calc_f_obs_numpy, calc_f_obs_df, calc_f_obs_series,
-                 get_mu_quantile, normalize, winsorize)
-from .sim import rng
-from .sect import seq_pos_to_index, Section
-from .seq import DNA
+from .. import mu
+from ..mu import (MAX_MU, clip, _calc_mu_obs,
+                  calc_mu_adj_numpy, calc_mu_adj_df, calc_mu_adj_series,
+                  calc_f_obs_numpy, calc_f_obs_df, calc_f_obs_series,
+                  get_mu_quantile, normalize, winsorize)
+from ..sim import rng
+from ..sect import seq_pos_to_index, Section
+from ..seq import DNA
 
 mu_logger = getLogger(mu.__name__)
 

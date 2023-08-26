@@ -4,25 +4,6 @@ Tests for the Relate Core Module
 
 ========================================================================
 
-©2023, the Rouskin Lab.
-
-This file is part of SEISMIC-RNA.
-
-SEISMIC-RNA is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License, or (at your
-option) any later version.
-
-SEISMIC-RNA is distributed in the hope that it will be useful, but WITH
-NO WARRANTY; not even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-details.
-
-You should have received a copy of the GNU General Public License along
-with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
-
-========================================================================
-
 """
 
 import string
@@ -33,21 +14,21 @@ from typing import Generator, Sequence
 import numpy as np
 import pandas as pd
 
-from .rel import (IRREC, MATCH, DELET,
-                  INS_5, INS_3, INS_8, MINS5, MINS3, ANY_8,
-                  SUB_A, SUB_C, SUB_G, SUB_T, SUB_N,
-                  ANY_B, ANY_D, ANY_H, ANY_V, ANY_N,
-                  INDEL, NOCOV,
-                  MIN_QUAL, MAX_QUAL,
-                  CIG_ALIGN, CIG_MATCH, CIG_SUBST,
-                  CIG_DELET, CIG_INSRT, CIG_SCLIP,
-                  CigarOp, parse_cigar, count_cigar_muts, find_cigar_op_pos,
-                  translate_relvec, blank_relvec, random_relvecs,
-                  encode_relate, encode_match,
-                  validate_relvec, iter_relvecs_q53, iter_relvecs_all,
-                  relvec_to_read, ref_to_alignments, iter_alignments, as_sam)
-from .sect import seq_pos_to_index
-from .seq import DNA, DNAmbig, expand_degenerate_seq
+from ..rel import (IRREC, MATCH, DELET,
+                   INS_5, INS_3, INS_8, MINS5, MINS3, ANY_8,
+                   SUB_A, SUB_C, SUB_G, SUB_T, SUB_N,
+                   ANY_B, ANY_D, ANY_H, ANY_V, ANY_N,
+                   INDEL, NOCOV,
+                   MIN_QUAL, MAX_QUAL,
+                   CIG_ALIGN, CIG_MATCH, CIG_SUBST,
+                   CIG_DELET, CIG_INSRT, CIG_SCLIP,
+                   CigarOp, parse_cigar, count_cigar_muts, find_cigar_op_pos,
+                   translate_relvec, blank_relvec, random_relvecs,
+                   encode_relate, encode_match,
+                   validate_relvec, iter_relvecs_q53, iter_relvecs_all,
+                   relvec_to_read, ref_to_alignments, iter_alignments, as_sam)
+from ..sect import seq_pos_to_index
+from ..seq import DNA, DNAmbig, expand_degenerate_seq
 
 
 class TestConstants(ut.TestCase):

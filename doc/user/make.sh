@@ -3,22 +3,21 @@
 set -eu -o pipefail
 
 
-# Remove existing output files.
-for dirname in build src/_autosummary
-do
-    if [ -d $dirname ]
-    then
-        rm -rv $dirname/
-    fi
-done
-
-clear
+# Directories
+TOP_DIR=$HOME/git/seismic-rna
+MOD_DIR=$TOP_DIR/src/seismicrna
+DOC_DIR=$TOP_DIR/doc/user
+SRC_DIR=$DOC_DIR/src
+API_DIR=$SRC_DIR/api
+OUT_DIR=$DOC_DIR/build
 
 
-# Build the HTML files.
-make html
+# Build the Python API source files.
+sphinx-apidoc --force -s rst --no-toc --module-first -o $API_DIR $MOD_DIR tests
 
+# Build the HTML documentation files from the source files.
+sphinx-build -b html $SRC_DIR $OUT_DIR
 
 # Open the main index (on macOS).
-open build/html/index.html
+open $OUT_DIR/index.html
 

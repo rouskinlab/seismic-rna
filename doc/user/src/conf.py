@@ -23,11 +23,11 @@ import sys
 # -- Project information -----------------------------------------------------
 
 project = "seismic-rna"
-copyright = "2023, the Rouskin Lab"
+project_copyright = "2023, the Rouskin Lab"
 author = "Matthew Allan, Yves Martin, Scott Grote, and Alberic de Lajarte"
 
 # The full version, including alpha/beta/rc tags
-#release = "28.02.2023"
+# release = "28.02.2023"
 
 # -- General configuration ---------------------------------------------------
 

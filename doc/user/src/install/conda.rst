@@ -1,9 +1,12 @@
 
-Installing with ``conda``
+Installing with Conda
 ========================================================================
 
-This guide assumes that you have a working installation of ``conda`` on
-your system already. If not, see :ref:`install-prereqs` for guidance.
+This section uses Conda to install SEISMIC-RNA in a virtual environment.
+If you are not familiar with virtual environments, read this primer on
+:ref:`virtual-envs`. If you do not have a working installation of Conda
+on your system (or are not sure if you do), then see the section of this
+tutorial about :ref:`install-prereqs` for guidance.
 
 
 Create and activate your virtual environment
@@ -33,7 +36,7 @@ Install the non-Python dependencies
 ------------------------------------------------------------------------
 
 SEISMIC-RNA has four dependencies that are not Python packages. They are
-all available to install using ``conda``, but this installation process
+all available to install using Conda, but this installation process
 seems prone to failing on some systems, such as Macbook computers with
 M1 and M2 processors. If you encounter errors, you can also install each
 dependency by following its own installation instructions.
@@ -100,7 +103,7 @@ the program has not been installed.
 Troubleshooting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you encounter errors during installation with ``conda``, then first
+If you encounter errors during installation with Conda, then first
 double check that you have entered the command exactly, especially that
 
 - the command includes ``-c bioconda`` and ``-c conda-forge``
@@ -111,7 +114,7 @@ double check that you have entered the command exactly, especially that
 If you had mistyped the command, then just re-run the command with the
 correct spelling. If you have verified that the command is correct and
 it is still not installing, then try to install the dependency using the
-instructions on its website (instead of with ``conda``):
+instructions on its website (instead of with Conda):
 
 - Samtools: https://www.htslib.org/
 - FastQC: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/

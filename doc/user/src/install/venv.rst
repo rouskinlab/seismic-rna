@@ -1,8 +1,8 @@
 
+.. _virtual-envs:
+
 Virtual Environments
 ========================================================================
-
-**Before you install**
 
 We *highly* recommend installing SEISMIC-RNA into a virtual environment.
 Doing so will likely spare you much frustration well into the future.

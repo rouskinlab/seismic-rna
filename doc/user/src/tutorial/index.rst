@@ -3,7 +3,6 @@ Tutorial
 ************************************************************************
 
 .. toctree::
-    :maxdepth: 3
     :hidden:
 
     align/index.rst

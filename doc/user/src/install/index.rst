@@ -2,6 +2,9 @@
 Installation
 ************************************************************************
 
-.. include:: venv.rst
-.. include:: prereqs.rst
-.. include:: conda.rst
+
+.. toctree::
+
+    venv
+    prereqs
+    conda
