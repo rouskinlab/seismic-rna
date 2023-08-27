@@ -13,4 +13,5 @@ Welcome to the documentation for SEISMIC-RNA
     cli
     api/seismicrna
     formats/index
+    data/index
     algos/index

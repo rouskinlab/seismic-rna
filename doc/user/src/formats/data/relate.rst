@@ -1,5 +1,46 @@
-Mutation Vector
-+++++++++++++++
+
+Relation Vectors
+------------------------------------------------------------------------
+
+A relation vector encodes the relationship between one sequencing read
+(or pair of mated reads) and each base in the reference sequence.
+SEISMIC-RNA defines eight primary types of such relationships:
+
+- **Match**: The reference base aligned to a high-quality base of the same kind in the read.
+- **Deletion**: The reference base aligned to the space between two bases in the read.
+- **5' of insertion**: The reference base aligned to a read base immediately 5' of
+
+- **Substitution to A**: The reference base (not A) aligned to a high-quality A in the read.
+- **Substitution to C**: The reference base (not C) aligned to a high-quality C in the read.
+- **Substitution to G**: The reference base (not G) aligned to a high-quality G in the read.
+- **Substitution to T**: The reference base (not T) aligned to a high-quality T in the read.
+
+Each
+reference base is represented by one byte: thus the number of bytes in a
+relation vector equals the number of bases in the reference sequence.
+Each byte, having eight bits, can conveniently indicate  the eight types of
+relationships between the read and reference:
+
+
+
+ ========== ===== ===== ===================
+  Bit        Dec   Hex   Relationship
+ ========== ===== ===== ===================
+  00000001     1    01   match
+  00000010     2    02   deletion
+  00000100     4    04   5' of insertion
+  00001000     8    08   3' of insertion
+  00010000    16    10   substitution to A
+  00100000    32    20   substitution to C
+  01000000    64    40   substitution to G
+  10000000   128    80   substitution to T
+ ========== ===== ===== ===================
+
+- Bit: which one of the 8 bits is set to 1
+- Dec: decimal (base 10) value of the binary number in the Bit column
+- Hex: hexadecimal (base 16) value of the binary number in the Bit column
+- Relationship: how the read compares with the position in the reference
+
 
 Mutation vector files store the mutations in each read as a table in the Apache Optimized Row Columnar (ORC) format (extension ``.orc``).
 Each row of the table corresponds to one read and each column to one position in the reference sequence.
@@ -19,23 +60,7 @@ An example showing the first three rows (reads) in a mutation vector file. Each 
 
 Each element of the matrix contains 8 bits, each of which indicates a possible relationship between the read and the position in the reference sequence, according to the following table:
 
- ========== ===== ===== ========================================================= 
-  Bit        Dec   Hex   Relationship                                                  
- ========== ===== ===== ========================================================= 
-  00000001     1    01   match                                                    
-  00000010     2    02   deletion                                                 
-  00000100     4    04   insertion of ≥1 base(s) immediately 3' of this position  
-  00001000     8    08   insertion of ≥1 base(s) immediately 5' of this position  
-  00010000    16    10   substitution to A                                        
-  00100000    32    20   substitution to C                                        
-  01000000    64    40   substitution to G                                        
-  10000000   128    80   substitution to T                                        
- ========== ===== ===== ========================================================= 
 
-- Bit: which one of the 8 bits is set to 1
-- Dec: decimal (base 10) value of the binary number in the Bit column
-- Hex: hexadecimal (base 16) value of the binary number in the Bit column
-- Relationship: how the read compares with the position in the reference
 
 Usually, each element of the matrix has at most one bit set to 1 in the binary representation (e.g. ``00010000``).
 In the example matrix above, at read B, position 36, the element is ``01`` (hexadecimal) or ``00000001`` (binary), meaning that the base in the read is the same as the base in the reference (which is a C).
