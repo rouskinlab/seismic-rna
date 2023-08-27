@@ -7,11 +7,10 @@ Welcome to the documentation for SEISMIC-RNA
     :maxdepth: 2
 
     about/index
-    intro/index
     install/index
     tutorial/index
-    cli
-    api/seismicrna
     formats/index
     data/index
     algos/index
+    cli
+    api/seismicrna

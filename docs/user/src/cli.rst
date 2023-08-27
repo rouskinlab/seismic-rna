@@ -3,15 +3,8 @@ Command Line Reference
 ************************************************************************
 
 
-Entire workflow
-========================================================================
-
 .. click:: seismicrna.main:all_cli
     :prog: seismic all
-
-
-Individual steps
-========================================================================
 
 .. click:: seismicrna.demult:cli
     :prog: seismic demult
@@ -37,8 +30,12 @@ Individual steps
     :prog: seismic table
 
 
+.. click:: seismicrna.fold:cli
+    :prog: seismic fold
+
+
 seismic graph
-------------------------------------------------------------------------
+========================================================================
 
 .. click:: seismicrna.graph.seqbar:cli
     :prog: seismic graph seqbar
