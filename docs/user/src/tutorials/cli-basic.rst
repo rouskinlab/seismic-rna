@@ -2,8 +2,8 @@
 Basic Command Line Usage
 ========================================================================
 
-.. include::
-    download.rst
+This tutorial uses the :ref:`download-example`. You may substitute your
+own dataset, but the file names and results will be different.
 
 Run all steps of the workflow
 ------------------------------------------------------------------------

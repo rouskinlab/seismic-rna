@@ -1,6 +1,12 @@
 
+.. _download-example:
+
+Example dataset
+========================================================================
+
 Download example files
 ------------------------------------------------------------------------
+========================================================================
 
 You can download the example FASTA and FASTQ files in several ways,
 according to your preference.
@@ -55,16 +61,16 @@ the files, and type the following commands::
 Verify the downloaded files
 ------------------------------------------------------------------------
 
-With the volume of malicious website and phishing attempts, verifying
-any files you download is always a good idea. This practice not only
-reduces the risk of opening malware you have downloaded but also also
-confirms that your files were not corrupted accidentally. You can verify
-each file's `checksum`_ using the `MD5`_ and/or `SHA-256`_ algorithm.
+Verifying the integrity of any files you download is always a good idea.
+This process checks whether the files were corrupted during the download
+and *slightly* reduces the risk of inadvertently opening malware (but it
+cannot not confirm that the file is authentic). `Checksum`_ results are
+given for each file using both the `MD5`_ and `SHA-256`_ algorithms.
 
 .. note::
     If you obtain checksums different than those in the tables below,
-    then delete the files immediately and please open an issue on GitHub
-    at https://github.com/rouskinlab/seismic-rna/issues.
+    then delete the files and please create a new issue on GitHub at
+    https://github.com/rouskinlab/seismic-rna/issues.
 
 Compute MD5 checksums
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
