@@ -120,7 +120,42 @@ Ambiguous insertions and deletions
 
 Insertions and deletions (collectively, "indels") in the read can cause
 ambiguities that even the highest quality sequencing reads could not
-prevent.
+prevent. When one or more bases are inserted or deleted in a repetitive
+sequence, the exact base that mutated cannot be determined. For example,
+if the reference is ``ACTTGA`` and the read is ``ACTGA``, then one T was
+clearly deleted from the read, but determining whether it was the first
+or second T is impossible. The alignments are equally good:
+
+**Deletion of the first T**::
+
+    AC-TGA
+    || |||
+    ACTTGA
+
+**Deletion of the second T**::
+
+    ACT-GA
+    ||| ||
+    ACTTGA
+
+Ambiguities in the location of a relationship are encoded by turning on
+the bit of every possible relationship at each position. In the above
+example, position 3 of the reference could be a deletion (``00000010``)
+or a match (``00000001``), so the byte it receives is the `bitwise or`_
+of the two relationships: ``00000011``. Likewise for position 4. Thus,
+the relationship vector for the above alignment would be
+
+===== ========== =====
+ Pos   Byte       Hex
+===== ========== =====
+  1    00000001    01
+  2    00000001    01
+  3    00000011    03
+  4    00000011    03
+  5    00000001    01
+  6    00000001    01
+===== ========== =====
+
 
 .. _Phred quality score: https://en.wikipedia.org/wiki/Phred_quality_score
 .. _bitwise or: https://en.wikipedia.org/wiki/Bitwise_operation#OR

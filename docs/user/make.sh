@@ -6,7 +6,7 @@ set -eu -o pipefail
 # Directories
 TOP_DIR=$HOME/git/seismic-rna
 MOD_DIR=$TOP_DIR/src/seismicrna
-DOC_DIR=$TOP_DIR/doc/user
+DOC_DIR=$TOP_DIR/docs/user
 SRC_DIR=$DOC_DIR/src
 API_DIR=$SRC_DIR/api
 OUT_DIR=$DOC_DIR/build
