@@ -8,7 +8,7 @@ Welcome to the documentation for SEISMIC-RNA
 
     about/index
     install/index
-    tutorial/index
+    tutorials/index
     formats/index
     data/index
     algos/index

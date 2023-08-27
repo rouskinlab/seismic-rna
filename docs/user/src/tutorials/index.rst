@@ -5,4 +5,4 @@ Tutorials
 .. toctree::
     :hidden:
 
-    basic/index.rst
+    cli-basic
