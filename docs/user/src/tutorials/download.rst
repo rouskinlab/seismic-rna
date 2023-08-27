@@ -1,9 +1,9 @@
 
-Download example FASTA and FASTQ files
+Download example files
 ------------------------------------------------------------------------
 
-You can download the example FASTQ files in several ways, according to
-your preference.
+You can download the example FASTA and FASTQ files in several ways,
+according to your preference.
 
 Download from the URL
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -58,8 +58,18 @@ Verify the downloaded files
 With the volume of malicious website and phishing attempts, verifying
 any files you download is always a good idea. This practice not only
 reduces the risk of opening malware you have downloaded but also also
-confirms that your files were not corrupted accidentally. Verify the
-`checksum`_ of each file with the `MD5`_ algorithm as follows::
+confirms that your files were not corrupted accidentally. You can verify
+each file's `checksum`_ using the `MD5`_ and/or `SHA-256`_ algorithm.
+
+.. note::
+    If you obtain checksums different than those in the tables below,
+    then delete the files immediately and please open an issue on GitHub
+    at https://github.com/rouskinlab/seismic-rna/issues.
+
+Compute MD5 checksums
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Compute MD5 checksums using the following commands::
 
     md5 sars2.fa
     md5 sars2-fse_R1.fq.gz
@@ -75,7 +85,10 @@ sars2-fse_R1.fq.gz 94ba454827b5763892dd244fe897a406
 sars2-fse_R2.fq.gz 58ff4df2fd5fb93e1407328a4dcd8f95
 ================== ================================
 
-You can also use the `SHA-256`_ algorithm::
+Compute SHA-256 checksums
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Compute SHA-256 checksums using the following commands::
 
     shasum -a 256 sars2.fa
     shasum -a 256 sars2-fse_R1.fq.gz
@@ -84,15 +97,12 @@ You can also use the `SHA-256`_ algorithm::
 These commands should produce the following checksums:
 
 ================== ================================================================
- File               SHA-256
+ File               SHA-256 Checksum
 ================== ================================================================
 sars2.fa           1f0277918d971ba2b4096b218ff91514793684a9bc60395c56c7cfcc837b45c4
 sars2-fse_R1.fq.gz 6f2453c2da1733109a9df9c6a9110adbd6cac82fa6fb01f3589cf8720eb65514
 sars2-fse_R2.fq.gz 9fce126e9740004b832170a288e83be45d702667c62e9bf18712a76464a16b4d
 ================== ================================================================
-
-If you obtain different checksums, then delete the files and raise an
-issue on GitHub at https://github.com/rouskinlab/seismic-rna/issues.
 
 
 .. _checksum: https://en.wikipedia.org/wiki/Checksum
