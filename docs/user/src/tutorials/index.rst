@@ -3,7 +3,7 @@ Tutorials
 ************************************************************************
 
 .. toctree::
-    :hidden:
 
     download
     cli-basic
+    logging

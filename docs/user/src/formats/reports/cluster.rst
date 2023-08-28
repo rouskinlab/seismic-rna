@@ -1,59 +1,46 @@
 
+Cluster Report
+------------------------------------------------------------------------
 
-Clustering report 
-+++++++++++++++++
+Fields
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This file is outputted by the clustering algorithm. 
-It associates each read with a likelihood to belong to a cluster.
+======================== ========= ===============================================
+Name                     Type      Description
+======================== ========= ===============================================
+Name of Sample           str       Sample's name (directory of BAM file)
+Name of Reference        str       Reference sequence's name (name of BAM file)
+Sequence of Reference    str       Reference sequence as DNA (from FASTA file)
+Length of Sequence (nt)  int       Number of nucleotides in the reference sequence
+Number of Reads Passed   int       Number of reads processed into relation vectors
+Number of Reads Failed   int       Number of reads that failed to be processed
+MD5 Checksums of Batches list[str] List of the MD5 checksum of each parquet file
+Number of Batches        int       Number of batches (or parquet files)
+Time Began               str       Date and time at which the step began
+Time Ended               str       Date and time at which the step ended
+Time Taken (minutes)     float     Duration of the step, in minutes
+Speed (reads per minute) float     Speed, in number of reads processed per minute
+======================== ========= ===============================================
 
-The file is a json with the following structure:
+Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-
-.. code:: python
-
+::
 
     {
-        # 2 clusters
-        'K2_1':
-        {
-            'read_1': 0.5,
-            'read_2': 0.8,
-        },
-        'K2_2':
-        {
-            'read_1': 0.5,
-            'read_2': 0.2,
-        },
-
-        # 3 clusters
-        'K3_1':
-        {
-            'read_1': 0.2,
-            'read_2': 0.5,
-        },
-
-        'K3_2':
-        {
-            'read_1': 0.2,
-            'read_2': 0.5,
-        },
-
-        'K3_3':
-        {
-            'read_1': 0.6,
-            'read_2': 0.0,
-        },
+        "Name of Sample": "sars2-fse",
+        "Name of Reference": "sars2",
+        "Sequence of Reference": "CCCTGTGGGTTTTACACTTAAAAACACAGTCTGTACCGTCTGCGGTATGTGGAAAGGTTATGGCTGTAGTTGTGATCAACTCCGCGAACCCATGCTTCAGTCAGCTGATGCACAATCGTTTTTAAACGGGTTTGCGGTGTAAGTGCAGCCCGTCTTACACCGTGCGGCACAGGCACTAGTACTGATGTCGTATACAGGGCTTTTGACATCTACAATGATAAAGTAGCTGGTTTTGCTAAATTCCTAAAAACTAATTGTTGTCGCTTCCAAGAAAAGGACGAAG",
+        "Length of Sequence (nt)": 283,
+        "Number of Reads Passed": 272516,
+        "Number of Reads Failed": 0,
+        "MD5 Checksums of Batches": [
+            "f9874e5c37b56316d47bacc0a7cc604e",
+            "15d30bd7b2075d51d7147fc5a454ea1a"
+        ],
+        "Number of Batches": 2,
+        "Time Began": "2023-08-28 at 16:13:11",
+        "Time Ended": "2023-08-28 at 16:14:12",
+        "Time Taken (minutes)": 1.02,
+        "Speed (reads per minute)": 266649.0
     }
-
-
-.. note::
-
-    Why not a csv like this?
-
-    ========= ====== ====== ====== ====== ====== 
-     read_id   K2_1   K2_2   K3_1   K3_2   K3_3  
-    ========= ====== ====== ====== ====== ====== 
-     read_1    0.5    0.5    0.2    0.2    0.6   
-     read_2    0.8    0.2    0.5    0.5    0.0   
-    ========= ====== ====== ====== ====== ====== 
-

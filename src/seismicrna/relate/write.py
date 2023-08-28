@@ -215,32 +215,31 @@ class RelationWriter(object):
                               ref=self.ref, ext=path.SAM_EXT)
         # Create the temporary SAM file.
         view_xam(self.bam, temp_sam, n_procs=n_procs)
-        sam_file = open(temp_sam)
         try:
-            # Compute number of records per batch.
-            n_per_bat = max(1, mib_to_bytes(batch_size) // len(self.seq))
-            # Compute the batch indexes.
-            disp_args = list(iter_batch_indexes(sam_file, n_per_bat))
-            # Collect the keyword arguments.
-            disp_kwargs = dict(temp_sam=temp_sam, out_dir=out_dir,
-                               sample=self.sample, ref=self.ref,
-                               refseq=self.seq, ambrel=ambrel,
-                               min_qual=get_min_qual(min_phred, phred_enc))
-            # Generate and write relation vectors for each batch.
-            results = dispatch(_relate_batch, n_procs,
-                               parallel=True, pass_n_procs=False,
-                               args=disp_args, kwargs=disp_kwargs)
-            # The list of results contains, for each batch, a tuple of
-            # the number of relation vectors in the batch and the MD5
-            # checksum of the batch file. Compute the total number of
-            # vectors and list all the checksums.
-            n_pass = sum(result[0] for result in results)
-            n_fail = sum(result[1] for result in results)
-            checksums: list[str] = [result[2] for result in results]
-            logger.info(f"Ended running {self}: {n_pass} pass, {n_fail} fail")
-            return n_pass, n_fail, checksums
+            with open(temp_sam) as sam_file:
+                # Compute the number of records per batch.
+                n_per_bat = max(1, mib_to_bytes(batch_size) // len(self.seq))
+                # Compute the batch indexes.
+                disp_args = list(iter_batch_indexes(sam_file, n_per_bat))
+                # Collect the keyword arguments.
+                disp_kwargs = dict(temp_sam=temp_sam, out_dir=out_dir,
+                                   sample=self.sample, ref=self.ref,
+                                   refseq=self.seq, ambrel=ambrel,
+                                   min_qual=get_min_qual(min_phred, phred_enc))
+                # Generate and write relation vectors for each batch.
+                results = dispatch(_relate_batch, n_procs,
+                                   parallel=True, pass_n_procs=False,
+                                   args=disp_args, kwargs=disp_kwargs)
+                # The list of results contains, for each batch, a tuple of
+                # the number of relation vectors in the batch and the MD5
+                # checksum of the batch file. Compute the total number of
+                # vectors and list all the checksums.
+                n_pass = sum(result[0] for result in results)
+                n_fail = sum(result[1] for result in results)
+                checksums: list[str] = [result[2] for result in results]
+                logger.info(f"Ended {self}: {n_pass} pass, {n_fail} fail")
+                return n_pass, n_fail, checksums
         finally:
-            sam_file.close()
             if not save_temp:
                 # Delete the temporary SAM file before exiting.
                 temp_sam.unlink(missing_ok=True)

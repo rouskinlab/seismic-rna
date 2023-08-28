@@ -684,7 +684,7 @@ opt_verbose = Option(
     help="Print info or info+debug messages to stdout")
 
 opt_quiet = Option(
-    ("--quiet",),
+    ("--quiet", "-q"),
     count=True,
     help="Suppress warnings or warnings+errors to stdout")
 

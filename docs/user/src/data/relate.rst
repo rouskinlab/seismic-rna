@@ -88,7 +88,7 @@ inserted into the relation vector.
  C              Substitution to C            00100000   032    20
  G              Substitution to G            01000000   064    40
  T              Match                        00000001   001    01
- Low-quality    Ambiguous                    01110001   113    71
+ Low-quality    Any of the above             01110001   113    71
 ============== ============================ ========== ===== =====
 
 Each row of the following table repeats this calculation for one type of

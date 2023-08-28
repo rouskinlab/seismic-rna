@@ -310,8 +310,12 @@ def main_cli(ctx: Context, verbose: int, quiet: int, log: str, profile: str,
              **kwargs):
     """ SEISMIC-RNA main command line interface """
     # Configure logging.
-    os.makedirs(os.path.dirname(log), exist_ok=True)
-    logs.config(verbose, quiet, log_file=log)
+    if log:
+        log_file = os.path.abspath(log)
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+    else:
+        log_file = None
+    logs.config(verbose, quiet, log_file=log_file)
     # If no subcommand was given, then run the entire pipeline.
     if ctx.invoked_subcommand is None:
         if profile:

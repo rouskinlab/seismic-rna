@@ -3,6 +3,5 @@ Data Formats
 ========================================================================
 
 
-.. include::
-    align
-    relate
+.. include:: align.rst
+.. include:: relate.rst

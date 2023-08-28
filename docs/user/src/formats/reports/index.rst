@@ -2,6 +2,5 @@
 Report Formats
 ========================================================================
 
-
-.. include::
-    relate
+.. include:: relate.rst
+.. include:: cluster.rst

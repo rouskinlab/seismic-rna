@@ -1,12 +1,11 @@
 
-.. _download-example:
-
 Example dataset
 ========================================================================
 
+.. _download-example:
+
 Download example files
 ------------------------------------------------------------------------
-========================================================================
 
 You can download the example FASTA and FASTQ files in several ways,
 according to your preference.

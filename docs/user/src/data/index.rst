@@ -3,5 +3,4 @@ Data Structures
 ************************************************************************
 
 
-.. include::
-    relate.rst
+.. include:: relate.rst

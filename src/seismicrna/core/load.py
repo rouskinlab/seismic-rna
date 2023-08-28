@@ -14,7 +14,7 @@ from .seq import DNA
 
 
 def no_kwargs(func: Callable):
-    """ Prevent a function/method from accepting **kwargs. """
+    """ Prevent a function/method from accepting a kwargs argument. """
 
     @wraps(func)
     def wrapper(*args, **kwargs):
