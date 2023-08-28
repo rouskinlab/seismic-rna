@@ -2,10 +2,8 @@
 About
 ########################################################################
 
-.. toctree::
-    :hidden:
-
-    authors
-    dms
-    dreem
-    copyright
+.. include::
+    dms.rst
+    dreem.rst
+    authors.rst
+    license.rst

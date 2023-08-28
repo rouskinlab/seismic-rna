@@ -17,7 +17,3 @@ sphinx-apidoc --force -s rst --no-toc --module-first -o $API_DIR $MOD_DIR tests
 
 # Build the HTML documentation files from the source files.
 sphinx-build -b html $SRC_DIR $OUT_DIR
-
-# Open the main index (on macOS).
-open $OUT_DIR/index.html
-

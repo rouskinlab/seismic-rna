@@ -7,11 +7,63 @@ Central manager of logging.
 """
 
 import logging
+from functools import cache
 
 MAX_VERBOSE = 2
 MAX_QUIET = 2
 FILE_MSG_FORMAT = "LOGMSG>\t%(asctime)s\t%(name)s\t%(levelname)s\n%(message)s\n"
 STREAM_MSG_FORMAT = "%(levelname)s\t%(message)s"
+
+
+class AnsiCode(object):
+    """ Format text with ANSI codes. """
+    END = 0
+    BOLD = 1
+    ULINE = 4
+    RED = 91
+    GREEN = 92
+    YELLOW = 93
+    BLUE = 94
+    PURPLE = 95
+    CYAN = 96
+    CODES = END, BOLD, ULINE, RED, GREEN, YELLOW, BLUE, PURPLE, CYAN
+
+    @classmethod
+    @cache
+    def fmt(cls, code: int):
+        """ Format one color code into text. """
+        if code not in cls.CODES:
+            raise ValueError(f"Invalid ANSI color code: {code}")
+        return f"\033[{code}m"
+
+    @classmethod
+    def end(cls):
+        """ Convenience function to end formatting. """
+        return cls.fmt(cls.END)
+
+    @classmethod
+    def wrap(cls, text: str, *codes: int, end: bool = True):
+        """ Wrap text with ANSI color code(s). """
+        return f"{''.join(map(cls.fmt, codes))}{text}{cls.end() if end else ''}"
+
+
+class ColorFormatter(logging.Formatter):
+    ansi_codes = {
+        logging.DEBUG: (AnsiCode.BLUE,),
+        logging.INFO: (AnsiCode.CYAN,),
+        logging.WARNING: (AnsiCode.YELLOW,),
+        logging.ERROR: (AnsiCode.RED,),
+        logging.CRITICAL: (AnsiCode.PURPLE, AnsiCode.BOLD),
+    }
+
+    def format(self, record: logging.LogRecord) -> str:
+        """ Log the message in color by adding an ANSI color escape code
+        to the beginning and a color stopping code to the end. """
+        # Get the ANSI format codes based on the record's logging level.
+        # Default to no color.
+        codes = self.ansi_codes.get(record.levelno, (AnsiCode.END,))
+        # Wrap the formatted text with ANSI format codes.
+        return AnsiCode.wrap(super().format(record), *codes)
 
 
 def get_top_logger():
@@ -74,7 +126,7 @@ def config(verbose: int, quiet: int, log_file: str | None = None):
     # Add stream handler.
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(get_verbosity(verbose, quiet))
-    stream_handler.setFormatter(logging.Formatter(STREAM_MSG_FORMAT))
+    stream_handler.setFormatter(ColorFormatter(STREAM_MSG_FORMAT))
     logger.addHandler(stream_handler)
     # Add file handler.
     if log_file is not None:

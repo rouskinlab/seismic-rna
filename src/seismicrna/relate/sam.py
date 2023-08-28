@@ -5,20 +5,21 @@ from typing import Callable, TextIO
 
 from ..core.xam import SAM_DELIM, SAM_HEADER, FLAG_PAIRED
 
-
 logger = getLogger(__name__)
 
 
 def _reset_seek(func: Callable):
     """ Decorator to reset the position in the SAM file after the
     decorated function returns. """
+
     @wraps(func)
     def wrapper(sam_file: TextIO, *args, **kwargs):
-        prev_pos = sam_file.tell()
+        previous_position = sam_file.tell()
         try:
             return func(sam_file, *args, **kwargs)
         finally:
-            sam_file.seek(prev_pos)
+            sam_file.seek(previous_position)
+
     return wrapper
 
 
@@ -39,8 +40,9 @@ def _range_of_records(get_records_func: Callable):
                     raise ValueError(f"Stopped at position {sam_file.tell()} "
                                      f"of {sam_file.name}, but expected {stop}")
                 break
-        logger.debug(f"Read {n_records} records from {sam_file.name} "
+        logger.debug(f"Read {n_records} records in {sam_file.name} "
                      f"from {start} to {stop}")
+
     return wrapper
 
 
@@ -89,26 +91,40 @@ def _iter_records_paired(sam_file: TextIO):
 @_reset_seek
 def _find_first_record(sam_file: TextIO):
     """ Return the position of the first record in the SAM file. """
+    # Seek to the beginning of the file.
     sam_file.seek(0)
-    while (line := sam_file.readline()).startswith(SAM_HEADER):
-        pass
-    return sam_file.tell() - len(line)
+    # Get the first position in the file.
+    position = sam_file.tell()
+    # Read the file until finding a line that is not part of the header.
+    while sam_file.readline().startswith(SAM_HEADER):
+        # If the line is part of the header, then get the position at
+        # the end of the line.
+        position = sam_file.tell()
+    # The position at which the first record starts is either the first
+    # position in the file (if there are no header lines) or the end of
+    # the last header line that was read.
+    return position
+
+
+def _seek_first_record(sam_file: TextIO):
+    """ Seek to the beginning of the first record in the SAM file. """
+    sam_file.seek(_find_first_record(sam_file))
+    return sam_file.tell()
 
 
 @cache
 @_reset_seek
 def is_paired(sam_file: TextIO):
     """ Return whether the reads in the SAM file are paired-end. """
-    sam_file.seek(_find_first_record(sam_file))
+    _seek_first_record(sam_file)
     first_line = sam_file.readline()
     try:
         flag = first_line.split(SAM_DELIM, 2)[1]
         paired = bool(int(flag) & FLAG_PAIRED)
     except (IndexError, ValueError):
-        logger.critical(f"Failed to determine whether {sam_file.name} has "
-                        f"single- or paired-end reads. Most likely, the file "
-                        f"contains no reads. It might also be corrupted.")
-        return False
+        raise ValueError(f"Failed to determine whether {sam_file.name} has "
+                         f"single- or paired-end reads. Most likely, the file "
+                         f"contains no reads. It might also be corrupted.")
     logger.debug(f"SAM file {sam_file.name} has "
                  f"{'paired' if paired else 'single'}-ended reads")
     return paired
@@ -121,6 +137,11 @@ def iter_records(sam_file: TextIO, start: int, stop: int):
             else _iter_records_single(sam_file, start, stop))
 
 
+def read_name(line: str):
+    """ Get the name of the read in the current line of a SAM file. """
+    return line.split(SAM_DELIM, 1)[0]
+
+
 def iter_batch_indexes(sam_file: TextIO, records_per_batch: int):
     """ Yield the start and end positions of every batch in the SAM
     file, where each batch should have about `records_per_batch`
@@ -129,99 +150,47 @@ def iter_batch_indexes(sam_file: TextIO, records_per_batch: int):
     mate is present for every paired-end record, there can be up to
     `2 * records_per_batch` records in a batch. """
     paired = is_paired(sam_file)
-    logger.debug(f"Computing batch indexes for {sam_file} with "
-                 f"{'paired' if paired else 'single'}-end reads, aiming for "
-                 f"{records_per_batch} records per batch")
     if records_per_batch <= 0:
         raise ValueError(f"records_per_batch must be a positive integer, "
                          f"but got {records_per_batch}")
+    logger.info(f"Began computing batch indexes for {sam_file} with "
+                f"{'paired' if paired else 'single'}-end reads, aiming for "
+                f"{records_per_batch} records per batch")
     # Number of lines to skip between batches: the number of records
     # per batch minus one (to account for the one line that is read
     # at the beginning of each batch, which ensures that every batch
     # has at least one line) times the number of mates per record.
     n_skip = (records_per_batch - 1) * (paired + 1)
     # Start at the beginning of the first record.
-    sam_file.seek(_find_first_record(sam_file))
+    position = _seek_first_record(sam_file)
     # Yield batches until the SAM file is exhausted. If there are no
     # records in the file, then this loop will exit immediately.
     batch = 0
     while line := sam_file.readline():
-        # The start position of the batch is the beginning of the
-        # line that was just read. Since the position in the file is
-        # now the end of that line, the line's length is subtracted.
-        start_of_batch = sam_file.tell() - len(line)
-        # Read either the prescribed number of lines or to the end
+        # The current batch starts at the current position.
+        batch_start = position
+        # Skip either the prescribed number of lines or to the end
         # of the file, whichever limit is reached first.
-        for _, line in zip(range(n_skip), sam_file, strict=False):
-            pass
-        if paired:
-            # Get the end position of the current line.
-            end_curr = sam_file.tell()
-            # Try to get the name of the read in the current line.
-            try:
-                name_curr = line.split(SAM_DELIM, 1)[0]
-            except IndexError:
-                # Getting the read name failed, so it is impossible
-                # to tell whether this read is the mate of the next
-                # read. End this batch at the current read so that
-                # the next iteration can check whether the next read
-                # and the read after the next read are mates.
-                logger.error(f"Cannot find read name in '{line.decode()}'")
-                logger.debug(f"Batch {batch}: {start_of_batch} - {end_curr}")
-                yield start_of_batch, end_curr
-                continue
-            # Try to read the next line.
-            try:
-                line = next(sam_file)
-            except StopIteration:
-                # The end of the file has been reached, so the end
-                # of the current line is the end of the batch.
-                logger.debug(f"Batch {batch}: {start_of_batch} - {end_curr}")
-                yield start_of_batch, end_curr
-                continue
-            # Get the end position of the next line.
-            end_next = sam_file.tell()
-            # Try to get the name of the read in the next line.
-            try:
-                name_next = line.split(SAM_DELIM, 1)[0]
-            except IndexError:
-                # Getting the read name failed, so it is impossible
-                # to tell whether this next read is the mate of the
-                # current read. End this batch at the next read so
-                # that this batch will have an even number of lines,
-                # which, when in doubt, is best for paired reads.
-                logger.error(f"Cannot find read name in '{line.decode()}'")
-                logger.debug(f"Batch {batch}: {start_of_batch} - {end_next}")
-                yield start_of_batch, end_next
-                continue
-            # Determine the end of the batch based on the names of
-            # the current and the next reads.
-            if name_curr == name_next:
-                # If the read names match, then they are mates and
-                # should be part of the same batch. So end the batch
-                # at the end of the next read.
-                logger.debug(f"Batch {batch}: {start_of_batch} - {end_next}")
-                yield start_of_batch, end_next
+        i_skip = 0
+        while i_skip < n_skip and (line := sam_file.readline()):
+            i_skip += 1
+        # Update the position to the end of the current line.
+        position = sam_file.tell()
+        # One extra step is required for files of paired-end reads.
+        if paired and line:
+            # Check if the current line is the mate of the next line.
+            if read_name(line) == read_name(sam_file.readline()):
+                # If the read names match, then the current line is the
+                # mate of the next line: they should be part of the same
+                # batch. End the batch after the next read, which is now
+                # the current position in the file.
+                position = sam_file.tell()
             else:
-                # Otherwise, the reads are not mates. If the batch
-                # were to end at the end of the next read, then it
-                # would be impossible for the next read to be in the
-                # same batch as the read after the next read, even
-                # if those two reads were mates. To allow those two
-                # reads to be compared and potentially be placed in
-                # the same batch, the current batch must end after
-                # the current read.
-                logger.debug(f"Batch {batch}: {start_of_batch} - {end_curr}")
-                yield start_of_batch, end_curr
-                # Because each iteration of the loop must start at
-                # the position at which the last iteration ended,
-                # move back to that position in the file.
-                sam_file.seek(end_curr)
-        else:
-            # If the file does not contain paired-end reads, then
-            # the end of the batch is the end of the current read.
-            end_curr = sam_file.tell()
-            logger.debug(f"Batch {batch}: {start_of_batch} - {end_curr}")
-            yield start_of_batch, end_curr
+                # Otherwise, they are not mates. End the batch after the
+                # current line.
+                sam_file.seek(position)
+        # Yield the number and the start and end positions of the batch.
+        logger.debug(f"Batch {batch}: {batch_start} - {position}")
+        yield batch, batch_start, position
         # Increment the batch number.
         batch += 1

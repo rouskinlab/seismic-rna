@@ -220,8 +220,7 @@ class RelationWriter(object):
             # Compute number of records per batch.
             n_per_bat = max(1, mib_to_bytes(batch_size) // len(self.seq))
             # Compute the batch indexes.
-            disp_args = [(batch, start, stop) for batch, (start, stop)
-                         in enumerate(iter_batch_indexes(sam_file, n_per_bat))]
+            disp_args = list(iter_batch_indexes(sam_file, n_per_bat))
             # Collect the keyword arguments.
             disp_kwargs = dict(temp_sam=temp_sam, out_dir=out_dir,
                                sample=self.sample, ref=self.ref,
