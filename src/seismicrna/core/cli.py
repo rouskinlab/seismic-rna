@@ -411,7 +411,7 @@ opt_bt2_r = Option(
     ("--bt2-R",),
     type=int,
     default=2,
-    help="Maximum number of times to re-seed")
+    help="Re-seed up to this many times")
 
 opt_bt2_dpad = Option(
     ("--bt2-dpad",),
@@ -424,6 +424,13 @@ opt_bt2_orient = Option(
     type=Choice(BOWTIE2_ORIENT, case_sensitive=False),
     default=BOWTIE2_ORIENT[0],
     help="Valid orientations of paired-end mates")
+
+opt_min_mapq = Option(
+    ("--min-mapq",),
+    type=int,
+    default=40,
+    help="Ignore alignments whose mapping quality is less than this number",
+)
 
 # Reference section specification options
 opt_coords = Option(

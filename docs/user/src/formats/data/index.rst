@@ -2,6 +2,5 @@
 Data Formats
 ========================================================================
 
-
-.. include:: align.rst
-.. include:: relate.rst
+.. include:: fastq.rst
+.. include:: sam.rst

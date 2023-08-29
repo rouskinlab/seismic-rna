@@ -62,13 +62,18 @@ def view_xam(xam_inp: Path,
              ref: str | None = None,
              end5: int | None = None,
              end3: int | None = None,
+             min_mapq: int | None = None,
              flags_req: int | None = None,
              flags_exc: int | None = None,
              n_procs: int = 1):
-    """ Convert between SAM and BAM formats, or extract reads aligning
-    to a specific reference/section using `samtools view`. """
+    """ Convert between SAM and BAM formats, extract reads aligning to a
+    specific reference/section, and filter based on flags and mapping
+    quality using `samtools view`. """
     logger.info(f"Began viewing {xam_inp}")
     cmd = [SAMTOOLS_CMD, "view", "-@", n_procs - 1, "-h"]
+    if min_mapq is not None:
+        # Require minimum mapping quality.
+        cmd.extend(["--min-mq", min_mapq])
     if flags_req is not None:
         # Require these flags.
         cmd.extend(["-f", flags_req])

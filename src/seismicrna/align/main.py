@@ -26,7 +26,8 @@ from ..core.cli import (arg_fasta,
                         opt_bt2_i, opt_bt2_x,
                         opt_bt2_score_min_loc, opt_bt2_score_min_e2e,
                         opt_bt2_s, opt_bt2_l, opt_bt2_d, opt_bt2_r,
-                        opt_bt2_gbar, opt_bt2_dpad, opt_bt2_orient)
+                        opt_bt2_gbar, opt_bt2_dpad, opt_bt2_orient,
+                        opt_min_mapq)
 from ..core.cmd import CMD_ALIGN
 from ..core.depend import confirm_dependency
 from ..core.parallel import lock_temp_dir
@@ -90,6 +91,8 @@ params = [
     opt_bt2_r,
     opt_bt2_dpad,
     opt_bt2_orient,
+    # Samtools
+    opt_min_mapq,
 ]
 
 
@@ -155,7 +158,9 @@ def run(*,
         bt2_d: int,
         bt2_r: int,
         bt2_dpad: int,
-        bt2_orient: str) -> list[Path]:
+        bt2_orient: str,
+        # Samtools
+        min_mapq: int) -> list[Path]:
     """
     Run the alignment module.
 
@@ -227,4 +232,5 @@ def run(*,
                          bt2_d=bt2_d,
                          bt2_r=bt2_r,
                          bt2_dpad=bt2_dpad,
-                         bt2_orient=bt2_orient)
+                         bt2_orient=bt2_orient,
+                         min_mapq=min_mapq)

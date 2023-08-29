@@ -16,8 +16,8 @@ from .write import relate_all, get_relaters
 from ..core import docdef, path
 from ..core.cli import (arg_input_path, arg_fasta,
                         opt_out_dir, opt_temp_dir,
-                        opt_phred_enc, opt_min_phred,
-                        opt_min_reads, opt_batch_size, opt_ambrel,
+                        opt_min_mapq, opt_min_reads, opt_batch_size,
+                        opt_phred_enc, opt_min_phred, opt_ambrel,
                         opt_parallel, opt_max_procs,
                         opt_rerun, opt_save_temp)
 from ..core.cmd import CMD_REL
@@ -34,6 +34,7 @@ params = [
     opt_out_dir,
     opt_temp_dir,
     # SAM options
+    opt_min_mapq,
     opt_phred_enc,
     opt_min_phred,
     # Vectoring options
@@ -63,9 +64,10 @@ def run(fasta: str,
         *,
         out_dir: str,
         temp_dir: str,
+        min_reads: int,
+        min_mapq: int,
         phred_enc: int,
         min_phred: int,
-        min_reads: int,
         batch_size: float,
         ambrel: bool,
         max_procs: int,
@@ -93,6 +95,7 @@ def run(fasta: str,
     return relate_all(relaters=relaters,
                       out_dir=Path(out_dir),
                       temp_dir=Path(temp_dir),
+                      min_mapq=min_mapq,
                       phred_enc=phred_enc,
                       min_phred=min_phred,
                       ambrel=ambrel,

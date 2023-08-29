@@ -195,6 +195,7 @@ class RelationWriter(object):
                     out_dir: Path,
                     temp_dir: Path,
                     save_temp: bool,
+                    min_mapq: int,
                     batch_size: int,
                     phred_enc: int,
                     min_phred: int,
@@ -214,7 +215,7 @@ class RelationWriter(object):
                               cmd=CMD_REL, step=path.STEPS_VECT[0],
                               ref=self.ref, ext=path.SAM_EXT)
         # Create the temporary SAM file.
-        view_xam(self.bam, temp_sam, n_procs=n_procs)
+        view_xam(self.bam, temp_sam, min_mapq=min_mapq, n_procs=n_procs)
         try:
             with open(temp_sam) as sam_file:
                 # Compute the number of records per batch.
@@ -333,15 +334,11 @@ def get_relaters(bam_files: Iterable[Path], fasta: Path, *,
 
 
 def relate_all(relaters: list[RelationWriter], *,
-               phred_enc: int, min_phred: int,
-               max_procs: int, parallel: bool,
-               **kwargs) -> list[Path]:
+               max_procs: int, parallel: bool, **kwargs) -> list[Path]:
     """ Run one or more RelationWriters in series or parallel. """
     logger.info("Began generating relation vector sets")
     # Determine method of parallelization. Do not use hybrid mode, which
     # would try to process multiple SAM files in parallel and use more
     # than one processe for each file.
     return dispatch([relater.relate_sample_ref for relater in relaters],
-                    max_procs, parallel, kwargs=dict(phred_enc=phred_enc,
-                                                     min_phred=min_phred,
-                                                     **kwargs))
+                    max_procs, parallel, kwargs=kwargs)

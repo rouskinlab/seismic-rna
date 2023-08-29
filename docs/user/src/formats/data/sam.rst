@@ -1,7 +1,7 @@
 
 .. _sam-format:
 
-Sequence Alignment Maps
+BAM: Sequence Alignment Maps
 ------------------------------------------------------------------------
 
 Aligned reads are stored in binary alignment map (BAM) format, detailed

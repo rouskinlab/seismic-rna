@@ -1,5 +1,5 @@
 
-Messages and Log Files
+Logging messages
 ========================================================================
 
 As SEISMIC-RNA runs, it outputs messages about its normal activities and

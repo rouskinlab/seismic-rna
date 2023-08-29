@@ -110,6 +110,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                 bt2_r: int,
                 bt2_dpad: int,
                 bt2_orient: str,
+                min_mapq: int,
                 n_procs: int = 1) -> list[Path]:
     """ Run all steps of the alignment pipeline for one FASTQ file or
     one pair of mated FASTQ files. """
@@ -241,8 +242,8 @@ def fq_pipeline(fq_inp: FastqUnit,
                 flags_req = None
             # Export the reads that align to the given reference
             # and meet the flag filters to a separate BAM file.
-            view_xam(bam_sorted, bam_split, ref=ref, n_procs=n_procs,
-                     flags_req=flags_req, flags_exc=flags_exc)
+            view_xam(bam_sorted, bam_split, ref=ref, min_mapq=min_mapq,
+                     flags_req=flags_req, flags_exc=flags_exc, n_procs=n_procs)
             # Sort the BAM file by name (required for relation step).
             sort_xam(bam_split, bam_ref, name=True, n_procs=n_procs)
             # The pre-sorted BAM file containing reads from only the
