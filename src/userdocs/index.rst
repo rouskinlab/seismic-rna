@@ -3,7 +3,7 @@ Welcome to the documentation for SEISMIC-RNA
 ########################################################################
 
 
-.. image:: ../../logo.png
+.. image:: logo.png
 
 
 .. toctree::
