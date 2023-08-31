@@ -13,12 +13,6 @@ logger = getLogger(__name__)
 LOCK_DIR = ".seismic-rna-lock"
 
 
-def fatal_error(message: str):
-    """  """
-    logger.critical(message)
-    raise SystemExit()
-
-
 def lock_temp_dir(run: Callable):
     @wraps(run)
     def wrapper(*args, temp_dir: str | Path, save_temp: bool, **kwargs):
@@ -40,7 +34,8 @@ def lock_temp_dir(run: Callable):
         except FileExistsError:
             # The lock already exists, which means another instance of
             # SEISMIC-RNA is using this temporary directory.
-            raise SystemExit(lock_error)
+            logger.critical(lock_error)
+            raise SystemExit()
         except FileNotFoundError:
             # The temporary directory does not exist yet, so create it
             # along with a lock.
