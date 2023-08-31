@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installing with Conda &mdash; seismic-rna  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Tutorials" href="../tutorials/index.html" />
+    <link rel="prev" title="Prerequisites: Python, pip, and Conda" href="prereqs.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            seismic-rna
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Installation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="venv.html">Virtual Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="prereqs.html">Prerequisites: Python, pip, and Conda</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Installing with Conda</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-and-activate-your-virtual-environment">Create and activate your virtual environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-the-non-python-dependencies">Install the non-Python dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#installing">Installing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#verifying">Verifying</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#install-seismic-rna-and-its-python-dependencies">Install SEISMIC-RNA and its Python dependencies</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../manuals/index.html">User Manuals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/seismicrna.html">seismicrna package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../formats/index.html">File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/index.html">Data Structures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algos/index.html">Algorithms</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">seismic-rna</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Installation</a></li>
+      <li class="breadcrumb-item active">Installing with Conda</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/install/conda.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installing-with-conda">
+<h1>Installing with Conda<a class="headerlink" href="#installing-with-conda" title="Permalink to this heading"></a></h1>
+<p>This section uses Conda to install SEISMIC-RNA in a virtual environment.
+If you are not familiar with virtual environments, read this primer on
+<a class="reference internal" href="venv.html#virtual-envs"><span class="std std-ref">Virtual Environments</span></a>. If you do not have a working installation of Conda
+on your system (or are not sure if you do), then see the section of this
+tutorial about <a class="reference internal" href="prereqs.html#install-prereqs"><span class="std std-ref">Prerequisites: Python, pip, and Conda</span></a> for guidance.</p>
+<section id="create-and-activate-your-virtual-environment">
+<h2>Create and activate your virtual environment<a class="headerlink" href="#create-and-activate-your-virtual-environment" title="Permalink to this heading"></a></h2>
+<p>Make a new virtual environment into which you will install SEISMIC-RNA.
+Give it a short, memorable name, such as <code class="docutils literal notranslate"><span class="pre">seismic</span></code>, and select Python
+version 3.10, which is currently the only supported version. The rest of
+this tutorial assumes that the virtual environment is named <code class="docutils literal notranslate"><span class="pre">seismic</span></code>,
+so if you have chosen a different name, then type that name instead:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">seismic</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.10</span>
+</pre></div>
+</div>
+<p>Activate your virtual environment with this command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">seismic</span>
+</pre></div>
+</div>
+<p>Note that this environment <strong>must</strong> be active whenever you install, use,
+or update SEISMIC-RNA. To deactivate it after you are finished, type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">deactivate</span>
+</pre></div>
+</div>
+<p>Note that you do not need to type <code class="docutils literal notranslate"><span class="pre">seismic</span></code> after <code class="docutils literal notranslate"><span class="pre">deactivate</span></code>.</p>
+</section>
+<section id="install-the-non-python-dependencies">
+<h2>Install the non-Python dependencies<a class="headerlink" href="#install-the-non-python-dependencies" title="Permalink to this heading"></a></h2>
+<p>SEISMIC-RNA has four dependencies that are not Python packages. They are
+all available to install using Conda, but this installation process
+seems prone to failing on some systems, such as Macbook computers with
+M1 and M2 processors. If you encounter errors, you can also install each
+dependency by following its own installation instructions.</p>
+<p>The four non-Python dependencies are</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.htslib.org/">Samtools</a> ≥ v1.17 (required)</p></li>
+<li><p><a class="reference external" href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">FastQC</a> ≥ 0.12.1 (optional: only for FASTQ quality control)</p></li>
+<li><p><a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/index.shtml">Bowtie2</a> ≥ v2.5.1 (optional: only for FASTQ alignment)</p></li>
+<li><p><a class="reference external" href="https://rna.urmc.rochester.edu/RNAstructure.html">RNAstructure</a> ≥ v6.3 (optional: only for RNA structure prediction)</p></li>
+</ul>
+<section id="installing">
+<h3>Installing<a class="headerlink" href="#installing" title="Permalink to this heading"></a></h3>
+<p>You can install them all at once by running the following command (note
+that it is long and you may need to scroll horizontally to see it all):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="o">-</span><span class="n">c</span> <span class="n">bioconda</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">samtools</span><span class="o">=</span><span class="mf">1.17</span> <span class="n">fastqc</span><span class="o">=</span><span class="mf">0.12.1</span> <span class="n">bowtie2</span><span class="o">=</span><span class="mf">2.5.1</span> <span class="n">rnastructure</span><span class="o">=</span><span class="mf">6.3</span>
+</pre></div>
+</div>
+<p>Or, if you do not want to install all of them, then you can choose which
+to install by running the corresponding individual command(s):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Samtools</span>
+<span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="o">-</span><span class="n">c</span> <span class="n">bioconda</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">samtools</span><span class="o">=</span><span class="mf">1.17</span>
+
+<span class="c1"># FastQC</span>
+<span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="o">-</span><span class="n">c</span> <span class="n">bioconda</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">fastqc</span><span class="o">=</span><span class="mf">0.12.1</span>
+
+<span class="c1"># Bowtie2</span>
+<span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="o">-</span><span class="n">c</span> <span class="n">bioconda</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">bowtie2</span><span class="o">=</span><span class="mf">2.5.1</span>
+
+<span class="c1"># RNAstructure</span>
+<span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="o">-</span><span class="n">c</span> <span class="n">bioconda</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">rnastructure</span><span class="o">=</span><span class="mf">6.3</span>
+</pre></div>
+</div>
+</section>
+<section id="verifying">
+<h3>Verifying<a class="headerlink" href="#verifying" title="Permalink to this heading"></a></h3>
+<p>To confirm that the dependencies have been installed successfully, type
+the following commands for each dependency that you want to check:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Samtools</span>
+<span class="n">which</span> <span class="n">samtools</span>
+
+<span class="c1"># FastQC</span>
+<span class="n">which</span> <span class="n">fastqc</span>
+
+<span class="c1"># Bowtie2</span>
+<span class="n">which</span> <span class="n">bowtie2</span>
+
+<span class="c1"># RNAstructure</span>
+<span class="n">which</span> <span class="n">ct2dot</span>
+</pre></div>
+</div>
+<p>If a dependency has been installed properly, then running its above
+command will print a message that looks similar to this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">your</span><span class="o">-</span><span class="n">name</span><span class="o">/</span><span class="n">miniconda3</span><span class="o">/</span><span class="n">envs</span><span class="o">/</span><span class="n">seismic</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">name</span><span class="o">-</span><span class="n">of</span><span class="o">-</span><span class="n">dependency</span>
+</pre></div>
+</div>
+<p>If it prints an error message that the depdendency was not found, then
+the program has not been installed.</p>
+</section>
+<section id="troubleshooting">
+<h3>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this heading"></a></h3>
+<p>If you encounter errors during installation with Conda, then first
+double check that you have entered the command exactly, especially that</p>
+<ul class="simple">
+<li><p>the command includes <code class="docutils literal notranslate"><span class="pre">-c</span> <span class="pre">bioconda</span></code> and <code class="docutils literal notranslate"><span class="pre">-c</span> <span class="pre">conda-forge</span></code></p></li>
+<li><p>the version of the program in the command is correct</p></li>
+<li><p>there are no extra spaces or missing spaces</p></li>
+<li><p>every word is spelled correctly</p></li>
+</ul>
+<p>If you had mistyped the command, then just re-run the command with the
+correct spelling. If you have verified that the command is correct and
+it is still not installing, then try to install the dependency using the
+instructions on its website (instead of with Conda):</p>
+<ul class="simple">
+<li><p>Samtools: <a class="reference external" href="https://www.htslib.org/">https://www.htslib.org/</a></p></li>
+<li><p>FastQC: <a class="reference external" href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">https://www.bioinformatics.babraham.ac.uk/projects/fastqc/</a></p></li>
+<li><p>Bowtie2: <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/index.shtml">https://bowtie-bio.sourceforge.net/bowtie2/index.shtml</a></p></li>
+<li><p>RNAstructure: <a class="reference external" href="https://rna.urmc.rochester.edu/RNAstructure.html">https://rna.urmc.rochester.edu/RNAstructure.html</a></p></li>
+</ul>
+</section>
+</section>
+<section id="install-seismic-rna-and-its-python-dependencies">
+<h2>Install SEISMIC-RNA and its Python dependencies<a class="headerlink" href="#install-seismic-rna-and-its-python-dependencies" title="Permalink to this heading"></a></h2>
+<p>After you have installed your chosen non-Python dependencies, run this
+command to install SEISMIC-RNA and all its Python dependencies:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">seismic</span><span class="o">-</span><span class="n">rna</span>
+</pre></div>
+</div>
+<p>The above command will install the latest version of SEISMIC-RNA and its
+dependencies. If you want to install a specific version instead, then
+run this command (substituting <code class="docutils literal notranslate"><span class="pre">1.2.3</span></code> with the version you want):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">seismic</span><span class="o">-</span><span class="n">rna</span><span class="o">==</span><span class="mf">1.2.3</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="prereqs.html" class="btn btn-neutral float-left" title="Prerequisites: Python, pip, and Conda" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../tutorials/index.html" class="btn btn-neutral float-right" title="Tutorials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, the Rouskin Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
