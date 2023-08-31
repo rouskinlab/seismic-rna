@@ -1,0 +1,91 @@
+%
+% SEISMIC-RNA Developer Manual: Main Document
+%
+% ======================================================================
+% 
+% ©2023, the Rouskin Lab.
+% 
+% This file is part of SEISMIC-RNA.
+% 
+% SEISMIC-RNA is free software: you can redistribute it and/or modify it
+% under the terms of the GNU General Public License as published by the
+% Free Software Foundation, either version 3 of the License, or (at your
+% option) any later version.
+% 
+% SEISMIC-RNA is distributed in the hope that it will be useful, but
+% WITH NO WARRANTY; not even the implied warranty of MERCHANTABILITY or
+% FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+% for more details.
+% 
+% You should have received a copy of the GNU General Public License
+% along with SEISMIC-RNA. If not, see https://www.gnu.org/licenses/.
+% 
+% ======================================================================
+%
+
+\documentclass[12pt,letterpaper]{report}
+
+% Distribute document among multiple subfiles.
+\usepackage{subfiles}
+
+% Set margins.
+\usepackage[letterpaper,left=1in,right=1in,top=1in,bottom=1in]{geometry}
+
+% Set the font family to Lato.
+\usepackage[default]{lato}
+
+% Prevent widow/orphan lines over the entire document.
+\usepackage[defaultlines=2,all]{nowidow}
+
+% Enable hyperlinks.
+\usepackage{hyperref}
+
+% Enable URLs.
+\usepackage{url}
+
+% Enable in-document interpretation of Python code.
+\usepackage{python}
+
+% Enable graphics.
+\usepackage{graphicx}
+\graphicspath{{../img}}
+
+% Adjust positioning of graphics.
+\usepackage[export]{adjustbox}
+
+% Exclude virtual figures from lists of figures.
+\usepackage{caption}
+
+% Style the bibliography.
+\usepackage{natbib}
+
+
+\begin{document}
+
+
+% Prevent text from running into the margins.
+\sloppy
+
+
+% Title page
+\subfile{title}
+
+
+% Table of contents
+\tableofcontents
+\listoffigures
+
+
+% Chapters
+
+\chapter{Clustering}
+\label{cluster}
+
+%\subfile{cluster}
+
+
+% Bibliography
+%\bibliographystyle{plain}
+%\bibliography{refs}
+
+\end{document}
