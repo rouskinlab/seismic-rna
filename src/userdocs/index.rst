@@ -1,9 +1,6 @@
 ########################################################################
-Welcome to the documentation for SEISMIC-RNA
+SEISMIC-RNA User Guide
 ########################################################################
-
-
-.. image:: logo.png
 
 
 .. toctree::

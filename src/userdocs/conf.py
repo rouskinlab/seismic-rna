@@ -4,21 +4,6 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import os
-import sys
-
-# from unittest.mock import MagicMock
-
-
-# for mod_name in MOCK_MODULES:
-#    sys.modules[mod_name] = MagicMock()
-
 
 # -- Project information -----------------------------------------------------
 
@@ -91,6 +76,8 @@ intersphinx_disabled_domains = ["std"]
 
 # -- Options for HTML output
 html_theme = "sphinx_rtd_theme"
+html_logo = "../../logo/logo-200.png"
+html_favicon = "../../logo/favicon-32x32.ico"
 
 # -- Options for EPUB output
 epub_show_urls = "footnote"

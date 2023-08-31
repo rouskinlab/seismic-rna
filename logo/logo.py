@@ -12,23 +12,25 @@ import unittest as ut
 
 from functools import cache
 from logging import getLogger
-from pathlib import Path
 
-from matplotlib import colormaps, pyplot as plt
 import numpy as np
+from matplotlib import colormaps, pyplot as plt
+from PIL import Image
 
 logger = getLogger(__name__)
 
-LOGO_PAR_DIR_NAME = "seismic-rna"
-LOGO_PAR_DIR = Path(__file__).parent
-LOGO_FILE = LOGO_PAR_DIR.joinpath("logo.png")
+LOGO_TEMPLATE = "logo-{}.png"
+LOGO_PRIMARY_WIDTH = 1800
+LOGO_EXTRA_WIDTHS = [200]
+FAVICON_TEMPLATE = "favicon-{}.ico"
+FAVICON_SIZES = [(32, 32)]
 
 SEGMENTS_PER_SIDE = 5040  # = 7!
 SEGMENTS_FOR_INTERPOLATION = 362880  # = 9!
 MAX_X = 3.
 
-MIN_WIDTH = 3.
-MAX_WIDTH = 18.
+MIN_WIDTH = 1.5
+MAX_WIDTH = 9.0
 
 COLOR_MAP = "inferno"
 
@@ -128,25 +130,43 @@ def colors():
     return list(cmap(np.linspace(0., 1., len(segments()))))
 
 
-def draw():
+def draw_primary_logo():
     """ Draw the logo for SEISMIC-RNA. """
-    if LOGO_PAR_DIR.name != LOGO_PAR_DIR_NAME:
-        logger.error(f"The logo must be written into the directory named "
-                     f"{LOGO_PAR_DIR_NAME}, but the directory in this file "
-                     f"system is named {LOGO_PAR_DIR.name}. Most likely, you "
-                     f"are trying to generate the logo from an installed copy "
-                     f"of SEISMIC-RNA. The logo can only be generated from the "
-                     f"source code before it is installed.")
-        return
     fig, ax = plt.subplots()
     for seg, w, c in zip(segments(), widths(), colors(),
                          strict=True):
         ax.plot(*seg, color=c, linewidth=w, solid_capstyle="round")
-    ax.set_aspect(1.0)
     plt.axis("off")
-    plt.tight_layout()
-    plt.savefig(LOGO_FILE, dpi=300, transparent=True)
+    fig.subplots_adjust(left=0., right=1., top=1., bottom=0.)
+    width_inches, height_inches = map(np.max, points())
+    fig.set_size_inches(w=width_inches, h=height_inches)
+    plt.savefig(LOGO_TEMPLATE.format(LOGO_PRIMARY_WIDTH),
+                dpi=LOGO_PRIMARY_WIDTH / width_inches,
+                transparent=True)
     plt.close()
+
+
+def draw_extra_logos():
+    image = Image.open(LOGO_TEMPLATE.format(LOGO_PRIMARY_WIDTH))
+    for width in LOGO_EXTRA_WIDTHS:
+        winit, hinit = image.size
+        height = round(hinit * width / winit)
+        resized = image.resize((width, height), resample=Image.LANCZOS)
+        resized.save(LOGO_TEMPLATE.format(width), format="PNG")
+
+
+def draw_favicon():
+    """ Draw the favicon for SEISMIC-RNA. """
+    image = Image.open(LOGO_TEMPLATE.format(LOGO_PRIMARY_WIDTH))
+    for size in FAVICON_SIZES:
+        image.save(FAVICON_TEMPLATE.format('x'.join(map(str, size))),
+                   format="ICO", sizes=[size])
+
+
+def draw():
+    draw_primary_logo()
+    draw_extra_logos()
+    draw_favicon()
 
 
 class TestConstants(ut.TestCase):
