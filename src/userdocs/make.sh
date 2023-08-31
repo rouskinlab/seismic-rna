@@ -35,6 +35,3 @@ touch $GHP_DIR/.nojekyll
 # Build the GitHub Pages files from the source files.
 sphinx-build -b html $DOC_DIR $GHP_DIR
 
-# Copy the logo image to the GitHub Pages directory.
-cp $IMG_DIR/logo-150.png $GHP_DIR
-
