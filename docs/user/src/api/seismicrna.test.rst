@@ -9,8 +9,6 @@ seismicrna.test package
 Submodules
 ----------
 
-seismicrna.test.main module
----------------------------
 
 .. automodule:: seismicrna.test.main
    :members:

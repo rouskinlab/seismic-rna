@@ -13,7 +13,7 @@ OUT_DIR=$DOC_DIR/build
 
 
 # Build the Python API source files.
-sphinx-apidoc --force -s rst --no-toc --module-first -o $API_DIR $MOD_DIR tests
+sphinx-apidoc -s rst --no-toc --no-headings --module-first -o $API_DIR $MOD_DIR
 
 # Build the HTML documentation files from the source files.
 sphinx-build -b html $SRC_DIR $OUT_DIR

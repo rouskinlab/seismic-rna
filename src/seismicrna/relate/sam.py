@@ -119,14 +119,19 @@ def is_paired(sam_file: TextIO):
     _seek_first_record(sam_file)
     first_line = sam_file.readline()
     try:
+        # Try to use the flag of the first read to determine whether the
+        # SAM file has paired-end or single-end reads.
         flag = first_line.split(SAM_DELIM, 2)[1]
         paired = bool(int(flag) & FLAG_PAIRED)
     except (IndexError, ValueError):
-        raise ValueError(f"Failed to determine whether {sam_file.name} has "
-                         f"single- or paired-end reads. Most likely, the file "
-                         f"contains no reads. It might also be corrupted.")
-    logger.debug(f"SAM file {sam_file.name} has "
-                 f"{'paired' if paired else 'single'}-ended reads")
+        # If that failed, default to single-end and issue a warning.
+        paired = False
+        logger.warning(f"Could not determine whether {sam_file.name} has "
+                       f"single- or paired-end reads. Most likely, the file "
+                       f"contains no reads. It might also be corrupted.")
+    else:
+        logger.debug(f"SAM file {sam_file.name} has "
+                     f"{'paired' if paired else 'single'}-ended reads")
     return paired
 
 

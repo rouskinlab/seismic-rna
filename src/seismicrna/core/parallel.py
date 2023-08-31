@@ -13,6 +13,12 @@ logger = getLogger(__name__)
 LOCK_DIR = ".seismic-rna-lock"
 
 
+def fatal_error(message: str):
+    """  """
+    logger.critical(message)
+    raise SystemExit()
+
+
 def lock_temp_dir(run: Callable):
     @wraps(run)
     def wrapper(*args, temp_dir: str | Path, save_temp: bool, **kwargs):
@@ -22,6 +28,11 @@ def lock_temp_dir(run: Callable):
                       f"with '--temp-dir /path/to/new/temp-dir/'. If a former "
                       f"run of SEISMIC-RNA failed to unlock this directory, "
                       f"then please delete it with 'rm -r {temp_dir}'.")
+        exist_error = (f"The temporary directory {temp_dir} exists. If any "
+                       f"needed files reside in {temp_dir}, then please "
+                       f"specify a nonexistent temporary directory with "
+                       f"'--temp-dir /new/temp/dir'. Otherwise, please delete "
+                       f"the directory with 'rm -r {temp_dir}' and then rerun.")
         # Determine whether the temporary directory and the lock exist.
         lock = os.path.join(temp_dir, LOCK_DIR)
         try:
@@ -43,7 +54,8 @@ def lock_temp_dir(run: Callable):
                 # first run makes the directory with os.makedirs(lock),
                 # and then this run tries to do the same thing but fails
                 # because the directory was created moments before.
-                raise SystemExit(lock_error)
+                logger.critical(lock_error)
+                raise SystemExit()
             temp_dir_existed_before = False
             logger.debug(f"Created and locked temporary directory: {temp_dir}")
         else:
@@ -56,12 +68,8 @@ def lock_temp_dir(run: Callable):
         # delete the lock upon exiting, regardless of the circumstances.
         try:
             if temp_dir_existed_before and not save_temp:
-                raise SystemExit(f"The temporary directory {temp_dir} exists. "
-                                 f"If any needed files reside in {temp_dir}, "
-                                 f"then please specify a nonexistent temporary "
-                                 f"directory with '--temp-dir /new/temp/dir'. "
-                                 f"Otherwise, please delete the directory "
-                                 f"with 'rm -r {temp_dir}' and then rerun.")
+                logger.critical(exist_error)
+                raise SystemExit()
             # Run the wrapped function and return its result.
             return run(*args, temp_dir=temp_dir, save_temp=save_temp, **kwargs)
         finally:
@@ -176,7 +184,7 @@ class Task(object):
         try:
             result = self._func(*args, **kwargs)
         except Exception as error:
-            logger.error(f"Failed task {task}:\n{error}\n", exc_info=True)
+            logger.error(f"Failed task {task}:\n{error}\n", exc_info=False)
         else:
             logger.debug(f"Ended task {task}:\n{result}\n")
             return result

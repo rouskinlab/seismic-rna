@@ -4,5 +4,5 @@ User Manuals
 
 .. toctree::
 
-    basic
+    steps/index
     logging

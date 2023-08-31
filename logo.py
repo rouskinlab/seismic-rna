@@ -46,34 +46,11 @@ def calc_y(x: np.ndarray):
     return np.sqrt(TAU) * np.exp(-np.square(x) / 2.) * np.sin(TAU * x)
 
 
-def calc_dy_dx(x: np.ndarray):
-    """
-    First derivative of y(x) with respect to x.
-
-    dy/dx = d/dx √(2π) sin(2π x) exp(-x² / 2)
-          = √(2π) [2π cos(2π x) exp(-x² / 2) - x sin(2π x) exp(-x² / 2)]
-          = √(2π) exp(-x² / 2) [2π cos(2π x) - x sin(2π x)]
-    """
-    return np.sqrt(TAU) * np.exp(-np.square(x) / 2.) * (TAU * np.cos(TAU * x)
-                                                        - x * np.sin(TAU * x))
-
-
-def calc_ds_dx(x: np.ndarray):
-    """
-    First derivative of distance traveled (s) with respect to x.
-
-    ds = √[(dx)² + (dy)²]
-    ds/dx = √[(dx/dx)² + (dy/dx)²]
-          = √[1 + (dy/dx)²]
-    """
-    return np.sqrt(1. + np.square(calc_dy_dx(x)))
-
-
 def calc_ds(x: np.ndarray):
     """
     Length of each segment connecting each pair of consecutive x.
     """
-    return np.diff(x) * calc_ds_dx((x[1:] + x[:-1]) / 2.)
+    return np.sqrt(np.square(np.diff(x)) + np.square(np.diff(calc_y(x))))
 
 
 def calc_cum_dist(x: np.ndarray):
@@ -83,6 +60,7 @@ def calc_cum_dist(x: np.ndarray):
     return np.concatenate([[0.], np.cumsum(calc_ds(x))])
 
 
+@cache
 def calc_x_interval(x_min: float, x_max: float, n_segs: int, n_interp: int):
     """
     Calculate the x values on the interval [x_min, x_max].
@@ -99,6 +77,7 @@ def calc_x_interval(x_min: float, x_max: float, n_segs: int, n_interp: int):
     return np.interp(cum_dist_uniform, cum_dist, x_uniform)
 
 
+@cache
 def calc_x(x_max: float, n_segs: int, n_interp: int):
     """
     Calculate the x values on the interval [-x_max, x_max].
@@ -241,6 +220,13 @@ class TestColors(ut.TestCase):
         self.assertEqual(len(colors()), 2 * SEGMENTS_PER_SIDE)
 
 
+class TestDraw(ut.TestCase):
+    """ Test function `logo.draw`. """
+
+    def test_draw(self):
+        """ Run draw(). """
+        self.assertIsNone(draw())
+
+
 if __name__ == "__main__":
-    draw()
     ut.main(verbosity=2)

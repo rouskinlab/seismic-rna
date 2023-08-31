@@ -27,8 +27,6 @@ Subpackages
 Submodules
 ----------
 
-seismicrna.main module
-----------------------
 
 .. automodule:: seismicrna.main
    :members:

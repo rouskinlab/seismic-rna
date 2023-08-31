@@ -9,16 +9,12 @@ seismicrna.fold package
 Submodules
 ----------
 
-seismicrna.fold.main module
----------------------------
 
 .. automodule:: seismicrna.fold.main
    :members:
    :undoc-members:
    :show-inheritance:
 
-seismicrna.fold.rnastructure module
------------------------------------
 
 .. automodule:: seismicrna.fold.rnastructure
    :members:
