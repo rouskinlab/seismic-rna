@@ -376,10 +376,11 @@ def run_cutadapt(fq_inp: FastqUnit,
                            f"two ({cut_q1} and {cut_q2}); using {cut_qnext}")
         cmd.extend(["--nextseq-trim", cut_qnext])
     else:
-        cmd.extend(["-q", cut_q1, "-Q", cut_q2])
+        cmd.extend(["-q", cut_q1])
+        if fq_inp.paired:
+            cmd.extend(["-Q", cut_q2])
     # Adapter trimming
-    adapters = {"g": cut_g1, "a": cut_a1,
-                "G": cut_g2, "A": cut_a2}
+    adapters = {"g": cut_g1, "a": cut_a1, "G": cut_g2, "A": cut_a2}
     for arg, adapter in adapters.items():
         if adapter and (fq_inp.paired or arg.islower()):
             for adapt in adapter:
