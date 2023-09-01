@@ -1,6 +1,5 @@
 from itertools import chain
 from logging import getLogger
-from os import pathsep
 from pathlib import Path
 from typing import Iterable
 
@@ -17,12 +16,12 @@ from ..core.shell import BOWTIE2_BUILD_CMD, run_cmd
 logger = getLogger(__name__)
 
 
-def get_fasta_index_paths(index: Path):
+def get_fasta_index_paths(prefix: Path):
     """ Return the Bowtie 2 index paths for a FASTA file. """
-    if index.suffixes:
-        logger.warning(f"Bowtie 2 index {index} includes '{pathsep}'; "
-                       f"its suffix(es) {index.suffixes} will be replaced")
-    return [index.with_suffix(ext) for ext in path.BOWTIE2_INDEX_EXTS]
+    suffix = prefix.suffix
+    if suffix in path.FASTA_EXTS:
+        logger.warning(f"Bowtie 2 index prefix {prefix} has a FASTA extension")
+    return [prefix.with_suffix(suffix + ext) for ext in path.BOWTIE2_INDEX_EXTS]
 
 
 def index_fasta_file(fasta: Path,
