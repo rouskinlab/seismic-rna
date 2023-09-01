@@ -1,5 +1,6 @@
 from itertools import chain
 from logging import getLogger
+from os import pathsep
 from pathlib import Path
 from typing import Iterable
 
@@ -16,9 +17,12 @@ from ..core.shell import BOWTIE2_BUILD_CMD, run_cmd
 logger = getLogger(__name__)
 
 
-def get_fasta_index_paths(fasta: Path):
+def get_fasta_index_paths(index: Path):
     """ Return the Bowtie 2 index paths for a FASTA file. """
-    return [fasta.with_suffix(ext) for ext in path.BOWTIE2_INDEX_EXTS]
+    if pathsep in index:
+        logger.warning(f"Bowtie 2 index {index} includes '{pathsep}'; "
+                       f"its suffix {index.suffix} will be replaced")
+    return [index.with_suffix(ext) for ext in path.BOWTIE2_INDEX_EXTS]
 
 
 def index_fasta_file(fasta: Path,
@@ -284,10 +288,8 @@ def fqs_pipeline(fq_units: list[FastqUnit],
     temp_fasta_paths = write_temp_ref_files(temp_dir, main_fasta,
                                             temp_refs, max_procs)
     # Check if the main FASTA file already has a Bowtie2 index.
-    if all(index.is_file() for index in get_fasta_index_paths(main_fasta)):
-        # Bowtie2 index for the main FASTA exists.
-        main_index = main_fasta.with_suffix("")
-    else:
+    main_index = main_fasta.with_suffix("")
+    if not all(index.is_file() for index in get_fasta_index_paths(main_index)):
         # Bowtie2 index does not already exist.
         main_index = None
     # Make the arguments for each alignment task.

@@ -2,6 +2,14 @@
 Align the sequencing reads
 ------------------------------------------------------------------------
 
+
+FASTA input file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alignment requires exactly one file of reference sequences, which must
+be in FASTA format.
+
+
 Options for FASTQ input
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
