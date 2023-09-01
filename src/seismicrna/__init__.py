@@ -24,7 +24,7 @@ from . import demult, align, relate, cluster, table
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-__version__ = "0.7.5"
+__version__ = "0.7.6"
 
 
 ########################################################################

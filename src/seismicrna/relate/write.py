@@ -20,7 +20,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .relate import relate_line, relate_pair, RelateError
+from .relate import relate_line, relate_pair
 from .report import RelateReport
 from .sam import iter_batch_indexes, iter_records
 from .seqpos import format_seq_pos
@@ -125,7 +125,7 @@ def _relate_batch(batch: int, start: int, stop: int, *,
         try:
             _relate_record(relvec, line1, line2, refseq,
                            min_qual=min_qual, ambrel=ambrel)
-        except RelateError as err:
+        except Exception as err:
             logger.error(f"Failed to relate read '{read_name}': {err}")
             # Return an empty read name and relation vector.
             return "", bytearray()
