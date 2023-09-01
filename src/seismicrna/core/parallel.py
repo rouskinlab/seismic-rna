@@ -7,6 +7,8 @@ from pathlib import Path
 from shutil import rmtree
 from typing import Any, Callable, Iterable
 
+from .logs import fatal_error
+
 logger = getLogger(__name__)
 
 # Lock directory (for function lock_output)
@@ -34,8 +36,7 @@ def lock_temp_dir(run: Callable):
         except FileExistsError:
             # The lock already exists, which means another instance of
             # SEISMIC-RNA is using this temporary directory.
-            logger.critical(lock_error)
-            raise SystemExit()
+            return fatal_error(lock_error, logger)
         except FileNotFoundError:
             # The temporary directory does not exist yet, so create it
             # along with a lock.
@@ -49,8 +50,7 @@ def lock_temp_dir(run: Callable):
                 # first run makes the directory with os.makedirs(lock),
                 # and then this run tries to do the same thing but fails
                 # because the directory was created moments before.
-                logger.critical(lock_error)
-                raise SystemExit()
+                return fatal_error(lock_error, logger)
             temp_dir_existed_before = False
             logger.debug(f"Created and locked temporary directory: {temp_dir}")
         else:
@@ -63,8 +63,7 @@ def lock_temp_dir(run: Callable):
         # delete the lock upon exiting, regardless of the circumstances.
         try:
             if temp_dir_existed_before and not save_temp:
-                logger.critical(exist_error)
-                raise SystemExit()
+                return fatal_error(exist_error, logger)
             # Run the wrapped function and return its result.
             return run(*args, temp_dir=temp_dir, save_temp=save_temp, **kwargs)
         finally:

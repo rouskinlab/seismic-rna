@@ -13,6 +13,11 @@ MAX_VERBOSE = 2
 MAX_QUIET = 2
 FILE_MSG_FORMAT = "LOGMSG>\t%(asctime)s\t%(name)s\t%(levelname)s\n%(message)s\n"
 STREAM_MSG_FORMAT = "%(levelname)s\t%(message)s"
+LEVELS = {(2, 0): logging.DEBUG,
+          (1, 0): logging.INFO,
+          (0, 0): logging.WARNING,
+          (0, 1): logging.ERROR,
+          (0, 2): logging.CRITICAL}
 
 
 class AnsiCode(object):
@@ -102,20 +107,12 @@ def get_verbosity(verbose: int = 0, quiet: int = 0):
         quiet = MAX_QUIET
 
     # Set logging level based on verbose and quiet.
-    if (verbose, quiet) == (2, 0):
-        return logging.DEBUG
-    if (verbose, quiet) == (1, 0):
-        return logging.INFO
-    if (verbose, quiet) == (0, 0):
-        return logging.WARNING
-    if (verbose, quiet) == (0, 1):
-        return logging.ERROR
-    if (verbose, quiet) == (0, 2):
-        return logging.CRITICAL
-
-    get_top_logger().warning(f"Invalid options: verbose={verbose}, "
-                             f"quiet={quiet}. Setting both to 0")
-    return get_verbosity(0, 0)
+    try:
+        return LEVELS[verbose, quiet]
+    except KeyError:
+        get_top_logger().warning(f"Invalid options: verbose={verbose}, "
+                                 f"quiet={quiet}. Setting both to 0")
+        return get_verbosity()
 
 
 def config(verbose: int, quiet: int, log_file: str | None = None):
@@ -134,3 +131,11 @@ def config(verbose: int, quiet: int, log_file: str | None = None):
         file_handler.setLevel(get_verbosity(verbose=MAX_VERBOSE))
         file_handler.setFormatter(logging.Formatter(FILE_MSG_FORMAT))
         logger.addHandler(file_handler)
+
+
+def fatal_error(message: str, logger: logging.Logger | None = None):
+    """ Log a fatal error and exit. """
+    if logger is None:
+        logger = get_top_logger()
+    logger.critical(message)
+    raise SystemExit()
