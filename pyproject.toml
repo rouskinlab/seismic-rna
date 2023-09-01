@@ -38,6 +38,15 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.github",
+  "/docs",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/seismicrna"]
+
 [tool.hatch.version]
 path = "src/seismicrna/__init__.py"
 

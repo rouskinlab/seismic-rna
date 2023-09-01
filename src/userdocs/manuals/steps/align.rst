@@ -290,8 +290,9 @@ then try the following steps (in this order):
     ``samtools view -f 4 temp/sample/align/align-2_align/refs.sam -o x``
     where ``sample``, ``refs``, and ``x`` are replaced with the name of
     the sample, name of the FASTA file, and name of the SAM file into
-    which to write the unaligned reads, respectively. Use `BLAST`_ to
-    identify the source of the unaligned reads, to infer the problem.
+    which to write the unaligned reads, respectively. Open the SAM file,
+    select several unaligned reads randomly, and use `BLAST`_ to discern
+    their origins, which can help in deducing what went wrong.
 
 
 .. _FastQC: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
