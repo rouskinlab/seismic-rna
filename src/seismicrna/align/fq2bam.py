@@ -19,9 +19,9 @@ logger = getLogger(__name__)
 
 def get_fasta_index_paths(index: Path):
     """ Return the Bowtie 2 index paths for a FASTA file. """
-    if pathsep in index:
+    if index.suffixes:
         logger.warning(f"Bowtie 2 index {index} includes '{pathsep}'; "
-                       f"its suffix {index.suffix} will be replaced")
+                       f"its suffix(es) {index.suffixes} will be replaced")
     return [index.with_suffix(ext) for ext in path.BOWTIE2_INDEX_EXTS]
 
 
