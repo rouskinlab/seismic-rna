@@ -14,23 +14,27 @@ from functools import cache
 from logging import getLogger
 
 import numpy as np
-from matplotlib import colormaps, pyplot as plt
+from matplotlib import colormaps, patches, pyplot as plt
 from PIL import Image
 
 logger = getLogger(__name__)
 
+BASE_LOGO = "logo-base.png"
+BASE_BLUE = "logo-blue.png"
+BASE_DIMENSION = 4800
 LOGO_TEMPLATE = "logo-{}.png"
-LOGO_PRIMARY_WIDTH = 1800
-LOGO_EXTRA_WIDTHS = [200]
+LOGO_EDGES = [1200, 200]
 FAVICON_TEMPLATE = "favicon-{}.ico"
 FAVICON_SIZES = [(32, 32)]
+BG_COLOR = "#2e8ece"
 
 SEGMENTS_PER_SIDE = 5040  # = 7!
 SEGMENTS_FOR_INTERPOLATION = 362880  # = 9!
 MAX_X = 3.
 
-MIN_WIDTH = 1.5
-MAX_WIDTH = 9.0
+MIN_WIDTH = 3.
+MAX_WIDTH = 18.
+MARGIN = 0.2
 
 COLOR_MAP = "inferno"
 
@@ -130,41 +134,56 @@ def colors():
     return list(cmap(np.linspace(0., 1., len(segments()))))
 
 
-def draw_primary_logo():
+def draw_base_logo():
     """ Draw the logo for SEISMIC-RNA. """
     fig, ax = plt.subplots()
+    # Plot each segment with its own line width and color.
     for seg, w, c in zip(segments(), widths(), colors(),
                          strict=True):
         ax.plot(*seg, color=c, linewidth=w, solid_capstyle="round")
+    # Calculate the width and height of the graph and set the length of
+    # each side of the square.
+    width_inches, height_inches = (np.max(xy) - np.min(xy) for xy in points())
+    length = max(width_inches, height_inches) * (1. + MARGIN)
+    half_length = length / 2.
+    # Hide the spines and ticks.
     plt.axis("off")
+    # Set the axis dimensions and aspect ratio.
+    ax.set_xlim(-half_length, half_length)
+    ax.set_ylim(-half_length, half_length)
+    ax.set_aspect(1.)
+    # Set the figure size and margins.
     fig.subplots_adjust(left=0., right=1., top=1., bottom=0.)
-    width_inches, height_inches = map(np.max, points())
-    fig.set_size_inches(w=width_inches, h=height_inches)
-    plt.savefig(LOGO_TEMPLATE.format(LOGO_PRIMARY_WIDTH),
-                dpi=LOGO_PRIMARY_WIDTH / width_inches,
-                transparent=True)
+    fig.set_size_inches(w=length, h=length)
+    # Set the image resolution.
+    dpi = BASE_DIMENSION / length
+    # Save the figure.
+    plt.savefig(BASE_LOGO, dpi=dpi, transparent=True)
+    # Add a blue circle and save the figure again.
+    ax.add_patch(patches.Circle((0., 0.), radius=half_length, fill=BG_COLOR))
+    plt.savefig(BASE_BLUE, dpi=dpi, transparent=True)
     plt.close()
 
 
 def draw_extra_logos():
-    image = Image.open(LOGO_TEMPLATE.format(LOGO_PRIMARY_WIDTH))
-    for width in LOGO_EXTRA_WIDTHS:
-        winit, hinit = image.size
-        height = round(hinit * width / winit)
-        resized = image.resize((width, height), resample=Image.LANCZOS)
-        resized.save(LOGO_TEMPLATE.format(width), format="PNG")
+    image = Image.open(BASE_LOGO)
+    for edge in LOGO_EDGES:
+        width, height = image.size
+        resized = image.resize((edge, round(edge * height / width)),
+                               resample=Image.LANCZOS)
+        resized.save(LOGO_TEMPLATE.format(edge), format="PNG")
 
 
 def draw_favicon():
     """ Draw the favicon for SEISMIC-RNA. """
-    image = Image.open(LOGO_TEMPLATE.format(LOGO_PRIMARY_WIDTH))
+    image = Image.open(BASE_BLUE)
     for size in FAVICON_SIZES:
         image.save(FAVICON_TEMPLATE.format('x'.join(map(str, size))),
                    format="ICO", sizes=[size])
 
 
 def draw():
-    draw_primary_logo()
+    draw_base_logo()
     draw_extra_logos()
     draw_favicon()
 
