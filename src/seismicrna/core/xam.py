@@ -59,18 +59,19 @@ def sort_xam(xam_inp: Path, xam_out: Path, *,
 
 def view_xam(xam_inp: Path,
              xam_out: Path, *,
-             ref: str | None = None,
-             end5: int | None = None,
-             end3: int | None = None,
+             header: bool = False,
              min_mapq: int | None = None,
              flags_req: int | None = None,
              flags_exc: int | None = None,
+             ref: str | None = None,
+             end5: int | None = None,
+             end3: int | None = None,
              n_procs: int = 1):
     """ Convert between SAM and BAM formats, extract reads aligning to a
     specific reference/section, and filter based on flags and mapping
     quality using `samtools view`. """
     logger.info(f"Began viewing {xam_inp}")
-    cmd = [SAMTOOLS_CMD, "view", "-@", n_procs - 1, "-h"]
+    cmd = [SAMTOOLS_CMD, "view", "-@", n_procs - 1]
     if min_mapq is not None:
         # Require minimum mapping quality.
         cmd.extend(["--min-mq", min_mapq])
@@ -80,6 +81,9 @@ def view_xam(xam_inp: Path,
     if flags_exc is not None:
         # Exclude these flags.
         cmd.extend(["-F", flags_exc])
+    if header:
+        # Include the header in the output file.
+        cmd.append("-h")
     if xam_out.suffix == path.BAM_EXT:
         # Write a binary (BAM) file.
         cmd.append("-b")

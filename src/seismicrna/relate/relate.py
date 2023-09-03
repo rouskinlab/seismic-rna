@@ -624,13 +624,11 @@ def relate_pair(relvec: bytearray, line1: str, line2: str,
     read2 = SamRead(line2)
     # Ensure that reads 1 and 2 are compatible mates.
     if not read1.flag.paired:
-        raise RelateValueError(f"Read 1 ({read1.qname}) was not "
-                               f"paired, but read 2 ('{read2.qname}') "
-                               f"was given")
+        raise RelateValueError(f"Read 1 ({read1.qname}) was not paired, "
+                               f"but read 2 ('{read2.qname}') was given")
     if not read2.flag.paired:
-        raise RelateValueError(f"Read 2 ({read2.qname}) was not "
-                               f"paired, but read 1 ({read1.qname}) "
-                               f"was given")
+        raise RelateValueError(f"Read 2 ({read2.qname}) was not paired, "
+                               f"but read 1 ({read1.qname}) was given")
     if read1.qname != read2.qname:
         raise RelateValueError(f"Reads 1 ({read1.qname}) and 2 "
                                f"({read2.qname}) had different names")

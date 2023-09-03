@@ -387,7 +387,7 @@ class Section(object):
             # adenines that are at least as long as min_length.
             polya_pattern = "%c{%d,}" % (BASEA, min_length)
             # Add the 0-indexed positions in every poly(A) sequence.
-            for polya in re.finditer(polya_pattern, self.seq):
+            for polya in re.finditer(polya_pattern, str(self.seq)):
                 polya_pos.extend(range(polya.start(), polya.end()))
         # Convert the positions to an array with natural indexing.
         return np.array(polya_pos, dtype=int) + self.end5
@@ -527,12 +527,12 @@ class SectionFinder(Section):
             occupies in the reference sequence. Positions are 1-indexed
             and include the first and last coordinates.
         """
-        matches = list(re.finditer(primer, refseq))
+        matches = list(re.finditer(str(primer), str(refseq)))
         if not matches:
-            raise ValueError(f"Primer '{primer}' is not in ref '{refseq}'")
+            raise ValueError(f"Primer {primer} is not in ref {refseq}")
         if len(matches) > 1:
-            raise ValueError(f"Primer '{primer}' occurs {len(matches)} times "
-                             f"in ref '{refseq}'")
+            raise ValueError(f"Primer {primer} occurs {len(matches)} times "
+                             f"in ref {refseq}")
         # Add 1 to convert from 0-indexed to 1-indexed.
         pos5 = matches[0].start() + 1
         # No change is needed to convert from exclusive 0-indexed to

@@ -606,7 +606,7 @@ def find_files(path: pl.Path, segments: Sequence[Segment]):
             parse(path, *segments)
         except PathError:
             # If not, skip it.
-            logger.debug(f"File {path} does not match {segments}")
+            pass
         else:
             # If so, return it.
             logger.debug(f"File {path} matches {segments}")

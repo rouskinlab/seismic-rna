@@ -24,8 +24,7 @@ import pandas as pd
 
 from .cli import opt_phred_enc
 from .sect import Section, seq_pos_to_index
-from .seq import (BASEA, BASEC, BASEG, BASET, BASEN, DNA, DNAmbig,
-                  expand_degenerate_seq)
+from .seq import BASEA, BASEC, BASEG, BASET, BASEN, DNA, expand_degenerate_seq
 from .sim import rng
 
 # Data type for NumPy and NumPy-like arrays of relation vectors.
@@ -62,7 +61,8 @@ MINS3 = INS_3 | MATCH
 ANY_8 = INS_8 | MATCH
 
 # Map bases to integer encodings and vice versa.
-BASE_ENCODINGS = {BASEA: SUB_A, BASEC: SUB_C, BASEG: SUB_G, BASET: SUB_T}
+BASE_ENCODINGS = {BASEA: SUB_A, BASEC: SUB_C, BASEG: SUB_G, BASET: SUB_T,
+                  BASEN: IRREC}
 BASE_DECODINGS = {code: base for base, code in BASE_ENCODINGS.items()}
 
 # Number of unique bytes
@@ -394,7 +394,9 @@ def encode_relate(ref_base: str, read_base: str, read_qual: str, min_qual: str):
         Minimum value of `read_qual` to not call the relation ambiguous.
     """
     return ((MATCH if ref_base == read_base
-             else BASE_ENCODINGS[read_base]) if read_qual >= min_qual
+             else BASE_ENCODINGS[read_base]) if (read_qual >= min_qual
+                                                 and read_base != BASEN
+                                                 and ref_base != BASEN)
             else ANY_N ^ BASE_ENCODINGS[ref_base])
 
 
@@ -407,7 +409,7 @@ def encode_match(read_base: str, read_qual: str, min_qual: str):
     so optimizing their processing would speed the program only slightly
     while making the source code more complex and harder to maintain.
     """
-    return (MATCH if read_qual >= min_qual
+    return (MATCH if (read_qual >= min_qual and read_base != BASEN)
             else ANY_N ^ BASE_ENCODINGS[read_base])
 
 
@@ -657,19 +659,9 @@ def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: str, lo_qual: str,
         else:
             # Unambiguous substitution: Add the substituted nucleotide
             # as high quality.
-            if rel == SUB_T:
-                # Substitution to T.
-                read_base = BASET
-            elif rel == SUB_G:
-                # Substitution to G.
-                read_base = BASEG
-            elif rel == SUB_C:
-                # Substitution to C.
-                read_base = BASEC
-            elif rel == SUB_A:
-                # Substitution to A.
-                read_base = BASEA
-            else:
+            try:
+                read_base = BASE_DECODINGS[rel]
+            except KeyError:
                 raise ValueError(f"Invalid relation {rel} in {relvec}")
             if ref_base == read_base:
                 raise ValueError(
@@ -686,7 +678,7 @@ def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: str, lo_qual: str,
     if not read:
         raise ValueError("Read contained no bases")
     # Assemble and return the read, quality, and CIGAR strings.
-    read_seq = DNAmbig("".join(read))
+    read_seq = DNA("".join(read))
     qual_string = "".join(qual)
     cigar_string = "".join(map(str, cigars))
     return read_seq, qual_string, cigar_string, end5, end3

@@ -45,16 +45,20 @@ There are two easy solutions to these inequalities:
 
 """
 
-from functools import cached_property
+from functools import cached_property, partial
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
 
 from ..core import path
 from ..core.cli import BOWTIE2_ORIENT
-from ..core.shell import run_cmd, BOWTIE2_CMD, CUTADAPT_CMD, FASTQC_CMD
+from ..core.shell import (BOWTIE2_CMD, CUTADAPT_CMD, FASTQC_CMD, GUNZIP_CMD,
+                          WORD_COUNT_CMD, join_cmd, join_sep, run_cmd)
 
 logger = getLogger(__name__)
+
+# FASTQ format
+FQ_LINES_PER_READ = 4
 
 # Bowtie2 parameters
 MATCH_BONUS = "1"
@@ -63,6 +67,31 @@ N_PENALTY = "0"
 REF_GAP_PENALTY = "1,1"
 READ_GAP_PENALTY = "1,1"
 METRICS_INTERVAL = 60  # Write metrics once every 60 seconds.
+
+
+def count_fastq_reads(fastq_file: Path) -> int:
+    """ Count the reads in a FASTQ file. """
+    ext = "".join(fastq_file.suffixes)
+    if ext not in path.FastqExt.options:
+        raise path.PathValueError(f"Invalid FASTQ extension: {ext}")
+    if fastq_file.suffix == ".gz":
+        # The file must be decompressed.
+        args = [[GUNZIP_CMD, "--stdout", fastq_file],
+                [WORD_COUNT_CMD, "-l"]]
+        func = partial(join_sep, sep=" | ")
+    else:
+        # The file is not compressed.
+        args = [WORD_COUNT_CMD, "-l", fastq_file]
+        func = join_cmd
+    # Count the lines in the FASTQ file.
+    process = run_cmd(args, join_func=func)
+    n_lines = int(process.stdout.strip().split()[0])
+    # Compute the number of reads in the FASTQ file.
+    n_reads, n_extra = divmod(n_lines, FQ_LINES_PER_READ)
+    if n_extra:
+        raise ValueError(f"{fastq_file} has {n_lines} lines, but expected a "
+                         f"multiple of {FQ_LINES_PER_READ}")
+    return n_reads
 
 
 class FastqUnit(object):
@@ -169,6 +198,15 @@ class FastqUnit(object):
                          self.KEY_MATE1: path.FASTQ1_SEGS,
                          self.KEY_MATE2: path.FASTQ2_SEGS}
         return {key: seg_types[key] for key in self.paths}
+
+    @cached_property
+    def n_reads(self) -> int:
+        """ Number of reads in the FASTQ file(s). """
+        n_reads = list({count_fastq_reads(fq) for fq in self.paths.values()})
+        if len(n_reads) != 1:
+            raise ValueError(
+                f"Expected one unique number of reads, but got {len(n_reads)}")
+        return n_reads[0]
 
     def get_sample_ref_exts(self):
         """ Return the sample and reference of the FASTQ file(s). """

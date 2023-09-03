@@ -20,9 +20,12 @@ import pandas as pd
 from .bitvect import BitBatch
 from .rel import MATCH, DELET, INS_5, INS_3, SUB_A, SUB_C, SUB_G, SUB_T, NP_TYPE
 from .sect import Section, index_to_seq
-from .seq import DNA
+from .seq import DNA, BASEA, BASEC, BASEG, BASET
 
 logger = getLogger(__name__)
+
+READ_DEL = "D"
+READ_INS = "I"
 
 
 class SemiBitCaller(object):
@@ -31,8 +34,8 @@ class SemiBitCaller(object):
     into bit vectors (whose elements are boolean values that indicate
     whether positions are mutations or matches). """
 
-    ref_bases = "ACGT"
-    read_bases = "ACGTDI"
+    ref_bases = "".join((BASEA, BASEC, BASEG, BASET))
+    read_bases = "".join((ref_bases, READ_DEL, READ_INS))
     mut_bits = bytes([SUB_A, SUB_C, SUB_G, SUB_T, DELET, INS_5 | INS_3])
     fmt_plain = "{}{}"
     fmt_fancy = "{} -> {}"

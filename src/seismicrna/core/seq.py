@@ -33,20 +33,35 @@ BASET = 'T'
 BASEU = 'U'
 BASEN = 'N'
 
+# Nucleic acid pictogram characters.
+PICTA = '▲'
+PICTC = '⌠'
+PICTG = '⌡'
+PICT4 = '▼'
+PICTN = '○'
+PICTS = PICTA, PICTC, PICTN, PICTG, PICT4
 
-class Seq(str):
-    __slots__ = []
 
-    alph: tuple[str, str, str, str]
+class Seq(object):
+    __slots__ = "_seq",
 
-    def __init__(self, seq: str):
-        self.validate_seq(seq)
-        super().__init__()
+    alph: tuple[str, str, str, str, str]
+
+    def __init__(self, seq: Iterable[str]):
+        if invalid := set(seq) - self.get_alphaset():
+            raise ValueError(
+                f"Invalid {self.__class__.__name__} bases: {sorted(invalid)}")
+        self._seq = str(seq)
 
     @cached_property
     def rc(self):
         """ Reverse complement. """
-        return self.__class__(self[::-1].translate(self.get_comptrans()))
+        return self.__class__(str(self)[::-1].translate(self.get_comptrans()))
+
+    @cached_property
+    def picto(self):
+        """ Pictogram string. """
+        return str(self).translate(self.get_pictotrans())
 
     @cache
     def to_array(self):
@@ -54,18 +69,15 @@ class Seq(str):
         return np.array(list(self))
 
     @classmethod
+    def t_or_u(cls):
+        """ Get the base that is complementary to A. """
+        return cls.alph[-1]
+
+    @classmethod
     @cache
     def get_alphaset(cls):
         """ Get the alphabet as a set. """
         return set(cls.alph)
-
-    @classmethod
-    @cache
-    def validate_seq(cls, seq: str):
-        if not isinstance(seq, str):
-            raise TypeError(f"Expected str, but got {type(seq).__name__}")
-        if invalid := set(seq) - cls.get_alphaset():
-            raise ValueError(f"Invalid {cls.__name__} bases: {sorted(invalid)}")
 
     @classmethod
     @cache
@@ -80,9 +92,15 @@ class Seq(str):
         return str.maketrans(dict(zip(cls.alph, cls.get_comp(), strict=True)))
 
     @classmethod
+    @cache
+    def get_pictotrans(cls):
+        """ Get the translation table for pictogram characters. """
+        return str.maketrans(dict(zip(cls.alph, PICTS, strict=True)))
+
+    @classmethod
     def random(cls, nt: int,
                a: float = 0.25, c: float = 0.25,
-               g: float = 0.25, tu: float = 0.25):
+               g: float = 0.25, t: float = 0.25):
         """
         Return a random sequence of the given length.
 
@@ -96,87 +114,93 @@ class Seq(str):
             Expected proportion of C.
         g: float = 0.25
             Expected proportion of G.
-        tu: float = 0.25
-            Expected proportion of T (for DNA) or U (for RNA).
+        t: float = 0.25
+            Expected proportion of T (DNA) or U (RNA).
 
         Returns
         -------
         Seq
             A random sequence.
         """
-        return cls("".join(rng.choice(cls.alph, size=nt, p=(a, c, g, tu))))
+        # Calculate expected proportion of N.
+        n = 1. - (a + c + g + t)
+        if not 0. <= n <= 1.:
+            raise ValueError(f"Sum of A, C, G, and {cls.t_or_u()} proportions "
+                             f"must be in [0, 1], but got {1. - n}")
+        return cls("".join(rng.choice(cls.alph, size=nt, p=(a, c, n, g, t))))
 
-    def __getitem__(self, item):
-        if isinstance(item, slice):
-            # For slices, return an instance of the class, not of str.
-            return self.__class__(super().__getitem__(item))
-        # Otherwise, return an instance of str.
-        return super().__getitem__(item)
+    def __str__(self):
+        return self._seq
 
     def __repr__(self):
-        """ Encapsulate the sequence string with DNA(). """
-        return f"{self.__class__.__name__}({super().__repr__()})"
-
-    def __eq__(self, other):
-        """ Return True if both the type of the sequence and the bases
-        in the sequence match, otherwise False. """
-        return other.__class__ is self.__class__ and super().__eq__(other)
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
+        """ Encapsulate the sequence string with the class name. """
+        return f"{self.__class__.__name__}({str(self).__repr__()})"
 
     def __hash__(self):
         """ Define __hash__ so that Seq subclasses can be used as keys
         for dict-like mappings. Use the hash of the plain string. """
-        return super().__hash__()
+        return str(self).__hash__()
+
+    def __getitem__(self, item):
+        """ If item is a slice, then return an instance of the class.
+        Otherwise, return an instance of str. """
+        value = str(self).__getitem__(item)
+        return self.__class__(value) if isinstance(item, slice) else value
+
+    def __iter__(self):
+        return self._seq.__iter__()
+
+    def __len__(self):
+        return len(str(self))
 
     def __bool__(self):
         """ Empty sequences return False; all else, True. """
-        return bool(len(self))
+        return bool(str(self))
+
+    def __add__(self, other):
+        """ Allow addition (concatenation) of two sequences only if the
+        sequences have the same class. """
+        if self.__class__ is other.__class__:
+            return self.__class__(str(self).__add__(str(other)))
+        return NotImplemented
+
+    def __mul__(self, other):
+        """ Multiply a sequence by an int like a str times an int. """
+        return self.__class__(str(self).__mul__(other))
+
+    def __eq__(self, other):
+        """ Return True if both the type of the sequence and the bases
+        in the sequence match, otherwise False. """
+        return self.__class__ is other.__class__ and str(self) == str(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class DNA(Seq):
-    alph = BASEA, BASEC, BASEG, BASET
-
-    @cache
-    def tr(self):
-        """ Transcribe DNA to RNA. """
-        return RNA(self.replace(BASET, BASEU))
-
-
-class RNA(Seq):
-    alph = BASEA, BASEC, BASEG, BASEU
-
-    @cache
-    def rt(self):
-        """ Reverse transcribe RNA to DNA. """
-        return DNA(self.replace(BASEU, BASET))
-
-
-class DNAmbig(DNA):
     alph = BASEA, BASEC, BASEN, BASEG, BASET
 
     @cache
     def tr(self):
-        """ Transcribe DNAmbig to RNAmbig. """
-        return RNAmbig(self.replace(BASET, BASEU))
+        """ Transcribe DNA to RNA. """
+        return RNA(str(self).replace(BASET, BASEU))
 
 
-class RNAmbig(RNA):
+class RNA(Seq):
     alph = BASEA, BASEC, BASEN, BASEG, BASEU
 
     @cache
     def rt(self):
-        """ Reverse transcribe RNAmbig to DNAmbig. """
-        return DNAmbig(self.replace(BASEU, BASET))
+        """ Reverse transcribe RNA to DNA. """
+        return DNA(str(self).replace(BASEU, BASET))
 
 
-def expand_degenerate_seq(seq: DNAmbig):
+def expand_degenerate_seq(seq: DNA):
     """ Given a (possibly degenerate) sequence, yield every definite
     sequence that could derive from it. Only the degenerate base N is
     supported by this function; other IUPAC codes (e.g. R) are not. """
     # Split the sequence into every segment that does not have an N.
-    segs = seq.split(BASEN)
+    segs = str(seq).split(BASEN)
     # The number of N bases is one less than the number of segments.
     if ns := len(segs) - 1:
         # If the sequence contains at least one N, then yield every

@@ -153,16 +153,17 @@ def check_array_pos_ints(arr: np.ndarray):
     return check_array_ints(arr) and np.all(arr > 0)
 
 
+def check_dict_vals_nonneg_ints(mapping: dict[Any, int]):
+    return isinstance(mapping, dict) and all(map(check_nonneg_int,
+                                                 mapping.values()))
+
+
 def check_nonneg_float(num: float):
     return isinstance(num, float) and num >= 0.
 
 
 def check_nannonneg_float(num: float):
     return isinstance(num, float) and num >= 0. or isnan(num)
-
-
-def check_bool(x: bool):
-    return isinstance(x, bool)
 
 
 def check_float(num: float):
@@ -278,6 +279,10 @@ def oconv_array_int(nums: np.ndarray):
     return list(map(int, nums))
 
 
+def iconv_dict_str_int(mapping: dict[Any, Any]) -> dict[str, int]:
+    return {str(key): int(value) for key, value in mapping.items()}
+
+
 @cache
 def get_oconv_float(precision: int = DECIMAL_PRECISION):
     def oconv_float(num: float):
@@ -339,7 +344,7 @@ def oconv_datetime(dtime: datetime):
 OutDirF = Field("out_dir", "", Path, check_val=check_dir)
 SampleF = Field("sample", "Name of Sample", str, check_val=check_name)
 RefF = Field("ref", "Name of Reference", str, check_val=check_name)
-SeqF = Field("seq", "Sequence of Reference", DNA)
+SeqF = Field("seq", "Sequence of Reference", DNA, oconv=str)
 SectF = Field("sect", "Name of Section", str, check_val=check_name)
 End5F = Field("end5", "5' end of Section", int, check_val=check_pos_int)
 End3F = Field("end3", "3' end of Section", int, check_val=check_pos_int)
@@ -352,6 +357,76 @@ TimeEndedF = Field("ended", "Time Ended", datetime,
                    check_rep_val=check_time_ended)
 TimeTakenF = Field("taken", "Time Taken (minutes)", float,
                    oconv=get_oconv_float(TIME_TAKEN_PRECISION))
+
+# Alignment
+IsDemultiplexed = Field("demultiplexed", "Use demultiplexed mode", bool)
+IsPairedEnd = Field("paired_end", "Use paired-end mode", bool)
+PhredEnc = Field("phred_enc", "Phred score encoding", int)
+FastqcRun = Field("fastqc", "Check quality with FastQC", bool)
+CutadaptRun = Field("cut", "Trim with Cutadapt", bool)
+CutadaptQ1 = Field("cut_q1", "Minimum Phred score for read 1",
+                   int, check_val=check_nonneg_int)
+CutadaptQ2 = Field("cut_q2", "Minimum Phred score for read 2",
+                   int, check_val=check_nonneg_int)
+CutadaptG1 = Field("cut_g1", "5' adapter for read 1", str)
+CutadaptA1 = Field("cut_a1", "3' adapter for read 1", str)
+CutadaptG2 = Field("cut_g2", "5' adapter for read 2", str)
+CutadaptA2 = Field("cut_a2", "3' adapter for read 2", str)
+CutadaptOverlap = Field("cut_o", "Minimum adapter length (nt)",
+                        int, check_val=check_nonneg_int)
+CutadaptErrors = Field("cut_e", "Minimum adapter error rate",
+                       float, check_val=check_probability)
+CutadaptIndels = Field("cut_indels", "Allow indels in adapters", bool)
+CutadaptNextSeq = Field("cut_nextseq", "Trim in NextSeq mode", bool)
+CutadaptNoTrimmed = Field("cut_discard_trimmed", "Discard trimmed reads",
+                          bool)
+CutadaptNoUntrimmed = Field("cut_discard_untrimmed", "Discard untrimmed reads",
+                            bool)
+CutadaptMinLength = Field("cut_m", "Minimum length of read after trimming (nt)",
+                          int, check_val=check_nonneg_int)
+Bowtie2Local = Field("bt2_local", "Align in local mode", bool)
+Bowtie2Discord = Field("bt2_discordant", "Keep discordant alignments", bool)
+Bowtie2Dovetail = Field("bt2_dovetail",
+                        "Consider dovetailed alignments concordant",
+                        bool)
+Bowtie2Contain = Field("bt2_contain",
+                       "Consider nested alignments concordant",
+                       bool)
+Bowtie2Mixed = Field("bt2_mixed", "Align in mixed mode", bool)
+Bowtie2Unal = Field("bt2_unal", "Output unaligned reads to SAM file", bool)
+Bowtie2ScoreMin = Field("bt2_score_min", "Minimum alignment score", str)
+Bowtie2MinLength = Field("bt2_i", "Minimum fragment length (nt)",
+                         int, check_val=check_nonneg_int)
+Bowtie2MaxLength = Field("bt2_x", "Maximum fragment length (nt)",
+                         int, check_val=check_nonneg_int)
+Bowtie2GBar = Field("bt2_gbar", "Gap buffer margin (nt)",
+                    int, check_val=check_nonneg_int)
+Bowtie2SeedLength = Field("bt2_l", "Seed length (nt)",
+                          int, check_val=check_nonneg_int)
+Bowtie2SeedInterval = Field("bt2_s", "Seed interval (nt)",
+                            str, check_val=check_nonneg_int)
+Bowtie2ExtTries = Field("bt2_d", "Maximum seed extension attempts",
+                        int, check_val=check_nonneg_int)
+Bowtie2Reseed = Field("bt2_r", "Maximum re-seeding attempts",
+                      int, check_val=check_nonneg_int)
+Bowtie2Dpad = Field("bt2_dpad", "Dynamic programming padding (nt)",
+                    int, check_val=check_nonneg_int)
+Bowtie2Orient = Field("bt2_orient", "Orientation of mates", str)
+MinMapQual = Field("min_mapq", "Minimum mapping quality",
+                   int, check_val=check_nonneg_int)
+ReadsInit = Field("reads_init", "Number of reads initially",
+                  int, check_val=check_nonneg_int)
+ReadsTrim = Field("reads_trim", "Number of reads after trimming",
+                  int, check_val=check_nonneg_int)
+ReadsAlign = Field("reads_align", "Number of reads after alignment",
+                   dict, iconv=iconv_dict_str_int,
+                   check_val=check_dict_vals_nonneg_ints)
+ReadsDedup = Field("reads_dedup", "Number of reads after deduplication",
+                   dict, iconv=iconv_dict_str_int,
+                   check_val=check_dict_vals_nonneg_ints)
+ReadsRefs = Field("reads_refs", "Number of reads aligned by reference",
+                  dict, iconv=iconv_dict_str_int,
+                  check_val=check_dict_vals_nonneg_ints)
 
 # Relation vector generation
 NumVecF = Field("n_reads_rel_pass", "Number of Reads Passed", int,

@@ -1,5 +1,7 @@
+import re
 from itertools import chain
 from logging import getLogger
+from os import linesep
 from pathlib import Path
 from typing import Iterable
 
@@ -72,6 +74,54 @@ def write_temp_ref_files(temp_dir: Path,
         logger.critical(f"Missing references in {refset_path}: "
                         + ", ".join(missing))
     return ref_paths
+
+
+def parse_bowtie2_stderr(stderr: str):
+    """ Get the number of reads input and aligned. """
+    indentation = 2
+    pattern1 = re.compile(r"^(\s*)(\d+) ([ \w>]+); of these:$")
+    pattern2 = re.compile(r"^(\s*)(\d+) \(\d+\.\d+%\) ([ \w>]+); of these:$")
+    pattern3 = re.compile(r"^(\s*)(\d+) \(\d+\.\d+%\) ([ \w>]+)$")
+    patterns = pattern1, pattern2, pattern3
+
+    def parse_match(m: re.Match[str]):
+        spaces, n_item, item = m.groups()
+        return len(spaces) // indentation, item, int(n_item)
+
+    n_reads = dict()
+    names: tuple[str, ...] = tuple()
+    lines = iter(stderr.split(linesep))
+    # Read through the lines until one matches the first pattern.
+    while not (match := pattern1.match(line := next(lines, "").rstrip())):
+        if not line:
+            # Prevent an infinite loop if lines becomes exhausted.
+            return n_reads
+    # Read the rest of the lines until the iterator is exhausted.
+    while line:
+        if match:
+            # If the line matches, then find the name of the alignment
+            # and the number of times it occurs.
+            level, name, count = parse_match(match)
+            # Key for dictionary.
+            names = names[: level] + (name,)
+            key = ", ".join(names)
+            # Check if the key was encountered previously.
+            if (prev := n_reads.get(key)) is None:
+                # If not, then add the key.
+                n_reads[key] = count
+            elif prev != count:
+                # If so, then confirm the count matches the previous.
+                raise ValueError(
+                    f"Inconsistent counts for '{key}': {prev} ≠ {count}")
+        # Read the next line, defaulting to an empty string.
+        line = next(lines, "").rstrip()
+        # Try to match the line with each pattern, until one matches.
+        match = None
+        for pattern in patterns:
+            if match := pattern.match(line):
+                # The pattern matches.
+                break
+    return n_reads
 
 
 def fq_pipeline(fq_inp: FastqUnit,
@@ -175,32 +225,41 @@ def fq_pipeline(fq_inp: FastqUnit,
                              cmd=CMD_ALIGN, step=path.STEPS_ALIGN[2],
                              ref=refset, ext=path.SAM_EXT)
     # Align the trimmed FASTQ file if any, otherwise the input FASTQ.
-    run_bowtie2(fq_inp if fq_cut is None else fq_cut,
-                bowtie2_index,
-                sam_aligned,
-                n_procs=n_procs,
-                bt2_local=bt2_local,
-                bt2_discordant=bt2_discordant,
-                bt2_mixed=bt2_mixed,
-                bt2_dovetail=bt2_dovetail,
-                bt2_contain=bt2_contain,
-                bt2_unal=bt2_unal,
-                bt2_score_min_e2e=bt2_score_min_e2e,
-                bt2_score_min_loc=bt2_score_min_loc,
-                bt2_i=bt2_i,
-                bt2_x=bt2_x,
-                bt2_gbar=bt2_gbar,
-                bt2_l=bt2_l,
-                bt2_s=bt2_s,
-                bt2_d=bt2_d,
-                bt2_r=bt2_r,
-                bt2_dpad=bt2_dpad,
-                bt2_orient=bt2_orient)
+    bowtie2 = run_bowtie2(fq_inp if fq_cut is None else fq_cut,
+                          bowtie2_index,
+                          sam_aligned,
+                          n_procs=n_procs,
+                          bt2_local=bt2_local,
+                          bt2_discordant=bt2_discordant,
+                          bt2_mixed=bt2_mixed,
+                          bt2_dovetail=bt2_dovetail,
+                          bt2_contain=bt2_contain,
+                          bt2_unal=bt2_unal,
+                          bt2_score_min_e2e=bt2_score_min_e2e,
+                          bt2_score_min_loc=bt2_score_min_loc,
+                          bt2_i=bt2_i,
+                          bt2_x=bt2_x,
+                          bt2_gbar=bt2_gbar,
+                          bt2_l=bt2_l,
+                          bt2_s=bt2_s,
+                          bt2_d=bt2_d,
+                          bt2_r=bt2_r,
+                          bt2_dpad=bt2_dpad,
+                          bt2_orient=bt2_orient)
     if not save_temp and fq_cut is not None:
         # Delete the trimmed FASTQ file (do not delete the input FASTQ
         # file even if trimming was not performed).
         for fq_file in fq_cut.paths.values():
             fq_file.unlink(missing_ok=True)
+    # Parse the standard error from Bowtie 2.
+    align_counts = parse_bowtie2_stderr(bowtie2.stderr.decode())
+    # The number of reads after trimming is defined as the number fed to
+    # Bowtie 2, regardless of whether the reads were actually trimmed.
+    reads_trim = align_counts.pop("reads")
+    # If the reads were trimmed, then the initial number must be found
+    # by counting the reads in the input FASTQ. Otherwise, the initial
+    # number equals the number after trimming.
+    reads_init = fq_inp.n_reads if cut else reads_trim
     # Deduplicate the SAM file by removing reads that align equally well
     # to multiple references or locations in a reference.
     sam_deduped = path.build(*path.XAM_STEP_SEGS,
