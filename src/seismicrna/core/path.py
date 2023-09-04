@@ -105,7 +105,8 @@ FQ2_EXTS = tuple(template.format(2, ext) for template, ext in
                  product(FQ_PAIRED_EXTS_TEMPLATES, FQ_EXTS))
 SAM_EXT = ".sam"
 BAM_EXT = ".bam"
-XAM_EXTS = SAM_EXT, BAM_EXT
+CRAM_EXT = ".cram"
+XAM_EXTS = SAM_EXT, BAM_EXT, CRAM_EXT
 BAI_EXT = f"{BAM_EXT}.bai"
 CT_EXT = ".ct"
 DOT_EXT = ".dot"
@@ -470,7 +471,6 @@ CLUST_TAB_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, ClustTabSeg
 CLUST_COUNT_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, ClustCountSeg
 TABLE_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, TableSeg
 FOLD_SECT_DIR_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, FoldSectSeg
-REPORT_CORE_SEGS = SampSeg, CmdSeg, RefSeg
 
 
 # Paths ################################################################

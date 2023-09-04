@@ -30,7 +30,7 @@ from ..core.files import digest_file
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rel import blank_relvec
 from ..core.seq import DNA, get_ref_seq
-from ..core.xam import count_xam, view_xam
+from ..core.xam import count_total_records, run_flagstat, view_xam
 
 logger = getLogger(__name__)
 
@@ -310,15 +310,16 @@ def get_min_qual(min_phred: int, phred_enc: int):
 def get_relater(bam_file: Path, fasta: Path, *, min_reads: int, n_procs: int):
     """ Return a RelationWriter for the BAM file. """
     # Count the records in the BAM file.
-    n_reads = count_xam(bam_file, n_procs)
-    if n_reads < min_reads:
-        raise ValueError(f"{bam_file} has {n_reads} reads (< {min_reads})")
-    # Determine the name of the reference from the BAM path.
-    ref = path.parse(bam_file, *path.XAM_SEGS)[path.REF]
-    # Get the sequence of the reference.
-    seq = get_ref_seq(fasta, ref)
-    # Create a RelationWriter.
-    return RelationWriter(bam_file, seq)
+    n_reads = count_total_records(run_flagstat(bam_file, None, n_procs=n_procs))
+    if n_reads >= min_reads:
+        # Determine the name of the reference from the BAM path.
+        ref = path.parse(bam_file, *path.XAM_SEGS)[path.REF]
+        # Get the sequence of the reference.
+        seq = get_ref_seq(fasta, ref)
+        # Create a RelationWriter.
+        return RelationWriter(bam_file, seq)
+    logger.warning(f"Skipping {bam_file} with {n_reads} reads, which is less "
+                   f"than the minimum ({min_reads})")
 
 
 def get_relaters(bam_files: Iterable[Path], fasta: Path, *,

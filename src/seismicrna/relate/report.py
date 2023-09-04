@@ -33,7 +33,7 @@ class RelateReport(BatchReport):
 
     @classmethod
     def path_segs(cls):
-        return super().path_segs() + (path.RelateRepSeg,)
+        return path.SampSeg, path.CmdSeg, path.RefSeg, path.RelateRepSeg
 
     @classmethod
     def auto_fields(cls):

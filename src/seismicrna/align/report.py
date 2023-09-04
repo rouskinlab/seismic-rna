@@ -2,7 +2,7 @@ from __future__ import annotations
 from logging import getLogger
 
 from ..core import path
-from ..core.cmd import CMD_REL
+from ..core.cmd import CMD_ALIGN
 from ..core.report import Report
 
 logger = getLogger(__name__)
@@ -20,17 +20,17 @@ class AlignReport(Report):
                  "cut_discard_trimmed", "cut_discard_untrimmed", "cut_m",
                  "bt2_local",
                  "bt2_discordant", "bt2_mixed", "bt2_dovetail", "bt2_contain",
-                 "bt2_unal", "bt2_score_min_e2e", "bt2_score_min_loc",
+                 "bt2_unal", "bt2_score_min",
                  "bt2_i", "bt2_x", "bt2_gbar", "bt2_l", "bt2_s",
                  "bt2_d", "bt2_r", "bt2_dpad", "bt2_orient",
                  "min_mapq",
-                 "reads_init", "reads_trim", "reads_align", "reads_dedup",
+                 "reads_init", "reads_trim", "reads_align", "reads_filter",
                  "reads_refs")
 
     @classmethod
     def path_segs(cls):
-        return super().path_segs() + (path.AlignRepSeg,)
+        return path.SampSeg, path.CmdSeg, path.AlignRepSeg
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: CMD_REL}
+        return {**super().auto_fields(), path.CMD: CMD_ALIGN}

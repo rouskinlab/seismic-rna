@@ -8,8 +8,8 @@ Tests for Alignment FASTQ Utilities Module
 
 import unittest as ut
 
-from ..fqutil import (MATCH_BONUS, MISMATCH_PENALTY, N_PENALTY,
-                      REF_GAP_PENALTY, READ_GAP_PENALTY)
+from ..fqops import (MATCH_BONUS, MISMATCH_PENALTY, N_PENALTY,
+                     REF_GAP_PENALTY, READ_GAP_PENALTY)
 from ...core.path import IN_TEST_DIR, OUT_TEST_DIR, TEMP_TEST_DIR
 
 

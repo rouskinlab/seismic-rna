@@ -29,7 +29,7 @@ def fold(rna: RnaProfile, *,
             # Get the path of the output CT file.
             cmd.append(ct_file)
             # Run the command.
-            run_cmd(cmd, check_is_after=[ct_file])
+            run_cmd(cmd)
         finally:
             if not save_temp:
                 # Delete the temporary files.
@@ -43,7 +43,7 @@ def ct2dot(ct_file: Path, number: int | str = "all"):
     """ Convert a CT file to a DOT file. """
     dot_file = ct_file.with_suffix(path.DOT_EXT)
     cmd = ["ct2dot", ct_file, number, dot_file]
-    run_cmd(cmd, check_is_before=[ct_file], check_is_after=[dot_file])
+    run_cmd(cmd)
     return dot_file
 
 
@@ -51,5 +51,5 @@ def dot2ct(dot_file: Path):
     """ Convert a DOT file to a CT file. """
     ct_file = dot_file.with_suffix(path.CT_EXT)
     cmd = ["dot2ct", dot_file, ct_file]
-    run_cmd(cmd, check_is_before=[dot_file], check_is_after=[ct_file])
+    run_cmd(cmd)
     return ct_file

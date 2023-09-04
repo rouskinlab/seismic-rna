@@ -21,7 +21,8 @@ class ClustReport(BatchReport):
 
     @classmethod
     def path_segs(cls):
-        return super().path_segs() + (path.SectSeg, path.ClustRepSeg)
+        return (path.SampSeg, path.CmdSeg, path.RefSeg, path.SectSeg,
+                path.ClustRepSeg)
 
     @classmethod
     def auto_fields(cls):

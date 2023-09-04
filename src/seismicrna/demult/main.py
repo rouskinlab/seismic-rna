@@ -2,7 +2,7 @@ from click import command
 from pathlib import Path
 
 from ..demult.demultiplex import demultiplex_run
-from ..align.fqutil import FastqUnit
+from ..align.fqops import FastqUnit
 from ..core.cli import (
     opt_barcode_length, opt_barcode_start, opt_parallel_demultiplexing, opt_clipped_demultiplexing,
     opt_mismatch_tolerence, opt_index_tolerence, opt_demulti_overwrite, arg_fasta, opt_sections_file, opt_fastqp, opt_out_dir,

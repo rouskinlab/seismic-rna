@@ -5,6 +5,7 @@ from ..core.rel import (DELET, INS_5, INS_3, SUB_N,
                         CIG_DELET, CIG_INSRT, CIG_SCLIP,
                         parse_cigar, encode_match, encode_relate)
 from ..core.seq import DNA
+from ..core.xam import MAX_FLAG
 
 
 class RelateError(Exception):
@@ -392,10 +393,6 @@ class SamFlag(object):
     # Define __slots__ to improve speed and memory performance.
     __slots__ = "flag", "paired", "rev", "first", "second"
 
-    # Maximum value of a valid SAM flag representation, corresponding
-    # to all 12 flags set to 1: 111111111111 (binary) = 4095 (decimal)
-    MAX_FLAG = 4095
-
     def __init__(self, flag: int):
         """
         Validate the integer value of the SAM flag, then set the flags
@@ -408,7 +405,7 @@ class SamFlag(object):
             https://samtools.github.io/hts-specs/
 
         """
-        if not 0 <= flag <= self.MAX_FLAG:
+        if not 0 <= flag <= MAX_FLAG:
             raise RelateValueError(f"Invalid flag: '{flag}'")
         self.flag = flag
         self.paired = bool(flag & 1)

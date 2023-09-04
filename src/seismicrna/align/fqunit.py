@@ -1,97 +1,52 @@
-"""
-
-Alignment FASTQ Utilities Module
-
-========================================================================
-
-Alignment Score Parameters for Bowtie2
-
-Consider this example: Ref = ACGT, Read = AG
-
-Assume that we want to minimize the number of edits needed to convert
-the reference into the read sequence. The smallest number of edits is
-two, specifically these two deletions (/) from the reference: [A/G/]
-which gets a score of (2 * match - 2 * gap_open - 2 * gap_extend).
-
-But there are two alternative alignments, each with 3 edits:
-[Ag//] and [A//g] (substitutions marked in lowercase). Each gets the
-score (match - substitution - gap_open - 2 * gap_extend).
-
-In order to favor the simpler alignment with two edits,
-(2 * match - 2 * gap_open - 2 * gap_extend) must be greater than
-(match - substitution - gap_open - 2 * gap_extend). This inequality
-simplifies to (substitution > gap_open - match).
-
-Thus, the substitution penalty and match bonus must be relatively large,
-and the gap open penalty small. We want to avoid introducing too many
-gaps, especially to prevent the introduction of an insertion and a
-deletion from scoring better than one substitution.
-
-Consider this example: Ref = ATAT, Read = ACTT
-
-The simplest alignment (the smallest number of mutations) is ActT, which
-gets a score of (2 * match - 2 * substitution). Another alignment with
-indels is A{C}T/T, where {C} means a C was inserted into the read and
-the / denotes an A deleted from the read. This alignment scores
-(3 * match - 2 * gap_open - 2 * gap_extend).
-
-Thus, (2 * match - 2 * substitution) must be greater than
-(3 * match - 2 * gap_open - 2 * gap_extend), which simplifies to
-(2 * gap_open + 2 * gap_extend > match + 2 * substitution).
-
-There are two easy solutions to these inequalities:
-- Bowtie v2.5 defaults: 6 > 5 - 2 and 2*5 + 2*3 > 2 + 2*6
-- Set every score to 1: 1 > 1 - 1 and 2*1 + 2*1 > 1 + 2*1
-
-"""
-
-from functools import cached_property, partial
+from functools import cached_property
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
+from subprocess import CompletedProcess
 
 from ..core import path
-from ..core.cli import BOWTIE2_ORIENT
-from ..core.shell import (BOWTIE2_CMD, CUTADAPT_CMD, FASTQC_CMD, GUNZIP_CMD,
-                          WORD_COUNT_CMD, join_cmd, join_sep, run_cmd)
+from ..core.shell import (GUNZIP_CMD,
+                          WORD_COUNT_CMD, make_cmd, make_pipeline_cmd,
+                          ParsedPipelineStep)
 
 logger = getLogger(__name__)
 
-# FASTQ format
 FQ_LINES_PER_READ = 4
 
-# Bowtie2 parameters
-MATCH_BONUS = "1"
-MISMATCH_PENALTY = "1,1"
-N_PENALTY = "0"
-REF_GAP_PENALTY = "1,1"
-READ_GAP_PENALTY = "1,1"
-METRICS_INTERVAL = 60  # Write metrics once every 60 seconds.
 
-
-def count_fastq_reads(fastq_file: Path) -> int:
-    """ Count the reads in a FASTQ file. """
+def fastq_gz(fastq_file: Path):
+    """ Return whether a FASTQ file is compressed with gzip. """
     ext = "".join(fastq_file.suffixes)
     if ext not in path.FastqExt.options:
         raise path.PathValueError(f"Invalid FASTQ extension: {ext}")
-    if fastq_file.suffix == ".gz":
-        # The file must be decompressed.
-        args = [[GUNZIP_CMD, "--stdout", fastq_file],
-                [WORD_COUNT_CMD, "-l"]]
-        func = partial(join_sep, sep=" | ")
-    else:
-        # The file is not compressed.
-        args = [WORD_COUNT_CMD, "-l", fastq_file]
-        func = join_cmd
-    # Count the lines in the FASTQ file.
-    process = run_cmd(args, join_func=func)
+    return fastq_file.suffix == ".gz"
+
+
+def get_args_count_fastq_reads(fastq_file: Path, _: None = None):
+    """ Count the reads in a FASTQ file. """
+    return ([[GUNZIP_CMD, "--stdout", fastq_file], [WORD_COUNT_CMD, "-l"]]
+            if fastq_gz(fastq_file)
+            else [WORD_COUNT_CMD, "-l", fastq_file])
+
+
+def parse_stdout_count_fastq_reads(process: CompletedProcess):
+    """ Parse the output of word count to find the number of reads. """
     n_lines = int(process.stdout.strip().split()[0])
-    # Compute the number of reads in the FASTQ file.
     n_reads, n_extra = divmod(n_lines, FQ_LINES_PER_READ)
     if n_extra:
-        raise ValueError(f"{fastq_file} has {n_lines} lines, but expected a "
-                         f"multiple of {FQ_LINES_PER_READ}")
+        raise ValueError(f"Got {n_lines} lines, but expected a multiple of "
+                         f"{FQ_LINES_PER_READ}")
     return n_reads
+
+
+def count_fastq_reads(fastq_file: Path):
+    """ Count the reads in a FASTQ file. """
+    fpp = ParsedPipelineStep(get_args_count_fastq_reads,
+                             (make_pipeline_cmd if fastq_gz(fastq_file)
+                              else make_cmd),
+                             parse_stdout_count_fastq_reads,
+                             "counting reads in")
+    return fpp(fastq_file, None)
 
 
 class FastqUnit(object):
@@ -364,175 +319,3 @@ class FastqUnit(object):
 
     def __str__(self):
         return f"{self.kind} {' and '.join(map(str, self.paths.values()))}"
-
-
-def run_fastqc(fq_unit: FastqUnit, out_dir: Path, *,
-               extract: bool, n_procs: int):
-    """ Run FASTQC on the given FASTQ unit. """
-    logger.info(f"Began FASTQC of {fq_unit}")
-    # Create FASTQC output directory.
-    out_dir.mkdir(parents=True, exist_ok=True)
-    logger.debug(f"Created directory: {out_dir}")
-    # Create FASTQC command.
-    cmd = [FASTQC_CMD,
-           "--threads", n_procs,
-           "--extract" if extract else "--noextract",
-           "--outdir", out_dir]
-    # Add input FASTQ files.
-    cmd.extend(fq_unit.paths.values())
-    # Run FASTQC.
-    process = run_cmd(cmd)
-    logger.info(f"Ended FASTQC of {fq_unit}")
-    return process
-
-
-def run_cutadapt(fq_inp: FastqUnit,
-                 fq_out: FastqUnit, *,
-                 n_procs: int,
-                 cut_q1: int,
-                 cut_q2: int,
-                 cut_g1: str,
-                 cut_a1: str,
-                 cut_g2: str,
-                 cut_a2: str,
-                 cut_o: int,
-                 cut_e: float,
-                 cut_indels: bool,
-                 cut_nextseq: bool,
-                 cut_discard_trimmed: bool,
-                 cut_discard_untrimmed: bool,
-                 cut_m: int):
-    """ Trim adapters and low-quality bases with Cutadapt. """
-    logger.info(f"Began trimming {fq_inp}")
-    # Cutadapt command
-    cmd = [CUTADAPT_CMD, "--cores", n_procs]
-    # Quality trimming
-    if cut_nextseq:
-        cut_qnext = max(cut_q1, cut_q2)
-        if cut_q1 != cut_q2:
-            logger.warning("NextSeq trimming takes one quality level, but got "
-                           f"two ({cut_q1} and {cut_q2}); using {cut_qnext}")
-        cmd.extend(["--nextseq-trim", cut_qnext])
-    else:
-        cmd.extend(["-q", cut_q1])
-        if fq_inp.paired:
-            cmd.extend(["-Q", cut_q2])
-    # Adapter trimming
-    adapters = {"g": cut_g1, "a": cut_a1, "G": cut_g2, "A": cut_a2}
-    for arg, adapter in adapters.items():
-        if adapter and (fq_inp.paired or arg.islower()):
-            for adapt in adapter:
-                cmd.extend([f"-{arg}", adapt])
-    cmd.extend(["-O", cut_o])
-    cmd.extend(["-e", cut_e])
-    cmd.extend(["-m", cut_m])
-    if not cut_indels:
-        cmd.append("--no-indels")
-    if cut_discard_trimmed:
-        cmd.append("--discard-trimmed")
-    if cut_discard_untrimmed:
-        cmd.append("--discard-untrimmed")
-    # FASTQ format
-    if fq_inp.interleaved:
-        cmd.append("--interleaved")
-    # Output files
-    output_args = list(zip(("-o", "-p"), fq_out.paths.values(), strict=False))
-    for flag, value in output_args:
-        cmd.extend([flag, value])
-    # Input files
-    cmd.extend(fq_inp.cutadapt_input_args)
-    # Make the output directory.
-    fq_out.parent.mkdir(parents=True, exist_ok=True)
-    logger.debug(f"Created directory: {fq_out.parent}")
-    # Run Cutadapt.
-    process = run_cmd(cmd, check_created=[output for _, output in output_args])
-    logger.info(f"Ended trimming {fq_inp}; output {fq_out}")
-    return process
-
-
-def run_bowtie2(fq_inp: FastqUnit,
-                index_pfx: Path,
-                sam_out: Path, *,
-                n_procs: int,
-                bt2_local: bool,
-                bt2_discordant: bool,
-                bt2_mixed: bool,
-                bt2_dovetail: bool,
-                bt2_contain: bool,
-                bt2_unal: bool,
-                bt2_score_min_e2e: str,
-                bt2_score_min_loc: str,
-                bt2_i: int,
-                bt2_x: int,
-                bt2_gbar: int,
-                bt2_l: int,
-                bt2_s: str,
-                bt2_d: int,
-                bt2_r: int,
-                bt2_dpad: int,
-                bt2_orient: str):
-    """ Align reads to the reference with Bowtie 2. """
-    logger.info(f"Began aligning {fq_inp} to {index_pfx}")
-    # Bowtie2 command
-    cmd = [BOWTIE2_CMD]
-    # Resources
-    cmd.extend(["--threads", n_procs])
-    # Alignment
-    cmd.append("--local" if bt2_local else "--end-to-end")
-    cmd.extend(["--gbar", bt2_gbar])
-    cmd.extend(["--dpad", bt2_dpad])
-    cmd.extend(["-L", bt2_l])
-    cmd.extend(["-i", bt2_s])
-    cmd.extend(["-D", bt2_d])
-    cmd.extend(["-R", bt2_r])
-    # Scoring
-    cmd.append(fq_inp.phred_arg)
-    cmd.append("--ignore-quals")
-    cmd.extend(["--ma", MATCH_BONUS if bt2_local else "0"])
-    cmd.extend(["--mp", MISMATCH_PENALTY])
-    cmd.extend(["--np", N_PENALTY])
-    cmd.extend(["--rfg", REF_GAP_PENALTY])
-    cmd.extend(["--rdg", READ_GAP_PENALTY])
-    # Filtering
-    if not bt2_unal:
-        cmd.append("--no-unal")
-    cmd.extend(["--score-min", (bt2_score_min_loc if bt2_local
-                                else bt2_score_min_e2e)])
-    cmd.extend(["-I", bt2_i])
-    cmd.extend(["-X", bt2_x])
-    # Mate pair orientation
-    if bt2_orient not in BOWTIE2_ORIENT:
-        logger.warning(f"Invalid mate orientation for Bowtie2: '{bt2_orient}'. "
-                       f"Setting to '{BOWTIE2_ORIENT[0]}'")
-        bt2_orient = BOWTIE2_ORIENT[0]
-    cmd.append(f"--{bt2_orient}")
-    if not bt2_discordant:
-        cmd.append("--no-discordant")
-    if not bt2_contain:
-        cmd.append("--no-contain")
-    if bt2_dovetail:
-        cmd.append("--dovetail")
-    if not bt2_mixed:
-        cmd.append("--no-mixed")
-    # Formatting
-    cmd.append("--xeq")
-    # Metrics
-    cmd.extend(["--met-stderr", "--met", METRICS_INTERVAL])
-    # Input and output files
-    cmd.extend(["-S", sam_out])
-    cmd.extend(["-x", index_pfx])
-    cmd.extend(fq_inp.bowtie2_inputs)
-    # Make the output directory.
-    try:
-        sam_out.parent.mkdir(parents=True, exist_ok=False)
-        logger.debug(f"Created directory: {sam_out.parent}")
-    except FileExistsError:
-        # The directory should not exist already unless the input FASTQ
-        # has been demultiplexed (and thus many FASTQs could get aligned
-        # in this directory).
-        if not fq_inp.one_ref:
-            raise
-    # Run alignment.
-    process = run_cmd(cmd, check_created=[sam_out])
-    logger.info(f"Ended aligning {fq_inp} and writing to {sam_out}")
-    return process

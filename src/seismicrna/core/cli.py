@@ -392,7 +392,7 @@ opt_bt2_s = Option(
 opt_bt2_l = Option(
     ("--bt2-L",),
     type=int,
-    default=12,
+    default=20,
     help="Seed length")
 
 opt_bt2_gbar = Option(

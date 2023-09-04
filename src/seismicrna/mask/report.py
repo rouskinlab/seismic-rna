@@ -30,7 +30,8 @@ class MaskReport(BatchReport):
 
     @classmethod
     def path_segs(cls):
-        return super().path_segs() + (path.SectSeg, path.MaskRepSeg)
+        return (path.SampSeg, path.CmdSeg, path.RefSeg, path.SectSeg,
+                path.MaskRepSeg)
 
     @classmethod
     def auto_fields(cls):

@@ -368,10 +368,14 @@ CutadaptQ1 = Field("cut_q1", "Minimum Phred score for read 1",
                    int, check_val=check_nonneg_int)
 CutadaptQ2 = Field("cut_q2", "Minimum Phred score for read 2",
                    int, check_val=check_nonneg_int)
-CutadaptG1 = Field("cut_g1", "5' adapter for read 1", str)
-CutadaptA1 = Field("cut_a1", "3' adapter for read 1", str)
-CutadaptG2 = Field("cut_g2", "5' adapter for read 2", str)
-CutadaptA2 = Field("cut_a2", "3' adapter for read 2", str)
+CutadaptG1 = Field("cut_g1", "5' adapter for read 1",
+                   list, check_val=check_list_str)
+CutadaptA1 = Field("cut_a1", "3' adapter for read 1",
+                   list, check_val=check_list_str)
+CutadaptG2 = Field("cut_g2", "5' adapter for read 2",
+                   list, check_val=check_list_str)
+CutadaptA2 = Field("cut_a2", "3' adapter for read 2",
+                   list, check_val=check_list_str)
 CutadaptOverlap = Field("cut_o", "Minimum adapter length (nt)",
                         int, check_val=check_nonneg_int)
 CutadaptErrors = Field("cut_e", "Minimum adapter error rate",
@@ -403,8 +407,7 @@ Bowtie2GBar = Field("bt2_gbar", "Gap buffer margin (nt)",
                     int, check_val=check_nonneg_int)
 Bowtie2SeedLength = Field("bt2_l", "Seed length (nt)",
                           int, check_val=check_nonneg_int)
-Bowtie2SeedInterval = Field("bt2_s", "Seed interval (nt)",
-                            str, check_val=check_nonneg_int)
+Bowtie2SeedInterval = Field("bt2_s", "Seed interval (nt)", str)
 Bowtie2ExtTries = Field("bt2_d", "Maximum seed extension attempts",
                         int, check_val=check_nonneg_int)
 Bowtie2Reseed = Field("bt2_r", "Maximum re-seeding attempts",
@@ -421,7 +424,7 @@ ReadsTrim = Field("reads_trim", "Number of reads after trimming",
 ReadsAlign = Field("reads_align", "Number of reads after alignment",
                    dict, iconv=iconv_dict_str_int,
                    check_val=check_dict_vals_nonneg_ints)
-ReadsDedup = Field("reads_dedup", "Number of reads after deduplication",
+ReadsDedup = Field("reads_filter", "Number of reads after filtering",
                    dict, iconv=iconv_dict_str_int,
                    check_val=check_dict_vals_nonneg_ints)
 ReadsRefs = Field("reads_refs", "Number of reads aligned by reference",
@@ -675,7 +678,7 @@ class Report(ABC):
     @abstractmethod
     def path_segs(cls):
         """ Return a tuple of the segments of the path. """
-        return path.REPORT_CORE_SEGS
+        return tuple()
 
     @classmethod
     def auto_fields(cls) -> dict[str, Any]:

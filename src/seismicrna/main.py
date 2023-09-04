@@ -217,6 +217,7 @@ def run(*,
         bt2_dpad=bt2_dpad,
         bt2_orient=bt2_orient,
         min_mapq=min_mapq,
+        min_reads=min_reads,
     )))
     # Relating
     input_path += tuple(map(str, relate_mod.run(

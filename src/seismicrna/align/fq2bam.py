@@ -1,41 +1,22 @@
-import re
 from itertools import chain
 from logging import getLogger
-from os import linesep
 from pathlib import Path
 from typing import Iterable
 
-from .fqutil import FastqUnit, run_fastqc, run_cutadapt, run_bowtie2
-from ..core.xam import (dedup_sam, index_bam, sort_xam, view_xam,
-                        FLAG_PAIRED, FLAG_UNMAP, FLAG_SECONDARY, FLAG_QCFAIL,
-                        FLAG_DUPLICATE, FLAG_SUPPLEMENTARY)
+from .fqops import FastqUnit, run_fastqc, run_cutadapt
+from .report import AlignReport
+from .xamgen import (build_bowtie2_index, get_bowtie2_index_paths,
+                     run_export, run_xamgen)
 from ..core import path
 from ..core.cmd import CMD_ALIGN, CMD_QC
 from ..core.parallel import dispatch
 from ..core.seq import parse_fasta, write_fasta
-from ..core.shell import BOWTIE2_BUILD_CMD, run_cmd
+from ..core.xam import (count_single_paired, count_total_records,
+                        get_bam_index, index_bam, run_flagstat)
 
 logger = getLogger(__name__)
 
-
-def get_fasta_index_paths(prefix: Path):
-    """ Return the Bowtie 2 index paths for a FASTA file. """
-    suffix = prefix.suffix
-    if suffix in path.FASTA_EXTS:
-        logger.warning(f"Bowtie 2 index prefix {prefix} has a FASTA extension")
-    return [prefix.with_suffix(suffix + ext) for ext in path.BOWTIE2_INDEX_EXTS]
-
-
-def index_fasta_file(fasta: Path,
-                     prefix: Path,
-                     n_procs: int = 1):
-    """ Build a Bowtie2 index of a FASTA file. """
-    logger.info(f"Began building Bowtie2 index of FASTA {fasta}")
-    # Generate and run the command. Use quiet mode because otherwise,
-    # Bowtie2-Build produces extremely verbose output.
-    cmd = [BOWTIE2_BUILD_CMD, "-q", "--threads", n_procs, fasta, prefix]
-    run_cmd(cmd, check_created=get_fasta_index_paths(prefix))
-    logger.info(f"Ended building Bowtie2 index of FASTA {fasta}: {prefix}")
+OUT_EXT = path.CRAM_EXT
 
 
 def write_temp_ref_files(temp_dir: Path,
@@ -63,7 +44,7 @@ def write_temp_ref_files(temp_dir: Path,
                     write_fasta(ref_path, [record])
                     # Build a Bowtie2 index of the temporary FASTA file.
                     index_prefix = ref_path.with_suffix("")
-                    index_fasta_file(ref_path, index_prefix, n_procs)
+                    build_bowtie2_index(ref_path, index_prefix, n_procs=n_procs)
                 except Exception as error:
                     logger.critical(
                         f"Failed to generate reference {ref_path}: {error}")
@@ -74,54 +55,6 @@ def write_temp_ref_files(temp_dir: Path,
         logger.critical(f"Missing references in {refset_path}: "
                         + ", ".join(missing))
     return ref_paths
-
-
-def parse_bowtie2_stderr(stderr: str):
-    """ Get the number of reads input and aligned. """
-    indentation = 2
-    pattern1 = re.compile(r"^(\s*)(\d+) ([ \w>]+); of these:$")
-    pattern2 = re.compile(r"^(\s*)(\d+) \(\d+\.\d+%\) ([ \w>]+); of these:$")
-    pattern3 = re.compile(r"^(\s*)(\d+) \(\d+\.\d+%\) ([ \w>]+)$")
-    patterns = pattern1, pattern2, pattern3
-
-    def parse_match(m: re.Match[str]):
-        spaces, n_item, item = m.groups()
-        return len(spaces) // indentation, item, int(n_item)
-
-    n_reads = dict()
-    names: tuple[str, ...] = tuple()
-    lines = iter(stderr.split(linesep))
-    # Read through the lines until one matches the first pattern.
-    while not (match := pattern1.match(line := next(lines, "").rstrip())):
-        if not line:
-            # Prevent an infinite loop if lines becomes exhausted.
-            return n_reads
-    # Read the rest of the lines until the iterator is exhausted.
-    while line:
-        if match:
-            # If the line matches, then find the name of the alignment
-            # and the number of times it occurs.
-            level, name, count = parse_match(match)
-            # Key for dictionary.
-            names = names[: level] + (name,)
-            key = ", ".join(names)
-            # Check if the key was encountered previously.
-            if (prev := n_reads.get(key)) is None:
-                # If not, then add the key.
-                n_reads[key] = count
-            elif prev != count:
-                # If so, then confirm the count matches the previous.
-                raise ValueError(
-                    f"Inconsistent counts for '{key}': {prev} ≠ {count}")
-        # Read the next line, defaulting to an empty string.
-        line = next(lines, "").rstrip()
-        # Try to match the line with each pattern, until one matches.
-        match = None
-        for pattern in patterns:
-            if match := pattern.match(line):
-                # The pattern matches.
-                break
-    return n_reads
 
 
 def fq_pipeline(fq_inp: FastqUnit,
@@ -164,6 +97,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                 bt2_dpad: int,
                 bt2_orient: str,
                 min_mapq: int,
+                min_reads: int,
                 n_procs: int = 1) -> list[Path]:
     """ Run all steps of the alignment pipeline for one FASTQ file or
     one pair of mated FASTQ files. """
@@ -171,7 +105,6 @@ def fq_pipeline(fq_inp: FastqUnit,
     sample = fq_inp.sample
     refset = path.parse(fasta, path.FastaSeg)[path.REF]
     refs = list(ref for ref, _ in parse_fasta(fasta))
-    paired = fq_inp.paired
     # Determine the path for FASTQC output files.
     if fq_inp.ref:
         # If the input FASTQ files are demultiplexed, then include the
@@ -220,109 +153,143 @@ def fq_pipeline(fq_inp: FastqUnit,
     else:
         fq_cut = None
     # Align the FASTQ to the reference sequence using Bowtie2.
-    sam_aligned = path.build(*path.XAM_STEP_SEGS,
-                             top=temp_dir, sample=sample,
-                             cmd=CMD_ALIGN, step=path.STEPS_ALIGN[2],
-                             ref=refset, ext=path.SAM_EXT)
-    # Align the trimmed FASTQ file if any, otherwise the input FASTQ.
-    bowtie2 = run_bowtie2(fq_inp if fq_cut is None else fq_cut,
-                          bowtie2_index,
-                          sam_aligned,
-                          n_procs=n_procs,
-                          bt2_local=bt2_local,
-                          bt2_discordant=bt2_discordant,
-                          bt2_mixed=bt2_mixed,
-                          bt2_dovetail=bt2_dovetail,
-                          bt2_contain=bt2_contain,
-                          bt2_unal=bt2_unal,
-                          bt2_score_min_e2e=bt2_score_min_e2e,
-                          bt2_score_min_loc=bt2_score_min_loc,
-                          bt2_i=bt2_i,
-                          bt2_x=bt2_x,
-                          bt2_gbar=bt2_gbar,
-                          bt2_l=bt2_l,
-                          bt2_s=bt2_s,
-                          bt2_d=bt2_d,
-                          bt2_r=bt2_r,
-                          bt2_dpad=bt2_dpad,
-                          bt2_orient=bt2_orient)
+    bam_whole = path.build(*path.XAM_STEP_SEGS,
+                           top=temp_dir, sample=sample,
+                           cmd=CMD_ALIGN, step=path.STEPS_ALIGN[4],
+                           ref=refset, ext=path.BAM_EXT)
+    reads_align = run_xamgen(fq_inp if fq_cut is None else fq_cut,
+                             bam_whole,
+                             index_pfx=bowtie2_index,
+                             n_procs=n_procs,
+                             bt2_local=bt2_local,
+                             bt2_discordant=bt2_discordant,
+                             bt2_mixed=bt2_mixed,
+                             bt2_dovetail=bt2_dovetail,
+                             bt2_contain=bt2_contain,
+                             bt2_unal=bt2_unal,
+                             bt2_score_min_e2e=bt2_score_min_e2e,
+                             bt2_score_min_loc=bt2_score_min_loc,
+                             bt2_i=bt2_i,
+                             bt2_x=bt2_x,
+                             bt2_gbar=bt2_gbar,
+                             bt2_l=bt2_l,
+                             bt2_s=bt2_s,
+                             bt2_d=bt2_d,
+                             bt2_r=bt2_r,
+                             bt2_dpad=bt2_dpad,
+                             bt2_orient=bt2_orient,
+                             min_mapq=min_mapq)
     if not save_temp and fq_cut is not None:
         # Delete the trimmed FASTQ file (do not delete the input FASTQ
         # file even if trimming was not performed).
         for fq_file in fq_cut.paths.values():
             fq_file.unlink(missing_ok=True)
-    # Parse the standard error from Bowtie 2.
-    align_counts = parse_bowtie2_stderr(bowtie2.stderr.decode())
     # The number of reads after trimming is defined as the number fed to
     # Bowtie 2, regardless of whether the reads were actually trimmed.
-    reads_trim = align_counts.pop("reads")
+    reads_trim = reads_align.pop("reads")
     # If the reads were trimmed, then the initial number must be found
     # by counting the reads in the input FASTQ. Otherwise, the initial
     # number equals the number after trimming.
     reads_init = fq_inp.n_reads if cut else reads_trim
-    # Deduplicate the SAM file by removing reads that align equally well
-    # to multiple references or locations in a reference.
-    sam_deduped = path.build(*path.XAM_STEP_SEGS,
-                             top=temp_dir, sample=sample,
-                             cmd=CMD_ALIGN, step=path.STEPS_ALIGN[3],
-                             ref=refset, ext=path.SAM_EXT)
-    dedup_sam(sam_aligned, sam_deduped)
-    if not save_temp:
-        sam_aligned.unlink(missing_ok=True)
-    # Sort the SAM file by coordinate in order to index it.
-    bam_sorted = path.build(*path.XAM_STEP_SEGS,
-                            top=temp_dir, sample=sample,
-                            cmd=CMD_ALIGN, step=path.STEPS_ALIGN[4],
-                            ref=refset, ext=path.BAM_EXT)
-    sort_xam(sam_deduped, bam_sorted, name=False, n_procs=n_procs)
-    if not save_temp:
-        sam_deduped.unlink(missing_ok=True)
+    # Count the reads after filtering.
+    flagstats = run_flagstat(bam_whole, None)
+    paired_two, paired_one, singles = count_single_paired(flagstats)
+    if fq_inp.paired:
+        if singles:
+            raise ValueError(f"{bam_whole} got {singles} single-end reads")
+        reads_filter = {"paired-end, both mates mapped": paired_two,
+                        "paired-end, one mate unmapped": paired_one}
+    else:
+        if n_paired := paired_two + paired_one:
+            raise ValueError(f"{bam_whole} got {n_paired} paired-end reads")
+        reads_filter = {"single-end": singles}
     # Index the sorted BAM file in order to split it by reference.
-    bam_sorted_index = index_bam(bam_sorted, n_procs=n_procs)
-    bams_out: list[Path] = list()
+    bam_index = get_bam_index(bam_whole)
+    index_bam(bam_whole, bam_index, n_procs=n_procs)
+    # Link the file of reference sequences to the output directory.
+    xams_out_dir = path.builddir(path.SampSeg, path.CmdSeg,
+                                 top=out_dir, sample=sample, cmd=CMD_ALIGN)
+    refs_file = xams_out_dir.joinpath(fasta.name)
+    if not refs_file.is_file():
+        refs_file.hardlink_to(fasta)
+    # Split the indexed BAM file into one file per reference.
+    xams_out: list[Path] = list()
+    reads_refs = dict()
     for ref in refs:
-        # Split the indexed BAM file into one file per reference.
-        bam_ref = path.build(*path.XAM_SEGS,
-                             top=out_dir, sample=sample, cmd=CMD_ALIGN,
-                             ref=ref, ext=path.BAM_EXT)
         try:
-            bam_split = path.build(*path.XAM_STEP_SEGS,
-                                   top=temp_dir, sample=sample,
-                                   cmd=CMD_ALIGN, step=path.STEPS_ALIGN[5],
-                                   ref=refset, ext=path.BAM_EXT)
-            # Also filter out any reads that did not align or are
-            # otherwise unsuitable for vectoring.
-            flags_exc = (FLAG_UNMAP | FLAG_SECONDARY | FLAG_QCFAIL
-                         | FLAG_DUPLICATE | FLAG_SUPPLEMENTARY)
-            # Ensure all output reads have the right pairing status.
-            if paired:
-                # Require the paired flag.
-                flags_req = FLAG_PAIRED
+            xam_ref = path.build(*path.XAM_SEGS,
+                                 top=out_dir, sample=sample, cmd=CMD_ALIGN,
+                                 ref=ref, ext=OUT_EXT)
+            if xam_ref.parent != xams_out_dir:
+                raise path.PathValueError(f"{xam_ref} is not in {xams_out_dir}")
+            # Export the reads that align to the given reference.
+            run_export(bam_whole, xam_ref, refs_file=refs_file, n_procs=n_procs)
+            # Count the reads in the name-sorted file.
+            n_reads = count_total_records(run_flagstat(xam_ref, None,
+                                                       n_procs=n_procs))
+            reads_refs[ref] = n_reads
+            if n_reads >= min_reads:
+                logger.debug(f"{ref} got {n_reads} reads")
+                xams_out.append(xam_ref)
             else:
-                # Exclude the paired flag and require no flags.
-                flags_exc |= FLAG_PAIRED
-                flags_req = None
-            # Export the reads that align to the given reference
-            # and meet the flag filters to a separate BAM file.
-            view_xam(bam_sorted, bam_split, ref=ref, min_mapq=min_mapq,
-                     flags_req=flags_req, flags_exc=flags_exc, n_procs=n_procs)
-            # Sort the BAM file by name (required for relation step).
-            sort_xam(bam_split, bam_ref, name=True, n_procs=n_procs)
-            # The pre-sorted BAM file containing reads from only the
-            # current reference is no longer needed.
-            if not save_temp:
-                bam_split.unlink(missing_ok=True)
-            # The name-sorted BAM file will be returned.
-            bams_out.append(bam_ref)
+                logger.warning(f"{ref} got {n_reads} reads, which is less than "
+                               f"the minimum ({min_reads}): deleting {xam_ref}")
+                xam_ref.unlink(missing_ok=True)
         except Exception as error:
-            logger.error(f"Failed to output {bam_ref}: {error}")
+            logger.error(f"Failed to output {ref}: {error}")
     # The pre-split BAM file and its index are no longer needed.
     if not save_temp:
-        bam_sorted.unlink(missing_ok=True)
-        bam_sorted_index.unlink(missing_ok=True)
+        bam_whole.unlink(missing_ok=True)
+        bam_index.unlink(missing_ok=True)
+    # Write a report to summarize the alignment.
+    report = AlignReport(
+        out_dir=out_dir,
+        sample=sample,
+        demultiplexed=fq_inp.ref is not None,
+        paired_end=fq_inp.paired,
+        phred_enc=fq_inp.phred_enc,
+        fastqc=fastqc,
+        cut=cut,
+        cut_q1=cut_q1,
+        cut_q2=cut_q2,
+        cut_g1=list(cut_g1),
+        cut_a1=list(cut_a1),
+        cut_g2=list(cut_g2),
+        cut_a2=list(cut_a2),
+        cut_o=cut_o,
+        cut_e=cut_e,
+        cut_indels=cut_indels,
+        cut_nextseq=cut_nextseq,
+        cut_discard_trimmed=cut_discard_trimmed,
+        cut_discard_untrimmed=cut_discard_untrimmed,
+        cut_m=cut_m,
+        bt2_local=bt2_local,
+        bt2_discordant=bt2_discordant,
+        bt2_mixed=bt2_mixed,
+        bt2_dovetail=bt2_dovetail,
+        bt2_contain=bt2_contain,
+        bt2_unal=bt2_unal,
+        bt2_score_min=bt2_score_min_loc if bt2_local else bt2_score_min_e2e,
+        bt2_i=bt2_i,
+        bt2_x=bt2_x,
+        bt2_gbar=bt2_gbar,
+        bt2_l=bt2_l,
+        bt2_s=bt2_s,
+        bt2_d=bt2_d,
+        bt2_r=bt2_r,
+        bt2_dpad=bt2_dpad,
+        bt2_orient=bt2_orient,
+        min_mapq=min_mapq,
+        reads_init=reads_init,
+        reads_trim=reads_trim,
+        reads_align=reads_align,
+        reads_filter=reads_filter,
+        reads_refs=reads_refs,
+    )
+    report.save()
     # Return a list of name-sorted BAM files, each of which contains a
     # set of reads that all align to the same reference.
-    return bams_out
+    return xams_out
 
 
 def fqs_pipeline(fq_units: list[FastqUnit],
@@ -347,7 +314,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                                             temp_refs, max_procs)
     # Check if the main FASTA file already has a Bowtie2 index.
     main_index = main_fasta.with_suffix("")
-    if not all(index.is_file() for index in get_fasta_index_paths(main_index)):
+    if not all(index.is_file() for index in get_bowtie2_index_paths(main_index)):
         # Bowtie2 index does not already exist.
         main_index = None
     # Make the arguments for each alignment task.
@@ -390,7 +357,8 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                 logger.debug(f"Created directory: {main_index.parent}")
                 # Build the Bowtie2 index.
                 try:
-                    index_fasta_file(main_fasta, main_index, max_procs)
+                    build_bowtie2_index(main_fasta, main_index,
+                                        n_procs=max_procs)
                     # Create a symbolic link to the reference file in
                     # the same directory as the new index.
                     fasta_link = main_index.with_suffix(main_fasta.suffix)
@@ -427,7 +395,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
             ref_file.unlink(missing_ok=True)
             logger.debug(f"Deleted temporary reference file: {ref_file}")
             # Index files
-            for index_file in get_fasta_index_paths(index_prefix):
+            for index_file in get_bowtie2_index_paths(index_prefix):
                 index_file.unlink(missing_ok=True)
                 logger.debug(f"Deleted temporary index file: {index_file}")
     # Return the final binary alignment map (BAM) files.
@@ -486,7 +454,7 @@ def check_fqs_bams(alignments: dict[tuple[str, str], FastqUnit],
         # alignment of the sample to the reference.
         bam_expect = path.build(*path.XAM_SEGS,
                                 top=out_dir, cmd=CMD_ALIGN,
-                                sample=sample, ref=ref, ext=path.BAM_EXT)
+                                sample=sample, ref=ref, ext=OUT_EXT)
         if bam_expect.is_file():
             # If the BAM file already exists, then add it to the dict of
             # BAM files that have already been aligned.

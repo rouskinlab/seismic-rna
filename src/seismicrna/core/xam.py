@@ -1,11 +1,10 @@
+import re
 from logging import getLogger
 from pathlib import Path
-from math import isnan, nan
-import re
-from typing import TextIO
+from subprocess import CompletedProcess
 
 from . import path
-from .shell import run_cmd, SAMTOOLS_CMD
+from .shell import PipelineStep, ParsedPipelineStep, make_cmd, SAMTOOLS_CMD
 
 logger = getLogger(__name__)
 
@@ -26,326 +25,164 @@ FLAG_SECONDARY = 2 ** 8
 FLAG_QCFAIL = 2 ** 9
 FLAG_DUPLICATE = 2 ** 10
 FLAG_SUPPLEMENTARY = 2 ** 11
+MAX_FLAG = sum([FLAG_PAIRED, FLAG_PROPER,
+                FLAG_UNMAP, FLAG_MUNMAP,
+                FLAG_REVERSE, FLAG_MREVERSE,
+                FLAG_FIRST, FLAG_SECOND,
+                FLAG_SECONDARY, FLAG_QCFAIL,
+                FLAG_DUPLICATE, FLAG_SUPPLEMENTARY])
 
 
-def index_bam(bam: Path, n_procs: int = 1):
+def get_bam_index(bam: Path):
+    """ Get the path to an index of a BAM file. """
+    return bam.with_suffix(path.BAI_EXT)
+
+
+def get_args_index_bam(bam: Path, _: None = None, *, n_procs: int = 1):
     """ Build an index of a BAM file using `samtools index`. """
-    logger.info(f"Began building BAM index of {bam}")
-    index = bam.with_suffix(path.BAI_EXT)
-    cmd = [SAMTOOLS_CMD, "index", "-@", n_procs - 1, bam]
-    # Build the BAM index.
-    run_cmd(cmd, check_created=[index])
-    logger.info(f"Ended building BAM index of {bam}: "
-                f"{bam.with_suffix(path.BAI_EXT)}")
-    return index
+    return [SAMTOOLS_CMD, "index", "-@", n_procs - 1, bam]
 
 
-def sort_xam(xam_inp: Path, xam_out: Path, *,
-             name: bool = False, n_procs: int = 1):
+index_bam = PipelineStep(get_args_index_bam, make_cmd, "indexing")
+
+
+def get_args_sort_xam(xam_inp: Path | None,
+                      xam_out: Path | None, *,
+                      name: bool = False,
+                      n_procs: int = 1):
     """ Sort a SAM or BAM file using `samtools sort`. """
-    logger.info(f"Began sorting {xam_inp}")
-    cmd = [SAMTOOLS_CMD, "sort", "-@", n_procs - 1]
+    args = [SAMTOOLS_CMD, "sort", "-@", n_procs - 1]
     if name:
         # Sort by name instead of coordinate.
-        cmd.append("-n")
-    cmd.extend(["-o", xam_out, xam_inp])
-    # Make the output directory.
-    xam_out.parent.mkdir(parents=True, exist_ok=True)
-    logger.debug(f"Created directory: {xam_out.parent}")
-    # Sort the SAM/BAM file.
-    run_cmd(cmd, check_created=[xam_out])
-    logger.info(f"Ended sorting {xam_inp} to {xam_out}")
+        args.append("-n")
+    if xam_out:
+        args.extend(["-o", xam_out])
+    else:
+        # To increase speed, do not compress on stdout.
+        args.append("-u")
+    if xam_inp:
+        args.append(xam_inp)
+    return args
 
 
-def view_xam(xam_inp: Path,
-             xam_out: Path, *,
-             header: bool = False,
-             min_mapq: int | None = None,
-             flags_req: int | None = None,
-             flags_exc: int | None = None,
-             ref: str | None = None,
-             end5: int | None = None,
-             end3: int | None = None,
-             n_procs: int = 1):
+sort_xam = PipelineStep(get_args_sort_xam, make_cmd, "sorting")
+
+
+def get_args_view_xam(xam_inp: Path | None,
+                      xam_out: Path | None, *,
+                      bam: bool = False,
+                      cram: bool = False,
+                      header: bool = False,
+                      min_mapq: int | None = None,
+                      flags_req: int | None = None,
+                      flags_exc: int | None = None,
+                      ref: str | None = None,
+                      end5: int | None = None,
+                      end3: int | None = None,
+                      refs_file: Path | None = None,
+                      n_procs: int = 1):
     """ Convert between SAM and BAM formats, extract reads aligning to a
-    specific reference/section, and filter based on flags and mapping
-    quality using `samtools view`. """
-    logger.info(f"Began viewing {xam_inp}")
-    cmd = [SAMTOOLS_CMD, "view", "-@", n_procs - 1]
+    specific reference/section, and filter by flag and mapping quality
+    using `samtools view`. """
+    args = [SAMTOOLS_CMD, "view", "-@", n_procs - 1]
+    # Read filters
     if min_mapq is not None:
         # Require minimum mapping quality.
-        cmd.extend(["--min-mq", min_mapq])
+        args.extend(["--min-mq", min_mapq])
     if flags_req is not None:
         # Require these flags.
-        cmd.extend(["-f", flags_req])
+        args.extend(["-f", flags_req])
     if flags_exc is not None:
         # Exclude these flags.
-        cmd.extend(["-F", flags_exc])
-    if header:
-        # Include the header in the output file.
-        cmd.append("-h")
-    if xam_out.suffix == path.BAM_EXT:
-        # Write a binary (BAM) file.
-        cmd.append("-b")
+        args.extend(["-F", flags_exc])
+    # Output format
+    if cram:
+        args.append("--cram")
+        if bam:
+            logger.warning("Both BAM and CRAM flags were set: using CRAM")
+        if not refs_file:
+            logger.warning("Missing reference file for CRAM output")
+    elif bam:
+        args.append("--bam")
+    else:
+        # The header argument affects only output in SAM format.
+        args.append("--with-header" if header else "--no-header")
+    # Reference file
+    if refs_file:
+        args.extend(["--reference", refs_file])
     # Input and output files
-    cmd.extend(["-o", xam_out, xam_inp])
+    if xam_out:
+        args.extend(["-o", xam_out])
+    else:
+        # To increase speed, do not compress on stdout.
+        args.append("-u")
+    if xam_inp:
+        args.append(xam_inp)
     # Reference and section specification
     if ref is not None:
         if end5 is not None and end3 is not None:
             # View only reads aligning to a section of this reference.
-            cmd.append(f"{ref}:{end5}-{end3}")
+            args.append(f"{ref}:{end5}-{end3}")
         else:
             # View only reads aligning to this reference.
-            cmd.append(ref)
+            args.append(ref)
             if end5 is not None:
                 logger.warning(f"Got end5 = {end5} but not end3")
             if end3 is not None:
                 logger.warning(f"Got end3 = {end3} but not end5")
     elif end5 is not None or end5 is not None:
         logger.warning(f"Options end5 and end3 require a reference name")
-    # Make the output directory.
-    xam_out.parent.mkdir(parents=True, exist_ok=True)
-    logger.debug(f"Created directory: {xam_out.parent}")
-    # View the SAM/BAM file.
-    run_cmd(cmd, check_created=[xam_out])
-    logger.info(f"Ended viewing {xam_inp} as {xam_out}")
+    return args
 
 
-def get_flagstat(xam_inp: Path, n_procs: int = 1):
-    """ Return a dict of the output from `samtools flagstat`. """
-    logger.info(f"Began computing flag statistics on {xam_inp}")
-    # Use samtools flagstat to compute the flag statistics.
-    cmd = [SAMTOOLS_CMD, "flagstat", "-@", n_procs - 1, xam_inp]
-    output = run_cmd(cmd, check_is_before=[xam_inp]).stdout.decode()
-    # Convert the output into a dict with one entry per line.
-    stat_pattern = "([0-9]+) [+] ([0-9]+) ([A-Za-z0-9 ]+)"
-    stats = {stat.strip(): (int(n1), int(n2))
-             for n1, n2, stat in map(re.Match.groups,
-                                     re.finditer(stat_pattern, output))}
-    logger.debug(f"Flag statistics for {xam_inp}:\n{stats}")
-    logger.info(f"Ended computing flag statistics on {xam_inp}")
-    return stats
+view_xam = PipelineStep(get_args_view_xam, make_cmd, "viewing")
 
 
-def count_xam(xam_inp: Path, n_procs: int = 1):
-    """ Count the unique records in a SAM/BAM file. """
-    logger.info(f"Began counting records in {xam_inp}")
-    # Compute the flag statistics.
-    flagstat = get_flagstat(xam_inp, n_procs)
-    mapped, _ = flagstat["mapped"]
+def get_args_flagstat(xam_inp: Path | None,
+                      _: None = None, *,
+                      n_procs: int = 1):
+    """ Compute the statistics with `samtools flagstat`. """
+    args = [SAMTOOLS_CMD, "flagstat", "-@", n_procs - 1]
+    if xam_inp:
+        args.append(xam_inp)
+    return args
+
+
+def parse_stdout_flagstat(process: CompletedProcess):
+    """ Convert the output into a dict with one entry per line. """
+    stdout = process.stdout.decode()
+    stats_pattern = "([0-9]+) [+] ([0-9]+) ([A-Za-z0-9 ]+)"
+    return {stat.strip(): (int(n1), int(n2))
+            for n1, n2, stat in map(re.Match.groups,
+                                    re.finditer(stats_pattern, stdout))}
+
+
+run_flagstat = ParsedPipelineStep(get_args_flagstat,
+                                  make_cmd,
+                                  parse_stdout_flagstat,
+                                  "computing flagstats")
+
+
+def count_single_paired(flagstats: dict):
+    """ Count the records in a SAM/BAM file given an output dict from
+    `get_flagstats()`. """
+    mapped, _ = flagstats["mapped"]
     # Count paired-end reads with both mates in the file.
-    paired_two, _ = flagstat["with itself and mate mapped"]
+    paired_self_mate, _ = flagstats["with itself and mate mapped"]
+    paired_two, extra = divmod(paired_self_mate, 2)
+    if extra:
+        raise ValueError(f"Reads with themselves and their mates mapped must "
+                         f"be even, but got {paired_self_mate}")
     # Count paired-end reads with only one mate in the file.
-    paired_one, _ = flagstat["singletons"]
+    paired_one, _ = flagstats["singletons"]
     # Count single-end reads.
-    singles = mapped - (paired_one + paired_two)
-    # Count unique reads (two mates of one pair count as one).
-    unique = singles + paired_one + paired_two // 2
-    logger.debug(f"Number of records in {xam_inp}:\n"
-                 f"Single-end: {singles}\n"
+    singles = mapped - (paired_one + paired_self_mate)
+    logger.debug(f"Single-end: {singles}\n"
                  f"Paired-end, one mate: {paired_one}\n"
-                 f"Paired-end, two mates: {paired_two // 2}")
-    logger.info(f"Ended counting {unique} records in {xam_inp}")
-    return unique
+                 f"Paired-end, two mates: {paired_two}")
+    return paired_two, paired_one, singles
 
 
-def dedup_sam(sam_inp: Path, sam_out: Path):
-    """ Remove SAM reads that map equally to multiple locations. """
-
-    logger.info(f"Began deduplicating {sam_inp}")
-
-    pattern_a = re.compile(SAM_ALIGN_SCORE + "([-0-9]+)")
-    pattern_x = re.compile(SAM_EXTRA_SCORE + "([-0-9]+)")
-
-    min_fields = 11
-    max_flag = 4095  # 2^12 - 1
-
-    def get_score(line: str, ptn: re.Pattern[str]):
-        """ Get the alignment score from a line in a SAM file. """
-        return float(match.groups()[0]) if (match := ptn.search(line)) else nan
-
-    def is_best_align(line: str):
-        """ Return whether the line contains the best alignment of the
-        read it contains. """
-        try:
-            if isnan(score_a := get_score(line, pattern_a)):
-                logger.warning(f"Missing alignment score for {line}")
-                return True
-            # Compare using "not >=" instead of "<" because, if score x
-            # is missing (NaN), the comparison will be False, but this
-            # function should return False only if score x exists and
-            # is greater than or equal to score_a.
-            return not get_score(line, pattern_x) >= score_a
-        except Exception as error:
-            raise ValueError(f"Failed to determine if line {line} in {sam_inp} "
-                             f"is the best alignment: {error}")
-
-    def read_is_paired(line: str):
-        info = line.split()
-        if len(info) < min_fields:
-            raise ValueError(f"Invalid line in {sam_inp}:\n{line}")
-        flag = int(info[1])
-        if flag < 0 or flag > max_flag:
-            raise ValueError(f"Invalid flag in {sam_inp}: {flag}")
-        return bool(flag & FLAG_PAIRED)
-
-    def write_summary_single(written: int, skipped: int, errors: int):
-        total = written + skipped + errors
-        try:
-            fw = 100 * written / total
-            fs = 100 * written / total
-            fe = 100 * errors / total
-        except ZeroDivisionError:
-            fw, fs, fe = float("nan"), float("nan"), float("nan")
-        return (f"\n\nSummary of deduplicating {sam_inp}\n"
-                f"Total reads: {total:>12}\n"
-                f"Uniquely-mapped (written): {written:>12} ({fw:>6.2f}%)\n"
-                f"Multiply-mapped (skipped): {skipped:>12} ({fs:>6.2f}%)\n"
-                f"Reads w/ errors (skipped): {errors:>12} ({fe:>6.2f}%)\n\n")
-
-    def write_summary_paired(pwrit: int, pskip: int, perro: int,
-                             mwrit: int, mskip: int, merro: int):
-        mates = mwrit + mskip + merro
-        pairs = pwrit + pskip + perro
-        pairs1 = 2 * pairs - mates
-        pairs2 = pairs - pairs1
-        try:
-            f1 = 100 * pairs1 / pairs
-            f2 = 100 * pairs2 / pairs
-            fw = 100 * pwrit / pairs
-            fs = 100 * pskip / pairs
-            fe = 100 * perro / pairs
-        except ZeroDivisionError:
-            f1, f2, fw, fs, fe = nan, nan, nan, nan, nan
-        return (f"\n\nSummary of deduplicating {sam_inp}\n"
-                f"Total mates: {mates:>12}\n"
-                f"Total pairs: {pairs:>12}\n"
-                f"Pairs w/ both mates mapped: {pairs2:>12} ({f2:>6.2f}%)\n"
-                f"Pairs w/ one mate unmapped: {pairs1:>12} ({f1:>6.2f}%)\n"
-                f"Uniquely-mapped (written):  {pwrit:>12} ({fw:>6.2f}%)\n"
-                f"Multiply-mapped (skipped):  {pskip:>12} ({fs:>6.2f}%)\n"
-                f"Pairs w/ errors (skipped):  {perro:>12} ({fe:>6.2f}%)\n\n")
-
-    def iter_single(sam: TextIO, line: str):
-        """ For each read, yield the best-scoring alignment, excluding
-        reads that aligned equally well to multiple locations. """
-        n_copy = 0
-        n_skip = 0
-        n_erro = 0
-        while line:
-            try:
-                if is_best_align(line):
-                    n_copy += 1
-                    yield line
-                else:
-                    n_skip += 1
-            except Exception as error:
-                n_erro += 1
-                logger.error(error)
-            line = sam.readline()
-        logger.info(write_summary_single(n_copy, n_skip, n_erro))
-
-    def iter_paired(sam: TextIO, line1: str):
-        """ For each pair of reads, yield the pair of alignments for
-        which both the forward alignment and the reverse alignment in
-        the pair scored best among all alignments for the forward and
-        reverse reads, respectively. Exclude pairs for which the forward
-        and/or reverse read aligned equally well to multiple locations,
-        or for which the best alignments for the forward and reverse
-        reads individually are not part of the same alignment pair. """
-        n_pairs_written = 0
-        n_pairs_skipped = 0
-        n_pairs_errors = 0
-        n_mates_written = 0
-        n_mates_skipped = 0
-        n_mates_errors = 0
-        while line1:
-            if SAM_DELIM not in line1:
-                # If the line is blank, skip it.
-                line1 = sam.readline()
-                continue
-            # Check if there is at least one more line in the file.
-            if (line2 := sam.readline()) and SAM_DELIM in line2:
-                # Check if the reads on lines 1 and 2 are mates.
-                if (line1.split(SAM_DELIM, 1)[0]
-                        == line2.split(SAM_DELIM, 1)[0]):
-                    # If they are mates of each other, check if the
-                    # lines represent the best alignment for both.
-                    try:
-                        if is_best_align(line1) and is_best_align(line2):
-                            # If so, then yield both mates.
-                            n_pairs_written += 1
-                            n_mates_written += 2
-                            yield line1
-                            yield line2
-                        else:
-                            # Otherwise, skip both mates.
-                            n_pairs_skipped += 1
-                            n_mates_skipped += 2
-                    except Exception as error:
-                        n_pairs_errors += 1
-                        n_mates_errors += 2
-                        logger.error(error)
-                    # Read the next line from the file.
-                    line1 = sam.readline()
-                    continue
-            # If line2 does not have the mate of line1, then check only
-            # line1 now and consider line2 on the next iteration.
-            try:
-                if is_best_align(line1):
-                    # Yield only line1.
-                    n_pairs_written += 1
-                    n_mates_written += 1
-                    yield line1
-                else:
-                    # Skip line1.
-                    n_pairs_skipped += 1
-                    n_mates_skipped += 1
-            except Exception as error:
-                n_pairs_errors += 1
-                n_mates_errors += 1
-                logger.error(error)
-            # Since line2 was not used yet, consider it on the next
-            # iteration instead of reading another line from the file.
-            line1 = line2
-        logger.info(write_summary_paired(n_pairs_written,
-                                         n_pairs_skipped,
-                                         n_pairs_errors,
-                                         n_mates_written,
-                                         n_mates_skipped,
-                                         n_mates_errors))
-
-    # Make the output directory.
-    sam_out.parent.mkdir(parents=True, exist_ok=True)
-    logger.debug(f"Creating directory: {sam_out.parent}")
-
-    # Deduplicate the alignments.
-    with (open(sam_inp) as sami, open(sam_out, 'x') as samo):
-        # Copy the entire header from the input to the output SAM file.
-        n_header = 0
-        while (line_ := sami.readline()).startswith(SAM_HEADER):
-            samo.write(line_)
-            n_header += 1
-        logger.debug(
-            f"Copied {n_header} header lines from {sam_inp} to {sam_out}")
-        # Copy only the reads that mapped best to one location from the
-        # input to the output SAM file.
-        if line_:
-            is_paired = read_is_paired(line_)
-            # Determine whether the reads in the SAM file are paired.
-            if is_paired:
-                endedness = "paired"
-                lines = iter_paired(sami, line_)
-            else:
-                endedness = "single"
-                lines = iter_single(sami, line_)
-            logger.debug(f"Deduplicating {endedness}-end SAM file: {sam_inp}")
-            # Write the selected lines to the output SAM file.
-            for line_ in lines:
-                samo.write(line_)
-        else:
-            logger.critical(f"SAM file {sam_inp} contained no reads")
-
-    if not sam_out.is_file():
-        raise FileNotFoundError(f"Failed to deduplicate {sam_inp} to {sam_out}")
-    logger.info(f"Ended deduplicating {sam_inp} to {sam_out}")
+def count_total_records(flagstats: dict):
+    """ Count the unique records in a SAM/BAM file. """
+    return sum(count_single_paired(flagstats))
