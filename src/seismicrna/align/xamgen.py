@@ -1,6 +1,6 @@
 """
 
-Alignment SAM/BAM/CRAM Generation Module
+Alignment XAM Generation Module
 
 ========================================================================
 

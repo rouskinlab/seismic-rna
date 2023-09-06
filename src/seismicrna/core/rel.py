@@ -63,7 +63,8 @@ ANY_8 = INS_8 | MATCH
 # Map bases to integer encodings and vice versa.
 BASE_ENCODINGS = {BASEA: SUB_A, BASEC: SUB_C, BASEG: SUB_G, BASET: SUB_T,
                   BASEN: IRREC}
-BASE_DECODINGS = {code: base for base, code in BASE_ENCODINGS.items()}
+BASE_DECODINGS = {code: base for base, code in BASE_ENCODINGS.items()
+                  if base != BASEN}
 
 # Number of unique bytes
 N_BYTES = 256  # = 2^8
@@ -455,7 +456,7 @@ def iter_relvecs_q53(refseq: DNA, low_qual: Sequence[int] = (),
         else:
             # The options are a match and three substitutions.
             opts = tuple(encode_relate(ref_base, read_base, '1', '1')
-                         for read_base in DNA.alph)
+                         for read_base in (BASEA, BASEC, BASEG, BASET))
         # A deletion is an option at every position except the ends of
         # the covered region.
         if sect.end5 < pos < sect.end3:
@@ -651,7 +652,7 @@ def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: str, lo_qual: str,
                 raise ValueError(
                     f"Deletion cannot be at position {pos} in {end5}-{end3}")
             add_to_cigar(CIG_DELET)
-        elif rel ^ ANY_N in (SUB_A, SUB_C, SUB_G, SUB_T):
+        elif rel ^ ANY_N in (SUB_A, SUB_C, SUB_G, SUB_T, IRREC):
             # Ambiguous substitution: Add any nucleotide as low quality.
             read.append(BASEN)
             qual.append(lo_qual)

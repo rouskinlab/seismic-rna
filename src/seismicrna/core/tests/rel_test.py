@@ -28,7 +28,7 @@ from ..rel import (IRREC, MATCH, DELET,
                    validate_relvec, iter_relvecs_q53, iter_relvecs_all,
                    relvec_to_read, ref_to_alignments, iter_alignments, as_sam)
 from ..sect import seq_pos_to_index
-from ..seq import DNA, DNAmbig, expand_degenerate_seq
+from ..seq import DNA, expand_degenerate_seq, BASEA, BASEC, BASEG, BASET, BASEN
 
 
 class TestConstants(ut.TestCase):
@@ -62,15 +62,25 @@ class TestEncodeRelate(ut.TestCase):
 
     def test_encode_relate_hi_qual(self):
         """ Test when the quality is at least the minimum. """
-        for ref in DNA.alph:
-            for read, sub in zip(DNA.alph, [SUB_A, SUB_C, SUB_G, SUB_T]):
+        for ref, ref_sub in zip("ACGTN",
+                                [ANY_B, ANY_D, ANY_H, ANY_V, ANY_N],
+                                strict=True):
+            for read, read_sub in zip("ACGTN",
+                                      [SUB_A, SUB_C, SUB_G, SUB_T, SUB_N],
+                                      strict=True):
                 code = encode_relate(ref, read, MAX_QUAL, MAX_QUAL)
-                self.assertEqual(code, MATCH if read == ref else sub)
+                if ref == 'N':
+                    self.assertEqual(code, ANY_N)
+                elif read == 'N':
+                    self.assertEqual(code, ref_sub)
+                else:
+                    self.assertEqual(code, MATCH if read == ref else read_sub)
 
     def test_encode_relate_lo_qual(self):
         """ Test when the quality is less than the minimum. """
-        for ref, sub in zip(DNA.alph, [ANY_B, ANY_D, ANY_H, ANY_V]):
-            for read in DNA.alph:
+        for ref, sub in zip("ACGTN", [ANY_B, ANY_D, ANY_H, ANY_V, ANY_N],
+                            strict=True):
+            for read in "ACGTN":
                 self.assertEqual(encode_relate(ref, read, MIN_QUAL, MAX_QUAL),
                                  sub)
 
@@ -80,12 +90,13 @@ class TestEncodeMatch(ut.TestCase):
 
     def test_encode_match_hi_qual(self):
         """ Test when the quality is at least the minimum. """
-        for read in DNA.alph:
+        for read in "ACGT":
             self.assertEqual(encode_match(read, MAX_QUAL, MAX_QUAL), MATCH)
+        self.assertEqual(encode_match('N', MAX_QUAL, MAX_QUAL), ANY_N)
 
     def test_encode_match_lo_qual(self):
         """ Test when the quality is less than the minimum. """
-        for read, sub in zip(DNA.alph, [ANY_B, ANY_D, ANY_H, ANY_V]):
+        for read, sub in zip("ACGTN", [ANY_B, ANY_D, ANY_H, ANY_V, ANY_N]):
             self.assertEqual(encode_match(read, MIN_QUAL, MAX_QUAL), sub)
 
 
@@ -399,6 +410,11 @@ class TestIterRelvecsQ53(ut.TestCase):
         self.assertEqual(self.list_rels('T'),
                          [[SUB_A], [SUB_C], [SUB_G], [MATCH]])
 
+    def test_n(self):
+        """ Test with sequence 'N'. """
+        self.assertEqual(self.list_rels('N'),
+                         [[ANY_N], [ANY_N], [ANY_N], [ANY_N]])
+
     def test_aa(self):
         """ Test with sequence 'AA'. """
         self.assertEqual(self.list_rels("AA"),
@@ -437,13 +453,14 @@ class TestIterRelvecsQ53(ut.TestCase):
 
     def test_low_qual(self):
         """ Test with each low-quality base. """
-        for base, low_qual in zip("ACGT", [ANY_B, ANY_D, ANY_H, ANY_V]):
+        for base, low_qual in zip("ACGTN", [ANY_B, ANY_D, ANY_H, ANY_V, ANY_N],
+                                  strict=True):
             self.assertEqual(self.list_rels(base, [1]),
                              [[low_qual]])
 
     def test_low_qual_invalid(self):
         """ Test that invalid low-qual positions raise ValueError. """
-        seq = "ACGT"
+        seq = "ACGTN"
         for n in range(1, len(seq) + 1):
             self.assertTrue(isinstance(self.list_rels(seq[: n], [1]), list))
             self.assertTrue(isinstance(self.list_rels(seq[: n], [n]), list))
@@ -777,7 +794,7 @@ class TestIterRelvecsAll(ut.TestCase):
 
     def test_length_1(self):
         """ Test with all length-1 DNA sequences. """
-        for ref in expand_degenerate_seq(DNAmbig("N")):
+        for ref in expand_degenerate_seq(DNA("N")):
             expects = [
                 iter_relvecs_q53(ref, [], 1, 1),
                 iter_relvecs_q53(ref, [1], 1, 1),
@@ -786,7 +803,7 @@ class TestIterRelvecsAll(ut.TestCase):
 
     def test_length_2(self):
         """ Test with all length-2 DNA sequences. """
-        for ref in expand_degenerate_seq(DNAmbig("NN")):
+        for ref in expand_degenerate_seq(DNA("NN")):
             expects = [
                 iter_relvecs_q53(ref, [], 1, 1),
                 iter_relvecs_q53(ref, [1], 1, 1),
@@ -801,7 +818,7 @@ class TestIterRelvecsAll(ut.TestCase):
 
     def test_length_3(self):
         """ Test with all length-3 DNA sequences. """
-        for ref in expand_degenerate_seq(DNAmbig("NNN")):
+        for ref in expand_degenerate_seq(DNA("NNN")):
             expects = [
                 iter_relvecs_q53(ref, [], 1, 1),
                 iter_relvecs_q53(ref, [1], 1, 1),
@@ -841,7 +858,7 @@ class TestRelvecToRead(ut.TestCase):
                 self.assertEqual(relvec_to_read(ref, np.array(relvec,
                                                               dtype=np.uint8),
                                                 MAX_QUAL, MIN_QUAL),
-                                 (DNAmbig(expect[0]),) + expect[1:])
+                                 (DNA(expect[0]),) + expect[1:])
 
     def assert_raise(self, ref: DNA,
                      relvecs: list[list[int]],
@@ -860,6 +877,14 @@ class TestRelvecToRead(ut.TestCase):
         ref = DNA("ACGT")
         relvecs = [[MATCH, MATCH, MATCH, MATCH]]
         expects = [("ACGT", "IIII", "4=", 1, 4)]
+        self.assert_equal(ref, relvecs, expects)
+
+    def test_all_match_n(self):
+        """ Test when the read has four matching bases and an ambiguous
+        base. """
+        ref = DNA("ACNGT")
+        relvecs = [[MATCH, MATCH, ANY_N, MATCH, MATCH]]
+        expects = [("ACNGT", "II!II", "2=1M2=", 1, 5)]
         self.assert_equal(ref, relvecs, expects)
 
     def test_nocov_valid(self):
@@ -916,18 +941,6 @@ class TestRelvecToRead(ut.TestCase):
             ("ACGN", "III!", "3=1M", 1, 4),
         ]
         self.assert_equal(ref, relvecs, expects)
-
-    def test_low_qual_invalid(self):
-        """ Test when the read has an invalid low-quality base. """
-        ref = DNA("ACGT")
-        relvecs = [
-            [ANY_N, MATCH, MATCH, MATCH],
-            [MATCH, ANY_N, MATCH, MATCH],
-            [MATCH, MATCH, ANY_N, MATCH],
-            [MATCH, MATCH, MATCH, ANY_N],
-        ]
-        self.assert_raise(ref, relvecs, ValueError,
-                          f"Invalid relation {ANY_N}")
 
     def test_subst_valid(self):
         """ Test when the read has a substitution. """

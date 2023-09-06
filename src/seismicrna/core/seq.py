@@ -75,6 +75,12 @@ class Seq(object):
 
     @classmethod
     @cache
+    def get_unambig(cls):
+        """ Get the unambiguous bases. """
+        return tuple(n for n in cls.alph if n != BASEN)
+
+    @classmethod
+    @cache
     def get_alphaset(cls):
         """ Get the alphabet as a set. """
         return set(cls.alph)
@@ -205,7 +211,7 @@ def expand_degenerate_seq(seq: DNA):
     if ns := len(segs) - 1:
         # If the sequence contains at least one N, then yield every
         # possible sequence by replacing each N with each base.
-        for bases in product(DNA.alph, repeat=ns):
+        for bases in product(DNA.get_unambig(), repeat=ns):
             yield DNA("".join(chain((segs[0],), *zip(bases, segs[1:],
                                                      strict=True))))
     else:
