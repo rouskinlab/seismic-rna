@@ -26,7 +26,8 @@ from . import (__version__,
                table as table_mod,
                fold as fold_mod,
                graph as graph_mod,
-               test as test_mod)
+               test as test_mod,
+               fastc as fastc_mod)
 from .core import docdef, logs
 from .core.cli import (merge_params, opt_demultiplex,
                        opt_verbose, opt_quiet, opt_log, opt_profile, opt_fold)
@@ -40,7 +41,9 @@ all_params = merge_params([opt_demultiplex],
                           cluster_mod.params,
                           table_mod.params,
                           [opt_fold],
-                          fold_mod.params)
+                          fold_mod.params,
+                          test_mod.params,
+                          fastc_mod.params)
 
 
 @command("all", params=all_params)
@@ -339,6 +342,7 @@ def main_cli(ctx: Context, verbose: int, quiet: int, log: str, profile: str,
 
 # Add all commands to the main CLI command group.
 main_cli.add_command(all_cli)
+main_cli.add_command(fastc_mod.cli)
 main_cli.add_command(demultiplex_mod.cli)
 main_cli.add_command(align_mod.cli)
 main_cli.add_command(relate_mod.cli)

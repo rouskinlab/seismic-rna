@@ -20,11 +20,11 @@ or
 
 import warnings
 
-from . import demult, align, relate, cluster, table
+from . import demult, align, relate, cluster, table, fastc
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 
 
 ########################################################################
