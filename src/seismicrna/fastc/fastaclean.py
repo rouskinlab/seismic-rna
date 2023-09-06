@@ -33,4 +33,4 @@ class FastaCleaner(object):
             for line in fi:
                 fo.write(f"{match.group()}\n"
                          if (match := FASTA_NAME_REGEX.match(line))
-                         else self.non_seq_regex.sub(BASEN, line))
+                         else self.non_seq_regex.sub(BASEN, line.upper()))
