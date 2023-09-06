@@ -10,7 +10,7 @@ from .xamgen import (run_bowtie2_build, get_bowtie2_index_paths,
 from ..core import path
 from ..core.cmd import CMD_ALIGN, CMD_QC
 from ..core.parallel import dispatch
-from ..core.seq import parse_fasta, write_fasta
+from ..core.seq import parse_fasta, parse_fasta_names, write_fasta
 from ..core.xam import (count_single_paired, run_flagstat, run_ref_header,
                         run_index_xam, run_index_fasta, run_idxstats)
 
@@ -528,7 +528,7 @@ def get_xam_files(fq_units: list[FastqUnit],
         xams = set()
     else:
         # Get the names of all reference sequences.
-        refs = {ref for ref, _ in parse_fasta(fasta)}
+        refs = set(parse_fasta_names(fasta))
         # Run only the alignments whose outputs do not yet exist.
         fqs_to_align, xams = list_fqs_xams(fq_units, refs, out_dir)
     if fqs_to_align:

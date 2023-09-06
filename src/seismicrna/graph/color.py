@@ -75,7 +75,7 @@ hexta = RelColorMap("sexta", v="#FBED94", n="#C05F15", r="#597DE4",
 
 DEFAULTS: dict[type[ColorMap], ColorMap] = {
     RelColorMap: hexta,
-    SeqColorMap: bwong,
+    SeqColorMap: tetra,
 }
 
 

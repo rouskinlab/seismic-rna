@@ -9,15 +9,18 @@ for reading them from and writing them to FASTA files.
 
 """
 
+from collections import Counter
 from functools import cache, cached_property
 from itertools import chain, product
 from logging import getLogger
 from pathlib import Path
+from subprocess import CompletedProcess
 from typing import Iterable
 
 import numpy as np
 
 from . import path
+from .shell import args_to_cmd, GREP_CMD, ShellCommand
 from .sim import rng
 
 logger = getLogger(__name__)
@@ -282,6 +285,26 @@ def parse_fasta(fasta: Path, rna: bool = False):
             yield name, seq
     logger.info(f"Ended parsing {len(names)} {seq_type.__name__} sequence(s) "
                 f"from {fasta}")
+
+
+def _fasta_names_cmd(fasta: Path):
+    """ Parse only the names of the references in a FASTA file. """
+    return args_to_cmd([GREP_CMD, f"^{FASTA_RECORD}", fasta])
+
+
+def _parse_fasta_names(process: CompletedProcess):
+    """ Parse only the names of the references in a FASTA file. """
+    counts = Counter(name[len(FASTA_RECORD):]
+                     for name in process.stdout.decode().splitlines())
+    if duplicates := [name for name, count in counts.items() if count > 1]:
+        logger.warning(f"Duplicate sequence names: {duplicates}")
+    return list(counts)
+
+
+parse_fasta_names = ShellCommand("parsing names of sequences in",
+                                 _fasta_names_cmd,
+                                 _parse_fasta_names,
+                                 opath=False)
 
 
 def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]],
