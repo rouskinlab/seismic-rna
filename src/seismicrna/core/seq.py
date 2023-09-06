@@ -224,6 +224,48 @@ def expand_degenerate_seq(seq: DNA):
         yield DNA(segs[0])
 
 
+def match_to_seq_name(match: re.Match[str]):
+    """ Extract the name from a matched FASTA name line. """
+    name, = match.groups()
+    if name_strip := name.strip():
+        return name_strip
+    raise ValueError(f"Name in FASTA file is blank")
+
+
+def match_fasta_seq_name(line: str):
+    """ Try to match a line as if it were the name line of a FASTA. """
+    if match := FASTA_NAME_REGEX.match(line):
+        # The line matches: validate it.
+        if match.group() != line.rstrip():
+            raise ValueError(f"Name line {repr(line)} has illegal characters")
+        return match_to_seq_name(match)
+    # The line does not match: return None.
+    return
+
+
+def get_fasta_seq_name(line: str):
+    """ Get the name of a sequence from the line of a FASTA. """
+    if (name := match_fasta_seq_name(line)) is None:
+        raise ValueError(f"Line {repr(line)} is not in FASTA name line format")
+    return name
+
+
+def try_fasta_seq_name(line: str):
+    try:
+        return get_fasta_seq_name(line)
+    except Exception as error:
+        logger.error(error)
+    return ""
+
+
+def format_fasta_name_line(name: str):
+    return f"{FASTA_NAME_MARK}{name}\n"
+
+
+def format_fasta_record(name: str, seq: Seq):
+    return f"{format_fasta_name_line(name)}{seq}\n"
+
+
 def parse_fasta(fasta: Path, rna: bool = False):
     """ Parse a FASTA file and iterate through the reference names and
     sequences. """
@@ -240,23 +282,15 @@ def parse_fasta(fasta: Path, rna: bool = False):
         line = f.readline()
         while line:
             try:
-                # Read the name from the current line.
-                if not (match := FASTA_NAME_REGEX.match(line)):
-                    raise ValueError(f"Name line '{line.strip()}' in {fasta} "
-                                     f"does not start with '{FASTA_NAME_MARK}'")
+                name_line = line
                 # Read the sequence of the reference up until the next
                 # reference or the end of the file.
                 segments = list()
                 while ((line := f.readline())
                        and not line.startswith(FASTA_NAME_MARK)):
-                    segments.append(line.rstrip().upper())
-                # Confirm the reference name is valid.
-                if match.group() != line.rstrip():
-                    raise ValueError(f"Name line '{line.strip()}' in {fasta} "
-                                     f"contains illegal characters")
-                name, = match.groups()
-                if not name.strip():
-                    logger.error(f"Name '{line.strip()}' in {fasta} is blank")
+                    segments.append(line.rstrip())
+                # Get the name of the sequence.
+                name = get_fasta_seq_name(name_line)
                 # If there are two or more references with the same
                 # name, then the sequence of only the first is used.
                 if name in names:
@@ -296,8 +330,8 @@ def _fasta_names_cmd(fasta: Path):
 
 def _parse_fasta_names(process: CompletedProcess):
     """ Parse only the names of the references in a FASTA file. """
-    counts = Counter(FASTA_NAME_REGEX.match(name).groups()[0]
-                     for name in process.stdout.decode().splitlines())
+    counts = Counter(name for line in process.stdout.decode().splitlines()
+                     if (name := try_fasta_seq_name(line)))
     if duplicates := [name for name, count in counts.items() if count > 1]:
         logger.warning(f"Duplicate sequence names: {duplicates}")
     return list(counts)
@@ -346,7 +380,7 @@ def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]],
                                  f"not allowed to get any other references, "
                                  f"but it also got {', '.join(names)}")
             try:
-                f.write(f"{FASTA_NAME_MARK}{name}\n{seq}\n")
+                f.write(format_fasta_record(name, seq))
             except Exception as error:
                 logger.error(
                     f"Error writing reference '{name}' to {fasta}: {error}")

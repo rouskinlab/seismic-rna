@@ -42,7 +42,6 @@ all_params = merge_params([opt_demultiplex],
                           table_mod.params,
                           [opt_fold],
                           fold_mod.params,
-                          test_mod.params,
                           fastc_mod.params)
 
 
