@@ -5,9 +5,8 @@ from pathlib import Path
 from subprocess import CompletedProcess
 
 from ..core import path
-from ..core.shell import (GUNZIP_CMD,
-                          WORD_COUNT_CMD, make_cmd, make_pipeline_cmd,
-                          ParsedPipelineStep)
+from ..core.shell import (GUNZIP_CMD, WORD_COUNT_CMD, args_to_cmd, cmds_to_pipe,
+                          ShellCommand)
 
 logger = getLogger(__name__)
 
@@ -22,11 +21,14 @@ def fastq_gz(fastq_file: Path):
     return fastq_file.suffix == ".gz"
 
 
-def get_args_count_fastq_reads(fastq_file: Path, _: None = None):
+def get_args_count_fastq_reads(fastq_file: Path):
     """ Count the reads in a FASTQ file. """
-    return ([[GUNZIP_CMD, "--stdout", fastq_file], [WORD_COUNT_CMD, "-l"]]
-            if fastq_gz(fastq_file)
-            else [WORD_COUNT_CMD, "-l", fastq_file])
+    if fastq_gz(fastq_file):
+        return cmds_to_pipe([
+            args_to_cmd([GUNZIP_CMD, "--stdout", fastq_file]),
+            args_to_cmd([WORD_COUNT_CMD, "-l"])
+        ])
+    return args_to_cmd([WORD_COUNT_CMD, "-l", fastq_file])
 
 
 def parse_stdout_count_fastq_reads(process: CompletedProcess):
@@ -41,12 +43,11 @@ def parse_stdout_count_fastq_reads(process: CompletedProcess):
 
 def count_fastq_reads(fastq_file: Path):
     """ Count the reads in a FASTQ file. """
-    fpp = ParsedPipelineStep(get_args_count_fastq_reads,
-                             (make_pipeline_cmd if fastq_gz(fastq_file)
-                              else make_cmd),
-                             parse_stdout_count_fastq_reads,
-                             "counting reads in")
-    return fpp(fastq_file, None)
+    step = ShellCommand("counting reads in",
+                        get_args_count_fastq_reads,
+                        parse_stdout_count_fastq_reads,
+                        opath=False)
+    return step(fastq_file)
 
 
 class FastqUnit(object):
@@ -64,7 +65,7 @@ class FastqUnit(object):
       from one reference sequence in one sample
     """
 
-    MAX_PHRED_ENC = 127  # 2^7 - 1
+    MAX_PHRED_ENC = 2 ** 7 - 1
 
     KEY_SINGLE = "fastqs"
     KEY_INTER = "fastqi"

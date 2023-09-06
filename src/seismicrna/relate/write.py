@@ -27,10 +27,10 @@ from .seqpos import format_seq_pos
 from ..core import path
 from ..core.cmd import CMD_REL
 from ..core.files import digest_file
-from ..core.parallel import as_list_of_tuples, dispatch
+from ..core.parallel import dispatch
 from ..core.rel import blank_relvec
-from ..core.seq import DNA, get_ref_seq
-from ..core.xam import count_total_records, run_flagstat, view_xam
+from ..core.seq import DNA, parse_fasta
+from ..core.xam import count_total_reads, run_flagstat, run_view_xam
 
 logger = getLogger(__name__)
 
@@ -215,7 +215,7 @@ class RelationWriter(object):
                               cmd=CMD_REL, step=path.STEPS_VECT[0],
                               ref=self.ref, ext=path.SAM_EXT)
         # Create the temporary SAM file.
-        view_xam(self.bam, temp_sam, min_mapq=min_mapq, n_procs=n_procs)
+        run_view_xam(self.bam, temp_sam, min_mapq=min_mapq, n_procs=n_procs)
         try:
             with open(temp_sam) as sam_file:
                 # Compute the number of records per batch.
@@ -307,29 +307,33 @@ def get_min_qual(min_phred: int, phred_enc: int):
     return chr(min_phred + phred_enc)
 
 
-def get_relater(bam_file: Path, fasta: Path, *, min_reads: int, n_procs: int):
-    """ Return a RelationWriter for the BAM file. """
-    # Count the records in the BAM file.
-    n_reads = count_total_records(run_flagstat(bam_file, None, n_procs=n_procs))
-    if n_reads >= min_reads:
-        # Determine the name of the reference from the BAM path.
-        ref = path.parse(bam_file, *path.XAM_SEGS)[path.REF]
-        # Get the sequence of the reference.
-        seq = get_ref_seq(fasta, ref)
-        # Create a RelationWriter.
-        return RelationWriter(bam_file, seq)
-    logger.warning(f"Skipping {bam_file} with {n_reads} reads, which is less "
-                   f"than the minimum ({min_reads})")
+def get_sufficient_xam_files(xam_files: Iterable[Path],
+                             min_reads: int,
+                             n_procs: int):
+    """ Yield the XAM files with enough reads. """
+    for xam_file in xam_files:
+        n_reads = count_total_reads(run_flagstat(xam_file, n_procs=n_procs))
+        if n_reads >= min_reads:
+            yield xam_file
+        else:
+            logger.warning(f"Skipping {xam_file} with {n_reads} reads, which "
+                           f"is less than the minimum ({min_reads})")
 
 
-def get_relaters(bam_files: Iterable[Path], fasta: Path, *,
-                 min_reads: int, max_procs: int, parallel: bool):
-    """ Return a RelationWriter for every BAM file with a reference in
+def get_relaters(xam_files: Iterable[Path], fasta: Path, *,
+                 min_reads: int, max_procs: int):
+    """ Return a RelationWriter for every XAM file with a reference in
     the given FASTA file and with a sufficient number of reads. """
     logger.info("Began creating relation writers")
-    relaters = dispatch(get_relater, max_procs, parallel,
-                        args=as_list_of_tuples(set(bam_files)),
-                        kwargs=dict(fasta=fasta, min_reads=min_reads))
+    # Filter out the XAM files with insufficient reads and index them by
+    # the name of the reference.
+    xam_files = {path.parse(xam, *path.XAM_SEGS)[path.REF]: xam for xam in
+                 get_sufficient_xam_files(xam_files, min_reads, max_procs)}
+    # Cache the sequences of the references for those XAM files.
+    seqs = {ref: seq for ref, seq in parse_fasta(fasta) if ref in xam_files}
+    # Create a RelationWriter for each XAM file.
+    relaters = [RelationWriter(xam_file, seqs[ref])
+                for ref, xam_file in xam_files.items()]
     logger.info(f"Ended creating {len(relaters)} relation writer(s)")
     return relaters
 

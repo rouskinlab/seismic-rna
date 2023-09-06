@@ -54,10 +54,10 @@ from subprocess import CompletedProcess
 from .fqunit import FastqUnit
 from ..core import path
 from ..core.cli import BOWTIE2_ORIENT
-from ..core.shell import (BOWTIE2_CMD, BOWTIE2_BUILD_CMD,
-                          make_cmd, make_pipeline_cmd,
-                          PipelineStep, ParsedPipelineStep)
-from ..core.xam import (get_args_sort_xam, get_args_view_xam,
+from ..core.shell import (BOWTIE2_CMD, BOWTIE2_BUILD_CMD, ECHO_CMD,
+                          args_to_cmd, cmds_to_pipe, cmds_to_subshell,
+                          ShellCommand)
+from ..core.xam import (sort_xam_cmd, view_xam_cmd,
                         FLAG_PAIRED, FLAG_UNMAP, FLAG_SECONDARY, FLAG_QCFAIL,
                         FLAG_DUPLICATE, FLAG_SUPPLEMENTARY)
 
@@ -79,39 +79,39 @@ def get_bowtie2_index_paths(prefix: Path):
     return [prefix.with_suffix(suffix + ext) for ext in path.BOWTIE2_INDEX_EXTS]
 
 
-def get_args_build_bowtie2_index(fasta: Path, prefix: Path, n_procs: int = 1):
+def bowtie2_build_cmd(fasta: Path, prefix: Path, *, n_procs: int = 1):
     """ Build a Bowtie2 index of a FASTA file. """
     # Generate and run the command. Use quiet mode because otherwise,
     # Bowtie2-Build produces extremely verbose output.
-    return [BOWTIE2_BUILD_CMD, "-q", "--threads", n_procs, fasta, prefix]
+    args = [BOWTIE2_BUILD_CMD, "-q", "--threads", n_procs, fasta, prefix]
+    return args_to_cmd(args)
 
 
-build_bowtie2_index = PipelineStep(get_args_build_bowtie2_index,
-                                   make_cmd,
-                                   "building Bowtie 2 index for")
+run_bowtie2_build = ShellCommand("building Bowtie 2 index for",
+                                 bowtie2_build_cmd)
 
 
-def get_args_bowtie2(fq_inp: FastqUnit,
-                     sam_out: Path | None, *,
-                     index_pfx: Path,
-                     n_procs: int,
-                     bt2_local: bool,
-                     bt2_discordant: bool,
-                     bt2_mixed: bool,
-                     bt2_dovetail: bool,
-                     bt2_contain: bool,
-                     bt2_unal: bool,
-                     bt2_score_min_e2e: str,
-                     bt2_score_min_loc: str,
-                     bt2_i: int,
-                     bt2_x: int,
-                     bt2_gbar: int,
-                     bt2_l: int,
-                     bt2_s: str,
-                     bt2_d: int,
-                     bt2_r: int,
-                     bt2_dpad: int,
-                     bt2_orient: str):
+def bowtie2_cmd(fq_inp: FastqUnit,
+                sam_out: Path | None, *,
+                index_pfx: Path,
+                n_procs: int,
+                bt2_local: bool,
+                bt2_discordant: bool,
+                bt2_mixed: bool,
+                bt2_dovetail: bool,
+                bt2_contain: bool,
+                bt2_unal: bool,
+                bt2_score_min_e2e: str,
+                bt2_score_min_loc: str,
+                bt2_i: int,
+                bt2_x: int,
+                bt2_gbar: int,
+                bt2_l: int,
+                bt2_s: str,
+                bt2_d: int,
+                bt2_r: int,
+                bt2_dpad: int,
+                bt2_orient: str):
     args = [BOWTIE2_CMD,
             # Resources
             "--threads", n_procs,
@@ -159,10 +159,10 @@ def get_args_bowtie2(fq_inp: FastqUnit,
         args.extend(["-S", sam_out])
     args.extend(["-x", index_pfx])
     args.extend(fq_inp.bowtie2_inputs)
-    return args
+    return args_to_cmd(args)
 
 
-def parse_bowtie2_stderr(process: CompletedProcess):
+def parse_bowtie2(process: CompletedProcess):
     """ Get the number of reads input and aligned. """
     indentation = 2
     pattern1 = re.compile(r"^(\s*)(\d+) ([ \w>]+); of these:$")
@@ -210,19 +210,16 @@ def parse_bowtie2_stderr(process: CompletedProcess):
     return n_reads
 
 
-run_bowtie2 = ParsedPipelineStep(get_args_bowtie2,
-                                 make_cmd,
-                                 parse_bowtie2_stderr,
-                                 "aligning")
+run_bowtie2 = ShellCommand("aligning", bowtie2_cmd, parse_bowtie2)
 
 
-def get_args_xamgen(fq_inp: FastqUnit,
-                    bam_out: Path | None, *,
-                    n_procs: int,
-                    min_mapq: int,
-                    **kwargs):
+def xamgen_cmd(fq_inp: FastqUnit,
+               bam_out: Path | None, *,
+               min_mapq: int,
+               n_procs: int,
+               **kwargs):
     """ Wrap alignment and post-processing into one pipeline. """
-    bt2_args = get_args_bowtie2(fq_inp, None, n_procs=n_procs, **kwargs)
+    bowtie2_step = bowtie2_cmd(fq_inp, None, n_procs=n_procs, **kwargs)
     # Filter out any unaligned or otherwise unsuitable reads.
     flags_exc = (FLAG_UNMAP | FLAG_SECONDARY | FLAG_QCFAIL
                  | FLAG_DUPLICATE | FLAG_SUPPLEMENTARY)
@@ -234,37 +231,44 @@ def get_args_xamgen(fq_inp: FastqUnit,
         # Exclude the paired flag and require no flags.
         flags_exc |= FLAG_PAIRED
         flags_req = None
-    view_args = get_args_view_xam(None, None,
-                                  min_mapq=min_mapq,
-                                  flags_req=flags_req,
-                                  flags_exc=flags_exc,
-                                  bam=True,
-                                  n_procs=n_procs)
-    sort_args = get_args_sort_xam(None, bam_out, n_procs=n_procs)
-    return [bt2_args, view_args, sort_args]
+    view_xam_step = view_xam_cmd(None, None,
+                                 min_mapq=min_mapq,
+                                 flags_req=flags_req,
+                                 flags_exc=flags_exc,
+                                 bam=True,
+                                 n_procs=n_procs)
+    sort_xam_step = sort_xam_cmd(None, bam_out, n_procs=n_procs)
+    return cmds_to_pipe([bowtie2_step, view_xam_step, sort_xam_step])
 
 
-run_xamgen = ParsedPipelineStep(get_args_xamgen,
-                                make_pipeline_cmd,
-                                parse_bowtie2_stderr,
-                                "aligning, filtering, and sorting")
+run_xamgen = ShellCommand("aligning, filtering, and sorting by position",
+                          xamgen_cmd,
+                          parse_bowtie2)
 
 
-def get_args_export(xam_in: Path | None,
-                    cram_out: Path | None, *,
-                    refs_file: Path,
-                    n_procs: int):
+def export_cmd(xam_in: Path | None,
+               cram_out: Path | None, *,
+               ref: str,
+               header: str,
+               ref_file: Path,
+               n_procs: int):
     """ Wrap sorting and cramming into one pipeline. """
+    # Pipe the header line.
+    echo_step = args_to_cmd([ECHO_CMD, header])
+    # Select only the reads that aligned to the reference, and ignore
+    # the original header.
+    ref_step = view_xam_cmd(xam_in, None,
+                            sam=True, with_header=False,
+                            ref=ref, n_procs=n_procs)
+    # Merge the one header line and the reads for the reference.
+    merge_step = cmds_to_subshell([echo_step, ref_step])
     # Sort reads by name so that mates are adjacent.
-    sort_args = get_args_sort_xam(xam_in, None, name=True, n_procs=n_procs)
+    sort_step = sort_xam_cmd(None, None, name=True, n_procs=n_procs)
     # Cram the reads into a CRAM file.
-    view_args = get_args_view_xam(None, cram_out,
-                                  cram=True,
-                                  refs_file=refs_file,
-                                  n_procs=n_procs)
-    return [sort_args, view_args]
+    cram_step = view_xam_cmd(None, cram_out, refs_file=ref_file,
+                             n_procs=n_procs)
+    return cmds_to_pipe([merge_step, sort_step, cram_step])
 
 
-run_export = PipelineStep(get_args_export,
-                          make_pipeline_cmd,
-                          "name-sorting and cramming")
+run_export = ShellCommand("selecting reference, sorting by name, and cramming",
+                          export_cmd)

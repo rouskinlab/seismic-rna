@@ -5,14 +5,14 @@ from typing import Iterable
 
 from .fqops import FastqUnit, run_fastqc, run_cutadapt
 from .report import AlignReport
-from .xamgen import (build_bowtie2_index, get_bowtie2_index_paths,
+from .xamgen import (run_bowtie2_build, get_bowtie2_index_paths,
                      run_export, run_xamgen)
 from ..core import path
 from ..core.cmd import CMD_ALIGN, CMD_QC
 from ..core.parallel import dispatch
 from ..core.seq import parse_fasta, write_fasta
-from ..core.xam import (count_single_paired, count_total_records,
-                        get_bam_index, index_bam, run_flagstat)
+from ..core.xam import (count_single_paired, run_flagstat, run_ref_header,
+                        run_index_xam, run_index_fasta, run_idxstats)
 
 logger = getLogger(__name__)
 
@@ -44,7 +44,7 @@ def write_temp_ref_files(temp_dir: Path,
                     write_fasta(ref_path, [record])
                     # Build a Bowtie2 index of the temporary FASTA file.
                     index_prefix = ref_path.with_suffix("")
-                    build_bowtie2_index(ref_path, index_prefix, n_procs=n_procs)
+                    run_bowtie2_build(ref_path, index_prefix, n_procs=n_procs)
                 except Exception as error:
                     logger.critical(
                         f"Failed to generate reference {ref_path}: {error}")
@@ -104,7 +104,9 @@ def fq_pipeline(fq_inp: FastqUnit,
     # Get attributes of the sample and references.
     sample = fq_inp.sample
     refset = path.parse(fasta, path.FastaSeg)[path.REF]
-    refs = list(ref for ref, _ in parse_fasta(fasta))
+    # Determine the output directory for the finished XAM files.
+    xams_out_dir = path.builddir(path.SampSeg, path.CmdSeg,
+                                 top=out_dir, sample=sample, cmd=CMD_ALIGN)
     # Determine the path for FASTQC output files.
     if fq_inp.ref:
         # If the input FASTQ files are demultiplexed, then include the
@@ -127,6 +129,7 @@ def fq_pipeline(fq_inp: FastqUnit,
         # Trim adapters and low-quality bases with Cutadapt.
         fq_cut = fq_inp.to_new(path.StepSeg,
                                top=temp_dir,
+                               sample=sample,
                                step=path.STEPS_ALIGN[1])
         run_cutadapt(fq_inp, fq_cut,
                      n_procs=n_procs,
@@ -153,12 +156,12 @@ def fq_pipeline(fq_inp: FastqUnit,
     else:
         fq_cut = None
     # Align the FASTQ to the reference sequence using Bowtie2.
-    bam_whole = path.build(*path.XAM_STEP_SEGS,
+    xam_whole = path.build(*path.XAM_STEP_SEGS,
                            top=temp_dir, sample=sample,
-                           cmd=CMD_ALIGN, step=path.STEPS_ALIGN[4],
+                           cmd=CMD_ALIGN, step=path.STEPS_ALIGN[2],
                            ref=refset, ext=path.BAM_EXT)
     reads_align = run_xamgen(fq_inp if fq_cut is None else fq_cut,
-                             bam_whole,
+                             xam_whole,
                              index_pfx=bowtie2_index,
                              n_procs=n_procs,
                              bt2_local=bt2_local,
@@ -191,103 +194,120 @@ def fq_pipeline(fq_inp: FastqUnit,
     # by counting the reads in the input FASTQ. Otherwise, the initial
     # number equals the number after trimming.
     reads_init = fq_inp.n_reads if cut else reads_trim
+    # Index the whole XAM file to enable exporting only reads aligning
+    # to each reference and to speed counting reads.
+    run_index_xam(xam_whole, n_procs=n_procs)
     # Count the reads after filtering.
-    flagstats = run_flagstat(bam_whole, None)
+    flagstats = run_flagstat(xam_whole)
     paired_two, paired_one, singles = count_single_paired(flagstats)
     if fq_inp.paired:
         if singles:
-            raise ValueError(f"{bam_whole} got {singles} single-end reads")
+            raise ValueError(f"{xam_whole} got {singles} single-end reads")
         reads_filter = {"paired-end, both mates mapped": paired_two,
                         "paired-end, one mate unmapped": paired_one}
     else:
         if n_paired := paired_two + paired_one:
-            raise ValueError(f"{bam_whole} got {n_paired} paired-end reads")
+            raise ValueError(f"{xam_whole} got {n_paired} paired-end reads")
         reads_filter = {"single-end": singles}
-    # Index the sorted BAM file in order to split it by reference.
-    bam_index = get_bam_index(bam_whole)
-    index_bam(bam_whole, bam_index, n_procs=n_procs)
-    # Link the file of reference sequences to the output directory.
-    xams_out_dir = path.builddir(path.SampSeg, path.CmdSeg,
-                                 top=out_dir, sample=sample, cmd=CMD_ALIGN)
+    # Determine which references received enough reads.
+    reads_refs = run_idxstats(xam_whole)
+    sufficient_refs = {ref for ref, n_reads in reads_refs.items()
+                       if n_reads >= min_reads}
+    if insufficient_refs := set(reads_refs) - sufficient_refs:
+        logger.warning(f"Skipped references with fewer than {min_reads} reads: "
+                       f"{insufficient_refs}")
+    # Cache the sequence for each reference that received enough reads.
+    ref_seqs = {ref: seq for ref, seq in parse_fasta(fasta)
+                if ref in sufficient_refs}
+    # Cache the header for each reference that received enough reads.
+    ref_headers = {ref: header
+                   for ref, header in run_ref_header(xam_whole, n_procs=n_procs)
+                   if ref in sufficient_refs}
+    # Determine the path of the output FASTA and its index.
     refs_file = xams_out_dir.joinpath(fasta.name)
-    if not refs_file.is_file():
-        refs_file.hardlink_to(fasta)
-    # Split the indexed BAM file into one file per reference.
+    refs_file_index = refs_file.with_suffix(f"{refs_file.suffix}{path.FAI_EXT}")
+    # Delete the FASTA file and its index, in case they already exist.
+    refs_file.unlink(missing_ok=True)
+    refs_file_index.unlink(missing_ok=True)
+    # Split the whole XAM file into one XAM file for each reference that
+    # received enough reads.
     xams_out: list[Path] = list()
-    reads_refs = dict()
-    for ref in refs:
+    for ref in sufficient_refs:
         try:
+            # Write the single reference sequence to a temporary FASTA.
+            write_fasta(refs_file, [(ref, ref_seqs[ref])])
+            # Export the reads that align to the given reference.
             xam_ref = path.build(*path.XAM_SEGS,
-                                 top=out_dir, sample=sample, cmd=CMD_ALIGN,
-                                 ref=ref, ext=OUT_EXT)
+                                 top=out_dir,
+                                 sample=sample,
+                                 cmd=CMD_ALIGN,
+                                 ref=ref,
+                                 ext=OUT_EXT)
             if xam_ref.parent != xams_out_dir:
                 raise path.PathValueError(f"{xam_ref} is not in {xams_out_dir}")
-            # Export the reads that align to the given reference.
-            run_export(bam_whole, xam_ref, refs_file=refs_file, n_procs=n_procs)
-            # Count the reads in the name-sorted file.
-            n_reads = count_total_records(run_flagstat(xam_ref, None,
-                                                       n_procs=n_procs))
-            reads_refs[ref] = n_reads
-            if n_reads >= min_reads:
-                logger.debug(f"{ref} got {n_reads} reads")
-                xams_out.append(xam_ref)
-            else:
-                logger.warning(f"{ref} got {n_reads} reads, which is less than "
-                               f"the minimum ({min_reads}): deleting {xam_ref}")
-                xam_ref.unlink(missing_ok=True)
+            run_export(xam_whole, xam_ref, ref=ref, header=ref_headers[ref],
+                       ref_file=refs_file, n_procs=n_procs)
         except Exception as error:
             logger.error(f"Failed to output {ref}: {error}")
-    # The pre-split BAM file and its index are no longer needed.
+        else:
+            xams_out.append(xam_ref)
+        finally:
+            # Remove the temporary FASTA files.
+            refs_file.unlink(missing_ok=True)
+            refs_file_index.unlink(missing_ok=True)
+    # The whole XAM file is no longer needed.
     if not save_temp:
-        bam_whole.unlink(missing_ok=True)
-        bam_index.unlink(missing_ok=True)
+        xam_whole.unlink(missing_ok=True)
+    # Make a hard link to the original FASTA file.
+    refs_file.hardlink_to(fasta)
+    # Index the new hard-linked FASTA file.
+    run_index_fasta(refs_file)
     # Write a report to summarize the alignment.
-    report = AlignReport(
-        out_dir=out_dir,
-        sample=sample,
-        demultiplexed=fq_inp.ref is not None,
-        paired_end=fq_inp.paired,
-        phred_enc=fq_inp.phred_enc,
-        fastqc=fastqc,
-        cut=cut,
-        cut_q1=cut_q1,
-        cut_q2=cut_q2,
-        cut_g1=list(cut_g1),
-        cut_a1=list(cut_a1),
-        cut_g2=list(cut_g2),
-        cut_a2=list(cut_a2),
-        cut_o=cut_o,
-        cut_e=cut_e,
-        cut_indels=cut_indels,
-        cut_nextseq=cut_nextseq,
-        cut_discard_trimmed=cut_discard_trimmed,
-        cut_discard_untrimmed=cut_discard_untrimmed,
-        cut_m=cut_m,
-        bt2_local=bt2_local,
-        bt2_discordant=bt2_discordant,
-        bt2_mixed=bt2_mixed,
-        bt2_dovetail=bt2_dovetail,
-        bt2_contain=bt2_contain,
-        bt2_unal=bt2_unal,
-        bt2_score_min=bt2_score_min_loc if bt2_local else bt2_score_min_e2e,
-        bt2_i=bt2_i,
-        bt2_x=bt2_x,
-        bt2_gbar=bt2_gbar,
-        bt2_l=bt2_l,
-        bt2_s=bt2_s,
-        bt2_d=bt2_d,
-        bt2_r=bt2_r,
-        bt2_dpad=bt2_dpad,
-        bt2_orient=bt2_orient,
-        min_mapq=min_mapq,
-        reads_init=reads_init,
-        reads_trim=reads_trim,
-        reads_align=reads_align,
-        reads_filter=reads_filter,
-        reads_refs=reads_refs,
-    )
+    report = AlignReport(out_dir=out_dir,
+                         sample=sample,
+                         demultiplexed=fq_inp.ref is not None,
+                         paired_end=fq_inp.paired,
+                         phred_enc=fq_inp.phred_enc,
+                         fastqc=fastqc,
+                         cut=cut,
+                         cut_q1=cut_q1,
+                         cut_q2=cut_q2,
+                         cut_g1=list(cut_g1),
+                         cut_a1=list(cut_a1),
+                         cut_g2=list(cut_g2),
+                         cut_a2=list(cut_a2),
+                         cut_o=cut_o,
+                         cut_e=cut_e,
+                         cut_indels=cut_indels,
+                         cut_nextseq=cut_nextseq,
+                         cut_discard_trimmed=cut_discard_trimmed,
+                         cut_discard_untrimmed=cut_discard_untrimmed,
+                         cut_m=cut_m,
+                         bt2_local=bt2_local,
+                         bt2_discordant=bt2_discordant,
+                         bt2_mixed=bt2_mixed,
+                         bt2_dovetail=bt2_dovetail,
+                         bt2_contain=bt2_contain,
+                         bt2_unal=bt2_unal,
+                         bt2_score_min=(bt2_score_min_loc if bt2_local
+                                        else bt2_score_min_e2e),
+                         bt2_i=bt2_i,
+                         bt2_x=bt2_x,
+                         bt2_gbar=bt2_gbar,
+                         bt2_l=bt2_l,
+                         bt2_s=bt2_s,
+                         bt2_d=bt2_d,
+                         bt2_r=bt2_r,
+                         bt2_dpad=bt2_dpad,
+                         bt2_orient=bt2_orient,
+                         min_mapq=min_mapq,
+                         reads_init=reads_init,
+                         reads_trim=reads_trim,
+                         reads_align=reads_align,
+                         reads_filter=reads_filter,
+                         reads_refs=reads_refs)
     report.save()
-    # Return a list of name-sorted BAM files, each of which contains a
+    # Return a list of name-sorted XAM files, each of which contains a
     # set of reads that all align to the same reference.
     return xams_out
 
@@ -330,7 +350,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
             except KeyError:
                 # If the FASTA with that reference does not exist,
                 # then log an error and skip this FASTQ.
-                logger.critical(
+                logger.error(
                     f"Skipped {fq_unit} because reference '{fq_unit.ref}' "
                     f"was not found in FASTA file {main_fasta}")
                 continue
@@ -357,8 +377,8 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                 logger.debug(f"Created directory: {main_index.parent}")
                 # Build the Bowtie2 index.
                 try:
-                    build_bowtie2_index(main_fasta, main_index,
-                                        n_procs=max_procs)
+                    run_bowtie2_build(main_fasta, main_index,
+                                      n_procs=max_procs)
                     # Create a symbolic link to the reference file in
                     # the same directory as the new index.
                     fasta_link = main_index.with_suffix(main_fasta.suffix)
@@ -381,13 +401,13 @@ def fqs_pipeline(fq_units: list[FastqUnit],
             # added to temp_fasta_paths.
             iter_args.append((fq_unit, main_fasta, main_index))
             logger.debug(f"Added task: align {fq_unit} to {main_index}")
-    # Generate binary alignment map (BAM) files.
-    bam_lists = dispatch(fq_pipeline, max_procs, parallel, hybrid=True,
+    # Generate alignment map (XAM) files.
+    xam_lists = dispatch(fq_pipeline, max_procs, parallel, hybrid=True,
                          args=iter_args, kwargs=dict(out_dir=out_dir,
                                                      temp_dir=temp_dir,
                                                      save_temp=save_temp,
                                                      **kwargs))
-    bams = list(chain(*bam_lists))
+    xams = list(chain(*xam_lists))
     if not save_temp:
         # Delete the temporary files.
         for ref_file, index_prefix in temp_fasta_paths.values():
@@ -398,8 +418,8 @@ def fqs_pipeline(fq_units: list[FastqUnit],
             for index_file in get_bowtie2_index_paths(index_prefix):
                 index_file.unlink(missing_ok=True)
                 logger.debug(f"Deleted temporary index file: {index_file}")
-    # Return the final binary alignment map (BAM) files.
-    return bams
+    # Return the final alignment map (XAM) files.
+    return xams
 
 
 def figure_alignments(fq_units: list[FastqUnit], refs: set[str]):
@@ -443,27 +463,27 @@ def figure_alignments(fq_units: list[FastqUnit], refs: set[str]):
     return alignments
 
 
-def check_fqs_bams(alignments: dict[tuple[str, str], FastqUnit],
+def check_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
                    out_dir: Path):
     """ Return every FASTQ unit on which alignment must be run and every
-    expected BAM file that already exists. """
+    expected XAM file that already exists. """
     alignments_missing: dict[tuple[str, str], FastqUnit] = dict()
-    bams_existing: list[Path] = list()
+    xams_existing: list[Path] = list()
     for (sample, ref), fq_unit in alignments.items():
-        # Determine the path of the BAM file expected to result from the
+        # Determine the path of the XAM file expected to result from the
         # alignment of the sample to the reference.
-        bam_expect = path.build(*path.XAM_SEGS,
+        xam_expect = path.build(*path.XAM_SEGS,
                                 top=out_dir, cmd=CMD_ALIGN,
                                 sample=sample, ref=ref, ext=OUT_EXT)
-        if bam_expect.is_file():
-            # If the BAM file already exists, then add it to the dict of
-            # BAM files that have already been aligned.
-            bams_existing.append(bam_expect)
+        if xam_expect.is_file():
+            # If the XAM file already exists, then add it to the dict of
+            # XAM files that have already been aligned.
+            xams_existing.append(xam_expect)
         else:
-            # If at least one BAM file for a FASTQ unit does not exist,
+            # If at least one XAM file for a FASTQ unit does not exist,
             # then align the FASTQ.
             alignments_missing[sample, ref] = fq_unit
-    return alignments_missing, bams_existing
+    return alignments_missing, xams_existing
 
 
 def merge_nondemult_fqs(fq_units: Iterable[FastqUnit]):
@@ -478,26 +498,26 @@ def merge_nondemult_fqs(fq_units: Iterable[FastqUnit]):
     return list(merged.values())
 
 
-def list_fqs_bams(fq_units: list[FastqUnit],
+def list_fqs_xams(fq_units: list[FastqUnit],
                   refs: set[str],
                   out_dir: Path):
-    """ List every FASTQ that needs to be aligned and every expected BAM
+    """ List every FASTQ that needs to be aligned and every expected XAM
     file that already exists. """
     # Determine all possible alignments of a sample and reference.
     alignments = figure_alignments(fq_units, refs)
     # Determine which alignments need to be / have already been run.
-    alignments_missing, bams_existing = check_fqs_bams(alignments, out_dir)
+    alignments_missing, xams_existing = check_fqs_xams(alignments, out_dir)
     # Merge entries for each non-demultiplexed FASTQ.
     fqs_to_align = merge_nondemult_fqs(alignments_missing.values())
-    return fqs_to_align, set(bams_existing)
+    return fqs_to_align, set(xams_existing)
 
 
-def get_bam_files(fq_units: list[FastqUnit],
+def get_xam_files(fq_units: list[FastqUnit],
                   fasta: Path, *,
                   out_dir: Path,
                   rerun: bool,
                   **kwargs) -> list[Path]:
-    """ Run the alignment pipeline and return a tuple of all BAM files
+    """ Run the alignment pipeline and return a tuple of all XAM files
     from the pipeline. """
     if not fq_units:
         logger.warning("No FASTQ files or pairs of FASTQ files were given")
@@ -505,18 +525,18 @@ def get_bam_files(fq_units: list[FastqUnit],
     if rerun:
         # Rerun all alignments.
         fqs_to_align = fq_units
-        bams = set()
+        xams = set()
     else:
         # Get the names of all reference sequences.
         refs = {ref for ref, _ in parse_fasta(fasta)}
         # Run only the alignments whose outputs do not yet exist.
-        fqs_to_align, bams = list_fqs_bams(fq_units, refs, out_dir)
+        fqs_to_align, xams = list_fqs_xams(fq_units, refs, out_dir)
     if fqs_to_align:
         # Align all FASTQs that need to be aligned.
-        bams_new = set(fqs_pipeline(fqs_to_align, fasta,
+        xams_new = set(fqs_pipeline(fqs_to_align, fasta,
                                     out_dir=out_dir, **kwargs))
     else:
         logger.warning("All given FASTQ files have already been aligned")
-        bams_new = set()
-    # Merge the existing and new BAM paths into a tuple of strings.
-    return list(bams | bams_new)
+        xams_new = set()
+    # Merge the existing and new XAM paths into a tuple of strings.
+    return list(xams | xams_new)

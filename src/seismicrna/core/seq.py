@@ -219,7 +219,7 @@ def parse_fasta(fasta: Path, rna: bool = False):
     if not fasta:
         raise TypeError("No FASTA file given")
     seq_type = RNA if rna else DNA
-    logger.info(f"Began parsing FASTA of {seq_type}: {fasta}")
+    logger.info(f"Began parsing FASTA of {seq_type.__name__}: {fasta}")
     # Get the name of the set of references.
     refset = path.parse(fasta, path.FastaSeg)[path.REF]
     has_ref_named_refset = False
@@ -278,17 +278,6 @@ def parse_fasta(fasta: Path, rna: bool = False):
                 f"from {fasta}")
 
 
-def get_ref_seq(fasta: Path, ref: str):
-    """ Return the sequence of the reference named `ref` in the FASTA
-    file; raise ValueError if not found. """
-    for curr_ref, curr_seq in parse_fasta(fasta):
-        if curr_ref == ref:
-            # The reference was found.
-            return curr_seq
-    # The reference sequence was not found.
-    raise ValueError(f"Reference '{ref}' is not in {fasta}")
-
-
 def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]],
                 overwrite: bool = False):
     """ Write an iterable of reference names and DNA sequences to a
@@ -326,12 +315,12 @@ def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]],
                                  f"not allowed to get any other references, "
                                  f"but it also got {', '.join(names)}")
             try:
-                f.write("".join([FASTA_RECORD, name, '\n', seq, '\n']))
+                f.write(f"{FASTA_RECORD}{name}\n{seq}\n")
             except Exception as error:
                 logger.error(
                     f"Error writing reference '{name}' to {fasta}: {error}")
             else:
-                logger.debug(f"Wrote reference '{name}' of length {len(seq)}"
+                logger.debug(f"Wrote reference '{name}' ({len(seq)} nt) "
                              f"to {fasta}")
                 names.add(name)
     logger.info(f"Wrote {len(names)} sequences(s) to {fasta}")

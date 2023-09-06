@@ -4,7 +4,7 @@ from inspect import getmembers
 from sys import modules
 from typing import Any, Hashable
 
-from ..core.seq import BASEA, BASEC, BASEG, BASET
+from ..core.seq import BASEA, BASEC, BASEG, BASET, BASEN
 from ..table.base import REL_CODES
 
 
@@ -29,11 +29,11 @@ class ColorMap(ABC):
 class SeqColorMap(ColorMap):
     """ Color map for bases A, C, G, and T. """
 
-    def __init__(self, name: str, a: str, c: str, g: str, t: str):
-        super().__init__(name, a=a, c=c, g=g, t=t)
+    def __init__(self, name: str, a: str, c: str, g: str, t: str, n: str):
+        super().__init__(name, a=a, c=c, g=g, t=t, n=n)
 
-    def _set_colors(self, *, a: str, c: str, g: str, t: str):
-        return {BASEA: a, BASEC: c, BASEG: g, BASET: t}
+    def _set_colors(self, *, a: str, c: str, g: str, t: str, n: str):
+        return {BASEA: a, BASEC: c, BASEG: g, BASET: t, BASEN: n}
 
 
 class RelColorMap(ColorMap):
@@ -53,22 +53,29 @@ class RelColorMap(ColorMap):
         return colors
 
 
-basic = SeqColorMap("basic", a="#FF0000", c="#0000FF", g="#FFC000", t="#008000")
-water = SeqColorMap("water", a="#A15252", c="#3D427D", g="#E3CC7B", t="#76B887")
-earth = SeqColorMap("earth", a="#D17777", c="#464EA6", g="#E3CC7B", t="#336140")
-steel = SeqColorMap("steel", a="#663328", c="#716B80", g="#91B8AC", t="#D9D5B4")
-tetra = SeqColorMap("tetra", a="#C05F15", c="#597DE4", g="#743B4A", t="#9BD1D0")
+basic = SeqColorMap("basic", a="#FF0000", c="#0000FF", g="#FFC000", t="#008000",
+                    n="#7f7f7f")
+water = SeqColorMap("water", a="#A15252", c="#3D427D", g="#E3CC7B", t="#76B887",
+                    n="#7f7f7f")
+earth = SeqColorMap("earth", a="#D17777", c="#464EA6", g="#E3CC7B", t="#336140",
+                    n="#7f7f7f")
+steel = SeqColorMap("steel", a="#663328", c="#716B80", g="#91B8AC", t="#D9D5B4",
+                    n="#7f7f7f")
+tetra = SeqColorMap("tetra", a="#F09869", c="#8875C7", g="#F7ED8F", t="#99C3EB",
+                    n="#f0f0f0")
+bwong = SeqColorMap("bwong", a="#d55e00", c="#0072b2", g="#e69f00", t="#56b4e9",
+                    n="#e0e0e0")
 
 crayons = RelColorMap("crayons", v="#424242", n="#A9A9A9", r="#942193",
                       m="#929000", d="#FF2600", i="#00FA92", s="#FF40FF",
                       a="#73FCD6", c="#FFD479", g="#7A81FF", t="#FF8AD8")
-sexta = RelColorMap("sexta", v="#FBED94", n="#C05F15", r="#597DE4",
+hexta = RelColorMap("sexta", v="#FBED94", n="#C05F15", r="#597DE4",
                     m="#0F155F", d="#FBED94", i="#0F155F", s="#743B4A",
                     a="#C05F15", c="#597DE4", g="#743B4A", t="#9BD1D0")
 
 DEFAULTS: dict[type[ColorMap], ColorMap] = {
-    RelColorMap: sexta,
-    SeqColorMap: tetra,
+    RelColorMap: hexta,
+    SeqColorMap: bwong,
 }
 
 

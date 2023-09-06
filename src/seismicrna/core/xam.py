@@ -3,16 +3,16 @@ from logging import getLogger
 from pathlib import Path
 from subprocess import CompletedProcess
 
-from . import path
-from .shell import PipelineStep, ParsedPipelineStep, make_cmd, SAMTOOLS_CMD
+from .shell import SAMTOOLS_CMD, args_to_cmd, ShellCommand
 
 logger = getLogger(__name__)
 
 # SAM file format specifications
 SAM_HEADER = '@'
 SAM_DELIM = '\t'
-SAM_ALIGN_SCORE = 'AS:i:'
-SAM_EXTRA_SCORE = 'XS:i:'
+SAM_UNMAP = '*'
+SAM_SEQLINE = "@SQ"
+SAM_SEQNAME = "SN:"
 FLAG_PAIRED = 2 ** 0
 FLAG_PROPER = 2 ** 1
 FLAG_UNMAP = 2 ** 2
@@ -33,23 +33,30 @@ MAX_FLAG = sum([FLAG_PAIRED, FLAG_PROPER,
                 FLAG_DUPLICATE, FLAG_SUPPLEMENTARY])
 
 
-def get_bam_index(bam: Path):
-    """ Get the path to an index of a BAM file. """
-    return bam.with_suffix(path.BAI_EXT)
+def index_xam_cmd(bam: Path, *, n_procs: int = 1):
+    """ Build an index of a XAM file using `samtools index`. """
+    return args_to_cmd([SAMTOOLS_CMD, "index", "-@", n_procs - 1, bam])
 
 
-def get_args_index_bam(bam: Path, _: None = None, *, n_procs: int = 1):
-    """ Build an index of a BAM file using `samtools index`. """
-    return [SAMTOOLS_CMD, "index", "-@", n_procs - 1, bam]
+run_index_xam = ShellCommand("indexing alignment map",
+                             index_xam_cmd,
+                             opath=False)
 
 
-index_bam = PipelineStep(get_args_index_bam, make_cmd, "indexing")
+def index_fasta_cmd(fasta: Path):
+    """ Build an index of a FASTA file using `samtools faidx`. """
+    return args_to_cmd([SAMTOOLS_CMD, "faidx", fasta])
 
 
-def get_args_sort_xam(xam_inp: Path | None,
-                      xam_out: Path | None, *,
-                      name: bool = False,
-                      n_procs: int = 1):
+run_index_fasta = ShellCommand("indexing reference file",
+                               index_fasta_cmd,
+                               opath=False)
+
+
+def sort_xam_cmd(xam_inp: Path | None,
+                 xam_out: Path | None, *,
+                 name: bool = False,
+                 n_procs: int = 1):
     """ Sort a SAM or BAM file using `samtools sort`. """
     args = [SAMTOOLS_CMD, "sort", "-@", n_procs - 1]
     if name:
@@ -62,25 +69,27 @@ def get_args_sort_xam(xam_inp: Path | None,
         args.append("-u")
     if xam_inp:
         args.append(xam_inp)
-    return args
+    return args_to_cmd(args)
 
 
-sort_xam = PipelineStep(get_args_sort_xam, make_cmd, "sorting")
+sort_xam = ShellCommand("sorting alignment map", sort_xam_cmd)
 
 
-def get_args_view_xam(xam_inp: Path | None,
-                      xam_out: Path | None, *,
-                      bam: bool = False,
-                      cram: bool = False,
-                      header: bool = False,
-                      min_mapq: int | None = None,
-                      flags_req: int | None = None,
-                      flags_exc: int | None = None,
-                      ref: str | None = None,
-                      end5: int | None = None,
-                      end3: int | None = None,
-                      refs_file: Path | None = None,
-                      n_procs: int = 1):
+def view_xam_cmd(xam_inp: Path | None,
+                 xam_out: Path | None, *,
+                 sam: bool = False,
+                 bam: bool = False,
+                 cram: bool = False,
+                 with_header: bool = False,
+                 only_header: bool = False,
+                 min_mapq: int | None = None,
+                 flags_req: int | None = None,
+                 flags_exc: int | None = None,
+                 ref: str | None = None,
+                 end5: int | None = None,
+                 end3: int | None = None,
+                 refs_file: Path | None = None,
+                 n_procs: int = 1):
     """ Convert between SAM and BAM formats, extract reads aligning to a
     specific reference/section, and filter by flag and mapping quality
     using `samtools view`. """
@@ -104,17 +113,20 @@ def get_args_view_xam(xam_inp: Path | None,
             logger.warning("Missing reference file for CRAM output")
     elif bam:
         args.append("--bam")
-    else:
-        # The header argument affects only output in SAM format.
-        args.append("--with-header" if header else "--no-header")
+        if sam:
+            logger.warning("Both BAM and SAM flags were set: using BAM")
+    if with_header:
+        args.append("--with-header")
+    if only_header:
+        args.append("--header-only")
     # Reference file
     if refs_file:
         args.extend(["--reference", refs_file])
     # Input and output files
     if xam_out:
         args.extend(["-o", xam_out])
-    else:
-        # To increase speed, do not compress on stdout.
+    elif not sam:
+        # To increase speed, do not compress binary standard output.
         args.append("-u")
     if xam_inp:
         args.append(xam_inp)
@@ -132,23 +144,21 @@ def get_args_view_xam(xam_inp: Path | None,
                 logger.warning(f"Got end3 = {end3} but not end5")
     elif end5 is not None or end5 is not None:
         logger.warning(f"Options end5 and end3 require a reference name")
-    return args
+    return args_to_cmd(args)
 
 
-view_xam = PipelineStep(get_args_view_xam, make_cmd, "viewing")
+run_view_xam = ShellCommand("viewing alignment map", view_xam_cmd)
 
 
-def get_args_flagstat(xam_inp: Path | None,
-                      _: None = None, *,
-                      n_procs: int = 1):
+def flagstat_cmd(xam_inp: Path | None, *, n_procs: int = 1):
     """ Compute the statistics with `samtools flagstat`. """
     args = [SAMTOOLS_CMD, "flagstat", "-@", n_procs - 1]
     if xam_inp:
         args.append(xam_inp)
-    return args
+    return args_to_cmd(args)
 
 
-def parse_stdout_flagstat(process: CompletedProcess):
+def parse_flagstat(process: CompletedProcess):
     """ Convert the output into a dict with one entry per line. """
     stdout = process.stdout.decode()
     stats_pattern = "([0-9]+) [+] ([0-9]+) ([A-Za-z0-9 ]+)"
@@ -157,10 +167,10 @@ def parse_stdout_flagstat(process: CompletedProcess):
                                     re.finditer(stats_pattern, stdout))}
 
 
-run_flagstat = ParsedPipelineStep(get_args_flagstat,
-                                  make_cmd,
-                                  parse_stdout_flagstat,
-                                  "computing flagstats")
+run_flagstat = ShellCommand("computing flagstats",
+                            flagstat_cmd,
+                            parse_flagstat,
+                            opath=False)
 
 
 def count_single_paired(flagstats: dict):
@@ -183,6 +193,58 @@ def count_single_paired(flagstats: dict):
     return paired_two, paired_one, singles
 
 
-def count_total_records(flagstats: dict):
-    """ Count the unique records in a SAM/BAM file. """
+def count_total_reads(flagstats: dict):
+    """ Count the total records in a SAM/BAM file. """
     return sum(count_single_paired(flagstats))
+
+
+def idxstats_cmd(xam_inp: Path):
+    """ Count the number of reads aligning to each reference. """
+    return args_to_cmd([SAMTOOLS_CMD, "idxstats", xam_inp])
+
+
+def parse_idxstats(process: CompletedProcess):
+    """ Map each reference to the number of reads aligning to it. """
+    counts = dict()
+    for line in process.stdout.decode().splitlines():
+        if stripped_line := line.rstrip():
+            ref, length, mapped, unmapped = stripped_line.split(SAM_DELIM)
+            if ref != SAM_UNMAP:
+                counts[ref] = int(mapped)
+    # Sort the references in from most to least abundant.
+    return {ref: counts[ref]
+            for ref in sorted(counts, key=counts.__getitem__, reverse=True)}
+
+
+run_idxstats = ShellCommand("counting reads for each reference",
+                            idxstats_cmd,
+                            parse_idxstats,
+                            opath=False)
+
+
+def ref_header_cmd(xam_inp: Path, *, n_procs: int):
+    """ Get the header line for each reference. """
+    return view_xam_cmd(xam_inp, None,
+                        sam=True, only_header=True, n_procs=n_procs)
+
+
+def parse_ref_header(process: CompletedProcess):
+    """ Map each reference to its header line. """
+    for line in process.stdout.decode().splitlines():
+        if line.startswith(SAM_SEQLINE):
+            # Find the field that has the reference name.
+            for field in line.split(SAM_DELIM):
+                if field.startswith(SAM_SEQNAME):
+                    # Yield the reference name and the full line.
+                    ref = field[len(SAM_SEQNAME):]
+                    yield ref, line.rstrip()
+                    break
+            else:
+                # The sequence name was not found.
+                logger.warning(f"Failed to find sequence name in line:\n{line}")
+
+
+run_ref_header = ShellCommand("getting header line for each reference",
+                              ref_header_cmd,
+                              parse_ref_header,
+                              opath=False)

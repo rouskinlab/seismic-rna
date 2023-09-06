@@ -1,6 +1,6 @@
 from subprocess import CalledProcessError
 
-from .shell import run_cmd, WHICH_CMD
+from .shell import args_to_cmd, run_cmd, WHICH_CMD
 
 
 def dependency_exists(command: str):
@@ -8,7 +8,7 @@ def dependency_exists(command: str):
     in the shell, which will succeed only if the dependency exists. """
     try:
         # Try to run 'which command' in the shell.
-        run_cmd([WHICH_CMD, command])
+        run_cmd(args_to_cmd([WHICH_CMD, command]))
     except CalledProcessError:
         # The command failed to run.
         return False

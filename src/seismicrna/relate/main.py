@@ -88,8 +88,7 @@ def run(fasta: str,
                                                   path.XAM_SEGS),
                             Path(fasta),
                             min_reads=min_reads,
-                            max_procs=max_procs,
-                            parallel=parallel)
+                            max_procs=max_procs)
 
     # Compute and write relation vectors for each relation writer.
     return relate_all(relaters=relaters,

@@ -62,9 +62,8 @@ INT_PATTERN = f"([{INT_CHARS}]+)"
 RE_PATTERNS = {str: STR_PATTERN, int: INT_PATTERN, pl.Path: PATH_PATTERN}
 
 STEPS_QC = "init", "trim"
-STEPS_ALIGN = ("align-0_refs", "align-1_trim", "align-2_align",
-               "align-3_dedup", "align-4_sort", "align-5_split")
-STEPS_VECT = "vector-0_bams",
+STEPS_ALIGN = "bt2-idx", "cut", "map", "sam-headers"
+STEPS_VECT = "sams",
 STEPS = STEPS_QC + STEPS_ALIGN + STEPS_VECT
 
 CLUST_PROP_RUN_TABLE = "props"
@@ -107,7 +106,7 @@ SAM_EXT = ".sam"
 BAM_EXT = ".bam"
 CRAM_EXT = ".cram"
 XAM_EXTS = SAM_EXT, BAM_EXT, CRAM_EXT
-BAI_EXT = f"{BAM_EXT}.bai"
+FAI_EXT = ".fai"
 CT_EXT = ".ct"
 DOT_EXT = ".dot"
 DBN_EXT = ".dbn"
@@ -249,7 +248,6 @@ FastqExt = Field(str, FQ_EXTS, is_ext=True)
 Fastq1Ext = Field(str, FQ1_EXTS, is_ext=True)
 Fastq2Ext = Field(str, FQ2_EXTS, is_ext=True)
 XamExt = Field(str, XAM_EXTS, is_ext=True)
-BamIndexExt = Field(str, [BAI_EXT], is_ext=True)
 ConnectTableExt = Field(str, [CT_EXT], is_ext=True)
 DotBracketExt = Field(str, DOT_EXTS, is_ext=True)
 DmsReactsExt = Field(str, [DMS_EXT], is_ext=True)
@@ -414,7 +412,6 @@ DmFastq2Seg = Segment("dm-fastq2", {REF: NameField, EXT: Fastq2Ext})
 
 # Alignment
 XamSeg = Segment("xam", {REF: NameField, EXT: XamExt})
-BamIndexSeg = Segment("bai", {REF: NameField, EXT: BamIndexExt})
 AlignRepSeg = Segment("align-rep", {EXT: ReportExt}, frmt="report-align{ext}")
 
 # Relation Vectors

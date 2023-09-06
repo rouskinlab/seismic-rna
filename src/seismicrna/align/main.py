@@ -3,7 +3,7 @@ from pathlib import Path
 
 from click import command
 
-from .fq2bam import get_bam_files
+from .fq2bam import get_xam_files
 from .fqops import FastqUnit
 from ..core import docdef
 from ..core.cli import (arg_fasta,
@@ -194,7 +194,7 @@ def run(*,
                                          phred_enc=phred_enc))
 
     # Generate and return a BAM file for every FASTQ-reference pair.
-    return get_bam_files(fq_units=fq_units,
+    return get_xam_files(fq_units=fq_units,
                          fasta=Path(fasta),
                          out_dir=Path(out_dir),
                          temp_dir=Path(temp_dir),
