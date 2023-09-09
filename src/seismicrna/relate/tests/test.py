@@ -5,7 +5,8 @@ import pandas as pd
 
 from ..relate import relate_line
 from ..seqpos import format_seq_pos
-from ...core.rel import as_sam, iter_alignments, NOCOV, MED_QUAL
+from ...core.rel import NOCOV, MED_QUAL
+from ...core.relaux import as_sam, iter_alignments
 from ...core.seq import DNA
 
 

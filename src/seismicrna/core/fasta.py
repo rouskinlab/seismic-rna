@@ -88,7 +88,7 @@ def parse_fasta(fasta: Path, seq_type: type[Seq] | None):
                     try:
                         segments = list()
                         while line and not line.startswith(FASTA_NAME_MARK):
-                            segments.append(line.rstrip('\n'))
+                            segments.append(line.rstrip(linesep))
                             line = f.readline()
                         seq = seq_type("".join(segments))
                         logger.debug(f"Read {seq_type.__name__} reference "
