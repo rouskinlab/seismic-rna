@@ -7,20 +7,15 @@ FASTA Cleaner Module
 import re
 from logging import getLogger
 from pathlib import Path
-from string import printable
 
-from ..core.seq import (Seq, BASEN, FASTA_NAME_REGEX,
-                        match_to_seq_name, format_fasta_name_line)
+from ..core.fasta import extract_fasta_seqname, format_fasta_name_line
+from ..core.seq import Seq, BASEN
 
 logger = getLogger(__name__)
 
 
-def get_non_seq_characters(seq_type: type[Seq]):
-    return "".join(sorted(set(printable) - (seq_type.get_alphaset() | {'\n'})))
-
-
 def get_non_seq_regex(seq_type: type[Seq]):
-    return re.compile(f"[{get_non_seq_characters(seq_type)}]")
+    return re.compile("[" + "".join(seq_type.get_nonalphaset() + {'\n'}) + "]")
 
 
 class FastaCleaner(object):
@@ -32,6 +27,6 @@ class FastaCleaner(object):
     def run(self, ifasta: Path, ofasta: Path, force: bool = False):
         with open(ifasta) as fi, open(ofasta, 'w' if force else 'x') as fo:
             for line in fi:
-                fo.write(self.non_seq_regex.sub(BASEN, line.upper())
-                         if (match := FASTA_NAME_REGEX.match(line)) is None
-                         else format_fasta_name_line(match_to_seq_name(match)))
+                fo.write(format_fasta_name_line(name)
+                         if (name := extract_fasta_seqname(line))
+                         else self.non_seq_regex.sub(BASEN, line.upper()))

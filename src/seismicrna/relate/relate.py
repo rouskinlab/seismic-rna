@@ -609,16 +609,26 @@ def relate_read(relvec: bytearray,
         find_ambrels(relvec, refseq, read.seq, read.qual, min_qual, dels, inns)
 
 
+def validate_refs(read: SamRead, ref: str):
+    if read.rname != ref:
+        raise ValueError(f"Reference mismatch: read '{read.qname}' aligned to "
+                         f"'{read.rname}' but is in file for reference '{ref}'")
+
+
 def relate_line(relvec: bytearray, line: str,
-                refseq: DNA, length: int, qmin: str, ambrel: bool):
-    relate_read(relvec, SamRead(line), refseq, length, qmin, ambrel)
+                ref: str, refseq: DNA, length: int, qmin: str, ambrel: bool):
+    read = SamRead(line)
+    validate_refs(read, ref)
+    relate_read(relvec, read, refseq, length, qmin, ambrel)
 
 
 def relate_pair(relvec: bytearray, line1: str, line2: str,
-                refseq: DNA, length: int, qmin: str, ambrel: bool):
+                ref: str, refseq: DNA, length: int, qmin: str, ambrel: bool):
     # Parse lines 1 and 2 into SAM reads.
     read1 = SamRead(line1)
+    validate_refs(read1, ref)
     read2 = SamRead(line2)
+    validate_refs(read2, ref)
     # Ensure that reads 1 and 2 are compatible mates.
     if not read1.flag.paired:
         raise RelateValueError(f"Read 1 ({read1.qname}) was not paired, "
@@ -629,11 +639,6 @@ def relate_pair(relvec: bytearray, line1: str, line2: str,
     if read1.qname != read2.qname:
         raise RelateValueError(f"Reads 1 ({read1.qname}) and 2 "
                                f"({read2.qname}) had different names")
-    if read1.rname != read2.rname:
-        raise RelateValueError(f"Read '{read1.qname}' had "
-                               "different references for mates 1 "
-                               f"('{read1.rname}') and 2 "
-                               f"('{read2.rname}')")
     if not (read1.flag.first and read2.flag.second):
         raise RelateValueError(f"Read '{read1.qname}' had mate 1 "
                                f"labeled {2 - read1.flag.first} and mate 2 "

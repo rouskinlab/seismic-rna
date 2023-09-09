@@ -12,11 +12,13 @@ from ..core.cli import (arg_input_path, opt_temp_dir, opt_save_temp,
                         opt_max_procs, opt_parallel, opt_rerun)
 from ..core.cmd import CMD_FOLD
 from ..core.depend import confirm_dependency
-from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
+from ..core.fasta import parse_fasta
+from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rna import RnaProfile
 from ..core.sect import RefSections, Section
-from ..core.seq import DNA, parse_fasta
+from ..core.seq import DNA
 from ..core.shell import RNASTRUCTURE_FOLD_CMD
+from ..core.temp import lock_temp_dir
 from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader
 
 logger = getLogger(__name__)
@@ -66,7 +68,7 @@ def run(fasta: str,
     confirm_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
 
     # Get the sections for every reference sequence.
-    ref_sections = RefSections(parse_fasta(Path(fasta)),
+    ref_sections = RefSections(parse_fasta(Path(fasta), DNA),
                                sects_file=(Path(sections_file) if sections_file
                                            else None),
                                coords=coords,

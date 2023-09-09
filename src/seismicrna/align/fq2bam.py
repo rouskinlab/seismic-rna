@@ -9,8 +9,9 @@ from .xamgen import (run_bowtie2_build, get_bowtie2_index_paths,
                      run_export, run_xamgen)
 from ..core import path
 from ..core.cmd import CMD_ALIGN, CMD_QC
+from ..core.fasta import parse_fasta, write_fasta
 from ..core.parallel import dispatch
-from ..core.seq import parse_fasta, parse_fasta_names, write_fasta
+from ..core.seq import DNA
 from ..core.xam import (count_single_paired, run_flagstat, run_ref_header,
                         run_index_xam, run_index_fasta, run_idxstats)
 
@@ -28,13 +29,13 @@ def write_temp_ref_files(temp_dir: Path,
     ref_paths: dict[str, tuple[Path, Path]] = dict()
     if refs:
         # Parse the FASTA only if there are any references to write.
-        for record in parse_fasta(refset_path):
-            ref = record[0]
+        for record in parse_fasta(refset_path, DNA):
+            ref, _ = record
             if ref in refs:
                 # Write the reference sequence to a temporary FASTA file
                 # only if at least one demultiplexed FASTQ file uses it.
-                ref_path = path.build(*path.FASTA_STEP_SEGS,
-                                      top=temp_dir, step=path.STEPS_ALIGN[0],
+                ref_path = path.build(*path.FASTA_STEP_SEGS, top=temp_dir,
+                                      step=path.STEP_ALIGN_INDEX_DEMULT,
                                       ref=ref, ext=refset_path.suffix)
                 # Create the parent directory.
                 ref_path.parent.mkdir(parents=True, exist_ok=True)
@@ -120,7 +121,7 @@ def fq_pipeline(fq_inp: FastqUnit,
         fqc_vals = {path.TOP: out_dir, path.SAMP: sample, path.CMD: CMD_QC}
     if fastqc:
         # Run FASTQC on the input FASTQ files.
-        fqc_out = path.build(*fqc_segs, **fqc_vals, step=path.STEPS_QC[0])
+        fqc_out = path.build(*fqc_segs, **fqc_vals, step=path.STEP_QC_INIT)
         try:
             run_fastqc(fq_inp, fqc_out, extract=qc_extract, n_procs=n_procs)
         except Exception as error:
@@ -130,7 +131,7 @@ def fq_pipeline(fq_inp: FastqUnit,
         fq_cut = fq_inp.to_new(path.StepSeg,
                                top=temp_dir,
                                sample=sample,
-                               step=path.STEPS_ALIGN[1])
+                               step=path.STEP_ALIGN_TRIM)
         run_cutadapt(fq_inp, fq_cut,
                      n_procs=n_procs,
                      cut_q1=cut_q1,
@@ -148,7 +149,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                      cut_m=cut_m)
         if fastqc:
             # Run FASTQC after trimming with Cutadapt.
-            fqc_out = path.build(*fqc_segs, **fqc_vals, step=path.STEPS_QC[1])
+            fqc_out = path.build(*fqc_segs, **fqc_vals, step=path.STEP_QC_TRIM)
             try:
                 run_fastqc(fq_cut, fqc_out, extract=qc_extract, n_procs=n_procs)
             except Exception as error:
@@ -158,7 +159,7 @@ def fq_pipeline(fq_inp: FastqUnit,
     # Align the FASTQ to the reference sequence using Bowtie2.
     xam_whole = path.build(*path.XAM_STEP_SEGS,
                            top=temp_dir, sample=sample,
-                           cmd=CMD_ALIGN, step=path.STEPS_ALIGN[2],
+                           cmd=CMD_ALIGN, step=path.STEP_ALIGN_MAP,
                            ref=refset, ext=path.BAM_EXT)
     reads_align = run_xamgen(fq_inp if fq_cut is None else fq_cut,
                              xam_whole,
@@ -217,7 +218,7 @@ def fq_pipeline(fq_inp: FastqUnit,
         logger.warning(f"Skipped references with fewer than {min_reads} reads: "
                        f"{insufficient_refs}")
     # Cache the sequence for each reference that received enough reads.
-    ref_seqs = {ref: seq for ref, seq in parse_fasta(fasta)
+    ref_seqs = {ref: seq for ref, seq in parse_fasta(fasta, DNA)
                 if ref in sufficient_refs}
     # Cache the header for each reference that received enough reads.
     ref_headers = {ref: header
@@ -370,7 +371,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                 # of the main FASTA file.
                 main_index = path.build(*path.FASTA_INDEX_DIR_STEP_SEGS,
                                         top=temp_dir,
-                                        step=path.STEPS_ALIGN[0],
+                                        step=path.STEP_ALIGN_INDEX,
                                         ref=refset)
                 # Make its parent directory if it does not exist.
                 main_index.parent.mkdir(parents=True, exist_ok=True)
@@ -528,7 +529,7 @@ def get_xam_files(fq_units: list[FastqUnit],
         xams = set()
     else:
         # Get the names of all reference sequences.
-        refs = set(parse_fasta_names(fasta))
+        refs = set(parse_fasta(fasta, None))
         # Run only the alignments whose outputs do not yet exist.
         fqs_to_align, xams = list_fqs_xams(fq_units, refs, out_dir)
     if fqs_to_align:

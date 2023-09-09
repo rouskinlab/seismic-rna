@@ -26,10 +26,11 @@ from .sam import iter_batch_indexes, iter_records
 from .seqpos import format_seq_pos
 from ..core import path
 from ..core.cmd import CMD_REL
+from ..core.fasta import parse_fasta
 from ..core.files import digest_file
 from ..core.parallel import dispatch
 from ..core.rel import blank_relvec
-from ..core.seq import DNA, parse_fasta
+from ..core.seq import DNA
 from ..core.xam import count_total_reads, run_flagstat, run_view_xam
 
 logger = getLogger(__name__)
@@ -49,7 +50,7 @@ def mib_to_bytes(batch_size: float):
     int
         Number of bytes per batch, to the nearest integer
     """
-    return round(batch_size * 2**20)
+    return round(batch_size * 2 ** 20)
 
 
 def write_batch(batch: int,
@@ -93,14 +94,15 @@ def write_batch(batch: int,
     return batch_path
 
 
-def _relate_record(relvec: bytearray, line1: str, line2: str, refseq: DNA, *,
-                   min_qual: str, ambrel: bool):
+def _relate_record(relvec: bytearray, line1: str, line2: str,
+                   ref: str, refseq: DNA, min_qual: str, ambrel: bool):
     """ Compute the relation vector of a record in a SAM file. """
     # Fill the relation vector with data from the SAM line(s).
     if line2:
-        relate_pair(relvec, line1, line2, refseq, len(refseq), min_qual, ambrel)
+        relate_pair(relvec, line1, line2,
+                    ref, refseq, len(refseq), min_qual, ambrel)
     else:
-        relate_line(relvec, line1, refseq, len(refseq), min_qual, ambrel)
+        relate_line(relvec, line1, ref, refseq, len(refseq), min_qual, ambrel)
 
 
 def _relate_batch(batch: int, start: int, stop: int, *,
@@ -123,8 +125,7 @@ def _relate_batch(batch: int, start: int, stop: int, *,
         # Copy the blank template to get a new relation vector.
         relvec = blank.copy()
         try:
-            _relate_record(relvec, line1, line2, refseq,
-                           min_qual=min_qual, ambrel=ambrel)
+            _relate_record(relvec, line1, line2, ref, refseq, min_qual, ambrel)
         except Exception as err:
             logger.error(f"Failed to relate read '{read_name}': {err}")
             # Return an empty read name and relation vector.
@@ -212,7 +213,7 @@ class RelationWriter(object):
         # Determine the path of the temporary SAM file.
         temp_sam = path.build(*path.XAM_STEP_SEGS,
                               top=temp_dir, sample=self.sample,
-                              cmd=CMD_REL, step=path.STEPS_VECT[0],
+                              cmd=CMD_REL, step=path.STEPS_VECT_SAMS,
                               ref=self.ref, ext=path.SAM_EXT)
         # Create the temporary SAM file.
         run_view_xam(self.bam, temp_sam, min_mapq=min_mapq, n_procs=n_procs)
@@ -327,13 +328,13 @@ def get_relaters(xam_files: Iterable[Path], fasta: Path, *,
     logger.info("Began creating relation writers")
     # Filter out the XAM files with insufficient reads and index them by
     # the name of the reference.
-    xam_files = {path.parse(xam, *path.XAM_SEGS)[path.REF]: xam for xam in
-                 get_sufficient_xam_files(xam_files, min_reads, max_procs)}
+    xams = {path.parse(xam, *path.XAM_SEGS)[path.REF]: xam for xam in
+            get_sufficient_xam_files(xam_files, min_reads, max_procs)}
     # Cache the sequences of the references for those XAM files.
-    seqs = {ref: seq for ref, seq in parse_fasta(fasta) if ref in xam_files}
+    seqs = {ref: seq for ref, seq in parse_fasta(fasta, DNA) if ref in xams}
     # Create a RelationWriter for each XAM file.
     relaters = [RelationWriter(xam_file, seqs[ref])
-                for ref, xam_file in xam_files.items()]
+                for ref, xam_file in xams.items()]
     logger.info(f"Ended creating {len(relaters)} relation writer(s)")
     return relaters
 

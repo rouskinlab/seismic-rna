@@ -7,21 +7,19 @@ Tests for Mutation Rate Core Module
 """
 
 import unittest as ut
-from logging import getLogger, Filter, LogRecord
+from logging import Filter, LogRecord
 
 import numpy as np
 import pandas as pd
 
-from .. import mu
 from ..mu import (MAX_MU, clip, _calc_mu_obs,
                   calc_mu_adj_numpy, calc_mu_adj_df, calc_mu_adj_series,
                   calc_f_obs_numpy, calc_f_obs_df, calc_f_obs_series,
-                  get_mu_quantile, normalize, winsorize)
-from ..sim import rng
+                  get_mu_quantile, normalize, winsorize,
+                  logger as mu_logger)
 from ..sect import seq_pos_to_index, Section
 from ..seq import DNA
-
-mu_logger = getLogger(mu.__name__)
+from ..sim import rng
 
 
 def has_close_muts(bitvec: np.ndarray, min_gap: int):
@@ -136,7 +134,6 @@ class TestClip(ut.TestCase):
                 msg = f"Mutation rates outside [0, {MAX_MU}]"
                 return not rec.msg.startswith(msg)
 
-        clip_filter = ClipFilter()
         for scale in range(min_scale, max_scale + 1):
             # Generate random mutation rates, some of which may not be
             # in the range [0, 1].
@@ -149,7 +146,7 @@ class TestClip(ut.TestCase):
             # Suppress the warnings that mu.clip() issues for mutation
             # rates being outside the bounds, since in this case they
             # are out of bounds deliberately.
-            mu_logger.addFilter(clip_filter)
+            mu_logger.addFilter(clip_filter := ClipFilter())
             try:
                 # Clip the mutation rates to the bounds.
                 clipped = clip(mus)

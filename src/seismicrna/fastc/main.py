@@ -15,9 +15,7 @@ from .fastaclean import FastaCleaner
 from ..core import docdef
 from ..core.cli import arg_fasta, opt_out_dir, opt_rerun
 from ..core.cmd import CMD_FASTC
-from ..core.depend import confirm_dependency
 from ..core.seq import DNA
-from ..core.shell import GREP_CMD
 
 logger = getLogger(__name__)
 
@@ -40,7 +38,6 @@ def run(fasta: str, out_dir: str, rerun: bool):
     Clean a FASTA file.
     """
     try:
-        confirm_dependency(GREP_CMD, __name__)
         fc = FastaCleaner(DNA)
         fc.run(fasta_path := Path(fasta),
                Path(out_dir).joinpath(fasta_path.name),

@@ -47,7 +47,7 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
         sam_line = as_sam("read", 99, ref, end5, 0, cigar, "=", 1, len(read),
                           read, qual)
         muts = bytearray(NOCOV.to_bytes(1, byteorder) * len(refseq))
-        relate_line(muts, sam_line, refseq, len(refseq), MED_QUAL, True)
+        relate_line(muts, sam_line, ref, refseq, len(refseq), MED_QUAL, True)
         return muts
 
     def iter_cases(self, refseq: DNA, max_ins: int = 2):

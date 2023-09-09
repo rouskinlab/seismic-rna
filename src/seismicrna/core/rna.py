@@ -8,8 +8,8 @@ import pandas as pd
 
 from . import path
 from .cmd import CMD_FOLD
+from .fasta import write_fasta
 from .sect import Section, POS_NAME
-from .seq import write_fasta
 from .pair import pairs_to_partners, parse_ct_pairs
 
 logger = getLogger(__name__)

@@ -131,11 +131,3 @@ def config(verbose: int, quiet: int, log_file: str | None = None):
         file_handler.setLevel(get_verbosity(verbose=MAX_VERBOSE))
         file_handler.setFormatter(logging.Formatter(FILE_MSG_FORMAT))
         logger.addHandler(file_handler)
-
-
-def fatal_error(message: str, logger: logging.Logger | None = None):
-    """ Log a fatal error and exit. """
-    if logger is None:
-        logger = get_top_logger()
-    logger.critical(message)
-    raise SystemExit()

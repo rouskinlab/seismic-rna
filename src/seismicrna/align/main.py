@@ -30,7 +30,7 @@ from ..core.cli import (arg_fasta,
                         opt_min_mapq, opt_min_reads)
 from ..core.cmd import CMD_ALIGN
 from ..core.depend import confirm_dependency
-from ..core.parallel import lock_temp_dir
+from ..core.temp import lock_temp_dir
 from ..core.shell import (BOWTIE2_CMD, BOWTIE2_BUILD_CMD, CUTADAPT_CMD,
                           FASTQC_CMD, SAMTOOLS_CMD)
 

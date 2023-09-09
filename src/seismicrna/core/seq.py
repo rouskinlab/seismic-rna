@@ -9,22 +9,14 @@ for reading them from and writing them to FASTA files.
 
 """
 
-import re
-from collections import Counter
 from functools import cache, cached_property
 from itertools import chain, product
-from logging import getLogger
-from pathlib import Path
-from subprocess import CompletedProcess
-from typing import Iterable
+from string import printable
+from typing import Any
 
 import numpy as np
 
-from . import path
-from .shell import args_to_cmd, GREP_CMD, ShellCommand
 from .sim import rng
-
-logger = getLogger(__name__)
 
 # Nucleic acid sequence alphabets.
 BASEA = 'A'
@@ -42,21 +34,17 @@ PICTG = '⌡'
 PICTU = '▼'
 PICTS = PICTA, PICTC, PICTN, PICTG, PICTU
 
-# FASTA name line format.
-FASTA_NAME_MARK = '>'
-FASTA_NAME_REGEX = re.compile(f"^{FASTA_NAME_MARK}([{path.STR_CHARS}]*)")
-
 
 class Seq(object):
     __slots__ = "_seq",
 
     alph: tuple[str, str, str, str, str]
 
-    def __init__(self, seq: Iterable[str]):
-        if invalid := set(seq) - self.get_alphaset():
+    def __init__(self, seq: Any):
+        self._seq = str(seq)
+        if invalid := set(self._seq) - self.get_alphaset():
             raise ValueError(
                 f"Invalid {self.__class__.__name__} bases: {sorted(invalid)}")
-        self._seq = str(seq)
 
     @cached_property
     def rc(self):
@@ -89,6 +77,12 @@ class Seq(object):
     def get_alphaset(cls):
         """ Get the alphabet as a set. """
         return set(cls.alph)
+
+    @classmethod
+    @cache
+    def get_nonalphaset(cls):
+        """ Get the printable characters not in the alphabet. """
+        return set(printable) - cls.get_alphaset()
 
     @classmethod
     @cache
@@ -222,170 +216,3 @@ def expand_degenerate_seq(seq: DNA):
     else:
         # If the sequence contains no N bases, then yield it as DNA.
         yield DNA(segs[0])
-
-
-def match_to_seq_name(match: re.Match[str]):
-    """ Extract the name from a matched FASTA name line. """
-    name, = match.groups()
-    if name_strip := name.strip():
-        return name_strip
-    raise ValueError(f"Name in FASTA file is blank")
-
-
-def match_fasta_seq_name(line: str):
-    """ Try to match a line as if it were the name line of a FASTA. """
-    if match := FASTA_NAME_REGEX.match(line):
-        # The line matches: validate it.
-        if match.group() != line.rstrip():
-            raise ValueError(f"Name line {repr(line)} has illegal characters")
-        return match_to_seq_name(match)
-    # The line does not match: return None.
-    return
-
-
-def get_fasta_seq_name(line: str):
-    """ Get the name of a sequence from the line of a FASTA. """
-    if (name := match_fasta_seq_name(line)) is None:
-        raise ValueError(f"Line {repr(line)} is not in FASTA name line format")
-    return name
-
-
-def try_fasta_seq_name(line: str):
-    try:
-        return get_fasta_seq_name(line)
-    except Exception as error:
-        logger.error(error)
-    return ""
-
-
-def format_fasta_name_line(name: str):
-    return f"{FASTA_NAME_MARK}{name}\n"
-
-
-def format_fasta_record(name: str, seq: Seq):
-    return f"{format_fasta_name_line(name)}{seq}\n"
-
-
-def parse_fasta(fasta: Path, rna: bool = False):
-    """ Parse a FASTA file and iterate through the reference names and
-    sequences. """
-    if not fasta:
-        raise TypeError("No FASTA file given")
-    seq_type = RNA if rna else DNA
-    logger.info(f"Began parsing FASTA of {seq_type.__name__}: {fasta}")
-    # Get the name of the set of references.
-    refset = path.parse(fasta, path.FastaSeg)[path.REF]
-    has_ref_named_refset = False
-    # Record the names of all the references.
-    names = set()
-    with open(fasta) as f:
-        line = f.readline()
-        while line:
-            try:
-                name_line = line
-                # Read the sequence of the reference up until the next
-                # reference or the end of the file.
-                segments = list()
-                while ((line := f.readline())
-                       and not line.startswith(FASTA_NAME_MARK)):
-                    segments.append(line.rstrip())
-                # Get the name of the sequence.
-                name = get_fasta_seq_name(name_line)
-                # If there are two or more references with the same
-                # name, then the sequence of only the first is used.
-                if name in names:
-                    logger.warning(f"Duplicate reference '{name}' in {fasta}")
-                    continue
-                # If any reference has the same name as the file, then
-                # the file is not allowed to have any more references
-                # because, if it did, then the files of all references
-                # and of only the self-named reference would have the
-                # same names and thus have indistinguishable paths.
-                if name == refset:
-                    has_ref_named_refset = True
-                    logger.debug(f"Reference '{name}' had same name as {fasta}")
-                if has_ref_named_refset and names:
-                    raise ValueError(f"Because {fasta} had a reference with "
-                                     f"the same name as the file ('{name}'), "
-                                     f"it is not allowed to have any other "
-                                     f"references, but it also had {names}")
-                # Confirm that the sequence is valid.
-                seq = seq_type("".join(segments))
-            except Exception as error:
-                logger.error(error)
-            else:
-                # Yield the validated name and sequence.
-                names.add(name)
-                logger.debug(f"Read {seq_type.__name__} reference '{name}' "
-                             f"({len(seq)} nt) from {fasta}")
-                yield name, seq
-    logger.info(f"Ended parsing {len(names)} {seq_type.__name__} sequence(s) "
-                f"from {fasta}")
-
-
-def _fasta_names_cmd(fasta: Path):
-    """ Parse only the names of the references in a FASTA file. """
-    return args_to_cmd([GREP_CMD, f"^{FASTA_NAME_MARK}", fasta])
-
-
-def _parse_fasta_names(process: CompletedProcess):
-    """ Parse only the names of the references in a FASTA file. """
-    counts = Counter(name for line in process.stdout.decode().splitlines()
-                     if (name := try_fasta_seq_name(line)))
-    if duplicates := [name for name, count in counts.items() if count > 1]:
-        logger.warning(f"Duplicate sequence names: {duplicates}")
-    return list(counts)
-
-
-parse_fasta_names = ShellCommand("parsing names of sequences in",
-                                 _fasta_names_cmd,
-                                 _parse_fasta_names,
-                                 opath=False)
-
-
-def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]],
-                overwrite: bool = False):
-    """ Write an iterable of reference names and DNA sequences to a
-    FASTA file. """
-    if not fasta:
-        raise TypeError("No FASTA file given")
-    logger.info(f"Began writing FASTA file: {fasta}")
-    # Get the name of the set of references.
-    refset = path.parse(fasta, path.FastaSeg)[path.REF]
-    has_ref_named_refset = False
-    # Record the names of all the references.
-    names = set()
-    with open(fasta, 'w' if overwrite else 'x') as f:
-        for name, seq in refs:
-            # Confirm that the name is not blank.
-            if not name:
-                logger.error(f"Blank reference name")
-                continue
-            # If there are two or more references with the same name,
-            # then the sequence of only the first is used.
-            if name in names:
-                logger.warning(f"Duplicate reference '{name}'")
-                continue
-            # If any reference has the same name as the file, then the
-            # file is not allowed to have any additional references
-            # because, if it did, then the files of all references and
-            # of only the self-named reference would have the same names
-            # and thus be indistinguishable by their paths.
-            if name == refset:
-                has_ref_named_refset = True
-                logger.debug(f"Reference '{name}' had same name as {fasta}")
-            if has_ref_named_refset and names:
-                raise ValueError(f"Because {fasta} got a reference with the "
-                                 f"same name as the file ('{name}'), it was "
-                                 f"not allowed to get any other references, "
-                                 f"but it also got {', '.join(names)}")
-            try:
-                f.write(format_fasta_record(name, seq))
-            except Exception as error:
-                logger.error(
-                    f"Error writing reference '{name}' to {fasta}: {error}")
-            else:
-                logger.debug(f"Wrote reference '{name}' ({len(seq)} nt) "
-                             f"to {fasta}")
-                names.add(name)
-    logger.info(f"Wrote {len(names)} sequences(s) to {fasta}")
