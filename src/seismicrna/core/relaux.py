@@ -1,6 +1,6 @@
 """
 
-Relate Auxilliary Core Module
+Relate Auxiliary Core Module
 
 ========================================================================
 
@@ -547,60 +547,3 @@ def iter_alignments(*args, **kwargs):
         qual = quals[key]
         for cigar in cigars[key]:
             yield read, qual, cigar, end5, end3, relvec
-
-
-def as_sam(name: str, flag: int, ref: str, end5: int, mapq: int, cigar: str,
-           rnext: str, pnext: int, tlen: int, read: DNA, qual: str):
-    """
-    Return a line in SAM format from the given fields.
-
-    Parameters
-    ----------
-    name: str
-        Name of the read.
-    flag: int
-        SAM flag. Must be in [0, 4096).
-    ref: str
-        Name of the reference.
-    end5: int
-        Most 5' position to which the read mapped (1-indexed).
-    mapq: int
-        Mapping quality score.
-    cigar: str
-        CIGAR string. Not checked for compatibility with the read.
-    rnext: str
-        Name of the mate's reference (if paired-end).
-    pnext: int
-        Most 5' position of the mate (if paired-end).
-    tlen: int
-        Length of the template.
-    read: DNA
-        Base calls in the read. Must be equal in length to `read`.
-    qual: str
-        Phred quality score string of the base calls. Must be equal in
-        length to `read`.
-
-    Returns
-    -------
-    str
-        A line in SAM format containing the given fields.
-    """
-    if not name:
-        raise ValueError("Read name is empty")
-    if not 0 <= flag < 4096:  # 4096 = 2^12
-        raise ValueError(f"Invalid SAM flag: {flag}")
-    if not ref:
-        raise ValueError("Reference name is empty")
-    if not end5 >= 1:
-        raise ValueError(f"Invalid 5' mapping position: {end5}")
-    if not cigar:
-        raise ValueError("CIGAR string is empty")
-    if not rnext:
-        raise ValueError("Next reference name is empty")
-    if not pnext >= 1:
-        raise ValueError(f"Invalid next 5' mapping position: {pnext}")
-    if not len(read) == len(qual):
-        raise ValueError(
-            f"Lengths of read ({len(read)}) and qual ({len(qual)}) disagree")
-    return (f"{name}\t{flag}\t{ref}\t{end5}\t{mapq}\t{cigar}\t"
-            f"{rnext}\t{pnext}\t{tlen}\t{read}\t{qual}\n")

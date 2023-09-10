@@ -21,7 +21,7 @@ from ..rel import (NOCOV, MATCH, DELET, INS_5, INS_3, INS_8,
                    MIN_QUAL, MAX_QUAL)
 from ..relaux import (CigarOp, count_cigar_muts, find_cigar_op_pos,
                       iter_relvecs_q53, iter_relvecs_all,
-                      validate_relvec, relvec_to_read, as_sam)
+                      validate_relvec, relvec_to_read)
 from ..seq import DNA, expand_degenerate_seq
 
 
@@ -1014,26 +1014,3 @@ class TestRelvecToRead(ut.TestCase):
             ("ANGNT", "I!III", "1=1M1=1I1=", 1, 4),
         ]
         self.assert_equal(ref, relvecs, expects)
-
-
-class TestAsSam(ut.TestCase):
-    """ Test function `as_sam`. """
-
-    def test_line_in_sam_format(self):
-        line = as_sam("FS10000136:77:BPG61616-2310:1:1101:1000:1300", 99,
-                      "SARS2_FSE", 1, 42, "151=", "=", 133, 283,
-                      DNA("CCCTGTGGGTTTTACACTTAAAAACACAGTCTGTACCGTCTGCGGTATGTG"
-                          "GAAAGGTTATGGCTGTAGTTGTGATCAACTCCGCGAACCCATGCTTCAGTC"
-                          "AGCTGATGCACAATCGTTTTTAAACGGGTTTGCGGTGTAAGTGCAGCCC"),
-                      "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-                      "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-                      "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:")
-        expect = ("FS10000136:77:BPG61616-2310:1:1101:1000:1300\t99\tSARS2_FSE"
-                  "\t1\t42\t151=\t=\t133\t283\t"
-                  "CCCTGTGGGTTTTACACTTAAAAACACAGTCTGTACCGTCTGCGGTATGTGGAAAGGTT"
-                  "ATGGCTGTAGTTGTGATCAACTCCGCGAACCCATGCTTCAGTCAGCTGATGCACAATCG"
-                  "TTTTTAAACGGGTTTGCGGTGTAAGTGCAGCCC\t"
-                  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-                  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-                  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:\n")
-        self.assertEqual(line, expect)

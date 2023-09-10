@@ -6,8 +6,9 @@ import pandas as pd
 from ..relate import relate_line
 from ..seqpos import format_seq_pos
 from ...core.rel import NOCOV, MED_QUAL
-from ...core.relaux import as_sam, iter_alignments
+from ...core.relaux import iter_alignments
 from ...core.seq import DNA
+from ...core.xam import as_sam
 
 
 class TestSeqposFormatSeqPos(ut.TestCase):
