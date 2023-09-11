@@ -19,7 +19,7 @@ from ..mu import (MAX_MU, clip, _calc_mu_obs,
                   logger as mu_logger)
 from ..sect import seq_pos_to_index, Section
 from ..seq import DNA
-from ..sim import rng
+from ..rand import rng
 
 
 def has_close_muts(bitvec: np.ndarray, min_gap: int):

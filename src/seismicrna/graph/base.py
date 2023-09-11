@@ -288,10 +288,10 @@ class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
     def __init__(self, *args, table1: TableLoader, table2: TableLoader,
                  **kwargs):
         super().__init__(*args, **kwargs)
-        for table, table_type in zip([table1,
-                                      table2],
-                                     [self.get_table1_type(),
-                                      self.get_table2_type()]):
+        for table, table_type in zip((table1, table2),
+                                     (self.get_table1_type(),
+                                      self.get_table2_type()),
+                                     strict=True):
             if not isinstance(table, table_type):
                 raise TypeError(f"{self.__class__.__name__} expected table "
                                 f"of type '{table_type.__name__}', "

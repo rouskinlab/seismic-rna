@@ -188,8 +188,7 @@ class RnaState(Rna2dStructure, RnaProfile):
 
     @cached_property
     def auc(self):
-        fpr, tpr = self.roc
-        return compute_auc_roc(fpr, tpr)
+        return compute_auc_roc(*self.roc)
 
 
 # Helper functions #####################################################

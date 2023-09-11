@@ -16,7 +16,7 @@ from typing import Any
 
 import numpy as np
 
-from .sim import rng
+from .rand import rng
 
 # Nucleic acid sequence alphabets.
 BASEA = 'A'

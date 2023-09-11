@@ -1,12 +1,15 @@
 """
-Core -- Simulation Module
+
+Simulation Core Module
 ========================================================================
-Auth: Matty
-Date: 2023-06-06
+
 """
 
 
-import numpy as np
+from .relaux import random_relvecs
 
-# Initialize a pseudo-random number generator.
-rng = np.random.default_rng()
+
+def sam_rvs():
+    """
+    Generate a random SAM file and the corresponding relation vectors.
+    """

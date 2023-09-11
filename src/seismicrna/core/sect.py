@@ -276,7 +276,7 @@ class Section(object):
 
     @property
     def ref_sect(self):
-        return f"{self.ref}:{self.name}"
+        return f"{self.ref}__{self.name}"
 
     def to_dict(self):
         return {"ref": self.ref, "seq": self.seq, "sect": self.name,

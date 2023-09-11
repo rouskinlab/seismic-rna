@@ -241,9 +241,10 @@ def encode_relate(ref_base: str, read_base: str, read_qual: str, min_qual: str):
         Minimum value of `read_qual` to not call the relation ambiguous.
     """
     return ((MATCH if ref_base == read_base
-             else BASE_ENCODINGS[read_base]) if (read_qual >= min_qual
-                                                 and read_base != BASEN
-                                                 and ref_base != BASEN)
+             else BASE_ENCODINGS[read_base])
+            if (read_qual >= min_qual
+                and read_base != BASEN
+                and ref_base != BASEN)
             else ANY_N ^ BASE_ENCODINGS[ref_base])
 
 

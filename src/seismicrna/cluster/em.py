@@ -9,7 +9,7 @@ from scipy.stats import dirichlet
 from .names import CLS_NAME
 from ..core.bitvect import UniqMutBits, iter_all_bit_vectors
 from ..core.mu import calc_mu_adj_numpy, calc_f_obs_numpy
-from ..core.sim import rng
+from ..core.rand import rng
 from ..mask.load import MaskLoader
 
 logger = getLogger(__name__)

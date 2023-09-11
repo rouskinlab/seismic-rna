@@ -1,5 +1,6 @@
 import re
 from logging import getLogger
+from os import linesep
 from pathlib import Path
 from subprocess import CompletedProcess
 
@@ -11,9 +12,10 @@ logger = getLogger(__name__)
 # SAM file format specifications
 SAM_HEADER = '@'
 SAM_DELIM = '\t'
-SAM_UNMAP = '*'
+SAM_NOREF = '*'
 SAM_SEQLINE = "@SQ"
 SAM_SEQNAME = "SN:"
+SAM_SEQLEN = "LN:"
 FLAG_PAIRED = 2 ** 0
 FLAG_PROPER = 2 ** 1
 FLAG_UNMAP = 2 ** 2
@@ -210,7 +212,7 @@ def parse_idxstats(process: CompletedProcess):
     for line in process.stdout.decode().splitlines():
         if stripped_line := line.rstrip():
             ref, length, mapped, unmapped = stripped_line.split(SAM_DELIM)
-            if ref != SAM_UNMAP:
+            if ref != SAM_NOREF:
                 counts[ref] = int(mapped)
     # Sort the references in from most to least abundant.
     return {ref: counts[ref]
@@ -251,6 +253,16 @@ run_ref_header = ShellCommand("getting header line for each reference",
                               opath=False)
 
 
+def sam_header(ref: str, length: int | DNA):
+    if isinstance(length, DNA):
+        length = len(length)
+    if not isinstance(length, int):
+        raise TypeError(f"Length must be int, but got {type(length).__name__}")
+    return SAM_DELIM.join((SAM_SEQLINE,
+                           f"{SAM_SEQNAME}{ref}",
+                           f"{SAM_SEQLEN}{length}{linesep}"))
+
+
 def as_sam(name: str, flag: int, ref: str, end5: int, mapq: int, cigar: str,
            rnext: str, pnext: int, tlen: int, read: DNA, qual: str):
     """
@@ -261,7 +273,7 @@ def as_sam(name: str, flag: int, ref: str, end5: int, mapq: int, cigar: str,
     name: str
         Name of the read.
     flag: int
-        SAM flag. Must be in [0, 4096).
+        SAM flag. Must be in [0, MAX_FLAG].
     ref: str
         Name of the reference.
     end5: int
@@ -299,10 +311,10 @@ def as_sam(name: str, flag: int, ref: str, end5: int, mapq: int, cigar: str,
         raise ValueError("CIGAR string is empty")
     if not rnext:
         raise ValueError("Next reference name is empty")
-    if not pnext >= 1:
+    if not pnext >= 0:
         raise ValueError(f"Invalid next 5' mapping position: {pnext}")
     if not len(read) == len(qual):
         raise ValueError(
             f"Lengths of read ({len(read)}) and qual ({len(qual)}) disagree")
-    return (f"{name}\t{flag}\t{ref}\t{end5}\t{mapq}\t{cigar}\t"
-            f"{rnext}\t{pnext}\t{tlen}\t{read}\t{qual}\n")
+    return SAM_DELIM.join(map(str, (name, flag, ref, end5, mapq, cigar, rnext,
+                                    pnext, tlen, read, f"{qual}{linesep}")))

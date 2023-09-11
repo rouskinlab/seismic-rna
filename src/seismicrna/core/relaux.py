@@ -1,7 +1,6 @@
 """
 
 Relate Auxiliary Core Module
-
 ========================================================================
 
 ------------------------------------------------------------------------
@@ -16,15 +15,16 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 
-from .rel import (BASE_DECODINGS, BASE_ENCODINGS, MIN_INDEL_GAP, NP_TYPE,
+from .rel import (BASE_DECODINGS, MIN_INDEL_GAP, MIN_QUAL, MAX_QUAL, NP_TYPE,
                   CIG_ALIGN, CIG_MATCH, CIG_SUBST,
                   CIG_DELET, CIG_INSRT, CIG_SCLIP,
                   NOCOV, MATCH, DELET, INS_5, INS_3, INS_8,
                   ANY_N, SUB_A, SUB_C, SUB_G, SUB_T, IRREC,
-                  MIN_QUAL, MAX_QUAL, blank_relvec, encode_relate, parse_cigar)
-from .sect import Section
+                  blank_relvec, encode_match, encode_relate, parse_cigar)
+from .sect import BASE_NAME, POS_NAME, Section, index_to_seq
 from .seq import BASEA, BASEC, BASEG, BASET, BASEN, DNA, expand_degenerate_seq
-from .sim import rng
+from .rand import rng
+from .xam import as_sam, sam_header, SAM_NOREF, FLAG_PAIRED
 
 
 class CigarOp(object):
@@ -98,9 +98,13 @@ def validate_relvec(relvec: np.ndarray):
     return end5, end3
 
 
-def random_relvecs(refseq: DNA, reads: pd.Index | np.ndarray | list | int,
-                   ploq: pd.Series, pmut: pd.Series,
-                   ptri: float = 0.50, ptrc: float = 0.25, ptrn: float = 0.25):
+def random_relvecs(refseq: DNA,
+                   reads: pd.Index | np.ndarray | list | int,
+                   ploq: pd.Series,
+                   pmut: pd.Series,
+                   ptri: float = 0.2,
+                   ptrc: float = 0.4,
+                   ptrn: float = 0.3):
     """
     Return random relation vectors.
 
@@ -114,20 +118,30 @@ def random_relvecs(refseq: DNA, reads: pd.Index | np.ndarray | list | int,
         Probability that each position is low-quality.
     pmut: Series
         Mutation rate of each position.
-    ptri: float = 0.25
+    ptri: float = 0.2
         Probability that a mutation is a transition.
-    ptrc: float = 0.25
+    ptrc: float = 0.4
         Probability that a mutation is a complementary transversion.
-    ptrn: float = 0.25
+    ptrn: float = 0.3
         Probability that a mutation is a non-complementary transversion.
 
     Returns
     -------
     """
+    # Obtain the reference sequence as an array.
+    seqarr = refseq.to_array()
     # Validate ploq and pmut.
     if not ploq.index.equals(pmut.index):
         raise ValueError(f"Indexes differ between ploq ({ploq.index}) "
                          f"and pmut ({pmut.index})")
+    positions = ploq.index.get_level_values(POS_NAME)
+    if positions.min() < 1 or positions.max() > len(refseq):
+        raise ValueError(f"Positions must all be in [1, {len(refseq)}], "
+                         f"but got {positions}")
+    if not np.array_equal(seqarr[positions - 1],
+                          ploq.index.get_level_values(BASE_NAME)):
+        raise ValueError(f"Reference sequence {refseq} disagrees with index "
+                         f"of probabilities {ploq.index}")
     if np.any(ploq < 0.) or np.any(ploq >= 1.):
         raise ValueError(f"All ploq must be in [0, 1), but got {ploq}")
     if np.any(pmut < 0.) or np.any(pmut >= 1.):
@@ -147,10 +161,13 @@ def random_relvecs(refseq: DNA, reads: pd.Index | np.ndarray | list | int,
     # Initialize a DataFrame of blank relation vectors.
     relvecs = blank_relvec(refseq, reads)
     n_reads, n_pos = relvecs.shape
-    # Initially set all relationships within the section to matches.
+    # Initially, set all relationships within the section to matches.
     relvecs.loc[:, ploq.index] = MATCH
-    # Simulate whether each position is low-quality.
-    is_loq = rng.random((n_reads, ploq.size)) < ploq
+    # Simulate whether each position is low-quality. Force every N base
+    # in the reference sequence to be low-quality.
+    is_loq = np.logical_or(np.less(rng.random((n_reads, ploq.size)),
+                                   ploq.values[np.newaxis, :]),
+                           np.equal(seqarr, BASEN))
     # Find the indexes of the low-quality positions.
     loq_rows, loq_cols = np.nonzero(is_loq)
     n_loqs = loq_rows.size
@@ -158,10 +175,10 @@ def random_relvecs(refseq: DNA, reads: pd.Index | np.ndarray | list | int,
         raise ValueError(f"Counts differ for low-quality rows ({n_loqs}) "
                          f"and columns ({loq_cols.size})")
     # Mark every low-quality base.
-    for base, code in BASE_ENCODINGS.items():
-        pass
+    relvecs.values[loq_rows, loq_cols] = encode_match(BASEN, MIN_QUAL, MAX_QUAL)
     # Simulate whether each high-quality position is mutated.
-    is_mut = np.logical_and(rng.random((n_reads, pmut.size)) < pmut,
+    is_mut = np.logical_and(np.less(rng.random((n_reads, pmut.size)),
+                                    pmut.values[np.newaxis, :]),
                             np.logical_not(is_loq))
     # Find the indexes of the mutated positions.
     mut_rows, mut_cols = np.nonzero(is_mut)
@@ -170,9 +187,34 @@ def random_relvecs(refseq: DNA, reads: pd.Index | np.ndarray | list | int,
         raise ValueError(f"Counts differ for mutated rows ({n_muts}) "
                          f"and columns ({mut_cols.size})")
     # Simulate the type of each mutation.
-    pmut_types = [pdel, ptrc, ptri, ptrn]
+    pmut_types = pdel, ptrc, ptri, ptrn
     is_mut_types = rng.choice(np.arange(len(pmut_types)), n_muts, p=pmut_types)
-    #
+    # Mark every base with each type of mutation.
+    mut_maps = [
+        {BASEA: DELET, BASEC: DELET, BASEG: DELET, BASET: DELET, BASEN: DELET},
+        {BASEA: SUB_T, BASEC: SUB_G, BASEG: SUB_C, BASET: SUB_A, BASEN: ANY_N},
+        {BASEA: SUB_G, BASEC: SUB_T, BASEG: SUB_A, BASET: SUB_C, BASEN: ANY_N},
+        {BASEA: SUB_C, BASEC: SUB_A, BASEG: SUB_T, BASET: SUB_G, BASEN: ANY_N},
+    ]
+    for mut_type, mut_map in enumerate(mut_maps):
+        # Select only the mutations of the current type.
+        is_mut_type = np.equal(is_mut_types, mut_type)
+        mtype_rows = mut_rows[is_mut_type]
+        mtype_cols = mut_cols[is_mut_type]
+        if mut_type == 0:
+            # The mutation type is a deletion, which is forbidden at the
+            # first and last positions.
+            is_not_end = np.logical_and(0 < mtype_cols, mtype_cols < n_pos - 1)
+            mtype_rows = mtype_rows[is_not_end]
+            mtype_cols = mtype_cols[is_not_end]
+        # Mark each type of base.
+        for base, mut in mut_map.items():
+            # Select only the mutations where the reference base is the
+            # current type of base.
+            is_base = np.equal(seqarr[mtype_cols], base)
+            # Mark those mutations.
+            relvecs.values[mtype_rows[is_base], mtype_cols[is_base]] = mut
+    return relvecs
 
 
 def iter_relvecs_q53(refseq: DNA, low_qual: Sequence[int] = (),
@@ -284,7 +326,9 @@ def iter_relvecs_all(refseq: DNA, max_ins: int = 2):
                                             max_ins)
 
 
-def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: str, lo_qual: str,
+def relvec_to_read(refseq: DNA, relvec: np.ndarray,
+                   hi_qual: str = MAX_QUAL,
+                   lo_qual: str = MIN_QUAL,
                    ins_len: int | Sequence[int] = 1):
     """
     Infer a read sequence and quality string from a reference sequence
@@ -296,10 +340,10 @@ def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: str, lo_qual: str,
         Sequence of the reference.
     relvec: ndarray
         Relation vector.
-    hi_qual: str
+    hi_qual: str = MAX_QUAL
         Character to put in the quality string at every position that is
         high-quality according to the relation vector.
-    lo_qual: str
+    lo_qual: str = MIN_QUAL
         Character to put in the quality string at every position that is
         low-quality according to the relation vector.
     ins_len: int | Sequence[int] = 1
@@ -444,6 +488,75 @@ def relvec_to_read(refseq: DNA, relvec: np.ndarray, hi_qual: str, lo_qual: str,
     qual_string = "".join(qual)
     cigar_string = "".join(map(str, cigars))
     return read_seq, qual_string, cigar_string, end5, end3
+
+
+def _relvec_to_sam_line(read: str,
+                        relvec: np.ndarray,
+                        ref: str,
+                        refseq: DNA, *,
+                        flag: int,
+                        mapq: int,
+                        hi_qual: str = MAX_QUAL,
+                        lo_qual: str = MIN_QUAL,
+                        ins_len: int | Sequence[int] = 1):
+    seq, qual, cig, end5, end3 = relvec_to_read(refseq,
+                                                relvec,
+                                                hi_qual,
+                                                lo_qual,
+                                                ins_len)
+    return as_sam(read, flag, ref, end5, mapq, cig, SAM_NOREF, 0, 0, seq, qual)
+
+
+def _find_blank_range(side3: bool, length: int, end5: int, end3: int):
+    if not length:
+        length = end3 - end5 + 1
+    if length < 1:
+        raise ValueError(f"Length of read must be ≥ 1, but got {length}")
+    return (
+        (end5 - 1, max(end5 - 1, end3 - length))
+        if side3 else
+        (min(end3, end5 - 1 + length), end3)
+    )
+
+
+def _mask_relvec(relvec: np.ndarray, mask5: int, mask3: int):
+    masked = relvec.copy()
+    masked[mask5: mask3] = NOCOV
+    return masked
+
+
+def _relvec_to_sam_pair(read: str,
+                        relvec: np.ndarray,
+                        ref: str,
+                        refseq: DNA, *,
+                        len1: int = 0,
+                        len2: int = 0,
+                        flag: int,
+                        **kwargs):
+    if not flag & FLAG_PAIRED:
+        raise ValueError(f"Expected paired flag, but got {flag}")
+    end5, end3 = validate_relvec(relvec)
+    first3 = bool(rng.integers(2))
+    rv1 = _mask_relvec(relvec, *_find_blank_range(first3, len1, end5, end3))
+    line1 = _relvec_to_sam_line(read, rv1, ref, refseq, flag=flag, **kwargs)
+    rv2 = _mask_relvec(relvec, *_find_blank_range(not first3, len2, end5, end3))
+    line2 = _relvec_to_sam_line(read, rv2, ref, refseq, flag=flag, **kwargs)
+    return line1, line2
+
+
+def relvec_to_sam_lines(*args, flag: int, **kwargs):
+    return (
+        _relvec_to_sam_pair(*args, flag=flag, **kwargs)
+        if flag & FLAG_PAIRED else
+        (_relvec_to_sam_line(*args, flag=flag, **kwargs),)
+    )
+
+
+def relvecs_to_sam_lines(relvecs: pd.DataFrame, ref: str, **kwargs):
+    refseq = index_to_seq(relvecs.columns)
+    yield sam_header(ref, refseq)
+    for read, relvec in zip(relvecs.index, relvecs.values, strict=True):
+        yield from relvec_to_sam_lines(read, relvec, ref, refseq, **kwargs)
 
 
 def ref_to_alignments(refseq: DNA,
