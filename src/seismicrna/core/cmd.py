@@ -11,6 +11,7 @@ Define the names of the commands.
 """
 
 
+CMD_WHOLE = "all"
 CMD_DEMULT = "demult"
 CMD_QC = "qc"
 CMD_ALIGN = "align"
@@ -23,5 +24,17 @@ CMD_GRAPH = "graph"
 CMD_SIM = "sim"
 CMD_TEST = "test"
 CMD_FASTC = "fastc"
-COMMANDS = (CMD_DEMULT, CMD_QC, CMD_ALIGN, CMD_REL, CMD_MASK, CMD_CLUST,
-            CMD_TABLE, CMD_FOLD, CMD_GRAPH, CMD_SIM, CMD_TEST, CMD_FASTC)
+
+COMMANDS = (CMD_WHOLE,
+            CMD_DEMULT,
+            CMD_QC,
+            CMD_ALIGN,
+            CMD_REL,
+            CMD_MASK,
+            CMD_CLUST,
+            CMD_TABLE,
+            CMD_FOLD,
+            CMD_GRAPH,
+            CMD_SIM,
+            CMD_TEST,
+            CMD_FASTC)

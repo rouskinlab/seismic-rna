@@ -8,7 +8,7 @@ This module is the entry point for the command line interface. Running
 
 $ seismic [OPTIONS] command [OPTIONS] [ARGS]
 
-calls the function main_cli() defined in this module.
+calls the function cli() defined in this module.
 
 """
 
