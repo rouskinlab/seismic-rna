@@ -100,11 +100,11 @@ CSVZIP_EXT = ".csv.gz"
 CSV_EXTS = CSV_EXT, CSVZIP_EXT
 PARQ_EXTS = ".parquet", ".parq"
 JSON_EXT = ".json"
-FASTA_EXTS = ".fasta", ".fna", ".fa"
+FASTA_EXTS = ".fa", ".fna", ".fasta"
 BOWTIE2_INDEX_EXTS = (".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2",
                       ".rev.1.bt2", ".rev.2.bt2")
-FQ_EXTS = (".fastq", ".fq", ".fastq.gz", ".fq.gz",
-           "_001.fastq", "_001.fq", "_001.fastq.gz", "_001.fq.gz")
+FQ_EXTS = (".fq.gz", ".fastq.gz", ".fq", ".fastq",
+           "_001.fq.gz", "_001.fastq.gz", "_001.fq", "_001.fastq")
 FQ_PAIRED_EXTS_TEMPLATES = ("_R{}{}", "_mate{}{}", "_{}_sequence{}")
 FQ1_EXTS = tuple(template.format(1, ext) for template, ext in
                  product(FQ_PAIRED_EXTS_TEMPLATES, FQ_EXTS))

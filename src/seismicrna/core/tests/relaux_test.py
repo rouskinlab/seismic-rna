@@ -21,8 +21,7 @@ from ..rel import (NOCOV, MATCH, DELET, INS_5, INS_3, INS_8,
                    MIN_QUAL, MAX_QUAL)
 from ..relaux import (CigarOp, count_cigar_muts, find_cigar_op_pos,
                       iter_relvecs_q53, iter_relvecs_all,
-                      validate_relvec, relvec_to_read, _find_blank_range,
-                      _relvec_to_sam_line, _relvec_to_sam_pair)
+                      validate_relvec, relvec_to_read)
 from ..seq import DNA, expand_degenerate_seq
 
 
@@ -1015,47 +1014,3 @@ class TestRelvecToRead(ut.TestCase):
             ("ANGNT", "I!III", "1=1M1=1I1=", 1, 4),
         ]
         self.assert_equal(ref, relvecs, expects)
-
-
-class TestFindBlankRange(ut.TestCase):
-    """ Test function `_find_blank_range`. """
-
-    def test_side5_zero_length(self):
-        self.assertEqual(_find_blank_range(False, 0, 1, 10),
-                         (10, 10))
-
-    def test_side5_under_length(self):
-        self.assertEqual(_find_blank_range(False, 3, 1, 10),
-                         (3, 10))
-
-    def test_side5_equal_length(self):
-        self.assertEqual(_find_blank_range(False, 10, 1, 10),
-                         (10, 10))
-
-    def test_side5_over_length(self):
-        self.assertEqual(_find_blank_range(False, 11, 1, 10),
-                         (10, 10))
-
-    def test_side5_neg_length(self):
-        self.assertRaisesRegex(ValueError, "Length of read must be ≥ 1",
-                               _find_blank_range, False, -1, 1, 10)
-
-    def test_side3_zero_length(self):
-        self.assertEqual(_find_blank_range(True, 0, 1, 10),
-                         (0, 0))
-
-    def test_side3_under_length(self):
-        self.assertEqual(_find_blank_range(True, 3, 1, 10),
-                         (0, 7))
-
-    def test_side3_equal_length(self):
-        self.assertEqual(_find_blank_range(True, 10, 1, 10),
-                         (0, 0))
-
-    def test_side3_over_length(self):
-        self.assertEqual(_find_blank_range(True, 11, 1, 10),
-                         (0, 0))
-
-    def test_side3_neg_length(self):
-        self.assertRaisesRegex(ValueError, "Length of read must be ≥ 1",
-                               _find_blank_range, True, -1, 1, 10)

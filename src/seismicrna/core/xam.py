@@ -4,6 +4,7 @@ from os import linesep
 from pathlib import Path
 from subprocess import CompletedProcess
 
+from .path import FQ_EXTS, FQ1_EXTS, FQ2_EXTS
 from .seq import DNA
 from .shell import SAMTOOLS_CMD, args_to_cmd, ShellCommand
 
@@ -201,6 +202,23 @@ def count_total_reads(flagstats: dict):
     return sum(count_single_paired(flagstats))
 
 
+def xam_paired(flagstats: dict):
+    """ Determine if the reads are single-end or paired-end. """
+    # Determine if there are any paired-end and single-end reads.
+    paired_two, paired_one, singles = count_single_paired(flagstats)
+    paired = paired_two > 0 or paired_one > 0
+    single = singles > 0
+    # SEISMIC-RNA currently cannot handle both types in one sample.
+    if paired and single:
+        raise ValueError(f"Got both single-end (n = {singles}) and paired-end "
+                         f"(n = {paired_one + paired_two}) reads")
+    # The pairing status cannot be determined if there are no reads.
+    if not paired and not single:
+        return None
+    # Otherwise, return True if paired-end and False if single-end.
+    return paired
+
+
 def idxstats_cmd(xam_inp: Path):
     """ Count the number of reads aligning to each reference. """
     return args_to_cmd([SAMTOOLS_CMD, "idxstats", xam_inp])
@@ -251,6 +269,33 @@ run_ref_header = ShellCommand("getting header line for each reference",
                               ref_header_cmd,
                               parse_ref_header,
                               opath=False)
+
+
+def xam_to_fq_cmd(xam_inp: Path | None,
+                  fq_out: Path | None, *,
+                  interleaved: bool = False,
+                  n_procs: int = 1):
+    """ Convert a XAM file to a FASTQ file using `samtools fastq`. """
+    args = [SAMTOOLS_CMD, "fastq", "-@", n_procs - 1, "-n"]
+    if fq_out:
+        if xam_paired(run_flagstat(xam_inp, n_procs=n_procs)):
+            if interleaved:
+                # Interleave first and second reads in one file.
+                args.extend(["-o", fq_out.with_suffix(FQ_EXTS[0])])
+            else:
+                # Output first and second reads in separate files.
+                args.extend(["-1", fq_out.with_suffix(FQ1_EXTS[0]),
+                             "-2", fq_out.with_suffix(FQ2_EXTS[0])])
+        else:
+            # Output single-end reads in one file.
+            args.extend(["-0", fq_out.with_suffix(FQ_EXTS[0])])
+    if xam_inp:
+        args.append(xam_inp)
+    return args_to_cmd(args)
+
+
+run_xam_to_fq = ShellCommand("deconstructing alignment map",
+                             xam_to_fq_cmd)
 
 
 def sam_header(ref: str, length: int | DNA):
