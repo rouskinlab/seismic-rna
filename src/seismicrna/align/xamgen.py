@@ -176,7 +176,7 @@ def parse_bowtie2(process: CompletedProcess):
 
     n_reads = dict()
     names: tuple[str, ...] = tuple()
-    lines = iter(process.stderr.decode().split(linesep))
+    lines = iter(process.stderr.split(linesep))
     # Read through the lines until one matches the first pattern.
     while not (match := pattern1.match(line := next(lines, "").rstrip())):
         if not line:

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from click import command
 
-from .write import relate_all, get_relaters
+from .write import write_all
 from ..core import docdef, path
 from ..core.cli import (arg_input_path, arg_fasta,
                         opt_out_dir, opt_temp_dir,
@@ -82,24 +82,18 @@ def run(fasta: str,
     read matches the base in the reference, is substituted to another
     base, is deleted, or has one or more extra bases inserted beside it.
     """
-
-    # For each BAM file, create a relation writer.
-    relaters = get_relaters(path.find_files_chain(map(Path, input_path),
-                                                  path.XAM_SEGS),
-                            Path(fasta),
-                            min_reads=min_reads,
-                            max_procs=max_procs)
-
-    # Compute and write relation vectors for each relation writer.
-    return relate_all(relaters=relaters,
-                      out_dir=Path(out_dir),
-                      temp_dir=Path(temp_dir),
-                      min_mapq=min_mapq,
-                      phred_enc=phred_enc,
-                      min_phred=min_phred,
-                      ambrel=ambrel,
-                      batch_size=batch_size,
-                      max_procs=max_procs,
-                      parallel=parallel,
-                      rerun=rerun,
-                      save_temp=save_temp)
+    return write_all(xam_files=list(path.find_files_chain(map(Path, input_path),
+                                                          path.XAM_SEGS)),
+                     fasta=Path(fasta),
+                     out_dir=Path(out_dir),
+                     temp_dir=Path(temp_dir),
+                     min_reads=min_reads,
+                     min_mapq=min_mapq,
+                     phred_enc=phred_enc,
+                     min_phred=min_phred,
+                     ambrel=ambrel,
+                     batch_size=batch_size,
+                     max_procs=max_procs,
+                     parallel=parallel,
+                     rerun=rerun,
+                     save_temp=save_temp)

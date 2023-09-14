@@ -11,7 +11,7 @@ from ..core.cli import (arg_input_path, opt_temp_dir, opt_save_temp,
                         opt_quantile,
                         opt_max_procs, opt_parallel, opt_rerun)
 from ..core.cmd import CMD_FOLD
-from ..core.depend import confirm_dependency
+from ..core.depend import require_dependency
 from ..core.fasta import parse_fasta
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rna import RnaProfile
@@ -65,7 +65,7 @@ def run(fasta: str,
     Run the structure module.
     """
 
-    confirm_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
+    require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
 
     # Get the sections for every reference sequence.
     ref_sections = RefSections(parse_fasta(Path(fasta), DNA),

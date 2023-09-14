@@ -31,14 +31,14 @@ PICTA = '▲'
 PICTC = '⌠'
 PICTN = '○'
 PICTG = '⌡'
-PICTU = '▼'
-PICTS = PICTA, PICTC, PICTN, PICTG, PICTU
+PICTT = PICTU = '▼'
 
 
 class Seq(object):
     __slots__ = "_seq",
 
     alph: tuple[str, str, str, str, str]
+    pict: tuple[str, str, str, str, str]
 
     def __init__(self, seq: Any):
         self._seq = str(seq)
@@ -76,13 +76,13 @@ class Seq(object):
     @cache
     def get_alphaset(cls):
         """ Get the alphabet as a set. """
-        return set(cls.alph)
+        return frozenset(cls.alph)
 
     @classmethod
     @cache
     def get_nonalphaset(cls):
         """ Get the printable characters not in the alphabet. """
-        return set(printable) - cls.get_alphaset()
+        return frozenset(printable) - cls.get_alphaset()
 
     @classmethod
     @cache
@@ -100,7 +100,7 @@ class Seq(object):
     @cache
     def get_pictrans(cls):
         """ Get the translation table for pictogram characters. """
-        return str.maketrans(dict(zip(cls.alph, PICTS, strict=True)))
+        return str.maketrans(dict(zip(cls.alph, cls.pict, strict=True)))
 
     @classmethod
     def random(cls, nt: int,
@@ -184,6 +184,7 @@ class Seq(object):
 
 class DNA(Seq):
     alph = BASEA, BASEC, BASEN, BASEG, BASET
+    pict = PICTA, PICTC, PICTN, PICTG, PICTT
 
     @cache
     def tr(self):
@@ -193,6 +194,7 @@ class DNA(Seq):
 
 class RNA(Seq):
     alph = BASEA, BASEC, BASEN, BASEG, BASEU
+    pict = PICTA, PICTC, PICTN, PICTG, PICTU
 
     @cache
     def rt(self):

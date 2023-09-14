@@ -55,7 +55,9 @@ def format_fasta_record(name: str, seq: Seq, wrap: int = 0):
     return f"{format_fasta_name_line(name)}{format_fasta_seq_lines(seq, wrap)}"
 
 
-def parse_fasta(fasta: Path, seq_type: type[Seq] | None):
+def parse_fasta(fasta: Path,
+                seq_type: type[Seq] | None,
+                only: Iterable[str] | None = None):
     names = set()
     with open(fasta) as f:
         line = f.readline()
@@ -78,29 +80,47 @@ def parse_fasta(fasta: Path, seq_type: type[Seq] | None):
                 # Advance to the next line to prevent the current line
                 # from being read multiple times.
                 line = f.readline()
-                if seq_type is None:
-                    # In name-only mode, yield just the name of the
-                    # reference.
-                    yield name
-                else:
-                    # In name-sequence mode, read the lines until the
-                    # current sequence ends, then assemble the lines.
-                    try:
-                        segments = list()
-                        while line and not line.startswith(FASTA_NAME_MARK):
-                            segments.append(line.rstrip(linesep))
-                            line = f.readline()
-                        seq = seq_type("".join(segments))
-                        logger.debug(f"Read {seq_type.__name__} reference "
-                                     f"'{name}' ({len(seq)} nt) from {fasta}")
-                        yield name, seq
-                    except Exception as error:
-                        logger.error(f"Failed to parse sequence of '{name}' "
-                                     f"in {fasta}: {error}")
+                if only is None or name in only:
+                    # Yield this record if it is not the case that only
+                    # some records have been selected or if the record
+                    # is among those that have been selected.
+                    if seq_type is None:
+                        # In name-only mode, yield just the name of the
+                        # reference.
+                        yield name
+                    else:
+                        # Otherwise, read the lines until the current
+                        # sequence ends, then assemble the lines.
+                        try:
+                            segments = list()
+                            while line and not line.startswith(FASTA_NAME_MARK):
+                                segments.append(line.rstrip(linesep))
+                                line = f.readline()
+                            seq = seq_type("".join(segments))
+                            logger.debug(f"Read {seq_type.__name__} '{name}' "
+                                         f"({len(seq)} nt) from {fasta}")
+                            yield name, seq
+                        except Exception as error:
+                            logger.error(f"Failed to read sequence of '{name}' "
+                                         f"in {fasta}: {error}")
             # Skip to the next name line if there is one, otherwise to
             # the end of the file. Ignore blank lines.
             while line and not line.startswith(FASTA_NAME_MARK):
                 line = f.readline()
+
+
+def get_fasta_seq(fasta: Path, seq_type: type[Seq], name: str):
+    """ Get one sequence of a given name from a FASTA file. """
+    if not isinstance(seq_type, type) and issubclass(seq_type, Seq):
+        raise TypeError("Expected seq_type to be subclass of Seq, but got "
+                        f"{repr(seq_type)}")
+    try:
+        _, seq = next(iter(parse_fasta(fasta, seq_type, (name,))))
+    except StopIteration:
+        pass
+    else:
+        return seq
+    raise ValueError(f"Sequence {repr(name)} was not found in {fasta}")
 
 
 def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]],

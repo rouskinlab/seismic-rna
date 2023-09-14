@@ -32,5 +32,5 @@ def get_table_params(table: PosTableLoader | ClustPosTableLoader,
     else:
         single_type = None
         multi_type = None
-        clusters_params = list()
+        clusters_params = []
     return single_type, multi_type, clusters_params

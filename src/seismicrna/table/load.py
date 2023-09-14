@@ -211,7 +211,7 @@ class ClustFreqTableLoader(TableLoader, ClustFreqTable):
 
 def find_tables(tables: tuple[str, ...]):
     """ Return a file for each given file/directory of a table. """
-    return path.find_files_chain(map(Path, tables), [path.TableSeg])
+    yield from path.find_files_chain(map(Path, tables), [path.TableSeg])
 
 
 def load(table_file: Path):

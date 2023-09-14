@@ -55,7 +55,6 @@ def run(input_path: tuple[str, ...],
         pdf: bool,
         max_procs: int,
         parallel: bool) -> list[Path]:
-    """ Run the graph pos module. """
     tables = list(find_tables(input_path))
     if len(tables) % 2 != 0:
         raise ValueError(f"Number of files must be even, but got {len(tables)}")

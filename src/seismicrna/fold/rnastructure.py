@@ -10,7 +10,8 @@ from pathlib import Path
 
 from ..core import path
 from ..core.rna import RnaProfile
-from ..core.shell import args_to_cmd, run_cmd, RNASTRUCTURE_FOLD_CMD
+from ..core.shell import (args_to_cmd, run_cmd, RNASTRUCTURE_FOLD_CMD,
+                          RNASTRUCTURE_CT2DOT_CMD, RNASTRUCTURE_DOT2CT_CMD)
 
 logger = getLogger(__name__)
 
@@ -42,7 +43,7 @@ def fold(rna: RnaProfile, *,
 def ct2dot(ct_file: Path, number: int | str = "all"):
     """ Convert a CT file to a DOT file. """
     dot_file = ct_file.with_suffix(path.DOT_EXT)
-    cmd = ["ct2dot", ct_file, number, dot_file]
+    cmd = [RNASTRUCTURE_CT2DOT_CMD, ct_file, number, dot_file]
     run_cmd(args_to_cmd(cmd))
     return dot_file
 
@@ -50,6 +51,6 @@ def ct2dot(ct_file: Path, number: int | str = "all"):
 def dot2ct(dot_file: Path):
     """ Convert a DOT file to a CT file. """
     ct_file = dot_file.with_suffix(path.CT_EXT)
-    cmd = ["dot2ct", dot_file, ct_file]
+    cmd = [RNASTRUCTURE_DOT2CT_CMD, dot_file, ct_file]
     run_cmd(args_to_cmd(cmd))
     return ct_file

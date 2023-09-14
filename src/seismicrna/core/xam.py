@@ -4,7 +4,7 @@ from os import linesep
 from pathlib import Path
 from subprocess import CompletedProcess
 
-from .path import FQ_EXTS, FQ1_EXTS, FQ2_EXTS
+from . import path
 from .seq import DNA
 from .shell import SAMTOOLS_CMD, args_to_cmd, ShellCommand
 
@@ -164,11 +164,10 @@ def flagstat_cmd(xam_inp: Path | None, *, n_procs: int = 1):
 
 def parse_flagstat(process: CompletedProcess):
     """ Convert the output into a dict with one entry per line. """
-    stdout = process.stdout.decode()
     stats_pattern = "([0-9]+) [+] ([0-9]+) ([A-Za-z0-9 ]+)"
     return {stat.strip(): (int(n1), int(n2))
             for n1, n2, stat in map(re.Match.groups,
-                                    re.finditer(stats_pattern, stdout))}
+                                    re.finditer(stats_pattern, process.stdout))}
 
 
 run_flagstat = ShellCommand("computing flagstats",
@@ -227,7 +226,7 @@ def idxstats_cmd(xam_inp: Path):
 def parse_idxstats(process: CompletedProcess):
     """ Map each reference to the number of reads aligning to it. """
     counts = dict()
-    for line in process.stdout.decode().splitlines():
+    for line in process.stdout.splitlines():
         if stripped_line := line.rstrip():
             ref, length, mapped, unmapped = stripped_line.split(SAM_DELIM)
             if ref != SAM_NOREF:
@@ -251,7 +250,7 @@ def ref_header_cmd(xam_inp: Path, *, n_procs: int):
 
 def parse_ref_header(process: CompletedProcess):
     """ Map each reference to its header line. """
-    for line in process.stdout.decode().splitlines():
+    for line in process.stdout.splitlines():
         if line.startswith(SAM_SEQLINE):
             # Find the field that has the reference name.
             for field in line.split(SAM_DELIM):
@@ -281,14 +280,14 @@ def xam_to_fq_cmd(xam_inp: Path | None,
         if xam_paired(run_flagstat(xam_inp, n_procs=n_procs)):
             if interleaved:
                 # Interleave first and second reads in one file.
-                args.extend(["-o", fq_out.with_suffix(FQ_EXTS[0])])
+                args.extend(["-o", fq_out.with_suffix(path.FQ_EXTS[0])])
             else:
                 # Output first and second reads in separate files.
-                args.extend(["-1", fq_out.with_suffix(FQ1_EXTS[0]),
-                             "-2", fq_out.with_suffix(FQ2_EXTS[0])])
+                args.extend(["-1", fq_out.with_suffix(path.FQ1_EXTS[0]),
+                             "-2", fq_out.with_suffix(path.FQ2_EXTS[0])])
         else:
             # Output single-end reads in one file.
-            args.extend(["-0", fq_out.with_suffix(FQ_EXTS[0])])
+            args.extend(["-0", fq_out.with_suffix(path.FQ_EXTS[0])])
     if xam_inp:
         args.append(xam_inp)
     return args_to_cmd(args)

@@ -29,7 +29,7 @@ from ..core.cli import (arg_fasta,
                         opt_bt2_gbar, opt_bt2_dpad, opt_bt2_orient,
                         opt_min_mapq, opt_min_reads)
 from ..core.cmd import CMD_ALIGN
-from ..core.depend import confirm_dependency
+from ..core.depend import require_dependency
 from ..core.temp import lock_temp_dir
 from ..core.shell import (BOWTIE2_CMD, BOWTIE2_BUILD_CMD, CUTADAPT_CMD,
                           FASTQC_CMD, SAMTOOLS_CMD)
@@ -174,12 +174,12 @@ def run(*,
 
     # Check for external dependencies.
     if fastqc:
-        confirm_dependency(FASTQC_CMD, __name__)
+        require_dependency(FASTQC_CMD, __name__)
     if cut:
-        confirm_dependency(CUTADAPT_CMD, __name__)
-    confirm_dependency(BOWTIE2_CMD, __name__)
-    confirm_dependency(BOWTIE2_BUILD_CMD, __name__)
-    confirm_dependency(SAMTOOLS_CMD, __name__)
+        require_dependency(CUTADAPT_CMD, __name__)
+    require_dependency(BOWTIE2_CMD, __name__)
+    require_dependency(BOWTIE2_BUILD_CMD, __name__)
+    require_dependency(SAMTOOLS_CMD, __name__)
 
     # FASTQ files of read sequences may come from up to seven different
     # sources (i.e. each argument beginning with "fq_unit"). This step

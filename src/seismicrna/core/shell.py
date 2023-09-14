@@ -1,9 +1,8 @@
 import logging
 import shlex
-import subprocess
 from functools import wraps
 from pathlib import Path
-from subprocess import CompletedProcess
+from subprocess import CompletedProcess, CalledProcessError, run as sp_run
 from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
@@ -11,14 +10,15 @@ logger = logging.getLogger(__name__)
 # Commands for external applications
 BOWTIE2_CMD = "bowtie2"
 BOWTIE2_BUILD_CMD = "bowtie2-build"
+RNASTRUCTURE_CT2DOT_CMD = "ct2dot"
 CUTADAPT_CMD = "cutadapt"
+RNASTRUCTURE_DOT2CT_CMD = "dot2ct"
 ECHO_CMD = "echo"
 FASTQC_CMD = "fastqc"
 RNASTRUCTURE_FOLD_CMD = "Fold"
 GUNZIP_CMD = "gunzip"
 SAMTOOLS_CMD = "samtools"
 WORD_COUNT_CMD = "wc"
-WHICH_CMD = "which"
 
 
 def args_to_cmd(args: list[Any]):
@@ -41,18 +41,31 @@ def cmds_to_subshell(cmds: list[str]):
     return f"( {cmds_to_series(cmds)} )"
 
 
-def run_cmd(cmd: str):
+def run_cmd(cmd: str, text: bool | None = True):
     """ Run a command via subprocess.run(), with logging. """
     # Log the command with which the process was run.
     logger.debug(f"Running command via the shell:\n{cmd}")
-    # Run the process and capture the output.
-    process = subprocess.run(cmd, check=True, shell=True, capture_output=True)
-    # Log the output of the process.
-    if process.stdout:
-        logger.debug(f"STDOUT of {process.args}:\n{process.stdout.decode()}")
-    if process.stderr:
-        logger.debug(f"STDERR of {process.args}:\n{process.stderr.decode()}")
-    return process
+    stdout = stderr = '' if text else b''
+    try:
+        # Run the process and capture the output.
+        process = sp_run(cmd, shell=True, check=True,
+                         capture_output=text is not None, text=text)
+    except CalledProcessError as error:
+        # Capture the output (if any) before re-raising the error.
+        stdout = error.stdout
+        stderr = error.stderr
+        raise
+    else:
+        # Capture the output (if any) before returning the process.
+        stdout = process.stdout
+        stderr = process.stderr
+        return process
+    finally:
+        # Log the output of the process regardless of its success.
+        if stdout:
+            logger.debug(f"STDOUT of {cmd}:\n{stdout}")
+        if stderr:
+            logger.debug(f"STDERR of {cmd}:\n{stderr}")
 
 
 def iopaths(has_ipath: bool = True, has_opath: bool = True):

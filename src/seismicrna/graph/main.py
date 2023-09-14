@@ -1,9 +1,6 @@
 from click import group
 
-from . import seqbar as seqbar_mod
-from . import seqcorr as seqcorr_mod
-from . import seqdiff as seqdiff_mod
-from . import scatter as scatter_mod
+from . import seqbar, seqcorr, seqdiff, scatter
 from ..core.cmd import CMD_GRAPH
 
 
@@ -14,7 +11,7 @@ def cli():
 
 
 # Add graph commands to the CLI.
-cli.add_command(seqbar_mod.cli)
-cli.add_command(seqcorr_mod.cli)
-cli.add_command(seqdiff_mod.cli)
-cli.add_command(scatter_mod.cli)
+cli.add_command(seqbar.cli)
+cli.add_command(seqcorr.cli)
+cli.add_command(seqdiff.cli)
+cli.add_command(scatter.cli)
