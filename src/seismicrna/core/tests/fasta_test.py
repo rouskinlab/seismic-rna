@@ -200,7 +200,7 @@ class TestParseFasta(ut.TestCase):
             """ Suppress errors about invalid sequences. """
 
             def filter(self, rec: LogRecord):
-                return "Failed to parse sequence" not in rec.msg
+                return "Failed to read sequence" not in rec.msg
 
         with NTFile('w', suffix=path.FASTA_EXTS[0], delete=False) as f:
             filepath = Path(f.file.name)

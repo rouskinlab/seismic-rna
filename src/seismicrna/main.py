@@ -1,12 +1,11 @@
 """
 
 SEISMIC-RNA Main Module
-
 ========================================================================
 
-This module is the entry point for the command line interface. Running
+This module is the entry point for the command line interface::
 
-$ seismic [OPTIONS] command [OPTIONS] [ARGS]
+    seismic [OPTIONS] command [OPTIONS] [ARGS]
 
 calls the function cli() defined in this module.
 
@@ -36,7 +35,11 @@ params = [
 @pass_context
 def cli(ctx: Context, verbose: int, quiet: int, log: str, profile: str,
         **kwargs):
-    """ SEISMIC-RNA main command line interface """
+    """
+    SEISMIC-RNA main command line interface
+
+    :
+    """
     # Configure logging.
     if log:
         log_file = os.path.abspath(log)

@@ -7,4 +7,5 @@ File Formats
     :maxdepth: 2
 
     data/index
-    reports/index
+    info
+    reports

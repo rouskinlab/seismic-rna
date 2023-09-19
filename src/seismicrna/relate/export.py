@@ -2,8 +2,8 @@ from logging import getLogger
 
 import pandas as pd
 
+from .human import humanize_relvec
 from .seqpos import parse_seq
-from ..core.rel import translate_relvec
 
 
 logger = getLogger(__name__)
@@ -28,7 +28,7 @@ def as_iter(vectors: pd.DataFrame, reference: bool = False):
         # Prepend the reference sequence to the lines of vectors.
         yield f"Reference\t{parse_seq(vectors.columns).decode()}"
     for index, row in zip(vectors.index, vectors.values, strict=True):
-        yield f"{index}\t{translate_relvec(row).decode()}"
+        yield f"{index}\t{humanize_relvec(row).decode()}"
 
 
 def as_block(vectors: pd.DataFrame, reference: bool = False):

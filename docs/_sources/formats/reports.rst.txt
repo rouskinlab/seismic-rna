@@ -1,5 +1,9 @@
 
-Cluster Report
+Report Formats
+========================================================================
+
+
+Relate Report
 ------------------------------------------------------------------------
 
 Fields
@@ -8,14 +12,14 @@ Fields
 ======================== ========= ===============================================
 Name                     Type      Description
 ======================== ========= ===============================================
-Name of Sample           str       Sample's name (directory of BAM file)
-Name of Reference        str       Reference sequence's name (name of BAM file)
+Name of Sample           str       Sample's name (directory of XAM file)
+Name of Reference        str       Reference sequence's name (name of XAM file)
 Sequence of Reference    str       Reference sequence as DNA (from FASTA file)
 Length of Sequence (nt)  int       Number of nucleotides in the reference sequence
 Number of Reads Passed   int       Number of reads processed into relation vectors
 Number of Reads Failed   int       Number of reads that failed to be processed
 MD5 Checksums of Batches list[str] List of the MD5 checksum of each parquet file
-Number of Batches        int       Number of batches (or parquet files)
+Number of Batches        int       Number of parquet files
 Time Began               str       Date and time at which the step began
 Time Ended               str       Date and time at which the step ended
 Time Taken (minutes)     float     Duration of the step, in minutes

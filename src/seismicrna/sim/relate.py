@@ -8,11 +8,13 @@ Simulate Relation Vectors Module
 import numpy as np
 import pandas as pd
 
+from ..core.qual import HI_QUAL, LO_QUAL
 from ..core.rand import rng
-from ..core.rel import (MATCH, DELET, ANY_N, SUB_A, SUB_C, SUB_G, SUB_T,
-                        MIN_QUAL, MAX_QUAL, blank_relvec, encode_match)
+from ..core.rel import MATCH, DELET, ANY_N, SUB_A, SUB_C, SUB_G, SUB_T
 from ..core.sect import BASE_NAME, POS_NAME
 from ..core.seq import BASEA, BASEC, BASEG, BASET, BASEN, DNA
+from ..relate.blank import blank_relvec
+from ..relate.encode import encode_match
 
 
 def sim_relvecs(refseq: DNA,
@@ -92,7 +94,7 @@ def sim_relvecs(refseq: DNA,
         raise ValueError(f"Counts differ for low-quality rows ({n_loqs}) "
                          f"and columns ({loq_cols.size})")
     # Mark every low-quality base.
-    relvecs.values[loq_rows, loq_cols] = encode_match(BASEN, MIN_QUAL, MAX_QUAL)
+    relvecs.values[loq_rows, loq_cols] = encode_match(BASEN, LO_QUAL, HI_QUAL)
     # Simulate whether each high-quality position is mutated.
     is_mut = np.logical_and(np.less(rng.random((n_reads, pmut.size)),
                                     pmut.values[np.newaxis, :]),

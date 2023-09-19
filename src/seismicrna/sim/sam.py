@@ -11,13 +11,14 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 
+from ..core.qual import HI_QUAL, LO_QUAL
 from ..core.rand import rng
-from ..core.rel import (MIN_QUAL, MAX_QUAL, NOCOV)
-from ..core.relaux import relvec_to_read, validate_relvec
+from ..core.rel import NOCOV
 from ..core.sect import index_to_seq
 from ..core.seq import DNA
 from ..core.xam import (as_sam, sam_header, SAM_NOREF, FLAG_PAIRED, FLAG_PROPER,
                         FLAG_FIRST, FLAG_SECOND, FLAG_REVERSE, FLAG_MREVERSE)
+from ..relate.invert import find_relvec_ends, inverse_relate
 
 
 def _relvec_to_sam_line(read: str,
@@ -26,10 +27,10 @@ def _relvec_to_sam_line(read: str,
                         refseq: DNA, *,
                         mapq: int,
                         flag: int = 0,
-                        hi_qual: str = MAX_QUAL,
-                        lo_qual: str = MIN_QUAL,
+                        hi_qual: str = HI_QUAL,
+                        lo_qual: str = LO_QUAL,
                         ins_len: int | Sequence[int] = 1):
-    seq, qual, cig, end5, end3 = relvec_to_read(refseq,
+    seq, qual, cig, end5, end3 = inverse_relate(refseq,
                                                 relvec,
                                                 hi_qual,
                                                 lo_qual,
@@ -63,7 +64,7 @@ def _relvec_to_sam_pair(read: str,
                         len2: int = 0,
                         **kwargs):
     # Find the 5' and 3' coordinates of the relation vector.
-    end5, end3 = validate_relvec(relvec)
+    end5, end3 = find_relvec_ends(relvec)
     # Determine whether the first read is reversed.
     rev1 = bool(rng.integers(2))
     # Set the flags of the first and second reads accordingly.

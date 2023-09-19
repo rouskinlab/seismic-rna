@@ -10,7 +10,19 @@ Submodules
 ----------
 
 
+.. automodule:: seismicrna.core.tests.fasta_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.core.tests.mu_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.core.tests.qual_test
    :members:
    :undoc-members:
    :show-inheritance:
@@ -29,6 +41,18 @@ Submodules
 
 
 .. automodule:: seismicrna.core.tests.seq_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.core.tests.temp_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.core.tests.xam_test
    :members:
    :undoc-members:
    :show-inheritance:

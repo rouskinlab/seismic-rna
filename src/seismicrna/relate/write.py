@@ -1,11 +1,12 @@
 """
-Relate -- Write Module
-======================
-Auth: Matty
+
+Relation Vector Writing Module
+========================================================================
 
 Given alignment map (BAM) files, split each file into batches of reads,
 write the relation vectors for each batch to a compressed file, and
 write a report summarizing the results.
+
 """
 
 from datetime import datetime
@@ -26,6 +27,7 @@ from ..core import path
 from ..core.fasta import get_fasta_seq
 from ..core.files import digest_file
 from ..core.parallel import as_list_of_tuples, dispatch
+from ..core.qual import encode_phred
 from ..core.seq import DNA
 
 logger = getLogger(__name__)
@@ -220,7 +222,7 @@ class RelationWriter(object):
             # Collect the keyword arguments.
             disp_kwargs = dict(xam_view=self.xam, out_dir=out_dir,
                                refseq=self.seq, ambrel=ambrel,
-                               min_qual=get_min_qual(min_phred, phred_enc))
+                               min_qual=encode_phred(min_phred, phred_enc))
             # Generate and write relation vectors for each batch.
             results = dispatch(_relate_batch,
                                n_procs,
@@ -240,7 +242,7 @@ class RelationWriter(object):
         finally:
             if not save_temp:
                 # Delete the temporary SAM file before exiting.
-                self.xam.temp_sam_path.unlink(missing_ok=True)
+                self.xam.delete_temp_sam()
 
     def write(self, *, rerun: bool, out_dir: Path, **kwargs):
         """ Compute a relation vector for every record in a BAM file,
@@ -269,39 +271,6 @@ class RelationWriter(object):
 
     def __str__(self):
         return f"Relate {self.xam}"
-
-
-def get_min_qual(min_phred: int, phred_enc: int):
-    """
-    Return the minimum quality for a base in a read to be considered
-    informative, as the character in the FASTQ file encoding that would
-    be the minimum valid quality.
-
-    Parameters
-    ----------
-    min_phred: int
-        The minimum Phred score needed to use the value of a base call.
-    phred_enc: int
-        The encoding offset for Phred scores. A Phred score is encoded
-        as the character whose ASCII value is the sum of the phred score
-        and the encoding offset.
-
-    Return
-    ------
-    str
-        The character whose ASCII code, in the encoding scheme of the
-        FASTQ file, represents the minimum valid quality.
-
-    Examples
-    --------
-    For example, if the minimum Phred score (`min_phred`) that
-    is accepted as informative is 20, and the Phred encoding of the
-    FASTQ file (`phred_enc`) is 33 (i.e. ASCII+33), then the
-    minimum quality as an ASCII integer (`min_qual`) is 20 + 33
-    = 53, which is character '5'. If `min_phred` were 37, then
-    `min_qual` would be 37 + 33 = 70, which is character 'F'.
-    """
-    return chr(min_phred + phred_enc)
 
 
 def write_one(xam_file: Path, *,

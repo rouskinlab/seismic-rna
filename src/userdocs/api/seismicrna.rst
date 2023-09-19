@@ -16,6 +16,7 @@ Subpackages
    seismicrna.cluster
    seismicrna.core
    seismicrna.demult
+   seismicrna.fastc
    seismicrna.fold
    seismicrna.graph
    seismicrna.mask
@@ -23,6 +24,7 @@ Subpackages
    seismicrna.sim
    seismicrna.table
    seismicrna.test
+   seismicrna.whole
 
 Submodules
 ----------

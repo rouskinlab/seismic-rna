@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Logging messages &mdash; seismic-rna  documentation</title>
@@ -12,11 +12,10 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -100,18 +99,23 @@
            <div itemprop="articleBody">
              
   <section id="logging-messages">
-<h1>Logging messages<a class="headerlink" href="#logging-messages" title="Permalink to this heading"></a></h1>
+<h1>Logging messages<a class="headerlink" href="#logging-messages" title="Permalink to this headline"></a></h1>
 <p>As SEISMIC-RNA runs, it outputs messages about its normal activities and
 any warnings or errors that occur. All messages are saved to a log file
 to provide a record of what happened during the run. The most salient
 messages are also printed to <a class="reference external" href="https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)">standard output</a>. This section shows how
 to control which messages are printed and where log files are written.</p>
 <section id="levels-of-messages">
-<h2>Levels of messages<a class="headerlink" href="#levels-of-messages" title="Permalink to this heading"></a></h2>
+<h2>Levels of messages<a class="headerlink" href="#levels-of-messages" title="Permalink to this headline"></a></h2>
 <p>Messages range from critical errors that halt the program to meticulous
 details of primary interest to software developers. SEISMIC-RNA assigns
 each message one of five levels from <a class="reference external" href="https://docs.python.org/3/howto/logging.html">Python’s built-in logging tools</a>:</p>
 <table class="docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 14%" />
+<col style="width: 76%" />
+</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Level</p></th>
 <th class="head"><p>Name</p></th>
@@ -143,9 +147,9 @@ each message one of five levels from <a class="reference external" href="https:/
 </table>
 </section>
 <section id="messages-on-standard-output">
-<h2>Messages on standard output<a class="headerlink" href="#messages-on-standard-output" title="Permalink to this heading"></a></h2>
+<h2>Messages on standard output<a class="headerlink" href="#messages-on-standard-output" title="Permalink to this headline"></a></h2>
 <section id="format-of-messages-on-standard-output">
-<h3>Format of messages on standard output<a class="headerlink" href="#format-of-messages-on-standard-output" title="Permalink to this heading"></a></h3>
+<h3>Format of messages on standard output<a class="headerlink" href="#format-of-messages-on-standard-output" title="Permalink to this headline"></a></h3>
 <p>Each message on standard output consists of the message level, in all
 capital letters, a tab character, and the message itself, for example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">INFO</span>    <span class="n">This</span> <span class="n">text</span> <span class="n">shows</span> <span class="n">the</span> <span class="nb">format</span> <span class="n">of</span> <span class="n">a</span> <span class="n">message</span> <span class="n">on</span> <span class="n">standard</span> <span class="n">output</span><span class="o">.</span>
@@ -155,13 +159,19 @@ capital letters, a tab character, and the message itself, for example:</p>
 more important messages.</p>
 </section>
 <section id="controlling-which-messages-are-printed">
-<h3>Controlling which messages are printed<a class="headerlink" href="#controlling-which-messages-are-printed" title="Permalink to this heading"></a></h3>
+<h3>Controlling which messages are printed<a class="headerlink" href="#controlling-which-messages-are-printed" title="Permalink to this headline"></a></h3>
 <p>By default, the only messages that are printed to standard output are of
 level 3 or higher (warning, error, and critical). This means that, if no
 problems occur, then SEISMIC-RNA will print nothing. The <code class="docutils literal notranslate"><span class="pre">--verbose</span></code>
 (<code class="docutils literal notranslate"><span class="pre">-v</span></code>) and <code class="docutils literal notranslate"><span class="pre">--quiet</span></code> (<code class="docutils literal notranslate"><span class="pre">-q</span></code>) flags, respectively, lower and raise
 the threshold level for printing messages:</p>
 <table class="docutils align-default">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 12%" />
+<col style="width: 44%" />
+<col style="width: 37%" />
+</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Flag</p></th>
 <th class="head"><p>Threshold</p></th>
@@ -212,10 +222,10 @@ framework that has its own, separate system for controlling verbosity:</p>
 </section>
 </section>
 <section id="messages-in-log-files">
-<h2>Messages in log files<a class="headerlink" href="#messages-in-log-files" title="Permalink to this heading"></a></h2>
+<h2>Messages in log files<a class="headerlink" href="#messages-in-log-files" title="Permalink to this headline"></a></h2>
 <p>All messages are written to the log file.</p>
 <section id="format-of-messages-in-log-files">
-<h3>Format of messages in log files<a class="headerlink" href="#format-of-messages-in-log-files" title="Permalink to this heading"></a></h3>
+<h3>Format of messages in log files<a class="headerlink" href="#format-of-messages-in-log-files" title="Permalink to this headline"></a></h3>
 <p>Each message in a log file consists of the label <code class="docutils literal notranslate"><span class="pre">LOGMSG&gt;</span></code>, the date
 and time (YYYY-MM-DD hh:mm:ss,dcm), the module that printed the message,
 and the message level, separated by tab characters on one line. On the
@@ -226,7 +236,7 @@ next line(s) is the message itself, after which comes one blank line:</p>
 </div>
 </section>
 <section id="controlling-the-path-to-log-files">
-<h3>Controlling the path to log files<a class="headerlink" href="#controlling-the-path-to-log-files" title="Permalink to this heading"></a></h3>
+<h3>Controlling the path to log files<a class="headerlink" href="#controlling-the-path-to-log-files" title="Permalink to this headline"></a></h3>
 <p>The default path of the log file is</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">log</span><span class="o">/</span><span class="n">seismic</span><span class="o">-</span><span class="n">rna_YYYY</span><span class="o">-</span><span class="n">MM</span><span class="o">-</span><span class="n">DD_hh</span><span class="o">-</span><span class="n">mm</span><span class="o">-</span><span class="n">ss</span><span class="o">.</span><span class="n">log</span>
 </pre></div>
@@ -241,7 +251,7 @@ between <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </div>
 </section>
 <section id="viewing-log-files-in-real-time">
-<h3>Viewing log files in real time<a class="headerlink" href="#viewing-log-files-in-real-time" title="Permalink to this heading"></a></h3>
+<h3>Viewing log files in real time<a class="headerlink" href="#viewing-log-files-in-real-time" title="Permalink to this headline"></a></h3>
 <p>Regardless of the verbosity or quietness specified by the <code class="docutils literal notranslate"><span class="pre">-v</span></code>/<code class="docutils literal notranslate"><span class="pre">-q</span></code>
 flags, all messages from all levels can be viewed in real time within
 the log file. To do so, open the log file in the text viewer <a class="reference external" href="https://greenwoodsoftware.com/less/">less</a>:</p>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>seismicrna.core.tests package &mdash; seismic-rna  documentation</title>
@@ -12,11 +12,10 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -51,6 +50,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../manuals/index.html">Manuals</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="seismicrna.html">seismicrna package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.html#seismic-rna">SEISMIC-RNA</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="seismicrna.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.cluster.html">seismicrna.cluster package</a></li>
@@ -60,6 +60,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastc.html">seismicrna.fastc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
@@ -67,6 +68,7 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.html">seismicrna.sim package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.table.html">seismicrna.table package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.test.html">seismicrna.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.whole.html">seismicrna.whole package</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.html#module-seismicrna.main">Submodules</a></li>
@@ -104,15 +106,154 @@
            <div itemprop="articleBody">
              
   <section id="module-seismicrna.core.tests">
-<span id="seismicrna-core-tests-package"></span><h1>seismicrna.core.tests package<a class="headerlink" href="#module-seismicrna.core.tests" title="Permalink to this heading"></a></h1>
-<section id="module-seismicrna.core.tests.mu_test">
-<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.core.tests.mu_test" title="Permalink to this heading"></a></h2>
-<p>Tests for Mutation Rate Core Module</p>
+<span id="seismicrna-core-tests-package"></span><h1>seismicrna.core.tests package<a class="headerlink" href="#module-seismicrna.core.tests" title="Permalink to this headline"></a></h1>
+<section id="module-seismicrna.core.tests.fasta_test">
+<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.core.tests.fasta_test" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestFormat">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.fasta_test.</span></span><span class="sig-name descname"><span class="pre">TestFormat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestFormat" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test format_fasta_name_line and format_fasta_record.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestFormat.test_format_fasta_name_line">
+<span class="sig-name descname"><span class="pre">test_format_fasta_name_line</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestFormat.test_format_fasta_name_line" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestFormat.test_format_fasta_record">
+<span class="sig-name descname"><span class="pre">test_format_fasta_record</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestFormat.test_format_fasta_record" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestFormat.test_format_fasta_seq_lines">
+<span class="sig-name descname"><span class="pre">test_format_fasta_seq_lines</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestFormat.test_format_fasta_seq_lines" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestParseFasta">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.fasta_test.</span></span><span class="sig-name descname"><span class="pre">TestParseFasta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestParseFasta" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test parse_fasta.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestParseFasta.test_duplicate_name">
+<span class="sig-name descname"><span class="pre">test_duplicate_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestParseFasta.test_duplicate_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestParseFasta.test_invalid_name">
+<span class="sig-name descname"><span class="pre">test_invalid_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestParseFasta.test_invalid_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestParseFasta.test_invalid_seq">
+<span class="sig-name descname"><span class="pre">test_invalid_seq</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestParseFasta.test_invalid_seq" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestParseFasta.test_valid_blank_line">
+<span class="sig-name descname"><span class="pre">test_valid_blank_line</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestParseFasta.test_valid_blank_line" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestParseFasta.test_valid_dna">
+<span class="sig-name descname"><span class="pre">test_valid_dna</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestParseFasta.test_valid_dna" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestParseFasta.test_valid_empty">
+<span class="sig-name descname"><span class="pre">test_valid_empty</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestParseFasta.test_valid_empty" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestParseFasta.test_valid_names">
+<span class="sig-name descname"><span class="pre">test_valid_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestParseFasta.test_valid_names" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestParseFasta.test_valid_rna">
+<span class="sig-name descname"><span class="pre">test_valid_rna</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestParseFasta.test_valid_rna" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestValidFastaSeqname">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.fasta_test.</span></span><span class="sig-name descname"><span class="pre">TestValidFastaSeqname</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestValidFastaSeqname" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test valid_fasta_seqname.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestValidFastaSeqname.test_blank">
+<span class="sig-name descname"><span class="pre">test_blank</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestValidFastaSeqname.test_blank" title="Permalink to this definition"></a></dt>
+<dd><p>Test that it fails with blank names.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestValidFastaSeqname.test_illegal_prefix">
+<span class="sig-name descname"><span class="pre">test_illegal_prefix</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestValidFastaSeqname.test_illegal_prefix" title="Permalink to this definition"></a></dt>
+<dd><p>Test it fails on names starting with illegal characters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestValidFastaSeqname.test_illegal_suffix">
+<span class="sig-name descname"><span class="pre">test_illegal_suffix</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestValidFastaSeqname.test_illegal_suffix" title="Permalink to this definition"></a></dt>
+<dd><p>Test it fails on names ending with illegal characters except
+for trailing whitespace, which is simply ignored.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestValidFastaSeqname.test_misformatted">
+<span class="sig-name descname"><span class="pre">test_misformatted</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestValidFastaSeqname.test_misformatted" title="Permalink to this definition"></a></dt>
+<dd><p>Test that it fails on misformatted lines.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestValidFastaSeqname.test_name_mark">
+<span class="sig-name descname"><span class="pre">test_name_mark</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestValidFastaSeqname.test_name_mark" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestValidFastaSeqname.test_valid">
+<span class="sig-name descname"><span class="pre">test_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestValidFastaSeqname.test_valid" title="Permalink to this definition"></a></dt>
+<dd><p>Test that it works on valid name lines.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestWriteFasta">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.fasta_test.</span></span><span class="sig-name descname"><span class="pre">TestWriteFasta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestWriteFasta" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test write_fasta.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestWriteFasta.test_invalid_name">
+<span class="sig-name descname"><span class="pre">test_invalid_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestWriteFasta.test_invalid_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestWriteFasta.test_no_overwrite">
+<span class="sig-name descname"><span class="pre">test_no_overwrite</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestWriteFasta.test_no_overwrite" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestWriteFasta.test_overwrite">
+<span class="sig-name descname"><span class="pre">test_overwrite</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestWriteFasta.test_overwrite" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.fasta_test.TestWriteFasta.test_valid_names">
+<span class="sig-name descname"><span class="pre">test_valid_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.fasta_test.TestWriteFasta.test_valid_names" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-seismicrna.core.tests.mu_test"></span><p>Tests for Mutation Rate Core Module</p>
 <hr class="docutils" />
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestCalcDataFrame">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">TestCalcDataFrame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.TestCalcDataFrame" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test functions <cite>mu.calc_mu_adj_df</cite> and mu.calc_f_obs_df.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestCalcDataFrame.test_equals_numpy">
@@ -126,7 +267,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestCalcFObsNumpy">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">TestCalcFObsNumpy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.TestCalcFObsNumpy" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test function <cite>mu.calc_f_obs_numpy</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestCalcFObsNumpy.test_1_dim">
@@ -166,7 +307,7 @@ bit vectors without mutations that are too close.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestCalcMuAdjNumpy">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">TestCalcMuAdjNumpy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.TestCalcMuAdjNumpy" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test function <cite>mu.calc_mu_adj_numpy</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestCalcMuAdjNumpy.test_inv_calc_mu_obs">
@@ -186,7 +327,7 @@ same results as running each cluster separately.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestCalcMuObs">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">TestCalcMuObs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.TestCalcMuObs" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test function <cite>mu._calc_mu_obs</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestCalcMuObs.test_inv_calc_mu_adj">
@@ -214,7 +355,7 @@ filtered to remove mutations that are too close.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestCalcSeries">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">TestCalcSeries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.TestCalcSeries" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test <cite>mu.calc_mu_adj_series</cite> and mu.calc_f_obs_series.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestCalcSeries.test_equals_numpy">
@@ -228,7 +369,7 @@ filtered to remove mutations that are too close.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestClip">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">TestClip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.TestClip" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test function <cite>mu.clip</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestClip.test_with_clip">
@@ -247,16 +388,16 @@ filtered to remove mutations that are too close.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestGetMuQuantile">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">TestGetMuQuantile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.TestGetMuQuantile" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test the function <cite>mu.get_mu_quantile</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestGetMuQuantile.NanFilter">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">NanFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.TestGetMuQuantile.NanFilter" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Filter" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Filter</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Filter" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">logging.Filter</span></code></a></p>
 <p>Suppress warnings about NaN quantiles.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestGetMuQuantile.NanFilter.filter">
-<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.LogRecord" title="(in Python v3.11)"><span class="pre">LogRecord</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.TestGetMuQuantile.NanFilter.filter" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.LogRecord" title="(in Python v3.11)"><span class="pre">logging.LogRecord</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.TestGetMuQuantile.NanFilter.filter" title="Permalink to this definition"></a></dt>
 <dd><p>Suppress warnings about NaN quantiles.</p>
 </dd></dl>
 
@@ -302,7 +443,7 @@ filtered to remove mutations that are too close.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestHasCloseMuts">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">TestHasCloseMuts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.TestHasCloseMuts" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test function <cite>has_close_muts</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestHasCloseMuts.test_more_muts">
@@ -327,7 +468,7 @@ filtered to remove mutations that are too close.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestNormalize">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">TestNormalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.TestNormalize" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test the function <cite>mu.normalize</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestNormalize.test_normalize_p0">
@@ -352,7 +493,7 @@ filtered to remove mutations that are too close.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestWinsorize">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">TestWinsorize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.TestWinsorize" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test the function <cite>mu.winsorize</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.TestWinsorize.test_winsorize_p0">
@@ -376,139 +517,82 @@ filtered to remove mutations that are too close.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.drop_close_muts">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">drop_close_muts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bitvecs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.drop_close_muts" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">drop_close_muts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bitvecs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.drop_close_muts" title="Permalink to this definition"></a></dt>
 <dd><p>Return a new array without every row in <cite>bitvecs</cite> that has two
 mutations that are too close.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.has_close_muts">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">has_close_muts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bitvec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.has_close_muts" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">has_close_muts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bitvec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.has_close_muts" title="Permalink to this definition"></a></dt>
 <dd><p>Return True if the bit vector has two mutations separated by
 fewer than <cite>min_gap</cite> non-mutated bits, otherwise False.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.tests.mu_test.label_close_muts">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">label_close_muts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bitvecs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.label_close_muts" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.mu_test.</span></span><span class="sig-name descname"><span class="pre">label_close_muts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bitvecs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.mu_test.label_close_muts" title="Permalink to this definition"></a></dt>
 <dd><p>Return a 1D vector that is True for every row in <cite>bitvecs</cite> that
 has two mutations that are too close, and otherwise False.</p>
+</dd></dl>
+
+<span class="target" id="module-seismicrna.core.tests.qual_test"></span><p>Tests for the Quality Core Module</p>
+<hr class="docutils" />
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.tests.qual_test.TestConstants">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.qual_test.</span></span><span class="sig-name descname"><span class="pre">TestConstants</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.qual_test.TestConstants" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.qual_test.TestConstants.test_phreds">
+<span class="sig-name descname"><span class="pre">test_phreds</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.qual_test.TestConstants.test_phreds" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.qual_test.TestConstants.test_quals">
+<span class="sig-name descname"><span class="pre">test_quals</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.qual_test.TestConstants.test_quals" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.tests.qual_test.TestDecode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.qual_test.</span></span><span class="sig-name descname"><span class="pre">TestDecode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.qual_test.TestDecode" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.qual_test.TestDecode.test_decode">
+<span class="sig-name descname"><span class="pre">test_decode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.qual_test.TestDecode.test_decode" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.tests.qual_test.TestEncode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.qual_test.</span></span><span class="sig-name descname"><span class="pre">TestEncode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.qual_test.TestEncode" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.qual_test.TestEncode.test_encode">
+<span class="sig-name descname"><span class="pre">test_encode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.qual_test.TestEncode.test_encode" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <span class="target" id="module-seismicrna.core.tests.rel_test"></span><p>Tests for the Relate Core Module</p>
 <hr class="docutils" />
 <dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestAsSam">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.rel_test.</span></span><span class="sig-name descname"><span class="pre">TestAsSam</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestAsSam" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<p>Test function <cite>as_sam</cite>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestAsSam.test_line_in_sam_format">
-<span class="sig-name descname"><span class="pre">test_line_in_sam_format</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestAsSam.test_line_in_sam_format" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestBlankRelvec">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.rel_test.</span></span><span class="sig-name descname"><span class="pre">TestBlankRelvec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestBlankRelvec" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<p>Test function <cite>blank_relvec</cite>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestBlankRelvec.compare_numpy">
-<span class="sig-name descname"><span class="pre">compare_numpy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expect</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestBlankRelvec.compare_numpy" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestBlankRelvec.compare_pandas">
-<span class="sig-name descname"><span class="pre">compare_pandas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expect</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestBlankRelvec.compare_pandas" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestBlankRelvec.test_numpy_1d">
-<span class="sig-name descname"><span class="pre">test_numpy_1d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestBlankRelvec.test_numpy_1d" title="Permalink to this definition"></a></dt>
-<dd><p>Test returning a 1D NumPy array.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestBlankRelvec.test_numpy_2d_int">
-<span class="sig-name descname"><span class="pre">test_numpy_2d_int</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestBlankRelvec.test_numpy_2d_int" title="Permalink to this definition"></a></dt>
-<dd><p>Test returning a 2D NumPy array with integer reads.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestBlankRelvec.test_numpy_2d_list">
-<span class="sig-name descname"><span class="pre">test_numpy_2d_list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestBlankRelvec.test_numpy_2d_list" title="Permalink to this definition"></a></dt>
-<dd><p>Test returning a 2D NumPy array with a list of reads.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestBlankRelvec.test_pandas_dataframe_int">
-<span class="sig-name descname"><span class="pre">test_pandas_dataframe_int</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestBlankRelvec.test_pandas_dataframe_int" title="Permalink to this definition"></a></dt>
-<dd><p>Test returning a Pandas DataFrame with integer reads.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestBlankRelvec.test_pandas_dataframe_list">
-<span class="sig-name descname"><span class="pre">test_pandas_dataframe_list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestBlankRelvec.test_pandas_dataframe_list" title="Permalink to this definition"></a></dt>
-<dd><p>Test returning a Pandas DataFrame with integer reads.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestBlankRelvec.test_pandas_series">
-<span class="sig-name descname"><span class="pre">test_pandas_series</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestBlankRelvec.test_pandas_series" title="Permalink to this definition"></a></dt>
-<dd><p>Test returning a Pandas Series.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestCigarOp">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.rel_test.</span></span><span class="sig-name descname"><span class="pre">TestCigarOp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestCigarOp" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<p>Test class <cite>CigarOp</cite>.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestCigarOp.ops">
-<span class="sig-name descname"><span class="pre">ops</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('M',</span> <span class="pre">'=',</span> <span class="pre">'X',</span> <span class="pre">'D',</span> <span class="pre">'I',</span> <span class="pre">'S')</span></em><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestCigarOp.ops" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestCigarOp.test_cigar_init_invalid">
-<span class="sig-name descname"><span class="pre">test_cigar_init_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestCigarOp.test_cigar_init_invalid" title="Permalink to this definition"></a></dt>
-<dd><p>Test that CigarOp instances cannot be created with invalid
-operations.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestCigarOp.test_cigar_init_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_init_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestCigarOp.test_cigar_init_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Test that CigarOp instances can be created.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestCigarOp.test_cigar_lengthen">
-<span class="sig-name descname"><span class="pre">test_cigar_lengthen</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestCigarOp.test_cigar_lengthen" title="Permalink to this definition"></a></dt>
-<dd><p>Test lengthening CIGAR operations.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestCigarOp.test_cigar_str">
-<span class="sig-name descname"><span class="pre">test_cigar_str</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestCigarOp.test_cigar_str" title="Permalink to this definition"></a></dt>
-<dd><p>Test string representations of CIGAR operations.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestConstants">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.rel_test.</span></span><span class="sig-name descname"><span class="pre">TestConstants</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestConstants" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test constants of <cite>rel</cite> module.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestConstants.test_derived_codes">
 <span class="sig-name descname"><span class="pre">test_derived_codes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestConstants.test_derived_codes" title="Permalink to this definition"></a></dt>
 <dd><p>Test the derived relation codes.</p>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestConstants.test_np_type">
+<span class="sig-name descname"><span class="pre">test_np_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestConstants.test_np_type" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestConstants.test_primary_codes">
@@ -518,439 +602,10 @@ operations.</p>
 
 </dd></dl>
 
-<dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestCountCigarMuts">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.rel_test.</span></span><span class="sig-name descname"><span class="pre">TestCountCigarMuts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestCountCigarMuts" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<p>Test function <cite>count_cigar_muts</cite>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestCountCigarMuts.test_cigar_match_subst_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_match_subst_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestCountCigarMuts.test_cigar_match_subst_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Count mutations in a valid CIGAR string.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestEncodeMatch">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.rel_test.</span></span><span class="sig-name descname"><span class="pre">TestEncodeMatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestEncodeMatch" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<p>Test function <cite>encode_match</cite>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestEncodeMatch.test_encode_match_hi_qual">
-<span class="sig-name descname"><span class="pre">test_encode_match_hi_qual</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestEncodeMatch.test_encode_match_hi_qual" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the quality is at least the minimum.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestEncodeMatch.test_encode_match_lo_qual">
-<span class="sig-name descname"><span class="pre">test_encode_match_lo_qual</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestEncodeMatch.test_encode_match_lo_qual" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the quality is less than the minimum.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestEncodeRelate">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.rel_test.</span></span><span class="sig-name descname"><span class="pre">TestEncodeRelate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestEncodeRelate" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<p>Test function <cite>encode_relate</cite>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestEncodeRelate.test_encode_relate_hi_qual">
-<span class="sig-name descname"><span class="pre">test_encode_relate_hi_qual</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestEncodeRelate.test_encode_relate_hi_qual" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the quality is at least the minimum.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestEncodeRelate.test_encode_relate_lo_qual">
-<span class="sig-name descname"><span class="pre">test_encode_relate_lo_qual</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestEncodeRelate.test_encode_relate_lo_qual" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the quality is less than the minimum.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestFindCigarOpPos">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.rel_test.</span></span><span class="sig-name descname"><span class="pre">TestFindCigarOpPos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestFindCigarOpPos" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<p>Test function <cite>find_cigar_op_pos</cite>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_m_aln_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_m_aln_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_m_aln_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Find aligned positions in a CIGAR string with M codes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_m_del_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_m_del_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_m_del_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Find deletions in a CIGAR string with M codes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_m_ins_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_m_ins_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_m_ins_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Find insertions in a CIGAR string with M codes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_m_mat_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_m_mat_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_m_mat_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Find matches in a CIGAR string with M codes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_m_scl_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_m_scl_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_m_scl_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Find soft clippings in a CIGAR string with M codes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_m_sub_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_m_sub_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_m_sub_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Find substitutions in a CIGAR string with M codes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_xeq_aln_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_xeq_aln_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_xeq_aln_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Find aligned positions in a CIGAR string with =/X codes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_xeq_del_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_xeq_del_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_xeq_del_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Find deletions in a CIGAR string with =/X codes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_xeq_ins_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_xeq_ins_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_xeq_ins_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Find insertions in a CIGAR string with =/X codes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_xeq_mat_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_xeq_mat_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_xeq_mat_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Find matches in a CIGAR string with =/X codes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_xeq_scl_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_xeq_scl_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_xeq_scl_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Find soft clippings in a CIGAR string with =/X codes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_xeq_sub_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_xeq_sub_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestFindCigarOpPos.test_cigar_xeq_sub_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Find substitutions in a CIGAR string with =/X codes.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsAll">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.rel_test.</span></span><span class="sig-name descname"><span class="pre">TestIterRelvecsAll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsAll" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<p>Test function <cite>iter_relvecs_all</cite>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsAll.assert_equal">
-<span class="sig-name descname"><span class="pre">assert_equal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.html#seismicrna.core.seq.DNA" title="seismicrna.core.seq.DNA"><span class="pre">DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">expects</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><span class="pre">list</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsAll.assert_equal" title="Permalink to this definition"></a></dt>
-<dd><p>Check that the expected and actual results match.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsAll.test_length_1">
-<span class="sig-name descname"><span class="pre">test_length_1</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsAll.test_length_1" title="Permalink to this definition"></a></dt>
-<dd><p>Test with all length-1 DNA sequences.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsAll.test_length_2">
-<span class="sig-name descname"><span class="pre">test_length_2</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsAll.test_length_2" title="Permalink to this definition"></a></dt>
-<dd><p>Test with all length-2 DNA sequences.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsAll.test_length_3">
-<span class="sig-name descname"><span class="pre">test_length_3</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsAll.test_length_3" title="Permalink to this definition"></a></dt>
-<dd><p>Test with all length-3 DNA sequences.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsQ53">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.rel_test.</span></span><span class="sig-name descname"><span class="pre">TestIterRelvecsQ53</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsQ53" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<p>Test function <cite>iter_relvecs_q53</cite>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsQ53.list_rels">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_rels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_qual</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.11)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end5</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.11)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end3</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.11)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsQ53.list_rels" title="Permalink to this definition"></a></dt>
-<dd><p>Convenience function to run <cite>rel.iter_relvecs_q53</cite> from a
-sequence of str and return a list of lists of ints.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_a">
-<span class="sig-name descname"><span class="pre">test_a</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_a" title="Permalink to this definition"></a></dt>
-<dd><p>Test with sequence ‘A’.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_aa">
-<span class="sig-name descname"><span class="pre">test_aa</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_aa" title="Permalink to this definition"></a></dt>
-<dd><p>Test with sequence ‘AA’.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_agg">
-<span class="sig-name descname"><span class="pre">test_agg</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_agg" title="Permalink to this definition"></a></dt>
-<dd><p>Test with sequence ‘AGG’.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_c">
-<span class="sig-name descname"><span class="pre">test_c</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_c" title="Permalink to this definition"></a></dt>
-<dd><p>Test with sequence ‘C’.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_g">
-<span class="sig-name descname"><span class="pre">test_g</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_g" title="Permalink to this definition"></a></dt>
-<dd><p>Test with sequence ‘G’.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_low_qual">
-<span class="sig-name descname"><span class="pre">test_low_qual</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_low_qual" title="Permalink to this definition"></a></dt>
-<dd><p>Test with each low-quality base.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_low_qual_invalid">
-<span class="sig-name descname"><span class="pre">test_low_qual_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_low_qual_invalid" title="Permalink to this definition"></a></dt>
-<dd><p>Test that invalid low-qual positions raise ValueError.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_t">
-<span class="sig-name descname"><span class="pre">test_t</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_t" title="Permalink to this definition"></a></dt>
-<dd><p>Test with sequence ‘T’.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_type">
-<span class="sig-name descname"><span class="pre">test_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_type" title="Permalink to this definition"></a></dt>
-<dd><p>Test that the result is a Generator of NumPy arrays.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_xaax">
-<span class="sig-name descname"><span class="pre">test_xaax</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestIterRelvecsQ53.test_xaax" title="Permalink to this definition"></a></dt>
-<dd><p>Test that bases with no coverage are marked.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestParseCigar">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.rel_test.</span></span><span class="sig-name descname"><span class="pre">TestParseCigar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestParseCigar" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<p>Test function <cite>parse_cigar</cite>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestParseCigar.test_cigar_align_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_align_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestParseCigar.test_cigar_align_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Parse a valid CIGAR string with align codes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestParseCigar.test_cigar_match_subst_valid">
-<span class="sig-name descname"><span class="pre">test_cigar_match_subst_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestParseCigar.test_cigar_match_subst_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Parse a valid CIGAR string with match and subst codes.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.rel_test.</span></span><span class="sig-name descname"><span class="pre">TestRelvecToRead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<p>Test function <cite>relvec_to_read</cite>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.assert_equal">
-<span class="sig-name descname"><span class="pre">assert_equal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.html#seismicrna.core.seq.DNA" title="seismicrna.core.seq.DNA"><span class="pre">DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">relvecs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expects</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.11)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.assert_equal" title="Permalink to this definition"></a></dt>
-<dd><p>Assert that the actual and expected outputs match.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.assert_raise">
-<span class="sig-name descname"><span class="pre">assert_raise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.html#seismicrna.core.seq.DNA" title="seismicrna.core.seq.DNA"><span class="pre">DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">relvecs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.11)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.11)"><span class="pre">Exception</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regex</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.assert_raise" title="Permalink to this definition"></a></dt>
-<dd><p>Assert that the relation vectors raise an exception.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_all_match">
-<span class="sig-name descname"><span class="pre">test_all_match</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_all_match" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has four matching bases.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_delete_invalid">
-<span class="sig-name descname"><span class="pre">test_delete_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_delete_invalid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has a deletion at either end.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_delete_valid">
-<span class="sig-name descname"><span class="pre">test_delete_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_delete_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has deletions.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_bare_invalid">
-<span class="sig-name descname"><span class="pre">test_insert_bare_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_bare_invalid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has bare insertions (with no underlying
-relationship).</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_dangling_3_invalid">
-<span class="sig-name descname"><span class="pre">test_insert_dangling_3_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_dangling_3_invalid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has an unmatched 3’ insertion.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_dangling_5_invalid">
-<span class="sig-name descname"><span class="pre">test_insert_dangling_5_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_dangling_5_invalid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has an unmatched 5’ insertion.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_deletion_invalid">
-<span class="sig-name descname"><span class="pre">test_insert_deletion_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_deletion_invalid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has an insertion next to a deletion.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_end3_invalid">
-<span class="sig-name descname"><span class="pre">test_insert_end3_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_end3_invalid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has an insertion at the 3’ end.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_end5_invalid">
-<span class="sig-name descname"><span class="pre">test_insert_end5_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_end5_invalid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has an insertion at the 5’ end.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_non_match_valid">
-<span class="sig-name descname"><span class="pre">test_insert_non_match_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_non_match_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has insertions next to substitutions or
-low-quality base calls.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_valid">
-<span class="sig-name descname"><span class="pre">test_insert_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_insert_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has insertions.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_low_qual_invalid">
-<span class="sig-name descname"><span class="pre">test_low_qual_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_low_qual_invalid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has an invalid low-quality base.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_low_qual_valid">
-<span class="sig-name descname"><span class="pre">test_low_qual_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_low_qual_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has a low-quality base.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_nocov_all_invalid">
-<span class="sig-name descname"><span class="pre">test_nocov_all_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_nocov_all_invalid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read does not cover any positions.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_nocov_middle_invalid">
-<span class="sig-name descname"><span class="pre">test_nocov_middle_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_nocov_middle_invalid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read does not cover a middle position.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_nocov_valid">
-<span class="sig-name descname"><span class="pre">test_nocov_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_nocov_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read does not cover one or both ends of the
-reference.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_subst_invalid">
-<span class="sig-name descname"><span class="pre">test_subst_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_subst_invalid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has an invalid substitution.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestRelvecToRead.test_subst_valid">
-<span class="sig-name descname"><span class="pre">test_subst_valid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestRelvecToRead.test_subst_valid" title="Permalink to this definition"></a></dt>
-<dd><p>Test when the read has a substitution.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestValidateRelVec">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.rel_test.</span></span><span class="sig-name descname"><span class="pre">TestValidateRelVec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestValidateRelVec" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<p>Test function <cite>validate_relvecs</cite>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestValidateRelVec.test_blank">
-<span class="sig-name descname"><span class="pre">test_blank</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestValidateRelVec.test_blank" title="Permalink to this definition"></a></dt>
-<dd><p>Test that an entirely blank relation vector is invalid.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestValidateRelVec.test_matches">
-<span class="sig-name descname"><span class="pre">test_matches</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestValidateRelVec.test_matches" title="Permalink to this definition"></a></dt>
-<dd><p>Test that a relation vector of all matches is valid.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestValidateRelVec.test_nocov_margin">
-<span class="sig-name descname"><span class="pre">test_nocov_margin</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestValidateRelVec.test_nocov_margin" title="Permalink to this definition"></a></dt>
-<dd><p>Test that a relation vector with non-covered positions on
-its margins is valid.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestValidateRelVec.test_nocov_middle">
-<span class="sig-name descname"><span class="pre">test_nocov_middle</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestValidateRelVec.test_nocov_middle" title="Permalink to this definition"></a></dt>
-<dd><p>Test that a relation vector with non-covered positions in
-the middle is invalid.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestValidateRelVec.test_not_array">
-<span class="sig-name descname"><span class="pre">test_not_array</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestValidateRelVec.test_not_array" title="Permalink to this definition"></a></dt>
-<dd><p>Test that a non-array relation vector is invalid.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.tests.rel_test.TestValidateRelVec.test_not_uint8">
-<span class="sig-name descname"><span class="pre">test_not_uint8</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.rel_test.TestValidateRelVec.test_not_uint8" title="Permalink to this definition"></a></dt>
-<dd><p>Test that a non-uint8 relation vector is invalid.</p>
-</dd></dl>
-
-</dd></dl>
-
 <span class="target" id="module-seismicrna.core.tests.sect_test"></span><dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.sect_test.TestIndexToPos">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.sect_test.</span></span><span class="sig-name descname"><span class="pre">TestIndexToPos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.sect_test.TestIndexToPos" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test function <cite>index_to_pos</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.sect_test.TestIndexToPos.test_valid_full">
@@ -975,7 +630,7 @@ the middle is invalid.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.sect_test.TestIndexToSeq">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.sect_test.</span></span><span class="sig-name descname"><span class="pre">TestIndexToSeq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.sect_test.TestIndexToSeq" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test function <cite>index_to_seq</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.sect_test.TestIndexToSeq.test_invalid_noncontig">
@@ -1018,7 +673,7 @@ the middle is invalid.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.sect_test.TestSeqPosToIndex">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.sect_test.</span></span><span class="sig-name descname"><span class="pre">TestSeqPosToIndex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.sect_test.TestSeqPosToIndex" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test function <cite>seq_pos_to_index</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.sect_test.TestSeqPosToIndex.test_invalid_dup_1">
@@ -1111,13 +766,12 @@ the middle is invalid.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestDna">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.seq_test.</span></span><span class="sig-name descname"><span class="pre">TestDna</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestDna" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test class <cite>DNA</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestDna.test_alph">
 <span class="sig-name descname"><span class="pre">test_alph</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestDna.test_alph" title="Permalink to this definition"></a></dt>
-<dd><p>Test that DNA.alph is a tuple of the four DNA bases.</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestDna.test_bool">
@@ -1128,28 +782,33 @@ the middle is invalid.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestDna.test_get_alphaset">
 <span class="sig-name descname"><span class="pre">test_get_alphaset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestDna.test_get_alphaset" title="Permalink to this definition"></a></dt>
-<dd><p>Test that DNA.get_alphaset() returns a set of the four DNA
-bases.</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestDna.test_get_comp">
 <span class="sig-name descname"><span class="pre">test_get_comp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestDna.test_get_comp" title="Permalink to this definition"></a></dt>
-<dd><p>Test that DNA.get_comp() returns a tuple of the bases that
-complement each of the four DNA bases in DNA.alph.</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestDna.test_get_comptrans">
 <span class="sig-name descname"><span class="pre">test_get_comptrans</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestDna.test_get_comptrans" title="Permalink to this definition"></a></dt>
-<dd><p>Test that DNA.get_comptrans() returns a dict that maps each
-DNA base to its complementary base.</p>
-</dd></dl>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestDna.test_get_nonalphaset">
+<span class="sig-name descname"><span class="pre">test_get_nonalphaset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestDna.test_get_nonalphaset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestDna.test_invalid_bases">
 <span class="sig-name descname"><span class="pre">test_invalid_bases</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestDna.test_invalid_bases" title="Permalink to this definition"></a></dt>
 <dd><p>Test whether invalid characters raise ValueError.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestDna.test_picto">
+<span class="sig-name descname"><span class="pre">test_picto</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestDna.test_picto" title="Permalink to this definition"></a></dt>
+<dd><p>Test pictograms.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1193,7 +852,7 @@ DNA base to its complementary base.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestExpandDegenerateSeq">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.seq_test.</span></span><span class="sig-name descname"><span class="pre">TestExpandDegenerateSeq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestExpandDegenerateSeq" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test function <cite>expand_degenerate_seq</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestExpandDegenerateSeq.test_one_degenerate">
@@ -1219,13 +878,12 @@ two DNA bases.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestRna">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.seq_test.</span></span><span class="sig-name descname"><span class="pre">TestRna</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestRna" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test class <cite>RNA</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestRna.test_alph">
 <span class="sig-name descname"><span class="pre">test_alph</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestRna.test_alph" title="Permalink to this definition"></a></dt>
-<dd><p>Test that RNA.alph is a tuple of the four RNA bases.</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestRna.test_bool">
@@ -1236,28 +894,33 @@ two DNA bases.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestRna.test_get_alphaset">
 <span class="sig-name descname"><span class="pre">test_get_alphaset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestRna.test_get_alphaset" title="Permalink to this definition"></a></dt>
-<dd><p>Test that RNA.get_alphaset() returns a set of the four RNA
-bases.</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestRna.test_get_comp">
 <span class="sig-name descname"><span class="pre">test_get_comp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestRna.test_get_comp" title="Permalink to this definition"></a></dt>
-<dd><p>Test that RNA.get_comp() returns a tuple of the bases that
-complement each of the four RNA bases in RNA.alph.</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestRna.test_get_comptrans">
 <span class="sig-name descname"><span class="pre">test_get_comptrans</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestRna.test_get_comptrans" title="Permalink to this definition"></a></dt>
-<dd><p>Test that RNA.get_comptrans() returns a dict that maps each
-RNA base to its complementary base.</p>
-</dd></dl>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestRna.test_get_nonalphaset">
+<span class="sig-name descname"><span class="pre">test_get_nonalphaset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestRna.test_get_nonalphaset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestRna.test_invalid_bases">
 <span class="sig-name descname"><span class="pre">test_invalid_bases</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestRna.test_invalid_bases" title="Permalink to this definition"></a></dt>
 <dd><p>Test whether invalid characters raise ValueError.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestRna.test_picto">
+<span class="sig-name descname"><span class="pre">test_picto</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestRna.test_picto" title="Permalink to this definition"></a></dt>
+<dd><p>Test pictograms.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1301,7 +964,7 @@ RNA base to its complementary base.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestSeq">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.seq_test.</span></span><span class="sig-name descname"><span class="pre">TestSeq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.seq_test.TestSeq" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
 <p>Test basic properties of the Seq class.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.seq_test.TestSeq.test_abstract_base_class">
@@ -1369,6 +1032,133 @@ compare as not equal.</p>
 <dd><p>Test that instances of str, DNA, and RNA with identical
 sequences can all be used together in a set.</p>
 </dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-seismicrna.core.tests.temp_test"></span><dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.TestLockTempDir">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.temp_test.</span></span><span class="sig-name descname"><span class="pre">TestLockTempDir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.TestLockTempDir" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test decorator <cite>lock_temp_dir</cite>.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.TestLockTempDir.LockErrFilter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">LockErrFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.TestLockTempDir.LockErrFilter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Filter" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">logging.Filter</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.TestLockTempDir.LockErrFilter.filter">
+<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.LogRecord" title="(in Python v3.11)"><span class="pre">logging.LogRecord</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.TestLockTempDir.LockErrFilter.filter" title="Permalink to this definition"></a></dt>
+<dd><p>Determine if the specified record is to be logged.</p>
+<p>Returns True if the record should be logged, or False otherwise.
+If deemed appropriate, the record may be modified in-place.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.TestLockTempDir.TempErrFilter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TempErrFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.TestLockTempDir.TempErrFilter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Filter" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">logging.Filter</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.TestLockTempDir.TempErrFilter.filter">
+<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.LogRecord" title="(in Python v3.11)"><span class="pre">logging.LogRecord</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.TestLockTempDir.TempErrFilter.filter" title="Permalink to this definition"></a></dt>
+<dd><p>Determine if the specified record is to be logged.</p>
+<p>Returns True if the record should be logged, or False otherwise.
+If deemed appropriate, the record may be modified in-place.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.TestLockTempDir.test_exists_erase_temp">
+<span class="sig-name descname"><span class="pre">test_exists_erase_temp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.TestLockTempDir.test_exists_erase_temp" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.TestLockTempDir.test_exists_save_temp">
+<span class="sig-name descname"><span class="pre">test_exists_save_temp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.TestLockTempDir.test_exists_save_temp" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.TestLockTempDir.test_locked">
+<span class="sig-name descname"><span class="pre">test_locked</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.TestLockTempDir.test_locked" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.TestLockTempDir.test_new_erase_temp">
+<span class="sig-name descname"><span class="pre">test_new_erase_temp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.TestLockTempDir.test_new_erase_temp" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.TestLockTempDir.test_new_save_temp">
+<span class="sig-name descname"><span class="pre">test_new_save_temp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.TestLockTempDir.test_new_save_temp" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.TestLockTempDir.test_wraps">
+<span class="sig-name descname"><span class="pre">test_wraps</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.TestLockTempDir.test_wraps" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.get_lock">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.temp_test.</span></span><span class="sig-name descname"><span class="pre">get_lock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.11)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.get_lock" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.lock">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.temp_test.</span></span><span class="sig-name descname"><span class="pre">lock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.11)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.lock" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.make_lock_temp">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.temp_test.</span></span><span class="sig-name descname"><span class="pre">make_lock_temp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.make_lock_temp" title="Permalink to this definition"></a></dt>
+<dd><p>Make and lock a new temporary directory.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.make_temp">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.temp_test.</span></span><span class="sig-name descname"><span class="pre">make_temp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.make_temp" title="Permalink to this definition"></a></dt>
+<dd><p>Make a new temporary directory with a random path.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.name_lock_temp">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.temp_test.</span></span><span class="sig-name descname"><span class="pre">name_lock_temp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.name_lock_temp" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.name_temp">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.temp_test.</span></span><span class="sig-name descname"><span class="pre">name_temp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.name_temp" title="Permalink to this definition"></a></dt>
+<dd><p>Get the path of a temporary directory that does not exist.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.rm_temp">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.temp_test.</span></span><span class="sig-name descname"><span class="pre">rm_temp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.11)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.rm_temp" title="Permalink to this definition"></a></dt>
+<dd><p>Remove a temporary directory, if it exists.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.run_func">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.temp_test.</span></span><span class="sig-name descname"><span class="pre">run_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.11)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">__</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.run_func" title="Permalink to this definition"></a></dt>
+<dd><p>Placeholder for run() function.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.tests.temp_test.unlock">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.temp_test.</span></span><span class="sig-name descname"><span class="pre">unlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.11)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.temp_test.unlock" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<span class="target" id="module-seismicrna.core.tests.xam_test"></span><dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.tests.xam_test.TestAsSam">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.xam_test.</span></span><span class="sig-name descname"><span class="pre">TestAsSam</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.xam_test.TestAsSam" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test function <cite>as_sam</cite>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.xam_test.TestAsSam.test_line_in_sam_format">
+<span class="sig-name descname"><span class="pre">test_line_in_sam_format</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.xam_test.TestAsSam.test_line_in_sam_format" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 

@@ -3,10 +3,11 @@ from sys import byteorder
 
 import pandas as pd
 
+from ..iterread import iter_alignments
 from ..relate import relate_line
 from ..seqpos import format_seq_pos
-from ...core.rel import NOCOV, MED_QUAL
-from ...core.relaux import iter_alignments
+from ...core.qual import OK_QUAL
+from ...core.rel import NOCOV
 from ...core.seq import DNA
 from ...core.xam import as_sam
 
@@ -49,7 +50,7 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
         sam_line = as_sam("read", 99, ref, end5, 0, cigar, "=", 1, len(read),
                           read, qual)
         muts = bytearray(NOCOV.to_bytes(1, byteorder) * len(refseq))
-        relate_line(muts, sam_line, ref, refseq, len(refseq), MED_QUAL, True)
+        relate_line(muts, sam_line, ref, refseq, len(refseq), OK_QUAL, True)
         return muts
 
     def iter_cases(self, refseq: DNA, max_ins: int = 2):
