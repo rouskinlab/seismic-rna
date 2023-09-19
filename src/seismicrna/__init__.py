@@ -24,7 +24,6 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 __version__ = "0.9.0"
 
-
 ########################################################################
 #                                                                      #
 # ©2023, the Rouskin Lab.                                              #
