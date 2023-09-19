@@ -7,5 +7,5 @@ File Formats
     :maxdepth: 2
 
     data/index
-    info
+    meta
     reports
