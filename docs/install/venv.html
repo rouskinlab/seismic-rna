@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Virtual Environments &mdash; seismic-rna  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/favicon-32x32.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Prerequisites: Python, pip, and Conda" href="prereqs.html" />
+    <link rel="prev" title="Installation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            seismic-rna
+              <img src="../_static/logo-200.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Installation</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Virtual Environments</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#why-a-virtual-environment-is-worth-the-effort-of-setting-it-up">Why a virtual environment is worth the effort of setting it up</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-a-virtual-environment-lets-conflicting-sofware-versions-coexist">How a virtual environment lets conflicting sofware versions coexist</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#creating-activating-and-deactivating-virtual-environments">Creating, activating, and deactivating virtual environments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#managing-software-in-a-virtual-environment">Managing software in a virtual environment</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="prereqs.html">Prerequisites: Python, pip, and Conda</a></li>
+<li class="toctree-l2"><a class="reference internal" href="conda.html">Installing with Conda</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../manuals/index.html">Manuals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/seismicrna.html">seismicrna package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../formats/index.html">File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/index.html">Data Structures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algos/index.html">Algorithms</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">seismic-rna</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Installation</a></li>
+      <li class="breadcrumb-item active">Virtual Environments</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/install/venv.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="virtual-environments">
+<span id="virtual-envs"></span><h1>Virtual Environments<a class="headerlink" href="#virtual-environments" title="Permalink to this headline"></a></h1>
+<p>We <em>highly</em> recommend installing SEISMIC-RNA into a virtual environment.
+Doing so will likely spare you much frustration well into the future.
+If you are not familiar with creating and managing virtual environments,
+then we recommend that you read this brief primer.</p>
+<section id="why-a-virtual-environment-is-worth-the-effort-of-setting-it-up">
+<h2>Why a virtual environment is worth the effort of setting it up<a class="headerlink" href="#why-a-virtual-environment-is-worth-the-effort-of-setting-it-up" title="Permalink to this headline"></a></h2>
+<p>Virtually every piece of software that you use requires other pieces of
+software to be installed. Why? Because software developers want to focus
+on implementing their own ideas, rather than “re-inventing the wheel” by
+implementing algorithms that have already been written.</p>
+<p>Suppose that you are developing a piece of software that requires linear
+algebra routines (e.g. matrix multiplication), as does SEISMIC-RNA.
+Because these routines are needed ubiquitously, algorithms that perform
+them have been distributed in many excellent software packages, such as
+<a class="reference external" href="https://numpy.org/">NumPy</a> for Python. Using a pre-made, well-tested package would save
+you all the time you would need to plan, code, test, debug, and optimize
+your own algorithms (which would take <em>a lot</em> of time). Thus, it would
+expedite the development of your project to borrow routine tasks from
+pre-existing software packages. This borrowing of code is called a
+“dependency”, and SEISMIC-RNA has dozens.</p>
+<p>While dependencies alleviate issues of re-inventing the wheel, they can
+also cause problems if dependencies conflict with each other. Suppose
+you use two pieces of software regularly at work: call them software A
+version 1 (Av1) and software B version 1 (Bv1). Both are dependent on
+software C version 1 (Cv1). All goes well until Bv1 becomes deprecated
+and you need to update it to Bv2. Bv2 is incompatible with Cv1 and needs
+Cv2. But Av1 is incompatible with Cv2, and no upgrade is available that
+is compatible with Cv2. So you need to have two versions of software C
+installed simultaneously: Cv1 for Av1, and Cv2 for Bv2. How can you
+accomplish this feat without mixing up the two versions?</p>
+</section>
+<section id="how-a-virtual-environment-lets-conflicting-sofware-versions-coexist">
+<h2>How a virtual environment lets conflicting sofware versions coexist<a class="headerlink" href="#how-a-virtual-environment-lets-conflicting-sofware-versions-coexist" title="Permalink to this headline"></a></h2>
+<p>Virtual environments let you keep more than one version of a piece of
+software on one computer system, without uninstalling and reinstalling
+the software every time you needed to use a different version (which
+would, of course, be a pain). Instead, you can “activate” a “virtual
+environment” that contains the specific version you need. When finished
+using that version, you can “deactivate” the virtual environment, which
+hides that version of the software.</p>
+<p>A virtual environment is simply a collection of software in which each
+piece of software has a specific version that you can control, as well
+as a list of its dependencies and their versions. The aforementioned
+example incompatibility among software A, B, and C could be solved by
+installing Av1 and Bv2 into separate virtual environments; call them
+<cite>venv1</cite> and <cite>venv2</cite>, respectively. Into <cite>venv1</cite>, you would install Av1
+and Cv1; and into <cite>venv2</cite>, you would install Bv2 and Cv2. If you needed
+to use softwareA, you would activate <cite>venv1</cite> so that you could run Av1
+and Av1 could see Cv1 (but not Cv2). Conversely, when you needed to use
+software B, you would activate <cite>venv2</cite> so that you could run Bv2 and Bv2
+could see Cv2 (but not Cv1).</p>
+</section>
+<section id="creating-activating-and-deactivating-virtual-environments">
+<span id="venv-environment-managers"></span><h2>Creating, activating, and deactivating virtual environments<a class="headerlink" href="#creating-activating-and-deactivating-virtual-environments" title="Permalink to this headline"></a></h2>
+<p>Creation, deletion, activation, and deactivation of virtual environments
+is performed by a piece of software called an “environment manager”. Two
+popular environment managers for Python are <a class="reference external" href="https://docs.python.org/3/library/venv.html">venv</a> (Python’s built-in
+virtual environment manager) and <a class="reference external" href="https://docs.conda.io/en/latest/">conda</a> (the package manager for the
+<a class="reference external" href="https://docs.anaconda.com/free/anaconda/index.html">Anaconda</a> distribution of Python). If you are unsure of which to use,
+then we recommend <a class="reference external" href="https://docs.conda.io/en/latest/">conda</a> because it is also a package manager (see
+<a class="reference internal" href="#venv-package-managers"><span class="std std-ref">Managing software in a virtual environment</span></a>).</p>
+<p>For example, to create a new virtual environment named <cite>seismic</cite> for
+SEISMIC-RNA using <cite>conda</cite>, you would enter the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">seismic</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.10</span>
+</pre></div>
+</div>
+<p>Note that Python 3.10 is currently the only version of Python that is
+compatible with SEISMIC-RNA and all of its dependencies.</p>
+<p>To activate the environment <cite>seismic</cite>, enter the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">seismic</span>
+</pre></div>
+</div>
+<p>Note that it is advisable to give your virtual environments short names
+because you will need to type their names every time you activate them.</p>
+<p>To deactivate the active virtual environment when you are finished,
+enter the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">deactivate</span>
+</pre></div>
+</div>
+<p>Note that you do <em>not</em> need to type the name of the environment after
+<cite>deactivate</cite> because this command simply deactivates the environment
+that is currently active.</p>
+</section>
+<section id="managing-software-in-a-virtual-environment">
+<span id="venv-package-managers"></span><h2>Managing software in a virtual environment<a class="headerlink" href="#managing-software-in-a-virtual-environment" title="Permalink to this headline"></a></h2>
+<p>It would be tedious (and risky) to install, uninstall, upgrade, and
+downgrade, and all of your software manually. Every time you changed a
+piece of software, you would need to install a compatible version of
+every one of its dependencies. Fortunately, these tasks can be automated
+using another piece of software called a “package manager”. (A “package”
+is just a specific version of a piece of software and all its code that
+you can download.) Two popular package managers for Python are <a class="reference external" href="https://pip.pypa.io/en/stable/">pip</a>
+(short for “Package Installer for Python”, Python’s official package
+manager) and <a class="reference external" href="https://docs.conda.io/en/latest/">conda</a>, which is also an environment manager (see
+<a class="reference internal" href="#venv-environment-managers"><span class="std std-ref">Creating, activating, and deactivating virtual environments</span></a>).</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="prereqs.html" class="btn btn-neutral float-right" title="Prerequisites: Python, pip, and Conda" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, the Rouskin Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

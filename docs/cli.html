@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Command Line Interface &mdash; seismic-rna  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/favicon-32x32.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="seismicrna package" href="api/seismicrna.html" />
+    <link rel="prev" title="Logging messages" href="manuals/logging.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            seismic-rna
+              <img src="_static/logo-200.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="about/index.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install/index.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="manuals/index.html">Manuals</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Command Line Interface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#seismic-demult">seismic demult</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#seismic-align">seismic align</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#seismic-relate">seismic relate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#seismic-mask">seismic mask</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#seismic-cluster">seismic cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#seismic-table">seismic table</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#seismic-fold">seismic fold</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#seismic-graph">seismic graph</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#seismic-graph-seqbar">seismic graph seqbar</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#seismic-graph-seqdiff">seismic graph seqdiff</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#seismic-graph-seqcorr">seismic graph seqcorr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#seismic-graph-scatter">seismic graph scatter</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/seismicrna.html">seismicrna package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formats/index.html">File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data/index.html">Data Structures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algos/index.html">Algorithms</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">seismic-rna</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Command Line Interface</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/cli.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="command-line-interface">
+<h1>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline"></a></h1>
+<section id="seismic-demult">
+<h2>seismic demult<a class="headerlink" href="#seismic-demult" title="Permalink to this headline"></a></h2>
+<p>Split multiplexed FASTQ files by their barcodes.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>demult<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>FASTA
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-x">
+<span id="cmdoption-seismic-demult-fastqp"></span><span class="sig-name descname"><span class="pre">-x</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--fastqp</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fastqp&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-x" title="Permalink to this definition"></a></dt>
+<dd><p>FASTQ files of paired-end reads separated into 2 files</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-phred-enc">
+<span class="sig-name descname"><span class="pre">--phred-enc</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;phred_enc&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-phred-enc" title="Permalink to this definition"></a></dt>
+<dd><p>Phred score encoding in FASTQ/SAM/BAM files</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-s">
+<span id="cmdoption-seismic-demult-sections-file"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--sections-file</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;sections_file&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-s" title="Permalink to this definition"></a></dt>
+<dd><p>CSV file of sections by name, reference, and coordinates/primers</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-barcode-start">
+<span class="sig-name descname"><span class="pre">--barcode-start</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;barcode_start&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-barcode-start" title="Permalink to this definition"></a></dt>
+<dd><p>index of start of barcode</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-barcode-length">
+<span class="sig-name descname"><span class="pre">--barcode-length</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;barcode_length&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-barcode-length" title="Permalink to this definition"></a></dt>
+<dd><p>length of barcode</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-o">
+<span id="cmdoption-seismic-demult-out-dir"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--out-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;out_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-o" title="Permalink to this definition"></a></dt>
+<dd><p>Where to output all finished files</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-parallel-demultiplexing">
+<span class="sig-name descname"><span class="pre">--parallel-demultiplexing</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;parallel_demultiplexing&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-parallel-demultiplexing" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to run demultiplexing at maximum speed by submitting multithreaded grep functions</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-clipped">
+<span class="sig-name descname"><span class="pre">--clipped</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;clipped&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-clipped" title="Permalink to this definition"></a></dt>
+<dd><p>Designates the amount of clipped patterns to search for in the sample, will raise compution time</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-mismatch-tolerence">
+<span class="sig-name descname"><span class="pre">--mismatch-tolerence</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;mismatch_tolerence&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-mismatch-tolerence" title="Permalink to this definition"></a></dt>
+<dd><p>Designates the allowable amount of mismatches allowed in a string and still be considered a valid pattern find.                             will increase non-parallel computation at a factorial rate. use caution going above 2 mismatches. does not apply to clipped sequences.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-index-tolerance">
+<span class="sig-name descname"><span class="pre">--index-tolerance</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;index_tolerance&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-index-tolerance" title="Permalink to this definition"></a></dt>
+<dd><p>Designates the allowable amount of distance you allow the pattern to be found in a read from the reference index</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-demulti-overwrite">
+<span class="sig-name descname"><span class="pre">--demulti-overwrite</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;demulti_overwrite&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-demulti-overwrite" title="Permalink to this definition"></a></dt>
+<dd><p>desiginates whether to overwrite the grepped fastq. should only be used if changing setting on the same sample</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-arg-FASTA">
+<span id="cmdoption-seismic-demult-arg-fasta"></span><span class="sig-name descname"><span class="pre">FASTA</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-demult-arg-FASTA" title="Permalink to this definition"></a></dt>
+<dd><p>Required argument</p>
+</dd></dl>
+
+</section>
+<section id="seismic-align">
+<h2>seismic align<a class="headerlink" href="#seismic-align" title="Permalink to this headline"></a></h2>
+<p>Trim FASTQ files with Cutadapt (optional), validate them with
+FASTQC (optional), and align them to a FASTA file with Bowtie2.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>align<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>FASTA
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-x">
+<span id="cmdoption-seismic-align-fastqp"></span><span class="sig-name descname"><span class="pre">-x</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--fastqp</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fastqp&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-x" title="Permalink to this definition"></a></dt>
+<dd><p>FASTQ files of paired-end reads separated into 2 files</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-y">
+<span id="cmdoption-seismic-align-fastqi"></span><span class="sig-name descname"><span class="pre">-y</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--fastqi</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fastqi&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-y" title="Permalink to this definition"></a></dt>
+<dd><p>FASTQ files of paired-end reads interleaved in 1 file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-z">
+<span id="cmdoption-seismic-align-fastqs"></span><span class="sig-name descname"><span class="pre">-z</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--fastqs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fastqs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-z" title="Permalink to this definition"></a></dt>
+<dd><p>FASTQ files of single-end reads</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-X">
+<span id="cmdoption-seismic-align-dmfastqp"></span><span class="sig-name descname"><span class="pre">-X</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--dmfastqp</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;dmfastqp&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-X" title="Permalink to this definition"></a></dt>
+<dd><p>Demultiplexed FASTQ files of mate 1 and mate 2 reads</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-Y">
+<span id="cmdoption-seismic-align-dmfastqi"></span><span class="sig-name descname"><span class="pre">-Y</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--dmfastqi</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;dmfastqi&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-Y" title="Permalink to this definition"></a></dt>
+<dd><p>Demultiplexed FASTQ files of paired-end reads interleaved in one file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-Z">
+<span id="cmdoption-seismic-align-dmfastqs"></span><span class="sig-name descname"><span class="pre">-Z</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--dmfastqs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;dmfastqs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-Z" title="Permalink to this definition"></a></dt>
+<dd><p>Demultiplexed FASTQ files of single-end reads</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-phred-enc">
+<span class="sig-name descname"><span class="pre">--phred-enc</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;phred_enc&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-phred-enc" title="Permalink to this definition"></a></dt>
+<dd><p>Phred score encoding in FASTQ/SAM/BAM files</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-o">
+<span id="cmdoption-seismic-align-out-dir"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--out-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;out_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-o" title="Permalink to this definition"></a></dt>
+<dd><p>Where to output all finished files</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-t">
+<span id="cmdoption-seismic-align-temp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--temp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;temp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-t" title="Permalink to this definition"></a></dt>
+<dd><p>Where to write all temporary files</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-rerun">
+<span id="cmdoption-seismic-align-no-rerun"></span><span class="sig-name descname"><span class="pre">--rerun</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-rerun</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-rerun" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to regenerate files that already exist</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-save-temp">
+<span id="cmdoption-seismic-align-no-save-temp"></span><span class="sig-name descname"><span class="pre">--save-temp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-save-temp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-save-temp" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to save temporary files when the program exits</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-parallel">
+<span id="cmdoption-seismic-align-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to run multiple tasks in parallel</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-max-procs">
+<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-max-procs" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of simultaneous processes</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-fastqc">
+<span id="cmdoption-seismic-align-no-fastqc"></span><span class="sig-name descname"><span class="pre">--fastqc</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-fastqc</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-fastqc" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to check quality of FASTQ files</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-qc-extract">
+<span id="cmdoption-seismic-align-qc-no-extract"></span><span class="sig-name descname"><span class="pre">--qc-extract</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--qc-no-extract</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-qc-extract" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to unzip FASTQC reports</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut">
+<span id="cmdoption-seismic-align-no-cut"></span><span class="sig-name descname"><span class="pre">--cut</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-cut</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-cut" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to trim reads with Cutadapt before alignment</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut-a1">
+<span class="sig-name descname"><span class="pre">--cut-a1</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cut_a1&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-cut-a1" title="Permalink to this definition"></a></dt>
+<dd><p>3’ adapter for read 1</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut-g1">
+<span class="sig-name descname"><span class="pre">--cut-g1</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cut_g1&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-cut-g1" title="Permalink to this definition"></a></dt>
+<dd><p>5’ adapter for read 1</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut-a2">
+<span class="sig-name descname"><span class="pre">--cut-a2</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cut_a2&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-cut-a2" title="Permalink to this definition"></a></dt>
+<dd><p>3’ adapter for read 2</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut-g2">
+<span class="sig-name descname"><span class="pre">--cut-g2</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cut_g2&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-cut-g2" title="Permalink to this definition"></a></dt>
+<dd><p>5’ adapter for read 2</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut-O">
+<span id="cmdoption-seismic-align-cut-o"></span><span class="sig-name descname"><span class="pre">--cut-O</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cut_o&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-cut-O" title="Permalink to this definition"></a></dt>
+<dd><p>Minimum overlap of read and adapter</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut-e">
+<span class="sig-name descname"><span class="pre">--cut-e</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cut_e&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-cut-e" title="Permalink to this definition"></a></dt>
+<dd><p>Error tolerance for adapters</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut-q1">
+<span class="sig-name descname"><span class="pre">--cut-q1</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cut_q1&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-cut-q1" title="Permalink to this definition"></a></dt>
+<dd><p>Phred score for read 1 quality trimming</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut-q2">
+<span class="sig-name descname"><span class="pre">--cut-q2</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cut_q2&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-cut-q2" title="Permalink to this definition"></a></dt>
+<dd><p>Phred score for read 2 quality trimming</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut-m">
+<span class="sig-name descname"><span class="pre">--cut-m</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cut_m&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-cut-m" title="Permalink to this definition"></a></dt>
+<dd><p>Discard reads shorter than this length after trimming</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut-indels">
+<span id="cmdoption-seismic-align-cut-no-indels"></span><span class="sig-name descname"><span class="pre">--cut-indels</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--cut-no-indels</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-cut-indels" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to allow indels in adapters</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut-discard-trimmed">
+<span id="cmdoption-seismic-align-cut-keep-trimmed"></span><span class="sig-name descname"><span class="pre">--cut-discard-trimmed</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--cut-keep-trimmed</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-cut-discard-trimmed" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to discard reads in which an adapter was found</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut-discard-untrimmed">
+<span id="cmdoption-seismic-align-cut-keep-untrimmed"></span><span class="sig-name descname"><span class="pre">--cut-discard-untrimmed</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--cut-keep-untrimmed</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-cut-discard-untrimmed" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to discard reads in which no adapter was found</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cut-nextseq">
+<span id="cmdoption-seismic-align-cut-no-nextseq"></span><span class="sig-name descname"><span class="pre">--cut-nextseq</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--cut-no-nextseq</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-cut-nextseq" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to trim high-quality Gs from 3’ end</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-local">
+<span id="cmdoption-seismic-align-bt2-end-to-end"></span><span class="sig-name descname"><span class="pre">--bt2-local</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--bt2-end-to-end</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-local" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to perform local or end-to-end alignment. Use local with fragmented samples, on which end-to-end yields false positives at read ends. Use end-to-end with amplicon-based samples, on which local yields false negatives at read ends.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-discordant">
+<span id="cmdoption-seismic-align-bt2-no-discordant"></span><span class="sig-name descname"><span class="pre">--bt2-discordant</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--bt2-no-discordant</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-discordant" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output discordant alignments</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-mixed">
+<span id="cmdoption-seismic-align-bt2-no-mixed"></span><span class="sig-name descname"><span class="pre">--bt2-mixed</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--bt2-no-mixed</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-mixed" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to align individual mates of unaligned pairs</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-dovetail">
+<span id="cmdoption-seismic-align-bt2-no-dovetail"></span><span class="sig-name descname"><span class="pre">--bt2-dovetail</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--bt2-no-dovetail</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-dovetail" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to treat dovetailed mate pairs as concordant</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-contain">
+<span id="cmdoption-seismic-align-bt2-no-contain"></span><span class="sig-name descname"><span class="pre">--bt2-contain</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--bt2-no-contain</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-contain" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to treat nested mate pairs as concordant</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-unal">
+<span id="cmdoption-seismic-align-bt2-no-unal"></span><span class="sig-name descname"><span class="pre">--bt2-unal</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--bt2-no-unal</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-unal" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output unaligned reads</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-I">
+<span id="cmdoption-seismic-align-bt2-i"></span><span class="sig-name descname"><span class="pre">--bt2-I</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;bt2_i&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-I" title="Permalink to this definition"></a></dt>
+<dd><p>Minimum fragment length for valid paired-end alignments</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-X">
+<span id="cmdoption-seismic-align-bt2-x"></span><span class="sig-name descname"><span class="pre">--bt2-X</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;bt2_x&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-X" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum fragment length for valid paired-end alignments</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-score-min-e2e">
+<span class="sig-name descname"><span class="pre">--bt2-score-min-e2e</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;bt2_score_min_e2e&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-score-min-e2e" title="Permalink to this definition"></a></dt>
+<dd><p>Minimum score for a valid end-to-end alignment</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-score-min-loc">
+<span class="sig-name descname"><span class="pre">--bt2-score-min-loc</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;bt2_score_min_loc&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-score-min-loc" title="Permalink to this definition"></a></dt>
+<dd><p>Minimum score for a valid local alignment</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-0">
+<span class="sig-name descname"><span class="pre">--bt2-i</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;bt2_s&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-0" title="Permalink to this definition"></a></dt>
+<dd><p>Seed interval</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-L">
+<span id="cmdoption-seismic-align-bt2-l"></span><span class="sig-name descname"><span class="pre">--bt2-L</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;bt2_l&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-L" title="Permalink to this definition"></a></dt>
+<dd><p>Seed length</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-gbar">
+<span class="sig-name descname"><span class="pre">--bt2-gbar</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;bt2_gbar&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-gbar" title="Permalink to this definition"></a></dt>
+<dd><p>Minimum distance of a gap from end of a read</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-D">
+<span id="cmdoption-seismic-align-bt2-d"></span><span class="sig-name descname"><span class="pre">--bt2-D</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;bt2_d&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-D" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of failed seed extensions</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-R">
+<span id="cmdoption-seismic-align-bt2-r"></span><span class="sig-name descname"><span class="pre">--bt2-R</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;bt2_r&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-R" title="Permalink to this definition"></a></dt>
+<dd><p>Re-seed up to this many times</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-dpad">
+<span class="sig-name descname"><span class="pre">--bt2-dpad</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;bt2_dpad&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-dpad" title="Permalink to this definition"></a></dt>
+<dd><p>Width of padding on alignment matrix, to allow gaps</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-bt2-orient">
+<span class="sig-name descname"><span class="pre">--bt2-orient</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;bt2_orient&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-bt2-orient" title="Permalink to this definition"></a></dt>
+<dd><p>Valid orientations of paired-end mates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Options</dt>
+<dd class="field-odd"><p>fr | rf | ff</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-min-mapq">
+<span class="sig-name descname"><span class="pre">--min-mapq</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_mapq&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-min-mapq" title="Permalink to this definition"></a></dt>
+<dd><p>Ignore alignments whose mapping quality is less than this number</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-n">
+<span id="cmdoption-seismic-align-min-reads"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--min-reads</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_reads&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-n" title="Permalink to this definition"></a></dt>
+<dd><p>Do not analyze datasets with fewer than this minimum number of reads</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-arg-FASTA">
+<span id="cmdoption-seismic-align-arg-fasta"></span><span class="sig-name descname"><span class="pre">FASTA</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-arg-FASTA" title="Permalink to this definition"></a></dt>
+<dd><p>Required argument</p>
+</dd></dl>
+
+</section>
+<section id="seismic-relate">
+<h2>seismic relate<a class="headerlink" href="#seismic-relate" title="Permalink to this headline"></a></h2>
+<p>For every read, find the relationship between each read base and
+the reference base to which it aligned.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>relate<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>FASTA<span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-o">
+<span id="cmdoption-seismic-relate-out-dir"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--out-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;out_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-o" title="Permalink to this definition"></a></dt>
+<dd><p>Where to output all finished files</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-t">
+<span id="cmdoption-seismic-relate-temp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--temp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;temp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-t" title="Permalink to this definition"></a></dt>
+<dd><p>Where to write all temporary files</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-min-mapq">
+<span class="sig-name descname"><span class="pre">--min-mapq</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_mapq&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-min-mapq" title="Permalink to this definition"></a></dt>
+<dd><p>Ignore alignments whose mapping quality is less than this number</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-phred-enc">
+<span class="sig-name descname"><span class="pre">--phred-enc</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;phred_enc&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-phred-enc" title="Permalink to this definition"></a></dt>
+<dd><p>Phred score encoding in FASTQ/SAM/BAM files</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-min-phred">
+<span class="sig-name descname"><span class="pre">--min-phred</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_phred&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-min-phred" title="Permalink to this definition"></a></dt>
+<dd><p>Minimum Phred score to use a base call</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-n">
+<span id="cmdoption-seismic-relate-min-reads"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--min-reads</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_reads&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-n" title="Permalink to this definition"></a></dt>
+<dd><p>Do not analyze datasets with fewer than this minimum number of reads</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-batch-size">
+<span class="sig-name descname"><span class="pre">--batch-size</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;batch_size&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-batch-size" title="Permalink to this definition"></a></dt>
+<dd><p>Target size of each batch of relation vectors, in millions of base calls</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-ambrel">
+<span id="cmdoption-seismic-relate-no-ambrel"></span><span class="sig-name descname"><span class="pre">--ambrel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-ambrel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-relate-ambrel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to find and label all ambiguous insertions and deletions (improves accuracy but runs slower)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-max-procs">
+<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-max-procs" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of simultaneous processes</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-parallel">
+<span id="cmdoption-seismic-relate-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-relate-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to run multiple tasks in parallel</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-rerun">
+<span id="cmdoption-seismic-relate-no-rerun"></span><span class="sig-name descname"><span class="pre">--rerun</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-rerun</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-relate-rerun" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to regenerate files that already exist</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-save-temp">
+<span id="cmdoption-seismic-relate-no-save-temp"></span><span class="sig-name descname"><span class="pre">--save-temp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-save-temp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-relate-save-temp" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to save temporary files when the program exits</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-arg-FASTA">
+<span id="cmdoption-seismic-relate-arg-fasta"></span><span class="sig-name descname"><span class="pre">FASTA</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-relate-arg-FASTA" title="Permalink to this definition"></a></dt>
+<dd><p>Required argument</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-arg-INPUT_PATH">
+<span id="cmdoption-seismic-relate-arg-input-path"></span><span class="sig-name descname"><span class="pre">INPUT_PATH</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-relate-arg-INPUT_PATH" title="Permalink to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<section id="seismic-mask">
+<h2>seismic mask<a class="headerlink" href="#seismic-mask" title="Permalink to this headline"></a></h2>
+<p>Select a section of the reference, define which relationships
+count as mutations, and filter out unusable positions and reads.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>mask<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-c">
+<span id="cmdoption-seismic-mask-coords"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--coords</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;coords&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-c" title="Permalink to this definition"></a></dt>
+<dd><p>Reference name, 5’ end, and 3’ end of a section; coordinates are 1-indexed and include both ends</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-p">
+<span id="cmdoption-seismic-mask-primers"></span><span class="sig-name descname"><span class="pre">-p</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--primers</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;primers&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-p" title="Permalink to this definition"></a></dt>
+<dd><p>Reference name, forward primer, and reverse primer of a section; reverse primer must be given 5’ to 3’</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-primer-gap">
+<span class="sig-name descname"><span class="pre">--primer-gap</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;primer_gap&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-primer-gap" title="Permalink to this definition"></a></dt>
+<dd><p>Number of bases to leave as a gap between the end of a primer and the end of the section</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-s">
+<span id="cmdoption-seismic-mask-sections-file"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--sections-file</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;sections_file&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-s" title="Permalink to this definition"></a></dt>
+<dd><p>CSV file of sections by name, reference, and coordinates/primers</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-count-del">
+<span id="cmdoption-seismic-mask-discount-del"></span><span class="sig-name descname"><span class="pre">--count-del</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--discount-del</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-mask-count-del" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to count deletions as mutations</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-count-ins">
+<span id="cmdoption-seismic-mask-discount-ins"></span><span class="sig-name descname"><span class="pre">--count-ins</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--discount-ins</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-mask-count-ins" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to count insertions as mutations</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-discount-mut">
+<span class="sig-name descname"><span class="pre">--discount-mut</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;discount_mut&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-discount-mut" title="Permalink to this definition"></a></dt>
+<dd><p>Do not count a specific type of mutation</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-exclude-polya">
+<span class="sig-name descname"><span class="pre">--exclude-polya</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;exclude_polya&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-exclude-polya" title="Permalink to this definition"></a></dt>
+<dd><p>Exclude stretches of consecutive A bases of at least this length. If 0, exclude none.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-exclude-gu">
+<span id="cmdoption-seismic-mask-include-gu"></span><span class="sig-name descname"><span class="pre">--exclude-gu</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--include-gu</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-mask-exclude-gu" title="Permalink to this definition"></a></dt>
+<dd><p>Exclude positions with G and U bases (which DMS methylates very weakly at physiological pH).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-exclude-pos">
+<span class="sig-name descname"><span class="pre">--exclude-pos</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;exclude_pos&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-exclude-pos" title="Permalink to this definition"></a></dt>
+<dd><p>Exclude arbitrary positions, given as (reference, position).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-min-finfo-read">
+<span class="sig-name descname"><span class="pre">--min-finfo-read</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_finfo_read&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-min-finfo-read" title="Permalink to this definition"></a></dt>
+<dd><p>Filter reads with less than this fraction of informative positions.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-max-fmut-read">
+<span class="sig-name descname"><span class="pre">--max-fmut-read</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_fmut_read&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-max-fmut-read" title="Permalink to this definition"></a></dt>
+<dd><p>Filter reads with more than this fraction of mutated positions.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-min-mut-gap">
+<span class="sig-name descname"><span class="pre">--min-mut-gap</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_mut_gap&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-min-mut-gap" title="Permalink to this definition"></a></dt>
+<dd><p>Filter out reads with any pair of mutations that are separated by fewer than this number of non-mutated bases. If 0, filter out no reads.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-min-ninfo-pos">
+<span class="sig-name descname"><span class="pre">--min-ninfo-pos</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_ninfo_pos&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-min-ninfo-pos" title="Permalink to this definition"></a></dt>
+<dd><p>Filter positions with less than this number of informative reads.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-max-fmut-pos">
+<span class="sig-name descname"><span class="pre">--max-fmut-pos</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_fmut_pos&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-max-fmut-pos" title="Permalink to this definition"></a></dt>
+<dd><p>Filter positions with more than this fraction of mutated reads.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-max-procs">
+<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-max-procs" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of simultaneous processes</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-parallel">
+<span id="cmdoption-seismic-mask-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-mask-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to run multiple tasks in parallel</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-rerun">
+<span id="cmdoption-seismic-mask-no-rerun"></span><span class="sig-name descname"><span class="pre">--rerun</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-rerun</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-mask-rerun" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to regenerate files that already exist</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-arg-INPUT_PATH">
+<span id="cmdoption-seismic-mask-arg-input-path"></span><span class="sig-name descname"><span class="pre">INPUT_PATH</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-mask-arg-INPUT_PATH" title="Permalink to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<section id="seismic-cluster">
+<h2>seismic cluster<a class="headerlink" href="#seismic-cluster" title="Permalink to this headline"></a></h2>
+<p>Cluster reads from ‘mask’ using Expectation-Maximization to find
+alternative structures in the RNA ensemble.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>cluster<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-k">
+<span id="cmdoption-seismic-cluster-max-clusters"></span><span class="sig-name descname"><span class="pre">-k</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--max-clusters</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_clusters&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-cluster-k" title="Permalink to this definition"></a></dt>
+<dd><p>End the clustering step after attempting this number of clusters, even if it yields the best (smallest) BIC observed thus far. If 0, do not run clustering.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-min-nmut-read">
+<span class="sig-name descname"><span class="pre">--min-nmut-read</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_nmut_read&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-cluster-min-nmut-read" title="Permalink to this definition"></a></dt>
+<dd><p>Ignore reads with less than this number of mutated positionsduring clustering.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-e">
+<span id="cmdoption-seismic-cluster-em-runs"></span><span class="sig-name descname"><span class="pre">-e</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--em-runs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;em_runs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-cluster-e" title="Permalink to this definition"></a></dt>
+<dd><p>Run clustering this many times for each number of clusters, randomly initializing each run.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-em-thresh">
+<span class="sig-name descname"><span class="pre">--em-thresh</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;em_thresh&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-cluster-em-thresh" title="Permalink to this definition"></a></dt>
+<dd><p>Consider an EM run to have converged when the log likelihood value has increased by less than this threshold between two consecutive iterations.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-min-em-iter">
+<span class="sig-name descname"><span class="pre">--min-em-iter</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_em_iter&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-cluster-min-em-iter" title="Permalink to this definition"></a></dt>
+<dd><p>Run every EM run for at least this number times k iterations, even if the likelihood value has already converged.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-max-em-iter">
+<span class="sig-name descname"><span class="pre">--max-em-iter</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_em_iter&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-cluster-max-em-iter" title="Permalink to this definition"></a></dt>
+<dd><p>Stop every EM run after this number times k iterations, even if the likelihood value has not yet converged.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-max-procs">
+<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-cluster-max-procs" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of simultaneous processes</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-parallel">
+<span id="cmdoption-seismic-cluster-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-cluster-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to run multiple tasks in parallel</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-rerun">
+<span id="cmdoption-seismic-cluster-no-rerun"></span><span class="sig-name descname"><span class="pre">--rerun</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-rerun</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-cluster-rerun" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to regenerate files that already exist</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-arg-INPUT_PATH">
+<span id="cmdoption-seismic-cluster-arg-input-path"></span><span class="sig-name descname"><span class="pre">INPUT_PATH</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-cluster-arg-INPUT_PATH" title="Permalink to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<section id="seismic-table">
+<h2>seismic table<a class="headerlink" href="#seismic-table" title="Permalink to this headline"></a></h2>
+<p>Tabulate per-base and per-read mutation counts from ‘relate’ and
+‘mask’, and mutation rates and read memberships from ‘cluster’.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>table<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-table-r">
+<span id="cmdoption-seismic-table-rels"></span><span class="sig-name descname"><span class="pre">-r</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--rels</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;rels&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-table-r" title="Permalink to this definition"></a></dt>
+<dd><p>Output these relationships between the read and the reference</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-table-max-procs">
+<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-table-max-procs" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of simultaneous processes</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-table-parallel">
+<span id="cmdoption-seismic-table-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-table-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to run multiple tasks in parallel</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-table-rerun">
+<span id="cmdoption-seismic-table-no-rerun"></span><span class="sig-name descname"><span class="pre">--rerun</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-rerun</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-table-rerun" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to regenerate files that already exist</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-table-arg-INPUT_PATH">
+<span id="cmdoption-seismic-table-arg-input-path"></span><span class="sig-name descname"><span class="pre">INPUT_PATH</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-table-arg-INPUT_PATH" title="Permalink to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<section id="seismic-fold">
+<h2>seismic fold<a class="headerlink" href="#seismic-fold" title="Permalink to this headline"></a></h2>
+<p>Predict the structure(s) of an RNA using mutation rates from the
+individual clusters or the ensemble average (‘mask’ step).</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>fold<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>FASTA<span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-s">
+<span id="cmdoption-seismic-fold-sections-file"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--sections-file</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;sections_file&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-s" title="Permalink to this definition"></a></dt>
+<dd><p>CSV file of sections by name, reference, and coordinates/primers</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-c">
+<span id="cmdoption-seismic-fold-coords"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--coords</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;coords&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-c" title="Permalink to this definition"></a></dt>
+<dd><p>Reference name, 5’ end, and 3’ end of a section; coordinates are 1-indexed and include both ends</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-p">
+<span id="cmdoption-seismic-fold-primers"></span><span class="sig-name descname"><span class="pre">-p</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--primers</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;primers&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-p" title="Permalink to this definition"></a></dt>
+<dd><p>Reference name, forward primer, and reverse primer of a section; reverse primer must be given 5’ to 3’</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-primer-gap">
+<span class="sig-name descname"><span class="pre">--primer-gap</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;primer_gap&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-primer-gap" title="Permalink to this definition"></a></dt>
+<dd><p>Number of bases to leave as a gap between the end of a primer and the end of the section</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-q">
+<span id="cmdoption-seismic-fold-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-q" title="Permalink to this definition"></a></dt>
+<dd><p>Quantile of mutation rates for normalization. Must be in [0, 1].</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-t">
+<span id="cmdoption-seismic-fold-temp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--temp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;temp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-t" title="Permalink to this definition"></a></dt>
+<dd><p>Where to write all temporary files</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-save-temp">
+<span id="cmdoption-seismic-fold-no-save-temp"></span><span class="sig-name descname"><span class="pre">--save-temp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-save-temp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-save-temp" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to save temporary files when the program exits</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-max-procs">
+<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-max-procs" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of simultaneous processes</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-parallel">
+<span id="cmdoption-seismic-fold-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to run multiple tasks in parallel</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-rerun">
+<span id="cmdoption-seismic-fold-no-rerun"></span><span class="sig-name descname"><span class="pre">--rerun</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-rerun</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-rerun" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to regenerate files that already exist</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-arg-FASTA">
+<span id="cmdoption-seismic-fold-arg-fasta"></span><span class="sig-name descname"><span class="pre">FASTA</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-arg-FASTA" title="Permalink to this definition"></a></dt>
+<dd><p>Required argument</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-arg-INPUT_PATH">
+<span id="cmdoption-seismic-fold-arg-input-path"></span><span class="sig-name descname"><span class="pre">INPUT_PATH</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-arg-INPUT_PATH" title="Permalink to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<section id="seismic-graph">
+<h2>seismic graph<a class="headerlink" href="#seismic-graph" title="Permalink to this headline"></a></h2>
+<section id="seismic-graph-seqbar">
+<h3>seismic graph seqbar<a class="headerlink" href="#seismic-graph-seqbar" title="Permalink to this headline"></a></h3>
+<p>Create bar graphs of positions in a sequence.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>graph<span class="w"> </span>seqbar<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqbar-r">
+<span id="cmdoption-seismic-graph-seqbar-rels"></span><span class="sig-name descname"><span class="pre">-r</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--rels</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;rels&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqbar-r" title="Permalink to this definition"></a></dt>
+<dd><p>Output these relationships between the read and the reference</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqbar-y-ratio">
+<span id="cmdoption-seismic-graph-seqbar-y-count"></span><span class="sig-name descname"><span class="pre">--y-ratio</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--y-count</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqbar-y-ratio" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the y-axis depicts counts or ratios</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqbar-q">
+<span id="cmdoption-seismic-graph-seqbar-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqbar-q" title="Permalink to this definition"></a></dt>
+<dd><p>Quantile of mutation rates for normalization. Must be in [0, 1].</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqbar-arrange">
+<span class="sig-name descname"><span class="pre">--arrange</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;arrange&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqbar-arrange" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to graph each INDIVidual cluster in its own file, graph each ORDER of clusters in its own file, or UNITE all clusters in one file containing all orders.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Options</dt>
+<dd class="field-odd"><p>indiv | order | unite</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqbar-csv">
+<span id="cmdoption-seismic-graph-seqbar-no-csv"></span><span class="sig-name descname"><span class="pre">--csv</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-csv</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqbar-csv" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output the source data for each graph as a CSV file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqbar-html">
+<span id="cmdoption-seismic-graph-seqbar-no-html"></span><span class="sig-name descname"><span class="pre">--html</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-html</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqbar-html" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output each graph as an HTML file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqbar-pdf">
+<span id="cmdoption-seismic-graph-seqbar-no-pdf"></span><span class="sig-name descname"><span class="pre">--pdf</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-pdf</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqbar-pdf" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output each graph as a PDF file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqbar-max-procs">
+<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqbar-max-procs" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of simultaneous processes</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqbar-parallel">
+<span id="cmdoption-seismic-graph-seqbar-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqbar-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to run multiple tasks in parallel</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqbar-arg-INPUT_PATH">
+<span id="cmdoption-seismic-graph-seqbar-arg-input-path"></span><span class="sig-name descname"><span class="pre">INPUT_PATH</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqbar-arg-INPUT_PATH" title="Permalink to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<section id="seismic-graph-seqdiff">
+<h3>seismic graph seqdiff<a class="headerlink" href="#seismic-graph-seqdiff" title="Permalink to this headline"></a></h3>
+<p>Create bar graphs of differences between pairs of samples at
+each position in a sequence.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>graph<span class="w"> </span>seqdiff<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqdiff-r">
+<span id="cmdoption-seismic-graph-seqdiff-rels"></span><span class="sig-name descname"><span class="pre">-r</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--rels</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;rels&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqdiff-r" title="Permalink to this definition"></a></dt>
+<dd><p>Output these relationships between the read and the reference</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqdiff-y-ratio">
+<span id="cmdoption-seismic-graph-seqdiff-y-count"></span><span class="sig-name descname"><span class="pre">--y-ratio</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--y-count</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqdiff-y-ratio" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the y-axis depicts counts or ratios</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqdiff-q">
+<span id="cmdoption-seismic-graph-seqdiff-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqdiff-q" title="Permalink to this definition"></a></dt>
+<dd><p>Quantile of mutation rates for normalization. Must be in [0, 1].</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqdiff-arrange">
+<span class="sig-name descname"><span class="pre">--arrange</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;arrange&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqdiff-arrange" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to graph each INDIVidual cluster in its own file, graph each ORDER of clusters in its own file, or UNITE all clusters in one file containing all orders.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Options</dt>
+<dd class="field-odd"><p>indiv | order | unite</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqdiff-csv">
+<span id="cmdoption-seismic-graph-seqdiff-no-csv"></span><span class="sig-name descname"><span class="pre">--csv</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-csv</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqdiff-csv" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output the source data for each graph as a CSV file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqdiff-html">
+<span id="cmdoption-seismic-graph-seqdiff-no-html"></span><span class="sig-name descname"><span class="pre">--html</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-html</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqdiff-html" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output each graph as an HTML file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqdiff-pdf">
+<span id="cmdoption-seismic-graph-seqdiff-no-pdf"></span><span class="sig-name descname"><span class="pre">--pdf</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-pdf</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqdiff-pdf" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output each graph as a PDF file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqdiff-max-procs">
+<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqdiff-max-procs" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of simultaneous processes</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqdiff-parallel">
+<span id="cmdoption-seismic-graph-seqdiff-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqdiff-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to run multiple tasks in parallel</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqdiff-arg-INPUT_PATH">
+<span id="cmdoption-seismic-graph-seqdiff-arg-input-path"></span><span class="sig-name descname"><span class="pre">INPUT_PATH</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqdiff-arg-INPUT_PATH" title="Permalink to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<section id="seismic-graph-seqcorr">
+<h3>seismic graph seqcorr<a class="headerlink" href="#seismic-graph-seqcorr" title="Permalink to this headline"></a></h3>
+<p>Create line graphs of rolling correlations between datasets.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>graph<span class="w"> </span>seqcorr<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-r">
+<span id="cmdoption-seismic-graph-seqcorr-rels"></span><span class="sig-name descname"><span class="pre">-r</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--rels</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;rels&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-r" title="Permalink to this definition"></a></dt>
+<dd><p>Output these relationships between the read and the reference</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-y-ratio">
+<span id="cmdoption-seismic-graph-seqcorr-y-count"></span><span class="sig-name descname"><span class="pre">--y-ratio</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--y-count</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-y-ratio" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the y-axis depicts counts or ratios</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-q">
+<span id="cmdoption-seismic-graph-seqcorr-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-q" title="Permalink to this definition"></a></dt>
+<dd><p>Quantile of mutation rates for normalization. Must be in [0, 1].</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-arrange">
+<span class="sig-name descname"><span class="pre">--arrange</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;arrange&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-arrange" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to graph each INDIVidual cluster in its own file, graph each ORDER of clusters in its own file, or UNITE all clusters in one file containing all orders.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Options</dt>
+<dd class="field-odd"><p>indiv | order | unite</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-csv">
+<span id="cmdoption-seismic-graph-seqcorr-no-csv"></span><span class="sig-name descname"><span class="pre">--csv</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-csv</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-csv" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output the source data for each graph as a CSV file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-html">
+<span id="cmdoption-seismic-graph-seqcorr-no-html"></span><span class="sig-name descname"><span class="pre">--html</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-html</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-html" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output each graph as an HTML file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-pdf">
+<span id="cmdoption-seismic-graph-seqcorr-no-pdf"></span><span class="sig-name descname"><span class="pre">--pdf</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-pdf</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-pdf" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output each graph as a PDF file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-max-procs">
+<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-max-procs" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of simultaneous processes</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-parallel">
+<span id="cmdoption-seismic-graph-seqcorr-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to run multiple tasks in parallel</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-arg-INPUT_PATH">
+<span id="cmdoption-seismic-graph-seqcorr-arg-input-path"></span><span class="sig-name descname"><span class="pre">INPUT_PATH</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-arg-INPUT_PATH" title="Permalink to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<section id="seismic-graph-scatter">
+<h3>seismic graph scatter<a class="headerlink" href="#seismic-graph-scatter" title="Permalink to this headline"></a></h3>
+<p>Create scatter plots between pairs of samples at each position
+in a sequence.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>graph<span class="w"> </span>scatter<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-r">
+<span id="cmdoption-seismic-graph-scatter-rels"></span><span class="sig-name descname"><span class="pre">-r</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--rels</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;rels&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-r" title="Permalink to this definition"></a></dt>
+<dd><p>Output these relationships between the read and the reference</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-y-ratio">
+<span id="cmdoption-seismic-graph-scatter-y-count"></span><span class="sig-name descname"><span class="pre">--y-ratio</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--y-count</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-y-ratio" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the y-axis depicts counts or ratios</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-q">
+<span id="cmdoption-seismic-graph-scatter-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-q" title="Permalink to this definition"></a></dt>
+<dd><p>Quantile of mutation rates for normalization. Must be in [0, 1].</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-arrange">
+<span class="sig-name descname"><span class="pre">--arrange</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;arrange&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-arrange" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to graph each INDIVidual cluster in its own file, graph each ORDER of clusters in its own file, or UNITE all clusters in one file containing all orders.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Options</dt>
+<dd class="field-odd"><p>indiv | order | unite</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-csv">
+<span id="cmdoption-seismic-graph-scatter-no-csv"></span><span class="sig-name descname"><span class="pre">--csv</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-csv</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-csv" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output the source data for each graph as a CSV file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-html">
+<span id="cmdoption-seismic-graph-scatter-no-html"></span><span class="sig-name descname"><span class="pre">--html</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-html</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-html" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output each graph as an HTML file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-pdf">
+<span id="cmdoption-seismic-graph-scatter-no-pdf"></span><span class="sig-name descname"><span class="pre">--pdf</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-pdf</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-pdf" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to output each graph as a PDF file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-max-procs">
+<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-max-procs" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of simultaneous processes</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-parallel">
+<span id="cmdoption-seismic-graph-scatter-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to run multiple tasks in parallel</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-arg-INPUT_PATH">
+<span id="cmdoption-seismic-graph-scatter-arg-input-path"></span><span class="sig-name descname"><span class="pre">INPUT_PATH</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-arg-INPUT_PATH" title="Permalink to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="manuals/logging.html" class="btn btn-neutral float-left" title="Logging messages" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api/seismicrna.html" class="btn btn-neutral float-right" title="seismicrna package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, the Rouskin Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

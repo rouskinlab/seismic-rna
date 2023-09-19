@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SEISMIC-RNA User Guide &mdash; seismic-rna  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/favicon-32x32.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="About" href="about/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            seismic-rna
+              <img src="_static/logo-200.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="about/index.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install/index.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="manuals/index.html">Manuals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/seismicrna.html">seismicrna package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formats/index.html">File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data/index.html">Data Structures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algos/index.html">Algorithms</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">seismic-rna</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">SEISMIC-RNA User Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="seismic-rna-user-guide">
+<h1>SEISMIC-RNA User Guide<a class="headerlink" href="#seismic-rna-user-guide" title="Permalink to this headline"></a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="about/index.html">About</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="about/index.html#dms-mapseq">DMS-MaPseq</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/index.html#dreem">DREEM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/index.html#authors">Authors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/index.html#license">License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="install/index.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install/venv.html">Virtual Environments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install/prereqs.html">Prerequisites: Python, pip, and Conda</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install/conda.html">Installing with Conda</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/index.html">Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/example.html">Example dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/amplicon.html">Step-by-step walkthrough</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="manuals/index.html">Manuals</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="manuals/steps/index.html">Steps of the workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="manuals/logging.html">Logging messages</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command Line Interface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#seismic-demult">seismic demult</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#seismic-align">seismic align</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#seismic-relate">seismic relate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#seismic-mask">seismic mask</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#seismic-cluster">seismic cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#seismic-table">seismic table</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#seismic-fold">seismic fold</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#seismic-graph">seismic graph</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/seismicrna.html">seismicrna package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/seismicrna.html#seismic-rna">SEISMIC-RNA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/seismicrna.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/seismicrna.html#module-seismicrna.main">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="formats/index.html">File Formats</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="formats/data/index.html">Data Formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="formats/meta.html">Metadata Formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="formats/reports.html">Report Formats</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="data/index.html">Data Structures</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="data/index.html#relation-vectors">Relation Vectors</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="algos/index.html">Algorithms</a></li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="about/index.html" class="btn btn-neutral float-right" title="About" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, the Rouskin Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

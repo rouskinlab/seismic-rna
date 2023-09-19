@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>seismicrna package &mdash; seismic-rna  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/favicon-32x32.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="seismicrna.align package" href="seismicrna.align.html" />
+    <link rel="prev" title="Command Line Interface" href="../cli.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            seismic-rna
+              <img src="../_static/logo-200.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../manuals/index.html">Manuals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">seismicrna package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#seismic-rna">SEISMIC-RNA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.cluster.html">seismicrna.cluster package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastc.html">seismicrna.fastc package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html">seismicrna.relate package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.html">seismicrna.sim package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.table.html">seismicrna.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.test.html">seismicrna.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.whole.html">seismicrna.whole package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-seismicrna.main">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#seismic-rna-main-module">SEISMIC-RNA Main Module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../formats/index.html">File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/index.html">Data Structures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algos/index.html">Algorithms</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">seismic-rna</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">seismicrna package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/seismicrna.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-seismicrna">
+<span id="seismicrna-package"></span><h1>seismicrna package<a class="headerlink" href="#module-seismicrna" title="Permalink to this headline"></a></h1>
+<section id="seismic-rna">
+<h2>SEISMIC-RNA<a class="headerlink" href="#seismic-rna" title="Permalink to this headline"></a></h2>
+<p>Expose the sub-packages <code class="docutils literal notranslate"><span class="pre">demult</span></code>, <code class="docutils literal notranslate"><span class="pre">align</span></code>, <code class="docutils literal notranslate"><span class="pre">relate</span></code>, <code class="docutils literal notranslate"><span class="pre">cluster</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">table</span></code>, plus the <code class="docutils literal notranslate"><span class="pre">__version__</span></code> attribute, at the top level so
+that they can be imported from external modules and scripts:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">seismicrna</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">seismicrna</span><span class="o">.</span><span class="n">__version__</span>
+<span class="go">&#39;x.y.z&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">seismicrna</span> <span class="kn">import</span> <span class="n">__version__</span>
+<span class="go">&#39;x.y.z&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.align.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.align.tests.html">seismicrna.align.tests package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.align.tests.html#module-seismicrna.align.tests.fqutil_test">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.align.html#module-seismicrna.align.fq2bam">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.cluster.html">seismicrna.cluster package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.cluster.html#module-seismicrna.cluster.compare">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.cluster.html#cluster-comparison-module">Cluster Comparison Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.cluster.html#cluster-names-module">Cluster – Names Module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.core.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.tests.html">seismicrna.core.tests package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.tests.html#module-seismicrna.core.tests.fasta_test">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.bitcall">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html#core-command-line-interface">Core Command Line Interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html#purpose">Purpose</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html#random-core-module">Random Core Module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.demult.html#module-seismicrna.demult.demultiplex">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.fastc.html">seismicrna.fastc package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.fastc.html#module-seismicrna.fastc.fastaclean">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastc.html#fasta-cleaning-module">FASTA Cleaning Module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.fold.html#module-seismicrna.fold.main">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.graph.html#module-seismicrna.graph.base">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.mask.html#module-seismicrna.mask.load">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.relate.html">seismicrna.relate package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.relate.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.tests.html">seismicrna.relate.tests package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.tests.html#module-seismicrna.relate.tests.ambrel_test">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.relate.html#module-seismicrna.relate.ambrel">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html#read-iteration-module">Read Iteration Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html#relate-auxiliary-module">Relate Auxiliary Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html#relate-main-module">Relate – Main Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html#relate-simulation-module">Relate Simulation Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html#relation-vector-writing-module">Relation Vector Writing Module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.sim.html">seismicrna.sim package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.sim.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.tests.html">seismicrna.sim.tests package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.sim.tests.html#module-seismicrna.sim.tests.sam_test">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.sim.html#module-seismicrna.sim.relate">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.html#simulate-relation-vectors-module">Simulate Relation Vectors Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.html#simulate-sam-files-module">Simulate SAM Files Module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.table.html">seismicrna.table package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.table.html#module-seismicrna.table.base">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.test.html">seismicrna.test package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.test.html#module-seismicrna.test.main">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.whole.html">seismicrna.whole package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.whole.html#module-seismicrna.whole.main">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.whole.html#whole-pipeline-main-module">Whole Pipeline Main Module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-seismicrna.main">
+<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.main" title="Permalink to this headline"></a></h2>
+<section id="seismic-rna-main-module">
+<h3>SEISMIC-RNA Main Module<a class="headerlink" href="#seismic-rna-main-module" title="Permalink to this headline"></a></h3>
+<p>This module is the entry point for the command line interface:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="p">[</span><span class="n">OPTIONS</span><span class="p">]</span> <span class="n">command</span> <span class="p">[</span><span class="n">OPTIONS</span><span class="p">]</span> <span class="p">[</span><span class="n">ARGS</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>calls the function cli() defined in this module.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../cli.html" class="btn btn-neutral float-left" title="Command Line Interface" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="seismicrna.align.html" class="btn btn-neutral float-right" title="seismicrna.align package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, the Rouskin Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
