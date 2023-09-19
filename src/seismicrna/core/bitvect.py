@@ -687,3 +687,24 @@ def iter_all_bit_vectors(mu: pd.Series, section: Section, min_mut_gap: int):
                                   sub=((lambda: [(base_bits, base_logp)])
                                        if bvs is None else bvs.iter))
     return iter(bvs.iter() if bvs is not None else list())
+
+########################################################################
+#                                                                      #
+# ©2023, the Rouskin Lab.                                              #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

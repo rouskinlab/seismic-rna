@@ -62,8 +62,8 @@ def ensure_license(file: str):
         return
     # Add the license to the end of the file, after one blank line.
     contents = f"{contents}{os.linesep * 2}{license_text}{os.linesep}"
-    #with open(file, 'w') as f:
-    #    f.write(contents)
+    with open(file, 'w') as f:
+        f.write(contents)
     logger.info(f"Added license text to file {file}")
 
 
