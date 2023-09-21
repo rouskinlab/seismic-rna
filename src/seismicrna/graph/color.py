@@ -106,7 +106,7 @@ def get_cmap(cmap_class: type[ColorMap], name: str | None = None):
 
 ########################################################################
 #                                                                      #
-# Copyright ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                    #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

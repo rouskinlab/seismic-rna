@@ -53,7 +53,7 @@ def find_cigar_op_pos(cigar_string: str, find_op: str):
 
 ########################################################################
 #                                                                      #
-# Copyright ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                    #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

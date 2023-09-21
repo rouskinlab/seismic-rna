@@ -514,7 +514,7 @@ def winsorize(mus: np.ndarray | pd.Series, quantile: float):
 
 ########################################################################
 #                                                                      #
-# Copyright ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                    #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

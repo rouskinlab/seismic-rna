@@ -32,7 +32,7 @@ ANY_8 = INS_8 | MATCH
 
 ########################################################################
 #                                                                      #
-# Copyright ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                    #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #
