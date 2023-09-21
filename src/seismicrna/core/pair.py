@@ -213,7 +213,7 @@ def parse_ct_pairs(ct_path: Path, start: int | None = None):
 
 ########################################################################
 #                                                                      #
-# ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

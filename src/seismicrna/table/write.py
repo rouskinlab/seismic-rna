@@ -162,7 +162,7 @@ def write(report_file: Path, rels: str, rerun: bool):
 
 ########################################################################
 #                                                                      #
-# ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

@@ -20,7 +20,7 @@ def get_subclasses_module(types: type | tuple[type], module_name: str):
 
 ########################################################################
 #                                                                      #
-# ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

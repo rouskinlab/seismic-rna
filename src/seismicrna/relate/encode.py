@@ -67,7 +67,7 @@ def encode_match(read_base: str, read_qual: str, min_qual: str):
 
 ########################################################################
 #                                                                      #
-# ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

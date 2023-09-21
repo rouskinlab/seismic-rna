@@ -403,7 +403,7 @@ def tabulate_loader(report_loader: RelateLoader | MaskLoader | ClustLoader,
 
 ########################################################################
 #                                                                      #
-# ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

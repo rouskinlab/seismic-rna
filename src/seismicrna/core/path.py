@@ -40,7 +40,8 @@ import re
 from string import ascii_letters, digits, printable
 from typing import Any, Iterable, Sequence
 
-from .cmd import COMMANDS
+from .cmd import (CMD_QC, CMD_ALIGN, CMD_REL, CMD_MASK, CMD_CLUST, CMD_TABLE,
+                  CMD_FOLD, CMD_GRAPH)
 
 logger = getLogger(__name__)
 
@@ -234,7 +235,8 @@ class Field(object):
 # Fields
 TopField = Field(pl.Path)
 NameField = Field(str)
-CmdField = Field(str, COMMANDS)
+CmdField = Field(str, [CMD_QC, CMD_ALIGN, CMD_REL, CMD_MASK, CMD_CLUST,
+                       CMD_TABLE, CMD_FOLD, CMD_GRAPH])
 StepField = Field(str, STEPS)
 IntField = Field(int)
 CountTabField = Field(str, COUNT_TABLES)
@@ -260,6 +262,7 @@ ConnectTableExt = Field(str, [CT_EXT], is_ext=True)
 DotBracketExt = Field(str, DOT_EXTS, is_ext=True)
 DmsReactsExt = Field(str, [DMS_EXT], is_ext=True)
 GraphExt = Field(str, GRAPH_EXTS, is_ext=True)
+DreemExt = Field(str, [JSON_EXT], is_ext=True)
 
 
 # Path Segments ########################################################
@@ -457,6 +460,9 @@ VarnaColorSeg = Segment("varna-color", {REACTS: NameField, EXT: TextExt},
 # Graphs
 GraphSeg = Segment("graph", {GRAPH: NameField, EXT: GraphExt})
 
+# Dreem output
+DreemSeg = Segment("dreem", {SAMP: NameField, EXT: DreemExt})
+
 
 # Path segment patterns
 
@@ -637,7 +643,7 @@ def find_files_chain(paths: Iterable[pl.Path], segments: Sequence[Segment]):
 
 ########################################################################
 #                                                                      #
-# ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

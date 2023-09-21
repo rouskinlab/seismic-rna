@@ -365,7 +365,7 @@ def as_sam(name: str, flag: int, ref: str, end5: int, mapq: int, cigar: str,
 
 ########################################################################
 #                                                                      #
-# ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

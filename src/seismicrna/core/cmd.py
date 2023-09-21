@@ -21,27 +21,14 @@ CMD_CLUST = "cluster"
 CMD_TABLE = "table"
 CMD_FOLD = "fold"
 CMD_GRAPH = "graph"
+CMD_EXPORT = "export"
 CMD_SIM = "sim"
 CMD_TEST = "test"
 CMD_FASTC = "fastc"
 
-COMMANDS = (CMD_WHOLE,
-            CMD_DEMULT,
-            CMD_QC,
-            CMD_ALIGN,
-            CMD_REL,
-            CMD_MASK,
-            CMD_CLUST,
-            CMD_TABLE,
-            CMD_FOLD,
-            CMD_GRAPH,
-            CMD_SIM,
-            CMD_TEST,
-            CMD_FASTC)
-
 ########################################################################
 #                                                                      #
-# ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

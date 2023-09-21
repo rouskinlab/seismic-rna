@@ -232,7 +232,7 @@ def compute_auc_roc(fpr: np.ndarray, tpr: np.ndarray):
 
 ########################################################################
 #                                                                      #
-# ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

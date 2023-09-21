@@ -77,10 +77,10 @@ opt_save_temp = Option(
 
 # Resource usage options
 opt_parallel = Option(
-    ("--parallel/--no-parallel",),
+    ("--parallel/--serial",),
     type=bool,
     default=True,
-    help="Whether to run multiple tasks in parallel")
+    help="Whether to process input files in parallel or in series")
 
 opt_max_procs = Option(
     ("--max-procs",),
@@ -95,12 +95,6 @@ opt_sections_file = Option(
     type=Path(dir_okay=False),
     default="",
     help="CSV file of sections by name, reference, and coordinates/primers")
-
-opt_samples = Option(
-    ("--samples", "-S"),
-    type=Path(dir_okay=False),
-    default="",
-    help="Samples file")
 
 opt_rerun = Option(
     ("--rerun/--no-rerun",),
@@ -684,6 +678,28 @@ opt_pdf = Option(
     type=bool,
     help="Whether to output each graph as a PDF file")
 
+
+# Export
+
+opt_samples_file = Option(
+    ("--samples-file", "-S"),
+    type=Path(dir_okay=False),
+    default="",
+    help="CSV file of metadata for each sample")
+
+opt_refs_file = Option(
+    ("--refs-file", "-R"),
+    type=Path(dir_okay=False),
+    default="",
+    help="CSV file of metadata for each reference")
+
+opt_beautify = Option(
+    ("--beautify/--no-beautify",),
+    default=True,
+    type=bool,
+    help="Whether to beautify JSON files",
+)
+
 # Logging options
 opt_verbose = Option(
     ("--verbose", "-v"),
@@ -722,7 +738,7 @@ def merge_params(*param_lists: list[Parameter]):
 
 ########################################################################
 #                                                                      #
-# ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

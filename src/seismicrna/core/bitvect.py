@@ -690,7 +690,7 @@ def iter_all_bit_vectors(mu: pd.Series, section: Section, min_mut_gap: int):
 
 ########################################################################
 #                                                                      #
-# ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                              #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #
