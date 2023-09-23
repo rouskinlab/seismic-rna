@@ -3,7 +3,7 @@ from typing import Sequence
 import numpy as np
 
 from .cigar import CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_DELET, CIG_INSRT
-from .cigar2 import CigarOp
+from .cigarcount import CigarOp
 from .encode import BASE_DECODINGS
 from ..core.qual import LO_QUAL, HI_QUAL
 from ..core.rel import (MATCH, DELET, INS_5, INS_3, INS_8,

@@ -7,7 +7,8 @@ Relate Auxiliary Module
 
 """
 
-from itertools import (product, combinations,
+from itertools import (product,
+                       combinations,
                        combinations_with_replacement as cwr)
 from typing import Sequence
 
@@ -19,11 +20,15 @@ from ..core.sect import Section
 from ..core.seq import BASEA, BASEC, BASEG, BASET, DNA
 
 MIN_INDEL_GAP = 1
+MIN_MAX_INS = 0
+MAX_MAX_INS = 2
 
 
-def iter_relvecs_q53(refseq: DNA, low_qual: Sequence[int] = (),
-                     end5: int | None = None, end3: int | None = None,
-                     max_ins: int = 2):
+def iter_relvecs_q53(refseq: DNA,
+                     low_qual: Sequence[int] = (),
+                     end5: int | None = None,
+                     end3: int | None = None,
+                     max_ins: int = MAX_MAX_INS):
     """
     For a given reference sequence, yield every possible unambiguous
     relation vector between positions end5 and end3 that follows the
@@ -49,7 +54,7 @@ def iter_relvecs_q53(refseq: DNA, low_qual: Sequence[int] = (),
     if low_qual - set(sect.range_int):
         raise ValueError(f"Invalid positions in low_qual: "
                          f"{sorted(low_qual - set(sect.range))}")
-    if max_ins not in range(3):
+    if max_ins not in range(MIN_MAX_INS, MAX_MAX_INS + 1):
         raise ValueError(f"Invalid value for max_ins: {max_ins}")
     # Find the possible relationships at each position in the section,
     # not including insertions.

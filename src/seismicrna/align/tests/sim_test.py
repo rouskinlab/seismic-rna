@@ -1,6 +1,30 @@
 import unittest as ut
 
-from ..sam import _find_blank_range
+from ..sim import as_sam, _find_blank_range
+from ...core.seq import DNA
+
+
+class TestAsSam(ut.TestCase):
+    """ Test function `as_sam`. """
+
+    def test_line_in_sam_format(self):
+        line = as_sam("FS10000136:77:BPG61616-2310:1:1101:1000:1300", 99,
+                      "SARS2_FSE", 1, 42, "151=", "=", 133, 283,
+                      DNA("CCCTGTGGGTTTTACACTTAAAAACACAGTCTGTACCGTCTGCGGTATGTG"
+                          "GAAAGGTTATGGCTGTAGTTGTGATCAACTCCGCGAACCCATGCTTCAGTC"
+                          "AGCTGATGCACAATCGTTTTTAAACGGGTTTGCGGTGTAAGTGCAGCCC"),
+                      "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+                      "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+                      "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:")
+        expect = ("FS10000136:77:BPG61616-2310:1:1101:1000:1300\t99\tSARS2_FSE"
+                  "\t1\t42\t151=\t=\t133\t283\t"
+                  "CCCTGTGGGTTTTACACTTAAAAACACAGTCTGTACCGTCTGCGGTATGTGGAAAGGTT"
+                  "ATGGCTGTAGTTGTGATCAACTCCGCGAACCCATGCTTCAGTCAGCTGATGCACAATCG"
+                  "TTTTTAAACGGGTTTGCGGTGTAAGTGCAGCCC\t"
+                  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+                  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+                  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:\n")
+        self.assertEqual(line, expect)
 
 
 class TestFindBlankRange(ut.TestCase):

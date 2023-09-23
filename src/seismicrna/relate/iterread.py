@@ -13,7 +13,7 @@ from itertools import product
 import numpy as np
 
 from .cigar import CIG_INSRT
-from .cigar2 import count_cigar_muts, find_cigar_op_pos
+from .cigarcount import count_cigar_muts, find_cigar_op_pos
 from .invert import inverse_relate
 from .iterrelv import iter_relvecs_all
 from ..core.rel import INS_5, INS_3, NP_TYPE, NOCOV

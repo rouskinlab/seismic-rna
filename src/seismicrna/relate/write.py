@@ -104,21 +104,26 @@ def _relate_record(relvec: bytearray,
                    line2: str,
                    ref: str,
                    refseq: DNA,
+                   min_mapq: int,
                    min_qual: str,
                    ambrel: bool):
     """ Compute the relation vector of a record in a SAM file. """
     # Fill the relation vector with data from the SAM line(s).
     if line2:
         relate_pair(relvec, line1, line2,
-                    ref, refseq, len(refseq), min_qual, ambrel)
+                    ref, refseq, len(refseq),
+                    min_mapq, min_qual, ambrel)
     else:
-        relate_line(relvec, line1, ref, refseq, len(refseq), min_qual, ambrel)
+        relate_line(relvec, line1,
+                    ref, refseq, len(refseq),
+                    min_mapq, min_qual, ambrel)
 
 
 def _relate_batch(batch: int, *,
                   xam_view: XamViewer,
                   out_dir: Path,
                   refseq: DNA,
+                  min_mapq: int,
                   min_qual: str,
                   ambrel: bool):
     """ Compute relation vectors for every SAM record in one batch,
@@ -138,7 +143,7 @@ def _relate_batch(batch: int, *,
         relvec = blank.copy()
         try:
             _relate_record(relvec, line1, line2, xam_view.ref, refseq,
-                           min_qual, ambrel)
+                           min_mapq, min_qual, ambrel)
         except Exception as err:
             logger.error(f"Failed to relate read '{read_name}': {err}")
             # Return an empty read name and relation vector.
@@ -220,8 +225,11 @@ class RelationWriter(object):
         logger.info(f"Began running {self}")
         try:
             # Collect the keyword arguments.
-            disp_kwargs = dict(xam_view=self.xam, out_dir=out_dir,
-                               refseq=self.seq, ambrel=ambrel,
+            disp_kwargs = dict(xam_view=self.xam,
+                               out_dir=out_dir,
+                               refseq=self.seq,
+                               min_mapq=min_mapq,
+                               ambrel=ambrel,
                                min_qual=encode_phred(min_phred, phred_enc))
             # Generate and write relation vectors for each batch.
             results = dispatch(_relate_batch,

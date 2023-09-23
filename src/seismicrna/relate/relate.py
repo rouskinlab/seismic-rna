@@ -233,26 +233,32 @@ def relate_read(relvec: bytearray,
         find_ambrels(relvec, refseq, read.seq, read.qual, min_qual, dels, inns)
 
 
-def validate_refs(read: SamRead, ref: str):
+def validate_read(read: SamRead, ref: str, min_mapq: int):
     if read.rname != ref:
-        raise ValueError(f"Reference mismatch: read '{read.qname}' aligned to "
-                         f"'{read.rname}' but is in file for reference '{ref}'")
+        raise ValueError(f"Read {repr(read.qname)} mapped to a reference named "
+                         f"{repr(read.rname)} but is in an alignment map file "
+                         f"for a reference named {repr(ref)}")
+    if read.mapq < min_mapq:
+        raise ValueError(f"Read {repr(read.qname)} mapped with quality score "
+                         f"{read.mapq}, less than the minimum of {min_mapq}")
 
 
 def relate_line(relvec: bytearray, line: str,
-                ref: str, refseq: DNA, length: int, qmin: str, ambrel: bool):
+                ref: str, refseq: DNA, length: int,
+                min_mapq: int, qmin: str, ambrel: bool):
     read = SamRead(line)
-    validate_refs(read, ref)
+    validate_read(read, ref, min_mapq)
     relate_read(relvec, read, refseq, length, qmin, ambrel)
 
 
 def relate_pair(relvec: bytearray, line1: str, line2: str,
-                ref: str, refseq: DNA, length: int, qmin: str, ambrel: bool):
+                ref: str, refseq: DNA, length: int,
+                min_mapq: int, qmin: str, ambrel: bool):
     # Parse lines 1 and 2 into SAM reads.
     read1 = SamRead(line1)
-    validate_refs(read1, ref)
+    validate_read(read1, ref, min_mapq)
     read2 = SamRead(line2)
-    validate_refs(read2, ref)
+    validate_read(read2, ref, min_mapq)
     # Ensure that reads 1 and 2 are compatible mates.
     if not read1.flag.paired:
         raise RelateValueError(f"Read 1 ({read1.qname}) was not paired, "

@@ -6,10 +6,11 @@ import pandas as pd
 from ..iterread import iter_alignments
 from ..relate import relate_line
 from ..seqpos import format_seq_pos
+from ...align.sim import as_sam
+from ...core.cli import opt_min_mapq
 from ...core.qual import OK_QUAL
 from ...core.rel import NOCOV
 from ...core.seq import DNA
-from ...core.xam import as_sam
 
 
 class TestSeqposFormatSeqPos(ut.TestCase):
@@ -44,13 +45,35 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
     """ Test function `relate.relate_line`. """
 
     @staticmethod
-    def relate(ref: str, refseq: DNA, read, qual, cigar, end5):
+    def relate(ref: str,
+               refseq: DNA,
+               read: DNA,
+               qual: str,
+               mapq: int,
+               cigar: str,
+               end5: int):
         """ Generate a SAM line from the given information, and use it
         to compute a relation vector. """
-        sam_line = as_sam("read", 99, ref, end5, 0, cigar, "=", 1, len(read),
-                          read, qual)
+        sam_line = as_sam("read",
+                          99,
+                          ref,
+                          end5,
+                          mapq,
+                          cigar,
+                          "=",
+                          1,
+                          len(read),
+                          read,
+                          qual)
         muts = bytearray(NOCOV.to_bytes(1, byteorder) * len(refseq))
-        relate_line(muts, sam_line, ref, refseq, len(refseq), OK_QUAL, True)
+        relate_line(muts,
+                    sam_line,
+                    ref,
+                    refseq,
+                    len(refseq),
+                    opt_min_mapq.default,
+                    OK_QUAL,
+                    True)
         return muts
 
     def iter_cases(self, refseq: DNA, max_ins: int = 2):
@@ -59,7 +82,13 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
                                                                      max_ins,
                                                                      max_ins,
                                                                      max_ins):
-            result = self.relate("ref", refseq, read, qual, cigar, end5)
+            result = self.relate("ref",
+                                 refseq,
+                                 read,
+                                 qual,
+                                 opt_min_mapq.default,
+                                 cigar,
+                                 end5)
             with self.subTest(relvec=relvec, result=result):
                 self.assertEqual(relvec.tobytes(), result)
 

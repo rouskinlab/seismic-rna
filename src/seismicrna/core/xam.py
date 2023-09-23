@@ -1,11 +1,9 @@
 import re
 from logging import getLogger
-from os import linesep
 from pathlib import Path
 from subprocess import CompletedProcess
 
 from . import path
-from .seq import DNA
 from .shell import SAMTOOLS_CMD, args_to_cmd, ShellCommand
 
 logger = getLogger(__name__)
@@ -295,73 +293,6 @@ def xam_to_fq_cmd(xam_inp: Path | None,
 
 run_xam_to_fq = ShellCommand("deconstructing alignment map",
                              xam_to_fq_cmd)
-
-
-def sam_header(ref: str, length: int | DNA):
-    if isinstance(length, DNA):
-        length = len(length)
-    if not isinstance(length, int):
-        raise TypeError(f"Length must be int, but got {type(length).__name__}")
-    return SAM_DELIM.join((SAM_SEQLINE,
-                           f"{SAM_SEQNAME}{ref}",
-                           f"{SAM_SEQLEN}{length}{linesep}"))
-
-
-def as_sam(name: str, flag: int, ref: str, end5: int, mapq: int, cigar: str,
-           rnext: str, pnext: int, tlen: int, read: DNA, qual: str):
-    """
-    Return a line in SAM format from the given fields.
-
-    Parameters
-    ----------
-    name: str
-        Name of the read.
-    flag: int
-        SAM flag. Must be in [0, MAX_FLAG].
-    ref: str
-        Name of the reference.
-    end5: int
-        Most 5' position to which the read mapped (1-indexed).
-    mapq: int
-        Mapping quality score.
-    cigar: str
-        CIGAR string. Not checked for compatibility with the read.
-    rnext: str
-        Name of the mate's reference (if paired-end).
-    pnext: int
-        Most 5' position of the mate (if paired-end).
-    tlen: int
-        Length of the template.
-    read: DNA
-        Base calls in the read. Must be equal in length to `read`.
-    qual: str
-        Phred quality score string of the base calls. Must be equal in
-        length to `read`.
-
-    Returns
-    -------
-    str
-        A line in SAM format containing the given fields.
-    """
-    if not name:
-        raise ValueError("Read name is empty")
-    if not 0 <= flag <= MAX_FLAG:
-        raise ValueError(f"Invalid SAM flag: {flag}")
-    if not ref:
-        raise ValueError("Reference name is empty")
-    if not end5 >= 1:
-        raise ValueError(f"Invalid 5' mapping position: {end5}")
-    if not cigar:
-        raise ValueError("CIGAR string is empty")
-    if not rnext:
-        raise ValueError("Next reference name is empty")
-    if not pnext >= 0:
-        raise ValueError(f"Invalid next 5' mapping position: {pnext}")
-    if not len(read) == len(qual):
-        raise ValueError(
-            f"Lengths of read ({len(read)}) and qual ({len(qual)}) disagree")
-    return SAM_DELIM.join(map(str, (name, flag, ref, end5, mapq, cigar, rnext,
-                                    pnext, tlen, read, f"{qual}{linesep}")))
 
 ########################################################################
 #                                                                      #
