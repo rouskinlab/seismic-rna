@@ -10,17 +10,17 @@ import unittest as ut
 
 import numpy as np
 
-from ..rel import (IRREC, INDEL, NOCOV, MATCH, DELET, INS_5, INS_3,
-                   INS_8, MINS5, MINS3, ANY_8, SUB_A, SUB_C, SUB_G,
-                   SUB_T, SUB_N, ANY_B, ANY_D, ANY_H, ANY_V, ANY_N,
-                   NP_TYPE)
+from ..relvect import (IRREC, INDEL, NOCOV, MATCH, DELET, INS_5, INS_3,
+                       INS_8, MINS5, MINS3, ANY_8, SUB_A, SUB_C, SUB_G,
+                       SUB_T, SUB_N, ANY_B, ANY_D, ANY_H, ANY_V, ANY_N,
+                       REL_TYPE)
 
 
 class TestConstants(ut.TestCase):
     """ Test constants of `rel` module. """
 
     def test_np_type(self):
-        self.assertIs(NP_TYPE, np.uint8)
+        self.assertIs(REL_TYPE, np.uint8)
 
     def test_primary_codes(self):
         """ Test the primary relation codes. """

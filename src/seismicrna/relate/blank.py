@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from ..core.rel import NOCOV, NP_TYPE
+from ..core.relvect import NOCOV, REL_TYPE
 from ..core.sect import seq_pos_to_index
 from ..core.seq import DNA
 
@@ -37,19 +37,19 @@ def blank_relvec(bases: int | DNA,
         sequence = seq_pos_to_index(bases, np.arange(1, len(bases) + 1), 1)
         if reads is None:
             # Return a Series representing just one relation vector.
-            return pd.Series(NOCOV, index=sequence, dtype=NP_TYPE)
+            return pd.Series(NOCOV, index=sequence, dtype=REL_TYPE)
         # Ensure that names is a sequence of read names as str objects.
         if isinstance(reads, int):
             names = [f"Read_{i}" for i in range(1, reads + 1)]
         else:
             names = list(map(str, reads))
         # Return a DataFrame with one row per relation vector.
-        return pd.DataFrame(NOCOV, index=names, columns=sequence, dtype=NP_TYPE)
+        return pd.DataFrame(NOCOV, index=names, columns=sequence, dtype=REL_TYPE)
     # Determine the size of the NumPy array.
     size = (bases if reads is None
             else ((reads, bases) if isinstance(reads, int)
                   else (len(reads), bases)))
-    return np.full(size, fill_value=NOCOV, dtype=NP_TYPE)
+    return np.full(size, fill_value=NOCOV, dtype=REL_TYPE)
 
 ########################################################################
 #                                                                      #

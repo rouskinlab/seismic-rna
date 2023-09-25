@@ -16,7 +16,7 @@ from .cigar import CIG_INSRT
 from .cigarcount import count_cigar_muts, find_cigar_op_pos
 from .invert import inverse_relate
 from .iterrelv import iter_relvecs_all
-from ..core.rel import INS_5, INS_3, NP_TYPE, NOCOV
+from ..core.relvect import INS_5, INS_3, REL_TYPE, NOCOV
 from ..core.seq import DNA, expand_degenerate_seq
 
 
@@ -46,7 +46,7 @@ def ref_to_alignments(refseq: DNA,
     quals = dict()
     cigars = defaultdict(lambda: defaultdict(list))
     relvecs = defaultdict(lambda: defaultdict(lambda: np.zeros(len(refseq),
-                                                               dtype=NP_TYPE)))
+                                                               dtype=REL_TYPE)))
     if max_ins < 0:
         raise ValueError(f"max_ins must be ≥ 0, but got {max_ins}")
     if max_ins > 0:

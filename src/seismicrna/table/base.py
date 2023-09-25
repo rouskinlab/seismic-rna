@@ -138,7 +138,7 @@ class RelTypeTable(Table, ABC):
     @property
     def _rel_level_index(self):
         """ Index of the column level indicating the relationship. """
-        return self.data.columns.names.index(REL_NAME)
+        return self.data.columns._names.index(REL_NAME)
 
     def _switch_rel(self, column: tuple, new_rel: str):
         """ Switch the relationship in a column label. """
@@ -237,7 +237,7 @@ class ClustTable(RelTypeTable, ABC):
 
     def _get_indexer(self, selection: dict[str, list]):
         return tuple(selection.get(level, slice(None))
-                     for level in self.data.columns.names)
+                     for level in self.data.columns._names)
 
 
 # Table by Index (position/read/frequency) #############################

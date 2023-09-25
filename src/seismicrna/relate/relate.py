@@ -6,7 +6,7 @@ from .cigar import (CIG_ALIGN, CIG_MATCH, CIG_SUBST,
                     parse_cigar)
 from .encode import encode_match, encode_relate
 from .error import RelateValueError
-from ..core.rel import DELET
+from ..core.relvect import DELET
 from ..core.seq import DNA
 from ..core.xam import MAX_FLAG
 

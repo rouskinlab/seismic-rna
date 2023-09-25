@@ -5,10 +5,10 @@ from typing import Generator, Sequence
 import numpy as np
 
 from ..iterrelv import iter_relvecs_q53, iter_relvecs_all
-from ...core.rel import (MATCH, DELET, INS_5, INS_3,
-                         SUB_A, SUB_C, SUB_G, SUB_T,
-                         ANY_B, ANY_D, ANY_H, ANY_V,
-                         ANY_N, NOCOV)
+from ...core.relvect import (MATCH, DELET, INS_5, INS_3,
+                             SUB_A, SUB_C, SUB_G, SUB_T,
+                             ANY_B, ANY_D, ANY_H, ANY_V,
+                             ANY_N, NOCOV)
 from ...core.seq import DNA, expand_degenerate_seq
 
 

@@ -126,7 +126,7 @@ class XamViewer(object):
                           cmd=CMD_REL, step=path.STEPS_VECT_SAMS,
                           ref=self.ref, ext=path.SAM_EXT)
 
-    def view_temp_sam(self):
+    def create_temp_sam(self):
         """ Create the temporary SAM file. """
         run_view_xam(self.xam_input, self.temp_sam_path)
 
@@ -138,7 +138,7 @@ class XamViewer(object):
         """ Open the temporary SAM file as a file object. """
         if not self.temp_sam_path.is_file():
             # Create the temporary SAM file if it does not yet exist.
-            self.view_temp_sam()
+            self.create_temp_sam()
         return open(self.temp_sam_path)
 
     def _iter_batch_indexes(self):

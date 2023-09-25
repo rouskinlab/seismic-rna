@@ -94,7 +94,7 @@ class EmClustering(object):
             convergence threshold (and at least min_iter iterations have
             run). Must be a positive real number (ideally close to 0).
         """
-        # Filter loader
+        # Mask loader
         self.loader = loader
         # Unique bit vectors of mutations
         self.muts = muts

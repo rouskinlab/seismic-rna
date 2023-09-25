@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from .bitvect import BitBatch
-from .rel import MATCH, DELET, INS_5, INS_3, SUB_A, SUB_C, SUB_G, SUB_T, NP_TYPE
+from .relvect import MATCH, DELET, INS_5, INS_3, SUB_A, SUB_C, SUB_G, SUB_T, REL_TYPE
 from .sect import Section, index_to_seq
 from .seq import DNA, BASEA, BASEC, BASEG, BASET
 
@@ -152,7 +152,7 @@ class SemiBitCaller(object):
         """ Convert the query dictionary into an array with one element
         per position in the sequence. """
         # Initialize an empty query array: one element per base in seq.
-        query = np.zeros(len(seq), dtype=NP_TYPE)
+        query = np.zeros(len(seq), dtype=REL_TYPE)
         # Set the elements of the query array for each type of ref base.
         for ref_base, ref_query in self.queries.items():
             # Locate all elements of seq with the given type of ref base

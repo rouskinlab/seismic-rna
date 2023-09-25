@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from .encode import encode_relate
 from .error import RelateNotImplementedError, RelateValueError
-from ..core.rel import DELET, INS_5, INS_3, SUB_N
+from ..core.relvect import DELET, INS_5, INS_3, SUB_N
 from ..core.seq import DNA
 
 

@@ -7,7 +7,7 @@ import pandas as pd
 from .report import RelateReport
 from .seqpos import format_seq_pos, parse_pos
 from ..core.load import BatchLoader
-from ..core.rel import NP_TYPE
+from ..core.relvect import REL_TYPE
 from ..core.report import SeqF
 from ..core.sect import seq_pos_to_index
 
@@ -64,7 +64,7 @@ class RelateLoader(BatchLoader):
         # The vectors are stored as signed 8-bit integers (np.int8) and
         # must be cast to unsigned 8-bit integers (np.uint8) so that the
         # bitwise operations work.
-        return vectors.astype(NP_TYPE, copy=False)
+        return vectors.astype(REL_TYPE, copy=False)
 
     def iter_batches_personal(self, *, positions: Sequence[int] | None = None):
         yield from super().iter_batches_personal(positions=positions)

@@ -15,7 +15,7 @@ from typing import Sequence
 import numpy as np
 
 from .encode import encode_relate
-from ..core.rel import DELET, INS_5, INS_3, NP_TYPE, NOCOV
+from ..core.relvect import DELET, INS_5, INS_3, REL_TYPE, NOCOV
 from ..core.sect import Section
 from ..core.seq import BASEA, BASEC, BASEG, BASET, DNA
 
@@ -78,7 +78,7 @@ def iter_relvecs_q53(refseq: DNA,
     margin = MIN_INDEL_GAP + 1
     for rel in product(*rel_opts):
         # Generate a relation vector from the relationships.
-        relvec = np.array(rel, dtype=NP_TYPE)
+        relvec = np.array(rel, dtype=REL_TYPE)
         yield relvec
         if max_ins == 0:
             # Do not introduce any insertions into the read.

@@ -4,9 +4,9 @@ import numpy as np
 
 from ..invert import find_relvec_ends, inverse_relate
 from ...core.qual import HI_QUAL, LO_QUAL
-from ...core.rel import (MATCH, DELET, INS_5, INS_3, INS_8,
-                         NOCOV, ANY_N, MINS5, MINS3, ANY_8,
-                         SUB_A, SUB_C, SUB_G, SUB_T, NP_TYPE)
+from ...core.relvect import (MATCH, DELET, INS_5, INS_3, INS_8,
+                             NOCOV, ANY_N, MINS5, MINS3, ANY_8,
+                             SUB_A, SUB_C, SUB_G, SUB_T, REL_TYPE)
 from ...core.seq import DNA
 
 
@@ -15,31 +15,31 @@ class TestFindRelVecEnds(ut.TestCase):
 
     def test_matches(self):
         """ Test that a relation vector of all matches is valid. """
-        self.assertIsNotNone(find_relvec_ends(np.ones(8, NP_TYPE)))
+        self.assertIsNotNone(find_relvec_ends(np.ones(8, REL_TYPE)))
 
     def test_nocov_margin(self):
         """ Test that a relation vector with non-covered positions on
         its margins is valid. """
-        relvec = np.full(8, NOCOV, NP_TYPE)
+        relvec = np.full(8, NOCOV, REL_TYPE)
         relvec[4] = 1
         self.assertIsNotNone(find_relvec_ends(relvec))
 
     def test_nocov_middle(self):
         """ Test that a relation vector with non-covered positions in
         the middle is invalid. """
-        relvec = np.full(8, MATCH, NP_TYPE)
+        relvec = np.full(8, MATCH, REL_TYPE)
         relvec[4] = NOCOV
         self.assertRaises(ValueError, find_relvec_ends, relvec)
 
     def test_blank(self):
         """ Test that an entirely blank relation vector is invalid. """
         self.assertRaises(ValueError, find_relvec_ends,
-                          np.full(8, NOCOV, NP_TYPE))
+                          np.full(8, NOCOV, REL_TYPE))
 
     def test_not_array(self):
         """ Test that a non-array relation vector is invalid. """
         self.assertRaises(TypeError, find_relvec_ends,
-                          np.ones(8, NP_TYPE).tolist())
+                          np.ones(8, REL_TYPE).tolist())
 
     def test_not_uint8(self):
         """ Test that a non-uint8 relation vector is invalid. """

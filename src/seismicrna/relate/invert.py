@@ -6,9 +6,9 @@ from .cigar import CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_DELET, CIG_INSRT
 from .cigarcount import CigarOp
 from .encode import BASE_DECODINGS
 from ..core.qual import LO_QUAL, HI_QUAL
-from ..core.rel import (MATCH, DELET, INS_5, INS_3, INS_8,
-                        SUB_A, SUB_C, SUB_G, SUB_T, ANY_N,
-                        IRREC, NOCOV, NP_TYPE)
+from ..core.relvect import (MATCH, DELET, INS_5, INS_3, INS_8,
+                            SUB_A, SUB_C, SUB_G, SUB_T, ANY_N,
+                            IRREC, NOCOV, REL_TYPE)
 from ..core.seq import BASEN, DNA
 
 
@@ -16,8 +16,8 @@ def find_relvec_ends(relvec: np.ndarray):
     """ Find the 5' and 3' ends of a relation vector. """
     if not isinstance(relvec, np.ndarray):
         raise TypeError(f"Expected {np.ndarray}, but got {type(relvec)}")
-    if relvec.dtype.type is not NP_TYPE:
-        raise TypeError(f"Expected an array of type {NP_TYPE}, but got "
+    if relvec.dtype.type is not REL_TYPE:
+        raise TypeError(f"Expected an array of type {REL_TYPE}, but got "
                         f"type {relvec.dtype.type}")
     if relvec.ndim != 1:
         raise ValueError("Expected an array with 1 dimension, but got "

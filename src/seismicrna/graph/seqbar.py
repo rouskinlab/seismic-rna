@@ -294,7 +294,7 @@ class EnsembleMultiRelSeqBarGraph(EnsembleSeqBarGraph, MultiRelSeqBarGraph):
         data = self.data.copy()
         if data.columns.nlevels != 1:
             raise ValueError(
-                f"Expected 1 level of columns, but got {data.columns.names}")
+                f"Expected 1 level of columns, but got {data.columns._names}")
         # Replace the columns with a single index.
         data.columns = data.columns.get_level_values(REL_NAME)
         for trace in iter_seq_stack_bar_traces(self.data, self.cmap):
