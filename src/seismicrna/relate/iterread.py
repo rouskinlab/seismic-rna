@@ -16,7 +16,7 @@ from .cigar import CIG_INSRT
 from .cigarcount import count_cigar_muts, find_cigar_op_pos
 from .invert import inverse_relate
 from .iterrelv import iter_relvecs_all
-from ..core.relvect import INS_5, INS_3, REL_TYPE, NOCOV
+from ..core.relv import INS_5, INS_3, REL_TYPE, NOCOV
 from ..core.seq import DNA, expand_degenerate_seq
 
 

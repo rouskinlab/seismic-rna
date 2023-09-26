@@ -15,7 +15,7 @@ from typing import Sequence
 import numpy as np
 
 from .encode import encode_relate
-from ..core.relvect import DELET, INS_5, INS_3, REL_TYPE, NOCOV
+from ..core.relv import DELET, INS_5, INS_3, REL_TYPE, NOCOV
 from ..core.sect import Section
 from ..core.seq import BASEA, BASEC, BASEG, BASET, DNA
 

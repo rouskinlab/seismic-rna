@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from .bitvect import BitBatch
-from .relvect import MATCH, DELET, INS_5, INS_3, SUB_A, SUB_C, SUB_G, SUB_T, REL_TYPE
+from .relv import MATCH, DELET, INS_5, INS_3, SUB_A, SUB_C, SUB_G, SUB_T, REL_TYPE
 from .sect import Section, index_to_seq
 from .seq import DNA, BASEA, BASEC, BASEG, BASET
 

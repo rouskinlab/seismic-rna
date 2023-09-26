@@ -14,8 +14,7 @@ BATCH_INDEX_COL = "Read Name"
 
 class RelateReport(BatchReport):
     __slots__ = ("sample", "ref", "seq", "length",
-                 "n_reads_rel_pass", "n_reads_rel_fail",
-                 "checksums", "n_batches",
+                 "n_reads_rel", "checksums", "n_batches",
                  "began", "ended", "taken", "speed")
 
     def __init__(self, *,
@@ -45,7 +44,7 @@ class RelateReport(BatchReport):
 
     @classmethod
     def default_batch_ext(cls):
-        return path.PARQ_EXTS[0]
+        return path.RELZIP_EXT
 
 ########################################################################
 #                                                                      #

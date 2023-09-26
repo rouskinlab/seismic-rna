@@ -113,7 +113,7 @@ def calc_n_batches(report: Report):
 
 
 def calc_speed(report: Report) -> float:
-    nvecs = report.get_field(NumVecF)
+    nvecs = report.get_field(NumReadsRel)
     taken = report.get_field(TimeTakenF)
     try:
         return nvecs / taken
@@ -432,10 +432,8 @@ ReadsRefs = Field("reads_refs", "Number of reads aligned by reference",
                   check_val=check_dict_vals_nonneg_ints)
 
 # Relation vector generation
-NumVecF = Field("n_reads_rel_pass", "Number of Reads Passed", int,
-                check_val=check_nonneg_int)
-NumErrF = Field("n_reads_rel_fail", "Number of Reads Failed", int,
-                check_val=check_nonneg_int)
+NumReadsRel = Field("n_reads_rel", "Number of Reads", int,
+                    check_val=check_nonneg_int)
 NumBatchF = Field("n_batches", "Number of Batches", int,
                   check_val=check_nonneg_int)
 ChecksumsF = Field("checksums", "MD5 Checksums of Batches", list,

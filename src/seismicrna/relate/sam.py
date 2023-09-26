@@ -41,13 +41,14 @@ def _range_of_records(get_records_func: Callable):
 
 @_range_of_records
 def _iter_records_single(sam_file: TextIO):
-    """ Yield the read name and line for every read in the file. """
+    """ Yield the line for every read in the file. """
     while line := sam_file.readline():
-        yield read_name(line), line, ""
+        yield line, ""
 
 
 @_range_of_records
 def _iter_records_paired(sam_file: TextIO):
+    """ Yield every pair of lines in the file. """
     prev_line: str = ""
     prev_name: str = ""
     while line := sam_file.readline():
@@ -57,7 +58,7 @@ def _iter_records_paired(sam_file: TextIO):
             # The previous read has not yet been yielded.
             if prev_name == name:
                 # The current read is the mate of the previous read.
-                yield prev_name, prev_line, line
+                yield prev_line, line
                 prev_line = ""
                 prev_name = ""
             else:
@@ -65,7 +66,7 @@ def _iter_records_paired(sam_file: TextIO):
                 # the SAM file. This situation can occur if Bowtie2 is
                 # run in mixed alignment mode and two paired mates fail
                 # to align as a pair but one mate aligns individually.
-                yield prev_name, prev_line, ""
+                yield prev_line, ""
                 # Save the current read so that if its mate is the next
                 # read, it will be returned as a pair.
                 prev_line = line
@@ -77,7 +78,7 @@ def _iter_records_paired(sam_file: TextIO):
             prev_name = read_name(line)
     if prev_line:
         # In case the last read has not yet been yielded, do so.
-        yield prev_name, prev_line, ""
+        yield prev_line, ""
 
 
 class XamViewer(object):

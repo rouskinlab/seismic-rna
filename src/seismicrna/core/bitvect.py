@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from .mu import calc_f_obs_df
-from .relvect import REL_TYPE
+from .relv import REL_TYPE
 from .sect import Section
 
 logger = getLogger(__name__)

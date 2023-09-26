@@ -12,7 +12,7 @@ format (which encodes relationships explicitly as elements of arrays).
 
 """
 
-from ..core.relvect import MATCH, SUB_A, SUB_C, SUB_G, SUB_T, ANY_N, IRREC
+from ..core.relv import MATCH, SUB_A, SUB_C, SUB_G, SUB_T, ANY_N, IRREC
 from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
 
 

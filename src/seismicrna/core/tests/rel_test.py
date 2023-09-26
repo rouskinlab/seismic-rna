@@ -10,10 +10,10 @@ import unittest as ut
 
 import numpy as np
 
-from ..relvect import (IRREC, INDEL, NOCOV, MATCH, DELET, INS_5, INS_3,
-                       INS_8, MINS5, MINS3, ANY_8, SUB_A, SUB_C, SUB_G,
-                       SUB_T, SUB_N, ANY_B, ANY_D, ANY_H, ANY_V, ANY_N,
-                       REL_TYPE)
+from ..relv import (IRREC, INDEL, NOCOV, MATCH, DELET, INS_5, INS_3,
+                    INS_8, MINS5, MINS3, ANY_8, SUB_A, SUB_C, SUB_G,
+                    SUB_T, SUB_N, ANY_B, ANY_D, ANY_H, ANY_V, ANY_N,
+                    REL_TYPE)
 
 
 class TestConstants(ut.TestCase):

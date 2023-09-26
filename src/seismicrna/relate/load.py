@@ -7,7 +7,7 @@ import pandas as pd
 from .report import RelateReport
 from .seqpos import format_seq_pos, parse_pos
 from ..core.load import BatchLoader
-from ..core.relvect import REL_TYPE
+from ..core.relv import REL_TYPE
 from ..core.report import SeqF
 from ..core.sect import seq_pos_to_index
 

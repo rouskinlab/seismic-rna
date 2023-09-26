@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
+
 from .encode import encode_relate
-from .error import RelateNotImplementedError, RelateValueError
-from ..core.relvect import DELET, INS_5, INS_3, SUB_N
+from .error import RelateValueError
+from ..core.relv import DELET, INS_5, INS_3, SUB_N
 from ..core.seq import DNA
 
+# Minimum distance between an insertion and a deletion
+MIN_INDEL_DIST = 2
 
-class Indel(object):
+
+class Indel(ABC):
     """
     Base class for an Insertion or Deletion (collectively, "indel")
     It is used to find alternative positions for indels by keeping track
@@ -16,24 +21,24 @@ class Indel(object):
     Parameters
     ----------
 
-    rel_ins_idx: int
+    rel_ins_pos: int
         The 0-indexed position of the indel with respect to the sequence
         (ref or read) with the relative insertion. This position points
         to one specific base. If the mutation is labeled an insertion,
         then the read is the sequence with the relative insertion (since
-        it has a base that is not in the reference), and rel_ins_idx is
+        it has a base that is not in the reference), and rel_ins_pos is
         the 0-based index of the inserted base in the coordinates of the
         read sequence. If the mutation is labeled a deletion, then the
         reference is the sequence with the relative insertion (since it
-        has a base that is not in the read), and rel_ins_idx is the
+        has a base that is not in the read), and rel_ins_pos is the
         0-based index of the deleted base in the coordinates of the
         reference sequence.
-    rel_del_idx (int):
-        The opposite of rel_ins_idx: the 0-indexed position of the indel
+    rel_del_pos (int):
+        The opposite of rel_ins_pos: the 0-indexed position of the indel
         with respect to the sequence with a relative deletion (that is,
         the read if the mutation is denoted a deletion, and the ref if
         an insertion). Because the deleted base does not actually exist
-        in the sequence whose coordinates it is based on, rel_del_idx
+        in the sequence whose coordinates it is based on, rel_del_pos
         does not refer to a specific position in the sequence, rather to
         the two extant positions in the sequence that flank the deleted
         position. It is most convenient for the algorithm to have this
@@ -42,107 +47,123 @@ class Indel(object):
 
     """
 
-    # Define __slots__ to improve speed and memory performance.
-    __slots__ = ["_ins_idx", "_ins_init", "_del_idx", "_del_init", "_tunneled"]
+    __slots__ = "_ins_pos", "_ins_init", "_del_pos", "_del_init", "_tunneled"
 
-    # Minimum distance between an insertion and a deletion
-    MIN_INDEL_DIST = 2
-
-    def __init__(self, rel_ins_idx: int, rel_del_idx: int) -> None:
-        self._ins_idx = rel_ins_idx
-        self._ins_init = rel_ins_idx
-        self._del_idx = rel_del_idx
-        self._del_init = rel_del_idx
+    def __init__(self, rel_ins_pos: int, rel_del_pos: int):
+        self._ins_pos = rel_ins_pos
+        self._ins_init = rel_ins_pos
+        self._del_pos = rel_del_pos
+        self._del_init = rel_del_pos
         self._tunneled = False
 
     @property
-    def ins_idx(self):
-        return self._ins_idx
+    def ins_pos(self):
+        return self._ins_pos
 
     @property
-    def del_idx5(self):
-        return self._del_idx - 1
+    def del_pos5(self):
+        return self._del_pos - 1
 
     @property
-    def del_idx3(self):
-        return self._del_idx
+    def del_pos3(self):
+        return self._del_pos
 
     @property
     def tunneled(self):
         return self._tunneled
 
     @property
+    @abstractmethod
     def rank(self) -> int:
-        raise RelateNotImplementedError
+        """ Rank of the indel. """
 
     def reset(self):
         """ Reset the indel to its initial position, and erase its
         history of tunneling. """
-        self._ins_idx = self._ins_init
-        self._del_idx = self._del_init
+        self._ins_pos = self._ins_init
+        self._del_pos = self._del_init
         self._tunneled = False
 
     @staticmethod
-    def _get_indel_by_idx(indels: list[Indel], idx: int):
+    def _get_indel_by_pos(indels: list[Indel], ins_pos: int):
         for indel in indels:
-            if indel.ins_idx == idx:
+            if indel.ins_pos == ins_pos:
                 return indel
 
     def _peek_out_of_indel(self, indels: list[Indel], from3to5: bool):
-        inc = -1 if from3to5 else 1
-        idx = self.ins_idx + inc
+        increment = -1 if from3to5 else 1
+        ins_pos = self.ins_pos + increment
         tunneled_indels: list[Indel] = list()
-        while indel := (self._get_indel_by_idx(indels, idx)):
-            idx += inc
+        while indel := (self._get_indel_by_pos(indels, ins_pos)):
+            ins_pos += increment
             tunneled_indels.append(indel)
         self._tunneled = bool(tunneled_indels)
-        return idx, tunneled_indels
+        return ins_pos, tunneled_indels
 
-    def _collision(self, other: Indel, swap_idx: int):
-        return self.MIN_INDEL_DIST > (min(abs(swap_idx - other.del_idx5),
-                                          abs(swap_idx - other.del_idx3)))
+    @staticmethod
+    def _collision(other: Indel, swap_pos: int):
+        return MIN_INDEL_DIST > (min(abs(swap_pos - other.del_pos5),
+                                     abs(swap_pos - other.del_pos3)))
 
-    def _collisions(self, indels: list[Indel], swap_idx: int):
-        return any(self._collision(indel, swap_idx) for indel in indels)
+    @classmethod
+    def _collisions(cls, indels: list[Indel], swap_pos: int):
+        return any(cls._collision(indel, swap_pos) for indel in indels)
 
-    def step_del_idx(self, swap_idx: int):
-        # Move the indel's position (self._ins_idx) to swap_idx.
-        # Move self._del_idx one step in the same direction.
-        if swap_idx == self.ins_idx:
-            raise RelateValueError(f"swap ({swap_idx}) = ins ({self.ins_idx})")
-        self._del_idx += 1 if swap_idx > self.ins_idx else -1
+    def step_del_pos(self, swap_pos: int):
+        # Move the indel's position (self._ins_pos) to swap_pos.
+        # Move self._del_pos one step in the same direction.
+        if swap_pos == self.ins_pos:
+            raise RelateValueError(f"swap ({swap_pos}) = ins ({self.ins_pos})")
+        self._del_pos += 1 if swap_pos > self.ins_pos else -1
 
-    def _step(self, swap_idx: int):
-        self.step_del_idx(swap_idx)
-        self._ins_idx = swap_idx
+    def _step(self, swap_pos: int):
+        self.step_del_pos(swap_pos)
+        self._ins_pos = swap_pos
 
     @staticmethod
     def _consistent_rels(curr_rel: int, swap_rel: int):
         if curr_rel & swap_rel or (curr_rel & SUB_N and swap_rel & SUB_N):
-            # Relationship between reference and read base (read_code) and
-            # relationship between reference and swap base (swap_code)
-            # are consistent, meaning either
+            # Relationship of the reference and read base (curr_rel) and
+            # relationship of the reference and swap base (swap_rel) are
+            # consistent, meaning one of the following is true:
             # - both match the reference
-            # - one matches and the other potentially matches (i.e. low qual)
-            # - one is a substitution and the other could be a substitution
-            # - both are substitutions (for each code, code & SUB_N == code)
+            # - one matches and the other maybe matches (i.e. low qual)
+            # - one is a substitution and the other could also be
+            # - both are substitutions
             return curr_rel
-        # Otherwise, i.e.g if one base matches and the other is a substitution,
-        # then the relationships are not consistent.
+        # Otherwise, e.g. if one base matches and the other is a
+        # substitution, then the relationships are not consistent.
         return 0
 
-    def _encode_swap(self, *args, **kwargs) -> bool:
-        raise RelateNotImplementedError
+    @classmethod
+    @abstractmethod
+    def _encode_swap(cls, *args, **kwargs) -> bool:
+        """ Encode a swap. """
 
+    @abstractmethod
     def _try_swap(self, *args, **kwargs) -> bool:
-        raise RelateNotImplementedError
+        """ Perform a swap if possible. """
 
-    def sweep(self, muts: bytearray, ref: DNA, read: DNA, qual: str,
-              min_qual: str, dels: list[Deletion], inns: list[Insertion],
-              from3to5: bool, tunnel: bool):
-        # Move the indel as far as possible in either the 5' or 3' direction.
-        while self._try_swap(muts, ref, read, qual, min_qual, dels, inns,
-                             from3to5, tunnel):
+    def sweep(self,
+              muts: dict[int, int],
+              ref: DNA,
+              read: DNA,
+              qual: str,
+              min_qual: str,
+              dels: list[Deletion],
+              inns: list[Insertion],
+              from3to5: bool,
+              tunnel: bool):
+        # Move the indel as far as possible in the 5' or 3' direction.
+        while self._try_swap(muts,
+                             ref,
+                             read,
+                             qual,
+                             min_qual,
+                             dels,
+                             inns,
+                             from3to5,
+                             tunnel):
             # All actions happen in _try_swap, so loop body is empty.
             pass
 
@@ -150,54 +171,66 @@ class Indel(object):
 class Deletion(Indel):
     @property
     def rank(self):
-        return self._ins_idx
+        return self._ins_pos
 
     @classmethod
-    def _encode_swap(cls, ref_base: str, swap_base: str, read_base: str,
-                     read_qual: str, min_qual: str):
+    def _encode_swap(cls,
+                     ref_base: str,
+                     swap_base: str,
+                     read_base: str,
+                     read_qual: str,
+                     min_qual: str):
         curr_rel = encode_relate(ref_base, read_base, read_qual, min_qual)
         swap_rel = encode_relate(swap_base, read_base, read_qual, min_qual)
         return cls._consistent_rels(curr_rel, swap_rel)
 
-    def _swap(self, muts: bytearray, swap_idx: int, relation: int):
+    def _swap(self, muts: dict[int, int], swap_pos: int, relation: int):
         """
         Parameters
         ----------
-        muts: bytearray
+        muts: dict
             Mutation vector
-        swap_idx: int
-            Index in the reference to which the deletion moves during
+        swap_pos: int
+            Position in the reference to which the deletion moves during
             this swap
         relation: int
             Relationship (match, sub, etc.) between the base located at
-            swap_idx and the base in the read
+            swap_pos and the base in the read
 
         """
-        # The base at swap_idx moves to self.ref_idx, so after the swap, the
-        # relationship between self.ref_idx and the read base will be swap_code.
-        muts[self.ins_idx] |= relation
-        # The base at self.ref_idx is marked as a deletion (by definition), so
-        # mark the position it moves to (swap_idx) as a deletion too.
-        muts[swap_idx] |= DELET
-        self._step(swap_idx)
+        # The base at swap_pos moves to self.ins_pos, so after the swap,
+        # the relationship between self.ins_pos and the read base will
+        # be relation.
+        muts[self.ins_pos] |= relation
+        # The base at self.ref_pos is a deletion (by definition), so
+        # mark the position it moves to (swap_pos) as a deletion, too.
+        muts[swap_pos] |= DELET
+        self._step(swap_pos)
 
-    def _try_swap(self, relvec: bytearray, refseq: DNA, read: DNA, qual: str,
-                  min_qual: str, dels: list[Deletion], inns: list[Insertion],
-                  from3to5: bool, tunnel: bool) -> bool:
-        swap_idx, tunneled_indels = self._peek_out_of_indel(dels, from3to5)
-        read_idx = self.del_idx5 if from3to5 else self.del_idx3
-        if (1 <= swap_idx < len(refseq) - 1 and 1 <= read_idx < len(read) - 1
+    def _try_swap(self,
+                  muts: dict[int, int],
+                  refseq: DNA,
+                  read: DNA,
+                  qual: str,
+                  min_qual: str,
+                  dels: list[Deletion],
+                  inns: list[Insertion],
+                  from3to5: bool,
+                  tunnel: bool):
+        swap_pos, tunneled_indels = self._peek_out_of_indel(dels, from3to5)
+        read_pos = self.del_pos5 if from3to5 else self.del_pos3
+        if (1 < swap_pos < len(refseq) and 1 < read_pos < len(read)
                 and (tunnel or not self.tunneled)
-                and not self._collisions(inns, swap_idx)):
-            relation = self._encode_swap(refseq[self.ins_idx],
-                                         refseq[swap_idx],
-                                         read[read_idx],
-                                         qual[read_idx],
+                and not self._collisions(inns, swap_pos)):
+            relation = self._encode_swap(refseq[self.ins_pos - 1],
+                                         refseq[swap_pos - 1],
+                                         read[read_pos - 1],
+                                         qual[read_pos - 1],
                                          min_qual)
             if relation:
-                self._swap(relvec, swap_idx, relation)
+                self._swap(muts, swap_pos, relation)
                 for indel in tunneled_indels:
-                    indel.step_del_idx(swap_idx)
+                    indel.step_del_pos(swap_pos)
                 return True
         return False
 
@@ -205,72 +238,99 @@ class Deletion(Indel):
 class Insertion(Indel):
     @property
     def rank(self):
-        return self._del_idx
+        return self._del_pos
 
-    def stamp(self, muts: bytearray):
+    def stamp(self, muts: dict[int, int], reflen: int):
         """ Stamp the relation vector with a 5' and a 3' insertion. """
-        if 0 <= self.del_idx5 < len(muts):
-            muts[self.del_idx5] |= INS_5
-        if 0 <= self.del_idx3 < len(muts):
-            muts[self.del_idx3] |= INS_3
+        if 1 <= self.del_pos5 <= reflen:
+            muts[self.del_pos5] |= INS_5
+        if 1 <= self.del_pos3 <= reflen:
+            muts[self.del_pos3] |= INS_3
 
     @classmethod
-    def _encode_swap(cls, ref_base: str, read_base: str, read_qual: str,
-                     swap_base: str, swap_qual: str, min_qual: str):
+    def _encode_swap(cls,
+                     ref_base: str,
+                     read_base: str,
+                     read_qual: str,
+                     swap_base: str,
+                     swap_qual: str,
+                     min_qual: str):
         curr_rel = encode_relate(ref_base, read_base, read_qual, min_qual)
         swap_rel = encode_relate(ref_base, swap_base, swap_qual, min_qual)
         return cls._consistent_rels(curr_rel, swap_rel)
 
-    def _swap(self, muts: bytearray, ref_idx: int,
-              swap_idx: int, relation: int):
+    def _swap(self,
+              muts: dict[int, int],
+              ref_pos: int,
+              swap_pos: int,
+              relation: int,
+              reflen: int):
         """
         Parameters
         ----------
-        muts: bytearray:
-            Relation vector
-        swap_idx: int:
-            Index in the read to which the deletion is swapped
+        muts: dict
+            Mutations
+        swap_pos: int
+            Position in the read to which the deletion is swapped
         relation: int
             Relationship (match, sub, etc.) between the base located at
-            swap_idx and the base in the ref
+            swap_pos and the base in the ref
+        reflen: int
+            Length of the reference sequence.
 
         """
-        # The base at ref_idx moves to swap_idx, so after the swap, the
-        # relationship between ref_idx and the read base is relation.
-        muts[ref_idx] |= relation
-        self._step(swap_idx)
+        # The base at ref_pos moves to swap_pos, so after the swap, the
+        # relationship between ref_pos and the read base is relation.
+        muts[ref_pos] |= relation
+        self._step(swap_pos)
         # Mark the new positions of the insertion.
-        self.stamp(muts)
+        self.stamp(muts, reflen)
 
-    def _try_swap(self, muts: bytearray, refseq: DNA, read: DNA, qual: str,
-                  min_qual: str, dels: list[Deletion], inns: list[Insertion],
-                  from3to5: bool, tunnel: bool) -> bool:
-        swap_idx, tunneled_indels = self._peek_out_of_indel(inns, from3to5)
-        ref_idx = self.del_idx5 if from3to5 else self.del_idx3
-        if (1 <= swap_idx < len(read) - 1 and 1 <= ref_idx < len(refseq) - 1
+    def _try_swap(self,
+                  muts: dict[int, int],
+                  refseq: DNA,
+                  read: DNA,
+                  qual: str,
+                  min_qual: str,
+                  dels: list[Deletion],
+                  inns: list[Insertion],
+                  from3to5: bool,
+                  tunnel: bool):
+        swap_pos, tunneled_indels = self._peek_out_of_indel(inns, from3to5)
+        ref_pos = self.del_pos5 if from3to5 else self.del_pos3
+        if (1 < swap_pos < len(read) and 1 < ref_pos < len(refseq)
                 and (tunnel or not self.tunneled)
-                and not self._collisions(dels, swap_idx)):
-            relation = self._encode_swap(refseq[ref_idx], read[self.ins_idx],
-                                         qual[self.ins_idx], read[swap_idx],
-                                         qual[swap_idx], min_qual)
+                and not self._collisions(dels, swap_pos)):
+            relation = self._encode_swap(refseq[ref_pos - 1],
+                                         read[self.ins_pos - 1],
+                                         qual[self.ins_pos - 1],
+                                         read[swap_pos - 1],
+                                         qual[swap_pos - 1],
+                                         min_qual)
             if relation:
-                self._swap(muts, ref_idx, swap_idx, relation)
+                self._swap(muts, ref_pos, swap_pos, relation, len(refseq))
                 for indel in tunneled_indels:
-                    indel.step_del_idx(swap_idx)
+                    indel.step_del_pos(swap_pos)
                 return True
         return False
 
 
-def sweep_indels(muts: bytearray, refseq: DNA, read: DNA, qual: str,
-                 min_qual: str, dels: list[Deletion], inns: list[Insertion],
-                 from3to5: bool, tunnel: bool):
+def sweep_indels(muts: dict[int, int],
+                 refseq: DNA,
+                 read: DNA,
+                 qual: str,
+                 min_qual: str,
+                 dels: list[Deletion],
+                 inns: list[Insertion],
+                 from3to5: bool,
+                 tunnel: bool):
     """
     For every insertion and deletion,
 
     Parameters
     ----------
-    muts: bytearray
-        Mutation vector
+    muts: dict
+        Mutations
     refseq: bytes
         Reference sequence
     read: bytes
@@ -303,34 +363,46 @@ def sweep_indels(muts: bytearray, refseq: DNA, read: DNA, qual: str,
     # algorithm starts from the initial state every time.
     for indel in indels:
         indel.reset()
-    # Sort the indels by their rank, which is
+    # Sort the indels by their rank.
     sort_rev = from3to5 != tunnel
     indels.sort(key=lambda idl: idl.rank, reverse=sort_rev)
     while indels:
         indel = indels.pop()
-        indel.sweep(muts, refseq, read, qual, min_qual,
-                    dels, inns, from3to5, tunnel)
-        i = len(indels)
+        indel.sweep(muts,
+                    refseq,
+                    read,
+                    qual,
+                    min_qual,
+                    dels,
+                    inns,
+                    from3to5,
+                    tunnel)
+        idx = len(indels)
         if sort_rev:
-            while i > 0 and indel.rank > indels[i - 1].rank:
-                i -= 1
+            while idx > 0 and indel.rank > indels[idx - 1].rank:
+                idx -= 1
         else:
-            while i > 0 and indel.rank < indels[i - 1].rank:
-                i -= 1
-        if i < len(indels):
-            indels.insert(i, indel)
+            while idx > 0 and indel.rank < indels[idx - 1].rank:
+                idx -= 1
+        if idx < len(indels):
+            indels.insert(idx, indel)
 
 
-def find_ambrels(relvec: bytearray, refseq: DNA, read: DNA, qual: str,
-                 min_qual: str, dels: list[Deletion], inns: list[Insertion]):
+def find_ambrels(muts: dict[int, int],
+                 refseq: DNA,
+                 read: DNA,
+                 qual: str,
+                 min_qual: str,
+                 dels: list[Deletion],
+                 inns: list[Insertion]):
     """
     Find and label all positions in the vector that are ambiguous due to
     insertions and deletions.
 
     Parameters
     ----------
-    relvec: bytearray
-        Mutation vector
+    muts: dict
+        Mutations
     refseq: DNA
         Reference sequence
     read: DNA
@@ -354,12 +426,26 @@ def find_ambrels(relvec: bytearray, refseq: DNA, read: DNA, qual: str,
         # direction indicated by from3to5. Allow tunneling so that any
         # runs of consecutive insertions or consecutive deletions can
         # effectively move together.
-        sweep_indels(relvec, refseq, read, qual, min_qual,
-                     dels, inns, from3to5, tunnel=True)
+        sweep_indels(muts,
+                     refseq,
+                     read,
+                     qual,
+                     min_qual,
+                     dels,
+                     inns,
+                     from3to5,
+                     tunnel=True)
         if any(d.tunneled for d in dels) or any(i.tunneled for i in inns):
             # If any indel tunneled,
-            sweep_indels(relvec, refseq, read, qual, min_qual,
-                         dels, inns, from3to5, tunnel=False)
+            sweep_indels(muts,
+                         refseq,
+                         read,
+                         qual,
+                         min_qual,
+                         dels,
+                         inns,
+                         from3to5,
+                         tunnel=False)
 
 ########################################################################
 #                                                                      #

@@ -14,7 +14,7 @@ import pandas as pd
 
 from ..core.qual import HI_QUAL, LO_QUAL
 from ..core.rand import rng
-from ..core.relvect import NOCOV
+from ..core.relv import NOCOV
 from ..core.sect import index_to_seq
 from ..core.seq import DNA
 from ..core.xam import (FLAG_PAIRED, FLAG_PROPER,
