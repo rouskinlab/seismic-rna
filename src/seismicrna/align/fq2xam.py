@@ -17,8 +17,6 @@ from ..core.xam import (count_single_paired, run_flagstat, run_ref_header,
 
 logger = getLogger(__name__)
 
-OUT_EXT = path.CRAM_EXT
-
 
 def write_temp_ref_files(temp_dir: Path,
                          refset_path: Path,
@@ -99,6 +97,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                 bt2_orient: str,
                 min_mapq: int,
                 min_reads: int,
+                cram: bool,
                 n_procs: int = 1) -> list[Path]:
     """ Run all steps of the alignment pipeline for one FASTQ file or
     one pair of mated FASTQ files. """
@@ -243,7 +242,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                                  sample=sample,
                                  cmd=CMD_ALIGN,
                                  ref=ref,
-                                 ext=OUT_EXT)
+                                 ext=(path.CRAM_EXT if cram else path.BAM_EXT))
             if xam_ref.parent != xams_out_dir:
                 raise path.PathValueError(f"{xam_ref} is not in {xams_out_dir}")
             run_export(xam_whole, xam_ref, ref=ref, header=ref_headers[ref],
@@ -473,13 +472,18 @@ def check_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
     for (sample, ref), fq_unit in alignments.items():
         # Determine the path of the XAM file expected to result from the
         # alignment of the sample to the reference.
-        xam_expect = path.build(*path.XAM_SEGS,
-                                top=out_dir, cmd=CMD_ALIGN,
-                                sample=sample, ref=ref, ext=OUT_EXT)
-        if xam_expect.is_file():
-            # If the XAM file already exists, then add it to the dict of
-            # XAM files that have already been aligned.
-            xams_existing.append(xam_expect)
+        for ext in path.XAM_EXTS:
+            xam_expect = path.build(*path.XAM_SEGS,
+                                    top=out_dir,
+                                    cmd=CMD_ALIGN,
+                                    sample=sample,
+                                    ref=ref,
+                                    ext=ext)
+            if xam_expect.is_file():
+                # If the XAM file already exists, then add it to the
+                # dict of XAM files that have already been aligned.
+                xams_existing.append(xam_expect)
+                break
         else:
             # If at least one XAM file for a FASTQ unit does not exist,
             # then align the FASTQ.

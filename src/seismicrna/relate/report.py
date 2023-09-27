@@ -44,7 +44,7 @@ class RelateReport(BatchReport):
 
     @classmethod
     def default_batch_ext(cls):
-        return path.RELZIP_EXT
+        return path.PICKLE_BROTLI_EXT
 
 ########################################################################
 #                                                                      #

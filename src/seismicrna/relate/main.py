@@ -17,7 +17,8 @@ from ..core import docdef, path
 from ..core.cli import (arg_input_path, arg_fasta,
                         opt_out_dir, opt_temp_dir,
                         opt_min_mapq, opt_min_reads, opt_batch_size,
-                        opt_phred_enc, opt_min_phred, opt_ambrel,
+                        opt_phred_enc, opt_min_phred,
+                        opt_ambrel, opt_brotli_level,
                         opt_parallel, opt_max_procs,
                         opt_rerun, opt_save_temp)
 from ..core.cmd import CMD_REL
@@ -37,10 +38,11 @@ params = [
     opt_min_mapq,
     opt_phred_enc,
     opt_min_phred,
-    # Vectoring options
+    # Relate options
     opt_min_reads,
     opt_batch_size,
     opt_ambrel,
+    opt_brotli_level,
     # Parallelization
     opt_max_procs,
     opt_parallel,
@@ -72,6 +74,7 @@ def run(fasta: str,
         ambrel: bool,
         max_procs: int,
         parallel: bool,
+        brotli_level: int,
         rerun: bool,
         save_temp: bool):
     """
@@ -95,6 +98,7 @@ def run(fasta: str,
                      batch_size=batch_size,
                      max_procs=max_procs,
                      parallel=parallel,
+                     brotli_level=brotli_level,
                      rerun=rerun,
                      save_temp=save_temp)
 

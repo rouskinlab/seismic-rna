@@ -1,48 +1,34 @@
-"""
+from .types import get_uint_type
 
-Tests for the Relate Core Module
+REL_SIZE = 1
+REL_TYPE = get_uint_type(REL_SIZE)
 
-========================================================================
-
-"""
-
-import unittest as ut
-
-import numpy as np
-
-from ..rel import (IRREC, INDEL, NOCOV, MATCH, DELET, INS_5, INS_3,
-                   INS_8, MINS5, MINS3, ANY_8, SUB_A, SUB_C, SUB_G,
-                   SUB_T, SUB_N, ANY_B, ANY_D, ANY_H, ANY_V, ANY_N,
-                   REL_TYPE)
-
-
-class TestConstants(ut.TestCase):
-    """ Test constants of `rel` module. """
-
-    def test_np_type(self):
-        self.assertIs(REL_TYPE, np.uint8)
-
-    def test_primary_codes(self):
-        """ Test the primary relation codes. """
-        for exp, code in enumerate([MATCH, DELET, INS_5, INS_3,
-                                    SUB_A, SUB_C, SUB_G, SUB_T]):
-            self.assertEqual(code, 2 ** exp)
-
-    def test_derived_codes(self):
-        """ Test the derived relation codes. """
-        self.assertEqual(IRREC, 0)
-        self.assertEqual(MINS5, 5)
-        self.assertEqual(MINS3, 9)
-        self.assertEqual(INS_8, 12)
-        self.assertEqual(ANY_8, 13)
-        self.assertEqual(INDEL, 14)
-        self.assertEqual(SUB_N, 240)
-        self.assertEqual(ANY_N, 241)
-        self.assertEqual(NOCOV, 255)
-        self.assertEqual(ANY_B, ANY_N - SUB_A)
-        self.assertEqual(ANY_D, ANY_N - SUB_C)
-        self.assertEqual(ANY_H, ANY_N - SUB_G)
-        self.assertEqual(ANY_V, ANY_N - SUB_T)
+# Integer encodings for relation vectors
+IRREC = REL_TYPE(int("00000000", 2))  # 000: irreconcilable mates
+MATCH = REL_TYPE(int("00000001", 2))  # 001: match
+DELET = REL_TYPE(int("00000010", 2))  # 002: deletion
+INS_5 = REL_TYPE(int("00000100", 2))  # 004: 5' of insertion
+INS_3 = REL_TYPE(int("00001000", 2))  # 008: 3' of insertion
+SUB_A = REL_TYPE(int("00010000", 2))  # 016: substitution to A
+SUB_C = REL_TYPE(int("00100000", 2))  # 032: substitution to C
+SUB_G = REL_TYPE(int("01000000", 2))  # 064: substitution to G
+SUB_T = REL_TYPE(int("10000000", 2))  # 128: substitution to T
+NOCOV = REL_TYPE(int("11111111", 2))  # 255: not covered by read
+SUB_N = REL_TYPE(SUB_A | SUB_C | SUB_G | SUB_T)
+SUB_B = REL_TYPE(SUB_N ^ SUB_A)
+SUB_D = REL_TYPE(SUB_N ^ SUB_C)
+SUB_H = REL_TYPE(SUB_N ^ SUB_G)
+SUB_V = REL_TYPE(SUB_N ^ SUB_T)
+ANY_N = REL_TYPE(SUB_N | MATCH)
+ANY_B = REL_TYPE(SUB_B | MATCH)
+ANY_D = REL_TYPE(SUB_D | MATCH)
+ANY_H = REL_TYPE(SUB_H | MATCH)
+ANY_V = REL_TYPE(SUB_V | MATCH)
+INS_8 = REL_TYPE(INS_5 | INS_3)
+INDEL = REL_TYPE(DELET | INS_8)
+MINS5 = REL_TYPE(INS_5 | MATCH)
+MINS3 = REL_TYPE(INS_3 | MATCH)
+ANY_8 = REL_TYPE(INS_8 | MATCH)
 
 ########################################################################
 #                                                                      #

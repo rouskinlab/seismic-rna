@@ -3,7 +3,7 @@ from pathlib import Path
 
 from click import command
 
-from .fq2bam import get_xam_files
+from .fq2xam import get_xam_files
 from .fqops import FastqUnit
 from ..core import docdef
 from ..core.cli import (arg_fasta,
@@ -27,7 +27,7 @@ from ..core.cli import (arg_fasta,
                         opt_bt2_score_min_loc, opt_bt2_score_min_e2e,
                         opt_bt2_s, opt_bt2_l, opt_bt2_d, opt_bt2_r,
                         opt_bt2_gbar, opt_bt2_dpad, opt_bt2_orient,
-                        opt_min_mapq, opt_min_reads)
+                        opt_min_mapq, opt_min_reads, opt_cram)
 from ..core.cmd import CMD_ALIGN
 from ..core.depend import require_dependency
 from ..core.temp import lock_temp_dir
@@ -94,6 +94,7 @@ params = [
     # Samtools
     opt_min_mapq,
     opt_min_reads,
+    opt_cram,
 ]
 
 
@@ -162,7 +163,8 @@ def run(*,
         bt2_orient: str,
         # Samtools
         min_mapq: int,
-        min_reads: int) -> list[Path]:
+        min_reads: int,
+        cram: bool) -> list[Path]:
     """
     Run the alignment module.
 
@@ -236,7 +238,8 @@ def run(*,
                          bt2_dpad=bt2_dpad,
                          bt2_orient=bt2_orient,
                          min_mapq=min_mapq,
-                         min_reads=min_reads)
+                         min_reads=min_reads,
+                         cram=cram)
 
 ########################################################################
 #                                                                      #

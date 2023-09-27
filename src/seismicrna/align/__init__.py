@@ -24,7 +24,7 @@ or
 
 """
 
-from . import main, fq2bam, fqops
+from . import main, fq2xam, fqops
 from .main import cli, params, run
 
 ########################################################################

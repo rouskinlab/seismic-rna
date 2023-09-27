@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 from .encode import encode_relate
 from .error import RelateValueError
-from ..core.relv import DELET, INS_5, INS_3, SUB_N
+from ..core.rel import DELET, INS_5, INS_3, SUB_N
 from ..core.seq import DNA
 
 # Minimum distance between an insertion and a deletion

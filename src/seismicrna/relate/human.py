@@ -2,9 +2,9 @@ from sys import byteorder
 
 import numpy as np
 
-from ..core.relv import (MATCH, DELET, INS_5, INS_3,
-                         SUB_A, SUB_C, SUB_G, SUB_T,
-                         NOCOV, IRREC)
+from ..core.rel import (MATCH, DELET, INS_5, INS_3,
+                        SUB_A, SUB_C, SUB_G, SUB_T,
+                        NOCOV, IRREC)
 
 # Number of unique bytes
 N_BYTES = 2 ** 8

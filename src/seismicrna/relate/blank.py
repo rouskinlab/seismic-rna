@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from ..core.relv import NOCOV, REL_TYPE
+from ..core.rel import NOCOV, REL_TYPE
 from ..core.sect import seq_pos_to_index
 from ..core.seq import DNA
 

@@ -26,7 +26,7 @@ from ..core.fasta import get_fasta_seq
 from ..core.files import digest_file
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.qual import encode_phred
-from ..core.relv import from_reads
+from ..core.array import from_reads
 from ..core.seq import DNA
 
 logger = getLogger(__name__)
@@ -86,7 +86,8 @@ def relate_batch(batch: int, *,
                  refseq: DNA,
                  min_mapq: int,
                  min_qual: str,
-                 ambrel: bool):
+                 ambrel: bool,
+                 brotli_level: int):
     """ Compute relation vectors for every SAM record in one batch,
     write the vectors to a batch file, and return its MD5 checksum
     and the number of vectors. """
@@ -106,17 +107,19 @@ def relate_batch(batch: int, *,
             except Exception as error:
                 logger.error(f"Failed to compute relation vector: {error}")
 
-    relvecs = from_reads(refseq, relate_records(xam_view.iter_records(batch)))
+    relvecs = from_reads(relate_records(xam_view.iter_records(batch)),
+                         batch,
+                         refseq)
     batch_file = RelateReport.build_batch_path(out_dir,
                                                batch,
                                                sample=xam_view.sample,
                                                ref=xam_view.ref,
-                                               ext=path.RELZIP_EXT)
-    relvecs.save(batch_file, overwrite=True)
+                                               ext=path.PICKLE_BROTLI_EXT)
+    relvecs.save(batch_file, brotli_level=brotli_level, overwrite=True)
     checksum = digest_file(batch_file)
     logger.info(f"Ended computing relation vectors for batch {batch} "
                 f"of {xam_view}")
-    return relvecs.nreads, checksum
+    return relvecs.num_reads, checksum
 
 
 class RelationWriter(object):
@@ -153,6 +156,7 @@ class RelationWriter(object):
                        phred_enc: int,
                        min_phred: int,
                        ambrel: bool,
+                       brotli_level: int,
                        n_procs: int):
         """ Compute a relation vector for every record in a XAM file,
         split among one or more batches. For each batch, write a matrix
@@ -168,8 +172,9 @@ class RelationWriter(object):
                                out_dir=out_dir,
                                refseq=self.seq,
                                min_mapq=min_mapq,
+                               min_qual=encode_phred(min_phred, phred_enc),
                                ambrel=ambrel,
-                               min_qual=encode_phred(min_phred, phred_enc))
+                               brotli_level=brotli_level)
             # Generate and write relation vectors for each batch.
             results = dispatch(relate_batch,
                                n_procs,

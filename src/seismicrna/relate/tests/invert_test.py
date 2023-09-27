@@ -4,9 +4,9 @@ import numpy as np
 
 from ..invert import find_relvec_ends, inverse_relate
 from ...core.qual import HI_QUAL, LO_QUAL
-from ...core.relv import (MATCH, DELET, INS_5, INS_3, INS_8,
-                          NOCOV, ANY_N, MINS5, MINS3, ANY_8,
-                          SUB_A, SUB_C, SUB_G, SUB_T, REL_TYPE)
+from ...core.rel import (MATCH, DELET, INS_5, INS_3, INS_8,
+                         NOCOV, ANY_N, MINS5, MINS3, ANY_8,
+                         SUB_A, SUB_C, SUB_G, SUB_T, REL_TYPE)
 from ...core.seq import DNA
 
 

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from ..blank import blank_relvec
-from ...core.relv import NOCOV
+from ...core.rel import NOCOV
 from ...core.sect import seq_pos_to_index
 from ...core.seq import DNA
 

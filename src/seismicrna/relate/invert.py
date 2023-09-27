@@ -6,9 +6,9 @@ from .cigar import CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_DELET, CIG_INSRT
 from .cigarcount import CigarOp
 from .encode import BASE_DECODINGS
 from ..core.qual import LO_QUAL, HI_QUAL
-from ..core.relv import (MATCH, DELET, INS_5, INS_3, INS_8,
-                         SUB_A, SUB_C, SUB_G, SUB_T, ANY_N,
-                         IRREC, NOCOV, REL_TYPE)
+from ..core.rel import (MATCH, DELET, INS_5, INS_3, INS_8,
+                        SUB_A, SUB_C, SUB_G, SUB_T, ANY_N,
+                        IRREC, NOCOV, REL_TYPE)
 from ..core.seq import BASEN, DNA
 
 

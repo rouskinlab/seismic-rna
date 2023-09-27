@@ -247,30 +247,34 @@ run_xamgen = ShellCommand("aligning, filtering, and sorting by position",
 
 
 def export_cmd(xam_in: Path | None,
-               cram_out: Path | None, *,
+               xam_out: Path | None, *,
                ref: str,
                header: str,
                ref_file: Path,
                n_procs: int):
-    """ Wrap sorting and cramming into one pipeline. """
+    """ Wrap selecting, sorting, and exporting into one pipeline. """
     # Pipe the header line.
     echo_step = args_to_cmd([ECHO_CMD, header])
     # Select only the reads that aligned to the reference, and ignore
     # the original header.
     ref_step = view_xam_cmd(xam_in, None,
-                            sam=True, with_header=False,
-                            ref=ref, n_procs=n_procs)
+                            sam=True,
+                            with_header=False,
+                            ref=ref,
+                            n_procs=n_procs)
     # Merge the one header line and the reads for the reference.
     merge_step = cmds_to_subshell([echo_step, ref_step])
     # Sort reads by name so that mates are adjacent.
     sort_step = sort_xam_cmd(None, None, name=True, n_procs=n_procs)
-    # Cram the reads into a CRAM file.
-    cram_step = view_xam_cmd(None, cram_out, refs_file=ref_file,
-                             n_procs=n_procs)
-    return cmds_to_pipe([merge_step, sort_step, cram_step])
+    # Export the reads into a XAM file.
+    export_step = view_xam_cmd(None,
+                               xam_out,
+                               refs_file=ref_file,
+                               n_procs=n_procs)
+    return cmds_to_pipe([merge_step, sort_step, export_step])
 
 
-run_export = ShellCommand("selecting reference, sorting by name, and cramming",
+run_export = ShellCommand("selecting reference, sorting by name, and exporting",
                           export_cmd)
 
 ########################################################################

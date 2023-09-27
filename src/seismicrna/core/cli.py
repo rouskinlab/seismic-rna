@@ -426,6 +426,14 @@ opt_min_mapq = Option(
     help="Ignore alignments whose mapping quality is less than this number",
 )
 
+opt_cram = Option(
+    ("--cram/--bam",),
+    type=bool,
+    default=True,
+    help="Output alignment maps in BAM or CRAM format. BAM format has faster "
+         "read/write speeds, while CRAM format yields smaller files."
+)
+
 # Reference section specification options
 opt_coords = Option(
     ("--coords", "-c"),
@@ -472,6 +480,14 @@ opt_ambrel = Option(
     help=("Whether to find and label all ambiguous "
           "insertions and deletions (improves accuracy "
           "but runs slower)"))
+
+opt_brotli_level = Option(
+    ("--brotli-level",),
+    type=int,
+    default=10,
+    help=("Compression level for brotli: 0 (fastest, but worst compression) "
+          "to 11 (best compression, but slowest)")
+)
 
 # Mask
 
