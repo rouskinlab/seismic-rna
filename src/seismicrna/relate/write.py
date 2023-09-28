@@ -17,16 +17,15 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
+from .batch import from_reads
 from .relate import find_rels_line
 from .report import RelateReport
 from .sam import XamViewer
 from .seqpos import format_seq_pos
 from ..core import path
 from ..core.fasta import get_fasta_seq
-from ..core.files import digest_file
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.qual import encode_phred
-from ..core.array import from_reads
 from ..core.seq import DNA
 
 logger = getLogger(__name__)
@@ -46,7 +45,14 @@ def mib_to_bytes(batch_size: float):
     int
         Number of bytes per batch, to the nearest integer
     """
-    return round(batch_size * 2 ** 20)
+    if batch_size <= 0.:
+        raise ValueError(f"batch_size must be > 0, but got {batch_size}")
+    nbytes = round(batch_size * 2 ** 20)
+    if nbytes <= 0:
+        logger.warning(f"Using batch_size of {batch_size} MiB gave {nbytes} "
+                       f"bytes per batch: defaulting to 1")
+        nbytes = 1
+    return nbytes
 
 
 def get_reads_per_batch(bytes_per_batch: int, seq_len: int):
@@ -80,14 +86,14 @@ def _bytes_to_df(relbytes: tuple[bytearray, ...], reads: list[str], refseq: DNA)
     return pd.DataFrame(data=relarray, index=reads, columns=columns, copy=False)
 
 
-def relate_batch(batch: int, *,
-                 xam_view: XamViewer,
-                 out_dir: Path,
-                 refseq: DNA,
-                 min_mapq: int,
-                 min_qual: str,
-                 ambrel: bool,
-                 brotli_level: int):
+def generate_batch(batch: int, *,
+                   xam_view: XamViewer,
+                   out_dir: Path,
+                   refseq: DNA,
+                   min_mapq: int,
+                   min_qual: str,
+                   ambrel: bool,
+                   brotli_level: int):
     """ Compute relation vectors for every SAM record in one batch,
     write the vectors to a batch file, and return its MD5 checksum
     and the number of vectors. """
@@ -107,19 +113,22 @@ def relate_batch(batch: int, *,
             except Exception as error:
                 logger.error(f"Failed to compute relation vector: {error}")
 
-    relvecs = from_reads(relate_records(xam_view.iter_records(batch)),
-                         batch,
-                         refseq)
-    batch_file = RelateReport.build_batch_path(out_dir,
-                                               batch,
-                                               sample=xam_view.sample,
-                                               ref=xam_view.ref,
-                                               ext=path.PICKLE_BROTLI_EXT)
-    relvecs.save(batch_file, brotli_level=brotli_level, overwrite=True)
-    checksum = digest_file(batch_file)
+    names, relvecs = from_reads(relate_records(xam_view.iter_records(batch)),
+                                xam_view.sample,
+                                xam_view.ref,
+                                refseq,
+                                batch)
+    if names.num_pos != relvecs.num_pos:
+        raise ValueError(f"Inconsistent lengths: names ({names.num_pos}) "
+                         f"≠ relation vectors ({relvecs.num_pos})")
+    if names.num_reads != relvecs.num_reads:
+        raise ValueError(f"Inconsistent read counts: names ({names.num_reads}) "
+                         f"≠ relation vectors ({relvecs.num_reads})")
+    names.save(out_dir, brotli_level, overwrite=True)
+    relvecs.save(out_dir, brotli_level, overwrite=True)
     logger.info(f"Ended computing relation vectors for batch {batch} "
                 f"of {xam_view}")
-    return relvecs.num_reads, checksum
+    return relvecs.num_reads
 
 
 class RelationWriter(object):
@@ -141,23 +150,22 @@ class RelationWriter(object):
         return self.xam.ref
 
     def _write_report(self, *, out_dir: Path, **kwargs):
-        report = RelateReport(out_dir=out_dir,
+        report = RelateReport(top=out_dir,
                               seq=self.seq,
                               sample=self.sample,
                               ref=self.ref,
                               **kwargs)
-        report.save()
-        return report.get_path()
+        return report.save(out_dir, overwrite=True)
 
-    def _write_batches(self, *,
-                       out_dir: Path,
-                       save_temp: bool,
-                       min_mapq: int,
-                       phred_enc: int,
-                       min_phred: int,
-                       ambrel: bool,
-                       brotli_level: int,
-                       n_procs: int):
+    def _generate_batches(self, *,
+                          out_dir: Path,
+                          save_temp: bool,
+                          min_mapq: int,
+                          phred_enc: int,
+                          min_phred: int,
+                          ambrel: bool,
+                          brotli_level: int,
+                          n_procs: int):
         """ Compute a relation vector for every record in a XAM file,
         split among one or more batches. For each batch, write a matrix
         of the vectors to one batch file, and compute its checksum. """
@@ -165,7 +173,7 @@ class RelationWriter(object):
         # records to a temporary SAM file and determine the number and
         # start/stop indexes of each batch of records in the file.
         # The SAM file will remain open until exiting the with block.
-        logger.info(f"Began running {self}")
+        logger.info(f"Began {self}")
         try:
             # Collect the keyword arguments.
             disp_kwargs = dict(xam_view=self.xam,
@@ -176,20 +184,20 @@ class RelationWriter(object):
                                ambrel=ambrel,
                                brotli_level=brotli_level)
             # Generate and write relation vectors for each batch.
-            results = dispatch(relate_batch,
-                               n_procs,
-                               parallel=True,
-                               pass_n_procs=False,
-                               args=as_list_of_tuples(self.xam.indexes),
-                               kwargs=disp_kwargs)
+            nreads_batches = dispatch(generate_batch,
+                                      n_procs,
+                                      parallel=True,
+                                      pass_n_procs=False,
+                                      args=as_list_of_tuples(self.xam.indexes),
+                                      kwargs=disp_kwargs)
             # The list of results contains, for each batch, a tuple of
             # the number of relation vectors in the batch and the MD5
             # checksum of the batch file. Compute the total number of
             # vectors and list all the checksums.
-            nreads = sum(result[0] for result in results)
-            checksums: list[str] = [result[1] for result in results]
-            logger.info(f"Ended {self}: {nreads} reads")
-            return nreads, checksums
+            n_batches = len(nreads_batches)
+            n_reads = sum(nreads_batches)
+            logger.info(f"Ended {self}: {n_reads} reads in {n_batches} batches")
+            return n_batches, n_reads
         finally:
             if not save_temp:
                 # Delete the temporary SAM file before exiting.
@@ -199,19 +207,20 @@ class RelationWriter(object):
         """ Compute a relation vector for every record in a BAM file,
         write the vectors into one or more batch files, compute their
         checksums, and write a report summarizing the results. """
-        report_file = RelateReport.build_path(out_dir,
+        report_file = RelateReport.build_path(top=out_dir,
                                               sample=self.sample,
                                               ref=self.ref)
         # Check if the report file already exists.
         if rerun or not report_file.is_file():
             # Compute relation vectors and time how long it takes.
             began = datetime.now()
-            nreads, checksums = self._write_batches(out_dir=out_dir, **kwargs)
+            n_batches, n_reads = self._generate_batches(out_dir=out_dir,
+                                                        **kwargs)
             ended = datetime.now()
             # Write a report of the relation step.
             self._write_report(out_dir=out_dir,
-                               n_reads_rel=nreads,
-                               checksums=checksums,
+                               n_batches=n_batches,
+                               n_reads_rel=n_reads,
                                began=began,
                                ended=ended)
         else:

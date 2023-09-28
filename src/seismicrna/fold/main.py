@@ -17,7 +17,7 @@ from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rna import RnaProfile
 from ..core.sect import RefSections, Section
 from ..core.seq import DNA
-from ..core.shell import RNASTRUCTURE_FOLD_CMD
+from ..core.shell import RNASTRUCTURE_CT2DOT_CMD, RNASTRUCTURE_FOLD_CMD
 from ..core.temp import lock_temp_dir
 from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader
 
@@ -62,10 +62,11 @@ def run(fasta: str,
         parallel: bool,
         rerun: bool):
     """
-    Run the structure module.
+    Predict RNA structures using mutation rates as constraints.
     """
 
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
+    require_dependency(RNASTRUCTURE_CT2DOT_CMD, __name__)
 
     # Get the sections for every reference sequence.
     ref_sections = RefSections(parse_fasta(Path(fasta), DNA),

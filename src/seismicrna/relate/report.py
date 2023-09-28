@@ -1,25 +1,44 @@
 from __future__ import annotations
 from logging import getLogger
 
+from .batch import NameBatch, RelateBatch
+from .output import RelateOutput
 from ..core import path
 from ..core.cmd import CMD_REL
-from ..core.report import (BatchReport, calc_seqlen, calc_time_taken,
-                           calc_n_batches, calc_speed)
+from ..core.report import BatchReport, calc_seqlen, calc_time_taken, calc_speed
 
 logger = getLogger(__name__)
-
 
 BATCH_INDEX_COL = "Read Name"
 
 
-class RelateReport(BatchReport):
-    __slots__ = ("sample", "ref", "seq", "length",
-                 "n_reads_rel", "checksums", "n_batches",
-                 "began", "ended", "taken", "speed")
+class RelateReport(BatchReport, RelateOutput):
+
+    @classmethod
+    def field_names(cls) -> tuple[str, ...]:
+        return ("sample",
+                "ref",
+                "seq",
+                "length",
+                "n_reads_rel") + super().field_names() + ("began",
+                                                          "ended",
+                                                          "taken",
+                                                          "speed")
+
+    @classmethod
+    def file_seg_type(cls):
+        return path.RelateRepSeg
+
+    @classmethod
+    def auto_fields(cls):
+        return {**super().auto_fields(), path.CMD: CMD_REL}
+
+    @classmethod
+    def _batch_types(cls):
+        return NameBatch, RelateBatch
 
     def __init__(self, *,
                  length=calc_seqlen,
-                 n_batches=calc_n_batches,
                  taken=calc_time_taken,
                  speed=calc_speed,
                  **kwargs):
@@ -27,24 +46,7 @@ class RelateReport(BatchReport):
         # because they are calculated using the values of the arguments
         # in **kwargs. If **kwargs was given last, those values would be
         # undefined when the named keyword arguments would be computed.
-        super().__init__(**kwargs, length=length, n_batches=n_batches,
-                         taken=taken, speed=speed)
-
-    @classmethod
-    def path_segs(cls):
-        return path.SampSeg, path.CmdSeg, path.RefSeg, path.RelateRepSeg
-
-    @classmethod
-    def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: CMD_REL}
-
-    @classmethod
-    def get_batch_seg(cls):
-        return path.RelateBatSeg
-
-    @classmethod
-    def default_batch_ext(cls):
-        return path.PICKLE_BROTLI_EXT
+        super().__init__(**kwargs, length=length, taken=taken, speed=speed)
 
 ########################################################################
 #                                                                      #

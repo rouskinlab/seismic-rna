@@ -323,8 +323,8 @@ class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
 
     def _get_common_attribute(self, name: str):
         """ Get the common attribute for tables 1 and 2. """
-        attr1 = self.table1.__getattribute__(name)
-        attr2 = self.table2.__getattribute__(name)
+        attr1 = getattr(self.table1, name)
+        attr2 = getattr(self.table2, name)
         if attr1 != attr2:
             raise ValueError(f"Attribute '{name}' differs between tables 1 "
                              f"({repr(attr1)}) and 2 ({repr(attr2)})")

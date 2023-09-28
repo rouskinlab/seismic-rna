@@ -8,7 +8,8 @@ Define alphabets and classes for nucleic acid sequences, and functions
 for reading them from and writing them to FASTA files.
 
 """
-
+import re
+from abc import ABC, abstractmethod
 from functools import cache, cached_property
 from itertools import chain, product
 from string import printable
@@ -17,6 +18,7 @@ from typing import Any
 import numpy as np
 
 from .rand import rng
+from .types import BITS_PER_BYTE, get_uint_type
 
 # Nucleic acid sequence alphabets.
 BASEA = 'A'
@@ -26,6 +28,13 @@ BASET = 'T'
 BASEU = 'U'
 BASEN = 'N'
 
+# Nucleic acid compression symbols.
+COMPRESS_TYPE = get_uint_type(1)
+BITS_PER_BASE = 2
+NUM_BASES = 2 ** BITS_PER_BASE
+BLOCK_SIZE = BITS_PER_BYTE // BITS_PER_BASE
+BLOCK_FORMAT = ":".join(["{}", f"{BASEN}<{BLOCK_SIZE}"])
+
 # Nucleic acid pictogram characters.
 PICTA = '▲'
 PICTC = '⌠'
@@ -34,49 +43,33 @@ PICTG = '⌡'
 PICTT = PICTU = '▼'
 
 
-class Seq(object):
+class Seq(ABC):
     __slots__ = "_seq",
 
-    alph: tuple[str, str, str, str, str]
-    pict: tuple[str, str, str, str, str]
-
-    def __init__(self, seq: Any):
-        self._seq = str(seq)
-        if invalid := set(self._seq) - self.get_alphaset():
-            raise ValueError(
-                f"Invalid {self.__class__.__name__} bases: {sorted(invalid)}")
-
-    @cached_property
-    def rc(self):
-        """ Reverse complement. """
-        return self.__class__(str(self)[::-1].translate(self.get_comptrans()))
-
-    @cached_property
-    def picto(self):
-        """ Pictogram string. """
-        return str(self).translate(self.get_pictrans())
-
-    @cache
-    def to_array(self):
-        """ NumPy array of Unicode characters for the sequence. """
-        return np.array(list(self))
+    @classmethod
+    @abstractmethod
+    def alph(cls) -> tuple[str, str, str, str, str]:
+        """ Sequence alphabet. """
 
     @classmethod
-    def t_or_u(cls):
-        """ Get the base that is complementary to A. """
-        return cls.alph[-1]
+    @abstractmethod
+    def pict(cls) -> tuple[str, str, str, str, str]:
+        """ Sequence pictograms. """
 
     @classmethod
     @cache
-    def get_unambig(cls):
-        """ Get the unambiguous bases. """
-        return tuple(n for n in cls.alph if n != BASEN)
+    def four(cls):
+        """ Get the four standard bases. """
+        four = tuple(n for n in cls.alph() if n != BASEN)
+        if len(four) != NUM_BASES:
+            raise ValueError(f"Expected {NUM_BASES} bases, but got {four}")
+        return four
 
     @classmethod
     @cache
     def get_alphaset(cls):
         """ Get the alphabet as a set. """
-        return frozenset(cls.alph)
+        return frozenset(cls.alph())
 
     @classmethod
     @cache
@@ -88,19 +81,24 @@ class Seq(object):
     @cache
     def get_comp(cls):
         """ Get the complementary alphabet as a tuple. """
-        return tuple(reversed(cls.alph))
+        return tuple(reversed(cls.alph()))
 
     @classmethod
     @cache
     def get_comptrans(cls):
         """ Get the translation table for complementary bases. """
-        return str.maketrans(dict(zip(cls.alph, cls.get_comp(), strict=True)))
+        return str.maketrans(dict(zip(cls.alph(), cls.get_comp(), strict=True)))
 
     @classmethod
     @cache
     def get_pictrans(cls):
         """ Get the translation table for pictogram characters. """
-        return str.maketrans(dict(zip(cls.alph, cls.pict, strict=True)))
+        return str.maketrans(dict(zip(cls.alph(), cls.pict(), strict=True)))
+
+    @classmethod
+    def t_or_u(cls):
+        """ Get the base that is complementary to A. """
+        return max(cls.four())
 
     @classmethod
     def random(cls, nt: int,
@@ -132,7 +130,32 @@ class Seq(object):
         if not 0. <= n <= 1.:
             raise ValueError(f"Sum of A, C, G, and {cls.t_or_u()} proportions "
                              f"must be in [0, 1], but got {1. - n}")
-        return cls("".join(rng.choice(cls.alph, size=nt, p=(a, c, n, g, t))))
+        return cls("".join(rng.choice(cls.alph(), size=nt, p=(a, c, n, g, t))))
+
+    def __init__(self, seq: Any):
+        self._seq = str(seq)
+        if invalid := set(self._seq) - self.get_alphaset():
+            raise ValueError(
+                f"Invalid {self.__class__.__name__} bases: {sorted(invalid)}")
+
+    @cached_property
+    def rc(self):
+        """ Reverse complement. """
+        return self.__class__(str(self)[::-1].translate(self.get_comptrans()))
+
+    @cached_property
+    def picto(self):
+        """ Pictogram string. """
+        return str(self).translate(self.get_pictrans())
+
+    @cache
+    def to_array(self):
+        """ NumPy array of Unicode characters for the sequence. """
+        return np.array(list(self))
+
+    def compress(self):
+        """ Compress the sequence. """
+        return CompressedSeq(self)
 
     def __str__(self):
         return self._seq
@@ -183,8 +206,14 @@ class Seq(object):
 
 
 class DNA(Seq):
-    alph = BASEA, BASEC, BASEN, BASEG, BASET
-    pict = PICTA, PICTC, PICTN, PICTG, PICTT
+
+    @classmethod
+    def alph(cls):
+        return BASEA, BASEC, BASEN, BASEG, BASET
+
+    @classmethod
+    def pict(cls):
+        return PICTA, PICTC, PICTN, PICTG, PICTT
 
     @cache
     def tr(self):
@@ -193,8 +222,14 @@ class DNA(Seq):
 
 
 class RNA(Seq):
-    alph = BASEA, BASEC, BASEN, BASEG, BASEU
-    pict = PICTA, PICTC, PICTN, PICTG, PICTU
+
+    @classmethod
+    def alph(cls):
+        return BASEA, BASEC, BASEN, BASEG, BASEU
+
+    @classmethod
+    def pict(cls):
+        return PICTA, PICTC, PICTN, PICTG, PICTU
 
     @cache
     def rt(self):
@@ -212,12 +247,76 @@ def expand_degenerate_seq(seq: DNA):
     if ns := len(segs) - 1:
         # If the sequence contains at least one N, then yield every
         # possible sequence by replacing each N with each base.
-        for bases in product(DNA.get_unambig(), repeat=ns):
+        for bases in product(DNA.four(), repeat=ns):
             yield DNA("".join(chain((segs[0],), *zip(bases, segs[1:],
                                                      strict=True))))
     else:
         # If the sequence contains no N bases, then yield it as DNA.
         yield DNA(segs[0])
+
+
+@cache
+def _base_to_index(base: str, alph: tuple[str, str, str, str]):
+    try:
+        return alph.index(base)
+    except ValueError:
+        return 0
+
+
+@cache
+def _compress_block(block: str, alph: tuple[str, str, str, str]):
+    """ Compress one block of a sequence. """
+    if len(alph) != NUM_BASES:
+        raise ValueError(f"Expected {NUM_BASES} bases, but got {alph}")
+    if len(block) > BLOCK_SIZE:
+        raise ValueError(f"Expected block of no more than {BLOCK_SIZE} nt, "
+                         f"but got {repr(block)}")
+    if len(block) < BLOCK_SIZE:
+        # Pad the end of the block with Ns until it is long enough.
+        block = BLOCK_FORMAT.format(block)
+    return sum(_base_to_index(base, alph) << (i * BITS_PER_BASE)
+               for i, base in enumerate(block))
+
+
+@cache
+def _decompress_block(byte: int, alph: tuple[str, str, str, str]):
+    """ Decompress one block of a sequence. """
+    if len(alph) != NUM_BASES:
+        raise ValueError(f"Expected {NUM_BASES} bases, but got {alph}")
+    byte = COMPRESS_TYPE(byte)
+    return "".join(alph[(byte >> (i * BITS_PER_BASE)) % len(alph)]
+                   for i in range(BLOCK_SIZE))
+
+
+def _get_blocks(seq: str):
+    return (seq[i: i + BLOCK_SIZE] for i in range(0, len(seq), BLOCK_SIZE))
+
+
+class CompressedSeq(object):
+    """ Compress a sequence into two bits per base. """
+
+    def __init__(self, seq: Seq):
+        self._r = isinstance(seq, RNA)
+        self._s = len(seq)
+        self._b = bytes(_compress_block(block, self.alph)
+                        for block in _get_blocks(str(seq)))
+        self._n = tuple(map(re.Match.start, re.finditer(BASEN, str(seq))))
+
+    @property
+    def type(self):
+        return RNA if self._r else DNA
+
+    @property
+    def alph(self):
+        return self.type.four()
+
+    def decompress(self):
+        """ Restore the original sequence. """
+        bases = [base for byte in self._b
+                 for base in _decompress_block(byte, self.alph)][:self._s]
+        for n in self._n:
+            bases[n] = BASEN
+        return self.type("".join(bases))
 
 ########################################################################
 #                                                                      #

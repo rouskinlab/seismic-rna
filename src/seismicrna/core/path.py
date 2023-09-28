@@ -99,8 +99,8 @@ TXT_EXT = ".txt"
 CSV_EXT = ".csv"
 CSVZIP_EXT = ".csv.gz"
 CSV_EXTS = CSV_EXT, CSVZIP_EXT
-PICKLE_BROTLI_EXT = ".pickle.br"
-PARQ_EXTS = ".parquet", ".parq"
+PICKLE_BROTLI_EXT = ".pkl.br"
+TEXT_BROTLI_EXT = ".txt.br"
 JSON_EXT = ".json"
 FASTA_EXTS = ".fa", ".fna", ".fasta"
 BOWTIE2_INDEX_EXTS = (".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2",
@@ -246,6 +246,7 @@ ClustTabField = Field(str, CLUST_TABLES)
 # File extensions
 TextExt = Field(str, [TXT_EXT], is_ext=True)
 ReportExt = Field(str, [JSON_EXT], is_ext=True)
+QnamesBatExt = Field(str, [TEXT_BROTLI_EXT], is_ext=True)
 RelVecBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
 MaskRepExt = Field(str, [JSON_EXT], is_ext=True)
 MaskBatExt = Field(str, CSV_EXTS, is_ext=True)
@@ -263,7 +264,6 @@ ConnectTableExt = Field(str, [CT_EXT], is_ext=True)
 DotBracketExt = Field(str, DOT_EXTS, is_ext=True)
 DmsReactsExt = Field(str, [DMS_EXT], is_ext=True)
 GraphExt = Field(str, GRAPH_EXTS, is_ext=True)
-DreemExt = Field(str, [JSON_EXT], is_ext=True)
 
 
 # Path Segments ########################################################
@@ -394,7 +394,6 @@ REACTS = "reacts"
 GRAPH = "graph"
 EXT = "ext"
 
-
 # Directory segments
 
 TopSeg = Segment("top-dir", {TOP: TopField}, order=-1)
@@ -404,7 +403,6 @@ StepSeg = Segment("step-dir", {STEP: StepField}, order=40)
 RefSeg = Segment("ref-dir", {REF: NameField}, order=30)
 SectSeg = Segment("section-dir", {SECT: NameField}, order=20)
 FoldSectSeg = Segment("fold-section-dir", {FOLD_SECT: NameField}, order=10)
-
 
 # File segments
 
@@ -424,17 +422,19 @@ DmFastq2Seg = Segment("dm-fastq2", {REF: NameField, EXT: Fastq2Ext})
 
 # Alignment
 XamSeg = Segment("xam", {REF: NameField, EXT: XamExt})
-AlignRepSeg = Segment("align-rep", {EXT: ReportExt}, frmt="report-align{ext}")
+AlignRepSeg = Segment("align-rep", {EXT: ReportExt}, frmt="align-report{ext}")
 
 # Relation Vectors
+QnamesBatSeg = Segment("name-bat", {BATCH: IntField, EXT: RelVecBatExt},
+                       frmt="qnames-batch-{batch}{ext}")
 RelateBatSeg = Segment("rel-bat", {BATCH: IntField, EXT: RelVecBatExt},
-                       frmt="batch-relate-{batch}{ext}")
-RelateRepSeg = Segment("rel-rep", {EXT: ReportExt}, frmt="report-relate{ext}")
+                       frmt="relate-batch-{batch}{ext}")
+RelateRepSeg = Segment("rel-rep", {EXT: ReportExt}, frmt="relate-report{ext}")
 
 # Masking
 MaskBatSeg = Segment("mask-bat", {BATCH: IntField, EXT: MaskBatExt},
-                     frmt="batch-mask-{batch}{ext}")
-MaskRepSeg = Segment("mask-rep", {EXT: ReportExt}, frmt="report-mask{ext}")
+                     frmt="mask-batch-{batch}{ext}")
+MaskRepSeg = Segment("mask-rep", {EXT: ReportExt}, frmt="mask-report{ext}")
 
 # Clustering
 ClustTabSeg = Segment("clust-tab", {TABLE: ClustTabField,
@@ -444,12 +444,12 @@ ClustTabSeg = Segment("clust-tab", {TABLE: ClustTabField,
                       frmt="{table}-k{k}-r{run}{ext}")
 ClustCountSeg = Segment("clust-count", {EXT: ClustCountExt}, frmt="counts{ext}")
 ClustBatSeg = Segment("clust-bat", {BATCH: IntField, EXT: ClustBatExt},
-                      frmt="batch-cluster-{batch}{ext}")
+                      frmt="cluster-batch-{batch}{ext}")
 ClustRepSeg = Segment("clust-rep", {EXT: ReportExt},
-                      frmt="report-cluster{ext}")
+                      frmt="cluster-report{ext}")
 
 # Tabulation
-TableSeg = Segment("mut-tab", {TABLE: CountTabField, EXT: MutTabExt})
+TableSeg = Segment("table", {TABLE: CountTabField, EXT: MutTabExt})
 
 # RNA Structure Formats
 ConnectTableSeg = Segment("rna-ct", {STRUCT: NameField, EXT: ConnectTableExt})
@@ -460,10 +460,6 @@ VarnaColorSeg = Segment("varna-color", {REACTS: NameField, EXT: TextExt},
 
 # Graphs
 GraphSeg = Segment("graph", {GRAPH: NameField, EXT: GraphExt})
-
-# Dreem output
-DreemSeg = Segment("dreem", {SAMP: NameField, EXT: DreemExt})
-
 
 # Path segment patterns
 

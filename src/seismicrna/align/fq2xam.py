@@ -263,8 +263,7 @@ def fq_pipeline(fq_inp: FastqUnit,
     # Index the new hard-linked FASTA file.
     run_index_fasta(refs_file)
     # Write a report to summarize the alignment.
-    report = AlignReport(out_dir=out_dir,
-                         sample=sample,
+    report = AlignReport(sample=sample,
                          demultiplexed=fq_inp.ref is not None,
                          paired_end=fq_inp.paired,
                          phred_enc=fq_inp.phred_enc,
@@ -306,7 +305,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                          reads_align=reads_align,
                          reads_filter=reads_filter,
                          reads_refs=reads_refs)
-    report.save()
+    report.save(out_dir, overwrite=True)
     # Return a list of name-sorted XAM files, each of which contains a
     # set of reads that all align to the same reference.
     return xams_out

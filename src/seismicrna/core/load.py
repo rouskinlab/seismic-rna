@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Callable
 
 from . import path
-from .report import (OutDirF, SampleF, RefF, SectF, End5F, End3F,
+from .report import (SampleF, RefF, SectF, End5F, End3F,
                      Report, BatchReport)
 from .sect import Section
 from .seq import DNA
@@ -51,11 +51,6 @@ class DataLoader(ABC):
     def _open_report(cls, report_file: Path):
         """ Open a report of the correct type for this class. """
         return cls.get_report_type().open(report_file)
-
-    @property
-    def out_dir(self) -> Path:
-        """ Output directory. """
-        return self._report.get_field(OutDirF)
 
     @property
     def sample(self) -> str:
@@ -146,7 +141,7 @@ class BatchLoader(DataLoader, ABC):
 
     @property
     def num_batches(self):
-        return self._report.num_batches
+        return self._report.n_batches
 
     def build_batch_path(self, batch: int):
         """ Path to the batch with the given number. """

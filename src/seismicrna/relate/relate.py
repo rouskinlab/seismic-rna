@@ -69,7 +69,7 @@ class SamRead(object):
                                    f"string {len(self.qual)} did not match.")
 
     def __str__(self):
-        attrs = {attr: self.__getattribute__(attr) for attr in self.__slots__[1:]}
+        attrs = {attr: getattr(self, attr) for attr in self.__slots__[1:]}
         return f"Read '{self.qname}' {attrs}"
 
 

@@ -21,7 +21,11 @@ logger = getLogger(__name__)
 
 
 def write_batch(read_names: Iterable[str],
-                out_dir: Path, sample: str, ref: str, sect: str, batch: int):
+                out_dir: Path,
+                sample: str,
+                ref: str,
+                sect: str,
+                batch: int):
     """ Write the names of the reads in one batch to a file. """
     # Determine the path to the batch file.
     batch_file = MaskReport.build_batch_path(out_dir, batch,
@@ -137,8 +141,12 @@ class BitMasker(object):
                    self.MASK_READ_GAP: self._mask_min_mut_gap}
         ))
         # Write batches of read names and record their checksums.
-        self.checksums = [write_batch(read_names, self.out_dir, self.sample,
-                                      self.ref, self.section.name, batch)
+        self.checksums = [write_batch(read_names,
+                                      self.out_dir,
+                                      self.sample,
+                                      self.ref,
+                                      self.section.name,
+                                      batch)
                           for batch, read_names
                           in enumerate(self.counter.read_batches)]
         # Warn if no reads were counted.
