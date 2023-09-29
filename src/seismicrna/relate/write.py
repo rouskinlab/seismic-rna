@@ -118,12 +118,6 @@ def generate_batch(batch: int, *,
                                 xam_view.ref,
                                 refseq,
                                 batch)
-    if names.num_pos != relvecs.num_pos:
-        raise ValueError(f"Inconsistent lengths: names ({names.num_pos}) "
-                         f"≠ relation vectors ({relvecs.num_pos})")
-    if names.num_reads != relvecs.num_reads:
-        raise ValueError(f"Inconsistent read counts: names ({names.num_reads}) "
-                         f"≠ relation vectors ({relvecs.num_reads})")
     names.save(out_dir, brotli_level, overwrite=True)
     relvecs.save(out_dir, brotli_level, overwrite=True)
     logger.info(f"Ended computing relation vectors for batch {batch} "

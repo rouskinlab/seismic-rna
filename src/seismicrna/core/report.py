@@ -16,7 +16,7 @@ from typing import Any, Hashable, Callable, Iterable
 import numpy as np
 
 from . import path
-from .batch import Batch
+from .batch import BaseBatch
 from .bitcall import SemiBitCaller
 from .files import digest_file
 from .output import Output
@@ -815,18 +815,18 @@ class BatchReport(Report, ABC):
 
     @classmethod
     @abstractmethod
-    def _batch_types(cls) -> tuple[type[Batch], ...]:
+    def _batch_types(cls) -> tuple[type[BaseBatch], ...]:
         """ Type(s) of batch(es) for the report. """
 
     @classmethod
     @cache
-    def batch_types(cls) -> dict[str, type[Batch]]:
+    def batch_types(cls) -> dict[str, type[BaseBatch]]:
         """ Type(s) of batch(es) for the report, keyed by name. """
         return {batch_type.btype(): batch_type
                 for batch_type in cls._batch_types()}
 
     @classmethod
-    def get_batch_type(cls, btype: str | None = None) -> type[Batch]:
+    def get_batch_type(cls, btype: str | None = None) -> type[BaseBatch]:
         """ Return a valid type of batch based on its name. """
         if btype is None:
             if (ntypes := len(cls.batch_types())) != 1:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from logging import getLogger
 
-from .batch import NameBatch, RelateBatch
+from .batch import QnamesBatch, RelateBatch
 from .output import RelateOutput
 from ..core import path
 from ..core.cmd import CMD_REL
@@ -35,7 +35,7 @@ class RelateReport(BatchReport, RelateOutput):
 
     @classmethod
     def _batch_types(cls):
-        return NameBatch, RelateBatch
+        return QnamesBatch, RelateBatch
 
     def __init__(self, *,
                  length=calc_seqlen,

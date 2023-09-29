@@ -7,8 +7,8 @@ import pandas as pd
 
 from .output import RelateOutput
 from ..core import path
-from ..core.batch import Batch, POS_INDEX, READ_INDEX
-from ..core.rel import MATCH, NOCOV, REL_TYPE
+from ..core.batch import BaseBatch, ArrayBatch, POS_INDEX, READ_INDEX
+from ..core.rel import MATCH, NOCOV
 from ..core.seq import DNA
 
 
@@ -20,11 +20,7 @@ def get_read_nums(num_reads: int, dtype: type):
     return np.arange(READ_INDEX, num_reads + READ_INDEX, dtype=dtype)
 
 
-def get_pos(num_pos: int, dtype: type):
-    return np.arange(POS_INDEX, num_pos + POS_INDEX, dtype=dtype)
-
-
-class NameBatch(Batch, RelateOutput):
+class QnamesBatch(BaseBatch, RelateOutput):
 
     @classmethod
     def file_seg_type(cls):
@@ -35,20 +31,12 @@ class NameBatch(Batch, RelateOutput):
         self.names = np.asarray(names, dtype=str)
 
     @property
-    def num_pos(self):
-        return len(self.refseq)
-
-    @property
     def num_reads(self):
         return self.names.size
 
     @property
     def max_read(self):
         return get_max_read(self.num_reads)
-
-    @cached_property
-    def pos(self):
-        return get_pos(self.num_pos, self.pos_dtype)
 
     @cached_property
     def read_nums(self):
@@ -64,71 +52,21 @@ class NameBatch(Batch, RelateOutput):
 
     def __getstate__(self):
         state = super().__getstate__()
-        # Compress the names from unicode to bytes.
+        # Compress the names from unicode to bytes before pickling.
         state["names"] = np.char.encode(self.names)
         return state
 
     def __setstate__(self, state: dict[str, Any]):
         super().__setstate__(state)
-        # Decompress the names from bytes to unicode.
+        # Decompress the names from bytes to unicode when unpickling.
         self.names = np.char.decode(state["names"])
 
 
-class RelateBatch(Batch, RelateOutput):
+class RelateBatch(ArrayBatch, RelateOutput):
 
     @classmethod
     def file_seg_type(cls):
         return path.RelateBatSeg
-
-    def __init__(self,
-                 *args,
-                 end5s: list[int] | np.ndarray,
-                 mid5s: list[int] | np.ndarray,
-                 mid3s: list[int] | np.ndarray,
-                 end3s: list[int] | np.ndarray,
-                 muts: dict[int, dict[int, list[int] | np.ndarray]],
-                 **kwargs):
-        super().__init__(*args, **kwargs)
-        # 5' ends
-        self.end5s = np.asarray(end5s, dtype=self.pos_dtype)
-        if self.end5s.ndim != 1:
-            raise ValueError(
-                f"end5s must have 1 dimension, but got {self.end5s.ndim}")
-        if np.any(self.end5s < POS_INDEX):
-            errors = self.end5s[self.end5s < POS_INDEX]
-            raise ValueError(f"Got end5 < {POS_INDEX} for reads {errors}")
-        # 3' ends
-        self.end3s = np.asarray(end3s, dtype=self.pos_dtype)
-        if self.end3s.ndim != 1:
-            raise ValueError(
-                f"end3s must have 1 dimension, but got {self.end3s.ndim}")
-        if np.any(self.end3s < self.end5s):
-            errors = self.end3s[self.end3s < self.end5s]
-            raise ValueError(f"Got end3 < end5 for reads {errors}")
-        # 5' mids
-        self.mid5s = np.asarray(mid5s, dtype=self.pos_dtype)
-        if self.mid5s.ndim != 1:
-            raise ValueError(
-                f"mid5s must have 1 dimension, but got {self.mid5s.ndim}")
-        if np.any(self.mid5s < self.end5s):
-            errors = self.mid5s[self.mid5s < self.end5s]
-            raise ValueError(f"Got mid5 < end5 for reads {errors}")
-        # 3' mids
-        self.mid3s = np.asarray(mid3s, dtype=self.pos_dtype)
-        if self.mid3s.ndim != 1:
-            raise ValueError(
-                f"mid3s must have 1 dimension, but got {self.mid3s.ndim}")
-        if np.any(self.mid3s > self.end3s):
-            errors = self.mid3s[self.mid3s > self.end3s]
-            raise ValueError(f"Got mid3 > end3 for reads {errors}")
-        # Mutations
-        self.muts = {
-            pos: {
-                REL_TYPE(rel): np.asarray(reads, self.read_dtype)
-                for rel, reads in muts.get(pos, dict()).items()
-            }
-            for pos in get_pos(self.num_pos, self.pos_dtype)
-        }
 
     @property
     def num_pos(self):
@@ -151,7 +89,9 @@ class RelateBatch(Batch, RelateOutput):
 
     @cached_property
     def pos(self):
-        return get_pos(self.num_pos, self.pos_dtype)
+        return np.arange(POS_INDEX,
+                         self.num_pos + POS_INDEX,
+                         dtype=self.pos_dtype)
 
     @cached_property
     def read_nums(self):
@@ -199,11 +139,11 @@ def from_reads(reads: Iterable[tuple[str, int, int, int, int, dict[int, int]]],
         for pos, mut in poss.items():
             muts[pos][mut].append(read)
         read += 1
-    name_batch = NameBatch(sample, ref, refseq, batch, names=names)
-    rel_batch = RelateBatch(sample,
+    name_batch = QnamesBatch(batch, sample, ref, names=names)
+    rel_batch = RelateBatch(batch,
+                            sample,
                             ref,
-                            refseq,
-                            batch,
+                            refseq=refseq,
                             end5s=end5s,
                             mid5s=mid5s,
                             mid3s=mid3s,
