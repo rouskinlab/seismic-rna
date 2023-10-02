@@ -1,11 +1,14 @@
 from __future__ import annotations
-from logging import getLogger
 
-from .batch import QnamesBatch, RelateBatch
-from .output import RelateOutput
+from functools import cache
+from logging import getLogger
+from pathlib import Path
+
+from .batch import QnamesBatch, RelateBatch, RelateOutput
 from ..core import path
 from ..core.cmd import CMD_REL
-from ..core.report import BatchReport, calc_seqlen, calc_time_taken, calc_speed
+from ..core.report import BatchReport, calc_speed, calc_taken, RefF, SampleF
+from ..core.seq import DNA
 
 logger = getLogger(__name__)
 
@@ -18,8 +21,6 @@ class RelateReport(BatchReport, RelateOutput):
     def field_names(cls) -> tuple[str, ...]:
         return ("sample",
                 "ref",
-                "seq",
-                "length",
                 "n_reads_rel") + super().field_names() + ("began",
                                                           "ended",
                                                           "taken",
@@ -37,16 +38,38 @@ class RelateReport(BatchReport, RelateOutput):
     def _batch_types(cls):
         return QnamesBatch, RelateBatch
 
-    def __init__(self, *,
-                 length=calc_seqlen,
-                 taken=calc_time_taken,
-                 speed=calc_speed,
-                 **kwargs):
+    def __init__(self, *, taken=calc_taken, speed=calc_speed, **kwargs):
         # Note that the named keyword arguments must come after **kwargs
         # because they are calculated using the values of the arguments
         # in **kwargs. If **kwargs was given last, those values would be
         # undefined when the named keyword arguments would be computed.
-        super().__init__(**kwargs, length=length, taken=taken, speed=speed)
+        super().__init__(**kwargs, taken=taken, speed=speed)
+
+    def refseq_file(self, top: Path):
+        return refseq_file_path(top,
+                                self.get_field(SampleF),
+                                self.get_field(RefF))
+
+    def get_refseq(self, top: Path):
+        return DNA.load(self.refseq_file(top))
+
+
+@cache
+def refseq_file_seg_types():
+    return RelateReport.seg_types()[:-1] + (path.RefseqFileSeg,)
+
+
+@cache
+def refseq_file_auto_fields():
+    return {**RelateReport.auto_fields(), path.EXT: path.PICKLE_BROTLI_EXT}
+
+
+def refseq_file_path(top: Path, sample: str, ref: str):
+    return path.build(*refseq_file_seg_types(),
+                      **refseq_file_auto_fields(),
+                      top=top,
+                      sample=sample,
+                      ref=ref)
 
 ########################################################################
 #                                                                      #

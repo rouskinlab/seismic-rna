@@ -144,7 +144,7 @@ class SemiBitCaller(object):
     def __init__(self, *codes: str):
         # Compile the codes into a query.
         self.queries = self.compile(codes)
-        logger.debug(f"Instantiated new {self.__class__.__name__}"
+        logger.debug(f"Instantiated new {type(self).__name__}"
                      f"From: {codes}\nTo: {self.queries}")
 
     @cache
@@ -195,7 +195,7 @@ class SemiBitCaller(object):
     def to_report_format(self):
         """ Return the types of counted mutations as a list. """
         codes = list(self.decompile(self.queries))
-        logger.debug(f"Decompiled query for {self.__class__.__name__}"
+        logger.debug(f"Decompiled query for {type(self).__name__}"
                      f"From: {self.queries}\nTo: {codes}")
         return codes
 
@@ -279,7 +279,7 @@ class SemiBitCaller(object):
         return cls._junction(set.intersection, *callers)
 
     def __str__(self):
-        return f"{self.__class__.__name__} {self.to_report_format()}"
+        return f"{type(self).__name__} {self.to_report_format()}"
 
 
 class BitCaller(object):
@@ -367,7 +367,7 @@ class BitCaller(object):
         return cls._junction(SemiBitCaller.inter, *callers, **kwargs)
 
     def __str__(self):
-        return f"{self.__class__.__name__} +{self.affi_call} -{self.anti_call}"
+        return f"{type(self).__name__} +{self.affi_call} -{self.anti_call}"
 
 ########################################################################
 #                                                                      #

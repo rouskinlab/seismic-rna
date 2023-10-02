@@ -129,7 +129,7 @@ class Table(ABC):
         return path.buildpar(*self.path_segs(), **self.path_fields)
 
     def __str__(self):
-        return f"{self.__class__.__name__} at {self.path}"
+        return f"{type(self).__name__} at {self.path}"
 
 
 class RelTypeTable(Table, ABC):

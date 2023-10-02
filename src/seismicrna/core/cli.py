@@ -12,6 +12,7 @@ import os
 
 from click import Argument, Choice, Option, Parameter, Path
 
+from .files import DEFAULT_BROTLI_LEVEL
 from .seq import DNA
 
 # System information
@@ -20,7 +21,6 @@ if (NUM_CPUS := os.cpu_count()) is None:
     logging.warning("Failed to determine CPU count: defaulting to 1")
     NUM_CPUS = 1
 
-DEFAULT_PHRED_ENC = 33
 DEFAULT_MIN_PHRED = 25
 
 BOWTIE2_ORIENT_FR = "fr"
@@ -124,12 +124,12 @@ opt_fastqp = Option(
     default=(),
     help="FASTQ files of paired-end reads separated into 2 files")
 
-# Sequencing read (FASTQ/BAM) options
+# Sequencing read (FASTQ/XAM) options
 opt_phred_enc = Option(
     ("--phred-enc",),
     type=int,
-    default=DEFAULT_PHRED_ENC,
-    help="Phred score encoding in FASTQ/SAM/BAM files")
+    default=33,
+    help="Phred score encoding in FASTQ and SAM/BAM/CRAM files")
 
 opt_min_phred = Option(
     ("--min-phred",),
@@ -484,7 +484,7 @@ opt_ambrel = Option(
 opt_brotli_level = Option(
     ("--brotli-level",),
     type=int,
-    default=10,
+    default=DEFAULT_BROTLI_LEVEL,
     help=("Compression level for brotli: 0 (fastest, but worst compression) "
           "to 11 (best compression, but slowest)")
 )

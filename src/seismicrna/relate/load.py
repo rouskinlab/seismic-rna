@@ -4,12 +4,13 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 
+from .batch import RelateBatch
 from .report import RelateReport
 from .seqpos import format_seq_pos, parse_pos
 from ..core.load import BatchLoader
 from ..core.rel import REL_TYPE
-from ..core.report import SeqF
 from ..core.sect import seq_pos_to_index
+from ..core.seq import DNA
 
 logger = getLogger(__name__)
 
@@ -25,8 +26,16 @@ class RelateLoader(BatchLoader):
     def get_report_type(cls):
         return RelateReport
 
+    @classmethod
+    def get_batch_type(cls):
+        return RelateBatch
+
+    @classmethod
+    def get_btype_name(cls):
+        return
+
     def get_refseq(self):
-        return self._report.get_field(SeqF)
+        return DNA.load(self._report.refseq_file_path(self.top))
 
     def load_data_personal(self, batch_file: Path, *,
                            positions: Sequence[int] | None = None):

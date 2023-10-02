@@ -41,7 +41,7 @@ class OneTableGraphWriter(GraphWriter, ABC):
         try:
             table_file, = self.table_files
         except ValueError:
-            raise ValueError(f"{self.__class__.__name__} requires exactly 1 "
+            raise ValueError(f"{type(self).__name__} requires exactly 1 "
                              f"table file, but got {len(self.table_files)}")
         return table_file
 
@@ -62,7 +62,7 @@ class TwoTableGraphWriter(GraphWriter, ABC):
         try:
             table1_file, table2_file = self.table_files
         except ValueError:
-            raise ValueError(f"{self.__class__.__name__} requires exactly 2 "
+            raise ValueError(f"{type(self).__name__} requires exactly 2 "
                              f"table file, but got {len(self.table_files)}")
         return table1_file, table2_file
 

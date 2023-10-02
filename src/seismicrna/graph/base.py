@@ -250,7 +250,7 @@ class OneTableGraph(OneSampleGraph, OneRefGraph, ABC):
     def __init__(self, *args, table: TableLoader, **kwargs):
         super().__init__(*args, **kwargs)
         if not isinstance(table, self.get_table_type()):
-            raise TypeError(f"{self.__class__.__name__} expected table "
+            raise TypeError(f"{type(self).__name__} expected table "
                             f"of type '{self.get_table_type().__name__}', "
                             f"but got type '{type(table).__name__}'")
         self._table = table
@@ -293,7 +293,7 @@ class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
                                       self.get_table2_type()),
                                      strict=True):
             if not isinstance(table, table_type):
-                raise TypeError(f"{self.__class__.__name__} expected table "
+                raise TypeError(f"{type(self).__name__} expected table "
                                 f"of type '{table_type.__name__}', "
                                 f"but got type '{type(table).__name__}'")
         self._table1 = table1

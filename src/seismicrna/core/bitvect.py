@@ -111,7 +111,7 @@ class UniqMutBits(object):
         return pd.Index(names, name=BIT_VECTOR_NAME)
 
     def __eq__(self, other):
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, type(self)):
             return NotImplemented
         return (self.n_pos == other.n_pos
                 and np.array_equal(self.counts, other.counts)

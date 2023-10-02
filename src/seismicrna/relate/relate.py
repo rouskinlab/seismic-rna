@@ -40,7 +40,7 @@ class SamFlag(object):
         self.second = bool(flag & 128)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.flag})"
+        return f"{type(self).__name__}({self.flag})"
 
 
 class SamRead(object):

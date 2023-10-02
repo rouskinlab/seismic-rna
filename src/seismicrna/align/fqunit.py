@@ -114,7 +114,7 @@ class FastqUnit(object):
         self.phred_enc = phred_enc
         self.one_ref = one_ref
         self.sample, self.ref, self.exts = self.get_sample_ref_exts()
-        logger.debug(f"Instantiated a {self.__class__.__name__} with "
+        logger.debug(f"Instantiated a {type(self).__name__} with "
                      + ", ".join(f"{k} = {v} (type '{type(v).__name__}')"
                                  for k, v in self.paths.items())
                      + f", phred_enc = {phred_enc}, one_ref = {one_ref}")

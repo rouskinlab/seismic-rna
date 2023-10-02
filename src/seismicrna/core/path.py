@@ -246,7 +246,8 @@ ClustTabField = Field(str, CLUST_TABLES)
 # File extensions
 TextExt = Field(str, [TXT_EXT], is_ext=True)
 ReportExt = Field(str, [JSON_EXT], is_ext=True)
-QnamesBatExt = Field(str, [TEXT_BROTLI_EXT], is_ext=True)
+RefseqFileExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
+QnamesBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
 RelVecBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
 MaskRepExt = Field(str, [JSON_EXT], is_ext=True)
 MaskBatExt = Field(str, CSV_EXTS, is_ext=True)
@@ -425,14 +426,18 @@ XamSeg = Segment("xam", {REF: NameField, EXT: XamExt})
 AlignRepSeg = Segment("align-rep", {EXT: ReportExt}, frmt="align-report{ext}")
 
 # Relation Vectors
-QnamesBatSeg = Segment("name-bat", {BATCH: IntField, EXT: RelVecBatExt},
+RefseqFileSeg = Segment("refseq-file", {EXT: RefseqFileExt}, frmt="refseq{ext}")
+QnamesBatSeg = Segment("name-bat",
+                       {BATCH: IntField, EXT: QnamesBatExt},
                        frmt="qnames-batch-{batch}{ext}")
-RelateBatSeg = Segment("rel-bat", {BATCH: IntField, EXT: RelVecBatExt},
+RelateBatSeg = Segment("rel-bat",
+                       {BATCH: IntField, EXT: RelVecBatExt},
                        frmt="relate-batch-{batch}{ext}")
 RelateRepSeg = Segment("rel-rep", {EXT: ReportExt}, frmt="relate-report{ext}")
 
 # Masking
-MaskBatSeg = Segment("mask-bat", {BATCH: IntField, EXT: MaskBatExt},
+MaskBatSeg = Segment("mask-bat",
+                     {BATCH: IntField, EXT: MaskBatExt},
                      frmt="mask-batch-{batch}{ext}")
 MaskRepSeg = Segment("mask-rep", {EXT: ReportExt}, frmt="mask-report{ext}")
 
@@ -443,10 +448,10 @@ ClustTabSeg = Segment("clust-tab", {TABLE: ClustTabField,
                                     EXT: ClustTabExt},
                       frmt="{table}-k{k}-r{run}{ext}")
 ClustCountSeg = Segment("clust-count", {EXT: ClustCountExt}, frmt="counts{ext}")
-ClustBatSeg = Segment("clust-bat", {BATCH: IntField, EXT: ClustBatExt},
+ClustBatSeg = Segment("clust-bat",
+                      {BATCH: IntField, EXT: ClustBatExt},
                       frmt="cluster-batch-{batch}{ext}")
-ClustRepSeg = Segment("clust-rep", {EXT: ReportExt},
-                      frmt="cluster-report{ext}")
+ClustRepSeg = Segment("clust-rep", {EXT: ReportExt}, frmt="cluster-report{ext}")
 
 # Tabulation
 TableSeg = Segment("table", {TABLE: CountTabField, EXT: MutTabExt})

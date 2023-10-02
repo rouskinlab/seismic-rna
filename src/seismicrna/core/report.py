@@ -1,26 +1,24 @@
 from __future__ import annotations
 
+import json
+import re
+import sys
 from abc import ABC, abstractmethod
 from datetime import datetime
+from functools import cache
 from inspect import getmembers
-import json
-from functools import cache, partial
 from logging import getLogger
 from math import isclose, isnan, inf, nan
 from numbers import Integral
 from pathlib import Path
-import re
-import sys
 from typing import Any, Hashable, Callable, Iterable
 
 import numpy as np
 
 from . import path
-from .batch import BaseBatch
+from .batch import ReadBatch
 from .bitcall import SemiBitCaller
-from .files import digest_file
-from .output import Output
-from .seq import DNA
+from .output import Output, RefOutput
 
 logger = getLogger(__name__)
 
@@ -97,17 +95,13 @@ class Field(object):
 # But this implementation could cause confusion because no one Report
 # class can work with all these methods.
 
-def calc_time_taken(report: Report):
+def calc_taken(report: Report):
     """ Calculate the time taken in minutes. """
     delta = report.get_field(TimeEndedF) - report.get_field(TimeBeganF)
     minutes = (delta.seconds + 1e-6 * delta.microseconds) / 60.
     if minutes < 0.:
         raise ValueError(f"Time taken must be positive, but got {minutes} min")
     return minutes
-
-
-def calc_seqlen(report: Report):
-    return len(report.get_field(SeqF))
 
 
 def calc_speed(report: Report):
@@ -117,11 +111,6 @@ def calc_speed(report: Report):
         return nvecs / taken
     except ZeroDivisionError:
         return inf if nvecs > 0 else nan
-
-
-def calc_checksums(report: BatchReport, top: Path):
-    """ Calculate the checksums. """
-    return report.compute_checksums(top)
 
 
 # Field value checking functions
@@ -193,10 +182,6 @@ def check_percentage(percentage: float):
 def check_nanpercentage(percentage: float):
     return isinstance(percentage, float) and (0. <= percentage <= 100.
                                               or isnan(percentage))
-
-
-def check_seqlen(report: Report, seqlen: int):
-    return check_pos_int(seqlen) and seqlen == len(report.get_field(SeqF))
 
 
 def check_checksums_btype(checksums: list[str]):
@@ -346,20 +331,40 @@ def oconv_datetime(dtime: datetime):
 
 
 # General
-SampleF = Field("sample", "Name of Sample", str, check_val=check_name)
-RefF = Field("ref", "Name of Reference", str, check_val=check_name)
-SeqF = Field("seq", "Sequence of Reference", DNA, oconv=str)
-SectF = Field("sect", "Name of Section", str, check_val=check_name)
-End5F = Field("end5", "5' end of Section", int, check_val=check_pos_int)
-End3F = Field("end3", "3' end of Section", int, check_val=check_pos_int)
-SeqLenF = Field("length", "Length of Sequence (nt)", int,
-                check_rep_val=check_seqlen)
-TimeBeganF = Field("began", "Time Began", datetime,
-                   iconv=iconv_datetime, oconv=oconv_datetime)
-TimeEndedF = Field("ended", "Time Ended", datetime,
-                   iconv=iconv_datetime, oconv=oconv_datetime,
+SampleF = Field("sample",
+                "Name of Sample",
+                str,
+                check_val=check_name)
+RefF = Field("ref",
+             "Name of Reference",
+             str,
+             check_val=check_name)
+SectF = Field("sect",
+              "Name of Section",
+              str,
+              check_val=check_name)
+End5F = Field("end5",
+              "5' end of Section",
+              int,
+              check_val=check_pos_int)
+End3F = Field("end3",
+              "3' end of Section",
+              int,
+              check_val=check_pos_int)
+TimeBeganF = Field("began",
+                   "Time Began",
+                   datetime,
+                   iconv=iconv_datetime,
+                   oconv=oconv_datetime)
+TimeEndedF = Field("ended",
+                   "Time Ended",
+                   datetime,
+                   iconv=iconv_datetime,
+                   oconv=oconv_datetime,
                    check_rep_val=check_time_ended)
-TimeTakenF = Field("taken", "Time Taken (minutes)", float,
+TimeTakenF = Field("taken",
+                   "Time Taken (minutes)",
+                   float,
                    oconv=get_oconv_float(TIME_TAKEN_PRECISION))
 
 # Alignment
@@ -416,32 +421,55 @@ Bowtie2ExtTries = Field("bt2_d", "Maximum seed extension attempts",
                         int, check_val=check_nonneg_int)
 Bowtie2Reseed = Field("bt2_r", "Maximum re-seeding attempts",
                       int, check_val=check_nonneg_int)
-Bowtie2Dpad = Field("bt2_dpad", "Dynamic programming padding (nt)",
-                    int, check_val=check_nonneg_int)
+Bowtie2Dpad = Field("bt2_dpad",
+                    "Dynamic programming padding (nt)",
+                    int,
+                    check_val=check_nonneg_int)
 Bowtie2Orient = Field("bt2_orient", "Orientation of mates", str)
-MinMapQual = Field("min_mapq", "Minimum mapping quality",
-                   int, check_val=check_nonneg_int)
-ReadsInit = Field("reads_init", "Number of reads initially",
-                  int, check_val=check_nonneg_int)
-ReadsTrim = Field("reads_trim", "Number of reads after trimming",
-                  int, check_val=check_nonneg_int)
-ReadsAlign = Field("reads_align", "Number of reads after alignment",
-                   dict, iconv=iconv_dict_str_int,
+MinMapQual = Field("min_mapq",
+                   "Minimum mapping quality",
+                   int,
+                   check_val=check_nonneg_int)
+ReadsInit = Field("reads_init",
+                  "Number of reads initially",
+                  int,
+                  check_val=check_nonneg_int)
+ReadsTrim = Field("reads_trim",
+                  "Number of reads after trimming",
+                  int,
+                  check_val=check_nonneg_int)
+ReadsAlign = Field("reads_align",
+                   "Number of reads after alignment",
+                   dict,
+                   iconv=iconv_dict_str_int,
                    check_val=check_dict_vals_nonneg_ints)
-ReadsDedup = Field("reads_filter", "Number of reads after filtering",
-                   dict, iconv=iconv_dict_str_int,
+ReadsDedup = Field("reads_filter",
+                   "Number of reads after filtering",
+                   dict,
+                   iconv=iconv_dict_str_int,
                    check_val=check_dict_vals_nonneg_ints)
-ReadsRefs = Field("reads_refs", "Number of reads aligned by reference",
-                  dict, iconv=iconv_dict_str_int,
+ReadsRefs = Field("reads_refs",
+                  "Number of reads aligned by reference",
+                  dict,
+                  iconv=iconv_dict_str_int,
                   check_val=check_dict_vals_nonneg_ints)
 
 # Relation vector generation
-NumReadsRel = Field("n_reads_rel", "Number of Reads", int,
+NumReadsRel = Field("n_reads_rel",
+                    "Number of Reads",
+                    int,
                     check_val=check_nonneg_int)
-NumBatchF = Field("n_batches", "Number of Batches", int,
+NumBatchF = Field("n_batches",
+                  "Number of Batches",
+                  int,
                   check_val=check_nonneg_int)
-ChecksumsF = Field("checksums", "MD5 Checksums of Batches", dict,
+ChecksumsF = Field("checksums",
+                   "MD5 Checksums of Batches",
+                   dict,
                    check_val=check_checksums)
+RefseqChecksumF = Field("refseq_checksum",
+                        "MD5 Checksum of Reference Sequence File",
+                        dict)
 SpeedF = Field("speed", "Speed (reads per minute)", float,
                oconv=get_oconv_float(SPEED_PRECISION))
 
@@ -728,13 +756,18 @@ class Report(Output, ABC):
         return cls(**idata)
 
     @classmethod
-    def load(cls, file: Path):
+    def parse_file_path(cls, file: Path):
         path_fields = path.parse(file, *cls.seg_types())
+        return path_fields.pop(path.TOP), path_fields
+
+    @classmethod
+    def load(cls, file: Path):
+        top, path_fields = cls.parse_file_path(file)
         with open(file) as f:
-            report: Report | BatchReport = cls.from_dict(json.load(f))
+            report = cls.from_dict(json.load(f))
         # Ensure that the path-related fields in the JSON data match the
         # actual path of the JSON file.
-        for key, value in report.path_fields(path_fields[path.TOP]).items():
+        for key, value in report.path_fields().items():
             if value != path_fields[key]:
                 raise ValueError(f"Got different values for field {repr(key)} "
                                  f"from path ({repr(path_fields[key])}) and "
@@ -753,9 +786,9 @@ class Report(Output, ABC):
                 # it must accept one argument -- self -- and return the
                 # value of the attribute.
                 value = value(self)
-            self.__setattr__(name, value)
+            setattr(self, name, value)
         if kwargs:
-            raise ValueError(f"Invalid keywords for {self.__class__.__name__}: "
+            raise ValueError(f"Invalid keywords for {type(self).__name__}: "
                              f"{list(kwargs)}")
 
     def get_field(self, field: Field):
@@ -790,7 +823,7 @@ class Report(Output, ABC):
         """ Validate the attribute name and value before setting it. """
         if key not in self.field_names():
             raise ValueError(
-                f"Invalid field for {self.__class__.__name__}: {repr(key)}")
+                f"Invalid field for {type(self).__name__}: {repr(key)}")
         lookup_key(key).validate(self, value)
         super().__setattr__(key, value)
 
@@ -798,12 +831,30 @@ class Report(Output, ABC):
         descript = ", ".join(f"{key} = {repr(val)}"
                              for key, val in self.to_dict().items()
                              if isinstance(val, str))
-        return f"{self.__class__.__name__}: {descript}"
+        return f"{type(self).__name__}: {descript}"
 
     def __eq__(self, other):
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, type(self)):
             return NotImplemented
         return self.to_dict() == other.to_dict()
+
+
+class RefseqReport(Report, ABC):
+
+    @classmethod
+    @abstractmethod
+    def field_names(cls):
+        return super().field_names() + ("refseq_checksum",)
+
+    @classmethod
+    @cache
+    def refseq_seg_types(cls):
+        return cls.seg_types()[:-1] + (path.RefseqFileSeg,)
+
+    @classmethod
+    @cache
+    def refseq_auto_fields(cls):
+        return cls.auto_fields() | {path.EXT: path.PICKLE_BROTLI_EXT}
 
 
 class BatchReport(Report, ABC):
@@ -815,18 +866,18 @@ class BatchReport(Report, ABC):
 
     @classmethod
     @abstractmethod
-    def _batch_types(cls) -> tuple[type[BaseBatch], ...]:
+    def _batch_types(cls) -> tuple[type[ReadBatch], ...]:
         """ Type(s) of batch(es) for the report. """
 
     @classmethod
     @cache
-    def batch_types(cls) -> dict[str, type[BaseBatch]]:
+    def batch_types(cls) -> dict[str, type[ReadBatch]]:
         """ Type(s) of batch(es) for the report, keyed by name. """
         return {batch_type.btype(): batch_type
                 for batch_type in cls._batch_types()}
 
     @classmethod
-    def get_batch_type(cls, btype: str | None = None) -> type[BaseBatch]:
+    def get_batch_type(cls, btype: str | None = None) -> type[ReadBatch]:
         """ Return a valid type of batch based on its name. """
         if btype is None:
             if (ntypes := len(cls.batch_types())) != 1:
@@ -834,67 +885,6 @@ class BatchReport(Report, ABC):
                                  f"1 type of batch, but got {ntypes} types")
             return list(cls.batch_types().values())[0]
         return cls.batch_types()[btype]
-
-    def __init__(self, *,
-                 top: Path | None = None,
-                 checksums: dict | Callable = calc_checksums,
-                 **kwargs):
-        super().__init__(**kwargs,
-                         checksums=(partial(checksums, top=top)
-                                    if callable(checksums)
-                                    else checksums))
-
-    @property
-    def batch_nums(self):
-        """ Batch numbers. """
-        return range(self.get_field(NumBatchF))
-
-    def get_batch_path(self, top: Path, batch: int, btype: str | None = None):
-        """ Get the path to a batch of a specific number. """
-        bt = self.get_batch_type(btype)
-        return bt.build_path(batch=batch,
-                             **self.path_fields(top, bt.auto_fields()))
-
-    def digest_batch(self, top: Path, batch: int, btype: str | None = None):
-        """ Compute the checksum of a specific batch. """
-        return digest_file(self.get_batch_path(top, batch, btype))
-
-    def compute_checksums(self, top: Path):
-        """ Compute all checksums. """
-        return {btype: [self.digest_batch(top, batch, btype)
-                        for batch in self.batch_nums]
-                for btype in self.batch_types()}
-
-    def iter_batch_paths(self, top: Path, btype: str | None = None):
-        """ Iterate through all batch paths. """
-        for batch in self.batch_nums:
-            yield self.get_batch_path(top, batch, btype)
-
-    def find_invalid_batches(self, top: Path):
-        """ Return all the batches of relation vectors that either do
-        not exist or do not match their expected checksums. """
-        missing: list[tuple[str, int]] = list()
-        badsum: list[tuple[str, int]] = list()
-        for btype, checksums in self.get_field(ChecksumsF).items():
-            for batch, checksum in enumerate(checksums):
-                label = btype, batch
-                try:
-                    if checksum != self.digest_batch(top, batch, btype):
-                        # The file exists does not match the checksum.
-                        badsum.append(label)
-                except FileNotFoundError:
-                    # The batch file does not exist.
-                    missing.append(label)
-        return missing, badsum
-
-    def verify_batches(self, top: Path):
-        missing, badsum = self.find_invalid_batches(top)
-        if missing_files := [self.get_batch_path(top, batch, btype)
-                             for btype, batch in missing]:
-            raise FileNotFoundError(f"Missing batches: {missing_files}")
-        if badsum_files := [self.get_batch_path(top, batch, btype)
-                            for btype, batch in badsum]:
-            raise ValueError(f"Invalid checksums: {badsum_files}")
 
 ########################################################################
 #                                                                      #

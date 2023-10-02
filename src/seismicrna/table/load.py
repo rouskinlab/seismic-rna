@@ -28,7 +28,7 @@ class TableLoader(Table, ABC):
         self._ref = fields[path.REF]
         self._sect = fields[path.SECT]
         if not self.path.samefile(table_file):
-            raise ValueError(f"Invalid path for '{self.__class__.__name__}': "
+            raise ValueError(f"Invalid path for '{type(self).__name__}': "
                              f"{table_file} (expected {self.path})")
 
     @property

@@ -8,6 +8,9 @@ Define alphabets and classes for nucleic acid sequences, and functions
 for reading them from and writing them to FASTA files.
 
 """
+
+from __future__ import annotations
+
 import re
 from abc import ABC, abstractmethod
 from functools import cache, cached_property
@@ -136,7 +139,7 @@ class Seq(ABC):
         self._seq = str(seq)
         if invalid := set(self._seq) - self.get_alphaset():
             raise ValueError(
-                f"Invalid {self.__class__.__name__} bases: {sorted(invalid)}")
+                f"Invalid {type(self).__name__} bases: {sorted(invalid)}")
 
     @cached_property
     def rc(self):
@@ -162,7 +165,7 @@ class Seq(ABC):
 
     def __repr__(self):
         """ Encapsulate the sequence string with the class name. """
-        return f"{self.__class__.__name__}({str(self).__repr__()})"
+        return f"{type(self).__name__}({str(self).__repr__()})"
 
     def __hash__(self):
         """ Define __hash__ so that Seq subclasses can be used as keys
@@ -188,7 +191,7 @@ class Seq(ABC):
     def __add__(self, other):
         """ Allow addition (concatenation) of two sequences only if the
         sequences have the same class. """
-        if self.__class__ is other.__class__:
+        if type(self) is type(other):
             return self.__class__(str(self).__add__(str(other)))
         return NotImplemented
 
@@ -199,7 +202,7 @@ class Seq(ABC):
     def __eq__(self, other):
         """ Return True if both the type of the sequence and the bases
         in the sequence match, otherwise False. """
-        return self.__class__ is other.__class__ and str(self) == str(other)
+        return type(self) is type(other) and str(self) == str(other)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -255,6 +258,24 @@ def expand_degenerate_seq(seq: DNA):
         yield DNA(segs[0])
 
 
+class CompressedSeq(object):
+    """ Compress a sequence into two bits per base. """
+
+    def __init__(self, seq: Seq):
+        self.r = isinstance(seq, RNA)
+        self.s = len(seq)
+        self.b = _compress_seq(seq)
+        self.n = _find_ns(seq)
+
+    @property
+    def type(self):
+        return RNA if self.r else DNA
+
+    def decompress(self):
+        """ Restore the original sequence. """
+        return decompress(self)
+
+
 @cache
 def _base_to_index(base: str, alph: tuple[str, str, str, str]):
     try:
@@ -278,6 +299,19 @@ def _compress_block(block: str, alph: tuple[str, str, str, str]):
                for i, base in enumerate(block))
 
 
+def _get_blocks(seq: str):
+    return (seq[i: i + BLOCK_SIZE] for i in range(0, len(seq), BLOCK_SIZE))
+
+
+def _compress_seq(seq: Seq):
+    return bytes(_compress_block(block, seq.four())
+                 for block in _get_blocks(str(seq)))
+
+
+def _find_ns(seq: Seq):
+    return tuple(match.start() for match in re.finditer(BASEN, str(seq)))
+
+
 @cache
 def _decompress_block(byte: int, alph: tuple[str, str, str, str]):
     """ Decompress one block of a sequence. """
@@ -288,35 +322,13 @@ def _decompress_block(byte: int, alph: tuple[str, str, str, str]):
                    for i in range(BLOCK_SIZE))
 
 
-def _get_blocks(seq: str):
-    return (seq[i: i + BLOCK_SIZE] for i in range(0, len(seq), BLOCK_SIZE))
-
-
-class CompressedSeq(object):
-    """ Compress a sequence into two bits per base. """
-
-    def __init__(self, seq: Seq):
-        self._r = isinstance(seq, RNA)
-        self._s = len(seq)
-        self._b = bytes(_compress_block(block, self.alph)
-                        for block in _get_blocks(str(seq)))
-        self._n = tuple(map(re.Match.start, re.finditer(BASEN, str(seq))))
-
-    @property
-    def type(self):
-        return RNA if self._r else DNA
-
-    @property
-    def alph(self):
-        return self.type.four()
-
-    def decompress(self):
-        """ Restore the original sequence. """
-        bases = [base for byte in self._b
-                 for base in _decompress_block(byte, self.alph)][:self._s]
-        for n in self._n:
-            bases[n] = BASEN
-        return self.type("".join(bases))
+def decompress(seq: CompressedSeq):
+    """ Restore the original sequence from a CompressedSeq object. """
+    bases = [base for byte in seq.b
+             for base in _decompress_block(byte, seq.type.four())][:seq.s]
+    for n in seq.n:
+        bases[n] = BASEN
+    return seq.type("".join(bases))
 
 ########################################################################
 #                                                                      #
