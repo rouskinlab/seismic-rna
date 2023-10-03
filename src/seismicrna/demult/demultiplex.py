@@ -521,7 +521,7 @@ def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_length, fas
             rev_barcode = reverse_compliment(bc)
             rev_bc_start = rev_seq.index(rev_barcode)
             rev_bc_end = rev_bc_start + len(rev_barcode)
-            print("\nhere" + str(cols))
+            
             if ("secondary_signature_start" in cols):
                 secondary_sign_start = df.at[x, "secondary_signature_start"]
                 secondary_sign_end = secondary_sign_start + df.at[x, "secondary_signature_length"]
@@ -1024,17 +1024,27 @@ sections_file csv
 """
 
 
+"""
+
+
+
+"""
+
 def demultiplex_run(sections_file_csv, demulti_workspace, report_folder, fq_unit: FastqUnit, fasta, barcode_start=0,
                     barcode_length=0, split: int = 10, clipped: int = 0, rev_clipped: int = 0, index_tolerance: int = 0,
                     parallel: bool = False, mismatch_tolerence: int = 0, overwrite: bool = False):
-    sample_name = fq_unit.sample
-    mixed_fastq1, mixed_fastq2 = fq_unit.paths.values()  # only works if the FASTQ has paired-end reads in two separate files
+    
 
+    sample_name = fq_unit.sample
+    mixed_fastq1, mixed_fastq2 = (fq_unit.paths.values())  # only works if the FASTQ has paired-end reads in two separate files
+    mixed_fastq1=str(mixed_fastq1)
+    mixed_fastq2=str(mixed_fastq2)
+
+    report_folder+="/"
     """
     makes dictionary of sequence objects
     """
-    # print("demulti_workspace: ",demulti_workspace)
-    temp_ws = demulti_workspace + "/" + sample_name + "_demultiplex_folders_and_files/"
+    temp_ws = report_folder + "/" + sample_name + "_demultiplex_folders_and_files/"
     # final_sample_folder=temp_ws+"sample_fqs/"
 
     # print(temp_ws)
@@ -1126,24 +1136,3 @@ def demultiplex_run(sections_file_csv, demulti_workspace, report_folder, fq_unit
     create_report(sequence_objects, mixed_fastq1, mixed_fastq2, report_folder, unioned_sets_dictionary)
 
     return (), (), (report_folder + sample_name + "/",)
-
-########################################################################
-#                                                                      #
-# Copyright ©2023, the Rouskin Lab.                                    #
-#                                                                      #
-# This file is part of SEISMIC-RNA.                                    #
-#                                                                      #
-# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
-# it under the terms of the GNU General Public License as published by #
-# the Free Software Foundation; either version 3 of the License, or    #
-# (at your option) any later version.                                  #
-#                                                                      #
-# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
-# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
-# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
-# Public License for more details.                                     #
-#                                                                      #
-# You should have received a copy of the GNU General Public License    #
-# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
-#                                                                      #
-########################################################################
