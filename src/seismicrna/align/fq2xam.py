@@ -234,8 +234,6 @@ def fq_pipeline(fq_inp: FastqUnit,
     xams_out: list[Path] = list()
     for ref in sufficient_refs:
         try:
-            # Write the single reference sequence to a temporary FASTA.
-            write_fasta(refs_file, [(ref, ref_seqs[ref])])
             # Export the reads that align to the given reference.
             xam_ref = path.build(*path.XAM_SEGS,
                                  top=out_dir,
@@ -245,8 +243,14 @@ def fq_pipeline(fq_inp: FastqUnit,
                                  ext=(path.CRAM_EXT if cram else path.BAM_EXT))
             if xam_ref.parent != xams_out_dir:
                 raise path.PathValueError(f"{xam_ref} is not in {xams_out_dir}")
-            run_export(xam_whole, xam_ref, ref=ref, header=ref_headers[ref],
-                       ref_file=refs_file, n_procs=n_procs)
+            exp_kwargs = dict(ref=ref, header=ref_headers[ref], n_procs=n_procs)
+            if cram:
+                # Write the one reference sequence to a temporary FASTA.
+                # Do NOT use overwrite=True because, if refs_file is a
+                # link, then the file it is linked to will be erased.
+                write_fasta(refs_file, [(ref, ref_seqs[ref])])
+                exp_kwargs.update(dict(ref_file=refs_file))
+            run_export(xam_whole, xam_ref, **exp_kwargs)
         except Exception as error:
             logger.error(f"Failed to output {ref}: {error}")
         else:
@@ -258,10 +262,11 @@ def fq_pipeline(fq_inp: FastqUnit,
     # The whole XAM file is no longer needed.
     if not save_temp:
         xam_whole.unlink(missing_ok=True)
-    # Make a hard link to the original FASTA file.
-    refs_file.hardlink_to(fasta)
-    # Index the new hard-linked FASTA file.
-    run_index_fasta(refs_file)
+    if cram:
+        # Make a hard link to the original FASTA file.
+        refs_file.hardlink_to(fasta)
+        # Index the new hard-linked FASTA file.
+        run_index_fasta(refs_file)
     # Write a report to summarize the alignment.
     report = AlignReport(sample=sample,
                          demultiplexed=fq_inp.ref is not None,

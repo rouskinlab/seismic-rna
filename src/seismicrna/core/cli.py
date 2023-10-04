@@ -546,7 +546,7 @@ opt_min_finfo_read = Option(
 opt_max_fmut_read = Option(
     ("--max-fmut-read",),
     type=float,
-    default=0.05,
+    default=0.1,
     help="Filter reads with more than this fraction of mutated positions.")
 
 opt_max_nmut_read = Option(
@@ -733,6 +733,12 @@ opt_log = Option(
     default=os.path.join(CWD, "log", datetime.now().strftime(
         "seismic-rna_%Y-%m-%d_%H-%M-%S.log")),
     help="File in which to log all messages (except profiling)")
+
+opt_log_color = Option(
+    ("--log-color/--log-plain",),
+    type=bool,
+    default=True,
+    help="Whether to log messages in color on stdout")
 
 opt_profile = Option(
     ("--profile",),

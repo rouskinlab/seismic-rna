@@ -1,5 +1,9 @@
-from .cigar import (CIG_ALIGN, CIG_MATCH, CIG_SUBST,
-                    CIG_DELET, CIG_INSRT, CIG_SCLIP,
+from .cigar import (CIG_ALIGN,
+                    CIG_MATCH,
+                    CIG_SUBST,
+                    CIG_DELET,
+                    CIG_INSRT,
+                    CIG_SCLIP,
                     parse_cigar)
 
 

@@ -1,7 +1,7 @@
 from functools import cached_property
 
 from . import path
-from .output import PickleOutput, RefOutput
+from .files import PickleOutput, RefOutput
 from .seq import DNA
 
 

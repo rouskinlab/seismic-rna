@@ -9,7 +9,7 @@ import pandas as pd
 from ..core import path
 from ..core.batch import ReadBatch, MutsBatch, POS_INDEX, READ_INDEX
 from ..core.cmd import CMD_REL
-from ..core.output import RefOutput
+from ..core.files import RefOutput
 from ..core.rel import MATCH, NOCOV
 from ..core.seq import DNA
 

@@ -8,9 +8,9 @@ from .cigar import (CIG_ALIGN, CIG_MATCH, CIG_SUBST,
                     parse_cigar)
 from .encode import encode_match, encode_relate
 from .error import RelateValueError
-from ..core.rel import MATCH, DELET, NOCOV
-from ..core.seq import DNA
-from ..core.xam import MAX_FLAG
+from ...core.rel import MATCH, DELET, NOCOV
+from ...core.seq import DNA
+from ...core.xam import MAX_FLAG
 
 
 class SamFlag(object):

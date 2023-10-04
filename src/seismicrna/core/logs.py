@@ -65,10 +65,10 @@ class ColorFormatter(logging.Formatter):
         """ Log the message in color by adding an ANSI color escape code
         to the beginning and a color stopping code to the end. """
         # Get the ANSI format codes based on the record's logging level.
-        # Default to no color.
-        codes = self.ansi_codes.get(record.levelno, (AnsiCode.END,))
         # Wrap the formatted text with ANSI format codes.
-        return AnsiCode.wrap(super().format(record), *codes)
+        return AnsiCode.wrap(super().format(record),
+                             *self.ansi_codes.get(record.levelno,
+                                                  (AnsiCode.END,)))
 
 
 def get_top_logger():
@@ -115,7 +115,10 @@ def get_verbosity(verbose: int = 0, quiet: int = 0):
         return get_verbosity()
 
 
-def config(verbose: int, quiet: int, log_file: str | None = None):
+def config(verbose: int,
+           quiet: int,
+           log_file: str | None = None,
+           log_color: bool = True):
     """ Configure the main logger with handlers and verbosity. """
     # Set up logger.
     logger = get_top_logger()
@@ -123,7 +126,8 @@ def config(verbose: int, quiet: int, log_file: str | None = None):
     # Add stream handler.
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(get_verbosity(verbose, quiet))
-    stream_handler.setFormatter(ColorFormatter(STREAM_MSG_FORMAT))
+    stream_handler.setFormatter(ColorFormatter(STREAM_MSG_FORMAT) if log_color
+                                else logging.Formatter(STREAM_MSG_FORMAT))
     logger.addHandler(stream_handler)
     # Add file handler.
     if log_file is not None:

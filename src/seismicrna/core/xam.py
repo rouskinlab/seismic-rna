@@ -99,7 +99,7 @@ def view_xam_cmd(xam_inp: Path | None,
     # Read filters
     if min_mapq is not None:
         # Require minimum mapping quality.
-        args.extend(["--min-mq", min_mapq])
+        args.extend(["-q", min_mapq])
     if flags_req is not None:
         # Require these flags.
         args.extend(["-f", flags_req])
@@ -108,22 +108,22 @@ def view_xam_cmd(xam_inp: Path | None,
         args.extend(["-F", flags_exc])
     # Output format
     if cram:
-        args.append("--cram")
+        args.append("-C")
         if bam:
             logger.warning("Both BAM and CRAM flags were set: using CRAM")
         if not refs_file:
             logger.warning("Missing reference file for CRAM output")
     elif bam:
-        args.append("--bam")
+        args.append("-b")
         if sam:
             logger.warning("Both BAM and SAM flags were set: using BAM")
     if with_header:
-        args.append("--with-header")
+        args.append("-h")
     if only_header:
-        args.append("--header-only")
+        args.append("-H")
     # Reference file
     if refs_file:
-        args.extend(["--reference", refs_file])
+        args.extend(["-T", refs_file])
     # Input and output files
     if xam_out:
         args.extend(["-o", xam_out])

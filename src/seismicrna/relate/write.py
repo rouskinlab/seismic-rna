@@ -14,14 +14,10 @@ from logging import getLogger
 from pathlib import Path
 from typing import Iterable
 
-import numpy as np
-import pandas as pd
-
 from .batch import from_reads, QnamesBatch, RelateBatch
-from .relate import find_rels_line
+from .c.relate import find_rels_line
 from .report import RelateReport
 from .sam import XamViewer
-from .seqpos import format_seq_pos
 from ..core import path
 from ..core.fasta import get_fasta_seq
 from ..core.parallel import as_list_of_tuples, dispatch
@@ -64,27 +60,6 @@ def get_reads_per_batch(bytes_per_batch: int, seq_len: int):
                        f"sequence of {seq_len} nt. Using 1 read per batch.")
         return 1
     return reads_per_batch
-
-
-def _bytes_to_df(relbytes: tuple[bytearray, ...], reads: list[str], refseq: DNA):
-    """ Convert the relation vectors from bytearrays to a DataFrame. """
-    # Ideally, this step would use the NumPy unsigned 8-bit integer
-    # (np.uint8) data type because the data must be read back from the
-    # file as this type. But the PyArrow backend of to_parquet does not
-    # currently support uint8, so we are using np.byte, which works.
-    relarray = np.frombuffer(b"".join(relbytes), dtype=np.byte)
-    relarray.shape = relarray.size // len(refseq), len(refseq)
-    # Determine the numeric positions in the reference sequence.
-    positions = np.arange(1, len(refseq) + 1)
-    # Parquet format requires that the label of each column be a string.
-    # This requirement provides a good opportunity to add the reference
-    # sequence into the column labels themselves. Subsequent tasks can
-    # then obtain the entire reference sequence without needing to read
-    # the report file: relate.export.as_iter(), for example.
-    columns = format_seq_pos(refseq, positions, 1)
-    # Data must be converted to pd.DataFrame for PyArrow to write.
-    # Set copy=False to prevent copying the relation vectors.
-    return pd.DataFrame(data=relarray, index=reads, columns=columns, copy=False)
 
 
 def generate_batch(batch: int, *,
@@ -219,6 +194,8 @@ class RelationWriter(object):
                                               ref=self.ref)
         # Check if the report file already exists.
         if rerun or not report_file.is_file():
+            # Write the reference sequence to a file.
+            refcheck = self._write_refseq(out_dir, brotli_level)
             # Compute relation vectors and time how long it takes.
             began = datetime.now()
             (nreads,
@@ -227,8 +204,6 @@ class RelationWriter(object):
                                               brotli_level=brotli_level,
                                               **kwargs)
             ended = datetime.now()
-            # Write the reference sequence to a file.
-            refcheck = self._write_refseq(out_dir, brotli_level)
             # Write a report of the relation step.
             self._write_report(out_dir=out_dir,
                                n_reads_rel=nreads,

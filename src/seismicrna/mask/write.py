@@ -13,7 +13,6 @@ from .report import MaskReport
 from ..core import path
 from ..core.bitcall import BitCaller
 from ..core.bitvect import BitBatch, BitCounter
-from ..core.files import digest_file
 from ..core.sect import Section, index_to_pos
 from ..relate.load import RelateLoader
 

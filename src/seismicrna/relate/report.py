@@ -7,8 +7,9 @@ from pathlib import Path
 from .batch import QnamesBatch, RelateBatch, RelateOutput
 from ..core import path
 from ..core.cmd import CMD_REL
-from ..core.report import BatchReport, calc_speed, calc_taken, RefF, SampleF
-from ..core.seq import DNA
+from ..core.report import (BatchReport,
+                           calc_speed,
+                           calc_taken, RefF, SampleF)
 
 logger = getLogger(__name__)
 
@@ -49,9 +50,6 @@ class RelateReport(BatchReport, RelateOutput):
         return refseq_file_path(top,
                                 self.get_field(SampleF),
                                 self.get_field(RefF))
-
-    def get_refseq(self, top: Path):
-        return DNA.load(self.refseq_file(top))
 
 
 @cache

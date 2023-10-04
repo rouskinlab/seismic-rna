@@ -16,9 +16,9 @@ from typing import Any, Hashable, Callable, Iterable
 import numpy as np
 
 from . import path
-from .batch import ReadBatch
+from .batch import Batch
 from .bitcall import SemiBitCaller
-from .output import Output, RefOutput
+from .files import Output, RefOutput
 
 logger = getLogger(__name__)
 
@@ -331,6 +331,10 @@ def oconv_datetime(dtime: datetime):
 
 
 # General
+VersionF = Field("version",
+                 "Version of SEISMIC",
+                 str,
+                 check_val=check_name)
 SampleF = Field("sample",
                 "Name of Sample",
                 str,
@@ -368,11 +372,11 @@ TimeTakenF = Field("taken",
                    oconv=get_oconv_float(TIME_TAKEN_PRECISION))
 
 # Alignment
-IsDemultiplexed = Field("demultiplexed", "Use demultiplexed mode", bool)
-IsPairedEnd = Field("paired_end", "Use paired-end mode", bool)
-PhredEnc = Field("phred_enc", "Phred score encoding", int)
-FastqcRun = Field("fastqc", "Check quality with FastQC", bool)
-CutadaptRun = Field("cut", "Trim with Cutadapt", bool)
+IsDemultF = Field("demultiplexed", "Use demultiplexed mode", bool)
+IsPairedEndF = Field("paired_end", "Use paired-end mode", bool)
+PhredEncF = Field("phred_enc", "Phred score encoding", int)
+UseFastqcF = Field("fastqc", "Check quality with FastQC", bool)
+UseCutadaptF = Field("cut", "Trim with Cutadapt", bool)
 CutadaptQ1 = Field("cut_q1", "Minimum Phred score for read 1",
                    int, check_val=check_nonneg_int)
 CutadaptQ2 = Field("cut_q2", "Minimum Phred score for read 2",
@@ -733,9 +737,9 @@ class Report(Output, ABC):
 
     @classmethod
     @abstractmethod
-    def field_names(cls) -> tuple[str, ...]:
+    def field_names(cls):
         """ Names of all fields of the report. """
-        return tuple()
+        return VersionF.key,
 
     @classmethod
     def from_dict(cls, odata: dict[str, Any]):
@@ -791,6 +795,7 @@ class Report(Output, ABC):
             raise ValueError(f"Invalid keywords for {type(self).__name__}: "
                              f"{list(kwargs)}")
 
+    @cache
     def get_field(self, field: Field):
         """ Return the value of a field of the report using the field
         instance directly, not its key. """
@@ -839,22 +844,12 @@ class Report(Output, ABC):
         return self.to_dict() == other.to_dict()
 
 
-class RefseqReport(Report, ABC):
+class RefseqReport(Report, RefOutput, ABC):
 
     @classmethod
     @abstractmethod
     def field_names(cls):
-        return super().field_names() + ("refseq_checksum",)
-
-    @classmethod
-    @cache
-    def refseq_seg_types(cls):
-        return cls.seg_types()[:-1] + (path.RefseqFileSeg,)
-
-    @classmethod
-    @cache
-    def refseq_auto_fields(cls):
-        return cls.auto_fields() | {path.EXT: path.PICKLE_BROTLI_EXT}
+        return super().field_names() + (RefseqChecksumF.key,)
 
 
 class BatchReport(Report, ABC):
@@ -862,29 +857,33 @@ class BatchReport(Report, ABC):
     @classmethod
     @abstractmethod
     def field_names(cls):
-        return super().field_names() + ("n_batches", "checksums")
+        return super().field_names() + (NumBatchF.key, ChecksumsF.key)
 
     @classmethod
     @abstractmethod
-    def _batch_types(cls) -> tuple[type[ReadBatch], ...]:
+    def _batch_types(cls) -> tuple[type[Batch], ...]:
         """ Type(s) of batch(es) for the report. """
 
     @classmethod
     @cache
-    def batch_types(cls) -> dict[str, type[ReadBatch]]:
+    def batch_types(cls) -> dict[str, type[Batch]]:
         """ Type(s) of batch(es) for the report, keyed by name. """
         return {batch_type.btype(): batch_type
                 for batch_type in cls._batch_types()}
 
     @classmethod
-    def get_batch_type(cls, btype: str | None = None) -> type[ReadBatch]:
+    def get_batch_type(cls, btype: str | None = None) -> type[Batch]:
         """ Return a valid type of batch based on its name. """
         if btype is None:
             if (ntypes := len(cls.batch_types())) != 1:
                 raise ValueError(f"btype is optional only if there is exactly "
-                                 f"1 type of batch, but got {ntypes} types")
+                                 f"one type of batch, but got {ntypes} types")
             return list(cls.batch_types().values())[0]
         return cls.batch_types()[btype]
+
+
+class RefBatchReport(BatchReport, RefseqReport, ABC):
+    pass
 
 ########################################################################
 #                                                                      #

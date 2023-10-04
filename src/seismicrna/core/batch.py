@@ -6,7 +6,7 @@ from logging import getLogger
 import numpy as np
 import pandas as pd
 
-from .output import PickleOutput
+from .files import PickleOutput
 from .rel import REL_TYPE
 from .sect import seq_pos_to_index
 from .seq import DNA
@@ -19,6 +19,11 @@ POS_INDEX = 1
 READ_INDEX = 0
 
 READ_NUM = "Read Number"
+
+
+def list_batch_nums(num_batches: int):
+    """ List the batch numbers. """
+    return list(range(BATCH_INDEX, num_batches + BATCH_INDEX))
 
 
 def get_length(array: np.ndarray, what: str) -> int:
@@ -107,8 +112,8 @@ def sanitize_ends(read_nums: np.ndarray,
     return end5s, mid5s, mid3s, end3s
 
 
-class ReadBatch(PickleOutput, ABC):
-    """ """
+class Batch(PickleOutput, ABC):
+    """ One batch of data. """
 
     @classmethod
     def btype(cls):
@@ -119,6 +124,10 @@ class ReadBatch(PickleOutput, ABC):
         self.batch = batch
         self.sample = sample
         self.ref = ref
+
+
+class ReadBatch(Batch, ABC):
+    """ One batch of data with explicit reads. """
 
     @property
     @abstractmethod
@@ -142,6 +151,7 @@ class ReadBatch(PickleOutput, ABC):
 
 
 class ArrayBatch(ReadBatch, ABC):
+    """ Batch of data with explicit reads and positions. """
 
     def __init__(self,
                  *args,
@@ -204,6 +214,7 @@ class ArrayBatch(ReadBatch, ABC):
 
 
 class MutsBatch(ArrayBatch, ABC):
+    """ Batch of data with explicit reads, positions, and mutations. """
 
     def __init__(self,
                  *args,

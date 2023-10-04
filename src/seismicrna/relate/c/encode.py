@@ -12,8 +12,8 @@ format (which encodes relationships explicitly as elements of arrays).
 
 """
 
-from ..core.rel import MATCH, SUB_A, SUB_C, SUB_G, SUB_T, ANY_N, IRREC
-from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
+from ...core.rel import MATCH, SUB_A, SUB_C, SUB_G, SUB_T, ANY_N, IRREC
+from ...core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
 
 
 # Map bases to integer encodings and vice versa.

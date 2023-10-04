@@ -7,7 +7,7 @@ import pandas as pd
 
 from .report import MaskReport
 from ..core.bitcall import BitCaller
-from ..core.load import BatchChainLoader, no_kwargs
+from ..core.data import BatchChainLoader, no_kwargs
 from ..relate.load import RelateLoader
 
 logger = getLogger(__name__)
