@@ -250,7 +250,7 @@ class OneTableGraph(OneSampleGraph, OneRefGraph, ABC):
     def __init__(self, *args, table: TableLoader, **kwargs):
         super().__init__(*args, **kwargs)
         if not isinstance(table, self.get_table_type()):
-            raise TypeError(f"{self.__class__.__name__} expected table "
+            raise TypeError(f"{type(self).__name__} expected table "
                             f"of type '{self.get_table_type().__name__}', "
                             f"but got type '{type(table).__name__}'")
         self._table = table
@@ -288,12 +288,12 @@ class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
     def __init__(self, *args, table1: TableLoader, table2: TableLoader,
                  **kwargs):
         super().__init__(*args, **kwargs)
-        for table, table_type in zip([table1,
-                                      table2],
-                                     [self.get_table1_type(),
-                                      self.get_table2_type()]):
+        for table, table_type in zip((table1, table2),
+                                     (self.get_table1_type(),
+                                      self.get_table2_type()),
+                                     strict=True):
             if not isinstance(table, table_type):
-                raise TypeError(f"{self.__class__.__name__} expected table "
+                raise TypeError(f"{type(self).__name__} expected table "
                                 f"of type '{table_type.__name__}', "
                                 f"but got type '{type(table).__name__}'")
         self._table1 = table1
@@ -323,8 +323,8 @@ class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
 
     def _get_common_attribute(self, name: str):
         """ Get the common attribute for tables 1 and 2. """
-        attr1 = self.table1.__getattribute__(name)
-        attr2 = self.table2.__getattribute__(name)
+        attr1 = getattr(self.table1, name)
+        attr2 = getattr(self.table2, name)
         if attr1 != attr2:
             raise ValueError(f"Attribute '{name}' differs between tables 1 "
                              f"({repr(attr1)}) and 2 ({repr(attr2)})")
@@ -409,3 +409,24 @@ class CartesianGraph(GraphBase, ABC):
         return {**super()._get_subplots_params(),
                 **dict(shared_xaxes="all", shared_yaxes="all",
                        x_title=self.x_title, y_title=self.y_title)}
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

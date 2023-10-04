@@ -18,7 +18,67 @@ Submodules
 ----------
 
 
+.. automodule:: seismicrna.relate.ambrel
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.relate.blank
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.relate.cigar
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.relate.cigar2
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.relate.encode
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.relate.error
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.relate.export
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.relate.human
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.relate.invert
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.relate.iterread
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.relate.iterrelv
    :members:
    :undoc-members:
    :show-inheritance:
@@ -55,6 +115,12 @@ Submodules
 
 
 .. automodule:: seismicrna.relate.seqpos
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.relate.sim
    :members:
    :undoc-members:
    :show-inheritance:

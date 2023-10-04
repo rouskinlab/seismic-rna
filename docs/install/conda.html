@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Installing with Conda &mdash; seismic-rna  documentation</title>
@@ -12,11 +12,10 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -97,14 +96,14 @@
            <div itemprop="articleBody">
              
   <section id="installing-with-conda">
-<h1>Installing with Conda<a class="headerlink" href="#installing-with-conda" title="Permalink to this heading"></a></h1>
+<h1>Installing with Conda<a class="headerlink" href="#installing-with-conda" title="Permalink to this headline"></a></h1>
 <p>This section uses Conda to install SEISMIC-RNA in a virtual environment.
 If you are not familiar with virtual environments, read this primer on
 <a class="reference internal" href="venv.html#virtual-envs"><span class="std std-ref">Virtual Environments</span></a>. If you do not have a working installation of Conda
 on your system (or are not sure if you do), then see the section of this
 tutorial about <a class="reference internal" href="prereqs.html#install-prereqs"><span class="std std-ref">Prerequisites: Python, pip, and Conda</span></a> for guidance.</p>
 <section id="create-and-activate-your-virtual-environment">
-<h2>Create and activate your virtual environment<a class="headerlink" href="#create-and-activate-your-virtual-environment" title="Permalink to this heading"></a></h2>
+<h2>Create and activate your virtual environment<a class="headerlink" href="#create-and-activate-your-virtual-environment" title="Permalink to this headline"></a></h2>
 <p>Make a new virtual environment into which you will install SEISMIC-RNA.
 Give it a short, memorable name, such as <code class="docutils literal notranslate"><span class="pre">seismic</span></code>, and select Python
 version 3.10, which is currently the only supported version. The rest of
@@ -125,7 +124,7 @@ or update SEISMIC-RNA. To deactivate it after you are finished, type:</p>
 <p>Note that you do not need to type <code class="docutils literal notranslate"><span class="pre">seismic</span></code> after <code class="docutils literal notranslate"><span class="pre">deactivate</span></code>.</p>
 </section>
 <section id="install-the-non-python-dependencies">
-<h2>Install the non-Python dependencies<a class="headerlink" href="#install-the-non-python-dependencies" title="Permalink to this heading"></a></h2>
+<h2>Install the non-Python dependencies<a class="headerlink" href="#install-the-non-python-dependencies" title="Permalink to this headline"></a></h2>
 <p>SEISMIC-RNA has four dependencies that are not Python packages. They are
 all available to install using Conda, but this installation process
 seems prone to failing on some systems, such as Macbook computers with
@@ -139,7 +138,7 @@ dependency by following its own installation instructions.</p>
 <li><p><a class="reference external" href="https://rna.urmc.rochester.edu/RNAstructure.html">RNAstructure</a> ≥ v6.3 (optional: only for RNA structure prediction)</p></li>
 </ul>
 <section id="installing">
-<h3>Installing<a class="headerlink" href="#installing" title="Permalink to this heading"></a></h3>
+<h3>Installing<a class="headerlink" href="#installing" title="Permalink to this headline"></a></h3>
 <p>You can install them all at once by running the following command (note
 that it is long and you may need to scroll horizontally to see it all):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="o">-</span><span class="n">c</span> <span class="n">bioconda</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">samtools</span><span class="o">=</span><span class="mf">1.17</span> <span class="n">fastqc</span><span class="o">=</span><span class="mf">0.12.1</span> <span class="n">bowtie2</span><span class="o">=</span><span class="mf">2.5.1</span> <span class="n">rnastructure</span><span class="o">=</span><span class="mf">6.3</span>
@@ -162,7 +161,7 @@ to install by running the corresponding individual command(s):</p>
 </div>
 </section>
 <section id="verifying">
-<h3>Verifying<a class="headerlink" href="#verifying" title="Permalink to this heading"></a></h3>
+<h3>Verifying<a class="headerlink" href="#verifying" title="Permalink to this headline"></a></h3>
 <p>To confirm that the dependencies have been installed successfully, type
 the following commands for each dependency that you want to check:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Samtools</span>
@@ -187,7 +186,7 @@ command will print a message that looks similar to this:</p>
 the program has not been installed.</p>
 </section>
 <section id="troubleshooting">
-<h3>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this heading"></a></h3>
+<h3>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline"></a></h3>
 <p>If you encounter errors during installation with Conda, then first
 double check that you have entered the command exactly, especially that</p>
 <ul class="simple">
@@ -209,7 +208,7 @@ instructions on its website (instead of with Conda):</p>
 </section>
 </section>
 <section id="install-seismic-rna-and-its-python-dependencies">
-<h2>Install SEISMIC-RNA and its Python dependencies<a class="headerlink" href="#install-seismic-rna-and-its-python-dependencies" title="Permalink to this heading"></a></h2>
+<h2>Install SEISMIC-RNA and its Python dependencies<a class="headerlink" href="#install-seismic-rna-and-its-python-dependencies" title="Permalink to this headline"></a></h2>
 <p>After you have installed your chosen non-Python dependencies, run this
 command to install SEISMIC-RNA and all its Python dependencies:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">seismic</span><span class="o">-</span><span class="n">rna</span>

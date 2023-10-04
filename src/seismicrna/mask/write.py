@@ -21,7 +21,11 @@ logger = getLogger(__name__)
 
 
 def write_batch(read_names: Iterable[str],
-                out_dir: Path, sample: str, ref: str, sect: str, batch: int):
+                out_dir: Path,
+                sample: str,
+                ref: str,
+                sect: str,
+                batch: int):
     """ Write the names of the reads in one batch to a file. """
     # Determine the path to the batch file.
     batch_file = MaskReport.build_batch_path(out_dir, batch,
@@ -137,8 +141,12 @@ class BitMasker(object):
                    self.MASK_READ_GAP: self._mask_min_mut_gap}
         ))
         # Write batches of read names and record their checksums.
-        self.checksums = [write_batch(read_names, self.out_dir, self.sample,
-                                      self.ref, self.section.name, batch)
+        self.checksums = [write_batch(read_names,
+                                      self.out_dir,
+                                      self.sample,
+                                      self.ref,
+                                      self.section.name,
+                                      batch)
                           for batch, read_names
                           in enumerate(self.counter.read_batches)]
         # Warn if no reads were counted.
@@ -338,3 +346,24 @@ def mask_section(loader: RelateLoader,
     else:
         logger.warning(f"File exists: {report_file}")
     return report_file
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

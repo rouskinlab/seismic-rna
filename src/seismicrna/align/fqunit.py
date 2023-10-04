@@ -114,7 +114,7 @@ class FastqUnit(object):
         self.phred_enc = phred_enc
         self.one_ref = one_ref
         self.sample, self.ref, self.exts = self.get_sample_ref_exts()
-        logger.debug(f"Instantiated a {self.__class__.__name__} with "
+        logger.debug(f"Instantiated a {type(self).__name__} with "
                      + ", ".join(f"{k} = {v} (type '{type(v).__name__}')"
                                  for k, v in self.paths.items())
                      + f", phred_enc = {phred_enc}, one_ref = {one_ref}")
@@ -320,3 +320,24 @@ class FastqUnit(object):
 
     def __str__(self):
         return f"{self.kind} {' and '.join(map(str, self.paths.values()))}"
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

@@ -1,19 +1,17 @@
 """
 
-SEISMIC-RNA Initialization Module
-
+SEISMIC-RNA
 ========================================================================
 
-Expose the sub-packages demult, align, relate, cluster, and table, plus
-the __version__ attribute, at the top level so that they can be imported
-from external modules and scripts in either of the following manners:
+Expose the sub-packages ``demult``, ``align``, ``relate``, ``cluster``,
+and ``table``, plus the ``__version__`` attribute, at the top level so
+that they can be imported from external modules and scripts::
 
->>> import seismicrna
->>> seismicrna.__version__
-
-or
-
->>> from seismicrna import __version__
+    >>> import seismicrna
+    >>> seismicrna.__version__
+    'x.y.z'
+    >>> from seismicrna import __version__
+    'x.y.z'
 
 """
 
@@ -24,12 +22,11 @@ from . import demult, align, relate, cluster, table, fastc
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-__version__ = "0.8.3"
-
+__version__ = "0.9.0"
 
 ########################################################################
 #                                                                      #
-# ©2023, the Rouskin Lab.                                              #
+# Copyright ©2023, the Rouskin Lab.                                    #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

@@ -55,7 +55,6 @@ def run(input_path: tuple[str, ...],
         pdf: bool,
         max_procs: int,
         parallel: bool) -> list[Path]:
-    """ Run the graph pos module. """
     tables = list(find_tables(input_path))
     if len(tables) % 2 != 0:
         raise ValueError(f"Number of files must be even, but got {len(tables)}")
@@ -109,3 +108,24 @@ class SeqScatterGraphWriter(SeqPairGraphWriter):
     @property
     def graph_type(self):
         return SeqScatterGraph
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

@@ -1,390 +1,16 @@
 from __future__ import annotations
 
-from ..core.rel import (DELET, INS_5, INS_3, SUB_N,
-                        CIG_ALIGN, CIG_MATCH, CIG_SUBST,
-                        CIG_DELET, CIG_INSRT, CIG_SCLIP,
-                        parse_cigar, encode_match, encode_relate)
+from collections import defaultdict
+
+from .ambrel import Deletion, Insertion, find_ambrels
+from .cigar import (CIG_ALIGN, CIG_MATCH, CIG_SUBST,
+                    CIG_DELET, CIG_INSRT, CIG_SCLIP,
+                    parse_cigar)
+from .encode import encode_match, encode_relate
+from .error import RelateValueError
+from ..core.rel import MATCH, DELET, NOCOV
 from ..core.seq import DNA
 from ..core.xam import MAX_FLAG
-
-
-class RelateError(Exception):
-    """ Any error that occurs during relating. """
-
-
-class RelateValueError(RelateError, ValueError):
-    """ Any ValueError that occurs during relating. """
-
-
-class RelateNotImplementedError(RelateError, NotImplementedError):
-    """ Any NotImplementedError that occurs during relating. """
-
-
-class Indel(object):
-    """
-    Base class for an Insertion or Deletion (collectively, "indel")
-    It is used to find alternative positions for indels by keeping track
-    of an indel's current coordinates (as it is moved) and determining
-    whether a specific move is valid.
-
-    Parameters
-    ----------
-
-    rel_ins_idx: int
-        The 0-indexed position of the indel with respect to the sequence
-        (ref or read) with the relative insertion. This position points
-        to one specific base. If the mutation is labeled an insertion,
-        then the read is the sequence with the relative insertion (since
-        it has a base that is not in the reference), and rel_ins_idx is
-        the 0-based index of the inserted base in the coordinates of the
-        read sequence. If the mutation is labeled a deletion, then the
-        reference is the sequence with the relative insertion (since it
-        has a base that is not in the read), and rel_ins_idx is the
-        0-based index of the deleted base in the coordinates of the
-        reference sequence.
-    rel_del_idx (int):
-        The opposite of rel_ins_idx: the 0-indexed position of the indel
-        with respect to the sequence with a relative deletion (that is,
-        the read if the mutation is denoted a deletion, and the ref if
-        an insertion). Because the deleted base does not actually exist
-        in the sequence whose coordinates it is based on, rel_del_idx
-        does not refer to a specific position in the sequence, rather to
-        the two extant positions in the sequence that flank the deleted
-        position. It is most convenient for the algorithm to have this
-        argument refer to the position 3' of the deleted base and define
-        the 5' position as a property.
-
-    """
-
-    # Define __slots__ to improve speed and memory performance.
-    __slots__ = ["_ins_idx", "_ins_init", "_del_idx", "_del_init", "_tunneled"]
-
-    # Minimum distance between an insertion and a deletion
-    MIN_INDEL_DIST = 2
-
-    def __init__(self, rel_ins_idx: int, rel_del_idx: int) -> None:
-        self._ins_idx = rel_ins_idx
-        self._ins_init = rel_ins_idx
-        self._del_idx = rel_del_idx
-        self._del_init = rel_del_idx
-        self._tunneled = False
-
-    @property
-    def ins_idx(self):
-        return self._ins_idx
-
-    @property
-    def del_idx5(self):
-        return self._del_idx - 1
-
-    @property
-    def del_idx3(self):
-        return self._del_idx
-
-    @property
-    def tunneled(self):
-        return self._tunneled
-
-    @property
-    def rank(self) -> int:
-        raise RelateNotImplementedError
-
-    def reset(self):
-        """ Reset the indel to its initial position, and erase its
-        history of tunneling. """
-        self._ins_idx = self._ins_init
-        self._del_idx = self._del_init
-        self._tunneled = False
-
-    @staticmethod
-    def _get_indel_by_idx(indels: list[Indel], idx: int):
-        for indel in indels:
-            if indel.ins_idx == idx:
-                return indel
-
-    def _peek_out_of_indel(self, indels: list[Indel], from3to5: bool):
-        inc = -1 if from3to5 else 1
-        idx = self.ins_idx + inc
-        tunneled_indels: list[Indel] = list()
-        while indel := (self._get_indel_by_idx(indels, idx)):
-            idx += inc
-            tunneled_indels.append(indel)
-        self._tunneled = bool(tunneled_indels)
-        return idx, tunneled_indels
-
-    def _collision(self, other: Indel, swap_idx: int):
-        return self.MIN_INDEL_DIST > (min(abs(swap_idx - other.del_idx5),
-                                          abs(swap_idx - other.del_idx3)))
-
-    def _collisions(self, indels: list[Indel], swap_idx: int):
-        return any(self._collision(indel, swap_idx) for indel in indels)
-
-    def step_del_idx(self, swap_idx: int):
-        # Move the indel's position (self._ins_idx) to swap_idx.
-        # Move self._del_idx one step in the same direction.
-        if swap_idx == self.ins_idx:
-            raise RelateValueError(f"swap ({swap_idx}) = ins ({self.ins_idx})")
-        self._del_idx += 1 if swap_idx > self.ins_idx else -1
-
-    def _step(self, swap_idx: int):
-        self.step_del_idx(swap_idx)
-        self._ins_idx = swap_idx
-
-    @staticmethod
-    def _consistent_rels(curr_rel: int, swap_rel: int):
-        if curr_rel & swap_rel or (curr_rel & SUB_N
-                                   and swap_rel & SUB_N):
-            # Relationship between reference and read base (read_code) and
-            # relationship between reference and swap base (swap_code)
-            # are consistent, meaning either
-            # - both match the reference
-            # - one matches and the other potentially matches (i.e. low qual)
-            # - one is a substitution and the other could be a substitution
-            # - both are substitutions (for each code, code & SUB_N == code)
-            return curr_rel
-        # Otherwise, i.e.g if one base matches and the other is a substitution,
-        # then the relationships are not consistent.
-        return 0
-
-    def _encode_swap(self, *args, **kwargs) -> bool:
-        raise RelateNotImplementedError
-
-    def _try_swap(self, *args, **kwargs) -> bool:
-        raise RelateNotImplementedError
-
-    def sweep(self, muts: bytearray, ref: DNA, read: DNA, qual: str,
-              min_qual: str, dels: list[Deletion], inns: list[Insertion],
-              from3to5: bool, tunnel: bool):
-        # Move the indel as far as possible in either the 5' or 3' direction.
-        while self._try_swap(muts, ref, read, qual, min_qual, dels, inns,
-                             from3to5, tunnel):
-            # All actions happen in _try_swap, so loop body is empty.
-            pass
-
-
-class Deletion(Indel):
-    @property
-    def rank(self):
-        return self._ins_idx
-
-    @classmethod
-    def _encode_swap(cls, ref_base: str, swap_base: str, read_base: str,
-                     read_qual: str, min_qual: str):
-        curr_rel = encode_relate(ref_base, read_base, read_qual, min_qual)
-        swap_rel = encode_relate(swap_base, read_base, read_qual, min_qual)
-        return cls._consistent_rels(curr_rel, swap_rel)
-
-    def _swap(self, muts: bytearray, swap_idx: int, relation: int):
-        """
-        Parameters
-        ----------
-        muts: bytearray
-            Mutation vector
-        swap_idx: int
-            Index in the reference to which the deletion moves during
-            this swap
-        relation: int
-            Relationship (match, sub, etc.) between the base located at
-            swap_idx and the base in the read
-
-        """
-        # The base at swap_idx moves to self.ref_idx, so after the swap, the
-        # relationship between self.ref_idx and the read base will be swap_code.
-        muts[self.ins_idx] |= relation
-        # The base at self.ref_idx is marked as a deletion (by definition), so
-        # mark the position it moves to (swap_idx) as a deletion too.
-        muts[swap_idx] |= DELET
-        self._step(swap_idx)
-
-    def _try_swap(self, relvec: bytearray, refseq: DNA, read: DNA, qual: str,
-                  min_qual: str, dels: list[Deletion], inns: list[Insertion],
-                  from3to5: bool, tunnel: bool) -> bool:
-        swap_idx, tunneled_indels = self._peek_out_of_indel(dels, from3to5)
-        read_idx = self.del_idx5 if from3to5 else self.del_idx3
-        if (1 <= swap_idx < len(refseq) - 1 and 1 <= read_idx < len(read) - 1
-                and (tunnel or not self.tunneled)
-                and not self._collisions(inns, swap_idx)):
-            relation = self._encode_swap(refseq[self.ins_idx],
-                                         refseq[swap_idx],
-                                         read[read_idx],
-                                         qual[read_idx],
-                                         min_qual)
-            if relation:
-                self._swap(relvec, swap_idx, relation)
-                for indel in tunneled_indels:
-                    indel.step_del_idx(swap_idx)
-                return True
-        return False
-
-
-class Insertion(Indel):
-    @property
-    def rank(self):
-        return self._del_idx
-
-    def stamp(self, muts: bytearray):
-        """ Stamp the relation vector with a 5' and a 3' insertion. """
-        if 0 <= self.del_idx5 < len(muts):
-            muts[self.del_idx5] |= INS_5
-        if 0 <= self.del_idx3 < len(muts):
-            muts[self.del_idx3] |= INS_3
-
-    @classmethod
-    def _encode_swap(cls, ref_base: str, read_base: str, read_qual: str,
-                     swap_base: str, swap_qual: str, min_qual: str):
-        curr_rel = encode_relate(ref_base, read_base, read_qual, min_qual)
-        swap_rel = encode_relate(ref_base, swap_base, swap_qual, min_qual)
-        return cls._consistent_rels(curr_rel, swap_rel)
-
-    def _swap(self, muts: bytearray, ref_idx: int,
-              swap_idx: int, relation: int):
-        """
-        Parameters
-        ----------
-        muts: bytearray:
-            Relation vector
-        swap_idx: int:
-            Index in the read to which the deletion is swapped
-        relation: int
-            Relationship (match, sub, etc.) between the base located at
-            swap_idx and the base in the ref
-
-        """
-        # The base at ref_idx moves to swap_idx, so after the swap, the
-        # relationship between ref_idx and the read base is relation.
-        muts[ref_idx] |= relation
-        self._step(swap_idx)
-        # Mark the new positions of the insertion.
-        self.stamp(muts)
-
-    def _try_swap(self, muts: bytearray, refseq: DNA, read: DNA, qual: str,
-                  min_qual: str, dels: list[Deletion], inns: list[Insertion],
-                  from3to5: bool, tunnel: bool) -> bool:
-        swap_idx, tunneled_indels = self._peek_out_of_indel(inns, from3to5)
-        ref_idx = self.del_idx5 if from3to5 else self.del_idx3
-        if (1 <= swap_idx < len(read) - 1 and 1 <= ref_idx < len(refseq) - 1
-                and (tunnel or not self.tunneled)
-                and not self._collisions(dels, swap_idx)):
-            relation = self._encode_swap(refseq[ref_idx], read[self.ins_idx],
-                                         qual[self.ins_idx], read[swap_idx],
-                                         qual[swap_idx], min_qual)
-            if relation:
-                self._swap(muts, ref_idx, swap_idx, relation)
-                for indel in tunneled_indels:
-                    indel.step_del_idx(swap_idx)
-                return True
-        return False
-
-
-def sweep_indels(muts: bytearray, refseq: DNA, read: DNA, qual: str,
-                 min_qual: str, dels: list[Deletion], inns: list[Insertion],
-                 from3to5: bool, tunnel: bool):
-    """
-    For every insertion and deletion,
-
-    Parameters
-    ----------
-    muts: bytearray
-        Mutation vector
-    refseq: bytes
-        Reference sequence
-    read: bytes
-        Sequence of the read
-    qual: bytes
-        Phred quality scores of the read, encoded as ASCII characters
-    min_qual: int
-        The minimum Phred quality score needed to consider a base call
-        informative: integer value of the ASCII character
-    dels: list[Deletion]
-        List of deletions identified by `vectorize_read`
-    inns: list[Insertion]
-        List of insertions identified by `vectorize_read`
-    from3to5: bool
-        Whether to move indels in the 3' -> 5' direction (True) or the
-        5' -> 3' direction (False)
-    tunnel: bool
-        Whether to allow tunneling
-
-    """
-    # Collect all indels into one list.
-    indels: list[Indel] = list()
-    indels.extend(dels)
-    indels.extend(inns)
-    # Reset each indel to its initial state. This operation does nothing
-    # the first time sweep_indels is called because all indels start in
-    # their initial state (by definition). But the indels may move when
-    # this function runs, so resetting is necessary at the beginning of
-    # the second and subsequent calls to sweep_indels to ensure that the
-    # algorithm starts from the initial state every time.
-    for indel in indels:
-        indel.reset()
-    # Sort the indels by their rank, which is
-    sort_rev = from3to5 != tunnel
-    indels.sort(key=lambda idl: idl.rank, reverse=sort_rev)
-    while indels:
-        indel = indels.pop()
-        indel.sweep(muts, refseq, read, qual, min_qual,
-                    dels, inns, from3to5, tunnel)
-        i = len(indels)
-        if sort_rev:
-            while i > 0 and indel.rank > indels[i - 1].rank:
-                i -= 1
-        else:
-            while i > 0 and indel.rank < indels[i - 1].rank:
-                i -= 1
-        if i < len(indels):
-            indels.insert(i, indel)
-
-
-def find_ambrels(relvec: bytearray, refseq: DNA, read: DNA, qual: str,
-                 min_qual: str, dels: list[Deletion], inns: list[Insertion]):
-    """
-    Find and label all positions in the vector that are ambiguous due to
-    insertions and deletions.
-
-    Parameters
-    ----------
-    relvec: bytearray
-        Mutation vector
-    refseq: DNA
-        Reference sequence
-    read: DNA
-        Sequence of the read
-    qual: str
-        Phred quality scores of the read, encoded as ASCII characters
-    min_qual: str
-        The minimum Phred quality score needed to consider a base call
-        informative: integer value of the ASCII character
-    dels: list[Deletion]
-        List of deletions identified by `vectorize_read`
-    inns: list[Insertion]
-        List of insertions identified by `vectorize_read`
-
-    """
-    # Each indel might be able to be moved in the 5' -> 3' direction
-    # (from3to5 is False) or 3' -> 5' direction (from3to5 is True).
-    # Test both directions.
-    for from3to5 in (False, True):
-        # For each indel, try to move it as far as it can go in the
-        # direction indicated by from3to5. Allow tunneling so that any
-        # runs of consecutive insertions or consecutive deletions can
-        # effectively move together.
-        sweep_indels(relvec, refseq, read, qual, min_qual,
-                     dels, inns, from3to5, tunnel=True)
-        if any(d.tunneled for d in dels) or any(i.tunneled for i in inns):
-            # If any indel tunneled,
-            sweep_indels(relvec, refseq, read, qual, min_qual,
-                         dels, inns, from3to5, tunnel=False)
-
-
-def op_consumes_ref(op: bytes) -> bool:
-    """ Return whether the CIGAR operation consumes the reference. """
-    return op != CIG_INSRT and op != CIG_SCLIP
-
-
-def op_consumes_read(op: bytes) -> bool:
-    """ Return whether the CIGAR operation consumes the read. """
-    return op != CIG_DELET
 
 
 class SamFlag(object):
@@ -406,7 +32,7 @@ class SamFlag(object):
 
         """
         if not 0 <= flag <= MAX_FLAG:
-            raise RelateValueError(f"Invalid flag: '{flag}'")
+            raise RelateValueError(f"Invalid flag: {repr(flag)}")
         self.flag = flag
         self.paired = bool(flag & 1)
         self.rev = bool(flag & 16)
@@ -414,7 +40,7 @@ class SamFlag(object):
         self.second = bool(flag & 128)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.flag})"
+        return f"{type(self).__name__}({self.flag})"
 
 
 class SamRead(object):
@@ -432,6 +58,8 @@ class SamRead(object):
         self.flag = SamFlag(int(fields[1]))
         self.rname = fields[2]
         self.pos = int(fields[3])
+        if self.pos < 1:
+            raise ValueError(f"Position must be ≥ 1, but got {self.pos}")
         self.mapq = int(fields[4])
         self.cigar = fields[5]
         self.seq = DNA(fields[9])
@@ -441,54 +69,42 @@ class SamRead(object):
                                    f"string {len(self.qual)} did not match.")
 
     def __str__(self):
-        attrs = {attr: self.__getattribute__(attr) for attr in self.__slots__[1:]}
+        attrs = {attr: getattr(self, attr) for attr in self.__slots__[1:]}
         return f"Read '{self.qname}' {attrs}"
 
 
-def relate_read(relvec: bytearray,
-                read: SamRead,
-                refseq: DNA,
-                length: int,
-                min_qual: str,
-                ambrel: bool):
+def find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambrel: bool):
     """
-    Generate a relation vector of a read aligned to a reference.
+    Find the relationships between a read and a reference.
 
     Parameters
     ----------
     read: SamRead
         Read from SAM file to be related
-    relvec: bytearray
-        Relation vector (initially blank) into which to write bytes;
-        muts and refseq must have the same length.
     refseq: str
         Reference sequence; refseq and muts must have the same length.
-    length: int (≥ 1)
-        Length of the reference; must equal len(refseq) and len(muts)
     min_qual: int
         ASCII encoding of the minimum Phred score to accept a base call
     ambrel: bool
         Whether to find and label all ambiguous insertions and deletions
 
+    Returns
+    -------
+    tuple[int, int, dict[int, int]]
+        - the 5' coordinate of the read
+        - the 3' coordinate of the read
+        - the relationship code for each mutation in the read
     """
-    if len(relvec) != length:
-        raise ValueError(
-            f"Expected relvec to have length {length}, but got {len(relvec)}")
-    if len(refseq) != length:
-        raise ValueError(
-            f"Expected refseq to have length {length}, but got {len(refseq)}")
-    if length == 0:
-        raise ValueError(f"Length of reference cannot be 0")
-    # Current position in the reference (0-indexed)
-    ref_idx = read.pos - 1
-    if ref_idx < 0:
-        raise ValueError(
-            f"Read {read} mapped to a coordinate 5' of the reference")
-    if ref_idx > length:
-        raise ValueError(
-            f"Read {read} mapped to a coordinate 3' of the reference")
-    # Current position in the read (0-indexed)
-    read_idx = 0
+    reflen = len(refseq)
+    if read.pos > reflen:
+        raise ValueError(f"Position must be ≤ reference length ({reflen}), "
+                         f"but got {read.pos}")
+    # Position in the reference: can be 0- or 1-indexed (initially 0).
+    ref_pos = read.pos - 1
+    # Position in the read: can be 0- or 1-indexed (initially 0).
+    read_pos = 0
+    # Record the relationship for each mutated position.
+    rels: dict[int, int] = defaultdict(lambda: MATCH)
     # Record all deletions and insertions.
     dels: list[Deletion] = list()
     inns: list[Insertion] = list()
@@ -498,128 +114,123 @@ def relate_read(relvec: bytearray,
         if cigar_op == CIG_MATCH:
             # The read and reference sequences match over the entire
             # CIGAR operation.
-            if ref_idx + op_length > length:
+            if ref_pos + op_length > reflen:
                 raise ValueError("CIGAR operation overshot the reference")
-            if read_idx + op_length > len(read.seq):
+            if read_pos + op_length > len(read.seq):
                 raise ValueError("CIGAR operation overshot the read")
             for _ in range(op_length):
-                relvec[ref_idx] &= encode_match(read.seq[read_idx],
-                                                read.qual[read_idx],
-                                                min_qual)
-                ref_idx += 1
-                read_idx += 1
+                rel = encode_match(read.seq[read_pos],
+                                   read.qual[read_pos],
+                                   min_qual)
+                ref_pos += 1  # 1-indexed now until this iteration ends
+                read_pos += 1  # 1-indexed now until this iteration ends
+                if rel != MATCH:
+                    rels[ref_pos] = rel
         elif cigar_op == CIG_ALIGN or cigar_op == CIG_SUBST:
-            # The read contains only matches or substitutions (no
-            # indels) relative to the reference over the entire
+            # There are only matches or substitutions over the entire
             # CIGAR operation.
-            if ref_idx + op_length > length:
+            if ref_pos + op_length > reflen:
                 raise ValueError("CIGAR operation overshot the reference")
-            if read_idx + op_length > len(read.seq):
+            if read_pos + op_length > len(read.seq):
                 raise ValueError("CIGAR operation overshot the read")
             for _ in range(op_length):
-                relvec[ref_idx] &= encode_relate(refseq[ref_idx],
-                                                 read.seq[read_idx],
-                                                 read.qual[read_idx],
-                                                 min_qual)
-                ref_idx += 1
-                read_idx += 1
+                rel = encode_relate(refseq[ref_pos],
+                                    read.seq[read_pos],
+                                    read.qual[read_pos],
+                                    min_qual)
+                ref_pos += 1  # 1-indexed now until this iteration ends
+                read_pos += 1  # 1-indexed now until this iteration ends
+                if rel != MATCH:
+                    rels[ref_pos] = rel
         elif cigar_op == CIG_DELET:
-            # The portion of the reference sequence corresponding
-            # to the CIGAR operation is deleted from the read.
-            # Create one Deletion object for each base in the
-            # reference sequence that is missing from the read.
-            if ref_idx + op_length > length:
+            # The portion of the reference sequence corresponding to the
+            # CIGAR operation is deleted from the read. Make a Deletion
+            # object for each base in the reference sequence that has
+            # been deleted from the read.
+            if ref_pos + op_length > reflen:
                 raise ValueError("CIGAR operation overshot the reference")
-            if not 1 <= read_idx < len(read.seq):
-                raise ValueError(f"Deletion in {read}, pos {read_idx + 1}")
+            read_pos += 1  # 1-indexed now until explicitly reset
+            if not 1 < read_pos < len(read.seq):
+                raise ValueError(f"Deletion in {read}, pos {read_pos}")
             for _ in range(op_length):
-                if not 1 <= ref_idx < length - 1:
-                    raise ValueError(f"Deletion in {read}, ref {ref_idx + 1}")
-                dels.append(Deletion(ref_idx, read_idx))
-                relvec[ref_idx] &= DELET
-                ref_idx += 1
+                ref_pos += 1  # 1-indexed now until this iteration ends
+                if not 1 < ref_pos < reflen:
+                    raise ValueError(f"Deletion in {read}, ref {ref_pos}")
+                dels.append(Deletion(ref_pos, read_pos))
+                rels[ref_pos] = DELET
+            read_pos -= 1  # 0-indexed now
         elif cigar_op == CIG_INSRT:
-            # The read contains an insertion of one or more bases
-            # that are not present in the reference sequence.
-            # Create one Insertion object for each base in the read
-            # sequence that is not present in the reference. Every
-            # mutation needs to be assigned a coordinate in the
-            # region in order to appear at that coordinate in the
-            # relation vector. But each inserted base, being absent
-            # from the reference, does not correspond to a single
-            # coordinate in the region; instead, each inserted base
-            # lies between two coordinates in the region. Either of
-            # these coordinates could be chosen; this code assigns
-            # the 3' coordinate to the insertion. For example, if
-            # two bases are inserted between coordinates 45 and 46
-            # of the region, then both will be given coordinate 46.
-            # The reason for this convention is that the math is
-            # simpler than it would be if using the 5' coordinate.
-            # Because region_idx5 is, by definition, immediately 3'
-            # of the previous CIGAR operation; and the bases that
-            # are inserted lie between the previous and subsequent
-            # CIGAR operations; region_idx5 is the coordinate
-            # immediately 3' of the inserted bases. In this special
-            # case, region_idx5 also equals region_idx3 (because
-            # the insertion does not consume the reference, so
-            # region_idx3 += op_length was not run at the beginning
-            # of this loop iteration), as well as the length of mut_vectors
-            # (because Python is 0-indexed, so the length of a range
-            # of indexes such as [0, 1, ... , 45] equals the value
-            # of the next index in the range, 46). Thus, there are
-            # three variables that already equal the 3' coordinate
-            # and none that equal the 5' coordinate.
-            if read_idx + op_length > len(read.seq):
+            # The read contains an insertion of one or more bases that
+            # are not present in the reference sequence. Create one
+            # Insertion object for each such base. Every mutation needs
+            # a coordinate in the reference sequence. But each inserted
+            # base, being absent from the reference, does not correspond
+            # to a single reference coordinate but rather lies between
+            # two coordinates. Either of these coordinates could be used
+            # for an insertion; this algorithm uses the 3' coordinate.
+            # For example, if two bases are inserted between coordinates
+            # 45 and 46 in the reference, then both inserted bases will
+            # be assigned coordinate 46. The reason for this convention
+            # is that the math is simpler than it would be if using the
+            # 5' coordinate. Because all inserted bases lie between the
+            # previous and subsequent CIGAR operations, and ref_pos is
+            # the position immediately 3' of the previous operation,
+            # ref_pos is naturally the coordinate 3' of the insertion.
+            if read_pos + op_length > len(read.seq):
                 raise ValueError("CIGAR operation overshot the read")
-            if not 1 <= ref_idx < length:
-                raise ValueError(f"Insertion in {read}, ref {ref_idx}")
+            ref_pos += 1  # 1-indexed now until explicitly reset
+            if not 1 < ref_pos < reflen:
+                raise ValueError(f"Insertion in {read}, ref {ref_pos}")
             for _ in range(op_length):
-                if not 1 <= read_idx < len(read.seq) - 1:
-                    raise ValueError(f"Insertion in {read}, pos {read_idx + 1}")
-                inns.append(Insertion(read_idx, ref_idx))
-                read_idx += 1
+                read_pos += 1  # 1-indexed now until this iteration ends
+                if not 1 < read_pos < len(read.seq):
+                    raise ValueError(f"Insertion in {read}, pos {read_pos}")
+                inns.append(Insertion(read_pos, ref_pos))
             # Insertions do not consume the reference, so do not add
             # any information to mut_vectors yet; it will be added later
             # via the method Insertion.stamp().
+            ref_pos -= 1  # 0-indexed now
         elif cigar_op == CIG_SCLIP:
             # Bases were soft-clipped from the 5' or 3' end of the
             # read during alignment. Like insertions, they consume
             # the read but not the reference. Unlike insertions,
             # they are not mutations, so they do not require any
             # processing or boundary checking.
-            if read_idx + op_length > len(read.seq):
+            if read_pos + op_length > len(read.seq):
                 raise ValueError("CIGAR operation overshot the read")
-            read_idx += op_length
+            read_pos += op_length
         else:
             raise RelateValueError(
                 f"Invalid CIGAR operation: '{cigar_op.decode()}'")
     # Verify that the sum of all CIGAR operations that consumed the read
-    # equals the length of the read. The former equals read_idx because
+    # equals the length of the read. The former equals read_pos because
     # for each CIGAR operation that consumed the read, the length of the
-    # operation was added to read_idx.
-    if read_idx != len(read.seq):
+    # operation was added to read_pos.
+    if read_pos != len(read.seq):
         raise RelateValueError(
-            f"CIGAR string '{read.cigar}' consumed {read_idx} bases "
+            f"CIGAR string '{read.cigar}' consumed {read_pos} bases "
             f"from read, but read is {len(read.seq)} bases long.")
     # Add insertions to muts.
     for ins in inns:
-        ins.stamp(relvec)
+        ins.stamp(rels, len(refseq))
     # Find and label all relationships that are ambiguous due to indels.
     if ambrel and (dels or inns):
-        find_ambrels(relvec, refseq, read.seq, read.qual, min_qual, dels, inns)
+        find_ambrels(rels, refseq, read.seq, read.qual, min_qual, dels, inns)
+    return read.pos, ref_pos, rels
 
 
-def relate_line(relvec: bytearray, line: str,
-                refseq: DNA, length: int, qmin: str, ambrel: bool):
-    relate_read(relvec, SamRead(line), refseq, length, qmin, ambrel)
+def validate_read(read: SamRead, ref: str, min_mapq: int):
+    if read.rname != ref:
+        raise ValueError(f"Read {repr(read.qname)} mapped to a reference named "
+                         f"{repr(read.rname)} but is in an alignment map file "
+                         f"for a reference named {repr(ref)}")
+    if read.mapq < min_mapq:
+        raise ValueError(f"Read {repr(read.qname)} mapped with quality score "
+                         f"{read.mapq}, less than the minimum of {min_mapq}")
 
 
-def relate_pair(relvec: bytearray, line1: str, line2: str,
-                refseq: DNA, length: int, qmin: str, ambrel: bool):
-    # Parse lines 1 and 2 into SAM reads.
-    read1 = SamRead(line1)
-    read2 = SamRead(line2)
-    # Ensure that reads 1 and 2 are compatible mates.
+def validate_pair(read1: SamRead, read2: SamRead):
+    """ Ensure that reads 1 and 2 are compatible mates. """
     if not read1.flag.paired:
         raise RelateValueError(f"Read 1 ({read1.qname}) was not paired, "
                                f"but read 2 ('{read2.qname}') was given")
@@ -629,11 +240,6 @@ def relate_pair(relvec: bytearray, line1: str, line2: str,
     if read1.qname != read2.qname:
         raise RelateValueError(f"Reads 1 ({read1.qname}) and 2 "
                                f"({read2.qname}) had different names")
-    if read1.rname != read2.rname:
-        raise RelateValueError(f"Read '{read1.qname}' had "
-                               "different references for mates 1 "
-                               f"('{read1.rname}') and 2 "
-                               f"('{read2.rname}')")
     if not (read1.flag.first and read2.flag.second):
         raise RelateValueError(f"Read '{read1.qname}' had mate 1 "
                                f"labeled {2 - read1.flag.first} and mate 2 "
@@ -641,7 +247,59 @@ def relate_pair(relvec: bytearray, line1: str, line2: str,
     if read1.flag.rev == read2.flag.rev:
         raise RelateValueError(f"Read '{read1.qname}' had "
                                "mates 1 and 2 facing the same way")
-    # Vectorize read 1.
-    relate_read(relvec, read1, refseq, length, qmin, ambrel)
-    # Vectorize read 2.
-    relate_read(relvec, read2, refseq, length, qmin, ambrel)
+
+
+def merge_ends(end51: int, end31: int, end52: int, end32: int):
+    return (min(end51, end52),
+            max(end51, end52),
+            min(end31, end32),
+            max(end31, end32))
+
+
+def merge_rels(rels1: dict[int, int], rels2: dict[int, int]):
+    return {ref_idx: rels1.get(ref_idx, NOCOV) & rels2.get(ref_idx, NOCOV)
+            for ref_idx in rels1 | rels2}
+
+
+def find_rels_line(line1: str,
+                   line2: str,
+                   ref: str,
+                   refseq: DNA,
+                   min_mapq: int,
+                   qmin: str,
+                   ambrel: bool):
+    read1 = SamRead(line1)
+    validate_read(read1, ref, min_mapq)
+    end5, end3, rels = find_rels_read(read1, refseq, qmin, ambrel)
+    if line2:
+        read2 = SamRead(line2)
+        validate_read(read2, ref, min_mapq)
+        validate_pair(read1, read2)
+        end52, end32, rels2 = find_rels_read(read2, refseq, qmin, ambrel)
+        end5, mid5, mid3, end3 = merge_ends(end5, end3, end52, end32)
+        rels = merge_rels(rels, rels2)
+    else:
+        mid5, mid3 = end5, end3
+    return read1.qname, end5, mid5, mid3, end3, rels
+
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

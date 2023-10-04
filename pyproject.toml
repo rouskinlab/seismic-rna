@@ -51,7 +51,7 @@ packages = ["src/seismicrna"]
 path = "src/seismicrna/__init__.py"
 
 [project.scripts]
-seismic = "seismicrna.main:main_cli"
+seismic = "seismicrna.main:cli"
 
 [project.urls]
 "Homepage" = "https://github.com/rouskinlab/seismic-rna"

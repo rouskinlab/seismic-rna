@@ -24,13 +24,31 @@ Submodules
    :show-inheritance:
 
 
-.. automodule:: seismicrna.align.fqutil
+.. automodule:: seismicrna.align.fqops
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.align.fqunit
    :members:
    :undoc-members:
    :show-inheritance:
 
 
 .. automodule:: seismicrna.align.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.align.report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.align.xamgen
    :members:
    :undoc-members:
    :show-inheritance:

@@ -54,6 +54,12 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.core.fasta
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.core.files
    :members:
    :undoc-members:
@@ -96,6 +102,18 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.core.qual
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.core.rand
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.core.rel
    :members:
    :undoc-members:
@@ -132,13 +150,13 @@ Submodules
    :show-inheritance:
 
 
-.. automodule:: seismicrna.core.sim
+.. automodule:: seismicrna.core.subcls
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.core.subcls
+.. automodule:: seismicrna.core.temp
    :members:
    :undoc-members:
    :show-inheritance:

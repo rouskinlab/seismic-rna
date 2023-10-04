@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>seismicrna.sim package &mdash; seismic-rna  documentation</title>
@@ -12,15 +12,14 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="seismicrna.table package" href="seismicrna.table.html" />
+    <link rel="next" title="seismicrna.sim.tests package" href="seismicrna.sim.tests.html" />
     <link rel="prev" title="seismicrna.relate.tests package" href="seismicrna.relate.tests.html" /> 
 </head>
 
@@ -51,18 +50,25 @@
 <li class="toctree-l1"><a class="reference internal" href="../manuals/index.html">Manuals</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="seismicrna.html">seismicrna package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.html#seismic-rna">SEISMIC-RNA</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="seismicrna.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.cluster.html">seismicrna.cluster package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastc.html">seismicrna.fastc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html">seismicrna.relate package</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">seismicrna.sim package</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">seismicrna.sim package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-seismicrna.sim.relate">Submodules</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.table.html">seismicrna.table package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.test.html">seismicrna.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.whole.html">seismicrna.whole package</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.html#module-seismicrna.main">Submodules</a></li>
@@ -99,7 +105,56 @@
            <div itemprop="articleBody">
              
   <section id="module-seismicrna.sim">
-<span id="seismicrna-sim-package"></span><h1>seismicrna.sim package<a class="headerlink" href="#module-seismicrna.sim" title="Permalink to this heading"></a></h1>
+<span id="seismicrna-sim-package"></span><h1>seismicrna.sim package<a class="headerlink" href="#module-seismicrna.sim" title="Permalink to this headline"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.sim.tests.html">seismicrna.sim.tests package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.sim.tests.html#module-seismicrna.sim.tests.sam_test">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-seismicrna.sim.relate">
+<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.sim.relate" title="Permalink to this headline"></a></h2>
+<section id="simulate-relation-vectors-module">
+<h3>Simulate Relation Vectors Module<a class="headerlink" href="#simulate-relation-vectors-module" title="Permalink to this headline"></a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.sim.relate.sim_relvecs">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.sim.relate.</span></span><span class="sig-name descname"><span class="pre">sim_relvecs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refseq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.html#seismicrna.core.seq.DNA" title="seismicrna.core.seq.DNA"><span class="pre">seismicrna.core.seq.DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">reads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.indexes.base.Index</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ploq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pmut</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ptri</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ptrc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ptrn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.sim.relate.sim_relvecs" title="Permalink to this definition"></a></dt>
+<dd><p>Simulate relation vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>refseq</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DNA</span></code>) – Sequence of the reference.</p></li>
+<li><p><strong>reads</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pd.Index</span> <span class="pre">|</span> <span class="pre">np.ndarray</span> <span class="pre">|</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">int</span></code>) – Names of the reads or number of reads (if int).</p></li>
+<li><p><strong>ploq</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>) – Probability that each position is low-quality.</p></li>
+<li><p><strong>pmut</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>) – Mutation rate of each position.</p></li>
+<li><p><strong>ptri</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.2</span></code>) – Probability that a mutation is a transition.</p></li>
+<li><p><strong>ptrc</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.4</span></code>) – Probability that a mutation is a complementary transversion.</p></li>
+<li><p><strong>ptrn</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.3</span></code>) – Probability that a mutation is a non-complementary transversion.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<span class="target" id="module-seismicrna.sim.sam"></span><section id="simulate-sam-files-module">
+<h3>Simulate SAM Files Module<a class="headerlink" href="#simulate-sam-files-module" title="Permalink to this headline"></a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.sim.sam.relvecs_to_sam_file">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.sim.sam.</span></span><span class="sig-name descname"><span class="pre">relvecs_to_sam_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.11)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.sim.sam.relvecs_to_sam_file" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.sim.sam.relvecs_to_sam_lines">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.sim.sam.</span></span><span class="sig-name descname"><span class="pre">relvecs_to_sam_lines</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">relvecs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">paired</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.sim.sam.relvecs_to_sam_lines" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<span class="target" id="module-seismicrna.sim.whole"></span></section>
 </section>
 
 
@@ -107,7 +162,7 @@
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="seismicrna.relate.tests.html" class="btn btn-neutral float-left" title="seismicrna.relate.tests package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="seismicrna.table.html" class="btn btn-neutral float-right" title="seismicrna.table package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="seismicrna.sim.tests.html" class="btn btn-neutral float-right" title="seismicrna.sim.tests package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

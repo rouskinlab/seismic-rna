@@ -129,7 +129,7 @@ class Table(ABC):
         return path.buildpar(*self.path_segs(), **self.path_fields)
 
     def __str__(self):
-        return f"{self.__class__.__name__} at {self.path}"
+        return f"{type(self).__name__} at {self.path}"
 
 
 class RelTypeTable(Table, ABC):
@@ -138,7 +138,7 @@ class RelTypeTable(Table, ABC):
     @property
     def _rel_level_index(self):
         """ Index of the column level indicating the relationship. """
-        return self.data.columns.names.index(REL_NAME)
+        return self.data.columns._names.index(REL_NAME)
 
     def _switch_rel(self, column: tuple, new_rel: str):
         """ Switch the relationship in a column label. """
@@ -237,7 +237,7 @@ class ClustTable(RelTypeTable, ABC):
 
     def _get_indexer(self, selection: dict[str, list]):
         return tuple(selection.get(level, slice(None))
-                     for level in self.data.columns.names)
+                     for level in self.data.columns._names)
 
 
 # Table by Index (position/read/frequency) #############################
@@ -335,3 +335,24 @@ class ClustFreqTable(Table, ABC):
     @property
     def clusters(self):
         return self.data.index.values
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

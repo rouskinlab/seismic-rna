@@ -1,9 +1,6 @@
 from click import group
 
-from . import seqbar as seqbar_mod
-from . import seqcorr as seqcorr_mod
-from . import seqdiff as seqdiff_mod
-from . import scatter as scatter_mod
+from . import seqbar, seqcorr, seqdiff, scatter
 from ..core.cmd import CMD_GRAPH
 
 
@@ -14,7 +11,28 @@ def cli():
 
 
 # Add graph commands to the CLI.
-cli.add_command(seqbar_mod.cli)
-cli.add_command(seqcorr_mod.cli)
-cli.add_command(seqdiff_mod.cli)
-cli.add_command(scatter_mod.cli)
+cli.add_command(seqbar.cli)
+cli.add_command(seqcorr.cli)
+cli.add_command(seqdiff.cli)
+cli.add_command(scatter.cli)
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

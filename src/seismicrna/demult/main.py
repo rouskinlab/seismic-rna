@@ -1,5 +1,6 @@
 from click import command
 from pathlib import Path
+from ..core.temp import lock_temp_dir
 
 from ..demult.demultiplex import demultiplex_run
 from ..align.fqops import FastqUnit
@@ -33,11 +34,12 @@ params = [
 # Turn into DREEM command.
 
 @command(CMD_DEMULT, params=params)
+
 def cli(*args, **kwargs):
     """ Split multiplexed FASTQ files by their barcodes. """
     return run(*args, **kwargs)
 
-
+@lock_temp_dir
 def run(sections_file: str, out_dir: str, temp_dir: str, fastqp: tuple[str, ...], phred_enc: int, fasta: str, barcode_start=0,
         barcode_length=0, clipped: int = 0, index_tolerance: int = 0, parallel_demultiplexing: bool = False,
         mismatch_tolerence: int = 0, demulti_overwrite: bool = False):
@@ -60,3 +62,24 @@ def run(sections_file: str, out_dir: str, temp_dir: str, fastqp: tuple[str, ...]
 
 if __name__ == '__main__':
     pass
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

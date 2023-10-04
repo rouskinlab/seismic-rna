@@ -11,12 +11,14 @@ from ..core.cli import (arg_input_path, opt_temp_dir, opt_save_temp,
                         opt_quantile,
                         opt_max_procs, opt_parallel, opt_rerun)
 from ..core.cmd import CMD_FOLD
-from ..core.depend import confirm_dependency
-from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
+from ..core.depend import require_dependency
+from ..core.fasta import parse_fasta
+from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rna import RnaProfile
 from ..core.sect import RefSections, Section
-from ..core.seq import DNA, parse_fasta
-from ..core.shell import RNASTRUCTURE_FOLD_CMD
+from ..core.seq import DNA
+from ..core.shell import RNASTRUCTURE_CT2DOT_CMD, RNASTRUCTURE_FOLD_CMD
+from ..core.temp import lock_temp_dir
 from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader
 
 logger = getLogger(__name__)
@@ -60,13 +62,14 @@ def run(fasta: str,
         parallel: bool,
         rerun: bool):
     """
-    Run the structure module.
+    Predict RNA structures using mutation rates as constraints.
     """
 
-    confirm_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
+    require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
+    require_dependency(RNASTRUCTURE_CT2DOT_CMD, __name__)
 
     # Get the sections for every reference sequence.
-    ref_sections = RefSections(parse_fasta(Path(fasta)),
+    ref_sections = RefSections(parse_fasta(Path(fasta), DNA),
                                sects_file=(Path(sections_file) if sections_file
                                            else None),
                                coords=coords,
@@ -104,3 +107,24 @@ def fold_profile(rna: RnaProfile, out_dir: Path, **kwargs):
     dot_file = ct2dot(ct_file)
     varna_color_file = rna.to_varna_color_file(out_dir)
     return ct_file, dot_file, varna_color_file
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

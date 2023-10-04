@@ -3,6 +3,7 @@ from logging import getLogger
 from pathlib import Path
 from subprocess import CompletedProcess
 
+from . import path
 from .shell import SAMTOOLS_CMD, args_to_cmd, ShellCommand
 
 logger = getLogger(__name__)
@@ -10,9 +11,10 @@ logger = getLogger(__name__)
 # SAM file format specifications
 SAM_HEADER = '@'
 SAM_DELIM = '\t'
-SAM_UNMAP = '*'
+SAM_NOREF = '*'
 SAM_SEQLINE = "@SQ"
 SAM_SEQNAME = "SN:"
+SAM_SEQLEN = "LN:"
 FLAG_PAIRED = 2 ** 0
 FLAG_PROPER = 2 ** 1
 FLAG_UNMAP = 2 ** 2
@@ -160,11 +162,10 @@ def flagstat_cmd(xam_inp: Path | None, *, n_procs: int = 1):
 
 def parse_flagstat(process: CompletedProcess):
     """ Convert the output into a dict with one entry per line. """
-    stdout = process.stdout.decode()
     stats_pattern = "([0-9]+) [+] ([0-9]+) ([A-Za-z0-9 ]+)"
     return {stat.strip(): (int(n1), int(n2))
             for n1, n2, stat in map(re.Match.groups,
-                                    re.finditer(stats_pattern, stdout))}
+                                    re.finditer(stats_pattern, process.stdout))}
 
 
 run_flagstat = ShellCommand("computing flagstats",
@@ -198,6 +199,23 @@ def count_total_reads(flagstats: dict):
     return sum(count_single_paired(flagstats))
 
 
+def xam_paired(flagstats: dict):
+    """ Determine if the reads are single-end or paired-end. """
+    # Determine if there are any paired-end and single-end reads.
+    paired_two, paired_one, singles = count_single_paired(flagstats)
+    paired = paired_two > 0 or paired_one > 0
+    single = singles > 0
+    # SEISMIC-RNA currently cannot handle both types in one sample.
+    if paired and single:
+        raise ValueError(f"Got both single-end (n = {singles}) and paired-end "
+                         f"(n = {paired_one + paired_two}) reads")
+    # The pairing status cannot be determined if there are no reads.
+    if not paired and not single:
+        return None
+    # Otherwise, return True if paired-end and False if single-end.
+    return paired
+
+
 def idxstats_cmd(xam_inp: Path):
     """ Count the number of reads aligning to each reference. """
     return args_to_cmd([SAMTOOLS_CMD, "idxstats", xam_inp])
@@ -206,10 +224,10 @@ def idxstats_cmd(xam_inp: Path):
 def parse_idxstats(process: CompletedProcess):
     """ Map each reference to the number of reads aligning to it. """
     counts = dict()
-    for line in process.stdout.decode().splitlines():
+    for line in process.stdout.splitlines():
         if stripped_line := line.rstrip():
             ref, length, mapped, unmapped = stripped_line.split(SAM_DELIM)
-            if ref != SAM_UNMAP:
+            if ref != SAM_NOREF:
                 counts[ref] = int(mapped)
     # Sort the references in from most to least abundant.
     return {ref: counts[ref]
@@ -230,7 +248,7 @@ def ref_header_cmd(xam_inp: Path, *, n_procs: int):
 
 def parse_ref_header(process: CompletedProcess):
     """ Map each reference to its header line. """
-    for line in process.stdout.decode().splitlines():
+    for line in process.stdout.splitlines():
         if line.startswith(SAM_SEQLINE):
             # Find the field that has the reference name.
             for field in line.split(SAM_DELIM):
@@ -248,3 +266,51 @@ run_ref_header = ShellCommand("getting header line for each reference",
                               ref_header_cmd,
                               parse_ref_header,
                               opath=False)
+
+
+def xam_to_fq_cmd(xam_inp: Path | None,
+                  fq_out: Path | None, *,
+                  interleaved: bool = False,
+                  n_procs: int = 1):
+    """ Convert a XAM file to a FASTQ file using `samtools fastq`. """
+    args = [SAMTOOLS_CMD, "fastq", "-@", n_procs - 1, "-n"]
+    if fq_out:
+        if xam_paired(run_flagstat(xam_inp, n_procs=n_procs)):
+            if interleaved:
+                # Interleave first and second reads in one file.
+                args.extend(["-o", fq_out.with_suffix(path.FQ_EXTS[0])])
+            else:
+                # Output first and second reads in separate files.
+                args.extend(["-1", fq_out.with_suffix(path.FQ1_EXTS[0]),
+                             "-2", fq_out.with_suffix(path.FQ2_EXTS[0])])
+        else:
+            # Output single-end reads in one file.
+            args.extend(["-0", fq_out.with_suffix(path.FQ_EXTS[0])])
+    if xam_inp:
+        args.append(xam_inp)
+    return args_to_cmd(args)
+
+
+run_xam_to_fq = ShellCommand("deconstructing alignment map",
+                             xam_to_fq_cmd)
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

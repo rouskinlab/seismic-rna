@@ -3,7 +3,7 @@ from pathlib import Path
 
 from click import command
 
-from .fq2bam import get_xam_files
+from .fq2xam import get_xam_files
 from .fqops import FastqUnit
 from ..core import docdef
 from ..core.cli import (arg_fasta,
@@ -27,10 +27,10 @@ from ..core.cli import (arg_fasta,
                         opt_bt2_score_min_loc, opt_bt2_score_min_e2e,
                         opt_bt2_s, opt_bt2_l, opt_bt2_d, opt_bt2_r,
                         opt_bt2_gbar, opt_bt2_dpad, opt_bt2_orient,
-                        opt_min_mapq, opt_min_reads)
+                        opt_min_mapq, opt_min_reads, opt_cram)
 from ..core.cmd import CMD_ALIGN
-from ..core.depend import confirm_dependency
-from ..core.parallel import lock_temp_dir
+from ..core.depend import require_dependency
+from ..core.temp import lock_temp_dir
 from ..core.shell import (BOWTIE2_CMD, BOWTIE2_BUILD_CMD, CUTADAPT_CMD,
                           FASTQC_CMD, SAMTOOLS_CMD)
 
@@ -94,6 +94,7 @@ params = [
     # Samtools
     opt_min_mapq,
     opt_min_reads,
+    opt_cram,
 ]
 
 
@@ -162,7 +163,8 @@ def run(*,
         bt2_orient: str,
         # Samtools
         min_mapq: int,
-        min_reads: int) -> list[Path]:
+        min_reads: int,
+        cram: bool) -> list[Path]:
     """
     Run the alignment module.
 
@@ -174,12 +176,12 @@ def run(*,
 
     # Check for external dependencies.
     if fastqc:
-        confirm_dependency(FASTQC_CMD, __name__)
+        require_dependency(FASTQC_CMD, __name__)
     if cut:
-        confirm_dependency(CUTADAPT_CMD, __name__)
-    confirm_dependency(BOWTIE2_CMD, __name__)
-    confirm_dependency(BOWTIE2_BUILD_CMD, __name__)
-    confirm_dependency(SAMTOOLS_CMD, __name__)
+        require_dependency(CUTADAPT_CMD, __name__)
+    require_dependency(BOWTIE2_CMD, __name__)
+    require_dependency(BOWTIE2_BUILD_CMD, __name__)
+    require_dependency(SAMTOOLS_CMD, __name__)
 
     # FASTQ files of read sequences may come from up to seven different
     # sources (i.e. each argument beginning with "fq_unit"). This step
@@ -236,4 +238,26 @@ def run(*,
                          bt2_dpad=bt2_dpad,
                          bt2_orient=bt2_orient,
                          min_mapq=min_mapq,
-                         min_reads=min_reads)
+                         min_reads=min_reads,
+                         cram=cram)
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

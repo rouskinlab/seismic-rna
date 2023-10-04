@@ -15,8 +15,9 @@ PYAPI_DIR=$DOCSRC_DIR/api
 # Delete the old Python API source files, if any.
 if [ -d $PYAPI_DIR ]
 then
-    rm -rv $PYAPI_DIR/*
+    rm -rv $PYAPI_DIR
 fi
+mkdir $PYAPI_DIR
 
 # Build the Python API source files.
 sphinx-apidoc -s rst --no-toc --no-headings --module-first -o $PYAPI_DIR $SEISMIC_DIR
@@ -24,8 +25,9 @@ sphinx-apidoc -s rst --no-toc --no-headings --module-first -o $PYAPI_DIR $SEISMI
 # Delete the old GitHub Pages files, if any.
 if [ -d $BUILD_DIR ]
 then
-    rm -rv $BUILD_DIR/*
+    rm -rv $BUILD_DIR
 fi
+mkdir $BUILD_DIR
 
 # Make an empty file called .nojekyll to tell GitHub Pages to not use Jekyll.
 # Otherwise, some files including the style sheets are not copied.

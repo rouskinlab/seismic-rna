@@ -28,7 +28,7 @@ class TableLoader(Table, ABC):
         self._ref = fields[path.REF]
         self._sect = fields[path.SECT]
         if not self.path.samefile(table_file):
-            raise ValueError(f"Invalid path for '{self.__class__.__name__}': "
+            raise ValueError(f"Invalid path for '{type(self).__name__}': "
                              f"{table_file} (expected {self.path})")
 
     @property
@@ -211,7 +211,7 @@ class ClustFreqTableLoader(TableLoader, ClustFreqTable):
 
 def find_tables(tables: tuple[str, ...]):
     """ Return a file for each given file/directory of a table. """
-    return path.find_files_chain(map(Path, tables), [path.TableSeg])
+    yield from path.find_files_chain(map(Path, tables), [path.TableSeg])
 
 
 def load(table_file: Path):
@@ -255,3 +255,24 @@ def get_clusters(columns: pd.Index | pd.MultiIndex, allow_zero: bool = False):
                                              names=ORD_CLS_NAME)
         # Re-raise the error.
         raise
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

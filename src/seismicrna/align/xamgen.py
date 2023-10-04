@@ -176,7 +176,7 @@ def parse_bowtie2(process: CompletedProcess):
 
     n_reads = dict()
     names: tuple[str, ...] = tuple()
-    lines = iter(process.stderr.decode().split(linesep))
+    lines = iter(process.stderr.split(linesep))
     # Read through the lines until one matches the first pattern.
     while not (match := pattern1.match(line := next(lines, "").rstrip())):
         if not line:
@@ -247,28 +247,53 @@ run_xamgen = ShellCommand("aligning, filtering, and sorting by position",
 
 
 def export_cmd(xam_in: Path | None,
-               cram_out: Path | None, *,
+               xam_out: Path | None, *,
                ref: str,
                header: str,
                ref_file: Path,
                n_procs: int):
-    """ Wrap sorting and cramming into one pipeline. """
+    """ Wrap selecting, sorting, and exporting into one pipeline. """
     # Pipe the header line.
     echo_step = args_to_cmd([ECHO_CMD, header])
     # Select only the reads that aligned to the reference, and ignore
     # the original header.
     ref_step = view_xam_cmd(xam_in, None,
-                            sam=True, with_header=False,
-                            ref=ref, n_procs=n_procs)
+                            sam=True,
+                            with_header=False,
+                            ref=ref,
+                            n_procs=n_procs)
     # Merge the one header line and the reads for the reference.
     merge_step = cmds_to_subshell([echo_step, ref_step])
     # Sort reads by name so that mates are adjacent.
     sort_step = sort_xam_cmd(None, None, name=True, n_procs=n_procs)
-    # Cram the reads into a CRAM file.
-    cram_step = view_xam_cmd(None, cram_out, refs_file=ref_file,
-                             n_procs=n_procs)
-    return cmds_to_pipe([merge_step, sort_step, cram_step])
+    # Export the reads into a XAM file.
+    export_step = view_xam_cmd(None,
+                               xam_out,
+                               refs_file=ref_file,
+                               n_procs=n_procs)
+    return cmds_to_pipe([merge_step, sort_step, export_step])
 
 
-run_export = ShellCommand("selecting reference, sorting by name, and cramming",
+run_export = ShellCommand("selecting reference, sorting by name, and exporting",
                           export_cmd)
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

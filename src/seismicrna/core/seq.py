@@ -9,22 +9,19 @@ for reading them from and writing them to FASTA files.
 
 """
 
+from __future__ import annotations
+
 import re
-from collections import Counter
+from abc import ABC, abstractmethod
 from functools import cache, cached_property
 from itertools import chain, product
-from logging import getLogger
-from pathlib import Path
-from subprocess import CompletedProcess
-from typing import Iterable
+from string import printable
+from typing import Any
 
 import numpy as np
 
-from . import path
-from .shell import args_to_cmd, GREP_CMD, ShellCommand
-from .sim import rng
-
-logger = getLogger(__name__)
+from .rand import rng
+from .types import BITS_PER_BYTE, get_uint_type
 
 # Nucleic acid sequence alphabets.
 BASEA = 'A'
@@ -34,79 +31,77 @@ BASET = 'T'
 BASEU = 'U'
 BASEN = 'N'
 
+# Nucleic acid compression symbols.
+COMPRESS_TYPE = get_uint_type(1)
+BITS_PER_BASE = 2
+NUM_BASES = 2 ** BITS_PER_BASE
+BLOCK_SIZE = BITS_PER_BYTE // BITS_PER_BASE
+BLOCK_FORMAT = ":".join(["{}", f"{BASEN}<{BLOCK_SIZE}"])
+
 # Nucleic acid pictogram characters.
 PICTA = '▲'
 PICTC = '⌠'
 PICTN = '○'
 PICTG = '⌡'
-PICTU = '▼'
-PICTS = PICTA, PICTC, PICTN, PICTG, PICTU
-
-# FASTA name line format.
-FASTA_NAME_MARK = '>'
-FASTA_NAME_REGEX = re.compile(f"^{FASTA_NAME_MARK}([{path.STR_CHARS}]*)")
+PICTT = PICTU = '▼'
 
 
-class Seq(object):
+class Seq(ABC):
     __slots__ = "_seq",
 
-    alph: tuple[str, str, str, str, str]
-
-    def __init__(self, seq: Iterable[str]):
-        if invalid := set(seq) - self.get_alphaset():
-            raise ValueError(
-                f"Invalid {self.__class__.__name__} bases: {sorted(invalid)}")
-        self._seq = str(seq)
-
-    @cached_property
-    def rc(self):
-        """ Reverse complement. """
-        return self.__class__(str(self)[::-1].translate(self.get_comptrans()))
-
-    @cached_property
-    def picto(self):
-        """ Pictogram string. """
-        return str(self).translate(self.get_pictrans())
-
-    @cache
-    def to_array(self):
-        """ NumPy array of Unicode characters for the sequence. """
-        return np.array(list(self))
+    @classmethod
+    @abstractmethod
+    def alph(cls) -> tuple[str, str, str, str, str]:
+        """ Sequence alphabet. """
 
     @classmethod
-    def t_or_u(cls):
-        """ Get the base that is complementary to A. """
-        return cls.alph[-1]
+    @abstractmethod
+    def pict(cls) -> tuple[str, str, str, str, str]:
+        """ Sequence pictograms. """
 
     @classmethod
     @cache
-    def get_unambig(cls):
-        """ Get the unambiguous bases. """
-        return tuple(n for n in cls.alph if n != BASEN)
+    def four(cls):
+        """ Get the four standard bases. """
+        four = tuple(n for n in cls.alph() if n != BASEN)
+        if len(four) != NUM_BASES:
+            raise ValueError(f"Expected {NUM_BASES} bases, but got {four}")
+        return four
 
     @classmethod
     @cache
     def get_alphaset(cls):
         """ Get the alphabet as a set. """
-        return set(cls.alph)
+        return frozenset(cls.alph())
+
+    @classmethod
+    @cache
+    def get_nonalphaset(cls):
+        """ Get the printable characters not in the alphabet. """
+        return frozenset(printable) - cls.get_alphaset()
 
     @classmethod
     @cache
     def get_comp(cls):
         """ Get the complementary alphabet as a tuple. """
-        return tuple(reversed(cls.alph))
+        return tuple(reversed(cls.alph()))
 
     @classmethod
     @cache
     def get_comptrans(cls):
         """ Get the translation table for complementary bases. """
-        return str.maketrans(dict(zip(cls.alph, cls.get_comp(), strict=True)))
+        return str.maketrans(dict(zip(cls.alph(), cls.get_comp(), strict=True)))
 
     @classmethod
     @cache
     def get_pictrans(cls):
         """ Get the translation table for pictogram characters. """
-        return str.maketrans(dict(zip(cls.alph, PICTS, strict=True)))
+        return str.maketrans(dict(zip(cls.alph(), cls.pict(), strict=True)))
+
+    @classmethod
+    def t_or_u(cls):
+        """ Get the base that is complementary to A. """
+        return max(cls.four())
 
     @classmethod
     def random(cls, nt: int,
@@ -138,14 +133,39 @@ class Seq(object):
         if not 0. <= n <= 1.:
             raise ValueError(f"Sum of A, C, G, and {cls.t_or_u()} proportions "
                              f"must be in [0, 1], but got {1. - n}")
-        return cls("".join(rng.choice(cls.alph, size=nt, p=(a, c, n, g, t))))
+        return cls("".join(rng.choice(cls.alph(), size=nt, p=(a, c, n, g, t))))
+
+    def __init__(self, seq: Any):
+        self._seq = str(seq)
+        if invalid := set(self._seq) - self.get_alphaset():
+            raise ValueError(
+                f"Invalid {type(self).__name__} bases: {sorted(invalid)}")
+
+    @cached_property
+    def rc(self):
+        """ Reverse complement. """
+        return self.__class__(str(self)[::-1].translate(self.get_comptrans()))
+
+    @cached_property
+    def picto(self):
+        """ Pictogram string. """
+        return str(self).translate(self.get_pictrans())
+
+    @cache
+    def to_array(self):
+        """ NumPy array of Unicode characters for the sequence. """
+        return np.array(list(self))
+
+    def compress(self):
+        """ Compress the sequence. """
+        return CompressedSeq(self)
 
     def __str__(self):
         return self._seq
 
     def __repr__(self):
         """ Encapsulate the sequence string with the class name. """
-        return f"{self.__class__.__name__}({str(self).__repr__()})"
+        return f"{type(self).__name__}({str(self).__repr__()})"
 
     def __hash__(self):
         """ Define __hash__ so that Seq subclasses can be used as keys
@@ -171,7 +191,7 @@ class Seq(object):
     def __add__(self, other):
         """ Allow addition (concatenation) of two sequences only if the
         sequences have the same class. """
-        if self.__class__ is other.__class__:
+        if type(self) is type(other):
             return self.__class__(str(self).__add__(str(other)))
         return NotImplemented
 
@@ -182,14 +202,21 @@ class Seq(object):
     def __eq__(self, other):
         """ Return True if both the type of the sequence and the bases
         in the sequence match, otherwise False. """
-        return self.__class__ is other.__class__ and str(self) == str(other)
+        return type(self) is type(other) and str(self) == str(other)
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
 
 class DNA(Seq):
-    alph = BASEA, BASEC, BASEN, BASEG, BASET
+
+    @classmethod
+    def alph(cls):
+        return BASEA, BASEC, BASEN, BASEG, BASET
+
+    @classmethod
+    def pict(cls):
+        return PICTA, PICTC, PICTN, PICTG, PICTT
 
     @cache
     def tr(self):
@@ -198,7 +225,14 @@ class DNA(Seq):
 
 
 class RNA(Seq):
-    alph = BASEA, BASEC, BASEN, BASEG, BASEU
+
+    @classmethod
+    def alph(cls):
+        return BASEA, BASEC, BASEN, BASEG, BASEU
+
+    @classmethod
+    def pict(cls):
+        return PICTA, PICTC, PICTN, PICTG, PICTU
 
     @cache
     def rt(self):
@@ -216,7 +250,7 @@ def expand_degenerate_seq(seq: DNA):
     if ns := len(segs) - 1:
         # If the sequence contains at least one N, then yield every
         # possible sequence by replacing each N with each base.
-        for bases in product(DNA.get_unambig(), repeat=ns):
+        for bases in product(DNA.four(), repeat=ns):
             yield DNA("".join(chain((segs[0],), *zip(bases, segs[1:],
                                                      strict=True))))
     else:
@@ -224,168 +258,95 @@ def expand_degenerate_seq(seq: DNA):
         yield DNA(segs[0])
 
 
-def match_to_seq_name(match: re.Match[str]):
-    """ Extract the name from a matched FASTA name line. """
-    name, = match.groups()
-    if name_strip := name.strip():
-        return name_strip
-    raise ValueError(f"Name in FASTA file is blank")
+class CompressedSeq(object):
+    """ Compress a sequence into two bits per base. """
+
+    def __init__(self, seq: Seq):
+        self.r = isinstance(seq, RNA)
+        self.s = len(seq)
+        self.b = _compress_seq(seq)
+        self.n = _find_ns(seq)
+
+    @property
+    def type(self):
+        return RNA if self.r else DNA
+
+    def decompress(self):
+        """ Restore the original sequence. """
+        return decompress(self)
 
 
-def match_fasta_seq_name(line: str):
-    """ Try to match a line as if it were the name line of a FASTA. """
-    if match := FASTA_NAME_REGEX.match(line):
-        # The line matches: validate it.
-        if match.group() != line.rstrip():
-            raise ValueError(f"Name line {repr(line)} has illegal characters")
-        return match_to_seq_name(match)
-    # The line does not match: return None.
-    return
-
-
-def get_fasta_seq_name(line: str):
-    """ Get the name of a sequence from the line of a FASTA. """
-    if (name := match_fasta_seq_name(line)) is None:
-        raise ValueError(f"Line {repr(line)} is not in FASTA name line format")
-    return name
-
-
-def try_fasta_seq_name(line: str):
+@cache
+def _base_to_index(base: str, alph: tuple[str, str, str, str]):
     try:
-        return get_fasta_seq_name(line)
-    except Exception as error:
-        logger.error(error)
-    return ""
+        return alph.index(base)
+    except ValueError:
+        return 0
 
 
-def format_fasta_name_line(name: str):
-    return f"{FASTA_NAME_MARK}{name}\n"
+@cache
+def _compress_block(block: str, alph: tuple[str, str, str, str]):
+    """ Compress one block of a sequence. """
+    if len(alph) != NUM_BASES:
+        raise ValueError(f"Expected {NUM_BASES} bases, but got {alph}")
+    if len(block) > BLOCK_SIZE:
+        raise ValueError(f"Expected block of no more than {BLOCK_SIZE} nt, "
+                         f"but got {repr(block)}")
+    if len(block) < BLOCK_SIZE:
+        # Pad the end of the block with Ns until it is long enough.
+        block = BLOCK_FORMAT.format(block)
+    return sum(_base_to_index(base, alph) << (i * BITS_PER_BASE)
+               for i, base in enumerate(block))
 
 
-def format_fasta_record(name: str, seq: Seq):
-    return f"{format_fasta_name_line(name)}{seq}\n"
+def _get_blocks(seq: str):
+    return (seq[i: i + BLOCK_SIZE] for i in range(0, len(seq), BLOCK_SIZE))
 
 
-def parse_fasta(fasta: Path, rna: bool = False):
-    """ Parse a FASTA file and iterate through the reference names and
-    sequences. """
-    if not fasta:
-        raise TypeError("No FASTA file given")
-    seq_type = RNA if rna else DNA
-    logger.info(f"Began parsing FASTA of {seq_type.__name__}: {fasta}")
-    # Get the name of the set of references.
-    refset = path.parse(fasta, path.FastaSeg)[path.REF]
-    has_ref_named_refset = False
-    # Record the names of all the references.
-    names = set()
-    with open(fasta) as f:
-        line = f.readline()
-        while line:
-            try:
-                name_line = line
-                # Read the sequence of the reference up until the next
-                # reference or the end of the file.
-                segments = list()
-                while ((line := f.readline())
-                       and not line.startswith(FASTA_NAME_MARK)):
-                    segments.append(line.rstrip())
-                # Get the name of the sequence.
-                name = get_fasta_seq_name(name_line)
-                # If there are two or more references with the same
-                # name, then the sequence of only the first is used.
-                if name in names:
-                    logger.warning(f"Duplicate reference '{name}' in {fasta}")
-                    continue
-                # If any reference has the same name as the file, then
-                # the file is not allowed to have any more references
-                # because, if it did, then the files of all references
-                # and of only the self-named reference would have the
-                # same names and thus have indistinguishable paths.
-                if name == refset:
-                    has_ref_named_refset = True
-                    logger.debug(f"Reference '{name}' had same name as {fasta}")
-                if has_ref_named_refset and names:
-                    raise ValueError(f"Because {fasta} had a reference with "
-                                     f"the same name as the file ('{name}'), "
-                                     f"it is not allowed to have any other "
-                                     f"references, but it also had {names}")
-                # Confirm that the sequence is valid.
-                seq = seq_type("".join(segments))
-            except Exception as error:
-                logger.error(error)
-            else:
-                # Yield the validated name and sequence.
-                names.add(name)
-                logger.debug(f"Read {seq_type.__name__} reference '{name}' "
-                             f"({len(seq)} nt) from {fasta}")
-                yield name, seq
-    logger.info(f"Ended parsing {len(names)} {seq_type.__name__} sequence(s) "
-                f"from {fasta}")
+def _compress_seq(seq: Seq):
+    return bytes(_compress_block(block, seq.four())
+                 for block in _get_blocks(str(seq)))
 
 
-def _fasta_names_cmd(fasta: Path):
-    """ Parse only the names of the references in a FASTA file. """
-    return args_to_cmd([GREP_CMD, f"^{FASTA_NAME_MARK}", fasta])
+def _find_ns(seq: Seq):
+    return tuple(match.start() for match in re.finditer(BASEN, str(seq)))
 
 
-def _parse_fasta_names(process: CompletedProcess):
-    """ Parse only the names of the references in a FASTA file. """
-    counts = Counter(name for line in process.stdout.decode().splitlines()
-                     if (name := try_fasta_seq_name(line)))
-    if duplicates := [name for name, count in counts.items() if count > 1]:
-        logger.warning(f"Duplicate sequence names: {duplicates}")
-    return list(counts)
+@cache
+def _decompress_block(byte: int, alph: tuple[str, str, str, str]):
+    """ Decompress one block of a sequence. """
+    if len(alph) != NUM_BASES:
+        raise ValueError(f"Expected {NUM_BASES} bases, but got {alph}")
+    byte = COMPRESS_TYPE(byte)
+    return "".join(alph[(byte >> (i * BITS_PER_BASE)) % len(alph)]
+                   for i in range(BLOCK_SIZE))
 
 
-parse_fasta_names = ShellCommand("parsing names of sequences in",
-                                 _fasta_names_cmd,
-                                 _parse_fasta_names,
-                                 opath=False)
+def decompress(seq: CompressedSeq):
+    """ Restore the original sequence from a CompressedSeq object. """
+    bases = [base for byte in seq.b
+             for base in _decompress_block(byte, seq.type.four())][:seq.s]
+    for n in seq.n:
+        bases[n] = BASEN
+    return seq.type("".join(bases))
 
-
-def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]],
-                overwrite: bool = False):
-    """ Write an iterable of reference names and DNA sequences to a
-    FASTA file. """
-    if not fasta:
-        raise TypeError("No FASTA file given")
-    logger.info(f"Began writing FASTA file: {fasta}")
-    # Get the name of the set of references.
-    refset = path.parse(fasta, path.FastaSeg)[path.REF]
-    has_ref_named_refset = False
-    # Record the names of all the references.
-    names = set()
-    with open(fasta, 'w' if overwrite else 'x') as f:
-        for name, seq in refs:
-            # Confirm that the name is not blank.
-            if not name:
-                logger.error(f"Blank reference name")
-                continue
-            # If there are two or more references with the same name,
-            # then the sequence of only the first is used.
-            if name in names:
-                logger.warning(f"Duplicate reference '{name}'")
-                continue
-            # If any reference has the same name as the file, then the
-            # file is not allowed to have any additional references
-            # because, if it did, then the files of all references and
-            # of only the self-named reference would have the same names
-            # and thus be indistinguishable by their paths.
-            if name == refset:
-                has_ref_named_refset = True
-                logger.debug(f"Reference '{name}' had same name as {fasta}")
-            if has_ref_named_refset and names:
-                raise ValueError(f"Because {fasta} got a reference with the "
-                                 f"same name as the file ('{name}'), it was "
-                                 f"not allowed to get any other references, "
-                                 f"but it also got {', '.join(names)}")
-            try:
-                f.write(format_fasta_record(name, seq))
-            except Exception as error:
-                logger.error(
-                    f"Error writing reference '{name}' to {fasta}: {error}")
-            else:
-                logger.debug(f"Wrote reference '{name}' ({len(seq)} nt) "
-                             f"to {fasta}")
-                names.add(name)
-    logger.info(f"Wrote {len(names)} sequences(s) to {fasta}")
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

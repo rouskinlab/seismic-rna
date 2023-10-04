@@ -68,10 +68,10 @@ def get_common_best_run_attr(ord_runs: dict[int, RunOrderResults], attr: str):
     """ Get an attribute of the best clustering run from every order,
     and confirm that `key(attribute)` is identical for all orders. """
     # Start by getting the attribute from order 1, which always exists.
-    value = ord_runs[1].best.__getattribute__(attr)
+    value = getattr(ord_runs[1].best, attr)
     # Verify that the best run from every other order has an equal value
     # of that attribute.
-    if any(runs.best.__getattribute__(attr) != value
+    if any(getattr(runs.best, attr) != value
            for order, runs in ord_runs.items() if order != 1):
         raise ValueError(f"Found more than 1 value for attribute '{attr}' "
                          f"among EM clustering runs {ord_runs}")
@@ -224,3 +224,24 @@ def calc_mean_var_info(runs: list[EmClustering]):
     vinfo = {(i, j): calc_var_info_pair(resps[i], resps[j]) for i, j in pairs}
     # Return the mean variation of information among pairs of EM runs.
     return sum(vinfo.values()) / len(vinfo)
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

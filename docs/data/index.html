@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Data Structures &mdash; seismic-rna  documentation</title>
@@ -12,16 +12,15 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Algorithms" href="../algos/index.html" />
-    <link rel="prev" title="Report Formats" href="../formats/reports/index.html" /> 
+    <link rel="prev" title="Report Formats" href="../formats/reports.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -99,11 +98,11 @@
            <div itemprop="articleBody">
              
   <section id="data-structures">
-<h1>Data Structures<a class="headerlink" href="#data-structures" title="Permalink to this heading"></a></h1>
+<h1>Data Structures<a class="headerlink" href="#data-structures" title="Permalink to this headline"></a></h1>
 <section id="relation-vectors">
-<h2>Relation Vectors<a class="headerlink" href="#relation-vectors" title="Permalink to this heading"></a></h2>
+<h2>Relation Vectors<a class="headerlink" href="#relation-vectors" title="Permalink to this headline"></a></h2>
 <section id="relationships-between-reads-and-references">
-<h3>Relationships between reads and references<a class="headerlink" href="#relationships-between-reads-and-references" title="Permalink to this heading"></a></h3>
+<h3>Relationships between reads and references<a class="headerlink" href="#relationships-between-reads-and-references" title="Permalink to this headline"></a></h3>
 <p>A relation vector encodes the relationship between one sequencing read
 (or pair of mated reads) and each base in the reference sequence.
 SEISMIC-RNA defines eight primary relationships:</p>
@@ -123,7 +122,7 @@ span of the read.</p>
 <img alt="../_images/relationships.png" src="../_images/relationships.png" />
 </section>
 <section id="encoding-primary-relationships">
-<h3>Encoding primary relationships<a class="headerlink" href="#encoding-primary-relationships" title="Permalink to this heading"></a></h3>
+<h3>Encoding primary relationships<a class="headerlink" href="#encoding-primary-relationships" title="Permalink to this headline"></a></h3>
 <p>Each position in a relation vector is physically represented by one byte
 (eight bits); each bit corresponds to one of the eight types of primary
 relationship. For a given position in the relation vector, the byte(s)
@@ -133,6 +132,12 @@ relationship each bit represents. Each bit is shown as the sole 1 within
 an entire byte, an eight-digit binary number. The number’s decimal (Dec)
 and hexadecimal (Hex) forms are also shown.</p>
 <table class="docutils align-default">
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 49%" />
+</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Byte</p></th>
 <th class="head"><p>Dec</p></th>
@@ -185,7 +190,7 @@ and hexadecimal (Hex) forms are also shown.</p>
 </table>
 </section>
 <section id="encoding-ambiguous-relationships">
-<h3>Encoding ambiguous relationships<a class="headerlink" href="#encoding-ambiguous-relationships" title="Permalink to this heading"></a></h3>
+<h3>Encoding ambiguous relationships<a class="headerlink" href="#encoding-ambiguous-relationships" title="Permalink to this headline"></a></h3>
 <p>Oh, if only encoding relation vectors were that straightforward! Though
 most bases in a read will have primary relationships with the bases in
 the reference to which they align, two phenomena make it more difficult
@@ -195,7 +200,7 @@ for some bases to define the relationship:</p>
 <li><p>ambiguous insertions and deletions</p></li>
 </ul>
 <section id="low-quality-base-calls">
-<h4>Low-quality base calls<a class="headerlink" href="#low-quality-base-calls" title="Permalink to this heading"></a></h4>
+<h4>Low-quality base calls<a class="headerlink" href="#low-quality-base-calls" title="Permalink to this headline"></a></h4>
 <p>A low-quality base call is defined as having a <a class="reference external" href="https://en.wikipedia.org/wiki/Phred_quality_score">Phred quality score</a>
 below the user-specified threshold (default: 25). Low-quality base calls
 are processed as if they could be any of the four nucleotides. The type
@@ -212,6 +217,13 @@ are merged by taking the bitwise OR into a consensus byte (<code class="docutils
 that expresses the ambiguity in the relationship. This consensus byte is
 inserted into the relation vector.</p>
 <table class="docutils align-default">
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 45%" />
+<col style="width: 16%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>If read were</p></th>
 <th class="head"><p>Then relationship would be</p></th>
@@ -263,6 +275,16 @@ the relationship would be a substitution to C (<code class="docutils literal not
 “Byte” shows the resulting ambiguous relationship, the bitwise OR of the
 four columns “Read: A/C/G/T?”.</p>
 <table class="docutils align-default">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Ref</p></th>
 <th class="head"><p>Read: A?</p></th>
@@ -321,7 +343,7 @@ how mutations in relation vectors are counted, see [REF].</p>
 </div>
 </section>
 <section id="ambiguous-insertions-and-deletions">
-<h4>Ambiguous insertions and deletions<a class="headerlink" href="#ambiguous-insertions-and-deletions" title="Permalink to this heading"></a></h4>
+<h4>Ambiguous insertions and deletions<a class="headerlink" href="#ambiguous-insertions-and-deletions" title="Permalink to this headline"></a></h4>
 <p>Insertions and deletions (collectively, “indels”) in the read can cause
 ambiguities that even the highest quality sequencing reads could not
 prevent. When one or more bases are inserted or deleted in a repetitive
@@ -348,6 +370,11 @@ or a match (<code class="docutils literal notranslate"><span class="pre">0000000
 the two relationships: <code class="docutils literal notranslate"><span class="pre">00000011</span></code>. Likewise for position 4. Thus, the
 relationship byte at each position (Pos) in the alignment would be</p>
 <table class="docutils align-default">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 50%" />
+<col style="width: 25%" />
+</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Pos</p></th>
 <th class="head"><p>Byte</p></th>
@@ -392,14 +419,14 @@ how mutations in relation vectors are counted, see [REF].</p>
 </section>
 </section>
 <section id="encoding-positions-not-covered-by-the-read">
-<h3>Encoding positions not covered by the read<a class="headerlink" href="#encoding-positions-not-covered-by-the-read" title="Permalink to this heading"></a></h3>
+<h3>Encoding positions not covered by the read<a class="headerlink" href="#encoding-positions-not-covered-by-the-read" title="Permalink to this headline"></a></h3>
 <p>If a read is shorter than the reference, then it will not align to every
 position in the reference. The “blank” positions to which it does not
 align provide no information and are thus considered fully ambiguous and
 assigned the byte <code class="docutils literal notranslate"><span class="pre">11111111</span></code> (decimal 255, hexadecimal ff).</p>
 </section>
 <section id="encoding-paired-end-reads">
-<h3>Encoding paired-end reads<a class="headerlink" href="#encoding-paired-end-reads" title="Permalink to this heading"></a></h3>
+<h3>Encoding paired-end reads<a class="headerlink" href="#encoding-paired-end-reads" title="Permalink to this headline"></a></h3>
 <p>For paired-end reads, both mates produce a relation vector. They must be
 merged into one consensus relation vector to avoid double-counting any
 positions where the two mates overlap. Ideally, the mates would have
@@ -408,7 +435,7 @@ is covered in one mate but not in the other, one mate’s Phred score is
 above the threshold and the other’s is below, or (more rarely) the base
 calls themselves differ.</p>
 <section id="consensus-relationships">
-<h4>Consensus relationships<a class="headerlink" href="#consensus-relationships" title="Permalink to this heading"></a></h4>
+<h4>Consensus relationships<a class="headerlink" href="#consensus-relationships" title="Permalink to this headline"></a></h4>
 <p>When finding the consensus of two mates, information in one mate should
 compensate for a lack thereof in the other. Recall that a relationship
 byte indicates all possible relationships at its position. The more bits
@@ -420,6 +447,12 @@ mates. This operation is <a class="reference external" href="https://en.wikipedi
 <p>For example, consider the following mate 1 and mate 2, where the column
 “Result” indicates the consensus byte after taking the bitwise AND:</p>
 <table class="docutils align-default">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 29%" />
+<col style="width: 29%" />
+<col style="width: 29%" />
+</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Pos</p></th>
 <th class="head"><p>Mate 1</p></th>
@@ -471,7 +504,7 @@ consensus byte is ambiguous. Neither mate covers position 6, so the
 consensus byte is blank.</p>
 </section>
 <section id="irreconcilable-relationships">
-<h4>Irreconcilable relationships<a class="headerlink" href="#irreconcilable-relationships" title="Permalink to this heading"></a></h4>
+<h4>Irreconcilable relationships<a class="headerlink" href="#irreconcilable-relationships" title="Permalink to this headline"></a></h4>
 <p>It is possible, although rare, for mates 1 and 2 to share no bits. For
 example, if mate 1 were a high-quality match (<code class="docutils literal notranslate"><span class="pre">00000001</span></code>) and mate 2
 were a high-quality substitution to T (<code class="docutils literal notranslate"><span class="pre">10000000</span></code>), then the bitwise
@@ -486,7 +519,7 @@ at this position.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../formats/reports/index.html" class="btn btn-neutral float-left" title="Report Formats" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../formats/reports.html" class="btn btn-neutral float-left" title="Report Formats" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="../algos/index.html" class="btn btn-neutral float-right" title="Algorithms" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

@@ -40,7 +40,8 @@ import re
 from string import ascii_letters, digits, printable
 from typing import Any, Iterable, Sequence
 
-from .cmd import COMMANDS
+from .cmd import (CMD_QC, CMD_ALIGN, CMD_REL, CMD_MASK, CMD_CLUST, CMD_TABLE,
+                  CMD_FOLD, CMD_GRAPH)
 
 logger = getLogger(__name__)
 
@@ -61,10 +62,18 @@ STR_PATTERN = f"([{STR_CHARS}]+)"
 INT_PATTERN = f"([{INT_CHARS}]+)"
 RE_PATTERNS = {str: STR_PATTERN, int: INT_PATTERN, pl.Path: PATH_PATTERN}
 
-STEPS_QC = "init", "trim"
-STEPS_ALIGN = "bt2-idx", "cut", "map", "sam-headers"
-STEPS_VECT = "sams",
-STEPS = STEPS_QC + STEPS_ALIGN + STEPS_VECT
+STEP_QC_INIT = "init"
+STEP_QC_TRIM = "trim"
+
+STEP_ALIGN_INDEX = "index"
+STEP_ALIGN_INDEX_DEMULT = "index-demult"
+STEP_ALIGN_TRIM = "trim"
+STEP_ALIGN_MAP = "map"
+
+STEPS_VECT_SAMS = "sams"
+
+STEPS = (STEP_QC_INIT, STEP_QC_TRIM, STEP_ALIGN_INDEX, STEP_ALIGN_INDEX_DEMULT,
+         STEP_ALIGN_TRIM, STEP_ALIGN_MAP, STEPS_VECT_SAMS)
 
 CLUST_PROP_RUN_TABLE = "props"
 CLUST_MUS_RUN_TABLE = "mus"
@@ -90,13 +99,14 @@ TXT_EXT = ".txt"
 CSV_EXT = ".csv"
 CSVZIP_EXT = ".csv.gz"
 CSV_EXTS = CSV_EXT, CSVZIP_EXT
-PARQ_EXTS = ".parquet", ".parq"
+PICKLE_BROTLI_EXT = ".pkl.br"
+TEXT_BROTLI_EXT = ".txt.br"
 JSON_EXT = ".json"
-FASTA_EXTS = ".fasta", ".fna", ".fa"
+FASTA_EXTS = ".fa", ".fna", ".fasta"
 BOWTIE2_INDEX_EXTS = (".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2",
                       ".rev.1.bt2", ".rev.2.bt2")
-FQ_EXTS = (".fastq", ".fq", ".fastq.gz", ".fq.gz",
-           "_001.fastq", "_001.fq", "_001.fastq.gz", "_001.fq.gz")
+FQ_EXTS = (".fq.gz", ".fastq.gz", ".fq", ".fastq",
+           "_001.fq.gz", "_001.fastq.gz", "_001.fq", "_001.fastq")
 FQ_PAIRED_EXTS_TEMPLATES = ("_R{}{}", "_mate{}{}", "_{}_sequence{}")
 FQ1_EXTS = tuple(template.format(1, ext) for template, ext in
                  product(FQ_PAIRED_EXTS_TEMPLATES, FQ_EXTS))
@@ -226,7 +236,8 @@ class Field(object):
 # Fields
 TopField = Field(pl.Path)
 NameField = Field(str)
-CmdField = Field(str, COMMANDS)
+CmdField = Field(str, [CMD_QC, CMD_ALIGN, CMD_REL, CMD_MASK, CMD_CLUST,
+                       CMD_TABLE, CMD_FOLD, CMD_GRAPH])
 StepField = Field(str, STEPS)
 IntField = Field(int)
 CountTabField = Field(str, COUNT_TABLES)
@@ -235,7 +246,9 @@ ClustTabField = Field(str, CLUST_TABLES)
 # File extensions
 TextExt = Field(str, [TXT_EXT], is_ext=True)
 ReportExt = Field(str, [JSON_EXT], is_ext=True)
-RelVecBatExt = Field(str, PARQ_EXTS, is_ext=True)
+RefseqFileExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
+QnamesBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
+RelVecBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
 MaskRepExt = Field(str, [JSON_EXT], is_ext=True)
 MaskBatExt = Field(str, CSV_EXTS, is_ext=True)
 ClustTabExt = Field(str, CSV_EXTS, is_ext=True)
@@ -382,7 +395,6 @@ REACTS = "reacts"
 GRAPH = "graph"
 EXT = "ext"
 
-
 # Directory segments
 
 TopSeg = Segment("top-dir", {TOP: TopField}, order=-1)
@@ -392,7 +404,6 @@ StepSeg = Segment("step-dir", {STEP: StepField}, order=40)
 RefSeg = Segment("ref-dir", {REF: NameField}, order=30)
 SectSeg = Segment("section-dir", {SECT: NameField}, order=20)
 FoldSectSeg = Segment("fold-section-dir", {FOLD_SECT: NameField}, order=10)
-
 
 # File segments
 
@@ -412,17 +423,23 @@ DmFastq2Seg = Segment("dm-fastq2", {REF: NameField, EXT: Fastq2Ext})
 
 # Alignment
 XamSeg = Segment("xam", {REF: NameField, EXT: XamExt})
-AlignRepSeg = Segment("align-rep", {EXT: ReportExt}, frmt="report-align{ext}")
+AlignRepSeg = Segment("align-rep", {EXT: ReportExt}, frmt="align-report{ext}")
 
 # Relation Vectors
-RelateBatSeg = Segment("rel-bat", {BATCH: IntField, EXT: RelVecBatExt},
-                       frmt="batch-relate-{batch}{ext}")
-RelateRepSeg = Segment("rel-rep", {EXT: ReportExt}, frmt="report-relate{ext}")
+RefseqFileSeg = Segment("refseq-file", {EXT: RefseqFileExt}, frmt="refseq{ext}")
+QnamesBatSeg = Segment("name-bat",
+                       {BATCH: IntField, EXT: QnamesBatExt},
+                       frmt="qnames-batch-{batch}{ext}")
+RelateBatSeg = Segment("rel-bat",
+                       {BATCH: IntField, EXT: RelVecBatExt},
+                       frmt="relate-batch-{batch}{ext}")
+RelateRepSeg = Segment("rel-rep", {EXT: ReportExt}, frmt="relate-report{ext}")
 
 # Masking
-MaskBatSeg = Segment("mask-bat", {BATCH: IntField, EXT: MaskBatExt},
-                     frmt="batch-mask-{batch}{ext}")
-MaskRepSeg = Segment("mask-rep", {EXT: ReportExt}, frmt="report-mask{ext}")
+MaskBatSeg = Segment("mask-bat",
+                     {BATCH: IntField, EXT: MaskBatExt},
+                     frmt="mask-batch-{batch}{ext}")
+MaskRepSeg = Segment("mask-rep", {EXT: ReportExt}, frmt="mask-report{ext}")
 
 # Clustering
 ClustTabSeg = Segment("clust-tab", {TABLE: ClustTabField,
@@ -431,13 +448,13 @@ ClustTabSeg = Segment("clust-tab", {TABLE: ClustTabField,
                                     EXT: ClustTabExt},
                       frmt="{table}-k{k}-r{run}{ext}")
 ClustCountSeg = Segment("clust-count", {EXT: ClustCountExt}, frmt="counts{ext}")
-ClustBatSeg = Segment("clust-bat", {BATCH: IntField, EXT: ClustBatExt},
-                      frmt="batch-cluster-{batch}{ext}")
-ClustRepSeg = Segment("clust-rep", {EXT: ReportExt},
-                      frmt="report-cluster{ext}")
+ClustBatSeg = Segment("clust-bat",
+                      {BATCH: IntField, EXT: ClustBatExt},
+                      frmt="cluster-batch-{batch}{ext}")
+ClustRepSeg = Segment("clust-rep", {EXT: ReportExt}, frmt="cluster-report{ext}")
 
 # Tabulation
-TableSeg = Segment("mut-tab", {TABLE: CountTabField, EXT: MutTabExt})
+TableSeg = Segment("table", {TABLE: CountTabField, EXT: MutTabExt})
 
 # RNA Structure Formats
 ConnectTableSeg = Segment("rna-ct", {STRUCT: NameField, EXT: ConnectTableExt})
@@ -448,7 +465,6 @@ VarnaColorSeg = Segment("varna-color", {REACTS: NameField, EXT: TextExt},
 
 # Graphs
 GraphSeg = Segment("graph", {GRAPH: NameField, EXT: GraphExt})
-
 
 # Path segment patterns
 
@@ -626,3 +642,24 @@ def find_files_chain(paths: Iterable[pl.Path], segments: Sequence[Segment]):
             logger.error(f"Path does not exist: {path}")
         except Exception as error:
             logger.error(f"Failed search for {path}: {error}")
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

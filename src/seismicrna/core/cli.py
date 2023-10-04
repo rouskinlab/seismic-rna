@@ -12,6 +12,7 @@ import os
 
 from click import Argument, Choice, Option, Parameter, Path
 
+from .files import DEFAULT_BROTLI_LEVEL
 from .seq import DNA
 
 # System information
@@ -20,7 +21,6 @@ if (NUM_CPUS := os.cpu_count()) is None:
     logging.warning("Failed to determine CPU count: defaulting to 1")
     NUM_CPUS = 1
 
-DEFAULT_PHRED_ENC = 33
 DEFAULT_MIN_PHRED = 25
 
 BOWTIE2_ORIENT_FR = "fr"
@@ -77,10 +77,10 @@ opt_save_temp = Option(
 
 # Resource usage options
 opt_parallel = Option(
-    ("--parallel/--no-parallel",),
+    ("--parallel/--serial",),
     type=bool,
     default=True,
-    help="Whether to run multiple tasks in parallel")
+    help="Whether to process input files in parallel or in series")
 
 opt_max_procs = Option(
     ("--max-procs",),
@@ -95,12 +95,6 @@ opt_sections_file = Option(
     type=Path(dir_okay=False),
     default="",
     help="CSV file of sections by name, reference, and coordinates/primers")
-
-opt_samples = Option(
-    ("--samples", "-S"),
-    type=Path(dir_okay=False),
-    default="",
-    help="Samples file")
 
 opt_rerun = Option(
     ("--rerun/--no-rerun",),
@@ -130,12 +124,12 @@ opt_fastqp = Option(
     default=(),
     help="FASTQ files of paired-end reads separated into 2 files")
 
-# Sequencing read (FASTQ/BAM) options
+# Sequencing read (FASTQ/XAM) options
 opt_phred_enc = Option(
     ("--phred-enc",),
     type=int,
-    default=DEFAULT_PHRED_ENC,
-    help="Phred score encoding in FASTQ/SAM/BAM files")
+    default=33,
+    help="Phred score encoding in FASTQ and SAM/BAM/CRAM files")
 
 opt_min_phred = Option(
     ("--min-phred",),
@@ -432,6 +426,14 @@ opt_min_mapq = Option(
     help="Ignore alignments whose mapping quality is less than this number",
 )
 
+opt_cram = Option(
+    ("--cram/--bam",),
+    type=bool,
+    default=True,
+    help="Output alignment maps in BAM or CRAM format. BAM format has faster "
+         "read/write speeds, while CRAM format yields smaller files."
+)
+
 # Reference section specification options
 opt_coords = Option(
     ("--coords", "-c"),
@@ -478,6 +480,14 @@ opt_ambrel = Option(
     help=("Whether to find and label all ambiguous "
           "insertions and deletions (improves accuracy "
           "but runs slower)"))
+
+opt_brotli_level = Option(
+    ("--brotli-level",),
+    type=int,
+    default=DEFAULT_BROTLI_LEVEL,
+    help=("Compression level for brotli: 0 (fastest, but worst compression) "
+          "to 11 (best compression, but slowest)")
+)
 
 # Mask
 
@@ -684,6 +694,28 @@ opt_pdf = Option(
     type=bool,
     help="Whether to output each graph as a PDF file")
 
+
+# Export
+
+opt_samples_file = Option(
+    ("--samples-file", "-S"),
+    type=Path(dir_okay=False),
+    default="",
+    help="CSV file of metadata for each sample")
+
+opt_refs_file = Option(
+    ("--refs-file", "-R"),
+    type=Path(dir_okay=False),
+    default="",
+    help="CSV file of metadata for each reference")
+
+opt_beautify = Option(
+    ("--beautify/--no-beautify",),
+    default=True,
+    type=bool,
+    help="Whether to beautify JSON files",
+)
+
 # Logging options
 opt_verbose = Option(
     ("--verbose", "-v"),
@@ -719,3 +751,24 @@ def merge_params(*param_lists: list[Parameter]):
                 params.append(param)
                 names.add(param.name)
     return params
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from .mu import calc_f_obs_df
-from .rel import NP_TYPE
+from .rel import REL_TYPE
 from .sect import Section
 
 logger = getLogger(__name__)
@@ -98,7 +98,7 @@ class UniqMutBits(object):
         """ Return the unique bit vectors as byte strings. """
         # Get the full boolean matrix of the unique bit vectors and cast
         # the data from boolean to unsigned 8-bit integer type.
-        chars = self.get_full().astype(NP_TYPE, copy=False)
+        chars = self.get_full().astype(REL_TYPE, copy=False)
         if chars.size > 0:
             # Add ord('0') to transform every 0 into b'0' and every 1
             # into # b'1', and convert each row (bit vector) into a
@@ -111,7 +111,7 @@ class UniqMutBits(object):
         return pd.Index(names, name=BIT_VECTOR_NAME)
 
     def __eq__(self, other):
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, type(self)):
             return NotImplemented
         return (self.n_pos == other.n_pos
                 and np.array_equal(self.counts, other.counts)
@@ -687,3 +687,24 @@ def iter_all_bit_vectors(mu: pd.Series, section: Section, min_mut_gap: int):
                                   sub=((lambda: [(base_bits, base_logp)])
                                        if bvs is None else bvs.iter))
     return iter(bvs.iter() if bvs is not None else list())
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

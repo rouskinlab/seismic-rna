@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from .bitvect import BitBatch
-from .rel import MATCH, DELET, INS_5, INS_3, SUB_A, SUB_C, SUB_G, SUB_T, NP_TYPE
+from .rel import MATCH, DELET, INS_5, INS_3, SUB_A, SUB_C, SUB_G, SUB_T, REL_TYPE
 from .sect import Section, index_to_seq
 from .seq import DNA, BASEA, BASEC, BASEG, BASET
 
@@ -144,7 +144,7 @@ class SemiBitCaller(object):
     def __init__(self, *codes: str):
         # Compile the codes into a query.
         self.queries = self.compile(codes)
-        logger.debug(f"Instantiated new {self.__class__.__name__}"
+        logger.debug(f"Instantiated new {type(self).__name__}"
                      f"From: {codes}\nTo: {self.queries}")
 
     @cache
@@ -152,7 +152,7 @@ class SemiBitCaller(object):
         """ Convert the query dictionary into an array with one element
         per position in the sequence. """
         # Initialize an empty query array: one element per base in seq.
-        query = np.zeros(len(seq), dtype=NP_TYPE)
+        query = np.zeros(len(seq), dtype=REL_TYPE)
         # Set the elements of the query array for each type of ref base.
         for ref_base, ref_query in self.queries.items():
             # Locate all elements of seq with the given type of ref base
@@ -195,7 +195,7 @@ class SemiBitCaller(object):
     def to_report_format(self):
         """ Return the types of counted mutations as a list. """
         codes = list(self.decompile(self.queries))
-        logger.debug(f"Decompiled query for {self.__class__.__name__}"
+        logger.debug(f"Decompiled query for {type(self).__name__}"
                      f"From: {self.queries}\nTo: {codes}")
         return codes
 
@@ -279,7 +279,7 @@ class SemiBitCaller(object):
         return cls._junction(set.intersection, *callers)
 
     def __str__(self):
-        return f"{self.__class__.__name__} {self.to_report_format()}"
+        return f"{type(self).__name__} {self.to_report_format()}"
 
 
 class BitCaller(object):
@@ -367,4 +367,25 @@ class BitCaller(object):
         return cls._junction(SemiBitCaller.inter, *callers, **kwargs)
 
     def __str__(self):
-        return f"{self.__class__.__name__} +{self.affi_call} -{self.anti_call}"
+        return f"{type(self).__name__} +{self.affi_call} -{self.anti_call}"
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

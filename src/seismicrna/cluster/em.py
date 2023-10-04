@@ -9,7 +9,7 @@ from scipy.stats import dirichlet
 from .names import CLS_NAME
 from ..core.bitvect import UniqMutBits, iter_all_bit_vectors
 from ..core.mu import calc_mu_adj_numpy, calc_f_obs_numpy
-from ..core.sim import rng
+from ..core.rand import rng
 from ..mask.load import MaskLoader
 
 logger = getLogger(__name__)
@@ -94,7 +94,7 @@ class EmClustering(object):
             convergence threshold (and at least min_iter iterations have
             run). Must be a positive real number (ideally close to 0).
         """
-        # Filter loader
+        # Mask loader
         self.loader = loader
         # Unique bit vectors of mutations
         self.muts = muts
@@ -484,3 +484,24 @@ class EmClustering(object):
 
     def __str__(self):
         return f"Clustering {self.loader} to order {self.order}"
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################
