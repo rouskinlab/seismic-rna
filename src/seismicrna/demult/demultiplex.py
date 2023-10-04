@@ -1136,3 +1136,4 @@ def demultiplex_run(sections_file_csv, demulti_workspace, report_folder, fq_unit
     create_report(sequence_objects, mixed_fastq1, mixed_fastq2, report_folder, unioned_sets_dictionary)
 
     return (), (), (report_folder + sample_name + "/",)
+
