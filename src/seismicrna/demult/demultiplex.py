@@ -1058,7 +1058,6 @@ def demultiplex_run(sections_file_csv, demulti_workspace, report_folder, fq_unit
     seq_data_folder = temp_ws + "sequence_data/"
 
     os.makedirs(seq_data_folder, exist_ok=True)
-    return (), (), (report_folder + sample_name,)
     sequence_objects = make_sequence_objects_from_csv(
         input_csv=sections_file_csv,
         barcode_start=barcode_start,
