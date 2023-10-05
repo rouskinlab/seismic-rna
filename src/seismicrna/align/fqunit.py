@@ -227,7 +227,9 @@ class FastqUnit(object):
     def _from_mates(cls, /, *, phred_enc: int, one_ref: bool,
                     fqs: list[Path]):
         # Determine the key and segments based on whether the FASTQs are
-        # demultiplexed.
+        # demultiplexed
+        #print(f"one ref: {one_ref}")
+
         if one_ref:
             seg1s = path.DMFASTQ1_SEGS
             seg2s = path.DMFASTQ2_SEGS
@@ -235,23 +237,32 @@ class FastqUnit(object):
             seg1s = path.FASTQ1_SEGS
             seg2s = path.FASTQ2_SEGS
         # List all FASTQ mate 1 and mate 2 files.
-        fq1s = path.find_files_chain(fqs, seg1s)
-        fq2s = path.find_files_chain(fqs, seg2s)
-
+        fq1s = list(path.find_files_chain(fqs, seg1s))
+        fq2s = list(path.find_files_chain(fqs, seg2s))
+        #print(len(fq1s))
+        print()
+        #print(len(fq2s))
         # Determine the sample and/or reference name of each file.
-        def by_tag(fqs_: list[Path], segs: list[path.Segment]):
+        def by_tag(fqs_: list[Path], segs: list[path.Segment],check_=False):
             tags: dict[tuple[str, str | None], Path] = dict()
+            
             for fq in fqs_:
+                #print(str(fq))
                 fields = path.parse(fq, *segs)
                 tag_ = fields[path.SAMP], fields.get(path.REF)
+                #if(check_):
+                    #print(tags)
                 if tag_ in tags:
                     logger.warning(f"Duplicate sample and reference: {tag_}")
+                    print(tags[tag_])
+                    print(fq)
                 else:
                     tags[tag_] = fq
             return tags
-
+        #print("tag1")
         tag1s = by_tag(fq1s, seg1s)
-        tag2s = by_tag(fq2s, seg2s)
+        #print("tag2")
+        tag2s = by_tag(fq2s, seg2s,True)
         # Check for any mates with only one file.
         set1s, set2s = set(tag1s), set(tag2s)
         if miss1 := set2s - set1s:

@@ -152,7 +152,9 @@ def run(*,
     """ Run entire pipeline. """
     # Demultiplexing
     if demult_on:
-        for dms, dmi, dmm in demultiplex_mod.run(
+
+        dmfastqp=demultiplex_mod.run(
+            
                 fasta=fasta,
                 sections_file=sections_file,
                 out_dir=out_dir,
@@ -164,12 +166,18 @@ def run(*,
                 mismatch_tolerence=mismatch_tolerence,
                 parallel_demultiplexing=parallel_demultiplexing,
                 barcode_start=barcode_start,
+                save_temp=save_temp,
                 barcode_length=barcode_length,
-                phred_enc=phred_enc):
-            dmfastqs = dmfastqs + dms
-            dmfastqi = dmfastqi + dmi
-            dmfastqp = dmfastqp + dmm
+                phred_enc=phred_enc)[0][2]
+        fastqp=tuple()
+        fastqs=tuple()
+        fastqi=tuple()
+        print(dmfastqp)
+
+            #print(f"dms: {dms}\ndmi: {dmi}\ndmm: {dmm}")
+
     # Alignment
+    print(f"inputPath: {input_path}")
     input_path += tuple(map(str, align_mod.run(
         out_dir=out_dir,
         temp_dir=temp_dir,

@@ -429,6 +429,7 @@ def figure_alignments(fq_units: list[FastqUnit], refs: set[str]):
     alignments: dict[tuple[str, str], FastqUnit] = dict()
     # Keep track of any duplicate sample-reference pairs.
     duplicates: set[tuple[str, str]] = set()
+    
     for fq_unit in fq_units:
         # Determine which references the FASTQ reads could come from.
         if fq_unit.ref is None:
@@ -442,7 +443,9 @@ def figure_alignments(fq_units: list[FastqUnit], refs: set[str]):
                 continue
             fq_refs = [fq_unit.ref]
         # Add each sample-reference pair to the expected alignments.
+        #print(len(fq_refs))
         for ref in fq_refs:
+            #print(f"ref:    {ref}")
             sample_ref = fq_unit.sample, ref
             if sample_ref in duplicates:
                 # Skip the sample-reference pair if it is a duplicate.
@@ -458,6 +461,7 @@ def figure_alignments(fq_units: list[FastqUnit], refs: set[str]):
             else:
                 # If so, then flag it as a duplicate.
                 logger.warning(f"Duplicate sample and reference: {sample_ref}")
+                print(fq_unit)
                 duplicates.add(sample_ref)
     # Return a duplicate-free dict of alignments.
     return alignments
