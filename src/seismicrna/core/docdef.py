@@ -3,7 +3,7 @@ from inspect import getmembers, Parameter, Signature
 from textwrap import dedent
 from typing import Any, Callable
 
-from click import Option
+from click import Argument, Option
 
 from ..core import cli
 
@@ -11,18 +11,18 @@ from ..core import cli
 # Ignore special parameters with reserved names.
 reserved_params = "self", "cls"
 
-# Get every option defined for the command line interface.
+# Get every parameter defined for the command line interface.
+cli_args = dict(getmembers(cli, lambda member: isinstance(member, Argument)))
 cli_options = dict(getmembers(cli, lambda member: isinstance(member, Option)))
 
 # Get the default value for every parameter.
-api_defs = {
-    "n_procs": cli.NUM_CPUS,
-}
-cli_defs = {option.name: option.default for option in cli_options.values()
-            if option.default is not None}
-all_defs = {**cli_defs, **api_defs}
+api_defs = {"n_procs": cli.NUM_CPUS}
+cli_defs = {param.name: param.default
+            for param in (cli_args | cli_options).values()
+            if param.default is not None}
+all_defs = cli_defs | api_defs
 
-# Get the documentation for every CLI parameter.
+# Get the documentation for every CLI option.
 cli_docs = {option.name: option.help for option in cli_options.values()}
 
 
@@ -38,7 +38,7 @@ def get_param_default(param: Parameter,
         default = defaults[param.name]
     except KeyError:
         return param
-    # Return copy of parameter with new default value.
+    # Return a copy of the parameter with a new default value.
     return param.replace(default=default)
 
 
@@ -79,8 +79,7 @@ def autodef(extra_defs: dict[str, Any] | None = None,
     """ Call `paramdef` and automatically infer default values from
     the CLI and API. Extra defaults (if needed) may be given as keyword
     arguments. """
-    return paramdef(all_defs if extra_defs is None
-                    else {**all_defs, **extra_defs},
+    return paramdef(all_defs if extra_defs is None else all_defs | extra_defs,
                     exclude_defs)
 
 
@@ -170,8 +169,7 @@ def autodoc(extra_docs: dict[str, str] | None = None, return_doc: str = ""):
     """ Call `paramdoc` and automatically infer descriptions and
     type annotations about all parameters from the CLI and API.
     Documentation of any extra parameters may also be given. """
-    return paramdoc((cli_docs if extra_docs is None
-                     else {**cli_docs, **extra_docs}),
+    return paramdoc(cli_docs if extra_docs is None else cli_docs | extra_docs,
                     return_doc)
 
 

@@ -250,10 +250,10 @@ RefseqFileExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
 QnamesBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
 RelVecBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
 MaskRepExt = Field(str, [JSON_EXT], is_ext=True)
-MaskBatExt = Field(str, CSV_EXTS, is_ext=True)
+MaskBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
 ClustTabExt = Field(str, CSV_EXTS, is_ext=True)
 ClustCountExt = Field(str, CSV_EXTS, is_ext=True)
-ClustBatExt = Field(str, CSV_EXTS, is_ext=True)
+ClustBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
 MutTabExt = Field(str, CSV_EXTS, is_ext=True)
 FastaExt = Field(str, FASTA_EXTS, is_ext=True)
 FastaIndexExt = Field(str, BOWTIE2_INDEX_EXTS, is_ext=True)
@@ -509,7 +509,6 @@ class Path(object):
     def build(self, **fields: Any):
         """ Return a `pathlib.Path` instance by assembling the given
         `fields` into a full path. """
-        fstr = str(fields)
         # Build the new path one segment at a time.
         segments = list()
         for seg_type in self.seg_types:
@@ -531,8 +530,6 @@ class Path(object):
                                  f"fields {exp} for segment types {segs}")
         # Assemble the segment strings into a path, and return it.
         path = pl.Path(*segments)
-        logger.debug(f"Built path: {fstr} + {tuple(map(str, self.seg_types))} "
-                     f"-> {path}")
         return path
 
     def parse(self, path: str | pl.Path):
@@ -558,8 +555,6 @@ class Path(object):
             # Parse the deepest part of the path to obtain the fields,
             # and use them to update the field names and values.
             fields.update(seg_type.parse(tail))
-        logger.debug(f"Parsed path: {path}, {tuple(map(str, self.seg_types))} "
-                     f"-> {fields}")
         return fields
 
 
@@ -594,6 +589,17 @@ def buildpar(*segment_types: Segment, **field_values: Any):
 
 
 # Path parsing routines
+
+def deduplicated(paths: Iterable[str | pl.Path]):
+    """ Yield the non-redundant paths. """
+    seen = set()
+    for path in paths:
+        if (pathstr := str(path)) in seen:
+            logger.warning(f"Duplicate path: {path}")
+        else:
+            seen.add(pathstr)
+            yield path
+
 
 def parse(path: str | pl.Path, /, *segment_types: Segment):
     """ Return the fields of a path given as a `str` based on the
@@ -633,9 +639,7 @@ def find_files(path: pl.Path, segments: Sequence[Segment]):
 
 def find_files_chain(paths: Iterable[pl.Path], segments: Sequence[Segment]):
     """ Yield from `find_files` called on every path in `paths`. """
-    for path, count in Counter(paths).items():
-        if count > 1:
-            logger.warning(f"Path {path} was given {count} times")
+    for path in deduplicated(paths):
         try:
             yield from find_files(path, segments)
         except FileNotFoundError:

@@ -8,19 +8,22 @@ Core -- Bit Caller Module
 
 from __future__ import annotations
 
-from functools import cache, reduce
+import re
+from functools import reduce
 from itertools import product
 from logging import getLogger
-import re
 from typing import Callable, Iterable
 
-import numpy as np
-import pandas as pd
-
-from .bitvect import BitBatch
-from .rel import MATCH, DELET, INS_5, INS_3, SUB_A, SUB_C, SUB_G, SUB_T, REL_TYPE
-from .sect import Section, index_to_seq
-from .seq import DNA, BASEA, BASEC, BASEG, BASET
+from .rel import (MATCH,
+                  DELET,
+                  INS_5,
+                  INS_3,
+                  SUB_A,
+                  SUB_C,
+                  SUB_G,
+                  SUB_T,
+                  REL_TYPE)
+from .seq import DNA
 
 logger = getLogger(__name__)
 
@@ -28,13 +31,10 @@ READ_DEL = "D"
 READ_INS = "I"
 
 
-class SemiBitCaller(object):
-    """ Convert relation vectors (whose elements are 8-bit values that
-    indicate the possible relationships between a read and a reference)
-    into bit vectors (whose elements are boolean values that indicate
-    whether positions are mutations or matches). """
+class HalfRelPattern(object):
+    """ """
 
-    ref_bases = "".join((BASEA, BASEC, BASEG, BASET))
+    ref_bases = "".join(DNA.four())
     read_bases = "".join((ref_bases, READ_DEL, READ_INS))
     mut_bits = bytes([SUB_A, SUB_C, SUB_G, SUB_T, DELET, INS_5 | INS_3])
     fmt_plain = "{}{}"
@@ -94,8 +94,8 @@ class SemiBitCaller(object):
     def compile(cls, codes: Iterable[str]):
         """
         Given one or more codes in plain or fancy format, return a dict
-        that maps each reference base to a query byte that will match
-        all and only the codes given for that reference base.
+        that maps each reference base to a pattern that will match all
+        and only the codes given for that reference base.
 
         This function is the inverse of `cls.decompile`.
         """
@@ -117,87 +117,29 @@ class SemiBitCaller(object):
         return queries
 
     @classmethod
-    def decompile(cls, queries: dict[str, int]):
+    def decompile(cls, patterns: dict[str, int]):
         """
-        For each reference base and its one-byte query, yield all codes
-        that the query will count.
+        For each reference base and its one-byte pattern, yield all
+        codes that the pattern will count.
 
         This function is the inverse of `cls.compile`.
         """
-        # Check each query byte.
-        for ref, query in queries.items():
+        # Check each pattern.
+        for ref, pattern in patterns.items():
             if ref not in cls.ref_bases:
                 raise ValueError(f"Invalid reference base: '{ref}'")
-            if query & MATCH:
-                # The query byte has its match bit set to 1, so the code
+            if pattern & MATCH:
+                # The pattern has its match bit set to 1, so the code
                 # in which this ref base matches the read base counts.
                 yield cls.as_fancy(f"{ref}{ref}")
-            # For each mutation bit, check whether the query has the bit
+            # For each mutation bit, check whether the pattern has the bit
             # set to 1.
             for mut_bit, read in zip(cls.mut_bits, cls.read_bases, strict=True):
-                if query & mut_bit:
-                    # If the mutation bit is set to 1 in the query byte,
+                if pattern & mut_bit:
+                    # If the mutation bit is set to 1 in the pattern,
                     # then the code where the ref base becomes the read
                     # base (or deletion/insertion) counts.
                     yield cls.as_fancy(f"{ref}{read}")
-
-    def __init__(self, *codes: str):
-        # Compile the codes into a query.
-        self.queries = self.compile(codes)
-        logger.debug(f"Instantiated new {type(self).__name__}"
-                     f"From: {codes}\nTo: {self.queries}")
-
-    @cache
-    def seq_query(self, seq: DNA):
-        """ Convert the query dictionary into an array with one element
-        per position in the sequence. """
-        # Initialize an empty query array: one element per base in seq.
-        query = np.zeros(len(seq), dtype=REL_TYPE)
-        # Set the elements of the query array for each type of ref base.
-        for ref_base, ref_query in self.queries.items():
-            # Locate all elements of seq with the given type of ref base
-            # and set the corresponding positions in query to the query
-            # byte for the ref base.
-            query[np.equal(seq.to_array(), ref_base)] = ref_query
-        return query
-
-    def call(self, relvecs: pd.DataFrame) -> pd.DataFrame:
-        """
-        Query the given relation vectors. Return a boolean DataFrame
-        indicating which elements of relation vectors matched the query.
-
-        Parameters
-        ----------
-        relvecs: DataFrame
-            Relation vectors
-
-        Returns
-        -------
-        DataFrame
-            Boolean DataFrame of the same shape as mut_vectors wherein
-            element i,j is True if element i,j of mut_vectors matches
-            the query, otherwise False.
-        """
-        # Get the query array for the sequence of the relation vectors.
-        query = self.seq_query(index_to_seq(relvecs.columns, allow_gaps=True))
-        # Determine whether each element of the relation vectors counts
-        # given the query. A byte counts if and only if it equals or is
-        # a bitwise subset of the query byte. This check is implemented
-        # by computing the bitwise OR of the query byte and the byte in
-        # the relation vector. The bitwise OR will equal the query byte
-        # if the relation vector byte is a bitwise subset of the query.
-        # If not, it will have bits set to 1 that are not in the query.
-        bits = np.equal(query, np.bitwise_or(relvecs, query))
-        logger.debug(f"Queried relation vectors\n{relvecs}\nwith\n{query}\n"
-                     f"and returned\n{bits}")
-        return bits
-
-    def to_report_format(self):
-        """ Return the types of counted mutations as a list. """
-        codes = list(self.decompile(self.queries))
-        logger.debug(f"Decompiled query for {type(self).__name__}"
-                     f"From: {self.queries}\nTo: {codes}")
-        return codes
 
     @classmethod
     def from_report_format(cls, mut_codes: Iterable[str]):
@@ -232,8 +174,8 @@ class SemiBitCaller(object):
 
         Returns
         -------
-        SemiBitCaller
-            New SemiBitCaller instance that counts the specified bytes.
+        HalfRelPattern
+            New HalfRefPattern instance that counts the specified bytes.
         """
         codes: set[str] = set()
         if count_ref:
@@ -259,7 +201,7 @@ class SemiBitCaller(object):
         return cls(*codes)
 
     @classmethod
-    def _junction(cls, operation: Callable, *callers: SemiBitCaller):
+    def _junction(cls, operation: Callable, *callers: HalfRelPattern):
         """ Return the union or intersection of SemiBitCallers. """
         if not callers:
             # No callers were given.
@@ -269,105 +211,100 @@ class SemiBitCaller(object):
                                                           callers))))
 
     @classmethod
-    def union(cls, *callers: SemiBitCaller):
+    def union(cls, *callers: HalfRelPattern):
         """ Return the union of SemiBitCallers. """
         return cls._junction(set.union, *callers)
 
     @classmethod
-    def inter(cls, *callers: SemiBitCaller):
+    def inter(cls, *callers: HalfRelPattern):
         """ Return the intersection of SemiBitCallers. """
         return cls._junction(set.intersection, *callers)
+
+    def __init__(self, *codes: str):
+        # Compile the codes into patterns.
+        self.patterns = self.compile(codes)
+        logger.debug(f"Instantiated new {type(self).__name__}"
+                     f"From: {codes}\nTo: {self.patterns}")
+
+    def fits(self, base: str, rel: int):
+        """ Test whether a relationship code fits the pattern. """
+        return ((pattern := self.patterns.get(base)) is not None
+                and (REL_TYPE(rel) | pattern) == pattern)
+
+    def to_report_format(self):
+        """ Return the types of counted relationships as a list. """
+        codes = list(self.decompile(self.patterns))
+        logger.debug(f"Decompiled query for {type(self).__name__}"
+                     f"From: {self.patterns}\nTo: {codes}")
+        return codes
 
     def __str__(self):
         return f"{type(self).__name__} {self.to_report_format()}"
 
 
-class BitCaller(object):
-    def __init__(self, section: Section,
-                 affi_call: SemiBitCaller,
-                 anti_call: SemiBitCaller):
-        self.section = section
-        self.affi_call = affi_call
-        self.anti_call = anti_call
-
-    def call(self, relvecs: pd.DataFrame,
-             masks: dict[str, Callable[[BitBatch], pd.Index]] | None = None):
-        # Using each SemiBitCaller, determine which elements match the
-        # reference sequence and which are mutated.
-        anti = self.anti_call.call(relvecs)
-        affi = self.affi_call.call(relvecs)
-        # Determine which positions are informative, which means that
-        # they are unambiguously either affirmative or anti-affirmative.
-        # This condition is an exclusive or (XOR).
-        info: pd.DataFrame = np.logical_xor(affi, anti)
-        # For every uninformative element in info (i.e. which is False),
-        # mask the element of affi at the same coordinate to False.
-        affi: pd.DataFrame = np.logical_and(affi, info)
-        # Create a BitBatch from the data, and optionally mask reads.
-        return BitBatch(self.section, info, affi, masks)
-
-    def iter(self, rv_batches: Iterable[pd.DataFrame],
-             masks: dict[str, Callable[[BitBatch], pd.Index]] | None = None):
-        """ Run `self.call()` on each batch and yield the result. """
-        for batch in rv_batches:
-            yield self.call(batch, masks)
+class RelPattern(object):
 
     @classmethod
-    def from_counts(cls, section: Section,
+    def from_counts(cls,
                     count_del: bool = False,
                     count_ins: bool = False,
                     discount: Iterable[str] = ()):
         """ Return a new BitCaller by specifying which general types of
         mutations are to be counted, with optional ones to discount. """
         discount = list(discount)
-        return cls(section=section,
-                   affi_call=SemiBitCaller.from_counts(count_sub=True,
-                                                       count_del=count_del,
-                                                       count_ins=count_ins,
-                                                       discount=discount),
-                   anti_call=SemiBitCaller.from_counts(count_ref=True,
-                                                       discount=discount))
+        return cls(yes=HalfRelPattern.from_counts(count_sub=True,
+                                                  count_del=count_del,
+                                                  count_ins=count_ins,
+                                                  discount=discount),
+                   nos=HalfRelPattern.from_counts(count_ref=True,
+                                                  discount=discount))
 
     @classmethod
-    def _junction(cls, operation: Callable, *callers: BitCaller,
-                  merge: bool = False, invert: bool = False):
+    def _junction(cls,
+                  operation: Callable,
+                  *callers: RelPattern,
+                  merge: bool = False,
+                  invert: bool = False):
         """ Return the union or intersection of BitCallers. """
         # Confirm that at least one bit caller was given: the junction
         # of 0 BitCallers is undefined.
-        try:
-            section = callers[0].section
-        except IndexError:
-            raise ValueError("Junction of 0 bit callers is undefined")
-        # Confirm that the sections of all bit callers match.
-        if any(caller.section != section for caller in callers[1:]):
-            raise ValueError("Sections of bit callers do not all match")
         if merge:
-            # Merge all anti-affirmative bits into the affirmative bits.
-            affi_call = (SemiBitCaller.union(caller.anti_call, caller.affi_call)
-                         for caller in callers)
-            # Erase the anti-affirmative bits.
-            anti_call = ()
+            # Merge all yes half-patterns.
+            yes = (HalfRelPattern.union(pattern.nos, pattern.yes)
+                   for pattern in callers)
+            # Erase the nos half-patterns.
+            nos = ()
         else:
             # Gather all affirmative and anti-affirmative semi-callers.
-            affi_call = (caller.affi_call for caller in callers)
-            anti_call = (caller.anti_call for caller in callers)
+            yes = (caller.yes for caller in callers)
+            nos = (caller.nos for caller in callers)
         if invert:
             # Invert the affirmative and anti-affirmative conditions.
-            affi_call, anti_call = anti_call, affi_call
-        return cls(section, operation(*affi_call), operation(*anti_call))
+            yes, nos = nos, yes
+        return cls(operation(*yes), operation(*nos))
 
     @classmethod
-    def union(cls, *callers: BitCaller, **kwargs):
+    def union(cls, *callers: RelPattern, **kwargs):
         """ Return the union of BitCallers. """
-        return cls._junction(SemiBitCaller.union, *callers, **kwargs)
+        return cls._junction(HalfRelPattern.union, *callers, **kwargs)
 
     @classmethod
-    def inter(cls, *callers: BitCaller, **kwargs):
+    def inter(cls, *callers: RelPattern, **kwargs):
         """ Return the intersection of BitCallers. """
-        return cls._junction(SemiBitCaller.inter, *callers, **kwargs)
+        return cls._junction(HalfRelPattern.inter, *callers, **kwargs)
+
+    def __init__(self, yes: HalfRelPattern, nos: HalfRelPattern):
+        self.yes = yes
+        self.nos = nos
+
+    def fits(self, base: str, rel: int):
+        """ """
+        is_yes = self.yes.fits(base, rel)
+        is_nos = self.nos.fits(base, rel)
+        return is_yes != is_nos, is_yes
 
     def __str__(self):
-        return f"{type(self).__name__} +{self.affi_call} -{self.anti_call}"
+        return f"{type(self).__name__} +{self.yes} -{self.nos}"
 
 ########################################################################
 #                                                                      #

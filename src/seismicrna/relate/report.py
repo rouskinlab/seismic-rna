@@ -4,28 +4,38 @@ from functools import cache
 from logging import getLogger
 from pathlib import Path
 
-from .batch import QnamesBatch, RelateBatch, RelateOutput
+from .files import QnamesBatchFile, RelateBatchFile, RelateFile
 from ..core import path
 from ..core.cmd import CMD_REL
-from ..core.report import (BatchReport,
+from ..core.report import (RefBatchReport,
                            calc_speed,
-                           calc_taken, RefF, SampleF)
+                           calc_taken,
+                           RefF,
+                           SampleF,
+                           NumReadsRel,
+                           TimeBeganF,
+                           TimeEndedF,
+                           TimeTakenF,
+                           SpeedF)
 
 logger = getLogger(__name__)
 
 BATCH_INDEX_COL = "Read Name"
 
 
-class RelateReport(BatchReport, RelateOutput):
+class RelateReport(RefBatchReport, RelateFile):
 
     @classmethod
-    def field_names(cls) -> tuple[str, ...]:
-        return ("sample",
-                "ref",
-                "n_reads_rel") + super().field_names() + ("began",
-                                                          "ended",
-                                                          "taken",
-                                                          "speed")
+    def fields(cls):
+        return [
+            SampleF,
+            RefF,
+            NumReadsRel,
+            TimeBeganF,
+            TimeEndedF,
+            TimeTakenF,
+            SpeedF,
+        ] + super().fields()
 
     @classmethod
     def file_seg_type(cls):
@@ -37,7 +47,7 @@ class RelateReport(BatchReport, RelateOutput):
 
     @classmethod
     def _batch_types(cls):
-        return QnamesBatch, RelateBatch
+        return QnamesBatchFile, RelateBatchFile
 
     def __init__(self, *, taken=calc_taken, speed=calc_speed, **kwargs):
         # Note that the named keyword arguments must come after **kwargs

@@ -11,7 +11,7 @@ from .base import (COVER_REL, DELET_REL, INSRT_REL, MATCH_REL, MUTAT_REL,
                    INFOR_REL, CLUST_INDEX_NAMES, R_ADJ_TITLE, R_OBS_TITLE,
                    READ_TITLE, REL_NAME, REL_CODES, TABLE_RELS)
 from ..cluster.load import ClustLoader
-from ..core.bitcall import BitCaller, SemiBitCaller
+from ..core.pattern import RelPattern, HalfRelPattern
 from ..core.bitvect import BitCounter, ClustBitCounter
 from ..core.mu import calc_f_obs_series, calc_mu_adj_series
 from ..core.sect import Section, INDEX_NAMES
@@ -148,7 +148,7 @@ class RelTabulator(EnsembleTabulator):
         bit_counts = dict()
         for name, bit_caller, kwargs in self.iter_bit_callers():
             if kwargs:
-                bit_caller = BitCaller.inter(bit_caller, **kwargs)
+                bit_caller = RelPattern.inter(bit_caller, **kwargs)
             bit_counts[name] = BitCounter(
                 self.section,
                 bit_caller.iter(self._loader.iter_batches_processed())
@@ -274,25 +274,25 @@ class ClusterTabulator(NullableTabulator):
 
 def iter_mut_semi_callers():
     """ Yield a SemiBitCaller for each type of mutation to tabulate. """
-    yield SUBST_REL, SemiBitCaller.from_counts(count_sub=True)
-    yield SUB_A_REL, SemiBitCaller("ca", "ga", "ta")
-    yield SUB_C_REL, SemiBitCaller("ac", "gc", "tc")
-    yield SUB_G_REL, SemiBitCaller("ag", "cg", "tg")
-    yield SUB_T_REL, SemiBitCaller("at", "ct", "gt")
-    yield DELET_REL, SemiBitCaller.from_counts(count_del=True)
-    yield INSRT_REL, SemiBitCaller.from_counts(count_ins=True)
+    yield SUBST_REL, HalfRelPattern.from_counts(count_sub=True)
+    yield SUB_A_REL, HalfRelPattern("ca", "ga", "ta")
+    yield SUB_C_REL, HalfRelPattern("ac", "gc", "tc")
+    yield SUB_G_REL, HalfRelPattern("ag", "cg", "tg")
+    yield SUB_T_REL, HalfRelPattern("at", "ct", "gt")
+    yield DELET_REL, HalfRelPattern.from_counts(count_del=True)
+    yield INSRT_REL, HalfRelPattern.from_counts(count_ins=True)
 
 
 def _iter_bit_callers(section: Section):
     """ Yield a BitCaller for every type of relationship. """
     # Call reference matches.
-    refc = SemiBitCaller.from_counts(count_ref=True)
+    refc = HalfRelPattern.from_counts(count_ref=True)
     # Call mutations.
-    mutc = SemiBitCaller.from_counts(count_sub=True,
-                                     count_del=True,
-                                     count_ins=True)
+    mutc = HalfRelPattern.from_counts(count_sub=True,
+                                      count_del=True,
+                                      count_ins=True)
     # Create a standard bit caller for all matches and mutations.
-    bitc = BitCaller(section, mutc, refc)
+    bitc = RelPattern(section, mutc, refc)
     # Count all base calls (everything but the bytes 0 and 255).
     yield COVER_REL, bitc, dict(merge=True)
     # Count matches to the reference sequence.
@@ -301,7 +301,7 @@ def _iter_bit_callers(section: Section):
     yield MUTAT_REL, bitc, dict()
     # Count each type of mutation, relative to reference matches.
     for mut, mutc in iter_mut_semi_callers():
-        yield mut, BitCaller(section, mutc, refc), dict()
+        yield mut, RelPattern(section, mutc, refc), dict()
 
 
 def iter_bit_callers(section: Section, rel_codes: str):

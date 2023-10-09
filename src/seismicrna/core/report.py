@@ -17,8 +17,9 @@ import numpy as np
 
 from . import path
 from .batch import Batch
-from .bitcall import SemiBitCaller
-from .files import Output, RefOutput
+from .pattern import HalfRelPattern
+from .files import OutputFile, HasRefFile
+from .version import __version__, check_compatibility
 
 logger = getLogger(__name__)
 
@@ -332,7 +333,7 @@ def oconv_datetime(dtime: datetime):
 
 # General
 VersionF = Field("version",
-                 "Version of SEISMIC",
+                 "Version of SEISMIC-RNA",
                  str,
                  check_val=check_name)
 SampleF = Field("sample",
@@ -473,19 +474,21 @@ ChecksumsF = Field("checksums",
                    check_val=check_checksums)
 RefseqChecksumF = Field("refseq_checksum",
                         "MD5 Checksum of Reference Sequence File",
-                        dict)
+                        str)
 SpeedF = Field("speed", "Speed (reads per minute)", float,
                oconv=get_oconv_float(SPEED_PRECISION))
 
 # Mutation calling
-CountMutsF = Field("count_muts", "Count the Following as Mutations",
-                   SemiBitCaller,
-                   iconv=SemiBitCaller.from_report_format,
-                   oconv=SemiBitCaller.to_report_format)
-CountRefsF = Field("count_refs", "Count the Following as Matches",
-                   SemiBitCaller,
-                   iconv=SemiBitCaller.from_report_format,
-                   oconv=SemiBitCaller.to_report_format)
+CountMutsF = Field("count_muts",
+                   "Count the Following as Mutations",
+                   HalfRelPattern,
+                   iconv=HalfRelPattern.from_report_format,
+                   oconv=HalfRelPattern.to_report_format)
+CountRefsF = Field("count_refs",
+                   "Count the Following as Matches",
+                   HalfRelPattern,
+                   iconv=HalfRelPattern.from_report_format,
+                   oconv=HalfRelPattern.to_report_format)
 
 # Positional filtering
 ExclPolyAF = Field("exclude_polya",
@@ -732,14 +735,20 @@ def lookup_title(title: str) -> Field:
 
 # Report classes
 
-class Report(Output, ABC):
+class Report(OutputFile, ABC):
     """ Abstract base class for a report from a step. """
 
     @classmethod
     @abstractmethod
+    def fields(cls):
+        """ All fields of the report. """
+        return [VersionF]
+
+    @classmethod
+    @cache
     def field_names(cls):
         """ Names of all fields of the report. """
-        return VersionF.key,
+        return [field.key for field in cls.fields()]
 
     @classmethod
     def from_dict(cls, odata: dict[str, Any]):
@@ -784,7 +793,11 @@ class Report(Output, ABC):
 
     def __init__(self, **kwargs: Any | Callable[[Report], Any]):
         for name in self.field_names():
-            value = kwargs.pop(name)
+            if name == VersionF.key:
+                value = kwargs.pop(name, __version__)
+                check_compatibility(value, self)
+            else:
+                value = kwargs.pop(name)
             if callable(value):
                 # If the value of the keyword argument is callable, then
                 # it must accept one argument -- self -- and return the
@@ -795,7 +808,6 @@ class Report(Output, ABC):
             raise ValueError(f"Invalid keywords for {type(self).__name__}: "
                              f"{list(kwargs)}")
 
-    @cache
     def get_field(self, field: Field):
         """ Return the value of a field of the report using the field
         instance directly, not its key. """
@@ -844,20 +856,20 @@ class Report(Output, ABC):
         return self.to_dict() == other.to_dict()
 
 
-class RefseqReport(Report, RefOutput, ABC):
+class RefseqReport(Report, HasRefFile, ABC):
 
     @classmethod
     @abstractmethod
-    def field_names(cls):
-        return super().field_names() + (RefseqChecksumF.key,)
+    def fields(cls):
+        return [RefseqChecksumF] + super().fields()
 
 
 class BatchReport(Report, ABC):
 
     @classmethod
     @abstractmethod
-    def field_names(cls):
-        return super().field_names() + (NumBatchF.key, ChecksumsF.key)
+    def fields(cls):
+        return [NumBatchF, ChecksumsF] + super().fields()
 
     @classmethod
     @abstractmethod

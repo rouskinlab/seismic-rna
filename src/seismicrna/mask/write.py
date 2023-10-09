@@ -2,56 +2,41 @@
 Mask -- Write Module
 """
 
+from collections import defaultdict
 from logging import getLogger
-from pathlib import Path
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
+from .batch import MaskRelsBatch
+from .files import MaskBatchFile
 from .report import MaskReport
-from ..core import path
-from ..core.bitcall import BitCaller
-from ..core.bitvect import BitBatch, BitCounter
+from ..core.batch import count_per_pos, Batch, RelsBatch
+from ..core.cli import opt_brotli_level
+from ..core.pattern import RelPattern
 from ..core.sect import Section, index_to_pos
 from ..relate.load import RelateLoader
 
 logger = getLogger(__name__)
 
 
-def write_batch(read_names: Iterable[str],
-                out_dir: Path,
-                sample: str,
-                ref: str,
-                sect: str,
-                batch: int):
-    """ Write the names of the reads in one batch to a file. """
-    # Determine the path to the batch file.
-    batch_file = MaskReport.build_batch_path(out_dir, batch,
-                                             sample=sample, ref=ref, sect=sect,
-                                             ext=path.CSVZIP_EXT)
-    # Write the read names to the batch file.
-    read_data = pd.Series(read_names)
-    read_data.to_csv(batch_file, index=False)
-    logger.debug(f"Wrote {read_data.size} read names to {batch_file}:\n"
-                 f"{read_data}")
-    # Compute the checksum of the batch file.
-    return digest_file(batch_file)
+class RelMasker(object):
+    """ Mask batches of relation vectors. """
 
-
-class BitMasker(object):
-    """ Mask bit vectors. """
-
+    MASK_READ_INIT = "read-init"
     MASK_READ_FINFO = "read-finfo"
     MASK_READ_FMUT = "read-fmut"
     MASK_READ_GAP = "read-gap"
+    MASK_READ_KEPT = "read-kept"
     MASK_POS_NINFO = "pos-ninfo"
     MASK_POS_FMUT = "pos-fmut"
+    CHECKSUM_KEY = MaskReport.get_batch_type().btype()
 
     def __init__(self,
                  loader: RelateLoader,
                  section: Section,
-                 bit_caller: BitCaller, *,
+                 pattern: RelPattern, *,
                  exclude_polya: int = 0,
                  exclude_gu: bool = False,
                  exclude_pos: Iterable[tuple[str, int]] = (),
@@ -59,16 +44,17 @@ class BitMasker(object):
                  min_finfo_read: float = 0.,
                  max_fmut_read: float = 1.,
                  min_ninfo_pos: int = 0,
-                 max_fmut_pos: float = 1.):
+                 max_fmut_pos: float = 1.,
+                 brotli_level: int = opt_brotli_level.default):
         """
         Parameters
         ----------
         loader: RelateLoader
             Relation vector loader
         section: Section
-            Load this section from the reference
-        bit_caller: BitCaller
-            Bit caller
+            The section over which to mask
+        pattern: RelPattern
+            Relationship pattern
         exclude_polya: int = 0
             Exclude stretches of consecutive A bases at least this long.
             If 0, exclude no bases. Must be ≥ 0.
@@ -96,23 +82,24 @@ class BitMasker(object):
             reads. Must be in [0, 1].
         """
         # Set the general parameters.
-        self.out_dir = loader.out_dir
-        self.sample = loader.sample
-        self.ref = loader.ref
-        # Create a new section to compute the masked positions.
-        self.section = Section(loader.ref, loader.get_refseq(),
-                               end5=section.end5, end3=section.end3,
+        self.loader = loader
+        self.section = Section(loader.ref,
+                               loader.refseq,
+                               end5=section.end5,
+                               end3=section.end3,
                                name=section.name)
+        self.pattern = pattern
         # Set the parameters for excluding positions from the section.
         self.exclude_polya = exclude_polya
         self.exclude_gu = exclude_gu
         self.exclude_pos = np.array([pos for ref, pos in exclude_pos
-                                     if ref == self.ref],
+                                     if ref == self.loader.ref],
                                     dtype=int)
         # Set the parameters for filtering reads.
         self.min_mut_gap = min_mut_gap
         self.min_finfo_read = min_finfo_read
         self.max_fmut_read = max_fmut_read
+        self._n_reads = defaultdict(int)
         # Set the parameters for filtering positions.
         if not min_ninfo_pos >= 0:
             raise ValueError(
@@ -122,69 +109,31 @@ class BitMasker(object):
             raise ValueError(
                 f"max_fmut_pos must be in [0, 1), but got {max_fmut_pos}")
         self.max_fmut_pos = max_fmut_pos
-        # Exclude positions based on the parameters.
-        self.section.mask_polya(self.exclude_polya)
-        self.section.mask_gu(self.exclude_gu)
-        self.section.mask_pos(self.exclude_pos)
-        # Create a new BitCaller with the masked section.
-        self.bit_caller = BitCaller(self.section,
-                                    bit_caller.affi_call,
-                                    bit_caller.anti_call)
-        # For each batch, load the positions that remain unmasked,
-        # count the informative and mutated bits in every vector and
-        # position, and drop reads that do not pass the filters.
-        self.counter = BitCounter(self.section, self.bit_caller.iter(
-            loader.iter_batches_processed(positions=self.pos_kept),
-            masks={self.MASK_READ_FINFO: self._mask_min_finfo_read,
-                   self.MASK_READ_FMUT: self._mask_max_fmut_read,
-                   self.MASK_READ_GAP: self._mask_min_mut_gap}
-        ))
-        # Write batches of read names and record their checksums.
-        self.checksums = [write_batch(read_names,
-                                      self.out_dir,
-                                      self.sample,
-                                      self.ref,
-                                      self.section.name,
-                                      batch)
-                          for batch, read_names
-                          in enumerate(self.counter.read_batches)]
-        # Warn if no reads were counted.
-        if self.counter.nreads == 0:
-            logger.warning(f"No reads passed through {self}")
-        # Find the positions with insufficient informative reads.
-        mask_min_ninfo = self.counter.n_info_per_pos < self.min_ninfo_pos
-        # Mask the positions with insufficient informative reads.
-        self.section.add_mask(self.MASK_POS_NINFO,
-                              index_to_pos(mask_min_ninfo.index[mask_min_ninfo]))
-        # Find the positions with excessive mutation fractions.
-        mask_max_fmut = self.counter.f_affi_per_pos > self.max_fmut_pos
-        # Mask the positions with excessive mutation fractions.
-        self.section.add_mask(self.MASK_POS_FMUT,
-                              index_to_pos(mask_max_fmut.index[mask_max_fmut]))
-        # Check if any positions passed the filters.
-        if not np.any(self.section.unmasked_bool):
-            logger.warning(f"No positions passed through {self}")
+        # Set the parameters for saving files.
+        self.top = loader.top
+        self.brotli_level = brotli_level
+        self.checksums = list()
 
     @property
     def n_reads_init(self):
-        return self.counter.nreads_given
+        return self._n_reads[self.MASK_READ_INIT]
 
     @property
     def n_reads_min_finfo(self):
-        return self.counter.nmasked[self.MASK_READ_FINFO]
+        return self._n_reads[self.MASK_READ_FINFO]
 
     @property
     def n_reads_max_fmut(self):
-        return self.counter.nmasked[self.MASK_READ_FMUT]
+        return self._n_reads[self.MASK_READ_FMUT]
 
     @property
     def n_reads_min_gap(self):
-        return self.counter.nmasked[self.MASK_READ_GAP]
+        return self._n_reads[self.MASK_READ_GAP]
 
     @property
     def n_reads_kept(self):
         """ Number of reads kept. """
-        return self.counter.nreads
+        return self._n_reads[self.MASK_READ_KEPT]
 
     @property
     def pos_gu(self):
@@ -221,73 +170,126 @@ class BitMasker(object):
         """ Number of batches of reads. """
         return len(self.checksums)
 
-    def _mask_min_finfo_read(self, batch: BitBatch) -> np.ndarray:
-        """ Mask reads with too few informative bits. """
+    def _filter_min_finfo_read(self, batch: RelsBatch):
+        """ Filter out reads with too few informative positions. """
         if not 0. <= self.min_finfo_read <= 1.:
             raise ValueError(f"min_finfo_read must be in [0, 1], but got "
                              f"{self.min_finfo_read}")
         if self.min_finfo_read == 0.:
-            # Nothing to mask.
-            return np.zeros_like(batch.reads, dtype=bool)
-        return batch.f_info_per_read.values < self.min_finfo_read
+            # All reads have sufficiently many informative positions.
+            return batch
+        # Find the reads with sufficiently many informative positions.
+        info, muts = batch.count_per_read(self.section, self.pattern)
+        with np.errstate(invalid="ignore"):
+            finfo_read = info.values / self.pos_kept.size
+        reads = info.index[finfo_read >= self.min_finfo_read]
+        # Return a new batch of only those reads.
+        return MaskRelsBatch.from_batch(batch, reads=reads)
 
-    def _mask_max_fmut_read(self, batch: BitBatch) -> np.ndarray:
-        """ Mask reads with too many mutations. """
+    def _filter_max_fmut_read(self, batch: RelsBatch):
+        """ Filter out reads with too many mutations. """
         if not 0. <= self.max_fmut_read <= 1.:
             raise ValueError(f"max_fmut_read must be in [0, 1], but got "
                              f"{self.max_fmut_read}")
         if self.max_fmut_read == 1.:
-            # Nothing to mask.
-            return np.zeros_like(batch.reads, dtype=bool)
-        return batch.f_affi_per_read.values > self.max_fmut_read
+            # All reads have sufficiently few mutations.
+            return batch
+        # Find the reads with sufficiently few mutations.
+        info, muts = batch.count_per_read(self.section, self.pattern)
+        with np.errstate(invalid="ignore"):
+            fmut_read = muts.values / info.values
+        reads = info.index[fmut_read >= self.min_finfo_read]
+        # Return a new batch of only those reads.
+        return MaskRelsBatch.from_batch(batch, reads=reads)
 
-    def _mask_min_mut_gap(self, batch: BitBatch) -> np.ndarray:
-        """ Mask reads with mutations that are too close. """
+    def _mask_min_mut_gap(self, batch: RelsBatch):
+        """ Filter out reads with mutations that are too close. """
         if not self.min_mut_gap >= 0:
             raise ValueError(
                 f"min_mut_gap must be ≥ 0, but got {self.min_mut_gap}")
-        # Initially, mask no reads (set all to False).
-        read_mask = np.zeros_like(batch.reads, dtype=bool)
         if self.min_mut_gap == 0:
-            # Nothing to mask.
-            return read_mask
-        # Make a mask for the current window of positions.
-        positions = batch.section.unmasked_int
-        pos_mask = pd.Series(False, index=positions)
-        # Loop through every 5' position in the bit vectors.
-        for pos5 in positions:
-            # Find the 3'-most position that must be checked.
-            pos3 = pos5 + self.min_mut_gap
-            # Mask all positions between pos5 and pos3, inclusive.
-            # For example, if positions 1, 2, 4, 5, and 7 remain and
-            # min_gap = 3, then the positions checked in each
-            # iteration are [1, 2, 4], [2, 4, 5], [4, 5], [4, 5, 7].
-            pos_mask.loc[pos5: pos3] = True
-            # Sum over axis 1 to count the mutations in each read
-            # between positions pos5 and pos3, inclusive. If a read
-            # has > 1 mutation in this range, then it has mutations
-            # that are too close. Set all such reads' flags to True.
-            read_mask |= batch.affi.loc[:, pos_mask.values].sum(axis=1) > 1
-            # Erase the mask over the current window of positions.
-            pos_mask.loc[pos5: pos3] = False
-            if pos3 >= positions[-1]:
-                # The end of the section has been reached. Stop.
-                break
-        return read_mask
+            # No read can have a pair of mutations that are too close.
+            return batch
+        reads = batch.nonprox_muts(self.section, self.pattern, self.min_mut_gap)
+        return MaskRelsBatch.from_batch(batch, reads=reads)
+
+    def _exclude_positions(self):
+        """ Exclude positions from the section. """
+        self.section.mask_polya(self.exclude_polya)
+        self.section.mask_gu(self.exclude_gu)
+        self.section.mask_pos(self.exclude_pos)
+
+    def _filter_batch_reads(self, batch: Batch | RelsBatch):
+        """ Remove the reads in the batch that do not pass the filters
+        and return a new batch without those reads. """
+        # Keep only the unmasked positions.
+        batch = MaskRelsBatch.from_batch(batch, positions=self.pos_kept)
+        self._n_reads[self.MASK_READ_INIT] += (n := batch.num_reads)
+        # Remove reads with too few informative positions.
+        batch = self._filter_min_finfo_read(batch)
+        self._n_reads[self.MASK_READ_FINFO] += (n - (n := batch.num_reads))
+        # Remove reads with too many mutations.
+        batch = self._filter_max_fmut_read(batch)
+        self._n_reads[self.MASK_READ_FMUT] += (n - (n := batch.num_reads))
+        # Remove reads with mutations too close together.
+        batch = self._mask_min_mut_gap(batch)
+        self._n_reads[self.MASK_READ_GAP] += (n - (n := batch.num_reads))
+        # Record the number of reads remaining after filtering.
+        self._n_reads[self.MASK_READ_KEPT] += n
+        # Save the batch.
+        batch_file = MaskBatchFile(sample=self.loader.sample,
+                                   ref=self.loader.ref,
+                                   sect=self.section.name,
+                                   batch=batch.batch,
+                                   read_nums=batch.read_nums,
+                                   max_read=batch.max_read)
+        _, checksum = batch_file.save(self.top,
+                                      brotli_level=self.brotli_level,
+                                      overwrite=True)
+        self.checksums.append(checksum)
+        return batch
+
+    def _filter_positions(self, info: pd.Series, muts: pd.Series):
+        """ Remove the positions that do not pass the filters. """
+        # Mask the positions with insufficient informative reads.
+        self.section.add_mask(
+            self.MASK_POS_NINFO,
+            index_to_pos(info.index[info < self.min_ninfo_pos]))
+        # Mask the positions with excessive mutation fractions.
+        self.section.add_mask(
+            self.MASK_POS_FMUT,
+            index_to_pos(info.index[(muts / info) > self.max_fmut_pos]))
+
+    def mask(self):
+        # Exclude positions based on the parameters.
+        self._exclude_positions()
+        if self.pos_kept.size == 0:
+            logger.warning(f"No positions remained after excluding with {self}")
+        # Filter out reads based on the parameters and count the number
+        # of informative and mutated positions remaining.
+        info, muts = count_per_pos(self.section,
+                                   self.pattern,
+                                   map(self._filter_batch_reads,
+                                       self.loader.iter_batches()))
+        if self.n_reads_kept == 0:
+            logger.warning(f"No reads remained after filtering with {self}")
+        # Filter out positions based on the parameters.
+        self._filter_positions(info, muts)
+        if self.pos_kept.size == 0:
+            logger.warning(f"No positions remained after filtering with {self}")
 
     def create_report(self):
         """ Create a FilterReport from a BitFilter object. """
         return MaskReport(
-            out_dir=self.out_dir,
-            sample=self.sample,
-            ref=self.ref,
+            sample=self.loader.sample,
+            ref=self.loader.ref,
             sect=self.section.name,
             end5=self.section.end5,
             end3=self.section.end3,
-            checksums=self.checksums,
+            checksums={self.CHECKSUM_KEY: self.checksums},
             n_batches=self.n_batches,
-            count_refs=self.bit_caller.anti_call,
-            count_muts=self.bit_caller.affi_call,
+            count_refs=self.pattern.nos,
+            count_muts=self.pattern.yes,
             exclude_gu=self.exclude_gu,
             exclude_polya=self.exclude_polya,
             exclude_pos=self.exclude_pos,
@@ -317,7 +319,7 @@ class BitMasker(object):
         )
 
     def __str__(self):
-        return f"Mask {self.sample} over {self.section} with {self.bit_caller}"
+        return f"Mask {self.loader} over {self.section} with {self.pattern}"
 
 
 def mask_section(loader: RelateLoader,
@@ -329,19 +331,16 @@ def mask_section(loader: RelateLoader,
                  **kwargs):
     """ Filter a section of a set of bit vectors. """
     # Check if the report file already exists.
-    report_file = MaskReport.build_path(loader.out_dir,
+    report_file = MaskReport.build_path(top=loader.top,
                                         sample=loader.sample,
                                         ref=loader.ref,
                                         sect=section.name)
     if rerun or not report_file.is_file():
-        # Create the bit caller.
-        bit_caller = BitCaller.from_counts(section, count_del, count_ins,
-                                           discount)
-        # Create and apply the mask.
-        bit_masker = BitMasker(loader, section, bit_caller, **kwargs)
-        # Output the results of filtering.
-        report = bit_masker.create_report()
-        report.save()
+        pattern = RelPattern.from_counts(count_del, count_ins, discount)
+        masker = RelMasker(loader, section, pattern, **kwargs)
+        masker.mask()
+        report = masker.create_report()
+        report.save(loader.top, overwrite=True)
     else:
         logger.warning(f"File exists: {report_file}")
     return report_file

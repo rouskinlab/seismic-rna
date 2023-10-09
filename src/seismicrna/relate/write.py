@@ -14,7 +14,10 @@ from logging import getLogger
 from pathlib import Path
 from typing import Iterable
 
-from .batch import from_reads, QnamesBatch, RelateBatch
+from .files import (from_reads,
+                    QnamesBatchFile,
+                    RelateBatchFile,
+                    RelateRefseqFile)
 from .c.relate import find_rels_line
 from .report import RelateReport
 from .sam import XamViewer
@@ -22,7 +25,6 @@ from ..core import path
 from ..core.fasta import get_fasta_seq
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.qual import encode_phred
-from ..core.refseq import RefseqFile
 from ..core.seq import DNA
 
 logger = getLogger(__name__)
@@ -120,19 +122,17 @@ class RelationWriter(object):
         return self.xam.ref
 
     def _write_report(self, *, out_dir: Path, **kwargs):
-        report = RelateReport(top=out_dir,
-                              seq=self.seq,
-                              sample=self.sample,
+        report = RelateReport(sample=self.sample,
                               ref=self.ref,
                               **kwargs)
         return report.save(out_dir, overwrite=True)
 
     def _write_refseq(self, out_dir: Path, brotli_level: int):
         """ Write the reference sequence to a file. """
-        refseq = RefseqFile(sample=self.sample,
-                            ref=self.ref,
-                            refseq=self.seq)
-        _, checksum = refseq.save(out_dir, brotli_level, overwrite=True)
+        refseq_file = RelateRefseqFile(sample=self.sample,
+                                       ref=self.ref,
+                                       refseq=self.seq)
+        _, checksum = refseq_file.save(out_dir, brotli_level, overwrite=True)
         return checksum
 
     def _generate_batches(self, *,
@@ -168,12 +168,18 @@ class RelationWriter(object):
                                pass_n_procs=False,
                                args=as_list_of_tuples(self.xam.indexes),
                                kwargs=disp_kwargs)
-            nums_reads, relvecs_checksums, names_checksums = zip(*results,
-                                                                 strict=True)
+            if results:
+                nums_reads, relv_checks, name_checks = map(list,
+                                                           zip(*results,
+                                                               strict=True))
+            else:
+                nums_reads = list()
+                relv_checks = list()
+                name_checks = list()
             n_reads = sum(nums_reads)
             n_batches = len(nums_reads)
-            checksums = {RelateBatch.btype(): relvecs_checksums,
-                         QnamesBatch.btype(): names_checksums}
+            checksums = {RelateBatchFile.btype(): relv_checks,
+                         QnamesBatchFile.btype(): name_checks}
             logger.info(f"Ended {self}: {n_reads} reads in {n_batches} batches")
             return n_reads, n_batches, checksums
         finally:
@@ -247,8 +253,10 @@ def write_all(xam_files: Iterable[Path],
               parallel: bool,
               **kwargs):
     """  """
-    return dispatch(write_one, max_procs, parallel,
-                    args=as_list_of_tuples(xam_files),
+    return dispatch(write_one,
+                    max_procs,
+                    parallel,
+                    args=as_list_of_tuples(path.deduplicated(xam_files)),
                     kwargs=kwargs)
 
 ########################################################################

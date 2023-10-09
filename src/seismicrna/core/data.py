@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import cache, cached_property
+from logging import getLogger
 from pathlib import Path
-from typing import Generator, TypeVar
+from typing import Generator, Iterable, TypeVar
 
+from . import path
 from .batch import Batch, list_batch_nums
 from .refseq import RefseqFile
 from .report import (SampleF,
@@ -20,6 +22,7 @@ from .report import (SampleF,
 from .sect import Section
 from .seq import DNA
 
+logger = getLogger(__name__)
 
 AnyData = TypeVar("AnyData")
 
@@ -74,12 +77,17 @@ class Loader(Data, ABC):
     def get_report_type(cls) -> type[RefseqReport]:
         """ Type of the report for this loader. """
 
+    @classmethod
+    @abstractmethod
+    def get_refseq_type(cls) -> type[RefseqFile]:
+        """ Type of the reference sequence file for this loader. """
+
     def __init__(self, report: RefseqReport, top: Path):
         if not isinstance(report, self.get_report_type()):
             raise TypeError(f"Expected report type {self.get_report_type()}, "
                             f"but got {type(report)}")
         self._report: RefseqReport | BatchReport = report
-        self._top = top
+        self.top = top
 
     @property
     def sample(self) -> str:
@@ -91,10 +99,12 @@ class Loader(Data, ABC):
 
     @cached_property
     def refseq(self):
-        return RefseqFile.load(RefseqFile.build_path(top=self._top,
-                                                     sample=self.sample,
-                                                     ref=self.ref),
-                               self._report.get_field(RefseqChecksumF)).refseq
+        return self.get_refseq_type().load(
+            self.get_refseq_type().build_path(top=self.top,
+                                              sample=self.sample,
+                                              ref=self.ref),
+            self._report.get_field(RefseqChecksumF)
+        ).refseq
 
     @property
     def _sect(self):
@@ -150,6 +160,7 @@ class BatchLoader(Loader, Batches, ABC):
         """ Type of the report for this Loader. """
 
     @classmethod
+    @abstractmethod
     def get_batch_type(cls) -> type[Batch]:
         """ Type of the batch for this Loader. """
 
@@ -165,7 +176,7 @@ class BatchLoader(Loader, Batches, ABC):
     @cache
     def get_batch_path(self, batch: int):
         """ Get the path to a batch of a specific number. """
-        fields = self._report.path_fields(self._top,
+        fields = self._report.path_fields(self.top,
                                           self.get_batch_type().auto_fields())
         return self.get_batch_type().build_path(batch=batch, **fields)
 
@@ -239,63 +250,13 @@ class BatchLinker(Linker, Batches, ABC):
             yield self._link(batch1, batch2, *args, **kwargs)
 
 
-'''
-class ChainLoader(DataLoader, ABC):
-    """ Load data via a DataLoader from a previous step. """
-
-    @classmethod
-    @abstractmethod
-    def get_import_type(cls) -> type[ChainLoader]:
-        """ Type of the data loader that is immediately before this data
-        loader in the chain and from which data are thus imported. """
-
-    @property
-    def import_path_fields(self):
-        """ Fields for creating the imported data loader. """
-        return {path.TOP: self._top, path.SAMP: self.sample, path.REF: self.ref}
-
-    @cached_property
-    def import_loader(self):
-        """ Data loader that is immediately before this data loader in
-        the chain and from which data are thus imported. """
-        itype = self.get_import_type()
-        if itype is None:
-            return None
-        rtype = itype.get_report_type()
-        return itype.load(rtype.build_path(**self.import_path_fields))
-
-
-class BatchChainLoader(ChainLoader, BatchLoader, ABC):
-    """ Load data via a BatchLoader from a previous step. """
-
-    @abstractmethod
-    def process_batch(self, imported_batch, personal_batch, **kwargs):
-        """ Return a batch of processed data from one of data imported
-        from another DataLoader and one batch of personal data. """
-
-    @abstractmethod
-    def iter_batches_processed(self, **kwargs):
-        # Keyword arguments of self.import_loader.iter_batches_processed
-        imp_kwonly = _get_kwonly(self.import_loader.iter_batches_processed)
-        imp_kwargs = {name: kwargs.pop(name) for name in list(kwargs.keys())
-                      if name in imp_kwonly}
-        imp_batches = self.import_loader.iter_batches_processed(**imp_kwargs)
-        # Keyword arguments of self.iter_batches_personal
-        pers_kwonly = _get_kwonly(self.iter_batches_personal)
-        pers_kwargs = {name: kwargs.pop(name) for name in list(kwargs.keys())
-                       if name in pers_kwonly}
-        pers_batches = self.iter_batches_personal(**pers_kwargs)
-        # Keyword arguments of self.process_batch
-        proc_kwonly = _get_kwonly(self.process_batch)
-        proc_kwargs = {name: kwargs.pop(name) for name in list(kwargs.keys())
-                       if name in proc_kwonly}
-        # Check for extraneous keyword arguments.
-        if kwargs:
-            raise TypeError(f"Unexpected keyword arguments: {kwargs}")
-        # Yield every batch of processed data.
-        for imported, personal in zip(imp_batches, pers_batches, strict=True):
-            yield self.process_batch(imported, personal, **proc_kwargs)
-'''
+def load_data(report_files: Iterable[Path], loader_type: type[Loader]):
+    """ Load the data for each report file. """
+    for report_file in path.deduplicated(report_files):
+        try:
+            yield loader_type.load(report_file)
+        except Exception as error:
+            logger.error(f"Failed to open {report_file}: {error}")
 
 ########################################################################
 #                                                                      #

@@ -8,7 +8,7 @@ from .names import ORD_CLS_NAME
 from .report import ClustReport
 from ..core import path
 from ..core.bitvect import BitBatch, ClusterBitBatch, ClustBitCounter
-from ..core.data import BatchChainLoader, no_kwargs
+from ..core.data import BatchLoader
 from ..core.mu import calc_mu_adj_df, calc_f_obs_df
 from ..mask.load import MaskLoader
 
@@ -22,7 +22,7 @@ def get_cluster_index(max_order: int):
                                      for cluster in range(1, order + 1))
 
 
-class ClustLoader(BatchChainLoader):
+class ClustLoader(BatchLoader):
     """ Load clustering results. """
 
     def __init__(self, report: ClustReport):
@@ -57,7 +57,6 @@ class ClustLoader(BatchChainLoader):
         """ Order and number of each cluster. """
         return get_cluster_index(self.best_order)
 
-    @no_kwargs
     def load_data_personal(self, batch_file: Path):
         # Load the cluster memberships of the reads in the batch.
         data = pd.read_csv(batch_file,
@@ -72,7 +71,6 @@ class ClustLoader(BatchChainLoader):
     def iter_batches_personal(self):
         yield from super().iter_batches_personal()
 
-    @no_kwargs
     def process_batch(self, imported_batch: BitBatch,
                       personal_batch: pd.DataFrame):
         return ClusterBitBatch(imported_batch.section,

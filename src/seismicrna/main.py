@@ -33,7 +33,7 @@ from .core.cli import (opt_log,
                        opt_profile,
                        opt_quiet,
                        opt_verbose)
-from .core.meta import __version__
+from .core.version import __version__
 
 params = [
     opt_verbose,

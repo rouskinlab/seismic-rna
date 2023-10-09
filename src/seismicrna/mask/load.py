@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 
 from .report import MaskReport
-from ..core.bitcall import BitCaller
-from ..core.data import BatchChainLoader, no_kwargs
+from ..core.pattern import RelPattern
+from ..core.data import BatchLoader
 from ..relate.load import RelateLoader
 
 logger = getLogger(__name__)
@@ -15,11 +15,11 @@ logger = getLogger(__name__)
 MASK_KEY = "mask-load"
 
 
-class MaskLoader(BatchChainLoader):
+class MaskLoader(BatchLoader):
     """ Load batches of masked relation vectors. """
 
-    def __init__(self, report: MaskReport):
-        super().__init__(report)
+    def __init__(self, report: MaskReport, top: Path):
+        super().__init__(report, top)
         self.pos_kept = report.pos_kept
         self.min_mut_gap = report.min_mut_gap
         self.count_refs = report.count_refs
@@ -52,9 +52,8 @@ class MaskLoader(BatchChainLoader):
     @cached_property
     def bit_caller(self):
         """ Get the BitCaller associated with the mask. """
-        return BitCaller(self.section, self.count_muts, self.count_refs)
+        return RelPattern(self.section, self.count_muts, self.count_refs)
 
-    @no_kwargs
     def load_data_personal(self, batch_file: Path):
         # This method accepts no keyword arguments.
         # Load the names of the reads in the batch from the file.
@@ -81,7 +80,7 @@ class MaskLoader(BatchChainLoader):
 
     def process_batch(self, imported_batch: pd.DataFrame,
                       private_batch: pd.Series, *,
-                      bit_caller: BitCaller | None = None,
+                      bit_caller: RelPattern | None = None,
                       merge: bool = False, invert: bool = False):
         if bit_caller is None:
             # If no BitCaller was given, then use the mask's bit caller.
@@ -90,14 +89,14 @@ class MaskLoader(BatchChainLoader):
             # Otherwise, intersect the given bit caller with the mask's
             # bit caller so that a type of relationships is counted only
             # if both bit callers accept it.
-            bit_caller = BitCaller.inter(bit_caller, self.bit_caller,
-                                         merge=merge, invert=invert)
+            bit_caller = RelPattern.inter(bit_caller, self.bit_caller,
+                                          merge=merge, invert=invert)
         # Select only the relation vectors that were kept after masking
         # using imported_batch.loc[private_batch], then call the bits
         # using the BitCaller.
         return bit_caller.call(imported_batch.loc[private_batch])
 
-    def iter_batches_processed(self, *, bit_caller: BitCaller | None = None,
+    def iter_batches_processed(self, *, bit_caller: RelPattern | None = None,
                                merge: bool = False, invert: bool = False):
         yield from super().iter_batches_processed(positions=self.pos_kept,
                                                   bit_caller=bit_caller,

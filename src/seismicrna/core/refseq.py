@@ -1,11 +1,11 @@
 from functools import cached_property
 
 from . import path
-from .files import PickleOutput, RefOutput
+from .files import PickleRefFile
 from .seq import DNA
 
 
-class RefseqFile(PickleOutput, RefOutput):
+class RefseqFile(PickleRefFile):
 
     @classmethod
     def file_seg_type(cls):

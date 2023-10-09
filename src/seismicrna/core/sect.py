@@ -22,11 +22,16 @@ from .seq import DNA, BASEA, BASEC
 
 logger = getLogger(__name__)
 
+# Positions are 1-indexed.
+POS_INDEX = 1
+
+# Names of the section index levels.
 POS_NAME = "Position"
 BASE_NAME = "Base"
 INDEX_NAMES = POS_NAME, BASE_NAME
 FULL_NAME = "full"
 
+# Fields in the sections file.
 FIELD_REF = "Reference"
 FIELD_SECT = "Section"
 FIELD_END5 = "5' End"
@@ -202,8 +207,11 @@ class Section(object):
     MASK_GU = "pos-gu"
     MASK_POS = "pos-user"
 
-    def __init__(self, ref: str, refseq: DNA, *,
-                 end5: int | None = None, end3: int | None = None,
+    def __init__(self,
+                 ref: str,
+                 refseq: DNA, *,
+                 end5: int | None = None,
+                 end3: int | None = None,
                  name: str | None = None):
         """
         Parameters
@@ -343,6 +351,37 @@ class Section(object):
         """ Number of relevant positions in the section. """
         return self.length - self.masked_int.size
 
+    @property
+    def base_counts(self):
+        """ Count each unmasked base in the section. """
+        bases, counts = np.unique(self.unmasked.get_level_values(BASE_NAME),
+                                  return_counts=True)
+        return pd.Series(counts, bases)
+
+    def iter_bases(self):
+        """ Yield the index positions for each type of base. """
+        index = self.unmasked
+        bases = index.get_level_values(BASE_NAME)
+        for base in DNA.alph():
+            index_base = index[bases == base]
+            if index_base.size > 0:
+                yield base, index_base
+
+    def windows(self, size: int):
+        """ Yield the positions in each window of size positions of the
+        section. """
+        if size < 1:
+            raise ValueError(f"size must be ≥ 1, but got {size}")
+        # Define the 5' and 3' ends of the window.
+        win5 = self.end5
+        win3 = min(win5 + (size - 1), self.end3)
+        # Create a Series of True items with the positions as the index.
+        positions = pd.Series(True, self.unmasked_int)
+        while win3 <= self.end3:
+            yield (win5, win3), positions.loc[win5: win3].index.values
+            win5 += 1
+            win3 += 1
+
     def get_mask(self, name: str):
         """ Get the positions masked under the given name. """
         return self._masks[name]
@@ -355,12 +394,12 @@ class Section(object):
         pos = np.asarray(mask_pos, dtype=int)
         # Check for positions outside the section.
         if np.any(pos < self.end5) or np.any(pos > self.end3):
-            invalid = pos[np.logical_or(pos < self.end5, pos > self.end3)]
-            logger.warning(f"Got positions to mask ouside of {self}: {invalid}")
+            out = pos[np.logical_or(pos < self.end5, pos > self.end3)]
+            raise ValueError(f"Got positions to mask ouside of {self}: {out}")
         # Record the positions that have not already been masked.
         self._masks[name] = pos[np.isin(pos, self.masked_int, invert=True)]
 
-    def _find_gu(self, exclude_gu: bool = True) -> np.ndarray:
+    def _find_gu(self, exclude_gu: bool) -> np.ndarray:
         """ Array of each position whose base is neither A nor C. """
         if exclude_gu:
             # Mark whether each position is neither A nor C.
@@ -371,7 +410,7 @@ class Section(object):
         # Mask no positions.
         return np.array([], dtype=int)
 
-    def mask_gu(self, exclude: bool):
+    def mask_gu(self, exclude: bool = True):
         """ Mask positions whose base is neither A nor C. """
         self.add_mask(self.MASK_GU, self._find_gu(exclude))
 
@@ -399,6 +438,21 @@ class Section(object):
     def mask_pos(self, pos: Iterable[int]):
         """ Mask arbitrary positions. """
         self.add_mask(self.MASK_POS, pos)
+
+    @property
+    def _hash_key(self):
+        # Do not cache this method since self._masks can change.
+        return (
+            self.ref,
+            self.seq,
+            self.end5,
+            self.end3,
+            self.name,
+            tuple(self._masks),
+        )
+
+    def __hash__(self):
+        return hash(self._hash_key)
 
     def __str__(self):
         return f"Section {self.ref_sect} ({self.hyphen}) {self.mask_names}"
@@ -442,10 +496,14 @@ class SectionFinder(Section):
        - (primer_gap + 1) if rev is given, else the length of refseq
     """
 
-    def __init__(self, ref: str, refseq: DNA | None, *,
+    def __init__(self,
+                 ref: str,
+                 refseq: DNA | None, *,
                  name: str | None = None,
-                 end5: int | None = None, end3: int | None = None,
-                 fwd: DNA | None = None, rev: DNA | None = None,
+                 end5: int | None = None,
+                 end3: int | None = None,
+                 fwd: DNA | None = None,
+                 rev: DNA | None = None,
                  primer_gap: int | None = None):
         """
         Parameters
@@ -567,36 +625,41 @@ class RefSections(object):
         if sects_file is not None:
             try:
                 sect_coords, sect_primers = get_sect_coords_primers(sects_file)
-                # Combines the coordinates from the sections_file and from the
+                # Combines the coordinates from the sects_file and from the
                 # coord parameter.
+            except Exception as error:
+                logger.error(
+                    f"Failed to add coordinates from {sects_file}: {error}")
+            else:
                 coords = list(coords) + list(sect_coords)
                 primers = list(primers) + list(sect_primers)
-            except Exception as error:
-                logger.error(f"Failed to add coordinates from sections_file: {error}")
-
         # Group coordinates and primers by reference.
         ref_coords = get_coords_by_ref(coords)
         ref_primers = get_coords_by_ref(primers)
-
         # For each reference, generate sections from the coordinates.
         self._sections: dict[str, dict[tuple[int, int], Section]] = dict()
         for ref, seq in refseqs:
             self._sections[ref] = dict()
             for end5, end3 in ref_coords[ref]:
                 # Add a section for each pair of 5' and 3' coordinates.
-                self._add_section(ref=ref, refseq=seq, end5=end5, end3=end3,
+                self._add_section(ref=ref,
+                                  refseq=seq,
+                                  end5=end5,
+                                  end3=end3,
                                   primer_gap=primer_gap,
                                   name=sect_coords.get((ref, end5, end3)))
             for fwd, rev in ref_primers[ref]:
                 # Add a section for each pair of fwd and rev primers.
-                self._add_section(ref=ref, refseq=seq, fwd=fwd, rev=rev,
+                self._add_section(ref=ref,
+                                  refseq=seq,
+                                  fwd=fwd,
+                                  rev=rev,
                                   primer_gap=primer_gap,
                                   name=sect_primers.get((ref, fwd, rev)))
             if not self._sections[ref]:
                 # If no sections were given for the reference, then add
                 # a section that spans the full reference.
-                self._add_section(ref=ref, refseq=seq,
-                                  primer_gap=primer_gap)
+                self._add_section(ref=ref, refseq=seq, primer_gap=primer_gap)
         if extra := (set(ref_coords) | set(ref_primers)) - set(self._sections):
             logger.warning(f"No sequences given for references {sorted(extra)}")
 

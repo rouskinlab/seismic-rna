@@ -85,8 +85,8 @@ def run(fasta: str,
     read matches the base in the reference, is substituted to another
     base, is deleted, or has one or more extra bases inserted beside it.
     """
-    return write_all(xam_files=list(path.find_files_chain(map(Path, input_path),
-                                                          path.XAM_SEGS)),
+    return write_all(xam_files=path.find_files_chain(map(Path, input_path),
+                                                     path.XAM_SEGS),
                      fasta=Path(fasta),
                      out_dir=Path(out_dir),
                      temp_dir=Path(temp_dir),

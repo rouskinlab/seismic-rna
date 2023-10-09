@@ -1,19 +1,26 @@
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
+from shutil import copyfile
 from typing import Iterable
 
 from .fqops import FastqUnit, run_fastqc, run_cutadapt
 from .report import AlignReport
-from .xamgen import (run_bowtie2_build, get_bowtie2_index_paths,
-                     run_export, run_xamgen)
+from .xamgen import (run_bowtie2_build,
+                     get_bowtie2_index_paths,
+                     run_export,
+                     run_xamgen)
 from ..core import path
 from ..core.cmd import CMD_ALIGN, CMD_QC
 from ..core.fasta import parse_fasta, write_fasta
 from ..core.parallel import dispatch
 from ..core.seq import DNA
-from ..core.xam import (count_single_paired, run_flagstat, run_ref_header,
-                        run_index_xam, run_index_fasta, run_idxstats)
+from ..core.xam import (count_single_paired,
+                        run_flagstat,
+                        run_ref_header,
+                        run_index_xam,
+                        run_index_fasta,
+                        run_idxstats)
 
 logger = getLogger(__name__)
 
@@ -263,8 +270,13 @@ def fq_pipeline(fq_inp: FastqUnit,
     if not save_temp:
         xam_whole.unlink(missing_ok=True)
     if cram:
-        # Make a hard link to the original FASTA file.
-        refs_file.hardlink_to(fasta)
+        try:
+            # Make a hard link to the original FASTA file.
+            refs_file.hardlink_to(fasta)
+        except OSError as error:
+            logger.warning(f"Copying {refs_file} to {fasta} because hard "
+                           f"linking failed: {error}")
+            copyfile(fasta, refs_file)
         # Index the new hard-linked FASTA file.
         run_index_fasta(refs_file)
     # Write a report to summarize the alignment.

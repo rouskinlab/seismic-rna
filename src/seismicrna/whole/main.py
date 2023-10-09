@@ -158,6 +158,11 @@ def run(*,
             dmfastqs = dmfastqs + dms
             dmfastqi = dmfastqi + dmi
             dmfastqp = dmfastqp + dmm
+        # Clear the input FASTQ files once the demultiplexed FASTQ files
+        # have been generated.
+        fastqp = tuple()
+        fastqi = tuple()
+        fastqs = tuple()
     # Alignment
     input_path += tuple(map(str, align_mod.run(
         out_dir=out_dir,

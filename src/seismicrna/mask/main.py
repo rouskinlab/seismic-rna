@@ -5,19 +5,32 @@ from typing import Iterable
 from click import command
 
 from .write import mask_section
-from ..relate.load import open_reports
 from ..core import docdef, path
 from ..core.cli import (arg_input_path,
-                        opt_coords, opt_primers, opt_primer_gap, opt_sections_file,
-                        opt_count_del, opt_count_ins, opt_discount_mut,
-                        opt_exclude_polya, opt_exclude_gu, opt_exclude_pos,
-                        opt_min_finfo_read, opt_max_fmut_read, opt_min_mut_gap,
-                        opt_min_ninfo_pos, opt_max_fmut_pos,
-                        opt_max_procs, opt_parallel, opt_rerun)
+                        opt_coords,
+                        opt_primers,
+                        opt_primer_gap,
+                        opt_sections_file,
+                        opt_count_del,
+                        opt_count_ins,
+                        opt_discount_mut,
+                        opt_exclude_polya,
+                        opt_exclude_gu,
+                        opt_exclude_pos,
+                        opt_min_finfo_read,
+                        opt_max_fmut_read,
+                        opt_min_mut_gap,
+                        opt_min_ninfo_pos,
+                        opt_max_fmut_pos,
+                        opt_max_procs,
+                        opt_parallel,
+                        opt_rerun)
 from ..core.cmd import CMD_MASK
+from ..core.data import load_data
 from ..core.parallel import dispatch
 from ..core.sect import RefSections
 from ..core.seq import DNA
+from ..relate.load import RelateLoader
 
 logger = getLogger(__name__)
 
@@ -25,15 +38,26 @@ params = [
     # Input/output paths
     arg_input_path,
     # Sections
-    opt_coords, opt_primers, opt_primer_gap, opt_sections_file,
+    opt_coords,
+    opt_primers,
+    opt_primer_gap,
+    opt_sections_file,
     # Mutation counting
-    opt_count_del, opt_count_ins, opt_discount_mut,
+    opt_count_del,
+    opt_count_ins,
+    opt_discount_mut,
     # Filtering
-    opt_exclude_polya, opt_exclude_gu, opt_exclude_pos,
-    opt_min_finfo_read, opt_max_fmut_read, opt_min_mut_gap,
-    opt_min_ninfo_pos, opt_max_fmut_pos,
+    opt_exclude_polya,
+    opt_exclude_gu,
+    opt_exclude_pos,
+    opt_min_finfo_read,
+    opt_max_fmut_read,
+    opt_min_mut_gap,
+    opt_min_ninfo_pos,
+    opt_max_fmut_pos,
     # Parallelization
-    opt_max_procs, opt_parallel,
+    opt_max_procs,
+    opt_parallel,
     # Effort
     opt_rerun,
 ]
@@ -73,7 +97,7 @@ def run(input_path: tuple[str, ...], *,
         rerun: bool) -> list[Path]:
     """ Run the mask command. """
     # Open all relation vector loaders and get the sections for each.
-    loaders, sections = open_sections(map(Path, input_path),
+    loaders, sections = load_sections(map(Path, input_path),
                                       coords=coords,
                                       primers=primers,
                                       primer_gap=primer_gap,
@@ -97,21 +121,28 @@ def run(input_path: tuple[str, ...], *,
                   max_fmut_pos=max_fmut_pos,
                   rerun=rerun)
     # Call the mutations and filter the relation vectors.
-    reports = dispatch(mask_section, max_procs=max_procs, parallel=parallel,
-                       pass_n_procs=False, args=args, kwargs=kwargs)
+    reports = dispatch(mask_section,
+                       max_procs=max_procs,
+                       parallel=parallel,
+                       pass_n_procs=False,
+                       args=args,
+                       kwargs=kwargs)
     return list(map(Path, reports))
 
 
-def open_sections(report_paths: Iterable[Path],
+def load_sections(report_files: Iterable[Path],
                   coords: Iterable[tuple[str, int, int]],
                   primers: Iterable[tuple[str, DNA, DNA]],
                   primer_gap: int,
                   sections_file: Path | None = None):
     """ Open sections of relate reports. """
-    report_files = path.find_files_chain(report_paths, [path.RelateRepSeg])
-    loaders = open_reports(report_files)
-    sections = RefSections({(rep.ref, rep.seq) for rep in loaders},
-                           coords=coords, primers=primers, primer_gap=primer_gap,
+    loaders = list(load_data(path.find_files_chain(report_files,
+                                                   [path.RelateRepSeg]),
+                             RelateLoader))
+    sections = RefSections({(loader.ref, loader.refseq) for loader in loaders},
+                           coords=coords,
+                           primers=primers,
+                           primer_gap=primer_gap,
                            sects_file=sections_file)
     return loaders, sections
 

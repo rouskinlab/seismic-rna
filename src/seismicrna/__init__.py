@@ -18,9 +18,9 @@ that they can be imported from external modules and scripts::
 import warnings
 
 from . import demult, align, relate, cluster, table, fastc
-from .core.meta import __version__
+from .core.version import __version__
 
-warnings.simplefilter(action="ignore", category=FutureWarning)
+#warnings.simplefilter(action="ignore", category=FutureWarning)
 
 ########################################################################
 #                                                                      #

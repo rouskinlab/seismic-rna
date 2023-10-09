@@ -221,8 +221,11 @@ def xamgen_cmd(fq_inp: FastqUnit,
     """ Wrap alignment and post-processing into one pipeline. """
     bowtie2_step = bowtie2_cmd(fq_inp, None, n_procs=n_procs, **kwargs)
     # Filter out any unaligned or otherwise unsuitable reads.
-    flags_exc = (FLAG_UNMAP | FLAG_SECONDARY | FLAG_QCFAIL
-                 | FLAG_DUPLICATE | FLAG_SUPPLEMENTARY)
+    flags_exc = (FLAG_UNMAP
+                 | FLAG_SECONDARY
+                 | FLAG_QCFAIL
+                 | FLAG_DUPLICATE
+                 | FLAG_SUPPLEMENTARY)
     # Ensure all output reads have the right pairing status.
     if fq_inp.paired:
         # Require the paired flag.
@@ -250,8 +253,8 @@ def export_cmd(xam_in: Path | None,
                xam_out: Path | None, *,
                ref: str,
                header: str,
-               ref_file: Path,
-               n_procs: int):
+               ref_file: Path | None = None,
+               n_procs: int = 1):
     """ Wrap selecting, sorting, and exporting into one pipeline. """
     # Pipe the header line.
     echo_step = args_to_cmd([ECHO_CMD, header])

@@ -57,7 +57,7 @@ def load_pkl_br(file: Path,
     return item
 
 
-class Output(ABC):
+class OutputFile(ABC):
     """ Abstract base class for an output item. """
 
     @classmethod
@@ -114,7 +114,7 @@ class Output(ABC):
         """ Save the object to a file. """
 
 
-class RefOutput(Output, ABC):
+class HasRefFile(OutputFile, ABC):
 
     @classmethod
     def dir_seg_types(cls):
@@ -122,24 +122,24 @@ class RefOutput(Output, ABC):
                                           path.CmdSeg,
                                           path.RefSeg)
 
-    def __init__(self, sample: str, ref: str, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *, sample: str, ref: str, **kwargs):
+        super().__init__(**kwargs)
         self.sample = sample
         self.ref = ref
 
 
-class SectOutput(RefOutput, ABC):
+class HasSectFile(HasRefFile, ABC):
 
     @classmethod
     def dir_seg_types(cls):
         return super().dir_seg_types() + (path.SectSeg,)
 
-    def __init__(self, sect: str, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *, sect: str, **kwargs):
+        super().__init__(**kwargs)
         self.sect = sect
 
 
-class PickleOutput(Output, ABC):
+class PickleFile(OutputFile, ABC):
 
     @classmethod
     def load(cls, file: Path, checksum: str | None = None):
@@ -168,3 +168,11 @@ class PickleOutput(Output, ABC):
 
     def __setstate__(self, state: dict[str, Any]):
         self.__dict__.update(state)
+
+
+class PickleRefFile(HasRefFile, PickleFile, ABC):
+    pass
+
+
+class PickleSectFile(HasSectFile, PickleFile, ABC):
+    pass
