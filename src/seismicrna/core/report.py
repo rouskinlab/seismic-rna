@@ -16,9 +16,9 @@ from typing import Any, Hashable, Callable, Iterable
 import numpy as np
 
 from . import path
-from .batch import Batch
+from .iobatch import SavedBatch
 from .pattern import HalfRelPattern
-from .files import OutputFile, HasRefFile
+from .iofile import SavedFile, SavedRef
 from .version import __version__, check_compatibility
 
 logger = getLogger(__name__)
@@ -735,7 +735,7 @@ def lookup_title(title: str) -> Field:
 
 # Report classes
 
-class Report(OutputFile, ABC):
+class Report(SavedFile, ABC):
     """ Abstract base class for a report from a step. """
 
     @classmethod
@@ -774,7 +774,7 @@ class Report(OutputFile, ABC):
         return path_fields.pop(path.TOP), path_fields
 
     @classmethod
-    def load(cls, file: Path):
+    def load(cls, file: Path) -> Report:
         top, path_fields = cls.parse_file_path(file)
         with open(file) as f:
             report = cls.from_dict(json.load(f))
@@ -786,10 +786,6 @@ class Report(OutputFile, ABC):
                                  f"from path ({repr(path_fields[key])}) and "
                                  f"contents ({repr(value)}) of report {file}")
         return report
-
-    @classmethod
-    def auto_fields(cls) -> dict[str, Any]:
-        return {path.EXT: path.JSON_EXT}
 
     def __init__(self, **kwargs: Any | Callable[[Report], Any]):
         for name in self.field_names():
@@ -856,7 +852,8 @@ class Report(OutputFile, ABC):
         return self.to_dict() == other.to_dict()
 
 
-class RefseqReport(Report, HasRefFile, ABC):
+class RefseqReport(Report, SavedRef, ABC):
+    """ Report associated with a reference sequence file. """
 
     @classmethod
     @abstractmethod
@@ -864,7 +861,12 @@ class RefseqReport(Report, HasRefFile, ABC):
         return [RefseqChecksumF] + super().fields()
 
 
-class BatchReport(Report, ABC):
+class UnifiedReport(Report, ABC):
+    """ Report with exactly one data file. """
+
+
+class BatchedReport(Report, ABC):
+    """ Report with a number of data batches (one file per batch). """
 
     @classmethod
     @abstractmethod
@@ -873,29 +875,30 @@ class BatchReport(Report, ABC):
 
     @classmethod
     @abstractmethod
-    def _batch_types(cls) -> tuple[type[Batch], ...]:
+    def _batch_types(cls) -> tuple[type[SavedBatch], ...]:
         """ Type(s) of batch(es) for the report. """
 
     @classmethod
     @cache
-    def batch_types(cls) -> dict[str, type[Batch]]:
+    def batch_types(cls) -> dict[str, type[SavedBatch]]:
         """ Type(s) of batch(es) for the report, keyed by name. """
         return {batch_type.btype(): batch_type
                 for batch_type in cls._batch_types()}
 
     @classmethod
-    def get_batch_type(cls, btype: str | None = None) -> type[Batch]:
+    def get_batch_type(cls, btype: str | None = None) -> type[SavedBatch]:
         """ Return a valid type of batch based on its name. """
         if btype is None:
-            if (ntypes := len(cls.batch_types())) != 1:
+            batch_types = list(cls.batch_types().values())
+            if (ntypes := len(batch_types)) != 1:
                 raise ValueError(f"btype is optional only if there is exactly "
                                  f"one type of batch, but got {ntypes} types")
-            return list(cls.batch_types().values())[0]
+            return batch_types[0]
         return cls.batch_types()[btype]
 
 
-class RefBatchReport(BatchReport, RefseqReport, ABC):
-    pass
+class BatchedRefseqReport(BatchedReport, RefseqReport, ABC):
+    """ Convenience class used as a base for several Report classes. """
 
 ########################################################################
 #                                                                      #

@@ -2,18 +2,19 @@ from abc import ABC
 
 from .batch import MaskBatch
 from ..core import path
-from ..core.cmd import CMD_MASK
-from ..core.files import PickleSectFile
+from ..core.clicmd import CMD_MASK
+from ..core.iobatch import SavedBatch
+from ..core.iofile import SavedSect
 
 
-class MaskFile(PickleSectFile, ABC):
+class SavedMask(SavedSect, ABC):
 
     @classmethod
     def auto_fields(cls):
         return {**super().auto_fields(), path.CMD: CMD_MASK}
 
 
-class MaskBatchFile(MaskBatch, MaskFile):
+class SavedMaskBatch(SavedBatch, SavedMask, MaskBatch):
 
     @classmethod
     def file_seg_type(cls):

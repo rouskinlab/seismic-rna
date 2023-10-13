@@ -7,24 +7,20 @@ import numpy as np
 from .batch import QnamesBatch, RelateBatch
 from ..core import path
 from ..core.batch import POS_INDEX
-from ..core.cmd import CMD_REL
-from ..core.files import PickleRefFile
-from ..core.refseq import RefseqFile
+from ..core.iobatch import SavedBatch
+from ..core.clicmd import CMD_REL
+from ..core.iofile import SavedRef
 from ..core.seq import DNA
 
 
-class RelateFile(PickleRefFile, ABC):
+class SavedRelate(SavedRef, ABC):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: CMD_REL}
+        return super().auto_fields() | {path.CMD: CMD_REL}
 
 
-class RelateRefseqFile(RefseqFile, RelateFile):
-    pass
-
-
-class QnamesBatchFile(QnamesBatch, RelateFile):
+class SavedQnamesBatch(SavedRelate, SavedBatch, QnamesBatch):
 
     @classmethod
     def file_seg_type(cls):
@@ -42,7 +38,7 @@ class QnamesBatchFile(QnamesBatch, RelateFile):
         self.names = np.char.decode(state["names"])
 
 
-class RelateBatchFile(RelateBatch, RelateFile):
+class SavedRelateBatch(SavedRelate, SavedBatch, RelateBatch):
 
     @classmethod
     def file_seg_type(cls):
@@ -79,17 +75,17 @@ def from_reads(reads: Iterable[tuple[str, int, int, int, int, dict[int, int]]],
         raise ValueError(f"All positions must be ≤ {len(refseq)}, but got "
                          f"{[x for x in sorted(muts) if x > len(refseq)]}")
     # Assemble and return the batches.
-    name_batch = QnamesBatchFile(sample=sample,
+    name_batch = SavedQnamesBatch(sample=sample,
+                                  ref=ref,
+                                  batch=batch,
+                                  names=names)
+    rel_batch = SavedRelateBatch(sample=sample,
                                  ref=ref,
                                  batch=batch,
-                                 names=names)
-    rel_batch = RelateBatchFile(sample=sample,
-                                ref=ref,
-                                batch=batch,
-                                end5s=end5s,
-                                mid5s=mid5s,
-                                mid3s=mid3s,
-                                end3s=end3s,
-                                muts=muts,
-                                seqlen=len(refseq))
+                                 end5s=end5s,
+                                 mid5s=mid5s,
+                                 mid3s=mid3s,
+                                 end3s=end3s,
+                                 muts=muts,
+                                 seqlen=len(refseq))
     return name_batch, rel_batch

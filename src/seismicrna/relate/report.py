@@ -4,10 +4,9 @@ from functools import cache
 from logging import getLogger
 from pathlib import Path
 
-from .files import QnamesBatchFile, RelateBatchFile, RelateFile
+from .files import SavedRelate, SavedQnamesBatch, SavedRelateBatch
 from ..core import path
-from ..core.cmd import CMD_REL
-from ..core.report import (RefBatchReport,
+from ..core.report import (BatchedRefseqReport,
                            calc_speed,
                            calc_taken,
                            RefF,
@@ -23,7 +22,7 @@ logger = getLogger(__name__)
 BATCH_INDEX_COL = "Read Name"
 
 
-class RelateReport(RefBatchReport, RelateFile):
+class RelateReport(BatchedRefseqReport, SavedRelate):
 
     @classmethod
     def fields(cls):
@@ -42,12 +41,8 @@ class RelateReport(RefBatchReport, RelateFile):
         return path.RelateRepSeg
 
     @classmethod
-    def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: CMD_REL}
-
-    @classmethod
     def _batch_types(cls):
-        return QnamesBatchFile, RelateBatchFile
+        return SavedQnamesBatch, SavedRelateBatch
 
     def __init__(self, *, taken=calc_taken, speed=calc_speed, **kwargs):
         # Note that the named keyword arguments must come after **kwargs
@@ -69,7 +64,7 @@ def refseq_file_seg_types():
 
 @cache
 def refseq_file_auto_fields():
-    return {**RelateReport.auto_fields(), path.EXT: path.PICKLE_BROTLI_EXT}
+    return {**RelateReport.auto_fields(), path.EXT: path.BROTLI_PICKLE_EXT}
 
 
 def refseq_file_path(top: Path, sample: str, ref: str):

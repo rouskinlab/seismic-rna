@@ -12,7 +12,7 @@ import os
 
 from click import Argument, Choice, Option, Parameter, Path
 
-from .files import DEFAULT_BROTLI_LEVEL
+from .iofile import DEFAULT_BROTLI_LEVEL
 from .seq import DNA
 
 # System information

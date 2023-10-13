@@ -123,8 +123,10 @@ def get_fasta_seq(fasta: Path, seq_type: type[Seq], name: str):
     raise ValueError(f"Sequence {repr(name)} was not found in {fasta}")
 
 
-def write_fasta(fasta: Path, refs: Iterable[tuple[str, Seq]],
-                wrap: int = 0, overwrite: bool = False):
+def write_fasta(fasta: Path,
+                refs: Iterable[tuple[str, Seq]],
+                wrap: int = 0,
+                overwrite: bool = False):
     """ Write an iterable of reference names and DNA sequences to a
     FASTA file. """
     logger.info(f"Began writing FASTA file: {fasta}")

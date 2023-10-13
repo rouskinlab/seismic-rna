@@ -6,27 +6,27 @@ from click import command
 
 from .write import mask_section
 from ..core import docdef, path
-from ..core.cli import (arg_input_path,
-                        opt_coords,
-                        opt_primers,
-                        opt_primer_gap,
-                        opt_sections_file,
-                        opt_count_del,
-                        opt_count_ins,
-                        opt_discount_mut,
-                        opt_exclude_polya,
-                        opt_exclude_gu,
-                        opt_exclude_pos,
-                        opt_min_finfo_read,
-                        opt_max_fmut_read,
-                        opt_min_mut_gap,
-                        opt_min_ninfo_pos,
-                        opt_max_fmut_pos,
-                        opt_max_procs,
-                        opt_parallel,
-                        opt_rerun)
-from ..core.cmd import CMD_MASK
-from ..core.data import load_data
+from ..core.cliparam import (arg_input_path,
+                             opt_coords,
+                             opt_primers,
+                             opt_primer_gap,
+                             opt_sections_file,
+                             opt_count_del,
+                             opt_count_ins,
+                             opt_discount_mut,
+                             opt_exclude_polya,
+                             opt_exclude_gu,
+                             opt_exclude_pos,
+                             opt_min_finfo_read,
+                             opt_max_fmut_read,
+                             opt_min_mut_gap,
+                             opt_min_ninfo_pos,
+                             opt_max_fmut_pos,
+                             opt_max_procs,
+                             opt_parallel,
+                             opt_rerun)
+from ..core.clicmd import CMD_MASK
+from ..core.iodata import load_data
 from ..core.parallel import dispatch
 from ..core.sect import RefSections
 from ..core.seq import DNA

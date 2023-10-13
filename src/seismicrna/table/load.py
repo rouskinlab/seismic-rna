@@ -12,7 +12,7 @@ from .base import (MUTAT_REL, CLUST_INDEX_NAMES, REL_NAME,
                    ClustPosTable, ClustReadTable, ClustFreqTable)
 from ..cluster.names import ENSEMBLE_NAME, ORD_CLS_NAME, fmt_clust_name
 from ..core import path
-from ..core.rna import RnaProfile
+from ..core.rna.profile import RnaProfile
 from ..core.sect import Section, INDEX_NAMES
 
 

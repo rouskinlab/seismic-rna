@@ -14,10 +14,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Iterable
 
-from .files import (from_reads,
-                    QnamesBatchFile,
-                    RelateBatchFile,
-                    RelateRefseqFile)
+from .files import from_reads, SavedQnamesBatch, SavedRelateBatch
 from .c.relate import find_rels_line
 from .report import RelateReport
 from .sam import XamViewer
@@ -25,6 +22,7 @@ from ..core import path
 from ..core.fasta import get_fasta_seq
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.qual import encode_phred
+from ..core.ioseq import SavedRefseq
 from ..core.seq import DNA
 
 logger = getLogger(__name__)
@@ -129,9 +127,9 @@ class RelationWriter(object):
 
     def _write_refseq(self, out_dir: Path, brotli_level: int):
         """ Write the reference sequence to a file. """
-        refseq_file = RelateRefseqFile(sample=self.sample,
-                                       ref=self.ref,
-                                       refseq=self.seq)
+        refseq_file = SavedRefseq(sample=self.sample,
+                                  ref=self.ref,
+                                  refseq=self.seq)
         _, checksum = refseq_file.save(out_dir, brotli_level, overwrite=True)
         return checksum
 
@@ -178,8 +176,8 @@ class RelationWriter(object):
                 name_checks = list()
             n_reads = sum(nums_reads)
             n_batches = len(nums_reads)
-            checksums = {RelateBatchFile.btype(): relv_checks,
-                         QnamesBatchFile.btype(): name_checks}
+            checksums = {SavedRelateBatch.btype(): relv_checks,
+                         SavedQnamesBatch.btype(): name_checks}
             logger.info(f"Ended {self}: {n_reads} reads in {n_batches} batches")
             return n_reads, n_batches, checksums
         finally:

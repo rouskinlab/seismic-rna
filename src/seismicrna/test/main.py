@@ -18,8 +18,8 @@ from os.path import dirname
 from click import command
 
 from ..core import docdef
-from ..core.cli import opt_verbose
-from ..core.cmd import CMD_TEST
+from ..core.cliparam import opt_verbose
+from ..core.clicmd import CMD_TEST
 
 # Parameters for command line interface
 params = [opt_verbose]

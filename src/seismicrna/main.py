@@ -28,11 +28,11 @@ from . import (whole,
                test,
                fastc)
 from .core import logs
-from .core.cli import (opt_log,
-                       opt_log_color,
-                       opt_profile,
-                       opt_quiet,
-                       opt_verbose)
+from .core.cliparam import (opt_log,
+                            opt_log_color,
+                            opt_profile,
+                            opt_quiet,
+                            opt_verbose)
 from .core.version import __version__
 
 params = [

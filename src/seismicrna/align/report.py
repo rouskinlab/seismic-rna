@@ -3,7 +3,7 @@ from __future__ import annotations
 from logging import getLogger
 
 from ..core import path
-from ..core.cmd import CMD_ALIGN
+from ..core.clicmd import CMD_ALIGN
 from ..core.report import (Report,
                            SampleF,
                            IsDemultF,

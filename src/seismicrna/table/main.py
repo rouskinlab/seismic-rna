@@ -8,9 +8,9 @@ from click import command
 
 from .write import write
 from ..core import docdef, path
-from ..core.cli import (arg_input_path, opt_rels,
-                        opt_max_procs, opt_parallel, opt_rerun)
-from ..core.cmd import CMD_TABLE
+from ..core.cliparam import (arg_input_path, opt_rels,
+                             opt_max_procs, opt_parallel, opt_rerun)
+from ..core.clicmd import CMD_TABLE
 from ..core.parallel import dispatch
 
 logger = getLogger(__name__)

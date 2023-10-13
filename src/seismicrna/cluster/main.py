@@ -5,11 +5,11 @@ from click import command
 
 from .krun import cluster
 from ..core import docdef, path
-from ..core.cli import (arg_input_path, opt_max_clusters,
-                        opt_min_nmut_read, opt_em_runs, opt_em_thresh,
-                        opt_min_em_iter, opt_max_em_iter,
-                        opt_parallel, opt_max_procs, opt_rerun)
-from ..core.cmd import CMD_CLUST
+from ..core.cliparam import (arg_input_path, opt_max_clusters,
+                             opt_min_nmut_read, opt_em_runs, opt_em_thresh,
+                             opt_min_em_iter, opt_max_em_iter,
+                             opt_parallel, opt_max_procs, opt_rerun)
+from ..core.clicmd import CMD_CLUST
 from ..core.parallel import as_list_of_tuples, dispatch
 
 logger = getLogger(__name__)

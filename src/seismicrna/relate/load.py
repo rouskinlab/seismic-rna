@@ -1,8 +1,8 @@
 from logging import getLogger
 
-from .files import RelateBatchFile, RelateRefseqFile
+from .files import SavedRelateBatch
 from .report import RelateReport
-from ..core.data import BatchLoader
+from ..core.iodata import BatchedDatasetLoader
 
 logger = getLogger(__name__)
 
@@ -11,12 +11,8 @@ VEC = "by_vector"
 READ = "Read Name"
 
 
-class RelateLoader(BatchLoader):
+class RelateLoader(BatchedDatasetLoader):
     """ Load batches of relation vectors. """
-
-    @classmethod
-    def get_refseq_type(cls):
-        return RelateRefseqFile
 
     @classmethod
     def get_report_type(cls):
@@ -24,7 +20,7 @@ class RelateLoader(BatchLoader):
 
     @classmethod
     def get_batch_type(cls):
-        return RelateBatchFile
+        return SavedRelateBatch
 
 ########################################################################
 #                                                                      #

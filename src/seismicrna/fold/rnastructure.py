@@ -9,7 +9,7 @@ from logging import getLogger
 from pathlib import Path
 
 from ..core import path
-from ..core.rna import RnaProfile
+from ..core.rna.profile import RnaProfile
 from ..core.shell import (args_to_cmd, run_cmd, RNASTRUCTURE_FOLD_CMD,
                           RNASTRUCTURE_CT2DOT_CMD, RNASTRUCTURE_DOT2CT_CMD)
 

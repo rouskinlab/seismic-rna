@@ -1,8 +1,7 @@
-from .batch import MaskBatch
-from .files import MaskFile
+from .files import SavedMask, SavedMaskBatch
 from ..core import path
-from ..core.cmd import CMD_MASK
-from ..core.report import (BatchReport,
+from ..core.clicmd import CMD_MASK
+from ..core.report import (BatchedReport,
                            SampleF,
                            RefF,
                            SectF,
@@ -38,7 +37,7 @@ from ..core.report import (BatchReport,
                            NumReadsKeptF)
 
 
-class MaskReport(BatchReport, MaskFile):
+class MaskReport(BatchedReport, SavedMask):
 
     @classmethod
     def file_seg_type(cls):
@@ -46,7 +45,7 @@ class MaskReport(BatchReport, MaskFile):
 
     @classmethod
     def _batch_types(cls):
-        return MaskBatch,
+        return SavedMaskBatch,
 
     @classmethod
     def fields(cls):

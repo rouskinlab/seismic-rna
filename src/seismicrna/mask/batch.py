@@ -4,6 +4,7 @@ from typing import Iterable
 import numpy as np
 
 from ..core.batch import Batch, RelsBatch, get_length, sanitize_pos
+
 from ..core.types import fit_uint_type
 
 
@@ -57,15 +58,26 @@ class MaskRelsBatch(MaskBatch, RelsBatch):
                                                  assume_unique=True)
                                   if reads is not None
                                   else pos_mut_reads)
-        read_nums = reads if reads is not None else batch.read_nums
-        read_indexes = batch.read_idx[read_nums]
+        if reads is not None:
+            read_nums = np.asarray(reads, dtype=batch.read_dtype)
+            read_indexes = batch.read_idx[read_nums]
+            end5s = batch.end5s[read_indexes]
+            mid5s = batch.mid5s[read_indexes]
+            mid3s = batch.mid3s[read_indexes]
+            end3s = batch.end3s[read_indexes]
+        else:
+            read_nums = batch.read_nums
+            end5s = batch.end5s
+            mid5s = batch.mid5s
+            mid3s = batch.mid3s
+            end3s = batch.end3s
         return cls(batch=batch.batch,
                    muts=muts,
                    seqlen=batch.seqlen,
-                   end5s=batch.end5s[read_indexes],
-                   mid5s=batch.mid5s[read_indexes],
-                   mid3s=batch.mid3s[read_indexes],
-                   end3s=batch.end3s[read_indexes],
+                   end5s=end5s,
+                   mid5s=mid5s,
+                   mid3s=mid3s,
+                   end3s=end3s,
                    read_nums=read_nums,
                    max_read=batch.max_read)
 

@@ -14,14 +14,14 @@ from click import command
 
 from .write import write_all
 from ..core import docdef, path
-from ..core.cli import (arg_input_path, arg_fasta,
-                        opt_out_dir, opt_temp_dir,
-                        opt_min_mapq, opt_min_reads, opt_batch_size,
-                        opt_phred_enc, opt_min_phred,
-                        opt_ambrel, opt_brotli_level,
-                        opt_parallel, opt_max_procs,
-                        opt_rerun, opt_save_temp)
-from ..core.cmd import CMD_REL
+from ..core.cliparam import (arg_input_path, arg_fasta,
+                             opt_out_dir, opt_temp_dir,
+                             opt_min_mapq, opt_min_reads, opt_batch_size,
+                             opt_phred_enc, opt_min_phred,
+                             opt_ambrel, opt_brotli_level,
+                             opt_parallel, opt_max_procs,
+                             opt_rerun, opt_save_temp)
+from ..core.clicmd import CMD_REL
 from ..core.temp import lock_temp_dir
 
 logger = getLogger(__name__)

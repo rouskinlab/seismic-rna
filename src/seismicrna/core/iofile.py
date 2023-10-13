@@ -57,8 +57,8 @@ def load_pkl_br(file: Path,
     return item
 
 
-class OutputFile(ABC):
-    """ Abstract base class for an output item. """
+class SavedFile(ABC):
+    """ Any file saved by SEISMIC-RNA, rather than by a dependency. """
 
     @classmethod
     @abstractmethod
@@ -83,10 +83,10 @@ class OutputFile(ABC):
     @classmethod
     def auto_fields(cls) -> dict[str, Any]:
         """ Fields that are filled automatically. """
-        if len(exts := cls.file_seg_type().exts) != 1:
-            raise ValueError(f"Expected exactly one file extension, "
-                             f"but got {cls.file_seg_type().exts}")
-        return {path.EXT: exts[0]}
+        try:
+            return {path.EXT: cls.file_seg_type().exts[0]}
+        except IndexError:
+            raise ValueError(f"Got no file extensions for {cls.__name__}")
 
     @classmethod
     def build_path(cls, **path_fields):
@@ -114,7 +114,8 @@ class OutputFile(ABC):
         """ Save the object to a file. """
 
 
-class HasRefFile(OutputFile, ABC):
+class SavedRef(SavedFile, ABC):
+    """ Saved file with a sample, command, and reference. """
 
     @classmethod
     def dir_seg_types(cls):
@@ -128,7 +129,8 @@ class HasRefFile(OutputFile, ABC):
         self.ref = ref
 
 
-class HasSectFile(HasRefFile, ABC):
+class SavedSect(SavedRef, ABC):
+    """ File with a section of a reference. """
 
     @classmethod
     def dir_seg_types(cls):
@@ -139,10 +141,11 @@ class HasSectFile(HasRefFile, ABC):
         self.sect = sect
 
 
-class PickleFile(OutputFile, ABC):
+class SavedBrickle(SavedFile, ABC):
+    """ Brotli-compressed file of a Pickled object (Brickle). """
 
     @classmethod
-    def load(cls, file: Path, checksum: str | None = None):
+    def load(cls, file: Path, checksum: str = ""):
         """ Load from a compressed pickle file. """
         return load_pkl_br(file, check_type=cls, checksum=checksum)
 
@@ -168,11 +171,3 @@ class PickleFile(OutputFile, ABC):
 
     def __setstate__(self, state: dict[str, Any]):
         self.__dict__.update(state)
-
-
-class PickleRefFile(HasRefFile, PickleFile, ABC):
-    pass
-
-
-class PickleSectFile(HasSectFile, PickleFile, ABC):
-    pass

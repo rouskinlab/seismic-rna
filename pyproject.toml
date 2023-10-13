@@ -24,6 +24,7 @@ dependencies = [
     "cutadapt>=4.4",
     "fastqsplitter>=1.2",
     "matplotlib>=3.6",
+    "networkx>=3.1",
     "numpy>=1.23",
     "pandas>=1.5",
     "plotly>=5.11",

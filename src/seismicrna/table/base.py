@@ -7,7 +7,7 @@ import pandas as pd
 
 from ..cluster.names import CLS_NAME, ORD_NAME
 from ..core import path
-from ..core.cmd import CMD_TABLE
+from ..core.clicmd import CMD_TABLE
 from ..core.mu import winsorize
 from ..core.sect import index_to_pos, index_to_seq
 

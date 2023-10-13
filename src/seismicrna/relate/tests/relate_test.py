@@ -7,7 +7,7 @@ from ..iterread import iter_alignments
 from ..relate import relate_line
 from ..seqpos import format_seq_pos
 from ...align.sim import as_sam
-from ...core.cli import opt_min_mapq
+from ...core.cliparam import opt_min_mapq
 from ...core.qual import OK_QUAL
 from ...core.rel import NOCOV
 from ...core.seq import DNA

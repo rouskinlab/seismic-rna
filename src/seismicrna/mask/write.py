@@ -10,10 +10,10 @@ import numpy as np
 import pandas as pd
 
 from .batch import MaskRelsBatch
-from .files import MaskBatchFile
+from .files import SavedMaskBatch
 from .report import MaskReport
 from ..core.batch import count_per_pos, Batch, RelsBatch
-from ..core.cli import opt_brotli_level
+from ..core.cliparam import opt_brotli_level
 from ..core.pattern import RelPattern
 from ..core.sect import Section, index_to_pos
 from ..relate.load import RelateLoader
@@ -177,12 +177,16 @@ class RelMasker(object):
                              f"{self.min_finfo_read}")
         if self.min_finfo_read == 0.:
             # All reads have sufficiently many informative positions.
+            logger.debug(f"{self} skipped filtering reads with insufficient "
+                         f"informative fractions in {batch}")
             return batch
         # Find the reads with sufficiently many informative positions.
-        info, muts = batch.count_per_read(self.section, self.pattern)
+        info, muts = batch.count_per_read(self.loader.refseq, self.pattern)
         with np.errstate(invalid="ignore"):
             finfo_read = info.values / self.pos_kept.size
         reads = info.index[finfo_read >= self.min_finfo_read]
+        logger.debug(f"{self} kept {reads.size} reads with informative "
+                     f"fractions ≥ {self.min_finfo_read} in {batch}")
         # Return a new batch of only those reads.
         return MaskRelsBatch.from_batch(batch, reads=reads)
 
@@ -193,12 +197,16 @@ class RelMasker(object):
                              f"{self.max_fmut_read}")
         if self.max_fmut_read == 1.:
             # All reads have sufficiently few mutations.
+            logger.debug(f"{self} skipped filtering reads with excessive "
+                         f"mutation fractions in {batch}")
             return batch
         # Find the reads with sufficiently few mutations.
-        info, muts = batch.count_per_read(self.section, self.pattern)
+        info, muts = batch.count_per_read(self.loader.refseq, self.pattern)
         with np.errstate(invalid="ignore"):
             fmut_read = muts.values / info.values
-        reads = info.index[fmut_read >= self.min_finfo_read]
+        reads = info.index[fmut_read <= self.max_fmut_read]
+        logger.debug(f"{self} kept {reads.size} reads with mutated "
+                     f"fractions ≤ {self.max_fmut_read} in {batch}")
         # Return a new batch of only those reads.
         return MaskRelsBatch.from_batch(batch, reads=reads)
 
@@ -209,8 +217,14 @@ class RelMasker(object):
                 f"min_mut_gap must be ≥ 0, but got {self.min_mut_gap}")
         if self.min_mut_gap == 0:
             # No read can have a pair of mutations that are too close.
+            logger.debug(f"{self} skipped filtering reads with pairs of "
+                         f"mutations too close in {batch}")
             return batch
-        reads = batch.nonprox_muts(self.section, self.pattern, self.min_mut_gap)
+        reads = batch.nonprox_muts(self.loader.refseq,
+                                   self.pattern,
+                                   self.min_mut_gap)
+        logger.debug(f"{self} kept {reads.size} reads with no two mutations "
+                     f"separated by < {self.min_mut_gap} nt in {batch}")
         return MaskRelsBatch.from_batch(batch, reads=reads)
 
     def _exclude_positions(self):
@@ -237,12 +251,12 @@ class RelMasker(object):
         # Record the number of reads remaining after filtering.
         self._n_reads[self.MASK_READ_KEPT] += n
         # Save the batch.
-        batch_file = MaskBatchFile(sample=self.loader.sample,
-                                   ref=self.loader.ref,
-                                   sect=self.section.name,
-                                   batch=batch.batch,
-                                   read_nums=batch.read_nums,
-                                   max_read=batch.max_read)
+        batch_file = SavedMaskBatch(sample=self.loader.sample,
+                                    ref=self.loader.ref,
+                                    sect=self.section.name,
+                                    batch=batch.batch,
+                                    read_nums=batch.read_nums,
+                                    max_read=batch.max_read)
         _, checksum = batch_file.save(self.top,
                                       brotli_level=self.brotli_level,
                                       overwrite=True)
@@ -267,7 +281,8 @@ class RelMasker(object):
             logger.warning(f"No positions remained after excluding with {self}")
         # Filter out reads based on the parameters and count the number
         # of informative and mutated positions remaining.
-        info, muts = count_per_pos(self.section,
+        info, muts = count_per_pos(self.pos_kept,
+                                   self.loader.refseq,
                                    self.pattern,
                                    map(self._filter_batch_reads,
                                        self.loader.iter_batches()))

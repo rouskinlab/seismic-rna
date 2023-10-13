@@ -40,8 +40,14 @@ import re
 from string import ascii_letters, digits, printable
 from typing import Any, Iterable, Sequence
 
-from .cmd import (CMD_QC, CMD_ALIGN, CMD_REL, CMD_MASK, CMD_CLUST, CMD_TABLE,
-                  CMD_FOLD, CMD_GRAPH)
+from .clicmd import (CMD_QC,
+                     CMD_ALIGN,
+                     CMD_REL,
+                     CMD_MASK,
+                     CMD_CLUST,
+                     CMD_TABLE,
+                     CMD_FOLD,
+                     CMD_GRAPH)
 
 logger = getLogger(__name__)
 
@@ -72,26 +78,37 @@ STEP_ALIGN_MAP = "map"
 
 STEPS_VECT_SAMS = "sams"
 
-STEPS = (STEP_QC_INIT, STEP_QC_TRIM, STEP_ALIGN_INDEX, STEP_ALIGN_INDEX_DEMULT,
-         STEP_ALIGN_TRIM, STEP_ALIGN_MAP, STEPS_VECT_SAMS)
+STEPS = (STEP_QC_INIT,
+         STEP_QC_TRIM,
+         STEP_ALIGN_INDEX,
+         STEP_ALIGN_INDEX_DEMULT,
+         STEP_ALIGN_TRIM,
+         STEP_ALIGN_MAP,
+         STEPS_VECT_SAMS)
 
 CLUST_PROP_RUN_TABLE = "props"
 CLUST_MUS_RUN_TABLE = "mus"
 CLUST_RESP_RUN_TABLE = "resps"
 CLUST_COUNT_RUN_TABLE = "counts"
-CLUST_TABLES = (CLUST_PROP_RUN_TABLE, CLUST_MUS_RUN_TABLE,
-                CLUST_RESP_RUN_TABLE, CLUST_COUNT_RUN_TABLE)
+CLUST_TABLES = (CLUST_PROP_RUN_TABLE,
+                CLUST_MUS_RUN_TABLE,
+                CLUST_RESP_RUN_TABLE,
+                CLUST_COUNT_RUN_TABLE)
 
 RELATE_POS_TAB = "relate-per-pos"
 RELATE_READ_TAB = "relate-per-read"
 MASKED_POS_TAB = "mask-per-pos"
 MASKED_READ_TAB = "mask-per-read"
 CLUST_POS_TAB = "clust-per-pos"
-CLUST_FREQ_TAB = "clust-freq"
 CLUST_READ_TAB = "clust-per-read"
-COUNT_TABLES = (RELATE_POS_TAB, RELATE_READ_TAB,
-                MASKED_POS_TAB, MASKED_READ_TAB,
-                CLUST_POS_TAB, CLUST_FREQ_TAB, CLUST_READ_TAB)
+CLUST_FREQ_TAB = "clust-freq"
+COUNT_TABLES = (RELATE_POS_TAB,
+                RELATE_READ_TAB,
+                MASKED_POS_TAB,
+                MASKED_READ_TAB,
+                CLUST_POS_TAB,
+                CLUST_READ_TAB,
+                CLUST_FREQ_TAB)
 
 # File extensions
 
@@ -99,15 +116,24 @@ TXT_EXT = ".txt"
 CSV_EXT = ".csv"
 CSVZIP_EXT = ".csv.gz"
 CSV_EXTS = CSV_EXT, CSVZIP_EXT
-PICKLE_BROTLI_EXT = ".pkl.br"
-TEXT_BROTLI_EXT = ".txt.br"
+BROTLI_PICKLE_EXT = ".brickle"
 JSON_EXT = ".json"
 FASTA_EXTS = ".fa", ".fna", ".fasta"
-BOWTIE2_INDEX_EXTS = (".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2",
-                      ".rev.1.bt2", ".rev.2.bt2")
-FQ_EXTS = (".fq.gz", ".fastq.gz", ".fq", ".fastq",
-           "_001.fq.gz", "_001.fastq.gz", "_001.fq", "_001.fastq")
-FQ_PAIRED_EXTS_TEMPLATES = ("_R{}{}", "_mate{}{}", "_{}_sequence{}")
+BOWTIE2_INDEX_EXTS = (".1.bt2",
+                      ".2.bt2",
+                      ".3.bt2",
+                      ".4.bt2",
+                      ".rev.1.bt2",
+                      ".rev.2.bt2")
+FQ_EXTS = (".fq.gz",
+           ".fastq.gz",
+           ".fq",
+           ".fastq",
+           "_001.fq.gz",
+           "_001.fastq.gz",
+           "_001.fq",
+           "_001.fastq")
+FQ_PAIRED_EXTS_TEMPLATES = "_R{}{}", "_mate{}{}", "_{}_sequence{}"
 FQ1_EXTS = tuple(template.format(1, ext) for template, ext in
                  product(FQ_PAIRED_EXTS_TEMPLATES, FQ_EXTS))
 FQ2_EXTS = tuple(template.format(2, ext) for template, ext in
@@ -236,8 +262,14 @@ class Field(object):
 # Fields
 TopField = Field(pl.Path)
 NameField = Field(str)
-CmdField = Field(str, [CMD_QC, CMD_ALIGN, CMD_REL, CMD_MASK, CMD_CLUST,
-                       CMD_TABLE, CMD_FOLD, CMD_GRAPH])
+CmdField = Field(str, [CMD_QC,
+                       CMD_ALIGN,
+                       CMD_REL,
+                       CMD_MASK,
+                       CMD_CLUST,
+                       CMD_TABLE,
+                       CMD_FOLD,
+                       CMD_GRAPH])
 StepField = Field(str, STEPS)
 IntField = Field(int)
 CountTabField = Field(str, COUNT_TABLES)
@@ -246,14 +278,14 @@ ClustTabField = Field(str, CLUST_TABLES)
 # File extensions
 TextExt = Field(str, [TXT_EXT], is_ext=True)
 ReportExt = Field(str, [JSON_EXT], is_ext=True)
-RefseqFileExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
-QnamesBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
-RelVecBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
+RefseqFileExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
+QnamesBatExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
+RelVecBatExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 MaskRepExt = Field(str, [JSON_EXT], is_ext=True)
-MaskBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
+MaskBatExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 ClustTabExt = Field(str, CSV_EXTS, is_ext=True)
 ClustCountExt = Field(str, CSV_EXTS, is_ext=True)
-ClustBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
+ClustBatExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 MutTabExt = Field(str, CSV_EXTS, is_ext=True)
 FastaExt = Field(str, FASTA_EXTS, is_ext=True)
 FastaIndexExt = Field(str, BOWTIE2_INDEX_EXTS, is_ext=True)
@@ -460,7 +492,8 @@ TableSeg = Segment("table", {TABLE: CountTabField, EXT: MutTabExt})
 ConnectTableSeg = Segment("rna-ct", {STRUCT: NameField, EXT: ConnectTableExt})
 DotBracketSeg = Segment("rna-dot", {STRUCT: NameField, EXT: DotBracketExt})
 DmsReactsSeg = Segment("dms-reacts", {REACTS: NameField, EXT: DmsReactsExt})
-VarnaColorSeg = Segment("varna-color", {REACTS: NameField, EXT: TextExt},
+VarnaColorSeg = Segment("varna-color",
+                        {REACTS: NameField, EXT: TextExt},
                         frmt="{reacts}_varna-color{ext}")
 
 # Graphs

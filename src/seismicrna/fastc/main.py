@@ -13,8 +13,8 @@ from click import command
 
 from .fastaclean import FastaCleaner
 from ..core import docdef
-from ..core.cli import arg_fasta, opt_out_dir, opt_rerun
-from ..core.cmd import CMD_FASTC
+from ..core.cliparam import arg_fasta, opt_out_dir, opt_rerun
+from ..core.clicmd import CMD_FASTC
 from ..core.seq import DNA
 
 logger = getLogger(__name__)

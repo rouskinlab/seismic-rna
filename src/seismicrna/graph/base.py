@@ -9,7 +9,7 @@ from plotly.subplots import make_subplots
 
 from .color import ColorMap, get_cmap
 from ..core import path
-from ..core.cmd import CMD_GRAPH
+from ..core.clicmd import CMD_GRAPH
 from ..core.seq import DNA
 from ..table.base import Table
 from ..table.load import TableLoader, PosTableLoader

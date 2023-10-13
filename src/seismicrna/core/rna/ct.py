@@ -4,41 +4,10 @@ from typing import TextIO, Iterable
 
 import pandas as pd
 
-from .sect import Section, POS_NAME
-from .seq import RNA
+from ..sect import Section, POS_NAME
+from ..seq import RNA
 
 logger = getLogger(__name__)
-
-
-def pairs_to_partners(pairs: Iterable[tuple[int, int]], section: Section):
-    """ Return a Series of every position in the section and the base to
-    which it pairs, or 0 if it does not pair. """
-    # Initialize the series of pairs to 0 for every position.
-    partners = pd.Series(0, index=pd.Index(section.range_int, name=POS_NAME))
-
-    def add_pair(at: int, to: int):
-        """ Add a base pair at position `at` to position `to`. """
-        # Find the current pairing partner at this position.
-        try:
-            to2 = partners.loc[at]
-        except KeyError:
-            raise ValueError(f"Position {at} is not in {section}")
-        if to2 == 0:
-            # There is no pairing partner at this position: add it.
-            partners.loc[at] = to
-        elif to2 == to:
-            # A previous partner matches the current partner.
-            logger.warning(f"Pair {at}-{to} was given twice")
-        else:
-            # A previous partner conflicts with the current partner.
-            raise ValueError(f"Position {at} was given pairs with both "
-                             f"{to2} and {to}")
-
-    # Add all base pairs (in both directions) to the table.
-    for pos1, pos2 in pairs:
-        add_pair(pos1, pos2)
-        add_pair(pos2, pos1)
-    return partners
 
 
 def parse_ct_pairs(ct_path: Path, start: int | None = None):

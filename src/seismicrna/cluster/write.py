@@ -12,7 +12,7 @@ from .em import EmClustering
 from .names import ORD_CLS_NAME, READ_NAME
 from .report import ClustReport
 from ..core import path
-from ..core.cmd import CMD_CLUST
+from ..core.clicmd import CMD_CLUST
 from ..mask.load import MaskLoader
 
 logger = getLogger(__name__)

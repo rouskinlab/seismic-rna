@@ -1,7 +1,7 @@
 from click import group
 
 from . import seqbar, seqcorr, seqdiff, scatter
-from ..core.cmd import CMD_GRAPH
+from ..core.clicmd import CMD_GRAPH
 
 
 # Group for all graph commands

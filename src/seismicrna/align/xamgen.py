@@ -53,7 +53,7 @@ from subprocess import CompletedProcess
 
 from .fqunit import FastqUnit
 from ..core import path
-from ..core.cli import BOWTIE2_ORIENT
+from ..core.cliparam import BOWTIE2_ORIENT
 from ..core.shell import (BOWTIE2_CMD, BOWTIE2_BUILD_CMD, ECHO_CMD,
                           args_to_cmd, cmds_to_pipe, cmds_to_subshell,
                           ShellCommand)

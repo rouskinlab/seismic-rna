@@ -5,16 +5,16 @@ from click import command
 
 from .rnastructure import fold, ct2dot
 from ..core import docdef, path
-from ..core.cli import (arg_input_path, opt_temp_dir, opt_save_temp,
-                        arg_fasta, opt_sections_file,
-                        opt_coords, opt_primers, opt_primer_gap,
-                        opt_quantile,
-                        opt_max_procs, opt_parallel, opt_rerun)
-from ..core.cmd import CMD_FOLD
+from ..core.cliparam import (arg_input_path, opt_temp_dir, opt_save_temp,
+                             arg_fasta, opt_sections_file,
+                             opt_coords, opt_primers, opt_primer_gap,
+                             opt_quantile,
+                             opt_max_procs, opt_parallel, opt_rerun)
+from ..core.clicmd import CMD_FOLD
 from ..core.depend import require_dependency
 from ..core.fasta import parse_fasta
 from ..core.parallel import as_list_of_tuples, dispatch
-from ..core.rna import RnaProfile
+from ..core.rna.profile import RnaProfile
 from ..core.sect import RefSections, Section
 from ..core.seq import DNA
 from ..core.shell import RNASTRUCTURE_CT2DOT_CMD, RNASTRUCTURE_FOLD_CMD

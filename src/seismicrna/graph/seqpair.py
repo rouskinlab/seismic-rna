@@ -14,10 +14,10 @@ from .write import TwoTableGraphWriter
 from ..cluster.names import (CLS_NAME, ORD_NAME, ORD_CLS_NAME,
                              validate_order_cluster)
 from ..core import docdef
-from ..core.cli import (arg_input_path, opt_rels,
-                        opt_y_ratio, opt_quantile, opt_arrange,
-                        opt_csv, opt_html, opt_pdf,
-                        opt_max_procs, opt_parallel)
+from ..core.cliparam import (arg_input_path, opt_rels,
+                             opt_y_ratio, opt_quantile, opt_arrange,
+                             opt_csv, opt_html, opt_pdf,
+                             opt_max_procs, opt_parallel)
 from ..core.parallel import dispatch
 from ..core.sect import POS_NAME
 from ..table.base import REL_CODES

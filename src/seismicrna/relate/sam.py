@@ -5,7 +5,7 @@ from typing import Callable, TextIO
 
 from ..core import path
 from ..core.batch import BATCH_INDEX
-from ..core.cmd import CMD_REL
+from ..core.clicmd import CMD_REL
 from ..core.xam import (SAM_DELIM,
                         count_total_reads,
                         run_view_xam,
@@ -127,9 +127,12 @@ class XamViewer(object):
     def temp_sam_path(self):
         """ Get the path to the temporary SAM file. """
         return path.build(*path.XAM_STEP_SEGS,
-                          top=self.temp_dir, sample=self.sample,
-                          cmd=CMD_REL, step=path.STEPS_VECT_SAMS,
-                          ref=self.ref, ext=path.SAM_EXT)
+                          top=self.temp_dir,
+                          sample=self.sample,
+                          cmd=CMD_REL,
+                          step=path.STEPS_VECT_SAMS,
+                          ref=self.ref,
+                          ext=path.SAM_EXT)
 
     def create_temp_sam(self):
         """ Create the temporary SAM file. """

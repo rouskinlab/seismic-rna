@@ -2,11 +2,11 @@ from .compare import RunOrderResults, find_best_order
 from ..mask.load import MaskLoader
 from ..core import path
 from ..core.bitvect import UniqMutBits
-from ..core.cmd import CMD_CLUST
-from ..core.report import BatchReport
+from ..core.clicmd import CMD_CLUST
+from ..core.report import BatchedReport
 
 
-class ClustReport(BatchReport):
+class ClustReport(BatchedReport):
     __slots__ = (
         # Sample, reference, and section information.
         "sample", "ref", "sect", "end5", "end3", "n_uniq_reads",

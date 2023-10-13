@@ -8,17 +8,17 @@ Utilities for sections of reference sequences.
 
 """
 
+import re
 from collections import defaultdict, namedtuple
 from functools import cached_property, reduce
 from logging import getLogger
 from pathlib import Path
-import re
 from typing import Iterable, Sequence
 
 import numpy as np
 import pandas as pd
 
-from .seq import DNA, BASEA, BASEC
+from .seq import BASEA, BASEC, BASEN, DNA
 
 logger = getLogger(__name__)
 
@@ -241,7 +241,7 @@ class Section(object):
             name = FULL_NAME
         if end5 is None:
             # Set the 5' end to the first position in the reference.
-            end5 = 1
+            end5 = POS_INDEX
         elif end5 < 0:
             # Compute the corresponding positive 5' coordinate.
             end5 += len(refseq) + 1
@@ -251,14 +251,16 @@ class Section(object):
         elif end3 < 0:
             # Compute the corresponding positive 3' coordinate.
             end3 += len(refseq) + 1
-        if not 1 <= end5 <= end3 <= len(refseq):
-            raise ValueError("Must have 1 ≤ end5 ≤ end3 ≤ len(refseq), "
-                             f"but got end5 = {end5}, end3 = {end3}, and "
-                             f"len(refseq) = {len(refseq)}")
+        if end5 < POS_INDEX:
+            raise ValueError(f"Need end5 ≥ {POS_INDEX}, but got {end5}")
+        if end3 > len(refseq):
+            raise ValueError(f"Need end3 ≤ {len(refseq)}, but got {end3}")
+        if end5 > end3 + 1:
+            raise ValueError(f"Need end5 ≤ end3 + 1, but got {end5} and {end3}")
         self.end5: int = end5
         self.end3: int = end3
-        self.seq = DNA(refseq[end5 - 1: end3])
-        self.full = end5 == 1 and end3 == len(refseq)
+        self.seq = DNA(refseq[end5 - POS_INDEX: end3 - (POS_INDEX - 1)])
+        self.full = end5 == POS_INDEX and end3 == len(refseq)
         if name is None:
             self.name = self.hyphen
         elif isinstance(name, str):
@@ -351,37 +353,6 @@ class Section(object):
         """ Number of relevant positions in the section. """
         return self.length - self.masked_int.size
 
-    @property
-    def base_counts(self):
-        """ Count each unmasked base in the section. """
-        bases, counts = np.unique(self.unmasked.get_level_values(BASE_NAME),
-                                  return_counts=True)
-        return pd.Series(counts, bases)
-
-    def iter_bases(self):
-        """ Yield the index positions for each type of base. """
-        index = self.unmasked
-        bases = index.get_level_values(BASE_NAME)
-        for base in DNA.alph():
-            index_base = index[bases == base]
-            if index_base.size > 0:
-                yield base, index_base
-
-    def windows(self, size: int):
-        """ Yield the positions in each window of size positions of the
-        section. """
-        if size < 1:
-            raise ValueError(f"size must be ≥ 1, but got {size}")
-        # Define the 5' and 3' ends of the window.
-        win5 = self.end5
-        win3 = min(win5 + (size - 1), self.end3)
-        # Create a Series of True items with the positions as the index.
-        positions = pd.Series(True, self.unmasked_int)
-        while win3 <= self.end3:
-            yield (win5, win3), positions.loc[win5: win3].index.values
-            win5 += 1
-            win3 += 1
-
     def get_mask(self, name: str):
         """ Get the positions masked under the given name. """
         return self._masks[name]
@@ -439,21 +410,6 @@ class Section(object):
         """ Mask arbitrary positions. """
         self.add_mask(self.MASK_POS, pos)
 
-    @property
-    def _hash_key(self):
-        # Do not cache this method since self._masks can change.
-        return (
-            self.ref,
-            self.seq,
-            self.end5,
-            self.end3,
-            self.name,
-            tuple(self._masks),
-        )
-
-    def __hash__(self):
-        return hash(self._hash_key)
-
     def __str__(self):
         return f"Section {self.ref_sect} ({self.hyphen}) {self.mask_names}"
 
@@ -478,6 +434,30 @@ class Section(object):
                 return False
         # All checks for equality passed.
         return True
+
+
+def intersection(*sections: Section, name: str | None = None):
+    """ Return the intersection of sections. """
+    if not sections:
+        raise ValueError("Cannot take intersection of zero sections")
+    # Confirm that all reference names match.
+    refs = list(set(section.ref for section in sections))
+    if len(refs) != 1:
+        raise ValueError(f"Expected exactly one reference, but got {refs}")
+    # Compute the 5' and 3' coordinates of the intersection.
+    end5 = max(section.end5 for section in sections)
+    end3 = min(section.end3 for section in sections)
+    if end5 > end3:
+        # The intersection among the given sections is empty.
+        return Section(refs[0], DNA(''))
+    # Confirm that the reference sequences match.
+    seqs = list(set(section.seq[end5 - section.end5: end3 - section.end5]
+                    for section in sections))
+    if len(seqs) != 1:
+        raise ValueError(f"Expected exactly one sequence, but got {seqs}")
+    # Pad the intersection with artificial sequence on the 5' side.
+    refseq = DNA(BASEN * (end5 - POS_INDEX)) + seqs[0]
+    return Section(refs[0], refseq, end5=end5, end3=end3, name=name)
 
 
 class SectionFinder(Section):
@@ -559,8 +539,11 @@ class SectionFinder(Section):
                 # Locate the start of the reverse primer, then end the
                 # section (primer_gap + 1) positions upstream.
                 end3 = self.locate(refseq, rev.rc).pos5 - (primer_gap + 1)
-        super().__init__(refseq=refseq, ref=ref,
-                         end5=end5, end3=end3, name=name)
+        super().__init__(refseq=refseq,
+                         ref=ref,
+                         end5=end5,
+                         end3=end3,
+                         name=name)
 
     @staticmethod
     def locate(refseq: DNA, primer: DNA) -> SectionTuple:

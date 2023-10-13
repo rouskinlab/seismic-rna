@@ -8,7 +8,7 @@ from .names import ORD_CLS_NAME
 from .report import ClustReport
 from ..core import path
 from ..core.bitvect import BitBatch, ClusterBitBatch, ClustBitCounter
-from ..core.data import BatchLoader
+from ..core.iodata import BatchedDatasetLoader
 from ..core.mu import calc_mu_adj_df, calc_f_obs_df
 from ..mask.load import MaskLoader
 
@@ -22,7 +22,7 @@ def get_cluster_index(max_order: int):
                                      for cluster in range(1, order + 1))
 
 
-class ClustLoader(BatchLoader):
+class ClustLoader(BatchedDatasetLoader):
     """ Load clustering results. """
 
     def __init__(self, report: ClustReport):
