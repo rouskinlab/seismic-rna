@@ -2,9 +2,10 @@ from functools import cached_property
 from pathlib import Path
 from typing import Iterable
 
+import numpy as np
 import pandas as pd
 
-from .ct import parse_ct_pairs
+from .ct import parse_ct
 from .pair import find_root_pairs, pairs_to_dict, pairs_to_table, table_to_pairs
 from .sect import (BASE_FIELD,
                    IDX_FIELD,
@@ -86,6 +87,18 @@ class Rna2dStructure(RnaSection):
     def roots(self):
         return find_root_pairs(self.pairs)
 
+    def _subsect_kwargs(self, end5: int, end3: int, title: str | None = None):
+        return super()._subsect_kwargs(end5, end3, title) | dict(
+            pairs=table_to_pairs(
+                self.table[np.logical_and(self.table.index.values >= end5,
+                                          self.table.index.values <= end3)]
+            )
+        )
+
+    def iter_root_modules(self):
+        for end5, end3 in self.roots:
+            yield self.subsection(end5, end3)
+
     @property
     def header(self):
         return f"{self.section.length}\t{self.title}"
@@ -119,9 +132,9 @@ class Rna2dStructure(RnaSection):
         return f"{self.header}\n{data.to_string(index=False, header=False)}\n"
 
 
-def parse_ct_structures(ct_file: Path, section: Section):
+def from_ct(ct_file: Path, section: Section):
     section_rna_seq = section.seq.tr()
-    for title, seq, pairs in parse_ct_pairs(ct_file, section.end5):
+    for title, seq, pairs in parse_ct(ct_file, section.end5):
         if seq != section_rna_seq:
             raise ValueError(f"Expected {section_rna_seq}, but got {seq}")
         yield Rna2dStructure(title=title, section=section, pairs=pairs)

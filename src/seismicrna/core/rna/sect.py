@@ -19,13 +19,22 @@ PAIR_FIELD = "Pair"
 class RnaSection(object):
     """ RNA sequence or section thereof. """
 
-    def __init__(self, title: str, section: Section):
+    def __init__(self, title: str, section: Section, **kwargs):
+        super().__init__(**kwargs)
         self.title = path.fill_whitespace(title)
         self.section = section
 
     @property
     def ref(self):
         return self.section.ref
+
+    @property
+    def end5(self):
+        return self.section.end5
+
+    @property
+    def end3(self):
+        return self.section.end3
 
     @property
     def sect(self):
@@ -39,6 +48,14 @@ class RnaSection(object):
     @property
     def seq_record(self):
         return self.section.ref_sect, self.seq
+
+    def _subsect_kwargs(self, end5: int, end3: int, title: str | None = None):
+        return dict(title=(title if title is not None
+                           else f"{self.title}__{end5}-{end3}"),
+                    section=self.section.subsection(end5, end3))
+
+    def subsection(self, end5: int, end3: int, title: str | None = None):
+        return self.__class__(**self._subsect_kwargs(end5, end3, title))
 
 ########################################################################
 #                                                                      #

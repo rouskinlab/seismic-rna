@@ -410,6 +410,17 @@ class Section(object):
         """ Mask arbitrary positions. """
         self.add_mask(self.MASK_POS, pos)
 
+    def subsection(self, end5: int, end3: int, name: str | None = None):
+        if end5 < self.end5:
+            raise ValueError(f"end5 must be ≥ {self.end5}, but got {end5}")
+        if end3 > self.end3:
+            raise ValueError(f"end3 must be ≤ {self.end3}, but got {end3}")
+        return self.__class__(self.ref,
+                              DNA(BASEN * (self.end5 - POS_INDEX)) + self.seq,
+                              end5=end5,
+                              end3=end3,
+                              name=name)
+
     def __str__(self):
         return f"Section {self.ref_sect} ({self.hyphen}) {self.mask_names}"
 
