@@ -1,193 +1,29 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cache, cached_property
-from logging import getLogger
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
-from .pattern import RelPattern
-from .rel import MATCH, NOCOV, REL_TYPE
-from .sect import BASE_NAME, seq_pos_to_index
-from .seq import DNA
-from .types import fit_uint_type, get_uint_type, UINT_NBYTES
-
-logger = getLogger(__name__)
-
-READ_NUM = "Read Number"
-BATCH_NUM = "Batch Number"
-INDEX_NAMES = BATCH_NUM, READ_NUM
-
-# Whether numbers are 0-indexed or 1-indexed.
-BATCH_INDEX = 0
-PATTERN_INDEX = 0
-POS_INDEX = 1
+from .naive import Batch, MaskBatch
+from .util import (INDEX_NAMES,
+                   PATTERN_INDEX,
+                   POS_INDEX,
+                   get_coverage_matrix,
+                   get_length,
+                   sanitize_ends,
+                   sanitize_pos)
+from ..pattern import RelPattern
+from ..rel import MATCH, NOCOV, REL_TYPE
+from ..sect import BASE_NAME, seq_pos_to_index
+from ..seq import DNA
+from ..types import fit_uint_type
 
 
-def _zero_indexed(indexes: np.ndarray, basis: int):
-    """ Adjust indexes from basis-indexed to 0-indexed. """
-    return indexes if basis == 0 else indexes - basis
-
-
-def list_batch_nums(num_batches: int):
-    """ List the batch numbers. """
-    return list(range(BATCH_INDEX, BATCH_INDEX + num_batches))
-
-
-def get_length(array: np.ndarray, what: str = "array") -> int:
-    if array.ndim != 1:
-        raise ValueError(f"{what} must have 1 dimension, but got {array.ndim}")
-    length, = array.shape
-    return length
-
-
-def ensure_same_length(arr1: np.ndarray,
-                       arr2: np.ndarray,
-                       what1: str,
-                       what2: str):
-    if (len1 := get_length(arr1, what1)) != (len2 := get_length(arr2, what2)):
-        raise ValueError(
-            f"Lengths differ between {what1} ({len1}) and {what2} ({len2})")
-    return len1
-
-
-def ensure_order(array1: np.ndarray,
-                 array2: np.ndarray,
-                 what1: str = "array1",
-                 what2: str = "array2",
-                 gt_eq: bool = False):
-    num_reads = ensure_same_length(array1, array2, what1, what2)
-    ineq_func, ineq_sign = (np.less, '<') if gt_eq else (np.greater, '>')
-    if np.any(is_err := ineq_func(array1, array2)):
-        index = pd.Index(np.arange(num_reads)[is_err], name=READ_NUM)
-        errors = pd.DataFrame.from_dict({what1: pd.Series(array1[is_err],
-                                                          index=index),
-                                         what2: pd.Series(array2[is_err],
-                                                          index=index)})
-        raise ValueError(f"Got {what1} {ineq_sign} {what2}:\n{errors}")
-    return num_reads
-
-
-def sanitize_values(values: Iterable[int],
-                    lower_limit: int,
-                    upper_limit: int,
-                    whats: str = "values"):
-    """ Validate and sort values, and return them as an array. """
-    # Convert the values to an array and ensure it is one-dimensional.
-    if not isinstance(values, (np.ndarray, list)):
-        values = list(values)
-    array = np.asarray(values)
-    n_values = get_length(array, whats)
-    if n_values == 0:
-        # The array is empty.
-        return np.array([], dtype=get_uint_type(min(UINT_NBYTES)))
-    # Find and sort the unique values.
-    array = np.unique(array)
-    if array.size != n_values:
-        raise ValueError(f"Got non-unique {whats}")
-    # Validate the minimum and maximum values.
-    min_value = array[0]
-    max_value = array[-1]
-    if min_value < lower_limit:
-        raise ValueError(f"All {whats} must be ≥ {lower_limit}, but got "
-                         f"{array[array < lower_limit]}")
-    if max_value > upper_limit:
-        raise ValueError(f"All {whats} must be ≤ {upper_limit}, but got "
-                         f"{array[array > upper_limit]}")
-    # Return the array as the smallest data type that will fit the data.
-    return np.asarray(array, dtype=fit_uint_type(max_value))
-
-
-def sanitize_pos(positions: Iterable[int], seq_length: int):
-    """ Validate and sort positions, and return them as an array. """
-    return sanitize_values(positions, POS_INDEX, seq_length, "positions")
-
-
-def sanitize_ends(max_pos: int,
-                  end5s: list[int] | np.ndarray,
-                  mid5s: list[int] | np.ndarray,
-                  mid3s: list[int] | np.ndarray,
-                  end3s: list[int] | np.ndarray):
-    pos_dtype = fit_uint_type(max_pos)
-    end5s = np.asarray(end5s, pos_dtype)
-    mid5s = np.asarray(mid5s, pos_dtype)
-    mid3s = np.asarray(mid3s, pos_dtype)
-    end3s = np.asarray(end3s, pos_dtype)
-    # Verify 5' end ≥ min position
-    ensure_order(end5s,
-                 np.broadcast_to(POS_INDEX, end5s.shape),
-                 "5' end positions",
-                 f"minimum position ({POS_INDEX})",
-                 gt_eq=True)
-    # Verify 5' end ≤ 5' mid
-    ensure_order(end5s, mid5s, "5' end positions", "5' middle positions")
-    # Verify 5' end ≤ 3' mid
-    ensure_order(end5s, mid3s, "5' end positions", "3' middle positions")
-    # Verify 5' mid ≤ 3' end
-    ensure_order(mid5s, end3s, "5' middle positions", "3' end positions")
-    # Verify 3' mid ≤ 3' end
-    ensure_order(mid3s, end3s, "3' middle positions", "3' end positions")
-    # Verify 3' end ≤ max position
-    ensure_order(end3s,
-                 np.broadcast_to(max_pos, end3s.shape),
-                 "3' end positions",
-                 f"maximum position ({max_pos})")
-    return end5s, mid5s, mid3s, end3s
-
-
-class Batch(ABC):
-    """ Batch of reads. """
-
-    def __init__(self, *, batch: int, **kwargs):
-        super().__init__(**kwargs)
-        self.batch = batch
-
-    @cached_property
-    @abstractmethod
-    def read_nums(self) -> np.ndarray:
-        """ Read numbers in use. """
-
-    @property
-    @abstractmethod
-    def num_reads(self) -> int:
-        """ Number of reads that are actually in use. """
-
-    @property
-    @abstractmethod
-    def max_read(self) -> int:
-        """ Maximum possible value for a read index. """
-
-    @property
-    def read_dtype(self):
-        """ Data type for read numbers. """
-        return fit_uint_type(self.max_read)
-
-    @cached_property
-    @abstractmethod
-    def read_idx(self) -> np.ndarray:
-        """ Map each read number to its index in self.read_nums. """
-
-    def __str__(self):
-        return f"{type(self).__name__} {self.batch} with {self.num_reads} reads"
-
-
-def _get_coverage_matrix(positions: np.ndarray,
-                         end5s: np.ndarray,
-                         end3s: np.ndarray):
-    # Determine and validate the dimensions.
-    npos = get_length(positions)
-    nreads = get_length(end5s, "5' end positions")
-    # Reshape the positions and 5'/3' ends to row and column vectors.
-    pos_row = positions.reshape((1, npos))
-    end5s_col = end5s.reshape((nreads, 1))
-    end3s_col = end3s.reshape((nreads, 1))
-    # Generate a boolean matrix where each element indicates whether
-    # the read (row) covers the position (column).
-    return np.logical_and(end5s_col <= pos_row, pos_row <= end3s_col)
-
-
-class RelsBatch(Batch, ABC):
+class AwareBatch(Batch, ABC):
 
     def __init__(self, *,
                  muts: dict[int, dict[int, list[int] | np.ndarray]],
@@ -231,6 +67,15 @@ class RelsBatch(Batch, ABC):
     def pos_index(self, refseq: DNA):
         return seq_pos_to_index(refseq, self.pos_nums, POS_INDEX)
 
+    @cached_property
+    @abstractmethod
+    def pattern(self) -> RelPattern | None:
+        """ Relationship pattern. """
+
+    @cache
+    def fits(self, base: str, rel: int):
+        return self.pattern is None or all(self.pattern.fits(base, rel))
+
     @cache
     def count_base_types(self, refseq: DNA):
         bases = self.pos_index(refseq).get_level_values(BASE_NAME)
@@ -266,12 +111,12 @@ class RelsBatch(Batch, ABC):
 
     @cache
     def coverage_matrix(self, refseq: DNA):
-        return pd.DataFrame(np.logical_or(_get_coverage_matrix(self.pos_nums,
-                                                               self.end5s,
-                                                               self.mid3s),
-                                          _get_coverage_matrix(self.pos_nums,
-                                                               self.mid5s,
-                                                               self.end3s)),
+        return pd.DataFrame(np.logical_or(get_coverage_matrix(self.pos_nums,
+                                                              self.end5s,
+                                                              self.mid3s),
+                                          get_coverage_matrix(self.pos_nums,
+                                                              self.mid5s,
+                                                              self.end3s)),
                             index=self.read_nums,
                             columns=self.pos_index(refseq),
                             copy=False)
@@ -299,8 +144,8 @@ class RelsBatch(Batch, ABC):
 
     @cache
     def rels_per_pos(self, refseq: DNA):
-        """ For each type of relationship, the number of reads at each
-        position with that relationship. """
+        """ For each relationship that matches the pattern of the batch,
+        the number of reads at each position with that relationship. """
         cov_per_pos = self.cov_per_pos(refseq)
         counts = defaultdict(lambda: pd.Series(self.read_dtype(0),
                                                cov_per_pos.index))
@@ -310,33 +155,48 @@ class RelsBatch(Batch, ABC):
             for mut, reads in self.muts.get(pos, dict()).items():
                 num_reads_pos_mut = get_length(reads, "read numbers")
                 num_reads_pos += num_reads_pos_mut
-                counts[mut].loc[key] = num_reads_pos_mut
+                if self.fits(base, mut):
+                    counts[mut].loc[key] = num_reads_pos_mut
             # The number of matches is the coverage minus the number of
             # reads with another kind of relationship that is not the
             # no-coverage relationship (no coverage is counted later).
-            counts[MATCH].loc[key] = coverage - num_reads_pos
+            if self.fits(base, MATCH):
+                counts[MATCH].loc[key] = coverage - num_reads_pos
             # The number of non-covered positions is the number of reads
             # minus the number that cover the position.
-            counts[NOCOV].loc[key] = self.num_reads - coverage
+            if self.fits(base, NOCOV):
+                counts[NOCOV].loc[key] = self.num_reads - coverage
         return dict(counts)
 
     @cache
     def rels_per_read(self, refseq: DNA):
-        """ For each type of relationship, the number of positions in
-        each read with that relationship. """
+        """ For each relationship that matches the pattern of the batch,
+        the number of positions in each read with that relationship. """
         cov_per_read = self.cov_per_read(refseq)
         bases = list(cov_per_read.columns)
         counts = defaultdict(lambda: pd.DataFrame(self.pos_dtype(0),
                                                   index=cov_per_read.index,
                                                   columns=cov_per_read.columns))
-        counts[NOCOV] = self.count_base_types(refseq) - cov_per_read
-        counts[MATCH] = cov_per_read.copy()
+        if self.pattern is None:
+            counts[NOCOV] = self.count_base_types(refseq) - cov_per_read
+            counts[MATCH] = cov_per_read.copy()
+            implicit_per_pos = False
+        else:
+            implicit_per_pos = True
         for pos, base in self.pos_index(refseq):
             column = bases.index(base)
+            if implicit_per_pos:
+                covered = self.coverage_matrix(refseq)[pos]
+                if self.fits(base, NOCOV):
+                    counts[NOCOV].values[:, column] += np.logical_not(covered)
+                if self.fits(base, MATCH):
+                    counts[MATCH].values[:, column] += covered
             for mut, reads in self.muts.get(pos, dict()).items():
                 rows = self.read_idx[reads]
-                counts[mut].values[rows, column] += 1
-                counts[MATCH].values[rows, column] -= 1
+                if self.fits(base, MATCH):
+                    counts[MATCH].values[rows, column] -= 1
+                if self.fits(base, mut):
+                    counts[mut].values[rows, column] += 1
         return dict(counts)
 
     @cache
@@ -416,11 +276,68 @@ class RelsBatch(Batch, ABC):
                 nonprox &= read_counts <= 1
         return self.read_nums[nonprox]
 
+    def mask(self,
+             pattern: RelPattern | None = None,
+             positions: Iterable[int] | None = None,
+             reads: Iterable[int] | None = None):
+        # Clean and validate the selection.
+        if positions is not None:
+            positions = sanitize_pos(positions, self.max_pos)
+        # Select mutations at each position.
+        muts = dict()
+        for pos in positions if positions is not None else self.pos_nums:
+            muts[pos] = dict()
+            # Select reads with each type of mutation at this position.
+            for mut, pos_mut_reads in self.muts.get(pos, dict()).items():
+                muts[pos][mut] = (np.intersect1d(pos_mut_reads,
+                                                 reads,
+                                                 assume_unique=True)
+                                  if reads is not None
+                                  else pos_mut_reads)
+        if reads is not None:
+            read_nums = np.asarray(reads, dtype=self.read_dtype)
+            read_indexes = self.read_idx[read_nums]
+            end5s = self.end5s[read_indexes]
+            mid5s = self.mid5s[read_indexes]
+            mid3s = self.mid3s[read_indexes]
+            end3s = self.end3s[read_indexes]
+        else:
+            read_nums = self.read_nums
+            end5s = self.end5s
+            mid5s = self.mid5s
+            mid3s = self.mid3s
+            end3s = self.end3s
+        return MaskRelsBatch(batch=self.batch,
+                             muts=muts,
+                             seqlen=self.seqlen,
+                             end5s=end5s,
+                             mid5s=mid5s,
+                             mid3s=mid3s,
+                             end3s=end3s,
+                             read_nums=read_nums,
+                             max_read=self.max_read,
+                             pattern=pattern)
+
+
+class MaskRelsBatch(MaskBatch, AwareBatch, ABC):
+
+    def __init__(self, *, pattern: RelPattern | None, **kwargs):
+        super().__init__(**kwargs)
+        self._pattern = pattern
+
+    @cached_property
+    def pos_nums(self):
+        return np.array(list(self.muts))
+
+    @property
+    def pattern(self):
+        return self._pattern
+
 
 def count_per_pos(positions: np.ndarray,
                   refseq: DNA,
                   patterns: RelPattern | list[RelPattern],
-                  batches: Iterable[RelsBatch]):
+                  batches: Iterable[AwareBatch]):
     """ Count reads with each relationship at each position in a section
     over multiple batches. """
     if isinstance(patterns, RelPattern):
@@ -450,7 +367,7 @@ def count_per_pos(positions: np.ndarray,
 
 def count_per_read(refseq: DNA,
                    patterns: RelPattern | list[RelPattern],
-                   batches: Iterable[RelsBatch]):
+                   batches: Iterable[AwareBatch]):
     """ Count reads with each relationship at each position in a section
     over multiple batches. """
     if isinstance(patterns, RelPattern):

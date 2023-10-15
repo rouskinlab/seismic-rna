@@ -8,7 +8,7 @@ from .report import ClustReport
 from .write import write_batches, write_log_counts, write_mus, write_props
 from ..core.bitvect import BitMonolith, UniqMutBits
 from ..core.parallel import dispatch
-from ..mask.load import MaskLoader
+from ..mask.data import MaskLoader
 
 logger = getLogger(__name__)
 

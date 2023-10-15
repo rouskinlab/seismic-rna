@@ -212,21 +212,21 @@ class DatasetLinker(Dataset, ABC):
 
     @classmethod
     @abstractmethod
-    def data1_type(cls) -> type[Dataset]:
+    def get_data1_type(cls) -> type[Dataset]:
         """ Type of Dataset 1. """
 
     @classmethod
     @abstractmethod
-    def data2_type(cls) -> type[Dataset]:
+    def get_data2_type(cls) -> type[Dataset]:
         """ Type of Dataset 2. """
 
     @classmethod
     def verify_data_types(cls, data1: Dataset, data2: Dataset):
-        if not isinstance(data1, cls.data1_type()):
-            raise TypeError(f"Expected a {cls.data1_type().__name__} for "
+        if not isinstance(data1, cls.get_data1_type()):
+            raise TypeError(f"Expected a {cls.get_data1_type().__name__} for "
                             f"data1, but got {type(data1).__name__}")
-        if not isinstance(data2, cls.data2_type()):
-            raise TypeError(f"Expected a {cls.data2_type().__name__} for "
+        if not isinstance(data2, cls.get_data2_type()):
+            raise TypeError(f"Expected a {cls.get_data2_type().__name__} for "
                             f"data2, but got {type(data2).__name__}")
 
     def __init__(self,
@@ -276,12 +276,12 @@ class UnifiedDatasetLinker(DatasetLinker, UnifiedDataset, ABC):
 
     @classmethod
     @abstractmethod
-    def data1_type(cls) -> type[UnifiedDataset]:
+    def get_data1_type(cls) -> type[UnifiedDataset]:
         pass
 
     @classmethod
     @abstractmethod
-    def data2_type(cls) -> type[UnifiedDataset]:
+    def get_data2_type(cls) -> type[UnifiedDataset]:
         pass
 
     @property
@@ -297,12 +297,12 @@ class BatchedDatasetLinker(DatasetLinker, BatchedDataset, ABC):
 
     @classmethod
     @abstractmethod
-    def data1_type(cls) -> type[BatchedDataset]:
+    def get_data1_type(cls) -> type[BatchedDataset]:
         pass
 
     @classmethod
     @abstractmethod
-    def data2_type(cls) -> type[BatchedDataset]:
+    def get_data2_type(cls) -> type[BatchedDataset]:
         pass
 
     @property

@@ -11,7 +11,7 @@ from .tabulate import (Tabulator, RelTabulator, MaskTabulator, ClusterTabulator,
                        tabulate_loader)
 from ..cluster.load import ClustLoader
 from ..core import path
-from ..mask.load import MaskLoader
+from ..mask.data import MaskLoader
 from ..relate.load import RelateLoader
 
 logger = getLogger(__name__)

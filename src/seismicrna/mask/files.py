@@ -1,8 +1,8 @@
 from abc import ABC
 
-from .batch import MaskBatch
 from ..core import path
 from ..core.clicmd import CMD_MASK
+from ..core.batch import MaskBatch
 from ..core.iobatch import SavedBatch
 from ..core.iofile import SavedSect
 

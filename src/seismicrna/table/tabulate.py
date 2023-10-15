@@ -15,7 +15,7 @@ from ..core.pattern import RelPattern, HalfRelPattern
 from ..core.bitvect import BitCounter, ClustBitCounter
 from ..core.mu import calc_f_obs_series, calc_mu_adj_series
 from ..core.sect import Section, INDEX_NAMES
-from ..mask.load import MaskLoader
+from ..mask.data import MaskLoader
 from ..relate.load import RelateLoader
 
 logger = getLogger(__name__)

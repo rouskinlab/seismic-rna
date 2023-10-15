@@ -9,10 +9,9 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .batch import MaskRelsBatch
 from .files import SavedMaskBatch
 from .report import MaskReport
-from ..core.batch import count_per_pos, Batch, RelsBatch
+from ..core.batch import count_per_pos, Batch, AwareBatch
 from ..core.cliparam import opt_brotli_level
 from ..core.pattern import RelPattern
 from ..core.sect import Section, index_to_pos
@@ -170,7 +169,7 @@ class RelMasker(object):
         """ Number of batches of reads. """
         return len(self.checksums)
 
-    def _filter_min_finfo_read(self, batch: RelsBatch):
+    def _filter_min_finfo_read(self, batch: AwareBatch):
         """ Filter out reads with too few informative positions. """
         if not 0. <= self.min_finfo_read <= 1.:
             raise ValueError(f"min_finfo_read must be in [0, 1], but got "
@@ -188,9 +187,9 @@ class RelMasker(object):
         logger.debug(f"{self} kept {reads.size} reads with informative "
                      f"fractions ≥ {self.min_finfo_read} in {batch}")
         # Return a new batch of only those reads.
-        return MaskRelsBatch.from_batch(batch, reads=reads)
+        return batch.mask(reads=reads)
 
-    def _filter_max_fmut_read(self, batch: RelsBatch):
+    def _filter_max_fmut_read(self, batch: AwareBatch):
         """ Filter out reads with too many mutations. """
         if not 0. <= self.max_fmut_read <= 1.:
             raise ValueError(f"max_fmut_read must be in [0, 1], but got "
@@ -208,9 +207,9 @@ class RelMasker(object):
         logger.debug(f"{self} kept {reads.size} reads with mutated "
                      f"fractions ≤ {self.max_fmut_read} in {batch}")
         # Return a new batch of only those reads.
-        return MaskRelsBatch.from_batch(batch, reads=reads)
+        return batch.mask(reads=reads)
 
-    def _mask_min_mut_gap(self, batch: RelsBatch):
+    def _mask_min_mut_gap(self, batch: AwareBatch):
         """ Filter out reads with mutations that are too close. """
         if not self.min_mut_gap >= 0:
             raise ValueError(
@@ -225,7 +224,7 @@ class RelMasker(object):
                                    self.min_mut_gap)
         logger.debug(f"{self} kept {reads.size} reads with no two mutations "
                      f"separated by < {self.min_mut_gap} nt in {batch}")
-        return MaskRelsBatch.from_batch(batch, reads=reads)
+        return batch.mask(reads=reads)
 
     def _exclude_positions(self):
         """ Exclude positions from the section. """
@@ -233,11 +232,11 @@ class RelMasker(object):
         self.section.mask_gu(self.exclude_gu)
         self.section.mask_pos(self.exclude_pos)
 
-    def _filter_batch_reads(self, batch: Batch | RelsBatch):
+    def _filter_batch_reads(self, batch: Batch | AwareBatch):
         """ Remove the reads in the batch that do not pass the filters
         and return a new batch without those reads. """
         # Keep only the unmasked positions.
-        batch = MaskRelsBatch.from_batch(batch, positions=self.pos_kept)
+        batch = batch.mask(positions=self.pos_kept)
         self._n_reads[self.MASK_READ_INIT] += (n := batch.num_reads)
         # Remove reads with too few informative positions.
         batch = self._filter_min_finfo_read(batch)
@@ -294,7 +293,6 @@ class RelMasker(object):
             logger.warning(f"No positions remained after filtering with {self}")
 
     def create_report(self):
-        """ Create a FilterReport from a BitFilter object. """
         return MaskReport(
             sample=self.loader.sample,
             ref=self.loader.ref,

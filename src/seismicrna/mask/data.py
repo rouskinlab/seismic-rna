@@ -1,6 +1,5 @@
 from logging import getLogger
 
-from .batch import MaskRelsBatch
 from .files import SavedMaskBatch
 from .report import MaskReport
 from ..core.iodata import BatchedDatasetLoader, BatchedDatasetLinker
@@ -32,11 +31,11 @@ class MaskLinker(BatchedDatasetLinker):
         return SavedMaskBatch
 
     @classmethod
-    def data1_type(cls):
+    def get_data1_type(cls):
         return RelateLoader
 
     @classmethod
-    def data2_type(cls):
+    def get_data2_type(cls):
         return MaskLoader
 
     def _link(self,
@@ -44,8 +43,7 @@ class MaskLinker(BatchedDatasetLinker):
               batch2: SavedMaskBatch,
               *args,
               **kwargs):
-        return MaskRelsBatch.from_batch(batch1,
-                                        reads=batch2.read_nums)
+        return batch1.mask(reads=batch2.read_nums)
 
 
 ########################################################################

@@ -1,5 +1,5 @@
 from .compare import RunOrderResults, find_best_order
-from ..mask.load import MaskLoader
+from ..mask.data import MaskLoader
 from ..core import path
 from ..core.bitvect import UniqMutBits
 from ..core.clicmd import CMD_CLUST

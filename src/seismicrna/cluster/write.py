@@ -13,7 +13,7 @@ from .names import ORD_CLS_NAME, READ_NAME
 from .report import ClustReport
 from ..core import path
 from ..core.clicmd import CMD_CLUST
-from ..mask.load import MaskLoader
+from ..mask.data import MaskLoader
 
 logger = getLogger(__name__)
 

@@ -10,7 +10,7 @@ from .names import CLS_NAME
 from ..core.bitvect import UniqMutBits, iter_all_bit_vectors
 from ..core.mu import calc_mu_adj_numpy, calc_f_obs_numpy
 from ..core.rand import rng
-from ..mask.load import MaskLoader
+from ..mask.data import MaskLoader
 
 logger = getLogger(__name__)
 

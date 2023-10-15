@@ -1,25 +1,9 @@
-from abc import ABC
 from functools import cached_property
 
 import numpy as np
 
-from ..core.batch import Batch, RelsBatch, get_length, sanitize_pos
+from ..core.batch import AllReadsBatch, AwareBatch, get_length, sanitize_pos
 from ..core.sect import POS_INDEX
-
-
-class AllReadsBatch(Batch, ABC):
-
-    @property
-    def max_read(self):
-        return self.num_reads - 1
-
-    @cached_property
-    def read_nums(self):
-        return np.arange(self.num_reads)
-
-    @cached_property
-    def read_idx(self):
-        return self.read_nums
 
 
 class QnamesBatch(AllReadsBatch):
@@ -33,7 +17,7 @@ class QnamesBatch(AllReadsBatch):
         return get_length(self.names, "read names")
 
 
-class RelateBatch(RelsBatch, AllReadsBatch):
+class RelateBatch(AwareBatch, AllReadsBatch):
 
     def __init__(self, muts: dict[int, dict], seqlen: int, **kwargs):
         super().__init__(muts={pos: muts[pos]
@@ -56,3 +40,7 @@ class RelateBatch(RelsBatch, AllReadsBatch):
         return np.arange(POS_INDEX,
                          POS_INDEX + self.max_pos,
                          dtype=self.pos_dtype)
+
+    @cached_property
+    def pattern(self):
+        return None

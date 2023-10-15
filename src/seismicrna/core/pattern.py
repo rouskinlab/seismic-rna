@@ -9,7 +9,7 @@ Core -- Bit Caller Module
 from __future__ import annotations
 
 import re
-from functools import reduce
+from functools import cache, reduce
 from itertools import product
 from logging import getLogger
 from typing import Callable, Iterable
@@ -226,6 +226,7 @@ class HalfRelPattern(object):
         logger.debug(f"Instantiated new {type(self).__name__}"
                      f"From: {codes}\nTo: {self.patterns}")
 
+    @cache
     def fits(self, base: str, rel: int):
         """ Test whether a relationship code fits the pattern. """
         return ((pattern := self.patterns.get(base)) is not None
@@ -297,6 +298,7 @@ class RelPattern(object):
         self.yes = yes
         self.nos = nos
 
+    @cache
     def fits(self, base: str, rel: int):
         """ """
         is_yes = self.yes.fits(base, rel)
