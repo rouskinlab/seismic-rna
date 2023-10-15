@@ -26,14 +26,14 @@ from . import (whole,
                fold,
                graph,
                test,
-               fastc)
+               fastc,
+               __version__)
 from .core import logs
 from .core.cli import (opt_log,
                        opt_log_color,
                        opt_profile,
                        opt_quiet,
                        opt_verbose)
-from .core.version import __version__
 
 params = [
     opt_verbose,
