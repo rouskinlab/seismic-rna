@@ -9,9 +9,7 @@ import numpy as np
 import pandas as pd
 
 from .read import ReadBatch, MaskReadBatch
-from .util import (INDEX_NAMES,
-                   PATTERN_INDEX,
-                   POS_INDEX,
+from .util import (POS_INDEX,
                    get_coverage_matrix,
                    get_length,
                    sanitize_ends,
@@ -30,16 +28,21 @@ class MutsBatch(ReadBatch, ABC):
                  mid5s: list[int] | np.ndarray,
                  mid3s: list[int] | np.ndarray,
                  end3s: list[int] | np.ndarray,
+                 sanitize: bool = True,
                  **kwargs):
         super().__init__(**kwargs)
         self.seqlen = seqlen
         (self.end5s,
          self.mid5s,
          self.mid3s,
-         self.end3s) = sanitize_ends(self.max_pos, end5s, mid5s, mid3s, end3s)
+         self.end3s) = (sanitize_ends(self.max_pos, end5s, mid5s, mid3s, end3s)
+                        if sanitize
+                        else (end5s, mid5s, mid3s, end3s))
         self.muts = {pos: {REL_TYPE(rel): np.asarray(reads, self.read_dtype)
                            for rel, reads in muts[pos].items()}
-                     for pos in sanitize_pos(muts, self.max_pos)}
+                     for pos in (sanitize_pos(muts, self.max_pos)
+                                 if sanitize
+                                 else muts)}
 
     @property
     def num_pos(self):
@@ -120,7 +123,7 @@ class MutsBatch(ReadBatch, ABC):
                             copy=False)
 
     @cache
-    def cov_per_pos(self, refseq: DNA):
+    def cover_per_pos(self, refseq: DNA):
         """ Number of reads covering each position. """
         cov_mat = self.coverage_matrix(refseq)
         return pd.Series(np.count_nonzero(cov_mat.values, axis=0),
@@ -128,7 +131,7 @@ class MutsBatch(ReadBatch, ABC):
                          dtype=self.read_dtype)
 
     @cache
-    def cov_per_read(self, refseq: DNA):
+    def cover_per_read(self, refseq: DNA):
         """ Number of positions covered by each read. """
         cov_mat = self.coverage_matrix(refseq)
         return pd.DataFrame.from_dict(
@@ -144,7 +147,7 @@ class MutsBatch(ReadBatch, ABC):
     def rels_per_pos(self, refseq: DNA):
         """ For each relationship that matches the pattern of the batch,
         the number of reads at each position with that relationship. """
-        cov_per_pos = self.cov_per_pos(refseq)
+        cov_per_pos = self.cover_per_pos(refseq)
         counts = defaultdict(lambda: pd.Series(self.read_dtype(0),
                                                cov_per_pos.index))
         for key, coverage in cov_per_pos.items():
@@ -170,7 +173,7 @@ class MutsBatch(ReadBatch, ABC):
     def rels_per_read(self, refseq: DNA):
         """ For each relationship that matches the pattern of the batch,
         the number of positions in each read with that relationship. """
-        cov_per_read = self.cov_per_read(refseq)
+        cov_per_read = self.cover_per_read(refseq)
         bases = list(cov_per_read.columns)
         counts = defaultdict(lambda: pd.DataFrame(self.pos_dtype(0),
                                                   index=cov_per_read.index,
@@ -213,7 +216,7 @@ class MutsBatch(ReadBatch, ABC):
     def count_per_pos(self, refseq: DNA, pattern: RelPattern):
         """ Count the reads that fit a relationship pattern at each
         position in a section. """
-        cov_per_pos = self.cov_per_pos(refseq)
+        cov_per_pos = self.cover_per_pos(refseq)
         info = pd.Series(self.read_dtype(0), cov_per_pos.index)
         fits = pd.Series(self.read_dtype(0), cov_per_pos.index)
         rels_per_pos = self.rels_per_pos(refseq)
@@ -230,7 +233,7 @@ class MutsBatch(ReadBatch, ABC):
     def count_per_read(self, refseq: DNA, pattern: RelPattern):
         """ Count the positions in a section that fit a relationship
         pattern in each read. """
-        cov_per_read = self.cov_per_read(refseq)
+        cov_per_read = self.cover_per_read(refseq)
         info = pd.Series(self.pos_dtype(0), cov_per_read.index)
         fits = pd.Series(self.pos_dtype(0), cov_per_read.index)
         for rel, rel_counts in self.rels_per_read(refseq).items():
@@ -314,7 +317,8 @@ class MutsBatch(ReadBatch, ABC):
                              end3s=end3s,
                              read_nums=read_nums,
                              max_read=self.max_read,
-                             pattern=pattern)
+                             pattern=pattern,
+                             sanitize=False)
 
 
 class MaskMutsBatch(MaskReadBatch, MutsBatch, ABC):
@@ -332,71 +336,99 @@ class MaskMutsBatch(MaskReadBatch, MutsBatch, ABC):
         return self._pattern
 
 
-def count_per_pos(positions: np.ndarray,
-                  refseq: DNA,
-                  patterns: RelPattern | list[RelPattern],
-                  batches: Iterable[MutsBatch]):
-    """ Count reads with each relationship at each position in a section
-    over multiple batches. """
-    if isinstance(patterns, RelPattern):
-        # If just one pattern is given, then return two Series.
-        info, fits = count_per_pos(positions, refseq, [patterns], batches)
-        return info[PATTERN_INDEX], fits[PATTERN_INDEX]
-    # Initialize the counts for each position and pattern.
-    index = seq_pos_to_index(refseq, positions, POS_INDEX)
-    columns = pd.RangeIndex(PATTERN_INDEX,
-                            PATTERN_INDEX + len(patterns))
-    info = pd.DataFrame(0, index=index, columns=columns)
-    fits = pd.DataFrame(0, index=index, columns=columns)
+def accumulate(positions: np.ndarray,
+               refseq: DNA,
+               patterns: dict[str, RelPattern],
+               batches: Iterable[MutsBatch],
+               per_pos: bool = True,
+               per_read: bool = True):
+    columns = pd.Index(list(patterns))
+    # Initialize the counts per position.
+    if per_pos:
+        index_per_pos = seq_pos_to_index(refseq, positions, POS_INDEX)
+        info_per_pos = pd.DataFrame(0, index_per_pos, columns)
+        fits_per_pos = pd.DataFrame(0, index_per_pos, columns)
+    else:
+        info_per_pos = None
+        fits_per_pos = None
+    # Initialize the counts per read.
+    if per_read:
+        info_per_read_per_batch = list()
+        fits_per_read_per_batch = list()
+    else:
+        info_per_read_per_batch = None
+        fits_per_read_per_batch = None
     # Accumulate the counts from the batches.
     for batch in batches:
         # Confirm that the positions of every batch match those given.
         if not np.array_equal(batch.pos_nums, positions):
             raise ValueError(f"Positions of {batch} ({batch.pos_nums}) do not "
                              f"match the given positions ({positions})")
-        for column, pattern in enumerate(patterns, start=PATTERN_INDEX):
-            i, f = batch.count_per_pos(refseq, pattern)
-            info.loc[:, column] += i
-            fits.loc[:, column] += f
-    if info is None:
-        raise ValueError(f"No batches were given to count")
-    return info, fits
+        if info_per_read_per_batch is not None:
+            # Make two DataFrames for the per-read counts of this batch.
+            info_per_read_per_batch.append(pd.DataFrame(batch.pos_dtype(0),
+                                                        batch.multiindex,
+                                                        columns))
+            fits_per_read_per_batch.append(pd.DataFrame(batch.pos_dtype(0),
+                                                        batch.multiindex,
+                                                        columns))
+        # Count the positions and/or reads matching each pattern.
+        for column, pattern in patterns.items():
+            if info_per_pos is not None:
+                # Count the matching reads per position.
+                ipp, fpp = batch.count_per_pos(refseq, pattern)
+                info_per_pos.loc[:, column] += ipp
+                fits_per_pos.loc[:, column] += fpp
+            if info_per_read_per_batch is not None:
+                # Count the matching positions per read.
+                ipr, fpr = batch.count_per_read(refseq, pattern)
+                info_per_read_per_batch[-1].loc[:, column] = ipr
+                fits_per_read_per_batch[-1].loc[:, column] = fpr
+    if info_per_read_per_batch is not None:
+        # Produce two DataFrames of per-read counts.
+        if info_per_read_per_batch:
+            # Concatenate the per-read counts for the batches.
+            info_per_read = pd.concat(info_per_read_per_batch, axis=0)
+            fits_per_read = pd.concat(fits_per_read_per_batch, axis=0)
+        else:
+            # There are no batches.
+            info_per_read = pd.DataFrame(columns=columns, dtype=int)
+            fits_per_read = pd.DataFrame(columns=columns, dtype=int)
+    else:
+        # Per-read information is not being counted.
+        info_per_read = None
+        fits_per_read = None
+    return (info_per_pos, fits_per_pos), (info_per_read, fits_per_read)
 
 
-def count_per_read(refseq: DNA,
-                   patterns: RelPattern | list[RelPattern],
-                   batches: Iterable[MutsBatch]):
+def count_per_pos(positions: np.ndarray,
+                  refseq: DNA,
+                  patterns: dict[str, RelPattern],
+                  batches: Iterable[MutsBatch]
+                  ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """ Count reads with each relationship at each position in a section
     over multiple batches. """
-    if isinstance(patterns, RelPattern):
-        # If just one pattern is given, then return two Series.
-        info, fits = count_per_read(refseq, [patterns], batches)
-        return info[PATTERN_INDEX], fits[PATTERN_INDEX]
-    # Initialize a count for each relationship pattern.
-    columns = pd.RangeIndex(PATTERN_INDEX, PATTERN_INDEX + len(patterns))
-    info = list()
-    fits = list()
-    # Accumulate the counts from the batches.
-    for batch in batches:
-        # Create two new DataFrames to hold the counts for each pattern
-        # from the batch.
-        index = pd.MultiIndex.from_arrays([np.broadcast_to(batch.batch,
-                                                           batch.num_reads),
-                                           batch.read_nums],
-                                          names=INDEX_NAMES)
-        info.append(pd.DataFrame(batch.pos_dtype(0), index, columns))
-        fits.append(pd.DataFrame(batch.pos_dtype(0), index, columns))
-        # Count each pattern and add it to the counts for the batch.
-        for column, pattern in enumerate(patterns, start=PATTERN_INDEX):
-            i, f = batch.count_per_read(refseq, pattern)
-            info[-1].loc[:, column] = i
-            fits[-1].loc[:, column] = f
-    if info and fits:
-        # Concatenate the batches into one DataFrame.
-        return pd.concat(info, axis=0), pd.concat(fits, axis=0)
-    # There are no batches.
-    return (pd.DataFrame(columns=columns, dtype=int),
-            pd.DataFrame(columns=columns, dtype=int))
+    per_pos, per_read = accumulate(positions,
+                                   refseq,
+                                   patterns,
+                                   batches,
+                                   per_read=False)
+    return per_pos
+
+
+def count_per_read(positions: np.ndarray,
+                   refseq: DNA,
+                   patterns: dict[str, RelPattern],
+                   batches: Iterable[MutsBatch]
+                   ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """ Count reads with each relationship at each position in a section
+    over multiple batches. """
+    per_pos, per_read = accumulate(positions,
+                                   refseq,
+                                   patterns,
+                                   batches,
+                                   per_pos=False)
+    return per_read
 
 ########################################################################
 #                                                                      #

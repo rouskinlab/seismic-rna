@@ -103,7 +103,7 @@ def fold_rna(loader: MaskPosTableLoader | ClustPosTableLoader,
                     args=[(profile,)
                           for profile in loader.iter_profiles(sections,
                                                               quantile)],
-                    kwargs=dict(out_dir=loader.out_dir, **kwargs),
+                    kwargs=dict(out_dir=loader.top, **kwargs),
                     pass_n_procs=False)
 
 

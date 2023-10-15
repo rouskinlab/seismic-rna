@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 
 import numpy as np
+import pandas as pd
 
-from .util import get_length
+from .util import INDEX_NAMES, get_length
 from ..types import fit_uint_type
 
 
@@ -38,6 +39,14 @@ class ReadBatch(ABC):
     @abstractmethod
     def read_idx(self) -> np.ndarray:
         """ Map each read number to its index in self.read_nums. """
+
+    @cached_property
+    def multiindex(self):
+        """ MultiIndex of the batch number and read numbers. """
+        return pd.MultiIndex.from_arrays([np.broadcast_to(self.batch,
+                                                          self.num_reads),
+                                          self.read_nums],
+                                         names=INDEX_NAMES)
 
     def __str__(self):
         return f"{type(self).__name__} {self.batch} with {self.num_reads} reads"

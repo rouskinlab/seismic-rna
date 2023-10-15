@@ -135,8 +135,6 @@ def run(*,
         min_em_iter: int,
         max_em_iter: int,
         em_thresh: float,
-        # Table options
-        rels: tuple[str, ...],
         # Fold options
         fold: bool,
         quantile: float):
@@ -274,7 +272,6 @@ def run(*,
     # Table
     input_path += tuple(map(str, table_mod.run(
         input_path=input_path,
-        rels=rels,
         max_procs=max_procs,
         parallel=parallel,
         rerun=rerun,
@@ -296,7 +293,6 @@ def run(*,
             rerun=rerun,
         )
     # Graph
-
 
 ########################################################################
 #                                                                      #

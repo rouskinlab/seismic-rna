@@ -1,11 +1,12 @@
 from .io import MaskReadBatchIO
 from .report import MaskReport
-from ..core.io import BatchedDatasetLoader, BatchedDatasetLinker
+from ..core.batch import MaskMutsBatch
+from ..core.io import BatchedLoadedDataset, BatchedLinkedDataset
 from ..relate.io import RelateBatchIO
 from ..relate.data import RelateLoader
 
 
-class MaskLoader(BatchedDatasetLoader):
+class MaskLoader(BatchedLoadedDataset[MaskReadBatchIO, MaskReport]):
     """ Load batches of masked relation vectors. """
 
     @classmethod
@@ -13,16 +14,16 @@ class MaskLoader(BatchedDatasetLoader):
         return MaskReport
 
     @classmethod
-    def get_batch_type(cls):
+    def get_data_type(cls):
         return MaskReadBatchIO
 
 
-class MaskLinker(BatchedDatasetLinker):
-    """ Link relation """
+class MaskLinker(BatchedLinkedDataset[MaskMutsBatch, RelateLoader, MaskLoader]):
+    """ Link related batches to masked batches. """
 
     @classmethod
-    def get_batch_type(cls):
-        return MaskReadBatchIO
+    def get_data_type(cls):
+        return MaskMutsBatch
 
     @classmethod
     def get_data1_type(cls):
@@ -32,11 +33,8 @@ class MaskLinker(BatchedDatasetLinker):
     def get_data2_type(cls):
         return MaskLoader
 
-    def _link(self,
-              batch1: RelateBatchIO,
-              batch2: MaskReadBatchIO,
-              *args,
-              **kwargs):
+    @classmethod
+    def _link(cls, batch1: RelateBatchIO, batch2: MaskReadBatchIO):
         return batch1.mask(reads=batch2.read_nums)
 
 

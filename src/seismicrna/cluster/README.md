@@ -49,13 +49,13 @@ This json file is structured as follow:
 ### Command-line usage
 
 ```
-dreem-clustering --input_dir [path/to/{sample_1}] --input_dir [path/to/{sample_2}] —-fasta {reference}.fasta  --out_dir [path]
+dreem-clustering --input_dir [path/to/{sample_1}] --input_dir [path/to/{sample_2}] —-fasta {reference}.fasta  --top [path]
 ```
 
 - `dreem-clustering`: wrapper for function run in dreem.clustering.run.
 - [=1] `-fa / --fasta`: path to `{reference}.fasta` fasta file
 - [≥1] `-id / --input_dir`: folder(s) containing bitvector(s) `{reference}.orc`
-- [=1] `-o / --out_dir`: output_file
+- [=1] `-o / --top`: output_file
 - [≤1] `-mc / --max_n_clusters`: use the optimal number of clusters below or equal to this value
 - [≤1] `-st / --signal_thresh`: signal threshold #TODO, float in [0,1]
 - [≤1] `-mi / --min_iter`: minimal number of iterations for the EM loop

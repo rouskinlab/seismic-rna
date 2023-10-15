@@ -22,24 +22,25 @@ from .base import (COVER_REL,
                    R_OBS_TITLE,
                    READ_TITLE,
                    REL_NAME,
-                   REL_CODES,
                    TABLE_RELS)
 from ..cluster.load import ClustLoader
-from ..core.bitvect import BitCounter, ClustBitCounter
+from ..core.batch import accumulate
 from ..core.mu import calc_f_obs_series, calc_mu_adj_series
 from ..core.rel import RelPattern, HalfRelPattern
-from ..core.seq import INDEX_NAMES, Section
-from ..mask.data import MaskLoader
+from ..core.seq import Section
+from ..mask.data import MaskLinker
 from ..relate.data import RelateLoader
 
 logger = getLogger(__name__)
 
-# These relationships must be computed, else adjust_counts() will fail.
-REQUIRED_RELS = MATCH_REL, MUTAT_REL
-
 # These relationships are of all subtypes of mutations.
-SUBMUTS = [SUBST_REL, SUB_A_REL, SUB_C_REL, SUB_G_REL, SUB_T_REL,
-           DELET_REL, INSRT_REL]
+SUBMUTS = [SUBST_REL,
+           SUB_A_REL,
+           SUB_C_REL,
+           SUB_G_REL,
+           SUB_T_REL,
+           DELET_REL,
+           INSRT_REL]
 
 
 # Tabulator Classes ####################################################
@@ -48,45 +49,33 @@ class Tabulator(ABC):
     """ Base class for tabulating data for multiple tables from a report
     loader. """
 
-    def __init__(self, loader: RelateLoader | MaskLoader | ClustLoader,
-                 rel_codes: str):
-        self._loader = loader
-        # The table must contain COVER, MATCH, and MUTAT.
-        self._rel_codes = rel_codes
+    @classmethod
+    @abstractmethod
+    def get_null_value(cls) -> int | float:
+        """ The null value for a count: either 0 or NaN. """
+
+    def __init__(self, loader: RelateLoader | MaskLinker | ClustLoader):
+        self.loader = loader
 
     @property
-    def out_dir(self):
-        """ Output directory. """
-        return self._loader.out_dir
+    def top(self):
+        return self.loader.top
 
     @property
     def sample(self):
-        """ Name of the sample. """
-        return self._loader.sample
+        return self.loader.sample
 
     @property
     def ref(self):
-        """ Name of the reference. """
-        return self._loader.ref
+        return self.loader.ref
 
     @property
-    def sect(self):
-        """ Name of the section covered by the table. """
-        return self._loader.sect
+    def refseq(self):
+        return self.loader.refseq
 
     @property
     def section(self):
-        """ Section covered by the table. """
-        return self._loader.section
-
-    def iter_bit_callers(self):
-        """ Yield a BitCaller for each relationship in the table. """
-        yield from iter_bit_callers(self.section, self._rel_codes)
-
-    @property
-    def seq_array(self):
-        """ Array of the bases of the section at unmasked positions. """
-        return self._loader.seq.to_str_array()
+        return self.loader.section
 
     @property
     @abstractmethod
@@ -95,13 +84,18 @@ class Tabulator(ABC):
 
     @cached_property
     @abstractmethod
-    def bit_counts(self) -> dict[str, BitCounter]:
-        """ Return BitCounters for the batches of relation vectors. """
+    def _counts(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """ Count by position and by read. """
 
-    @classmethod
-    @abstractmethod
-    def get_null_value(cls) -> int | float:
-        """ The null value for a count: either 0 or NaN. """
+    @property
+    def _counts_per_pos(self):
+        per_pos, per_read = self._counts
+        return per_pos
+
+    @property
+    def _counts_per_read(self):
+        per_pos, per_read = self._counts
+        return per_read
 
     @abstractmethod
     def tabulate_by_pos(self):
@@ -114,34 +108,39 @@ class Tabulator(ABC):
 
 class EnsembleTabulator(Tabulator, ABC):
 
-    @property
-    def columns(self):
+    @classmethod
+    def columns(cls):
         return pd.Index(TABLE_RELS, name=REL_NAME)
 
+    @classmethod
+    def _tabulate(cls, counts: pd.DataFrame, index: pd.Index | None):
+        # Initialize an empty table.
+        table = pd.DataFrame(cls.get_null_value(),
+                             index=index if index is not None else counts.index,
+                             columns=cls.columns())
+        # Count reads with each relationship at each position.
+        for rel, rel_counts in counts.items():
+            if index is not None:
+                table.loc[counts.index, rel] = rel_counts
+            else:
+                table.loc[:, rel] = rel_counts
+        # Add a column for informative relationships.
+        table[INFOR_REL] = table[MATCH_REL] + table[MUTAT_REL]
+        return table
+
+    @cached_property
+    def _counts(self):
+        (ipp, fpp), (ipr, fpr) = accumulate(self.section.unmasked_int,
+                                            self.refseq,
+                                            name_patterns(),
+                                            self.loader.iter_batches())
+        return fpp, fpr
+
     def tabulate_by_pos(self):
-        # Assemble the DataFrame from the bit counts.
-        data = pd.DataFrame.from_dict({rel: counter.n_affi_per_pos
-                                       for rel, counter
-                                       in self.bit_counts.items()})
-        # Add a column for the informative bits.
-        data[INFOR_REL] = data[MATCH_REL] + data[MUTAT_REL]
-        # Rename the index of the positions and bases.
-        data.index.rename(INDEX_NAMES, inplace=True)
-        # Include all columns of relationships, even those not counted.
-        return data.reindex(columns=self.columns)
+        return self._tabulate(self._counts_per_pos, self.section.range)
 
     def tabulate_by_read(self):
-        """ Count the bits per read. """
-        # Assemble the DataFrame from the bit counts.
-        data = pd.DataFrame.from_dict({rel: counter.n_affi_per_read
-                                       for rel, counter
-                                       in self.bit_counts.items()})
-        # Add a column for the informative bits.
-        data[INFOR_REL] = data[MATCH_REL] + data[MUTAT_REL]
-        # Rename the index of the read names.
-        data.index.rename(READ_TITLE, inplace=True)
-        # Include all columns of relationships, even those not counted.
-        return data.reindex(columns=self.columns)
+        return self._tabulate(self._counts_per_read, None)
 
 
 class NullableTabulator(Tabulator, ABC):
@@ -157,36 +156,15 @@ class RelTabulator(EnsembleTabulator):
     def get_null_value(cls):
         return 0
 
-    @cached_property
-    def bit_counts(self):
-        bit_counts = dict()
-        for name, bit_caller, kwargs in self.iter_bit_callers():
-            if kwargs:
-                bit_caller = RelPattern.inter(bit_caller, **kwargs)
-            bit_counts[name] = BitCounter(
-                self.section,
-                bit_caller.iter(self._loader.iter_batches_processed())
-            )
-        return bit_counts
-
 
 class MaskTabulator(EnsembleTabulator, NullableTabulator):
-
-    @cached_property
-    def bit_counts(self):
-        return {
-            rel: BitCounter(self.section,
-                            self._loader.iter_batches_processed(bit_caller=bc,
-                                                                **kwargs))
-            for rel, bc, kwargs in self.iter_bit_callers()
-        }
 
     def tabulate_by_pos(self):
         # Count every type of relationship at each position, in the same
         # way as for the superclass, then adjust for observer bias.
         return adjust_counts(super().tabulate_by_pos(),
-                             self._loader.section,
-                             self._loader.min_mut_gap)
+                             self.section,
+                             self.loader.min_mut_gap)
 
 
 class ClusterTabulator(NullableTabulator):
@@ -194,10 +172,7 @@ class ClusterTabulator(NullableTabulator):
     @property
     def ord_clust(self):
         """ Order and number of each cluster. """
-        return self._loader.clusters
-
-    def get_read_names(self):
-        return self._loader.import_loader.get_read_names()
+        return self.loader.clusters
 
     @cached_property
     def columns(self):
@@ -229,7 +204,7 @@ class ClusterTabulator(NullableTabulator):
         """ DataFrame of the bit count for each position and caller. """
         # Initialize an empty DataFrame of observed counts.
         counts = pd.DataFrame(self.get_null_value(),
-                              index=self._loader.section.unmasked,
+                              index=self.section.unmasked,
                               columns=self.columns)
         # Fill the observed counts one relationship at a time.
         for rel in TABLE_RELS:
@@ -248,8 +223,8 @@ class ClusterTabulator(NullableTabulator):
         for ok in self.ord_clust:
             # Adjust the counts to correct for observer bias.
             counts.loc[:, ok] = adjust_counts(counts.loc[:, ok],
-                                              self._loader.section,
-                                              self._loader.min_mut_gap).values
+                                              self.section,
+                                              self.loader.min_mut_gap).values
         return counts
 
     def tabulate_by_read(self):
@@ -279,15 +254,15 @@ class ClusterTabulator(NullableTabulator):
         """ Return the adjusted number of reads in each cluster as a
         Series with dimension (clusters). """
         return pd.DataFrame.from_dict({
-            R_OBS_TITLE: self._loader.n_reads_obs,
-            R_ADJ_TITLE: self._loader.n_reads_adj,
+            R_OBS_TITLE: self.loader.n_reads_obs,
+            R_ADJ_TITLE: self.loader.n_reads_adj,
         })
 
 
 # Helper functions #####################################################
 
-def iter_mut_semi_callers():
-    """ Yield a SemiBitCaller for each type of mutation to tabulate. """
+def iter_half_patterns():
+    """ Yield a HalfRelPattern for each type of mutation. """
     yield SUBST_REL, HalfRelPattern.from_counts(count_sub=True)
     yield SUB_A_REL, HalfRelPattern("ca", "ga", "ta")
     yield SUB_C_REL, HalfRelPattern("ac", "gc", "tc")
@@ -297,42 +272,33 @@ def iter_mut_semi_callers():
     yield INSRT_REL, HalfRelPattern.from_counts(count_ins=True)
 
 
-def _iter_bit_callers(section: Section):
-    """ Yield a BitCaller for every type of relationship. """
-    # Call reference matches.
-    refc = HalfRelPattern.from_counts(count_ref=True)
-    # Call mutations.
-    mutc = HalfRelPattern.from_counts(count_sub=True,
-                                      count_del=True,
-                                      count_ins=True)
-    # Create a standard bit caller for all matches and mutations.
-    bitc = RelPattern(section, mutc, refc)
-    # Count all base calls (everything but the bytes 0 and 255).
-    yield COVER_REL, bitc, dict(merge=True)
+def iter_patterns():
+    """ Yield a RelPattern for every type of relationship. """
+    # Count everything except for no coverage.
+    yield COVER_REL, RelPattern(HalfRelPattern.from_counts(count_ref=True,
+                                                           count_sub=True,
+                                                           count_del=True,
+                                                           count_ins=True),
+                                HalfRelPattern.from_counts())
+    # Count all reference matches.
+    ref_pattern = HalfRelPattern.from_counts(count_ref=True)
+    # Count all mutations.
+    mut_pattern = HalfRelPattern.from_counts(count_sub=True,
+                                             count_del=True,
+                                             count_ins=True)
     # Count matches to the reference sequence.
-    yield MATCH_REL, bitc, dict(invert=True)
+    yield MATCH_REL, RelPattern(ref_pattern, mut_pattern)
     # Count all types of mutations, relative to reference matches.
-    yield MUTAT_REL, bitc, dict()
+    yield MUTAT_REL, RelPattern(mut_pattern, ref_pattern)
     # Count each type of mutation, relative to reference matches.
-    for mut, mutc in iter_mut_semi_callers():
-        yield mut, RelPattern(section, mutc, refc), dict()
+    for mut, mut_pattern in iter_half_patterns():
+        yield mut, RelPattern(mut_pattern, ref_pattern)
 
 
-def iter_bit_callers(section: Section, rel_codes: str):
-    """ Yield a BitCaller for each type of relationship to tabulate. """
-    # Determine which types of relationships to call.
-    if rel_codes:
-        # Use the selected relationships and two required relationships:
-        # MATCH and MUTAT.
-        call_rels = {REL_CODES[code] for code in rel_codes}
-        call_rels.update(REQUIRED_RELS)
-    else:
-        # Use all types of relationships.
-        call_rels = set(TABLE_RELS)
-    # Yield a BitCaller for each selected type of relationship.
-    for rel, bit_caller, kwargs in _iter_bit_callers(section):
-        if rel in call_rels:
-            yield rel, bit_caller, kwargs
+@cache
+def name_patterns():
+    """ Every RelPattern, keyed by its name. """
+    return dict(iter_patterns())
 
 
 def adjust_counts(counts_obs: pd.DataFrame,
@@ -403,17 +369,16 @@ def adjust_counts(counts_obs: pd.DataFrame,
     return counts_adj
 
 
-def tabulate_loader(report_loader: RelateLoader | MaskLoader | ClustLoader,
-                    rel_codes: str):
+def tabulate_loader(dataset: RelateLoader | MaskLinker | ClustLoader):
     """ Return a new DataLoader, choosing the subclass based on the type
-    of the argument `report_loader`. """
-    if isinstance(report_loader, RelateLoader):
-        return RelTabulator(report_loader, rel_codes)
-    if isinstance(report_loader, MaskLoader):
-        return MaskTabulator(report_loader, rel_codes)
-    if isinstance(report_loader, ClustLoader):
-        return ClusterTabulator(report_loader, rel_codes)
-    raise TypeError(f"Invalid loader type: {type(report_loader).__name__}")
+    of the argument `dataset`. """
+    if isinstance(dataset, RelateLoader):
+        return RelTabulator(dataset)
+    if isinstance(dataset, MaskLinker):
+        return MaskTabulator(dataset)
+    if isinstance(dataset, ClustLoader):
+        return ClusterTabulator(dataset)
+    raise TypeError(f"Invalid dataset type: {type(dataset).__name__}")
 
 ########################################################################
 #                                                                      #

@@ -7,7 +7,7 @@ import numpy as np
 from .batch import QnamesBatch, RelateBatch
 from ..core import path
 from ..core.batch import POS_INDEX
-from ..core.io import ReadBatchIO, RefIO
+from ..core.io import MutsBatchIO, ReadBatchIO, RefIO
 from ..core.seq import DNA
 
 
@@ -36,7 +36,7 @@ class QnamesBatchIO(RelateIO, ReadBatchIO, QnamesBatch):
         self.names = np.char.decode(state["names"])
 
 
-class RelateBatchIO(RelateIO, ReadBatchIO, RelateBatch):
+class RelateBatchIO(RelateIO, MutsBatchIO, RelateBatch):
 
     @classmethod
     def file_seg_type(cls):

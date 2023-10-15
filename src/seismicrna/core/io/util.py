@@ -2,7 +2,7 @@ import pickle
 from hashlib import md5
 from logging import getLogger
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any
 
 import brotli
 
@@ -10,8 +10,6 @@ logger = getLogger(__name__)
 
 DEFAULT_BROTLI_LEVEL = 10
 PICKLE_PROTOCOL = 5
-
-AnyOutput = TypeVar("AnyOutput")
 
 
 def digest_data(data: bytes):

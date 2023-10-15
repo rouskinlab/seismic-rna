@@ -4,12 +4,9 @@ from abc import ABC, abstractmethod
 from functools import cache, cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Generator, Iterable
+from typing import Generator, Generic, Iterable, TypeVar
 
-from .batch import ReadBatchIO
 from .report import (Field,
-                     RefseqReport,
-                     BatchedReport,
                      SampleF,
                      RefF,
                      SectF,
@@ -23,15 +20,28 @@ from .. import path
 from ..batch import list_batch_nums
 from ..seq import DNA, Section
 
+# Type variable for reports.
+R = TypeVar('R')
+# Type variable for data.
+D = TypeVar('D')
+# Type variables for datasets.
+S1 = TypeVar('S1')
+S2 = TypeVar('S2')
+
 logger = getLogger(__name__)
 
 
-class Dataset(ABC):
+class Dataset(Generic[D], ABC):
     """ Base class for a dataset.
 
     The purpose of the Dataset class is to load a dataset, which may or
     may not be split over multiple batches, each batch in one file.
     """
+
+    @classmethod
+    @abstractmethod
+    def get_data_type(cls) -> type[D]:
+        """ Type of the data for this dataset. """
 
     @property
     @abstractmethod
@@ -54,22 +64,25 @@ class Dataset(ABC):
         """ Section of the reference. """
 
 
-class UnifiedDataset(Dataset, ABC):
+class UnifiedDataset(Dataset[D], ABC):
     """ Dataset in one whole piece (exactly one file). """
 
-
-class BatchedDataset(Dataset, ABC):
-    """ Dataset split into batches (one file per batch). """
-
-    @classmethod
     @abstractmethod
-    def get_batch_type(cls) -> type[ReadBatchIO]:
-        """ Type of the batch for this Loader. """
+    def _get_data(self) -> D:
+        """ Get the data for this dataset. """
 
-    @classmethod
-    def get_btype_name(cls):
-        """ Name of the type of batch for this Loader. """
-        return cls.get_batch_type().btype()
+    @cached_property
+    def data(self):
+        data = self._get_data()
+        # Verify the type of the data before returning it.
+        if not isinstance(data, self.get_data_type()):
+            raise TypeError(f"Expected {self.get_data_type()}, "
+                            f"but got {type(data).__name__}")
+        return data
+
+
+class BatchedDataset(Dataset[D], ABC):
+    """ Dataset split into batches (one file per batch). """
 
     @property
     @abstractmethod
@@ -82,29 +95,41 @@ class BatchedDataset(Dataset, ABC):
         return list_batch_nums(self.num_batches)
 
     @abstractmethod
-    def iter_batches(self) -> Generator[ReadBatchIO, None, None]:
+    def _iter_batches(self) -> Generator[D, None, None]:
         """ Yield each batch. """
 
+    def iter_batches(self):
+        """ Yield each batch. """
+        for batch in self._iter_batches():
+            # Verify the type of the batch before yielding it.
+            if not isinstance(batch, self.get_data_type()):
+                raise TypeError(f"Expected {self.get_data_type()}, "
+                                f"but got {type(batch).__name__}")
+            yield batch
 
-class DatasetLoader(Dataset, ABC):
-    """ Dataset created by loading directly from a Report. """
+
+class Loader(Generic[R], ABC):
 
     @classmethod
     @abstractmethod
-    def get_report_type(cls) -> type[RefseqReport]:
+    def get_report_type(cls) -> type[R]:
         """ Type of the report for this loader. """
 
-    @classmethod
-    def get_refseq_type(cls) -> type[RefseqIO]:
-        """ Type of the reference sequence file for this loader. """
-        return RefseqIO
-
-    def __init__(self, report: RefseqReport, top: Path):
+    def __init__(self, report: R, top: Path):
         if not isinstance(report, self.get_report_type()):
             raise TypeError(f"Expected report type {self.get_report_type()}, "
                             f"but got {type(report)}")
-        self._report: RefseqReport | BatchedReport = report
+        self._report = report
         self.top = top
+
+
+class LoadedDataset(Dataset[D], Loader[R], ABC):
+    """ Dataset created by loading directly from a Report. """
+
+    @classmethod
+    def get_refseq_type(cls):
+        """ Type of the reference sequence file for this loader. """
+        return RefseqIO
 
     def _get_report_field(self, field: Field, missing_ok: bool = False):
         try:
@@ -167,17 +192,17 @@ class DatasetLoader(Dataset, ABC):
                 f"over {self.section}")
 
 
-class UnifiedDatasetLoader(UnifiedDataset, DatasetLoader, ABC):
-    pass
+class UnifiedLoadedDataset(LoadedDataset[D, R], UnifiedDataset[D], ABC):
+    """ Dataset loaded as one piece from a report. """
 
 
-class BatchedDatasetLoader(BatchedDataset, DatasetLoader, ABC):
-    """ Data loaded in batches from a report. """
+class BatchedLoadedDataset(LoadedDataset[D, R], BatchedDataset[D], ABC):
+    """ Dataset loaded in batches from a report. """
 
     @classmethod
-    @abstractmethod
-    def get_report_type(cls) -> type[BatchedReport]:
-        """ Type of the report for this Loader. """
+    def get_btype_name(cls):
+        """ Name of the type of batch for this Loader. """
+        return cls.get_data_type().btype()
 
     @cached_property
     def num_batches(self):
@@ -187,8 +212,8 @@ class BatchedDatasetLoader(BatchedDataset, DatasetLoader, ABC):
     def get_batch_path(self, batch: int):
         """ Get the path to a batch of a specific number. """
         fields = self._report.path_fields(self.top,
-                                          self.get_batch_type().auto_fields())
-        return self.get_batch_type().build_path(batch=batch, **fields)
+                                          self.get_data_type().auto_fields())
+        return self.get_data_type().build_path(batch=batch, **fields)
 
     @cache
     def report_checksum(self, batch: int):
@@ -197,30 +222,28 @@ class BatchedDatasetLoader(BatchedDataset, DatasetLoader, ABC):
 
     def load_batch(self, batch: int):
         """ Load a specific batch of data. """
-        return self.get_batch_type().load(self.get_batch_path(batch),
-                                          self.report_checksum(batch))
+        return self.get_data_type().load(self.get_batch_path(batch),
+                                         self.report_checksum(batch))
 
-    def iter_batches(self):
+    def _iter_batches(self):
         for batch in self.batch_nums:
             yield self.load_batch(batch)
 
 
-class DatasetLinker(Dataset, ABC):
-    """ A Dataset created with a function that accepts two datasets and
-    returns a third "linked" dataset. """
+class Linker(Generic[S1, S2], ABC):
 
     @classmethod
     @abstractmethod
-    def get_data1_type(cls) -> type[Dataset]:
+    def get_data1_type(cls) -> type[S1]:
         """ Type of Dataset 1. """
 
     @classmethod
     @abstractmethod
-    def get_data2_type(cls) -> type[Dataset]:
+    def get_data2_type(cls) -> type[S2]:
         """ Type of Dataset 2. """
 
     @classmethod
-    def verify_data_types(cls, data1: Dataset, data2: Dataset):
+    def verify_data_types(cls, data1: S1, data2: S2):
         if not isinstance(data1, cls.get_data1_type()):
             raise TypeError(f"Expected a {cls.get_data1_type().__name__} for "
                             f"data1, but got {type(data1).__name__}")
@@ -228,106 +251,76 @@ class DatasetLinker(Dataset, ABC):
             raise TypeError(f"Expected a {cls.get_data2_type().__name__} for "
                             f"data2, but got {type(data2).__name__}")
 
-    def __init__(self,
-                 data1: Dataset | BatchedDataset | UnifiedDataset,
-                 data2: Dataset | BatchedDataset | UnifiedDataset):
+    def __init__(self, data1: S1, data2: S2):
         self.verify_data_types(data1, data2)
-        self._data1 = data1
-        self._data2 = data2
+        self.data1 = data1
+        self.data2 = data2
 
-    @property
-    def data1(self):
-        return self._data1
 
-    @property
-    def data2(self):
-        return self._data2
+class LinkedDataset(Dataset[D], Linker[S1, S2], ABC):
+    """ A Dataset created with a function that accepts two datasets and
+    returns a third "linked" dataset. """
 
-    def _get_data_attr(self, name: str):
-        if (value := getattr(self.data1, name)) != getattr(self.data2, name):
-            raise ValueError(f"Attribute {repr(name)} of {self} does not match "
-                             f"between datasets 1 ({repr(value)}) and 2 "
-                             f"({repr(getattr(self.data2, name))})")
-        return value
+    @classmethod
+    def _unify_attrs(cls, attr1, attr2):
+        if attr1 != attr2:
+            raise ValueError(
+                f"Inconsistent attribute: {repr(attr1)} ≠ {repr(attr2)}")
+        return attr1
 
     @property
     def sample(self):
-        return self._get_data_attr("sample")
+        return self._unify_attrs(self.data1.sample, self.data2.sample)
 
     @property
     def ref(self):
-        return self._get_data_attr("ref")
+        return self._unify_attrs(self.data1.ref, self.data2.ref)
 
     @property
     def refseq(self):
-        return self._get_data_attr("refseq")
+        return self._unify_attrs(self.data1.refseq, self.data2.refseq)
 
     @property
     def section(self):
-        return self._get_data_attr("section")
+        return self._unify_attrs(self.data1.section, self.data2.section)
 
     @abstractmethod
-    def _link(self, *args, **kwargs):
+    def link(self):
         """ Link the datasets. """
 
 
-class UnifiedDatasetLinker(DatasetLinker, UnifiedDataset, ABC):
+class UnifiedLinkedDataset(LinkedDataset[D, S1, S2], UnifiedDataset[D], ABC):
+    """ Linked unified dataset. """
 
     @classmethod
     @abstractmethod
-    def get_data1_type(cls) -> type[UnifiedDataset]:
-        pass
+    def _link(cls, data1, data2) -> D:
+        """ Link the data in the two datasets. """
+
+    def _get_data(self):
+        return self._link(self.data1, self.data2)
+
+
+class BatchedLinkedDataset(LinkedDataset[D, S1, S2], BatchedDataset[D], ABC):
+    """ Linked batched dataset. """
 
     @classmethod
     @abstractmethod
-    def get_data2_type(cls) -> type[UnifiedDataset]:
-        pass
-
-    @property
-    def data1(self) -> UnifiedDataset:
-        return super().data1
-
-    @property
-    def data2(self) -> UnifiedDataset:
-        return super().data2
-
-
-class BatchedDatasetLinker(DatasetLinker, BatchedDataset, ABC):
-
-    @classmethod
-    @abstractmethod
-    def get_data1_type(cls) -> type[BatchedDataset]:
-        pass
-
-    @classmethod
-    @abstractmethod
-    def get_data2_type(cls) -> type[BatchedDataset]:
-        pass
-
-    @property
-    def data1(self) -> BatchedDataset:
-        return super().data1
-
-    @property
-    def data2(self) -> BatchedDataset:
-        return super().data2
+    def _link(cls, batch1, batch2) -> D:
+        """ Link corresponding batches of data. """
 
     @property
     def num_batches(self):
-        return self._get_data_attr("num_batches")
+        return self._unify_attrs(self.data1.num_batches, self.data2.num_batches)
 
-    @abstractmethod
-    def _link(self, batch1: ReadBatchIO, batch2: ReadBatchIO, *args, **kwargs):
-        """ Link corresponding batches of datasets. """
-
-    def iter_batches(self, *args, **kwargs):
+    def _iter_batches(self):
         for batch1, batch2 in zip(self.data1.iter_batches(),
                                   self.data2.iter_batches(),
                                   strict=True):
-            yield self._link(batch1, batch2, *args, **kwargs)
+            yield self._link(batch1, batch2)
 
 
-def load_data(report_files: Iterable[Path], loader_type: type[DatasetLoader]):
+def load_data(report_files: Iterable[Path], loader_type: type[LoadedDataset]):
     """ Load the data for each report file. """
     for report_file in path.deduplicated(report_files):
         try:

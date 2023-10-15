@@ -20,7 +20,7 @@ def cluster(call_report: Path, max_order: int, n_runs: int, *,
     # Load the vector calling report.
     loader = MaskLoader.open(Path(call_report))
     # Check if the clustering report file already exists.
-    report_file = ClustReport.build_path(loader.out_dir,
+    report_file = ClustReport.build_path(loader.top,
                                          sample=loader.sample,
                                          ref=loader.ref,
                                          sect=loader.sect)

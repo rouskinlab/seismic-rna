@@ -56,7 +56,7 @@ class Table(ABC):
 
     @property
     @abstractmethod
-    def out_dir(self):
+    def top(self):
         """ Path of the table's output directory. """
         return Path()
 
@@ -114,7 +114,7 @@ class Table(ABC):
     @property
     def path_fields(self) -> dict[str, Any]:
         """ Table's path fields. """
-        return {path.TOP: self.out_dir,
+        return {path.TOP: self.top,
                 path.CMD: path.DIR_TABLE,
                 path.SAMP: self.sample,
                 path.REF: self.ref,

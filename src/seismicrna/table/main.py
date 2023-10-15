@@ -11,15 +11,14 @@ from ..core import path
 from ..core.cli import (CMD_TABLE,
                         docdef,
                         arg_input_path,
-                        opt_rels,
                         opt_max_procs,
                         opt_parallel,
                         opt_rerun)
-from ..core.parallel import dispatch
+from ..core.parallel import as_list_of_tuples, dispatch
 
 logger = getLogger(__name__)
 
-params = [arg_input_path, opt_rels, opt_max_procs, opt_parallel, opt_rerun]
+params = [arg_input_path, opt_max_procs, opt_parallel, opt_rerun]
 
 
 @command(CMD_TABLE, params=params)
@@ -30,8 +29,7 @@ def cli(*args, **kwargs):
 
 
 @docdef.auto()
-def run(input_path: tuple[str, ...], rels: tuple[str, ...],
-        max_procs: int, parallel: bool, **kwargs):
+def run(input_path: tuple[str, ...], max_procs: int, parallel: bool, **kwargs):
     """
     Run the table module.
     """
@@ -45,12 +43,14 @@ def run(input_path: tuple[str, ...], rels: tuple[str, ...],
     clust_reports = path.find_files_chain(report_files, [path.ClustRepSeg])
     if clust_reports:
         logger.debug(f"Found cluster report files: {clust_reports}")
-    rels_str = join_rels(rels)
-    tasks = [(file, rels_str) for file in chain(relate_reports,
-                                                mask_reports,
-                                                clust_reports)]
-    return list(chain(*dispatch(write, max_procs, parallel,
-                                args=tasks, kwargs=kwargs,
+    tasks = as_list_of_tuples(chain(relate_reports,
+                                    mask_reports,
+                                    clust_reports))
+    return list(chain(*dispatch(write,
+                                max_procs,
+                                parallel,
+                                args=tasks,
+                                kwargs=kwargs,
                                 pass_n_procs=False)))
 
 

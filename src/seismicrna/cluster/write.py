@@ -112,7 +112,7 @@ def write_log_counts(ord_runs: dict[int, RunOrderResults]):
     # Get the data loader for the clustering runs.
     loader = get_common_best_run_attr(ord_runs, "loader")
     # Build the path for the output file.
-    file = get_count_path(loader.out_dir, loader.sample,
+    file = get_count_path(loader.top, loader.sample,
                           loader.ref, loader.sect)
     # Write the counts to the file.
     log_counts.to_csv(file)

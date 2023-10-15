@@ -23,6 +23,7 @@ logger = getLogger(__name__)
 class RelMasker(object):
     """ Mask batches of relation vectors. """
 
+    PATTERN_KEY = "pattern"
     MASK_READ_INIT = "read-init"
     MASK_READ_FINFO = "read-finfo"
     MASK_READ_FMUT = "read-fmut"
@@ -282,13 +283,13 @@ class RelMasker(object):
         # of informative and mutated positions remaining.
         info, muts = count_per_pos(self.pos_kept,
                                    self.loader.refseq,
-                                   self.pattern,
+                                   {self.PATTERN_KEY: self.pattern},
                                    map(self._filter_batch_reads,
                                        self.loader.iter_batches()))
         if self.n_reads_kept == 0:
             logger.warning(f"No reads remained after filtering with {self}")
         # Filter out positions based on the parameters.
-        self._filter_positions(info, muts)
+        self._filter_positions(info[self.PATTERN_KEY], muts[self.PATTERN_KEY])
         if self.pos_kept.size == 0:
             logger.warning(f"No positions remained after filtering with {self}")
 

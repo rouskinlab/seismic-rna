@@ -41,7 +41,7 @@ class TableLoader(Table, ABC):
                              f"{table_file} (expected {self.path})")
 
     @property
-    def out_dir(self):
+    def top(self):
         return self._out_dir
 
     @property

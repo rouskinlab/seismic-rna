@@ -9,10 +9,10 @@ Core -- Bit Caller Module
 from __future__ import annotations
 
 import re
-from functools import cache, reduce
+from functools import cache
 from itertools import product
 from logging import getLogger
-from typing import Callable, Iterable
+from typing import Iterable
 
 from .code import (MATCH,
                    DELET,
@@ -200,26 +200,6 @@ class HalfRelPattern(object):
                      f"dis: {discount}\nTo codes: {sorted(codes)}")
         return cls(*codes)
 
-    @classmethod
-    def _junction(cls, operation: Callable, *callers: HalfRelPattern):
-        """ Return the union or intersection of SemiBitCallers. """
-        if not callers:
-            # No callers were given.
-            return cls.from_report_format(())
-        return cls.from_report_format(reduce(operation,
-                                             map(set, map(cls.to_report_format,
-                                                          callers))))
-
-    @classmethod
-    def union(cls, *callers: HalfRelPattern):
-        """ Return the union of SemiBitCallers. """
-        return cls._junction(set.union, *callers)
-
-    @classmethod
-    def inter(cls, *callers: HalfRelPattern):
-        """ Return the intersection of SemiBitCallers. """
-        return cls._junction(set.intersection, *callers)
-
     def __init__(self, *codes: str):
         # Compile the codes into patterns.
         self.patterns = self.compile(codes)
@@ -260,40 +240,6 @@ class RelPattern(object):
                    nos=HalfRelPattern.from_counts(count_ref=True,
                                                   discount=discount))
 
-    @classmethod
-    def _junction(cls,
-                  operation: Callable,
-                  *callers: RelPattern,
-                  merge: bool = False,
-                  invert: bool = False):
-        """ Return the union or intersection of BitCallers. """
-        # Confirm that at least one bit caller was given: the junction
-        # of 0 BitCallers is undefined.
-        if merge:
-            # Merge all yes half-patterns.
-            yes = (HalfRelPattern.union(pattern.nos, pattern.yes)
-                   for pattern in callers)
-            # Erase the nos half-patterns.
-            nos = ()
-        else:
-            # Gather all affirmative and anti-affirmative semi-callers.
-            yes = (caller.yes for caller in callers)
-            nos = (caller.nos for caller in callers)
-        if invert:
-            # Invert the affirmative and anti-affirmative conditions.
-            yes, nos = nos, yes
-        return cls(operation(*yes), operation(*nos))
-
-    @classmethod
-    def union(cls, *callers: RelPattern, **kwargs):
-        """ Return the union of BitCallers. """
-        return cls._junction(HalfRelPattern.union, *callers, **kwargs)
-
-    @classmethod
-    def inter(cls, *callers: RelPattern, **kwargs):
-        """ Return the intersection of BitCallers. """
-        return cls._junction(HalfRelPattern.inter, *callers, **kwargs)
-
     def __init__(self, yes: HalfRelPattern, nos: HalfRelPattern):
         self.yes = yes
         self.nos = nos
@@ -306,7 +252,7 @@ class RelPattern(object):
         return is_yes != is_nos, is_yes
 
     def __str__(self):
-        return f"{type(self).__name__} +{self.yes} -{self.nos}"
+        return f"{type(self).__name__}  ++ {self.yes}  -- {self.nos}"
 
 ########################################################################
 #                                                                      #

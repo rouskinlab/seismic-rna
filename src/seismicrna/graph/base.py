@@ -267,7 +267,7 @@ class OneTableGraph(OneSampleGraph, OneRefGraph, ABC):
 
     @property
     def out_dir(self):
-        return self.table.out_dir
+        return self.table.top
 
     @property
     def sample(self):
@@ -331,7 +331,7 @@ class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
 
     @property
     def out_dir(self):
-        return self._get_common_attribute("out_dir")
+        return self._get_common_attribute("top")
 
     @property
     def ref(self):

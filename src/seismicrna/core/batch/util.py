@@ -11,7 +11,6 @@ INDEX_NAMES = BATCH_NUM, READ_NUM
 
 # Whether numbers are 0-indexed or 1-indexed.
 BATCH_INDEX = 0
-PATTERN_INDEX = 0
 POS_INDEX = 1
 
 

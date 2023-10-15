@@ -35,23 +35,23 @@ class TableWriter(Table, ABC):
     """ Write a table to a file. """
 
     def __init__(self, tabulator: Tabulator | ClusterTabulator):
-        self._tab = tabulator
+        self.tab = tabulator
 
     @property
-    def out_dir(self):
-        return self._tab.out_dir
+    def top(self):
+        return self.tab.top
 
     @property
     def sample(self):
-        return self._tab.sample
+        return self.tab.sample
 
     @property
     def ref(self):
-        return self._tab.ref
+        return self.tab.ref
 
     @property
     def sect(self):
-        return self._tab.sect
+        return self.tab.section.name
 
     @abstractmethod
     def load_data(self):
@@ -78,14 +78,14 @@ class PosTableWriter(TableWriter, PosTable, ABC):
 
     def load_data(self):
         # Load the data for each position, including excluded positions.
-        all_positions = self._tab.section.range
-        return self._tab.tabulate_by_pos().reindex(index=all_positions)
+        all_positions = self.tab.section.range
+        return self.tab.tabulate_by_pos().reindex(index=all_positions)
 
 
 class ReadTableWriter(TableWriter, ReadTable, ABC):
 
     def load_data(self):
-        return self._tab.tabulate_by_read()
+        return self.tab.tabulate_by_read()
 
 
 # Instantiable Table Writers ###########################################
@@ -127,7 +127,7 @@ class ClustFreqTableWriter(TableWriter, ClustFreqTable):
         return False
 
     def load_data(self):
-        return self._tab.tabulate_by_clust()
+        return self.tab.tabulate_by_clust()
 
 
 # Helper Functions #####################################################
@@ -140,7 +140,7 @@ def infer_report_loader_type(report_file: Path):
         return MaskLoader
     if path.ClustRepSeg.ptrn.match(report_file.name):
         return ClustLoader
-    raise ValueError(f"Failed to infer loader for {report_file}")
+    raise ValueError(f"Failed to infer loader type for {report_file}")
 
 
 def get_tabulator_writer_types(tabulator: Tabulator):
@@ -158,14 +158,14 @@ def get_tabulator_writers(tabulator: Tabulator):
         yield writer_type(tabulator)
 
 
-def write(report_file: Path, rels: str, rerun: bool):
+def write(report_file: Path, rerun: bool):
     """ Helper function to write a table from a report file. """
     # Determine the needed type of report loader.
     report_loader_type = infer_report_loader_type(report_file)
     # Load the report.
-    report_loader = report_loader_type.open(report_file)
+    report_loader = report_loader_type.load(report_file)
     # Create the tabulator for the report's data.
-    tabulator = tabulate_loader(report_loader, rels)
+    tabulator = tabulate_loader(report_loader)
     # For each table associated with this tabulator, create the table,
     # write it, and return the path to the table output file.
     return [table.write(rerun) for table in get_tabulator_writers(tabulator)]
