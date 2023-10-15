@@ -23,7 +23,7 @@ from .rel import (MATCH,
                   SUB_G,
                   SUB_T,
                   REL_TYPE)
-from .seq import DNA
+from ..seq import DNA
 
 logger = getLogger(__name__)
 

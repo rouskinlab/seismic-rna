@@ -19,7 +19,7 @@ from .batch import ReadBatchIO
 from .file import FileIO, RefIO
 from .. import path
 from ..meta.version import __version__, check_compatibility
-from ..pattern import HalfRelPattern
+from ..rel import HalfRelPattern
 
 logger = getLogger(__name__)
 

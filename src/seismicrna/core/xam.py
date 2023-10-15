@@ -27,12 +27,18 @@ FLAG_SECONDARY = 2 ** 8
 FLAG_QCFAIL = 2 ** 9
 FLAG_DUPLICATE = 2 ** 10
 FLAG_SUPPLEMENTARY = 2 ** 11
-MAX_FLAG = sum([FLAG_PAIRED, FLAG_PROPER,
-                FLAG_UNMAP, FLAG_MUNMAP,
-                FLAG_REVERSE, FLAG_MREVERSE,
-                FLAG_FIRST, FLAG_SECOND,
-                FLAG_SECONDARY, FLAG_QCFAIL,
-                FLAG_DUPLICATE, FLAG_SUPPLEMENTARY])
+MAX_FLAG = sum([FLAG_PAIRED,
+                FLAG_PROPER,
+                FLAG_UNMAP,
+                FLAG_MUNMAP,
+                FLAG_REVERSE,
+                FLAG_MREVERSE,
+                FLAG_FIRST,
+                FLAG_SECOND,
+                FLAG_SECONDARY,
+                FLAG_QCFAIL,
+                FLAG_DUPLICATE,
+                FLAG_SUPPLEMENTARY])
 
 
 def index_xam_cmd(bam: Path, *, n_procs: int = 1):

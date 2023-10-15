@@ -3,8 +3,12 @@ from __future__ import annotations
 from collections import defaultdict
 
 from .ambrel import Deletion, Insertion, find_ambrels
-from .cigar import (CIG_ALIGN, CIG_MATCH, CIG_SUBST,
-                    CIG_DELET, CIG_INSRT, CIG_SCLIP,
+from .cigar import (CIG_ALIGN,
+                    CIG_MATCH,
+                    CIG_SUBST,
+                    CIG_DELET,
+                    CIG_INSRT,
+                    CIG_SCLIP,
                     parse_cigar)
 from .encode import encode_match, encode_relate
 from .error import RelateValueError

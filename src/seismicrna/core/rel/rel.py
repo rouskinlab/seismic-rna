@@ -1,4 +1,4 @@
-from .types import get_uint_type
+from ..types import get_uint_type
 
 REL_SIZE = 1
 REL_TYPE = get_uint_type(REL_SIZE)

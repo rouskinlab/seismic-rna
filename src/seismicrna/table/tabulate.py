@@ -6,14 +6,25 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from .base import (COVER_REL, DELET_REL, INSRT_REL, MATCH_REL, MUTAT_REL,
-                   SUBST_REL, SUB_A_REL, SUB_C_REL, SUB_G_REL, SUB_T_REL,
-                   INFOR_REL, CLUST_INDEX_NAMES, R_ADJ_TITLE, R_OBS_TITLE,
+from .base import (COVER_REL,
+                   DELET_REL,
+                   INSRT_REL,
+                   MATCH_REL,
+                   MUTAT_REL,
+                   SUBST_REL,
+                   SUB_A_REL,
+                   SUB_C_REL,
+                   SUB_G_REL,
+                   SUB_T_REL,
+                   INFOR_REL,
+                   CLUST_INDEX_NAMES,
+                   R_ADJ_TITLE,
+                   R_OBS_TITLE,
                    READ_TITLE, REL_NAME, REL_CODES, TABLE_RELS)
 from ..cluster.load import ClustLoader
-from ..core.pattern import RelPattern, HalfRelPattern
 from ..core.bitvect import BitCounter, ClustBitCounter
 from ..core.mu import calc_f_obs_series, calc_mu_adj_series
+from ..core.rel import RelPattern, HalfRelPattern
 from ..core.sect import Section, INDEX_NAMES
 from ..mask.data import MaskLoader
 from ..relate.data import RelateLoader

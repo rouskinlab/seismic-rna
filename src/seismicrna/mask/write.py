@@ -13,7 +13,7 @@ from .io import MaskReadBatchIO
 from .report import MaskReport
 from ..core.batch import count_per_pos, ReadBatch, MutsBatch
 from ..core.io import DEFAULT_BROTLI_LEVEL
-from ..core.pattern import RelPattern
+from ..core.rel import RelPattern
 from ..core.sect import Section, index_to_pos
 from ..relate.data import RelateLoader
 

@@ -16,8 +16,7 @@ from .util import (INDEX_NAMES,
                    get_length,
                    sanitize_ends,
                    sanitize_pos)
-from ..pattern import RelPattern
-from ..rel import MATCH, NOCOV, REL_TYPE
+from ..rel import MATCH, NOCOV, REL_TYPE, RelPattern
 from ..sect import BASE_NAME, seq_pos_to_index
 from ..seq import DNA
 from ..types import fit_uint_type
