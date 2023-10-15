@@ -2,7 +2,7 @@ from functools import cached_property
 from logging import getLogger
 
 from .. import path
-from ..sect import Section
+from ..seq import Section
 
 logger = getLogger(__name__)
 

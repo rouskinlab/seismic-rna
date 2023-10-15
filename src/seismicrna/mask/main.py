@@ -29,8 +29,7 @@ from ..core.cli import (CMD_MASK,
                         opt_rerun)
 from ..core.io import load_data
 from ..core.parallel import dispatch
-from ..core.sect import RefSections
-from ..core.seq import DNA
+from ..core.seq import DNA, RefSections
 from ..relate.data import RelateLoader
 
 logger = getLogger(__name__)

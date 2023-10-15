@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from ..sect import POS_NAME
+from ..seq import POS_NAME
 
 
 def compute_roc_curve(paired: pd.Series, reacts: pd.Series):

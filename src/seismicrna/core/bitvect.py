@@ -20,7 +20,7 @@ import pandas as pd
 
 from .mu import calc_f_obs_df
 from .rel import REL_TYPE
-from .sect import Section
+from .seq import Section
 
 logger = getLogger(__name__)
 

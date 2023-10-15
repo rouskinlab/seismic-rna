@@ -20,11 +20,9 @@ from ..core.cli import (CMD_FOLD,
                         opt_parallel,
                         opt_rerun)
 from ..core.depend import require_dependency
-from ..core.fasta import parse_fasta
 from ..core.parallel import as_list_of_tuples, dispatch
-from ..core.rna.profile import RnaProfile
-from ..core.sect import RefSections, Section
-from ..core.seq import DNA
+from ..core.rna import RnaProfile
+from ..core.seq import DNA, RefSections, Section, parse_fasta
 from ..core.shell import RNASTRUCTURE_CT2DOT_CMD, RNASTRUCTURE_FOLD_CMD
 from ..core.parallel import lock_temp_dir
 from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader

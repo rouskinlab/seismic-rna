@@ -9,7 +9,7 @@ from scipy.stats import pearsonr, spearmanr
 
 from .seqpair import SeqPairGraphRunner, SeqPairGraphWriter, SeqPairOneAxisGraph
 from .traces import iter_seq_line_traces
-from ..core.sect import POS_NAME
+from ..core.seq import POS_NAME
 
 logger = getLogger(__name__)
 

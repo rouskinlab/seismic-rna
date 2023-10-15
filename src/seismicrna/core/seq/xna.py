@@ -20,8 +20,8 @@ from typing import Any
 
 import numpy as np
 
-from .rand import rng
-from .types import BITS_PER_BYTE, get_uint_type
+from ..rand import rng
+from ..types import BITS_PER_BYTE, get_uint_type
 
 # Nucleic acid sequence alphabets.
 BASEA = 'A'
@@ -46,7 +46,7 @@ PICTG = '⌡'
 PICTT = PICTU = '▼'
 
 
-class Seq(ABC):
+class XNA(ABC):
     __slots__ = "_seq",
 
     @classmethod
@@ -125,7 +125,7 @@ class Seq(ABC):
 
         Returns
         -------
-        Seq
+        XNA
             A random sequence.
         """
         # Calculate expected proportion of N.
@@ -208,7 +208,7 @@ class Seq(ABC):
         return not self.__eq__(other)
 
 
-class DNA(Seq):
+class DNA(XNA):
 
     @classmethod
     def alph(cls):
@@ -224,7 +224,7 @@ class DNA(Seq):
         return RNA(str(self).replace(BASET, BASEU))
 
 
-class RNA(Seq):
+class RNA(XNA):
 
     @classmethod
     def alph(cls):
@@ -261,7 +261,7 @@ def expand_degenerate_seq(seq: DNA):
 class CompressedSeq(object):
     """ Compress a sequence into two bits per base. """
 
-    def __init__(self, seq: Seq):
+    def __init__(self, seq: XNA):
         self.r = isinstance(seq, RNA)
         self.s = len(seq)
         self.b = _compress_seq(seq)
@@ -303,12 +303,12 @@ def _get_blocks(seq: str):
     return (seq[i: i + BLOCK_SIZE] for i in range(0, len(seq), BLOCK_SIZE))
 
 
-def _compress_seq(seq: Seq):
+def _compress_seq(seq: XNA):
     return bytes(_compress_block(block, seq.four())
                  for block in _get_blocks(str(seq)))
 
 
-def _find_ns(seq: Seq):
+def _find_ns(seq: XNA):
     return tuple(match.start() for match in re.finditer(BASEN, str(seq)))
 
 

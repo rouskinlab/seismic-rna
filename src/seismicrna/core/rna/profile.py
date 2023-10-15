@@ -4,9 +4,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .sect import RnaSection
+from .section import RnaSection
 from .. import path
-from ..fasta import write_fasta
+from ..seq import write_fasta
 
 
 class RnaProfile(RnaSection):

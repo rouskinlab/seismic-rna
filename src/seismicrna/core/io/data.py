@@ -21,8 +21,7 @@ from .report import (Field,
 from .seq import RefseqIO
 from .. import path
 from ..batch import list_batch_nums
-from ..sect import Section
-from ..seq import DNA
+from ..seq import DNA, Section
 
 logger = getLogger(__name__)
 

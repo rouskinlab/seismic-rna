@@ -20,12 +20,15 @@ from .base import (COVER_REL,
                    CLUST_INDEX_NAMES,
                    R_ADJ_TITLE,
                    R_OBS_TITLE,
-                   READ_TITLE, REL_NAME, REL_CODES, TABLE_RELS)
+                   READ_TITLE,
+                   REL_NAME,
+                   REL_CODES,
+                   TABLE_RELS)
 from ..cluster.load import ClustLoader
 from ..core.bitvect import BitCounter, ClustBitCounter
 from ..core.mu import calc_f_obs_series, calc_mu_adj_series
 from ..core.rel import RelPattern, HalfRelPattern
-from ..core.sect import Section, INDEX_NAMES
+from ..core.seq import INDEX_NAMES, Section
 from ..mask.data import MaskLoader
 from ..relate.data import RelateLoader
 

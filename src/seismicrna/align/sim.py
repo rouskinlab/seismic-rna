@@ -15,13 +15,19 @@ import pandas as pd
 from ..core.qual import HI_QUAL, LO_QUAL
 from ..core.rand import rng
 from ..core.rel import NOCOV
-from ..core.sect import index_to_seq
-from ..core.seq import DNA
-from ..core.xam import (FLAG_PAIRED, FLAG_PROPER,
-                        FLAG_FIRST, FLAG_SECOND,
-                        FLAG_REVERSE, FLAG_MREVERSE,
-                        MAX_FLAG, SAM_DELIM, SAM_NOREF,
-                        SAM_SEQLEN, SAM_SEQLINE, SAM_SEQNAME)
+from ..core.seq import DNA, index_to_seq
+from ..core.xam import (FLAG_PAIRED,
+                        FLAG_PROPER,
+                        FLAG_FIRST,
+                        FLAG_SECOND,
+                        FLAG_REVERSE,
+                        FLAG_MREVERSE,
+                        MAX_FLAG,
+                        SAM_DELIM,
+                        SAM_NOREF,
+                        SAM_SEQLEN,
+                        SAM_SEQLINE,
+                        SAM_SEQNAME)
 from ..relate.invert import find_relvec_ends, inverse_relate
 
 

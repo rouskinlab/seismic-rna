@@ -11,7 +11,7 @@ from string import printable
 
 import numpy as np
 
-from ..seq import Seq, DNA, RNA, expand_degenerate_seq
+from ..seq import XNA, DNA, RNA, expand_degenerate_seq
 
 
 class TestDna(ut.TestCase):
@@ -231,7 +231,7 @@ class TestSeq(ut.TestCase):
 
     def test_abstract_base_class(self):
         """ Test that instantiating a Seq raises AttributeError. """
-        self.assertRaises(AttributeError, Seq, "ACGN")
+        self.assertRaises(AttributeError, XNA, "ACGN")
 
     def test_equal_dna_dna(self):
         """ Test that DNA instances with the same sequences compare as

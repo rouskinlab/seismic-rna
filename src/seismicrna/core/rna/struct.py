@@ -7,13 +7,13 @@ import pandas as pd
 
 from .ct import parse_ct
 from .pair import find_root_pairs, pairs_to_dict, pairs_to_table, table_to_pairs
-from .sect import (BASE_FIELD,
-                   IDX_FIELD,
-                   NEXT_FIELD,
-                   PAIR_FIELD,
-                   PREV_FIELD,
-                   RnaSection)
-from ..sect import intersection, POS_NAME, Section
+from .section import (BASE_FIELD,
+                      IDX_FIELD,
+                      NEXT_FIELD,
+                      PAIR_FIELD,
+                      PREV_FIELD,
+                      RnaSection)
+from ..seq import intersection, POS_NAME, Section
 
 
 class Rna2dPart(object):

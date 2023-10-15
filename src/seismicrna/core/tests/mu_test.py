@@ -17,8 +17,7 @@ from ..mu import (MAX_MU, clip, _calc_mu_obs,
                   calc_f_obs_numpy, calc_f_obs_df, calc_f_obs_series,
                   get_mu_quantile, normalize, winsorize,
                   logger as mu_logger)
-from ..sect import seq_pos_to_index, Section
-from ..seq import DNA
+from ..seq import DNA, Section, seq_pos_to_index
 from ..rand import rng
 
 

@@ -18,7 +18,7 @@ from typing import Iterable, Sequence
 import numpy as np
 import pandas as pd
 
-from .seq import BASEA, BASEC, BASEN, DNA
+from .xna import BASEA, BASEC, BASEN, DNA
 
 logger = getLogger(__name__)
 

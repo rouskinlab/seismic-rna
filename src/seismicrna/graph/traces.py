@@ -5,8 +5,7 @@ from plotly import graph_objects as go
 
 from .base import PRECISION
 from .color import ColorMap
-from ..core.sect import BASE_NAME, POS_NAME
-from ..core.seq import DNA
+from ..core.seq import BASE_NAME, POS_NAME, DNA
 
 logger = getLogger(__name__)
 

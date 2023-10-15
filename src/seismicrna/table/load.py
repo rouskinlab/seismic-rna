@@ -22,7 +22,7 @@ from .base import (MUTAT_REL,
 from ..cluster.names import ENSEMBLE_NAME, ORD_CLS_NAME, fmt_clust_name
 from ..core import path
 from ..core.rna.profile import RnaProfile
-from ..core.sect import Section, INDEX_NAMES
+from ..core.seq import INDEX_NAMES, Section
 
 
 # Table Loader Base Classes ############################################

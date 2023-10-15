@@ -8,20 +8,19 @@ import re
 from logging import getLogger
 from pathlib import Path
 
-from ..core.fasta import extract_fasta_seqname, format_fasta_name_line
-from ..core.seq import Seq, BASEN
+from ..core.seq import BASEN, XNA, extract_fasta_seqname, format_fasta_name_line
 
 logger = getLogger(__name__)
 
 
-def get_non_seq_regex(seq_type: type[Seq]):
+def get_non_seq_regex(seq_type: type[XNA]):
     return re.compile("[" + "".join(seq_type.get_nonalphaset() + {'\n'}) + "]")
 
 
 class FastaCleaner(object):
     __slots__ = "non_seq_regex",
 
-    def __init__(self, seq_type: type[Seq]):
+    def __init__(self, seq_type: type[XNA]):
         self.non_seq_regex = get_non_seq_regex(seq_type)
 
     def run(self, ifasta: Path, ofasta: Path, force: bool = False):

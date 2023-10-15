@@ -3,8 +3,7 @@ import unittest as ut
 import numpy as np
 import pandas as pd
 
-from ..sect import index_to_pos, index_to_seq, seq_pos_to_index
-from ..seq import DNA
+from ..seq import DNA, index_to_pos, index_to_seq, seq_pos_to_index
 
 
 class TestIndexToPos(ut.TestCase):

@@ -3,7 +3,7 @@ from typing import Iterable
 
 import pandas as pd
 
-from ..sect import POS_INDEX, Section
+from ..seq import POS_INDEX, Section
 
 logger = getLogger(__name__)
 

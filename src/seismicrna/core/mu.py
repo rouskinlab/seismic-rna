@@ -82,7 +82,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import newton_krylov
 
-from .sect import Section
+from .seq import Section
 
 logger = getLogger(__name__)
 

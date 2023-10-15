@@ -4,8 +4,8 @@ from os import linesep
 from pathlib import Path
 from typing import Iterable
 
-from .path import STR_CHARS
-from .seq import Seq
+from ..path import STR_CHARS
+from .xna import XNA
 
 logger = getLogger(__name__)
 
@@ -40,7 +40,7 @@ def format_fasta_name_line(name: str):
     return f"{FASTA_NAME_MARK}{name.rstrip()}{linesep}"
 
 
-def format_fasta_seq_lines(seq: Seq, wrap: int = 0):
+def format_fasta_seq_lines(seq: XNA, wrap: int = 0):
     """ Format a sequence in a FASTA file so that each line has at most
     `wrap` characters, or no limit if `wrap` is 0. """
     if wrap < 0:
@@ -51,12 +51,12 @@ def format_fasta_seq_lines(seq: Seq, wrap: int = 0):
                    for start in range(0, len(seq), wrap))
 
 
-def format_fasta_record(name: str, seq: Seq, wrap: int = 0):
+def format_fasta_record(name: str, seq: XNA, wrap: int = 0):
     return f"{format_fasta_name_line(name)}{format_fasta_seq_lines(seq, wrap)}"
 
 
 def parse_fasta(fasta: Path,
-                seq_type: type[Seq] | None,
+                seq_type: type[XNA] | None,
                 only: Iterable[str] | None = None):
     names = set()
     with open(fasta) as f:
@@ -109,9 +109,9 @@ def parse_fasta(fasta: Path,
                 line = f.readline()
 
 
-def get_fasta_seq(fasta: Path, seq_type: type[Seq], name: str):
+def get_fasta_seq(fasta: Path, seq_type: type[XNA], name: str):
     """ Get one sequence of a given name from a FASTA file. """
-    if not isinstance(seq_type, type) and issubclass(seq_type, Seq):
+    if not isinstance(seq_type, type) and issubclass(seq_type, XNA):
         raise TypeError("Expected seq_type to be subclass of Seq, but got "
                         f"{repr(seq_type)}")
     try:
@@ -124,7 +124,7 @@ def get_fasta_seq(fasta: Path, seq_type: type[Seq], name: str):
 
 
 def write_fasta(fasta: Path,
-                refs: Iterable[tuple[str, Seq]],
+                refs: Iterable[tuple[str, XNA]],
                 wrap: int = 0,
                 overwrite: bool = False):
     """ Write an iterable of reference names and DNA sequences to a

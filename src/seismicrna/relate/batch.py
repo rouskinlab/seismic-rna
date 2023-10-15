@@ -3,7 +3,7 @@ from functools import cached_property
 import numpy as np
 
 from ..core.batch import AllReadsBatch, MutsBatch, get_length, sanitize_pos
-from ..core.sect import POS_INDEX
+from ..core.seq import POS_INDEX
 
 
 class QnamesBatch(AllReadsBatch):

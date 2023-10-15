@@ -27,7 +27,7 @@ from ..core.cli import (docdef,
                         opt_max_procs,
                         opt_parallel)
 from ..core.parallel import dispatch
-from ..core.sect import POS_NAME
+from ..core.seq import POS_NAME
 from ..table.base import REL_CODES, REL_NAME
 from ..table.load import (PosTableLoader, RelPosTableLoader, MaskPosTableLoader,
                           ClustPosTableLoader, find_tables, get_clusters)
