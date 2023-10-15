@@ -3,7 +3,6 @@ from itertools import chain, filterfalse, repeat
 from logging import getLogger
 from typing import Any, Callable, Iterable
 
-
 logger = getLogger(__name__)
 
 

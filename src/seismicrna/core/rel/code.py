@@ -30,31 +30,6 @@ MINS5 = REL_TYPE(INS_5 | MATCH)
 MINS3 = REL_TYPE(INS_3 | MATCH)
 ANY_8 = REL_TYPE(INS_8 | MATCH)
 
-
-def matches(rel: int, pattern: int):
-    """
-    Return whether the relationship code matches the pattern code, which
-    is true if and only if the relationship code is a bitwise subset of
-    the pattern code.
-
-    Parameters
-    ----------
-    rel: int
-        Relationship code to test; must be in [0, 255]
-    pattern: int
-        Pattern against which to match rel: must be in [0, 255]
-
-    Returns
-    -------
-    bool
-        Whether the relationship code matches the pattern.
-    """
-    # Validate that rel and pattern are 1-byte integers.
-    rel_code = REL_TYPE(rel)
-    pattern_code = REL_TYPE(pattern)
-    # Determine if rel_code is a bitwise subset of pattern_code.
-    return (rel_code | pattern_code) == pattern_code
-
 ########################################################################
 #                                                                      #
 # Copyright ©2023, the Rouskin Lab.                                    #

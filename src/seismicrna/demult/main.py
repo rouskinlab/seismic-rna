@@ -1,9 +1,8 @@
 from click import command
 from pathlib import Path
-from ..core.temp import lock_temp_dir
-
-from ..demult.demultiplex import demultiplex_run
+from .demultiplex import demultiplex_run
 from ..align.fqops import FastqUnit
+from ..core.parallel import lock_temp_dir
 from ..core.cli import (CMD_DEMULT,
                         opt_barcode_length,
                         opt_barcode_start,

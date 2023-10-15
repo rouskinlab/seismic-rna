@@ -14,15 +14,15 @@ from itertools import product
 from logging import getLogger
 from typing import Callable, Iterable
 
-from .rel import (MATCH,
-                  DELET,
-                  INS_5,
-                  INS_3,
-                  SUB_A,
-                  SUB_C,
-                  SUB_G,
-                  SUB_T,
-                  REL_TYPE)
+from .code import (MATCH,
+                   DELET,
+                   INS_5,
+                   INS_3,
+                   SUB_A,
+                   SUB_C,
+                   SUB_G,
+                   SUB_T,
+                   REL_TYPE)
 from ..seq import DNA
 
 logger = getLogger(__name__)

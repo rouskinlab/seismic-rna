@@ -31,7 +31,7 @@ from ..core.cli import (CMD_REL,
                         opt_max_procs,
                         opt_rerun,
                         opt_save_temp)
-from ..core.temp import lock_temp_dir
+from ..core.parallel import lock_temp_dir
 
 logger = getLogger(__name__)
 

@@ -58,7 +58,7 @@ from ..core.cli import (CMD_ALIGN,
                         opt_min_reads,
                         opt_cram)
 from ..core.depend import require_dependency
-from ..core.temp import lock_temp_dir
+from ..core.parallel import lock_temp_dir
 from ..core.shell import (BOWTIE2_CMD,
                           BOWTIE2_BUILD_CMD,
                           CUTADAPT_CMD,

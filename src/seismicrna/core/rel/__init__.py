@@ -1,2 +1,2 @@
 from .pattern import *
-from .rel import *
+from .code import *
