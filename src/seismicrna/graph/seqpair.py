@@ -15,8 +15,8 @@ from ..cluster.names import (CLS_NAME,
                              ORD_NAME,
                              ORD_CLS_NAME,
                              validate_order_cluster)
-from ..core import docdef
-from ..core.cli import (arg_input_path,
+from ..core.cli import (docdef,
+                        arg_input_path,
                         opt_rels,
                         opt_y_ratio,
                         opt_quantile,

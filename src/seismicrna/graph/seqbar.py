@@ -15,8 +15,8 @@ from .traces import iter_seq_base_bar_traces, iter_seq_stack_bar_traces
 from .write import OneTableGraphWriter
 from ..cluster.names import (ENSEMBLE_NAME, CLS_NAME, ORD_NAME, fmt_clust_name,
                              validate_order_cluster)
-from ..core import docdef
-from ..core.cli import (arg_input_path,
+from ..core.cli import (docdef,
+                        arg_input_path,
                         opt_rels,
                         opt_y_ratio,
                         opt_quantile,

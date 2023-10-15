@@ -13,8 +13,9 @@ from pathlib import Path
 from click import command
 
 from .write import write_all
-from ..core import docdef, path
+from ..core import path
 from ..core.cli import (CMD_REL,
+                        docdef,
                         arg_input_path,
                         arg_fasta,
                         opt_out_dir,

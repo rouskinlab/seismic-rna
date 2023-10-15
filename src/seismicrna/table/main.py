@@ -7,8 +7,9 @@ from typing import Iterable
 from click import command
 
 from .write import write
-from ..core import docdef, path
+from ..core import path
 from ..core.cli import (CMD_TABLE,
+                        docdef,
                         arg_input_path,
                         opt_rels,
                         opt_max_procs,

@@ -12,8 +12,7 @@ from pathlib import Path
 from click import command
 
 from .fastaclean import FastaCleaner
-from ..core import docdef
-from ..core.cli import CMD_FASTC, arg_fasta, opt_out_dir, opt_rerun
+from ..core.cli import CMD_FASTC, docdef, arg_fasta, opt_out_dir, opt_rerun
 from ..core.seq import DNA
 
 logger = getLogger(__name__)

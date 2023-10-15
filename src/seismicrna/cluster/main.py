@@ -4,8 +4,9 @@ from pathlib import Path
 from click import command
 
 from .krun import cluster
-from ..core import docdef, path
+from ..core import path
 from ..core.cli import (CMD_CLUST,
+                        docdef,
                         arg_input_path,
                         opt_max_clusters,
                         opt_min_nmut_read,

@@ -9,8 +9,8 @@ from plotly import graph_objects as go
 
 from .seqpair import SeqPairTwoAxisGraph, SeqPairGraphWriter, get_titles
 from .traces import iter_seq_base_scatter_traces
-from ..core import docdef
-from ..core.cli import (arg_input_path,
+from ..core.cli import (docdef,
+                        arg_input_path,
                         opt_rels,
                         opt_y_ratio,
                         opt_quantile,

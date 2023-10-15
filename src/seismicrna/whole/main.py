@@ -15,8 +15,11 @@ from .. import (demult as demultiplex_mod,
                 table as table_mod,
                 fold as fold_mod,
                 fastc as fastc_mod)
-from ..core import docdef
-from ..core.cli import CMD_WHOLE, merge_params, opt_demultiplex, opt_fold
+from ..core.cli import (CMD_WHOLE,
+                        docdef,
+                        merge_params,
+                        opt_demultiplex,
+                        opt_fold)
 from ..core.seq import DNA
 
 params = merge_params([opt_demultiplex],

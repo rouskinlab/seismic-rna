@@ -5,8 +5,9 @@ from typing import Iterable
 from click import command
 
 from .write import mask_section
-from ..core import docdef, path
+from ..core import path
 from ..core.cli import (CMD_MASK,
+                        docdef,
                         arg_input_path,
                         opt_coords,
                         opt_primers,

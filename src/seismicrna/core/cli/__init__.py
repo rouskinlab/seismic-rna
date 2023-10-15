@@ -1,2 +1,2 @@
-from .clicmd import *
+from .cmd import *
 from .param import *

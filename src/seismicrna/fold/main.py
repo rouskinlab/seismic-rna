@@ -4,8 +4,9 @@ from pathlib import Path
 from click import command
 
 from .rnastructure import fold, ct2dot
-from ..core import docdef, path
+from ..core import path
 from ..core.cli import (CMD_FOLD,
+                        docdef,
                         arg_input_path,
                         opt_temp_dir,
                         opt_save_temp,

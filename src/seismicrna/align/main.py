@@ -5,8 +5,8 @@ from click import command
 
 from .fq2xam import get_xam_files
 from .fqops import FastqUnit
-from ..core import docdef
 from ..core.cli import (CMD_ALIGN,
+                        docdef,
                         arg_fasta,
                         opt_fastqs,
                         opt_fastqi,

@@ -5,25 +5,25 @@ from typing import Any, Callable
 
 from click import Argument, Option
 
-from ..core.cli import param as clip
+from . import param as cpar
 
 
 # Ignore special parameters with reserved names.
 reserved_params = "self", "cls"
 
 # Get every parameter defined for the command line interface.
-cli_args = dict(getmembers(clip, lambda member: isinstance(member, Argument)))
-cli_options = dict(getmembers(clip, lambda member: isinstance(member, Option)))
+cli_args = dict(getmembers(cpar, lambda member: isinstance(member, Argument)))
+cli_opts = dict(getmembers(cpar, lambda member: isinstance(member, Option)))
 
 # Get the default value for every parameter.
-api_defs = {"n_procs": clip.NUM_CPUS}
+api_defs = {"n_procs": cpar.NUM_CPUS}
 cli_defs = {param.name: param.default
-            for param in (cli_args | cli_options).values()
+            for param in (cli_args | cli_opts).values()
             if param.default is not None}
 all_defs = cli_defs | api_defs
 
 # Get the documentation for every CLI option.
-cli_docs = {option.name: option.help for option in cli_options.values()}
+cli_docs = {option.name: option.help for option in cli_opts.values()}
 
 
 def get_param_default(param: Parameter,

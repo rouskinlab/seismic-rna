@@ -17,8 +17,7 @@ from os.path import dirname
 
 from click import command
 
-from ..core import docdef
-from ..core.cli import CMD_TEST, opt_verbose
+from ..core.cli import CMD_TEST, docdef, opt_verbose
 
 # Parameters for command line interface
 params = [opt_verbose]
