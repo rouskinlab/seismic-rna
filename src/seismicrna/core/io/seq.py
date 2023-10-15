@@ -2,7 +2,6 @@ from functools import cached_property
 
 from .file import RefIO, BrickleIO
 from .. import path
-from ..clicmd import CMD_REL
 from ..seq import DNA
 
 
@@ -14,7 +13,7 @@ class RefseqIO(RefIO, BrickleIO):
 
     @classmethod
     def auto_fields(cls):
-        return super().auto_fields() | {path.CMD: CMD_REL}
+        return super().auto_fields() | {path.CMD: path.DIR_REL}
 
     def __init__(self, *args, refseq: DNA, **kwargs):
         super().__init__(*args, **kwargs)

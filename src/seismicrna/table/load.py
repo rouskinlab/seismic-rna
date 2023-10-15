@@ -5,11 +5,20 @@ from typing import Iterable
 
 import pandas as pd
 
-from .base import (MUTAT_REL, CLUST_INDEX_NAMES, REL_NAME,
-                   Table, RelTypeTable, PosTable, ReadTable,
-                   RelPosTable, RelReadTable,
-                   MaskPosTable, MaskReadTable,
-                   ClustPosTable, ClustReadTable, ClustFreqTable)
+from .base import (MUTAT_REL,
+                   CLUST_INDEX_NAMES,
+                   REL_NAME,
+                   Table,
+                   RelTypeTable,
+                   PosTable,
+                   ReadTable,
+                   RelPosTable,
+                   RelReadTable,
+                   MaskPosTable,
+                   MaskReadTable,
+                   ClustPosTable,
+                   ClustReadTable,
+                   ClustFreqTable)
 from ..cluster.names import ENSEMBLE_NAME, ORD_CLS_NAME, fmt_clust_name
 from ..core import path
 from ..core.rna.profile import RnaProfile

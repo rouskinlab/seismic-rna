@@ -5,20 +5,18 @@ from typing import Any, Callable
 
 from click import Argument, Option
 
-from ..core import cliparam
+from ..core.cli import param as clip
 
 
 # Ignore special parameters with reserved names.
 reserved_params = "self", "cls"
 
 # Get every parameter defined for the command line interface.
-cli_args = dict(getmembers(cliparam,
-                           lambda member: isinstance(member, Argument)))
-cli_options = dict(getmembers(cliparam,
-                              lambda member: isinstance(member, Option)))
+cli_args = dict(getmembers(clip, lambda member: isinstance(member, Argument)))
+cli_options = dict(getmembers(clip, lambda member: isinstance(member, Option)))
 
 # Get the default value for every parameter.
-api_defs = {"n_procs": cliparam.NUM_CPUS}
+api_defs = {"n_procs": clip.NUM_CPUS}
 cli_defs = {param.name: param.default
             for param in (cli_args | cli_options).values()
             if param.default is not None}

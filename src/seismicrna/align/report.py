@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from ..core import path
-from ..core.clicmd import CMD_ALIGN
 from ..core.io import (Report,
                        SampleF,
                        IsDemultF,
@@ -102,7 +101,7 @@ class AlignReport(Report):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: CMD_ALIGN}
+        return {**super().auto_fields(), path.CMD: path.DIR_ALIGN}
 
 ########################################################################
 #                                                                      #

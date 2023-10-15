@@ -12,7 +12,7 @@ import pandas as pd
 from .io import MaskReadBatchIO
 from .report import MaskReport
 from ..core.batch import count_per_pos, ReadBatch, MutsBatch
-from ..core.cliparam import opt_brotli_level
+from ..core.io import DEFAULT_BROTLI_LEVEL
 from ..core.pattern import RelPattern
 from ..core.sect import Section, index_to_pos
 from ..relate.data import RelateLoader
@@ -44,7 +44,7 @@ class RelMasker(object):
                  max_fmut_read: float = 1.,
                  min_ninfo_pos: int = 0,
                  max_fmut_pos: float = 1.,
-                 brotli_level: int = opt_brotli_level.default):
+                 brotli_level: int = DEFAULT_BROTLI_LEVEL):
         """
         Parameters
         ----------

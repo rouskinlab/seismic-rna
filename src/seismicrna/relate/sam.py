@@ -5,7 +5,6 @@ from typing import Callable, TextIO
 
 from ..core import path
 from ..core.batch import BATCH_INDEX
-from ..core.clicmd import CMD_REL
 from ..core.xam import (SAM_DELIM,
                         count_total_reads,
                         run_view_xam,
@@ -129,7 +128,7 @@ class XamViewer(object):
         return path.build(*path.XAM_STEP_SEGS,
                           top=self.temp_dir,
                           sample=self.sample,
-                          cmd=CMD_REL,
+                          cmd=path.DIR_REL,
                           step=path.STEPS_VECT_SAMS,
                           ref=self.ref,
                           ext=path.SAM_EXT)

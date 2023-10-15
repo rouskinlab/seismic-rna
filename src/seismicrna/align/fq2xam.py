@@ -11,7 +11,7 @@ from .xamgen import (run_bowtie2_build,
                      run_export,
                      run_xamgen)
 from ..core import path
-from ..core.clicmd import CMD_ALIGN, CMD_QC
+from ..core.cli import CMD_ALIGN, CMD_QC
 from ..core.fasta import parse_fasta, write_fasta
 from ..core.parallel import dispatch
 from ..core.seq import DNA

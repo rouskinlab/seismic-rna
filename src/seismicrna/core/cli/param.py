@@ -12,8 +12,8 @@ import os
 
 from click import Argument, Choice, Option, Parameter, Path
 
-from .io import DEFAULT_BROTLI_LEVEL
-from .seq import DNA
+from ..io import DEFAULT_BROTLI_LEVEL
+from ..seq import DNA
 
 # System information
 CWD = os.getcwd()

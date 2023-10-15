@@ -10,9 +10,16 @@ from plotly import graph_objects as go
 from .seqpair import SeqPairTwoAxisGraph, SeqPairGraphWriter, get_titles
 from .traces import iter_seq_base_scatter_traces
 from ..core import docdef
-from ..core.cliparam import (arg_input_path, opt_rels, opt_y_ratio, opt_quantile,
-                             opt_arrange, opt_csv, opt_html, opt_pdf,
-                             opt_max_procs, opt_parallel)
+from ..core.cli import (arg_input_path,
+                        opt_rels,
+                        opt_y_ratio,
+                        opt_quantile,
+                        opt_arrange,
+                        opt_csv,
+                        opt_html,
+                        opt_pdf,
+                        opt_max_procs,
+                        opt_parallel)
 from ..core.parallel import dispatch
 from ..table.load import find_tables
 
@@ -32,7 +39,6 @@ params = [
     opt_max_procs,
     opt_parallel,
 ]
-
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -62,7 +68,7 @@ def run(input_path: tuple[str, ...],
                for t1, t2 in zip(tables[0::2], tables[1::2], strict=True)]
     return list(chain(*dispatch([writer.write for writer in writers],
                                 max_procs, parallel, pass_n_procs=False,
-                                kwargs=dict(rels_sets=rels,  y_ratio=y_ratio,
+                                kwargs=dict(rels_sets=rels, y_ratio=y_ratio,
                                             quantile=quantile, arrange=arrange,
                                             csv=csv, html=html, pdf=pdf))))
 

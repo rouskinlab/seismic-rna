@@ -1,6 +1,5 @@
 from .io import MaskIO, MaskReadBatchIO
 from ..core import path
-from ..core.clicmd import CMD_MASK
 from ..core.io import (BatchedReport,
                        SampleF,
                        RefF,
@@ -101,7 +100,7 @@ class MaskReport(BatchedReport, MaskIO):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: CMD_MASK}
+        return {**super().auto_fields(), path.CMD: path.DIR_MASK}
 
     @classmethod
     def get_batch_seg(cls):

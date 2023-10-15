@@ -6,7 +6,6 @@ import pandas as pd
 
 from .sect import RnaSection
 from .. import path
-from ..clicmd import CMD_FOLD
 from ..fasta import write_fasta
 
 
@@ -30,9 +29,12 @@ class RnaProfile(RnaSection):
     def get_dir(self, out_dir: Path):
         """ Get the directory in which this RNA's files will go. """
         return path.builddir(*path.FOLD_SECT_DIR_SEGS,
-                             top=out_dir, cmd=CMD_FOLD,
-                             sample=self.sample, ref=self.ref,
-                             sect=self.data_sect, fold_sect=self.sect)
+                             top=out_dir,
+                             cmd=path.DIR_FOLD,
+                             sample=self.sample,
+                             ref=self.ref,
+                             sect=self.data_sect,
+                             fold_sect=self.sect)
 
     @cache
     def get_file(self, out_dir: Path, segment: path.Segment, **kwargs):

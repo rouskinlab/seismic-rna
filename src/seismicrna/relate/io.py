@@ -8,7 +8,6 @@ from .batch import QnamesBatch, RelateBatch
 from ..core import path
 from ..core.batch import POS_INDEX
 from ..core.io import ReadBatchIO, RefIO
-from ..core.clicmd import CMD_REL
 from ..core.seq import DNA
 
 
@@ -16,7 +15,7 @@ class RelateIO(RefIO, ABC):
 
     @classmethod
     def auto_fields(cls):
-        return super().auto_fields() | {path.CMD: CMD_REL}
+        return super().auto_fields() | {path.CMD: path.DIR_REL}
 
 
 class QnamesBatchIO(RelateIO, ReadBatchIO, QnamesBatch):

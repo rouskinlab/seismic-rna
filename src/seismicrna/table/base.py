@@ -7,7 +7,6 @@ import pandas as pd
 
 from ..cluster.names import CLS_NAME, ORD_NAME
 from ..core import path
-from ..core.clicmd import CMD_TABLE
 from ..core.mu import winsorize
 from ..core.sect import index_to_pos, index_to_seq
 
@@ -116,7 +115,7 @@ class Table(ABC):
     def path_fields(self) -> dict[str, Any]:
         """ Table's path fields. """
         return {path.TOP: self.out_dir,
-                path.CMD: CMD_TABLE,
+                path.CMD: path.DIR_TABLE,
                 path.SAMP: self.sample,
                 path.REF: self.ref,
                 path.SECT: self.sect,

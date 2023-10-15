@@ -6,13 +6,14 @@ from typing import Callable, Sequence
 import numpy as np
 import pandas as pd
 
-from .compare import (get_common_best_run_attr, get_log_exp_obs_counts,
-                      find_best_order, RunOrderResults)
+from .compare import (RunOrderResults,
+                      find_best_order,
+                      get_common_best_run_attr,
+                      get_log_exp_obs_counts)
 from .em import EmClustering
 from .names import ORD_CLS_NAME, READ_NAME
 from .report import ClustReport
 from ..core import path
-from ..core.clicmd import CMD_CLUST
 from ..mask.data import MaskLoader
 
 logger = getLogger(__name__)
@@ -24,8 +25,15 @@ def get_table_path(out_dir: Path, sample: str, ref: str, sect: str,
                    table: str, k: int, run: int):
     """ Build a path for a table of clustering results. """
     return path.buildpar(*path.CLUST_TAB_SEGS,
-                         top=out_dir, cmd=CMD_CLUST, sample=sample, ref=ref,
-                         sect=sect, table=table, k=k, run=run, ext=path.CSV_EXT)
+                         top=out_dir,
+                         cmd=path.DIR_CLUST,
+                         sample=sample,
+                         ref=ref,
+                         sect=sect,
+                         table=table,
+                         k=k,
+                         run=run,
+                         ext=path.CSV_EXT)
 
 
 def write_single_run_table(run: EmClustering,

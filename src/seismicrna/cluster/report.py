@@ -2,14 +2,15 @@ from .compare import RunOrderResults, find_best_order
 from ..mask.data import MaskLoader
 from ..core import path
 from ..core.bitvect import UniqMutBits
-from ..core.clicmd import CMD_CLUST
 from ..core.io import BatchedReport
 
 
 class ClustReport(BatchedReport):
     __slots__ = (
         # Sample, reference, and section information.
-        "sample", "ref", "sect", "end5", "end3", "n_uniq_reads",
+        "sample",
+        "ref",
+        "sect", "end5", "end3", "n_uniq_reads",
         # Clustering parameters.
         "max_order", "num_runs", "min_iter", "max_iter", "conv_thresh",
         # Batch information.
@@ -26,7 +27,7 @@ class ClustReport(BatchedReport):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: CMD_CLUST}
+        return {**super().auto_fields(), path.CMD: path.DIR_CLUST}
 
     @classmethod
     def get_batch_seg(cls):

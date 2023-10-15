@@ -4,10 +4,20 @@ from pathlib import Path
 
 import pandas as pd
 
-from .base import (Table, PosTable, ReadTable,
-                   RelPosTable, RelReadTable, MaskPosTable, MaskReadTable,
-                   ClustPosTable, ClustReadTable, ClustFreqTable)
-from .tabulate import (Tabulator, RelTabulator, MaskTabulator, ClusterTabulator,
+from .base import (Table,
+                   PosTable,
+                   ReadTable,
+                   RelPosTable,
+                   RelReadTable,
+                   MaskPosTable,
+                   MaskReadTable,
+                   ClustPosTable,
+                   ClustReadTable,
+                   ClustFreqTable)
+from .tabulate import (Tabulator,
+                       RelTabulator,
+                       MaskTabulator,
+                       ClusterTabulator,
                        tabulate_loader)
 from ..cluster.load import ClustLoader
 from ..core import path

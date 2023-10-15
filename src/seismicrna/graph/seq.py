@@ -1,5 +1,5 @@
 from .base import OneSeqGraph
-from ..core.cliparam import CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
+from ..core.cli import CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
 from ..table.load import PosTableLoader, ClustPosTableLoader
 
 

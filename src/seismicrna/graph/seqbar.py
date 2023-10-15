@@ -16,9 +16,16 @@ from .write import OneTableGraphWriter
 from ..cluster.names import (ENSEMBLE_NAME, CLS_NAME, ORD_NAME, fmt_clust_name,
                              validate_order_cluster)
 from ..core import docdef
-from ..core.cliparam import (arg_input_path, opt_rels, opt_y_ratio, opt_quantile,
-                             opt_arrange, opt_csv, opt_html, opt_pdf,
-                             opt_max_procs, opt_parallel)
+from ..core.cli import (arg_input_path,
+                        opt_rels,
+                        opt_y_ratio,
+                        opt_quantile,
+                        opt_arrange,
+                        opt_csv,
+                        opt_html,
+                        opt_pdf,
+                        opt_max_procs,
+                        opt_parallel)
 from ..core.parallel import dispatch
 from ..core.sect import POS_NAME
 from ..table.base import REL_CODES, REL_NAME

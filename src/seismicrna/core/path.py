@@ -40,15 +40,6 @@ import re
 from string import ascii_letters, digits, printable
 from typing import Any, Iterable, Sequence
 
-from .clicmd import (CMD_QC,
-                     CMD_ALIGN,
-                     CMD_REL,
-                     CMD_MASK,
-                     CMD_CLUST,
-                     CMD_TABLE,
-                     CMD_FOLD,
-                     CMD_GRAPH)
-
 logger = getLogger(__name__)
 
 # Constants ############################################################
@@ -68,6 +59,19 @@ STR_PATTERN = f"([{STR_CHARS}]+)"
 INT_PATTERN = f"([{INT_CHARS}]+)"
 RE_PATTERNS = {str: STR_PATTERN, int: INT_PATTERN, pl.Path: PATH_PATTERN}
 
+# Directories for commands
+
+DIR_QC = "qc"
+DIR_ALIGN = "align"
+DIR_REL = "relate"
+DIR_MASK = "mask"
+DIR_CLUST = "cluster"
+DIR_TABLE = "table"
+DIR_FOLD = "fold"
+DIR_GRAPH = "graph"
+
+# Directories for steps
+
 STEP_QC_INIT = "init"
 STEP_QC_TRIM = "trim"
 
@@ -85,6 +89,8 @@ STEPS = (STEP_QC_INIT,
          STEP_ALIGN_TRIM,
          STEP_ALIGN_MAP,
          STEPS_VECT_SAMS)
+
+# Tables
 
 CLUST_PROP_RUN_TABLE = "props"
 CLUST_MUS_RUN_TABLE = "mus"
@@ -262,14 +268,14 @@ class Field(object):
 # Fields
 TopField = Field(pl.Path)
 NameField = Field(str)
-CmdField = Field(str, [CMD_QC,
-                       CMD_ALIGN,
-                       CMD_REL,
-                       CMD_MASK,
-                       CMD_CLUST,
-                       CMD_TABLE,
-                       CMD_FOLD,
-                       CMD_GRAPH])
+CmdField = Field(str, [DIR_QC,
+                       DIR_ALIGN,
+                       DIR_REL,
+                       DIR_MASK,
+                       DIR_CLUST,
+                       DIR_TABLE,
+                       DIR_FOLD,
+                       DIR_GRAPH])
 StepField = Field(str, STEPS)
 IntField = Field(int)
 CountTabField = Field(str, COUNT_TABLES)
