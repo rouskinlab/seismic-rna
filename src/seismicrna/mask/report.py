@@ -1,43 +1,43 @@
-from .files import SavedMask, SavedMaskBatch
+from .io import MaskIO, MaskReadBatchIO
 from ..core import path
 from ..core.clicmd import CMD_MASK
-from ..core.report import (BatchedReport,
-                           SampleF,
-                           RefF,
-                           SectF,
-                           End5F,
-                           End3F,
-                           CountMutsF,
-                           CountRefsF,
-                           ExclGUF,
-                           ExclPolyAF,
-                           ExclUserPosF,
-                           MinInfoPosF,
-                           MaxMutPosF,
-                           NumPosInitF,
-                           NumPosCutGUF,
-                           NumPosCutPolyAF,
-                           NumPosCutUserF,
-                           NumPosCutLoInfoF,
-                           NumPosCutHiMutF,
-                           NumPosKeptF,
-                           PosCutGUF,
-                           PosCutPolyAF,
-                           PosCutUserF,
-                           PosCutLoInfoF,
-                           PosCutHiMutF,
-                           PosKeptF,
-                           MinInfoReadF,
-                           MaxMutReadF,
-                           MinMutGapF,
-                           NumReadsInitF,
-                           NumReadsLoInfoF,
-                           NumReadsHiMutF,
-                           NumReadsCloseMutF,
-                           NumReadsKeptF)
+from ..core.io import (BatchedReport,
+                       SampleF,
+                       RefF,
+                       SectF,
+                       End5F,
+                       End3F,
+                       CountMutsF,
+                       CountRefsF,
+                       ExclGUF,
+                       ExclPolyAF,
+                       ExclUserPosF,
+                       MinInfoPosF,
+                       MaxMutPosF,
+                       NumPosInitF,
+                       NumPosCutGUF,
+                       NumPosCutPolyAF,
+                       NumPosCutUserF,
+                       NumPosCutLoInfoF,
+                       NumPosCutHiMutF,
+                       NumPosKeptF,
+                       PosCutGUF,
+                       PosCutPolyAF,
+                       PosCutUserF,
+                       PosCutLoInfoF,
+                       PosCutHiMutF,
+                       PosKeptF,
+                       MinInfoReadF,
+                       MaxMutReadF,
+                       MinMutGapF,
+                       NumReadsInitF,
+                       NumReadsLoInfoF,
+                       NumReadsHiMutF,
+                       NumReadsCloseMutF,
+                       NumReadsKeptF)
 
 
-class MaskReport(BatchedReport, SavedMask):
+class MaskReport(BatchedReport, MaskIO):
 
     @classmethod
     def file_seg_type(cls):
@@ -45,7 +45,7 @@ class MaskReport(BatchedReport, SavedMask):
 
     @classmethod
     def _batch_types(cls):
-        return SavedMaskBatch,
+        return MaskReadBatchIO,
 
     @classmethod
     def fields(cls):

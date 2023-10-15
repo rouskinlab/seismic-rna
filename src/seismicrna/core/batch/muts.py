@@ -8,7 +8,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .naive import Batch, MaskBatch
+from .read import ReadBatch, MaskReadBatch
 from .util import (INDEX_NAMES,
                    PATTERN_INDEX,
                    POS_INDEX,
@@ -23,7 +23,7 @@ from ..seq import DNA
 from ..types import fit_uint_type
 
 
-class AwareBatch(Batch, ABC):
+class MutsBatch(ReadBatch, ABC):
 
     def __init__(self, *,
                  muts: dict[int, dict[int, list[int] | np.ndarray]],
@@ -307,7 +307,7 @@ class AwareBatch(Batch, ABC):
             mid5s = self.mid5s
             mid3s = self.mid3s
             end3s = self.end3s
-        return MaskRelsBatch(batch=self.batch,
+        return MaskMutsBatch(batch=self.batch,
                              muts=muts,
                              seqlen=self.seqlen,
                              end5s=end5s,
@@ -319,7 +319,7 @@ class AwareBatch(Batch, ABC):
                              pattern=pattern)
 
 
-class MaskRelsBatch(MaskBatch, AwareBatch, ABC):
+class MaskMutsBatch(MaskReadBatch, MutsBatch, ABC):
 
     def __init__(self, *, pattern: RelPattern | None, **kwargs):
         super().__init__(**kwargs)
@@ -337,7 +337,7 @@ class MaskRelsBatch(MaskBatch, AwareBatch, ABC):
 def count_per_pos(positions: np.ndarray,
                   refseq: DNA,
                   patterns: RelPattern | list[RelPattern],
-                  batches: Iterable[AwareBatch]):
+                  batches: Iterable[MutsBatch]):
     """ Count reads with each relationship at each position in a section
     over multiple batches. """
     if isinstance(patterns, RelPattern):
@@ -367,7 +367,7 @@ def count_per_pos(positions: np.ndarray,
 
 def count_per_read(refseq: DNA,
                    patterns: RelPattern | list[RelPattern],
-                   batches: Iterable[AwareBatch]):
+                   batches: Iterable[MutsBatch]):
     """ Count reads with each relationship at each position in a section
     over multiple batches. """
     if isinstance(patterns, RelPattern):

@@ -7,7 +7,7 @@ from .util import get_length
 from ..types import fit_uint_type
 
 
-class Batch(ABC):
+class ReadBatch(ABC):
     """ Batch of reads. """
 
     def __init__(self, *, batch: int, **kwargs):
@@ -43,7 +43,7 @@ class Batch(ABC):
         return f"{type(self).__name__} {self.batch} with {self.num_reads} reads"
 
 
-class AllReadsBatch(Batch, ABC):
+class AllReadsBatch(ReadBatch, ABC):
 
     @property
     def max_read(self):
@@ -58,7 +58,7 @@ class AllReadsBatch(Batch, ABC):
         return self.read_nums
 
 
-class MaskBatch(Batch):
+class MaskReadBatch(ReadBatch):
 
     def __init__(self, *, read_nums: np.ndarray, max_read: int, **kwargs):
         self._max_read = max_read

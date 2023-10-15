@@ -26,11 +26,11 @@ from ..core.cliparam import (arg_input_path,
                              opt_parallel,
                              opt_rerun)
 from ..core.clicmd import CMD_MASK
-from ..core.iodata import load_data
+from ..core.io import load_data
 from ..core.parallel import dispatch
 from ..core.sect import RefSections
 from ..core.seq import DNA
-from ..relate.load import RelateLoader
+from ..relate.data import RelateLoader
 
 logger = getLogger(__name__)
 

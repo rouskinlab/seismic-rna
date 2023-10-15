@@ -8,7 +8,7 @@ from .names import ORD_CLS_NAME
 from .report import ClustReport
 from ..core import path
 from ..core.bitvect import BitBatch, ClusterBitBatch, ClustBitCounter
-from ..core.iodata import BatchedDatasetLoader
+from ..core.io import BatchedDatasetLoader
 from ..core.mu import calc_mu_adj_df, calc_f_obs_df
 from ..mask.data import MaskLoader
 

@@ -9,13 +9,13 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .files import SavedMaskBatch
+from .io import MaskReadBatchIO
 from .report import MaskReport
-from ..core.batch import count_per_pos, Batch, AwareBatch
+from ..core.batch import count_per_pos, ReadBatch, MutsBatch
 from ..core.cliparam import opt_brotli_level
 from ..core.pattern import RelPattern
 from ..core.sect import Section, index_to_pos
-from ..relate.load import RelateLoader
+from ..relate.data import RelateLoader
 
 logger = getLogger(__name__)
 
@@ -169,7 +169,7 @@ class RelMasker(object):
         """ Number of batches of reads. """
         return len(self.checksums)
 
-    def _filter_min_finfo_read(self, batch: AwareBatch):
+    def _filter_min_finfo_read(self, batch: MutsBatch):
         """ Filter out reads with too few informative positions. """
         if not 0. <= self.min_finfo_read <= 1.:
             raise ValueError(f"min_finfo_read must be in [0, 1], but got "
@@ -189,7 +189,7 @@ class RelMasker(object):
         # Return a new batch of only those reads.
         return batch.mask(reads=reads)
 
-    def _filter_max_fmut_read(self, batch: AwareBatch):
+    def _filter_max_fmut_read(self, batch: MutsBatch):
         """ Filter out reads with too many mutations. """
         if not 0. <= self.max_fmut_read <= 1.:
             raise ValueError(f"max_fmut_read must be in [0, 1], but got "
@@ -209,7 +209,7 @@ class RelMasker(object):
         # Return a new batch of only those reads.
         return batch.mask(reads=reads)
 
-    def _mask_min_mut_gap(self, batch: AwareBatch):
+    def _mask_min_mut_gap(self, batch: MutsBatch):
         """ Filter out reads with mutations that are too close. """
         if not self.min_mut_gap >= 0:
             raise ValueError(
@@ -232,7 +232,7 @@ class RelMasker(object):
         self.section.mask_gu(self.exclude_gu)
         self.section.mask_pos(self.exclude_pos)
 
-    def _filter_batch_reads(self, batch: Batch | AwareBatch):
+    def _filter_batch_reads(self, batch: ReadBatch | MutsBatch):
         """ Remove the reads in the batch that do not pass the filters
         and return a new batch without those reads. """
         # Keep only the unmasked positions.
@@ -250,12 +250,12 @@ class RelMasker(object):
         # Record the number of reads remaining after filtering.
         self._n_reads[self.MASK_READ_KEPT] += n
         # Save the batch.
-        batch_file = SavedMaskBatch(sample=self.loader.sample,
-                                    ref=self.loader.ref,
-                                    sect=self.section.name,
-                                    batch=batch.batch,
-                                    read_nums=batch.read_nums,
-                                    max_read=batch.max_read)
+        batch_file = MaskReadBatchIO(sample=self.loader.sample,
+                                     ref=self.loader.ref,
+                                     sect=self.section.name,
+                                     batch=batch.batch,
+                                     read_nums=batch.read_nums,
+                                     max_read=batch.max_read)
         _, checksum = batch_file.save(self.top,
                                       brotli_level=self.brotli_level,
                                       overwrite=True)

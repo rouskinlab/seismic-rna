@@ -14,15 +14,15 @@ from logging import getLogger
 from pathlib import Path
 from typing import Iterable
 
-from .files import from_reads, SavedQnamesBatch, SavedRelateBatch
+from .io import from_reads, QnamesBatchIO, RelateBatchIO
 from .c.relate import find_rels_line
-from .report import RelateReport
+from .report import RelateReportIO
 from .sam import XamViewer
 from ..core import path
 from ..core.fasta import get_fasta_seq
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.qual import encode_phred
-from ..core.ioseq import SavedRefseq
+from ..core.io import RefseqIO
 from ..core.seq import DNA
 
 logger = getLogger(__name__)
@@ -120,16 +120,16 @@ class RelationWriter(object):
         return self.xam.ref
 
     def _write_report(self, *, out_dir: Path, **kwargs):
-        report = RelateReport(sample=self.sample,
-                              ref=self.ref,
-                              **kwargs)
+        report = RelateReportIO(sample=self.sample,
+                                ref=self.ref,
+                                **kwargs)
         return report.save(out_dir, overwrite=True)
 
     def _write_refseq(self, out_dir: Path, brotli_level: int):
         """ Write the reference sequence to a file. """
-        refseq_file = SavedRefseq(sample=self.sample,
-                                  ref=self.ref,
-                                  refseq=self.seq)
+        refseq_file = RefseqIO(sample=self.sample,
+                               ref=self.ref,
+                               refseq=self.seq)
         _, checksum = refseq_file.save(out_dir, brotli_level, overwrite=True)
         return checksum
 
@@ -176,8 +176,8 @@ class RelationWriter(object):
                 name_checks = list()
             n_reads = sum(nums_reads)
             n_batches = len(nums_reads)
-            checksums = {SavedRelateBatch.btype(): relv_checks,
-                         SavedQnamesBatch.btype(): name_checks}
+            checksums = {RelateBatchIO.btype(): relv_checks,
+                         QnamesBatchIO.btype(): name_checks}
             logger.info(f"Ended {self}: {n_reads} reads in {n_batches} batches")
             return n_reads, n_batches, checksums
         finally:
@@ -193,9 +193,9 @@ class RelationWriter(object):
         """ Compute a relation vector for every record in a BAM file,
         write the vectors into one or more batch files, compute their
         checksums, and write a report summarizing the results. """
-        report_file = RelateReport.build_path(top=out_dir,
-                                              sample=self.sample,
-                                              ref=self.ref)
+        report_file = RelateReportIO.build_path(top=out_dir,
+                                                sample=self.sample,
+                                                ref=self.ref)
         # Check if the report file already exists.
         if rerun or not report_file.is_file():
             # Write the reference sequence to a file.

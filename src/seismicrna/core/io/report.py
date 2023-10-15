@@ -15,11 +15,11 @@ from typing import Any, Hashable, Callable, Iterable
 
 import numpy as np
 
-from . import path
-from .iobatch import SavedBatch
-from .pattern import HalfRelPattern
-from .iofile import SavedFile, SavedRef
-from .version import __version__, check_compatibility
+from .batch import ReadBatchIO
+from .file import FileIO, RefIO
+from .. import path
+from ..pattern import HalfRelPattern
+from ..version import __version__, check_compatibility
 
 logger = getLogger(__name__)
 
@@ -735,7 +735,7 @@ def lookup_title(title: str) -> Field:
 
 # Report classes
 
-class Report(SavedFile, ABC):
+class Report(FileIO, ABC):
     """ Abstract base class for a report from a step. """
 
     @classmethod
@@ -852,7 +852,7 @@ class Report(SavedFile, ABC):
         return self.to_dict() == other.to_dict()
 
 
-class RefseqReport(Report, SavedRef, ABC):
+class RefseqReport(Report, RefIO, ABC):
     """ Report associated with a reference sequence file. """
 
     @classmethod
@@ -875,18 +875,18 @@ class BatchedReport(Report, ABC):
 
     @classmethod
     @abstractmethod
-    def _batch_types(cls) -> tuple[type[SavedBatch], ...]:
+    def _batch_types(cls) -> tuple[type[ReadBatchIO], ...]:
         """ Type(s) of batch(es) for the report. """
 
     @classmethod
     @cache
-    def batch_types(cls) -> dict[str, type[SavedBatch]]:
+    def batch_types(cls) -> dict[str, type[ReadBatchIO]]:
         """ Type(s) of batch(es) for the report, keyed by name. """
         return {batch_type.btype(): batch_type
                 for batch_type in cls._batch_types()}
 
     @classmethod
-    def get_batch_type(cls, btype: str | None = None) -> type[SavedBatch]:
+    def get_batch_type(cls, btype: str | None = None) -> type[ReadBatchIO]:
         """ Return a valid type of batch based on its name. """
         if btype is None:
             batch_types = list(cls.batch_types().values())

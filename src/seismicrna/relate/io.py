@@ -7,20 +7,19 @@ import numpy as np
 from .batch import QnamesBatch, RelateBatch
 from ..core import path
 from ..core.batch import POS_INDEX
-from ..core.iobatch import SavedBatch
+from ..core.io import ReadBatchIO, RefIO
 from ..core.clicmd import CMD_REL
-from ..core.iofile import SavedRef
 from ..core.seq import DNA
 
 
-class SavedRelate(SavedRef, ABC):
+class RelateIO(RefIO, ABC):
 
     @classmethod
     def auto_fields(cls):
         return super().auto_fields() | {path.CMD: CMD_REL}
 
 
-class SavedQnamesBatch(SavedRelate, SavedBatch, QnamesBatch):
+class QnamesBatchIO(RelateIO, ReadBatchIO, QnamesBatch):
 
     @classmethod
     def file_seg_type(cls):
@@ -38,7 +37,7 @@ class SavedQnamesBatch(SavedRelate, SavedBatch, QnamesBatch):
         self.names = np.char.decode(state["names"])
 
 
-class SavedRelateBatch(SavedRelate, SavedBatch, RelateBatch):
+class RelateBatchIO(RelateIO, ReadBatchIO, RelateBatch):
 
     @classmethod
     def file_seg_type(cls):
@@ -75,17 +74,17 @@ def from_reads(reads: Iterable[tuple[str, int, int, int, int, dict[int, int]]],
         raise ValueError(f"All positions must be ≤ {len(refseq)}, but got "
                          f"{[x for x in sorted(muts) if x > len(refseq)]}")
     # Assemble and return the batches.
-    name_batch = SavedQnamesBatch(sample=sample,
-                                  ref=ref,
-                                  batch=batch,
-                                  names=names)
-    rel_batch = SavedRelateBatch(sample=sample,
-                                 ref=ref,
-                                 batch=batch,
-                                 end5s=end5s,
-                                 mid5s=mid5s,
-                                 mid3s=mid3s,
-                                 end3s=end3s,
-                                 muts=muts,
-                                 seqlen=len(refseq))
+    name_batch = QnamesBatchIO(sample=sample,
+                               ref=ref,
+                               batch=batch,
+                               names=names)
+    rel_batch = RelateBatchIO(sample=sample,
+                              ref=ref,
+                              batch=batch,
+                              end5s=end5s,
+                              mid5s=mid5s,
+                              mid3s=mid3s,
+                              end3s=end3s,
+                              muts=muts,
+                              seqlen=len(refseq))
     return name_batch, rel_batch

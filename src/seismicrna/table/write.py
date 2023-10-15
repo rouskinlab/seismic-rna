@@ -12,7 +12,7 @@ from .tabulate import (Tabulator, RelTabulator, MaskTabulator, ClusterTabulator,
 from ..cluster.load import ClustLoader
 from ..core import path
 from ..mask.data import MaskLoader
-from ..relate.load import RelateLoader
+from ..relate.data import RelateLoader
 
 logger = getLogger(__name__)
 

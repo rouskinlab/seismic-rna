@@ -1,8 +1,8 @@
 from logging import getLogger
 
-from .files import SavedRelateBatch
-from .report import RelateReport
-from ..core.iodata import BatchedDatasetLoader
+from .io import RelateBatchIO
+from .report import RelateReportIO
+from ..core.io import BatchedDatasetLoader
 
 logger = getLogger(__name__)
 
@@ -16,11 +16,11 @@ class RelateLoader(BatchedDatasetLoader):
 
     @classmethod
     def get_report_type(cls):
-        return RelateReport
+        return RelateReportIO
 
     @classmethod
     def get_batch_type(cls):
-        return SavedRelateBatch
+        return RelateBatchIO
 
 ########################################################################
 #                                                                      #

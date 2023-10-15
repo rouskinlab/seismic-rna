@@ -1,14 +1,8 @@
-from logging import getLogger
-
-from .files import SavedMaskBatch
+from .io import MaskReadBatchIO
 from .report import MaskReport
-from ..core.iodata import BatchedDatasetLoader, BatchedDatasetLinker
-from ..relate.files import SavedRelateBatch
-from ..relate.load import RelateLoader
-
-logger = getLogger(__name__)
-
-MASK_KEY = "mask-load"
+from ..core.io import BatchedDatasetLoader, BatchedDatasetLinker
+from ..relate.io import RelateBatchIO
+from ..relate.data import RelateLoader
 
 
 class MaskLoader(BatchedDatasetLoader):
@@ -20,7 +14,7 @@ class MaskLoader(BatchedDatasetLoader):
 
     @classmethod
     def get_batch_type(cls):
-        return SavedMaskBatch
+        return MaskReadBatchIO
 
 
 class MaskLinker(BatchedDatasetLinker):
@@ -28,7 +22,7 @@ class MaskLinker(BatchedDatasetLinker):
 
     @classmethod
     def get_batch_type(cls):
-        return SavedMaskBatch
+        return MaskReadBatchIO
 
     @classmethod
     def get_data1_type(cls):
@@ -39,8 +33,8 @@ class MaskLinker(BatchedDatasetLinker):
         return MaskLoader
 
     def _link(self,
-              batch1: SavedRelateBatch,
-              batch2: SavedMaskBatch,
+              batch1: RelateBatchIO,
+              batch2: MaskReadBatchIO,
               *args,
               **kwargs):
         return batch1.mask(reads=batch2.read_nums)

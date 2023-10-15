@@ -6,10 +6,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Generator, Iterable
 
-from . import path
-from .batch import list_batch_nums
-from .iobatch import SavedBatch
-from .ioseq import SavedRefseq
+from .batch import ReadBatchIO
 from .report import (Field,
                      RefseqReport,
                      BatchedReport,
@@ -21,8 +18,11 @@ from .report import (Field,
                      NumBatchF,
                      ChecksumsF,
                      RefseqChecksumF)
-from .sect import Section
-from .seq import DNA
+from .seq import RefseqIO
+from .. import path
+from ..batch import list_batch_nums
+from ..sect import Section
+from ..seq import DNA
 
 logger = getLogger(__name__)
 
@@ -64,7 +64,7 @@ class BatchedDataset(Dataset, ABC):
 
     @classmethod
     @abstractmethod
-    def get_batch_type(cls) -> type[SavedBatch]:
+    def get_batch_type(cls) -> type[ReadBatchIO]:
         """ Type of the batch for this Loader. """
 
     @classmethod
@@ -83,7 +83,7 @@ class BatchedDataset(Dataset, ABC):
         return list_batch_nums(self.num_batches)
 
     @abstractmethod
-    def iter_batches(self) -> Generator[SavedBatch, None, None]:
+    def iter_batches(self) -> Generator[ReadBatchIO, None, None]:
         """ Yield each batch. """
 
 
@@ -96,9 +96,9 @@ class DatasetLoader(Dataset, ABC):
         """ Type of the report for this loader. """
 
     @classmethod
-    def get_refseq_type(cls) -> type[SavedRefseq]:
+    def get_refseq_type(cls) -> type[RefseqIO]:
         """ Type of the reference sequence file for this loader. """
-        return SavedRefseq
+        return RefseqIO
 
     def __init__(self, report: RefseqReport, top: Path):
         if not isinstance(report, self.get_report_type()):
@@ -318,7 +318,7 @@ class BatchedDatasetLinker(DatasetLinker, BatchedDataset, ABC):
         return self._get_data_attr("num_batches")
 
     @abstractmethod
-    def _link(self, batch1: SavedBatch, batch2: SavedBatch, *args, **kwargs):
+    def _link(self, batch1: ReadBatchIO, batch2: ReadBatchIO, *args, **kwargs):
         """ Link corresponding batches of datasets. """
 
     def iter_batches(self, *args, **kwargs):

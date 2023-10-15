@@ -3,7 +3,7 @@ from ..mask.data import MaskLoader
 from ..core import path
 from ..core.bitvect import UniqMutBits
 from ..core.clicmd import CMD_CLUST
-from ..core.report import BatchedReport
+from ..core.io import BatchedReport
 
 
 class ClustReport(BatchedReport):

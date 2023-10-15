@@ -2,7 +2,7 @@ from functools import cached_property
 
 import numpy as np
 
-from ..core.batch import AllReadsBatch, AwareBatch, get_length, sanitize_pos
+from ..core.batch import AllReadsBatch, MutsBatch, get_length, sanitize_pos
 from ..core.sect import POS_INDEX
 
 
@@ -17,7 +17,7 @@ class QnamesBatch(AllReadsBatch):
         return get_length(self.names, "read names")
 
 
-class RelateBatch(AwareBatch, AllReadsBatch):
+class RelateBatch(MutsBatch, AllReadsBatch):
 
     def __init__(self, muts: dict[int, dict], seqlen: int, **kwargs):
         super().__init__(muts={pos: muts[pos]

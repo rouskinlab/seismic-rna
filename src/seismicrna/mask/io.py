@@ -2,19 +2,18 @@ from abc import ABC
 
 from ..core import path
 from ..core.clicmd import CMD_MASK
-from ..core.batch import MaskBatch
-from ..core.iobatch import SavedBatch
-from ..core.iofile import SavedSect
+from ..core.batch import MaskReadBatch
+from ..core.io import ReadBatchIO, SectIO
 
 
-class SavedMask(SavedSect, ABC):
+class MaskIO(SectIO, ABC):
 
     @classmethod
     def auto_fields(cls):
         return {**super().auto_fields(), path.CMD: CMD_MASK}
 
 
-class SavedMaskBatch(SavedBatch, SavedMask, MaskBatch):
+class MaskReadBatchIO(ReadBatchIO, MaskIO, MaskReadBatch):
 
     @classmethod
     def file_seg_type(cls):

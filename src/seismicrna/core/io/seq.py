@@ -1,12 +1,12 @@
 from functools import cached_property
 
-from . import path
-from .clicmd import CMD_REL
-from .iofile import SavedRef, SavedBrickle
-from .seq import DNA
+from .file import RefIO, BrickleIO
+from .. import path
+from ..clicmd import CMD_REL
+from ..seq import DNA
 
 
-class SavedRefseq(SavedRef, SavedBrickle):
+class RefseqIO(RefIO, BrickleIO):
 
     @classmethod
     def file_seg_type(cls):

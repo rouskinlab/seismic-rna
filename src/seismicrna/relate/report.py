@@ -1,28 +1,25 @@
 from __future__ import annotations
 
 from functools import cache
-from logging import getLogger
 from pathlib import Path
 
-from .files import SavedRelate, SavedQnamesBatch, SavedRelateBatch
+from .io import RelateIO, QnamesBatchIO, RelateBatchIO
 from ..core import path
-from ..core.report import (BatchedRefseqReport,
-                           calc_speed,
-                           calc_taken,
-                           RefF,
-                           SampleF,
-                           NumReadsRel,
-                           TimeBeganF,
-                           TimeEndedF,
-                           TimeTakenF,
-                           SpeedF)
-
-logger = getLogger(__name__)
+from ..core.io import (BatchedRefseqReport,
+                       calc_speed,
+                       calc_taken,
+                       RefF,
+                       SampleF,
+                       NumReadsRel,
+                       TimeBeganF,
+                       TimeEndedF,
+                       TimeTakenF,
+                       SpeedF)
 
 BATCH_INDEX_COL = "Read Name"
 
 
-class RelateReport(BatchedRefseqReport, SavedRelate):
+class RelateReportIO(BatchedRefseqReport, RelateIO):
 
     @classmethod
     def fields(cls):
@@ -42,7 +39,7 @@ class RelateReport(BatchedRefseqReport, SavedRelate):
 
     @classmethod
     def _batch_types(cls):
-        return SavedQnamesBatch, SavedRelateBatch
+        return QnamesBatchIO, RelateBatchIO
 
     def __init__(self, *, taken=calc_taken, speed=calc_speed, **kwargs):
         # Note that the named keyword arguments must come after **kwargs
@@ -59,12 +56,12 @@ class RelateReport(BatchedRefseqReport, SavedRelate):
 
 @cache
 def refseq_file_seg_types():
-    return RelateReport.seg_types()[:-1] + (path.RefseqFileSeg,)
+    return RelateReportIO.seg_types()[:-1] + (path.RefseqFileSeg,)
 
 
 @cache
 def refseq_file_auto_fields():
-    return {**RelateReport.auto_fields(), path.EXT: path.BROTLI_PICKLE_EXT}
+    return {**RelateReportIO.auto_fields(), path.EXT: path.BROTLI_PICKLE_EXT}
 
 
 def refseq_file_path(top: Path, sample: str, ref: str):
