@@ -137,7 +137,7 @@ class RelTypeTable(Table, ABC):
     @property
     def _rel_level_index(self):
         """ Index of the column level indicating the relationship. """
-        return self.data.columns._names.index(REL_NAME)
+        return self.data.columns.names.index(REL_NAME)
 
     def _switch_rel(self, column: tuple, new_rel: str):
         """ Switch the relationship in a column label. """
@@ -149,8 +149,9 @@ class RelTypeTable(Table, ABC):
         return self.data.loc[:, column].squeeze()
 
     @cache
-    def _ratio_col(self, column: tuple,
-                   quantile: float | None = None,
+    def _ratio_col(self,
+                   column: tuple,
+                   quantile: float,
                    precision: int | None = None):
         """ Compute the ratio for a column. """
         # Determine the relationship to use as the numerator.
@@ -186,11 +187,12 @@ class RelTypeTable(Table, ABC):
         """ Format a column selection into a column indexer. """
         return selection.get(REL_NAME, slice(None))
 
-    def select(self, ratio: bool,
-               quantile: float = -1.,
-               precision: int | None = None,
-               **kwargs: list):
-        """ Output selected data from the table as a DataFrame. """
+    def process(self, *,
+                ratio: bool,
+                quantile: float = 0.,
+                precision: int | None = None,
+                **kwargs: list):
+        """ Select, process, and return data from the table. """
         # Instantiate an empty DataFrame with the index and columns.
         indexer = self._get_indexer(self._format_selection(**kwargs))
         columns = self.data.loc[:, indexer].columns
@@ -236,7 +238,7 @@ class ClustTable(RelTypeTable, ABC):
 
     def _get_indexer(self, selection: dict[str, list]):
         return tuple(selection.get(level, slice(None))
-                     for level in self.data.columns._names)
+                     for level in self.data.columns.names)
 
 
 # Table by Index (position/read/frequency) #############################

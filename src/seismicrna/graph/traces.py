@@ -17,7 +17,7 @@ def get_seq_base_scatter_trace(xdata: pd.Series, ydata: pd.Series,
         raise ValueError("Indexes of x and y data must match, "
                          f"but got {xdata.index} and {ydata.index}")
     # Validate the base.
-    if base not in DNA.alph:
+    if base not in DNA.alph():
         raise ValueError(f"Invalid DNA base: '{base}'")
     # Find the position of every base of that type.
     seq_mask = xdata.index.get_level_values(BASE_NAME) == base
@@ -42,13 +42,13 @@ def get_seq_base_scatter_trace(xdata: pd.Series, ydata: pd.Series,
 
 def iter_seq_base_scatter_traces(xdata: pd.Series, ydata: pd.Series,
                                  cmap: ColorMap):
-    for base in DNA.alph:
+    for base in DNA.alph():
         yield get_seq_base_scatter_trace(xdata, ydata, cmap, base)
 
 
 def get_seq_base_bar_trace(data: pd.Series, cmap: ColorMap, base: str):
     # Validate the base.
-    if base not in DNA.alph:
+    if base not in DNA.alph():
         raise ValueError(f"Invalid DNA base: '{base}'")
     # Find the position of every base of that type.
     seq_mask = data.index.get_level_values(BASE_NAME) == base
@@ -66,7 +66,7 @@ def get_seq_base_bar_trace(data: pd.Series, cmap: ColorMap, base: str):
 
 
 def iter_seq_base_bar_traces(data: pd.Series, cmap: ColorMap):
-    for base in DNA.alph:
+    for base in DNA.alph():
         yield get_seq_base_bar_trace(data, cmap, base)
 
 

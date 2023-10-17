@@ -178,8 +178,10 @@ class EnsembleSeqBarGraph(SeqBarGraph, ABC):
 
     @cached_property
     def data(self):
-        return self.table.select(self.y_ratio, self.quantile, PRECISION,
-                                 rels=self.rels)
+        return self.table.process(ratio=self.y_ratio,
+                                  quantile=self.quantile,
+                                  precision=PRECISION,
+                                  rels=self.rels)
 
     @classmethod
     def sources(cls):
@@ -214,8 +216,10 @@ class ClusterSeqBarGraph(SeqBarGraph, ABC):
             select.update(dict(order=self._order))
             if self._cluster is not None:
                 select.update(dict(cluster=self._cluster))
-        return self.table.select(self.y_ratio, self.quantile, PRECISION,
-                                 **select)
+        return self.table.process(ratio=self.y_ratio,
+                                  quantile=self.quantile,
+                                  precision=PRECISION,
+                                  **select)
 
     @cached_property
     def clusters(self):
@@ -301,7 +305,7 @@ class EnsembleMultiRelSeqBarGraph(EnsembleSeqBarGraph, MultiRelSeqBarGraph):
         data = self.data.copy()
         if data.columns.nlevels != 1:
             raise ValueError(
-                f"Expected 1 level of columns, but got {data.columns._names}")
+                f"Expected 1 level of columns, but got {data.columns.names}")
         # Replace the columns with a single index.
         data.columns = data.columns.get_level_values(REL_NAME)
         for trace in iter_seq_stack_bar_traces(self.data, self.cmap):

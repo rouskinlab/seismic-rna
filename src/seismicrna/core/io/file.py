@@ -66,7 +66,7 @@ class FileIO(ABC):
 
     @classmethod
     def normalize_fields(cls, **fields):
-        """ Given arbitrary fields and values, select those for this
+        """ Given arbitrary fields and values, process those for this
         class of file, giving preference to auto-fields. """
         return {field: cls.auto_fields().get(field, fields[field])
                 for field in cls.path_field_names()}

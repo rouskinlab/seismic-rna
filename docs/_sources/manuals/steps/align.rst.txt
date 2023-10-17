@@ -299,7 +299,7 @@ then try the following steps (in this order):
     where ``sample``, ``refs``, and ``x`` are replaced with the name of
     the sample, name of the FASTA file, and name of the SAM file into
     which to write the unaligned reads, respectively. Open the SAM file,
-    select several unaligned reads randomly, and use `BLAST`_ to discern
+    process several unaligned reads randomly, and use `BLAST`_ to discern
     their origins, which can help in deducing what went wrong.
 
 
