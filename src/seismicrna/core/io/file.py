@@ -39,26 +39,44 @@ class FileIO(ABC):
         return cls.dir_seg_types() + (cls.file_seg_type(),)
 
     @classmethod
+    def path_field_names(cls):
+        """ Names of the fields of the path for the file type. """
+        return tuple(field for segment in cls.seg_types()
+                     for field in segment.field_types)
+
+    @classmethod
     def auto_fields(cls) -> dict[str, Any]:
-        """ Fields that are filled automatically. """
+        """ Names and automatic values of selected fields. """
         try:
             return {path.EXT: cls.file_seg_type().exts[0]}
         except IndexError:
             raise ValueError(f"Got no file extensions for {cls.__name__}")
 
     @classmethod
+    def parse_path(cls, file: Path):
+        """ Parse a file path to determine the field values. """
+        fields = path.parse(file, *cls.seg_types())
+        return fields.pop(path.TOP), fields
+
+    @classmethod
     def build_path(cls, **path_fields):
-        """ Build the file path from the given fields. """
+        """ Build the file path from the given field values. """
         return path.buildpar(*cls.seg_types(),
                              **(cls.auto_fields() | path_fields))
+
+    @classmethod
+    def normalize_fields(cls, **fields):
+        """ Given arbitrary fields and values, select those for this
+        class of file, giving preference to auto-fields. """
+        return {field: cls.auto_fields().get(field, fields[field])
+                for field in cls.path_field_names()}
 
     def path_fields(self, top: Path | None = None, exclude: Iterable[str] = ()):
         """ Return the path fields as a dict. """
         fields = {path.TOP: top} if top else dict()
         fields.update({field: (getattr(self, field) if hasattr(self, field)
                                else self.auto_fields()[field])
-                       for segment in self.seg_types()
-                       for field in segment.field_types})
+                       for field in self.path_field_names()})
         for field in exclude:
             fields.pop(field, None)
         return fields
@@ -129,3 +147,13 @@ class BrickleIO(FileIO, ABC):
 
     def __setstate__(self, state: dict[str, Any]):
         self.__dict__.update(state)
+
+
+def convert_path(file: Path, type1: type[FileIO], type2: type[FileIO]):
+    """ Convert a path from that used by file type 1 to file type 2. """
+    # Extract the fields from the path using file type 1.
+    top, fields = type1.parse_path(file)
+    # Normalize the fields to comply with file type 2.
+    norm_fields = type2.normalize_fields(**fields)
+    # Generate a new path for file type 2 from the normalized fields.
+    return type2.build_path(top=top, **norm_fields)

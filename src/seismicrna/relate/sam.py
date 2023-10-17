@@ -128,7 +128,7 @@ class XamViewer(object):
         return path.build(*path.XAM_STEP_SEGS,
                           top=self.temp_dir,
                           sample=self.sample,
-                          cmd=path.DIR_REL,
+                          cmd=path.CMD_REL_DIR,
                           step=path.STEPS_VECT_SAMS,
                           ref=self.ref,
                           ext=path.SAM_EXT)

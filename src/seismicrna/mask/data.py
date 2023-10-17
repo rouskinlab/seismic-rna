@@ -1,12 +1,21 @@
+from functools import cached_property
+
 from .io import MaskReadBatchIO
 from .report import MaskReport
 from ..core.batch import MaskMutsBatch
-from ..core.io import BatchedLoadedDataset, BatchedLinkedDataset
-from ..relate.io import RelateBatchIO
+from ..core.io import (CountMutsF,
+                       CountRefsF,
+                       MinMutGapF,
+                       PosKeptF,
+                       BatchedLoadedDataset,
+                       BatchedMergedDataset,
+                       MergedMutsDataset)
+from ..core.rel import RelPattern
 from ..relate.data import RelateLoader
+from ..relate.io import RelateBatchIO
 
 
-class MaskLoader(BatchedLoadedDataset[MaskReadBatchIO, MaskReport]):
+class MaskLoader(BatchedLoadedDataset):
     """ Load batches of masked relation vectors. """
 
     @classmethod
@@ -17,9 +26,24 @@ class MaskLoader(BatchedLoadedDataset[MaskReadBatchIO, MaskReport]):
     def get_data_type(cls):
         return MaskReadBatchIO
 
+    @property
+    def min_mut_gap(self):
+        return self.report.get_field(MinMutGapF)
 
-class MaskLinker(BatchedLinkedDataset[MaskMutsBatch, RelateLoader, MaskLoader]):
-    """ Link related batches to masked batches. """
+    @property
+    def pos_kept(self):
+        return self.report.get_field(PosKeptF)
+
+    @cached_property
+    def pattern(self):
+        return RelPattern(self.report.get_field(CountMutsF),
+                          self.report.get_field(CountRefsF))
+
+
+class MaskMerger(BatchedMergedDataset, MergedMutsDataset):
+    """ Merge mutation data with masked reads. """
+
+    MASK_NAME = "mask"
 
     @classmethod
     def get_data_type(cls):
@@ -33,10 +57,23 @@ class MaskLinker(BatchedLinkedDataset[MaskMutsBatch, RelateLoader, MaskLoader]):
     def get_data2_type(cls):
         return MaskLoader
 
-    @classmethod
-    def _link(cls, batch1: RelateBatchIO, batch2: MaskReadBatchIO):
-        return batch1.mask(reads=batch2.read_nums)
+    @property
+    def min_mut_gap(self):
+        return self.data2.min_mut_gap
 
+    @property
+    def pattern(self):
+        return self.data2.pattern
+
+    @cached_property
+    def section(self):
+        section = super().section
+        section.add_mask(self.MASK_NAME, self.data2.pos_kept, invert=True)
+        return section
+
+    def _merge(self, batch1: RelateBatchIO, batch2: MaskReadBatchIO):
+        return batch1.mask(positions=self.data2.pos_kept,
+                           reads=batch2.read_nums)
 
 ########################################################################
 #                                                                      #

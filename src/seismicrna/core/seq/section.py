@@ -200,6 +200,10 @@ def index_to_seq(index: pd.MultiIndex, allow_gaps: bool = False):
     return DNA("".join(index.get_level_values(BASE_NAME)))
 
 
+def hyphenate_ends(end5: int, end3: int):
+    return f"{end5}-{end3}"
+
+
 class Section(object):
     """ Section of a reference sequence between two coordinates. """
 
@@ -282,7 +286,7 @@ class Section(object):
 
     @property
     def hyphen(self):
-        return f"{self.end5}-{self.end3}"
+        return hyphenate_ends(self.end5, self.end3)
 
     @property
     def ref_sect(self):
@@ -357,18 +361,36 @@ class Section(object):
         """ Get the positions masked under the given name. """
         return self._masks[name]
 
-    def add_mask(self, name: str, mask_pos: Iterable[int]):
-        """ Mask the integer positions in the array `mask_pos`. """
+    def add_mask(self,
+                 name: str,
+                 mask_pos: Iterable[int],
+                 invert: bool = False):
+        """ Mask the integer positions in the array `mask_pos`.
+
+        Parameters
+        ----------
+        name: str
+            Name of the mask.
+        mask_pos: Iterable[int]
+            Positions to mask (1-indexed).
+        invert: bool = False
+            If invert is False, then mask out the positions in mask_pos.
+            If True, then mask out all but the given positions.
+        """
         if name in self._masks:
             raise ValueError(f"Mask '{name}' was already set")
         # Convert positions to a NumPy integer array.
-        pos = np.asarray(mask_pos, dtype=int)
+        p = np.unique(np.asarray(mask_pos, dtype=int))
         # Check for positions outside the section.
-        if np.any(pos < self.end5) or np.any(pos > self.end3):
-            out = pos[np.logical_or(pos < self.end5, pos > self.end3)]
+        if np.any(p < self.end5) or np.any(p > self.end3):
+            out = p[np.logical_or(p < self.end5, p > self.end3)]
             raise ValueError(f"Got positions to mask ouside of {self}: {out}")
+        if invert:
+            # Mask all positions except those listed.
+            p = np.setdiff1d(self.range_int, p, assume_unique=True)
         # Record the positions that have not already been masked.
-        self._masks[name] = pos[np.isin(pos, self.masked_int, invert=True)]
+        self._masks[name] = np.setdiff1d(p, self.masked_int, assume_unique=True)
+        logger.debug(f"Added mask {repr(name)} ({self._masks[name]}) to {self}")
 
     def _find_gu(self, exclude_gu: bool) -> np.ndarray:
         """ Array of each position whose base is neither A nor C. """

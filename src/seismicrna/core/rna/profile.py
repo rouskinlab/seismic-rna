@@ -30,7 +30,7 @@ class RnaProfile(RnaSection):
         """ Get the directory in which this RNA's files will go. """
         return path.builddir(*path.FOLD_SECT_DIR_SEGS,
                              top=out_dir,
-                             cmd=path.DIR_FOLD,
+                             cmd=path.CMD_FLD_DiR,
                              sample=self.sample,
                              ref=self.ref,
                              sect=self.data_sect,

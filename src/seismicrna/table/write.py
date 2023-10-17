@@ -21,7 +21,7 @@ from .tabulate import (Tabulator,
                        tabulate_loader)
 from ..cluster.load import ClustLoader
 from ..core import path
-from ..mask.data import MaskLoader
+from ..mask.data import MaskMerger
 from ..relate.data import RelateLoader
 
 logger = getLogger(__name__)
@@ -77,9 +77,7 @@ class TableWriter(Table, ABC):
 class PosTableWriter(TableWriter, PosTable, ABC):
 
     def load_data(self):
-        # Load the data for each position, including excluded positions.
-        all_positions = self.tab.section.range
-        return self.tab.tabulate_by_pos().reindex(index=all_positions)
+        return self.tab.tabulate_by_pos()
 
 
 class ReadTableWriter(TableWriter, ReadTable, ABC):
@@ -137,7 +135,7 @@ def infer_report_loader_type(report_file: Path):
     if path.RelateRepSeg.ptrn.match(report_file.name):
         return RelateLoader
     if path.MaskRepSeg.ptrn.match(report_file.name):
-        return MaskLoader
+        return MaskMerger
     if path.ClustRepSeg.ptrn.match(report_file.name):
         return ClustLoader
     raise ValueError(f"Failed to infer loader type for {report_file}")

@@ -11,7 +11,7 @@ import pandas as pd
 
 from .io import MaskReadBatchIO
 from .report import MaskReport
-from ..core.batch import count_per_pos, ReadBatch, MutsBatch
+from ..core.batch import accum_per_pos, ReadBatch, MutsBatch
 from ..core.io import DEFAULT_BROTLI_LEVEL
 from ..core.rel import RelPattern
 from ..core.seq import Section, index_to_pos
@@ -281,7 +281,7 @@ class RelMasker(object):
             logger.warning(f"No positions remained after excluding with {self}")
         # Filter out reads based on the parameters and count the number
         # of informative and mutated positions remaining.
-        info, muts = count_per_pos(self.pos_kept,
+        info, muts = accum_per_pos(self.pos_kept,
                                    self.loader.refseq,
                                    {self.PATTERN_KEY: self.pattern},
                                    map(self._filter_batch_reads,

@@ -15,7 +15,7 @@ class RelateIO(RefIO, ABC):
 
     @classmethod
     def auto_fields(cls):
-        return super().auto_fields() | {path.CMD: path.DIR_REL}
+        return super().auto_fields() | {path.CMD: path.CMD_REL_DIR}
 
 
 class QnamesBatchIO(RelateIO, ReadBatchIO, QnamesBatch):

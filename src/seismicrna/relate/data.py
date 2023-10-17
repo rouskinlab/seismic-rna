@@ -2,7 +2,7 @@ from logging import getLogger
 
 from .io import RelateBatchIO
 from .report import RelateReportIO
-from ..core.io import BatchedLoadedDataset
+from ..core.io import BatchedLoadedDataset, LoadedMutsDataset
 
 logger = getLogger(__name__)
 
@@ -11,7 +11,7 @@ VEC = "by_vector"
 READ = "Read Name"
 
 
-class RelateLoader(BatchedLoadedDataset[RelateBatchIO, RelateReportIO]):
+class RelateLoader(BatchedLoadedDataset, LoadedMutsDataset):
     """ Load batches of relation vectors. """
 
     @classmethod
@@ -21,6 +21,10 @@ class RelateLoader(BatchedLoadedDataset[RelateBatchIO, RelateReportIO]):
     @classmethod
     def get_report_type(cls):
         return RelateReportIO
+
+    @property
+    def pattern(self):
+        return None
 
 ########################################################################
 #                                                                      #

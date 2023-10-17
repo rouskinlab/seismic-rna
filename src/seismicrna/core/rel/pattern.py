@@ -9,7 +9,7 @@ Core -- Bit Caller Module
 from __future__ import annotations
 
 import re
-from functools import cache
+from functools import cache, cached_property
 from itertools import product
 from logging import getLogger
 from typing import Iterable
@@ -194,17 +194,45 @@ class HalfRelPattern(object):
             codes.update(cls.as_plain(f"{base}I") for base in cls.ref_bases)
         # Remove all the codes to be discounted.
         codes -= set(map(cls.as_plain, discount))
-        logger.debug(f"Converted counts for {cls.__name__}\n"
-                     f"ref: {count_ref}\nsub: {count_sub}\n"
-                     f"del: {count_del}\nins: {count_ins}\n"
-                     f"dis: {discount}\nTo codes: {sorted(codes)}")
         return cls(*codes)
+
+    @classmethod
+    @cache
+    def allc(cls):
+        """ Fits every relationship except for no coverage. """
+        return cls.from_counts(count_ref=True,
+                               count_sub=True,
+                               count_del=True,
+                               count_ins=True)
+
+    @classmethod
+    @cache
+    def muts(cls):
+        """ Fits every mutation. """
+        return cls.from_counts(count_sub=True,
+                               count_del=True,
+                               count_ins=True)
+
+    @classmethod
+    @cache
+    def refs(cls):
+        """ Fits every match. """
+        return cls.from_counts(count_ref=True)
+
+    @classmethod
+    @cache
+    def none(cls):
+        """ Fits nothing. """
+        return cls()
 
     def __init__(self, *codes: str):
         # Compile the codes into patterns.
         self.patterns = self.compile(codes)
-        logger.debug(f"Instantiated new {type(self).__name__}"
-                     f"From: {codes}\nTo: {self.patterns}")
+
+    @cached_property
+    def codes(self):
+        """ Return the codes of the relationships counted. """
+        return list(self.decompile(self.patterns))
 
     @cache
     def fits(self, base: str, rel: int):
@@ -214,10 +242,11 @@ class HalfRelPattern(object):
 
     def to_report_format(self):
         """ Return the types of counted relationships as a list. """
-        codes = list(self.decompile(self.patterns))
-        logger.debug(f"Decompiled query for {type(self).__name__}"
-                     f"From: {self.patterns}\nTo: {codes}")
-        return codes
+        return self.codes
+
+    def intersect(self, other: HalfRelPattern):
+        """ Intersect the HalfRelPattern with another. """
+        return self.__class__(*(set(self.codes) & set(other.codes)))
 
     def __str__(self):
         return f"{type(self).__name__} {self.to_report_format()}"
@@ -230,15 +259,27 @@ class RelPattern(object):
                     count_del: bool = False,
                     count_ins: bool = False,
                     discount: Iterable[str] = ()):
-        """ Return a new BitCaller by specifying which general types of
+        """ Return a new RelPattern by specifying which general types of
         mutations are to be counted, with optional ones to discount. """
         discount = list(discount)
-        return cls(yes=HalfRelPattern.from_counts(count_sub=True,
-                                                  count_del=count_del,
-                                                  count_ins=count_ins,
-                                                  discount=discount),
-                   nos=HalfRelPattern.from_counts(count_ref=True,
-                                                  discount=discount))
+        return cls(HalfRelPattern.from_counts(count_sub=True,
+                                              count_del=count_del,
+                                              count_ins=count_ins,
+                                              discount=discount),
+                   HalfRelPattern.from_counts(count_ref=True,
+                                              discount=discount))
+
+    @classmethod
+    @cache
+    def allc(cls):
+        """ Fits every relationship except for no coverage. """
+        return cls(HalfRelPattern.allc(), HalfRelPattern.none())
+
+    @classmethod
+    @cache
+    def muts(cls):
+        """ Fits every mutation. """
+        return cls(HalfRelPattern.muts(), HalfRelPattern.refs())
 
     def __init__(self, yes: HalfRelPattern, nos: HalfRelPattern):
         self.yes = yes
@@ -250,6 +291,16 @@ class RelPattern(object):
         is_yes = self.yes.fits(base, rel)
         is_nos = self.nos.fits(base, rel)
         return is_yes != is_nos, is_yes
+
+    @cache
+    def intersect(self, other: RelPattern | None, invert: bool = False):
+        if other is not None:
+            yes = self.yes.intersect(other.yes)
+            nos = self.nos.intersect(other.nos)
+        else:
+            yes = self.yes
+            nos = self.nos
+        return self.__class__(nos, yes) if invert else self.__class__(yes, nos)
 
     def __str__(self):
         return f"{type(self).__name__}  ++ {self.yes}  -- {self.nos}"

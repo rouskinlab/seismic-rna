@@ -27,7 +27,7 @@ class ClustReport(BatchedReport):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.DIR_CLUST}
+        return {**super().auto_fields(), path.CMD: path.CMD_CLS_DIR}
 
     @classmethod
     def get_batch_seg(cls):

@@ -26,7 +26,7 @@ def get_table_path(out_dir: Path, sample: str, ref: str, sect: str,
     """ Build a path for a table of clustering results. """
     return path.buildpar(*path.CLUST_TAB_SEGS,
                          top=out_dir,
-                         cmd=path.DIR_CLUST,
+                         cmd=path.CMD_CLS_DIR,
                          sample=sample,
                          ref=ref,
                          sect=sect,

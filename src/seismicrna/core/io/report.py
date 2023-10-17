@@ -769,21 +769,16 @@ class Report(FileIO, ABC):
         return cls(**idata)
 
     @classmethod
-    def parse_file_path(cls, file: Path):
-        path_fields = path.parse(file, *cls.seg_types())
-        return path_fields.pop(path.TOP), path_fields
-
-    @classmethod
     def load(cls, file: Path) -> Report:
-        top, path_fields = cls.parse_file_path(file)
         with open(file) as f:
             report = cls.from_dict(json.load(f))
         # Ensure that the path-related fields in the JSON data match the
         # actual path of the JSON file.
+        top, path_fields = cls.parse_path(file)
         for key, value in report.path_fields().items():
-            if value != path_fields[key]:
+            if value != path_fields.get(key):
                 raise ValueError(f"Got different values for field {repr(key)} "
-                                 f"from path ({repr(path_fields[key])}) and "
+                                 f"in path ({repr(path_fields.get(key))}) and "
                                  f"contents ({repr(value)}) of report {file}")
         return report
 
@@ -804,10 +799,15 @@ class Report(FileIO, ABC):
             raise ValueError(f"Invalid keywords for {type(self).__name__}: "
                              f"{list(kwargs)}")
 
-    def get_field(self, field: Field):
+    def get_field(self, field: Field, missing_ok: bool = False):
         """ Return the value of a field of the report using the field
         instance directly, not its key. """
-        return getattr(self, field.key)
+        try:
+            return getattr(self, field.key)
+        except AttributeError:
+            if missing_ok:
+                return
+            raise
 
     def to_dict(self):
         """ Return a dict of raw values of the fields, keyed by the

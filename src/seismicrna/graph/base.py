@@ -75,7 +75,7 @@ class GraphBase(ABC):
     def get_path_fields(self):
         """ Path fields. """
         return {path.TOP: self.out_dir,
-                path.CMD: path.DIR_GRAPH,
+                path.CMD: path.CMD_GRA_DIR,
                 path.GRAPH: self.graph_filename}
 
     def get_path(self, ext: str):

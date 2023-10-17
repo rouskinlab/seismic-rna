@@ -24,11 +24,11 @@ from .base import (COVER_REL,
                    REL_NAME,
                    TABLE_RELS)
 from ..cluster.load import ClustLoader
-from ..core.batch import accumulate
+from ..core.batch import accum_fits
 from ..core.mu import calc_f_obs_series, calc_mu_adj_series
 from ..core.rel import RelPattern, HalfRelPattern
 from ..core.seq import Section
-from ..mask.data import MaskLinker
+from ..mask.data import MaskMerger
 from ..relate.data import RelateLoader
 
 logger = getLogger(__name__)
@@ -54,7 +54,7 @@ class Tabulator(ABC):
     def get_null_value(cls) -> int | float:
         """ The null value for a count: either 0 or NaN. """
 
-    def __init__(self, loader: RelateLoader | MaskLinker | ClustLoader):
+    def __init__(self, loader: RelateLoader | MaskMerger | ClustLoader):
         self.loader = loader
 
     @property
@@ -130,11 +130,10 @@ class EnsembleTabulator(Tabulator, ABC):
 
     @cached_property
     def _counts(self):
-        (ipp, fpp), (ipr, fpr) = accumulate(self.section.unmasked_int,
-                                            self.refseq,
-                                            name_patterns(),
-                                            self.loader.iter_batches())
-        return fpp, fpr
+        return accum_fits(self.section.unmasked_int,
+                          self.refseq,
+                          name_patterns(self.loader.pattern),
+                          self.loader.iter_batches())
 
     def tabulate_by_pos(self):
         return self._tabulate(self._counts_per_pos, self.section.range)
@@ -261,7 +260,7 @@ class ClusterTabulator(NullableTabulator):
 
 # Helper functions #####################################################
 
-def iter_half_patterns():
+def _iter_mut_patterns():
     """ Yield a HalfRelPattern for each type of mutation. """
     yield SUBST_REL, HalfRelPattern.from_counts(count_sub=True)
     yield SUB_A_REL, HalfRelPattern("ca", "ga", "ta")
@@ -272,33 +271,28 @@ def iter_half_patterns():
     yield INSRT_REL, HalfRelPattern.from_counts(count_ins=True)
 
 
-def iter_patterns():
+@cache
+def list_mut_patterns():
+    return list(_iter_mut_patterns())
+
+
+def _iter_patterns(mask: RelPattern | None = None):
     """ Yield a RelPattern for every type of relationship. """
     # Count everything except for no coverage.
-    yield COVER_REL, RelPattern(HalfRelPattern.from_counts(count_ref=True,
-                                                           count_sub=True,
-                                                           count_del=True,
-                                                           count_ins=True),
-                                HalfRelPattern.from_counts())
-    # Count all reference matches.
-    ref_pattern = HalfRelPattern.from_counts(count_ref=True)
-    # Count all mutations.
-    mut_pattern = HalfRelPattern.from_counts(count_sub=True,
-                                             count_del=True,
-                                             count_ins=True)
+    yield COVER_REL, RelPattern.allc()
     # Count matches to the reference sequence.
-    yield MATCH_REL, RelPattern(ref_pattern, mut_pattern)
+    yield MATCH_REL, RelPattern.muts().intersect(mask, invert=True)
     # Count all types of mutations, relative to reference matches.
-    yield MUTAT_REL, RelPattern(mut_pattern, ref_pattern)
+    yield MUTAT_REL, RelPattern.muts().intersect(mask)
     # Count each type of mutation, relative to reference matches.
-    for mut, mut_pattern in iter_half_patterns():
-        yield mut, RelPattern(mut_pattern, ref_pattern)
+    for mut, pattern in list_mut_patterns():
+        yield mut, RelPattern(pattern, HalfRelPattern.refs()).intersect(mask)
 
 
 @cache
-def name_patterns():
+def name_patterns(mask: RelPattern | None = None):
     """ Every RelPattern, keyed by its name. """
-    return dict(iter_patterns())
+    return dict(_iter_patterns(mask))
 
 
 def adjust_counts(counts_obs: pd.DataFrame,
@@ -369,12 +363,12 @@ def adjust_counts(counts_obs: pd.DataFrame,
     return counts_adj
 
 
-def tabulate_loader(dataset: RelateLoader | MaskLinker | ClustLoader):
+def tabulate_loader(dataset: RelateLoader | MaskMerger | ClustLoader):
     """ Return a new DataLoader, choosing the subclass based on the type
     of the argument `dataset`. """
     if isinstance(dataset, RelateLoader):
         return RelTabulator(dataset)
-    if isinstance(dataset, MaskLinker):
+    if isinstance(dataset, MaskMerger):
         return MaskTabulator(dataset)
     if isinstance(dataset, ClustLoader):
         return ClusterTabulator(dataset)

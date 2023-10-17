@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cache, cached_property
+from logging import getLogger
 from typing import Iterable
 
 import numpy as np
@@ -17,6 +18,8 @@ from .util import (POS_INDEX,
 from ..rel import MATCH, NOCOV, REL_TYPE, RelPattern
 from ..seq import BASE_NAME, DNA, seq_pos_to_index
 from ..types import fit_uint_type
+
+logger = getLogger(__name__)
 
 
 class MutsBatch(ReadBatch, ABC):
@@ -67,15 +70,6 @@ class MutsBatch(ReadBatch, ABC):
     @cache
     def pos_index(self, refseq: DNA):
         return seq_pos_to_index(refseq, self.pos_nums, POS_INDEX)
-
-    @cached_property
-    @abstractmethod
-    def pattern(self) -> RelPattern | None:
-        """ Relationship pattern. """
-
-    @cache
-    def fits(self, base: str, rel: int):
-        return self.pattern is None or all(self.pattern.fits(base, rel))
 
     @cache
     def count_base_types(self, refseq: DNA):
@@ -145,8 +139,8 @@ class MutsBatch(ReadBatch, ABC):
 
     @cache
     def rels_per_pos(self, refseq: DNA):
-        """ For each relationship that matches the pattern of the batch,
-        the number of reads at each position with that relationship. """
+        """ For each relationship, the number of reads at each position
+        with that relationship. """
         cov_per_pos = self.cover_per_pos(refseq)
         counts = defaultdict(lambda: pd.Series(self.read_dtype(0),
                                                cov_per_pos.index))
@@ -156,48 +150,33 @@ class MutsBatch(ReadBatch, ABC):
             for mut, reads in self.muts.get(pos, dict()).items():
                 num_reads_pos_mut = get_length(reads, "read numbers")
                 num_reads_pos += num_reads_pos_mut
-                if self.fits(base, mut):
-                    counts[mut].loc[key] = num_reads_pos_mut
+                counts[mut].loc[key] = num_reads_pos_mut
             # The number of matches is the coverage minus the number of
             # reads with another kind of relationship that is not the
             # no-coverage relationship (no coverage is counted later).
-            if self.fits(base, MATCH):
-                counts[MATCH].loc[key] = coverage - num_reads_pos
+            counts[MATCH].loc[key] = coverage - num_reads_pos
             # The number of non-covered positions is the number of reads
             # minus the number that cover the position.
-            if self.fits(base, NOCOV):
-                counts[NOCOV].loc[key] = self.num_reads - coverage
+            counts[NOCOV].loc[key] = self.num_reads - coverage
         return dict(counts)
 
     @cache
     def rels_per_read(self, refseq: DNA):
-        """ For each relationship that matches the pattern of the batch,
-        the number of positions in each read with that relationship. """
+        """ For each relationship, the number of positions in each read
+        with that relationship. """
         cov_per_read = self.cover_per_read(refseq)
         bases = list(cov_per_read.columns)
         counts = defaultdict(lambda: pd.DataFrame(self.pos_dtype(0),
-                                                  index=cov_per_read.index,
-                                                  columns=cov_per_read.columns))
-        if self.pattern is None:
-            counts[NOCOV] = self.count_base_types(refseq) - cov_per_read
-            counts[MATCH] = cov_per_read.copy()
-            implicit_per_pos = False
-        else:
-            implicit_per_pos = True
+                                                  cov_per_read.index,
+                                                  cov_per_read.columns))
+        counts[NOCOV] = self.count_base_types(refseq) - cov_per_read
+        counts[MATCH] = cov_per_read.copy()
         for pos, base in self.pos_index(refseq):
             column = bases.index(base)
-            if implicit_per_pos:
-                covered = self.coverage_matrix(refseq)[pos]
-                if self.fits(base, NOCOV):
-                    counts[NOCOV].values[:, column] += np.logical_not(covered)
-                if self.fits(base, MATCH):
-                    counts[MATCH].values[:, column] += covered
             for mut, reads in self.muts.get(pos, dict()).items():
                 rows = self.read_idx[reads]
-                if self.fits(base, MATCH):
-                    counts[MATCH].values[rows, column] -= 1
-                if self.fits(base, mut):
-                    counts[mut].values[rows, column] += 1
+                counts[MATCH].values[rows, column] -= 1
+                counts[mut].values[rows, column] += 1
         return dict(counts)
 
     @cache
@@ -213,6 +192,7 @@ class MutsBatch(ReadBatch, ABC):
                           else np.array([], self.read_dtype))
         return reads
 
+    @cache
     def count_per_pos(self, refseq: DNA, pattern: RelPattern):
         """ Count the reads that fit a relationship pattern at each
         position in a section. """
@@ -230,6 +210,7 @@ class MutsBatch(ReadBatch, ABC):
                         fits.loc[index] += pos_counts
         return info, fits
 
+    @cache
     def count_per_read(self, refseq: DNA, pattern: RelPattern):
         """ Count the positions in a section that fit a relationship
         pattern in each read. """
@@ -245,6 +226,7 @@ class MutsBatch(ReadBatch, ABC):
                         fits += base_counts
         return info, fits
 
+    @cache
     def nonprox_muts(self, refseq: DNA, pattern: RelPattern, min_gap: int):
         """ List the reads with non-proximal mutations. """
         if min_gap < 0:
@@ -278,7 +260,6 @@ class MutsBatch(ReadBatch, ABC):
         return self.read_nums[nonprox]
 
     def mask(self,
-             pattern: RelPattern | None = None,
              positions: Iterable[int] | None = None,
              reads: Iterable[int] | None = None):
         # Clean and validate the selection.
@@ -317,23 +298,14 @@ class MutsBatch(ReadBatch, ABC):
                              end3s=end3s,
                              read_nums=read_nums,
                              max_read=self.max_read,
-                             pattern=pattern,
                              sanitize=False)
 
 
 class MaskMutsBatch(MaskReadBatch, MutsBatch, ABC):
 
-    def __init__(self, *, pattern: RelPattern | None, **kwargs):
-        super().__init__(**kwargs)
-        self._pattern = pattern
-
     @cached_property
     def pos_nums(self):
         return np.array(list(self.muts))
-
-    @property
-    def pattern(self):
-        return self._pattern
 
 
 def accumulate(positions: np.ndarray,
@@ -398,10 +370,12 @@ def accumulate(positions: np.ndarray,
         # Per-read information is not being counted.
         info_per_read = None
         fits_per_read = None
+    logger.debug(f"Accumulated reads per position:\n{fits_per_pos}")
+    logger.debug(f"Accumulated positions per read:\n{fits_per_read}")
     return (info_per_pos, fits_per_pos), (info_per_read, fits_per_read)
 
 
-def count_per_pos(positions: np.ndarray,
+def accum_per_pos(positions: np.ndarray,
                   refseq: DNA,
                   patterns: dict[str, RelPattern],
                   batches: Iterable[MutsBatch]
@@ -416,19 +390,14 @@ def count_per_pos(positions: np.ndarray,
     return per_pos
 
 
-def count_per_read(positions: np.ndarray,
-                   refseq: DNA,
-                   patterns: dict[str, RelPattern],
-                   batches: Iterable[MutsBatch]
-                   ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """ Count reads with each relationship at each position in a section
-    over multiple batches. """
-    per_pos, per_read = accumulate(positions,
-                                   refseq,
-                                   patterns,
-                                   batches,
-                                   per_pos=False)
-    return per_read
+def accum_fits(positions: np.ndarray,
+               refseq: DNA,
+               patterns: dict[str, RelPattern],
+               batches: Iterable[MutsBatch]
+               ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """ Count positions and reads fitting each relationship. """
+    (ipp, fpp), (ipr, fpr) = accumulate(positions, refseq, patterns, batches)
+    return fpp, fpr
 
 ########################################################################
 #                                                                      #
