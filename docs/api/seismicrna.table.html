@@ -684,14 +684,14 @@ Series with dimension (clusters).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.tabulate.ClusterTabulator.tabulate_by_pos">
-<span class="sig-name descname"><span class="pre">tabulate_by_pos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.ClusterTabulator.tabulate_by_pos" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.table.tabulate.ClusterTabulator.table_per_pos">
+<span class="sig-name descname"><span class="pre">table_per_pos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.ClusterTabulator.table_per_pos" title="Permalink to this definition"></a></dt>
 <dd><p>DataFrame of the bit count for each position and caller.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.tabulate.ClusterTabulator.tabulate_by_read">
-<span class="sig-name descname"><span class="pre">tabulate_by_read</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.ClusterTabulator.tabulate_by_read" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.table.tabulate.ClusterTabulator.table_per_read">
+<span class="sig-name descname"><span class="pre">table_per_read</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.ClusterTabulator.table_per_read" title="Permalink to this definition"></a></dt>
 <dd><p>DataFrame of the bit count for each read and caller.</p>
 </dd></dl>
 
@@ -708,14 +708,14 @@ Series with dimension (clusters).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.tabulate.EnsembleTabulator.tabulate_by_pos">
-<span class="sig-name descname"><span class="pre">tabulate_by_pos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.EnsembleTabulator.tabulate_by_pos" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.table.tabulate.EnsembleTabulator.table_per_pos">
+<span class="sig-name descname"><span class="pre">table_per_pos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.EnsembleTabulator.table_per_pos" title="Permalink to this definition"></a></dt>
 <dd><p>Count the bits per position.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.tabulate.EnsembleTabulator.tabulate_by_read">
-<span class="sig-name descname"><span class="pre">tabulate_by_read</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.EnsembleTabulator.tabulate_by_read" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.table.tabulate.EnsembleTabulator.table_per_read">
+<span class="sig-name descname"><span class="pre">table_per_read</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.EnsembleTabulator.table_per_read" title="Permalink to this definition"></a></dt>
 <dd><p>Count the bits per read.</p>
 </dd></dl>
 
@@ -732,8 +732,8 @@ Series with dimension (clusters).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.tabulate.MaskTabulator.tabulate_by_pos">
-<span class="sig-name descname"><span class="pre">tabulate_by_pos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.MaskTabulator.tabulate_by_pos" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.table.tabulate.MaskTabulator.table_per_pos">
+<span class="sig-name descname"><span class="pre">table_per_pos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.MaskTabulator.table_per_pos" title="Permalink to this definition"></a></dt>
 <dd><p>Count the bits per position.</p>
 </dd></dl>
 
@@ -836,14 +836,14 @@ loader.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.tabulate.Tabulator.tabulate_by_pos">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">tabulate_by_pos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.Tabulator.tabulate_by_pos" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.table.tabulate.Tabulator.table_per_pos">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">table_per_pos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.Tabulator.table_per_pos" title="Permalink to this definition"></a></dt>
 <dd><p>Count the bits per position.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.tabulate.Tabulator.tabulate_by_read">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">tabulate_by_read</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.Tabulator.tabulate_by_read" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.table.tabulate.Tabulator.table_per_read">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">table_per_read</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.tabulate.Tabulator.table_per_read" title="Permalink to this definition"></a></dt>
 <dd><p>Count the bits per read.</p>
 </dd></dl>
 

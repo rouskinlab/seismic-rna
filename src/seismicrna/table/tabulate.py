@@ -85,25 +85,29 @@ class Tabulator(ABC):
     @cached_property
     @abstractmethod
     def _counts(self) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """ Count by position and by read. """
+        """ Raw counts per position and per read. """
 
     @property
     def _counts_per_pos(self):
+        """ Raw counts per position. """
         per_pos, per_read = self._counts
         return per_pos
 
     @property
     def _counts_per_read(self):
+        """ Raw counts per read. """
         per_pos, per_read = self._counts
         return per_read
 
+    @cached_property
     @abstractmethod
-    def tabulate_by_pos(self):
-        """ Count the bits per position. """
+    def table_per_pos(self):
+        """ Count relationships at every position in the section. """
 
+    @cached_property
     @abstractmethod
-    def tabulate_by_read(self):
-        """ Count the bits per read. """
+    def table_per_read(self):
+        """ Count relationships in every read. """
 
 
 class EnsembleTabulator(Tabulator, ABC):
@@ -113,17 +117,13 @@ class EnsembleTabulator(Tabulator, ABC):
         return pd.Index(TABLE_RELS, name=REL_NAME)
 
     @classmethod
-    def _tabulate(cls, counts: pd.DataFrame, index: pd.Index | None):
+    def _tabulate(cls, counts: pd.DataFrame):
+        """ Counts with the proper columns. """
         # Initialize an empty table.
-        table = pd.DataFrame(cls.get_null_value(),
-                             index=index if index is not None else counts.index,
-                             columns=cls.columns())
+        table = pd.DataFrame(cls.get_null_value(), counts.index, cls.columns())
         # Count reads with each relationship at each position.
         for rel, rel_counts in counts.items():
-            if index is not None:
-                table.loc[counts.index, rel] = rel_counts
-            else:
-                table.loc[:, rel] = rel_counts
+            table[rel] = rel_counts
         # Add a column for informative relationships.
         table[INFOR_REL] = table[MATCH_REL] + table[MUTAT_REL]
         return table
@@ -135,11 +135,13 @@ class EnsembleTabulator(Tabulator, ABC):
                           name_patterns(self.loader.pattern),
                           self.loader.iter_batches())
 
-    def tabulate_by_pos(self):
-        return self._tabulate(self._counts_per_pos, self.section.range)
+    @cached_property
+    def table_per_pos(self):
+        return self._tabulate(self._counts_per_pos).reindex(self.section.range)
 
-    def tabulate_by_read(self):
-        return self._tabulate(self._counts_per_read, None)
+    @cached_property
+    def table_per_read(self):
+        return self._tabulate(self._counts_per_read)
 
 
 class NullableTabulator(Tabulator, ABC):
@@ -158,10 +160,11 @@ class RelTabulator(EnsembleTabulator):
 
 class MaskTabulator(EnsembleTabulator, NullableTabulator):
 
-    def tabulate_by_pos(self):
+    @cached_property
+    def table_per_pos(self):
         # Count every type of relationship at each position, in the same
         # way as for the superclass, then adjust for observer bias.
-        return adjust_counts(super().tabulate_by_pos(),
+        return adjust_counts(super().table_per_pos,
                              self.section,
                              self.loader.min_mut_gap)
 
@@ -199,7 +202,7 @@ class ClusterTabulator(NullableTabulator):
         counts.loc[:, slicer] = values
 
     @cache
-    def tabulate_by_pos(self):
+    def table_per_pos(self):
         """ DataFrame of the bit count for each position and caller. """
         # Initialize an empty DataFrame of observed counts.
         counts = pd.DataFrame(self.get_null_value(),
@@ -226,7 +229,7 @@ class ClusterTabulator(NullableTabulator):
                                               self.loader.min_mut_gap).values
         return counts
 
-    def tabulate_by_read(self):
+    def table_per_read(self):
         """ DataFrame of the bit count for each read and caller. """
 
         # Initialize an empty DataFrame.

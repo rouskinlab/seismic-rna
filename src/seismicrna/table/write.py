@@ -54,9 +54,8 @@ class TableWriter(Table, ABC):
         return self.tab.section.name
 
     @abstractmethod
-    def load_data(self):
-        """ Load the table's data from a DataLoader. """
-        return pd.DataFrame()
+    def load_data(self) -> pd.DataFrame:
+        """ Load the table's data from a DatasetLoader. """
 
     @property
     def data(self):
@@ -77,13 +76,13 @@ class TableWriter(Table, ABC):
 class PosTableWriter(TableWriter, PosTable, ABC):
 
     def load_data(self):
-        return self.tab.tabulate_by_pos()
+        return self.tab.table_per_pos
 
 
 class ReadTableWriter(TableWriter, ReadTable, ABC):
 
     def load_data(self):
-        return self.tab.tabulate_by_read()
+        return self.tab.table_per_read
 
 
 # Instantiable Table Writers ###########################################
