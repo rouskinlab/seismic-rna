@@ -187,7 +187,7 @@ class RelationWriter(object):
     def write(self, *,
               out_dir: Path,
               brotli_level: int,
-              rerun: bool,
+              force: bool,
               **kwargs):
         """ Compute a relation vector for every record in a BAM file,
         write the vectors into one or more batch files, compute their
@@ -196,7 +196,7 @@ class RelationWriter(object):
                                                 sample=self.sample,
                                                 ref=self.ref)
         # Check if the report file already exists.
-        if rerun or not report_file.is_file():
+        if force or not report_file.is_file():
             # Write the reference sequence to a file.
             refcheck = self._write_refseq(out_dir, brotli_level)
             # Compute relation vectors and time how long it takes.

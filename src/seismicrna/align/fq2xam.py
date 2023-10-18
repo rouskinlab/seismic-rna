@@ -535,15 +535,15 @@ def list_fqs_xams(fq_units: list[FastqUnit],
 def get_xam_files(fq_units: list[FastqUnit],
                   fasta: Path, *,
                   out_dir: Path,
-                  rerun: bool,
+                  force: bool,
                   **kwargs) -> list[Path]:
     """ Run the alignment pipeline and return a tuple of all XAM files
     from the pipeline. """
     if not fq_units:
         logger.warning("No FASTQ files or pairs of FASTQ files were given")
         return list()
-    if rerun:
-        # Rerun all alignments.
+    if force:
+        # force all alignments.
         fqs_to_align = fq_units
         xams = set()
     else:

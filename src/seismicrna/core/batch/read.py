@@ -4,7 +4,7 @@ from functools import cached_property
 import numpy as np
 import pandas as pd
 
-from .util import INDEX_NAMES, get_length
+from .util import INDEX_NAMES, get_length, get_max_read, get_read_inverse
 from ..types import fit_uint_type
 
 
@@ -20,24 +20,24 @@ class ReadBatch(ABC):
     def read_nums(self) -> np.ndarray:
         """ Read numbers in use. """
 
-    @property
-    @abstractmethod
-    def num_reads(self) -> int:
-        """ Number of reads that are actually in use. """
-
-    @property
+    @cached_property
     @abstractmethod
     def max_read(self) -> int:
         """ Maximum possible value for a read index. """
 
-    @property
+    @cached_property
+    @abstractmethod
+    def num_reads(self) -> int:
+        """ Number of reads that are actually in use. """
+
+    @cached_property
     def read_dtype(self):
         """ Data type for read numbers. """
-        return fit_uint_type(self.max_read)
+        return fit_uint_type(max(self.max_read, 0))
 
     @cached_property
     @abstractmethod
-    def read_idx(self) -> np.ndarray:
+    def read_indexes(self) -> np.ndarray:
         """ Map each read number to its index in self.read_nums. """
 
     @cached_property
@@ -52,45 +52,39 @@ class ReadBatch(ABC):
         return f"{type(self).__name__} {self.batch} with {self.num_reads} reads"
 
 
-class AllReadsBatch(ReadBatch, ABC):
+class AllReadBatch(ReadBatch, ABC):
 
-    @property
+    @cached_property
+    def read_nums(self):
+        return np.arange(self.num_reads, dtype=self.read_dtype)
+
+    @cached_property
     def max_read(self):
         return self.num_reads - 1
 
     @cached_property
-    def read_nums(self):
-        return np.arange(self.num_reads)
-
-    @cached_property
-    def read_idx(self):
+    def read_indexes(self):
         return self.read_nums
 
 
 class MaskReadBatch(ReadBatch):
 
-    def __init__(self, *, read_nums: np.ndarray, max_read: int, **kwargs):
-        self._max_read = max_read
+    def __init__(self, *, read_nums: np.ndarray, **kwargs):
+        self._read_nums = read_nums
         super().__init__(**kwargs)
-        if read_nums.size > 0 and np.max(read_nums) > max_read:
-            raise ValueError(f"All read numbers must be ≤ {max_read}, but got "
-                             f"{read_nums[read_nums > max_read]}")
-        self._read_nums = np.asarray(read_nums, fit_uint_type(max_read))
 
-    @property
+    @cached_property
     def read_nums(self):
         return self._read_nums
 
-    @property
+    @cached_property
     def num_reads(self):
         return get_length(self.read_nums, "read_nums")
 
-    @property
+    @cached_property
     def max_read(self):
-        return self._max_read
+        return get_max_read(self.read_nums)
 
     @cached_property
-    def read_idx(self):
-        read_map = np.zeros(self.max_read + 1, dtype=self.read_dtype)
-        read_map[self.read_nums] = np.arange(self.num_reads)
-        return read_map
+    def read_indexes(self):
+        return get_read_inverse(self.read_nums)

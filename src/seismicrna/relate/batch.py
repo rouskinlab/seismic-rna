@@ -2,22 +2,22 @@ from functools import cached_property
 
 import numpy as np
 
-from ..core.batch import AllReadsBatch, MutsBatch, get_length, sanitize_pos
+from ..core.batch import AllReadBatch, MutsBatch, get_length, sanitize_pos
 from ..core.seq import POS_INDEX
 
 
-class QnamesBatch(AllReadsBatch):
+class QnamesBatch(AllReadBatch):
 
     def __init__(self, *, names: list[str] | np.ndarray, **kwargs):
         super().__init__(**kwargs)
         self.names = np.asarray(names, dtype=str)
 
-    @property
+    @cached_property
     def num_reads(self):
         return get_length(self.names, "read names")
 
 
-class RelateBatch(MutsBatch, AllReadsBatch):
+class RelateBatch(MutsBatch, AllReadBatch):
 
     def __init__(self, muts: dict[int, dict], seqlen: int, **kwargs):
         super().__init__(muts={pos: muts[pos]

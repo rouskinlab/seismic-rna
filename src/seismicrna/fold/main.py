@@ -18,7 +18,7 @@ from ..core.cli import (CMD_FOLD,
                         opt_quantile,
                         opt_max_procs,
                         opt_parallel,
-                        opt_rerun)
+                        opt_force)
 from ..core.depend import require_dependency
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rna import RnaProfile
@@ -41,7 +41,7 @@ params = [
     opt_save_temp,
     opt_max_procs,
     opt_parallel,
-    opt_rerun,
+    opt_force,
 ]
 
 
@@ -66,7 +66,7 @@ def run(fasta: str,
         save_temp: bool,
         max_procs: int,
         parallel: bool,
-        rerun: bool):
+        force: bool):
     """
     Predict RNA structures using mutation rates as constraints.
     """
@@ -92,7 +92,7 @@ def run(fasta: str,
                     args=[(loader, ref_sections.list(loader.ref))
                           for loader in loaders],
                     kwargs=dict(temp_dir=Path(temp_dir), save_temp=save_temp,
-                                quantile=quantile, rerun=rerun),
+                                quantile=quantile, force=force),
                     pass_n_procs=True)
 
 

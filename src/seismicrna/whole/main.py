@@ -50,7 +50,7 @@ def run(*,
         temp_dir: str,
         save_temp: bool,
         brotli_level: int,
-        rerun: bool,
+        force: bool,
         max_procs: int,
         parallel: bool,
         # FASTQ options
@@ -168,7 +168,7 @@ def run(*,
         out_dir=out_dir,
         temp_dir=temp_dir,
         save_temp=save_temp,
-        rerun=rerun,
+        force=force,
         max_procs=max_procs,
         parallel=parallel,
         fasta=fasta,
@@ -231,7 +231,7 @@ def run(*,
         max_procs=max_procs,
         parallel=parallel,
         brotli_level=brotli_level,
-        rerun=rerun,
+        force=force,
         save_temp=save_temp,
     )))
     # Masking
@@ -254,7 +254,7 @@ def run(*,
         max_fmut_pos=max_fmut_pos,
         max_procs=max_procs,
         parallel=parallel,
-        rerun=rerun,
+        force=force,
     )))
     # Clustering
     input_path += tuple(map(str, cluster_mod.run(
@@ -267,14 +267,14 @@ def run(*,
         em_thresh=em_thresh,
         max_procs=max_procs,
         parallel=parallel,
-        rerun=rerun,
+        force=force,
     )))
     # Table
     input_path += tuple(map(str, table_mod.run(
         input_path=input_path,
         max_procs=max_procs,
         parallel=parallel,
-        rerun=rerun,
+        force=force,
     )))
     # Fold
     if fold:
@@ -290,7 +290,7 @@ def run(*,
             save_temp=save_temp,
             max_procs=max_procs,
             parallel=parallel,
-            rerun=rerun,
+            force=force,
         )
     # Graph
 

@@ -29,7 +29,7 @@ from ..core.cli import (CMD_REL,
                         opt_brotli_level,
                         opt_parallel,
                         opt_max_procs,
-                        opt_rerun,
+                        opt_force,
                         opt_save_temp)
 from ..core.parallel import lock_temp_dir
 
@@ -56,7 +56,7 @@ params = [
     opt_max_procs,
     opt_parallel,
     # File generation
-    opt_rerun,
+    opt_force,
     opt_save_temp,
 ]
 
@@ -84,7 +84,7 @@ def run(fasta: str,
         max_procs: int,
         parallel: bool,
         brotli_level: int,
-        rerun: bool,
+        force: bool,
         save_temp: bool):
     """
     Run the relation step. For each read (or each pair of reads, if the
@@ -108,7 +108,7 @@ def run(fasta: str,
                      max_procs=max_procs,
                      parallel=parallel,
                      brotli_level=brotli_level,
-                     rerun=rerun,
+                     force=force,
                      save_temp=save_temp)
 
 ########################################################################

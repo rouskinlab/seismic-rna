@@ -96,11 +96,11 @@ opt_sections_file = Option(
     default="",
     help="CSV file of sections by name, reference, and coordinates/primers")
 
-opt_rerun = Option(
-    ("--rerun/--no-rerun",),
+opt_force = Option(
+    ("--force/--no-force",),
     type=bool,
     default=False,
-    help="Whether to regenerate files that already exist")
+    help="Force all tasks to run, even those whose output files already exist")
 
 # Sequencing read (FASTQ) files
 opt_fastqs = Option(

@@ -61,10 +61,10 @@ class TableWriter(Table, ABC):
     def data(self):
         return self.load_data()
 
-    def write(self, rerun: bool):
+    def write(self, force: bool):
         """ Write the table's rounded data to the table's CSV file. """
         # Check if the File exists.
-        if rerun or not self.path.is_file():
+        if force or not self.path.is_file():
             self.data.round(decimals=PRECISION).to_csv(self.path)
         else:
             logger.warning(f"File exists: {self.path}")
@@ -155,7 +155,7 @@ def get_tabulator_writers(tabulator: Tabulator):
         yield writer_type(tabulator)
 
 
-def write(report_file: Path, rerun: bool):
+def write(report_file: Path, force: bool):
     """ Helper function to write a table from a report file. """
     # Determine the needed type of report loader.
     report_loader_type = infer_report_loader_type(report_file)
@@ -165,7 +165,7 @@ def write(report_file: Path, rerun: bool):
     tabulator = tabulate_loader(report_loader)
     # For each table associated with this tabulator, create the table,
     # write it, and return the path to the table output file.
-    return [table.write(rerun) for table in get_tabulator_writers(tabulator)]
+    return [table.write(force) for table in get_tabulator_writers(tabulator)]
 
 ########################################################################
 #                                                                      #

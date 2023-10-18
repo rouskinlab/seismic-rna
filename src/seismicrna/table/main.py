@@ -13,12 +13,12 @@ from ..core.cli import (CMD_TABLE,
                         arg_input_path,
                         opt_max_procs,
                         opt_parallel,
-                        opt_rerun)
+                        opt_force)
 from ..core.parallel import as_list_of_tuples, dispatch
 
 logger = getLogger(__name__)
 
-params = [arg_input_path, opt_max_procs, opt_parallel, opt_rerun]
+params = [arg_input_path, opt_max_procs, opt_parallel, opt_force]
 
 
 @command(CMD_TABLE, params=params)

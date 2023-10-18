@@ -15,7 +15,7 @@ logger = getLogger(__name__)
 
 def cluster(call_report: Path, max_order: int, n_runs: int, *,
             min_iter: int, max_iter: int, conv_thresh: float, min_muts: int,
-            n_procs: int, rerun: bool):
+            n_procs: int, force: bool):
     """ Run all processes of clustering reads from one filter. """
     # Load the vector calling report.
     loader = MaskLoader.open(Path(call_report))
@@ -24,7 +24,7 @@ def cluster(call_report: Path, max_order: int, n_runs: int, *,
                                          sample=loader.sample,
                                          ref=loader.ref,
                                          sect=loader.sect)
-    if rerun or not report_file.is_file():
+    if force or not report_file.is_file():
         logger.info(f"Began clustering {loader} up to order {max_order} "
                     f"cluster(s) and {n_runs} independent run(s) per order")
         # Get the unique bit vectors.

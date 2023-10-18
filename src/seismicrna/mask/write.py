@@ -105,9 +105,9 @@ class RelMasker(object):
             raise ValueError(
                 f"min_ninfo_pos must be ≥ 0, but got {min_ninfo_pos}")
         self.min_ninfo_pos = min_ninfo_pos
-        if not 0. <= max_fmut_pos < 1.:
+        if not 0. <= max_fmut_pos <= 1.:
             raise ValueError(
-                f"max_fmut_pos must be in [0, 1), but got {max_fmut_pos}")
+                f"max_fmut_pos must be in [0, 1], but got {max_fmut_pos}")
         self.max_fmut_pos = max_fmut_pos
         # Set the parameters for saving files.
         self.top = loader.top
@@ -255,8 +255,7 @@ class RelMasker(object):
                                      ref=self.loader.ref,
                                      sect=self.section.name,
                                      batch=batch.batch,
-                                     read_nums=batch.read_nums,
-                                     max_read=batch.max_read)
+                                     read_nums=batch.read_nums)
         _, checksum = batch_file.save(self.top,
                                       brotli_level=self.brotli_level,
                                       overwrite=True)
@@ -341,7 +340,7 @@ def mask_section(loader: RelateLoader,
                  count_del: bool,
                  count_ins: bool,
                  discount: Iterable[str], *,
-                 rerun: bool,
+                 force: bool,
                  **kwargs):
     """ Filter a section of a set of bit vectors. """
     # Check if the report file already exists.
@@ -349,7 +348,7 @@ def mask_section(loader: RelateLoader,
                                         sample=loader.sample,
                                         ref=loader.ref,
                                         sect=section.name)
-    if rerun or not report_file.is_file():
+    if force or not report_file.is_file():
         pattern = RelPattern.from_counts(count_del, count_ins, discount)
         masker = RelMasker(loader, section, pattern, **kwargs)
         masker.mask()

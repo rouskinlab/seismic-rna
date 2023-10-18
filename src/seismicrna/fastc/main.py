@@ -12,7 +12,7 @@ from pathlib import Path
 from click import command
 
 from .fastaclean import FastaCleaner
-from ..core.cli import CMD_FASTC, docdef, arg_fasta, opt_out_dir, opt_rerun
+from ..core.cli import CMD_FASTC, docdef, arg_fasta, opt_out_dir, opt_force
 from ..core.seq import DNA
 
 logger = getLogger(__name__)
@@ -20,7 +20,7 @@ logger = getLogger(__name__)
 params = [
     arg_fasta,
     opt_out_dir,
-    opt_rerun,
+    opt_force,
 ]
 
 
@@ -31,7 +31,7 @@ def cli(*args, **kwargs):
 
 
 @docdef.auto()
-def run(fasta: str, out_dir: str, rerun: bool):
+def run(fasta: str, out_dir: str, force: bool):
     """
     Clean a FASTA file.
     """
@@ -39,7 +39,7 @@ def run(fasta: str, out_dir: str, rerun: bool):
         fc = FastaCleaner(DNA)
         fc.run(fasta_path := Path(fasta),
                Path(out_dir).joinpath(fasta_path.name),
-               force=rerun)
+               force=force)
     except Exception as error:
         logger.critical(error)
 

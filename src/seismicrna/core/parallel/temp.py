@@ -24,7 +24,7 @@ def lock_temp_dir(run: Callable):
                       f"needed files reside in {temp_dir}, then please "
                       f"specify a nonexistent temporary directory with "
                       f"'--temp-dir /new/temp/dir'. Otherwise, please delete "
-                      f"the directory with 'rm -r {temp_dir}' and then rerun.")
+                      f"the directory with 'rm -r {temp_dir}' and then force.")
         # Determine whether the temporary directory and the lock exist.
         lock = os.path.join(temp_dir, LOCK_DIR)
         try:

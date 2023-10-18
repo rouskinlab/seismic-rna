@@ -16,7 +16,7 @@ from ..core.cli import (CMD_CLUST,
                         opt_max_em_iter,
                         opt_parallel,
                         opt_max_procs,
-                        opt_rerun)
+                        opt_force)
 from ..core.parallel import as_list_of_tuples, dispatch
 
 logger = getLogger(__name__)
@@ -37,7 +37,7 @@ params = [
     opt_max_procs,
     opt_parallel,
     # Effort
-    opt_rerun,
+    opt_force,
 ]
 
 
@@ -66,7 +66,7 @@ def run(input_path: tuple[str, ...], *,
         max_em_iter: int,
         max_procs: int,
         parallel: bool,
-        rerun: bool) -> list[Path]:
+        force: bool) -> list[Path]:
     """ Run the clustering module. """
     if max_clusters == 0:
         # Exit immediately if the maximum number of clusters is 0.
@@ -81,7 +81,7 @@ def run(input_path: tuple[str, ...], *,
                                 conv_thresh=em_thresh,
                                 min_iter=min_em_iter,
                                 max_iter=max_em_iter,
-                                rerun=rerun))
+                                force=force))
 
 ########################################################################
 #                                                                      #

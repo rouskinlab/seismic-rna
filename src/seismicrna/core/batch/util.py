@@ -13,6 +13,9 @@ INDEX_NAMES = BATCH_NUM, READ_NUM
 BATCH_INDEX = 0
 POS_INDEX = 1
 
+# Missing read identifier.
+NO_READ = -1
+
 
 def list_batch_nums(num_batches: int):
     """ List the batch numbers. """
@@ -24,6 +27,20 @@ def get_length(array: np.ndarray, what: str = "array") -> int:
         raise ValueError(f"{what} must have 1 dimension, but got {array.ndim}")
     length, = array.shape
     return length
+
+
+def get_max_read(read_nums: np.ndarray):
+    """ Get the maximum read number, or -1 if there are no reads. """
+    return read_nums.max(initial=NO_READ)
+
+
+def get_read_inverse(read_nums: np.ndarray):
+    """ Map a nonnegative integer to the position of that integer in
+    `read_nums`, or to -1 if that integer is not in `read_nums`. """
+    num_reads = get_length(read_nums, "read_nums")
+    read_inv = np.full(get_max_read(read_nums) + 1, NO_READ)
+    read_inv[read_nums] = np.arange(num_reads)
+    return read_inv
 
 
 def ensure_same_length(arr1: np.ndarray,
@@ -88,6 +105,11 @@ def sanitize_pos(positions: Iterable[int], seq_length: int):
     return sanitize_values(positions, POS_INDEX, seq_length, "positions")
 
 
+def contiguous_mates(mid5s: np.ndarray, mid3s: np.ndarray):
+    """ Return whether the two mates form a contiguous read. """
+    return np.less_equal(mid5s, mid3s + 1)
+
+
 def sanitize_ends(max_pos: int,
                   end5s: list[int] | np.ndarray,
                   mid5s: list[int] | np.ndarray,
@@ -117,6 +139,11 @@ def sanitize_ends(max_pos: int,
                  np.broadcast_to(max_pos, end3s.shape),
                  "3' end positions",
                  f"maximum position ({max_pos})")
+    # For contiguous mates, set the 5' and 3' ends of both mates to the
+    # 5' and 3' ends of the contiguous region that they cover.
+    is_contiguous = contiguous_mates(mid5s, mid3s)
+    mid5s[is_contiguous] = end5s[is_contiguous]
+    mid3s[is_contiguous] = end3s[is_contiguous]
     return end5s, mid5s, mid3s, end3s
 
 

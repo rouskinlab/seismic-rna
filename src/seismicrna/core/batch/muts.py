@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections import defaultdict
+from collections import Counter, defaultdict
 from functools import cache, cached_property
 from logging import getLogger
 from typing import Iterable
@@ -66,6 +66,15 @@ class MutsBatch(ReadBatch, ABC):
     @abstractmethod
     def pos_nums(self) -> np.ndarray:
         """ Positions in use. """
+
+    @cached_property
+    def ends(self):
+        """ Array of all end positions. """
+        return np.hstack([ends.reshape((self.num_reads, 1))
+                          for ends in (self.end5s,
+                                       self.mid5s,
+                                       self.mid3s,
+                                       self.end3s)])
 
     @cache
     def pos_index(self, refseq: DNA):
@@ -174,7 +183,7 @@ class MutsBatch(ReadBatch, ABC):
         for pos, base in self.pos_index(refseq):
             column = bases.index(base)
             for mut, reads in self.muts.get(pos, dict()).items():
-                rows = self.read_idx[reads]
+                rows = self.read_indexes[reads]
                 counts[MATCH].values[rows, column] -= 1
                 counts[mut].values[rows, column] += 1
         return dict(counts)
@@ -247,17 +256,44 @@ class MutsBatch(ReadBatch, ABC):
             win_pos_set = set(win_pos)
             for pos in win_pos_set - pos_counted:
                 # These positions have entered the window: count them.
-                read_counts[self.read_idx[reads_per_pos[pos]]] += 1
+                read_counts[self.read_indexes[reads_per_pos[pos]]] += 1
                 pos_counted.add(pos)
             for pos in pos_counted - win_pos_set:
                 # These positions have exited the window: drop them.
-                read_counts[self.read_idx[reads_per_pos[pos]]] -= 1
+                read_counts[self.read_indexes[reads_per_pos[pos]]] -= 1
                 pos_counted.remove(pos)
             if len(pos_counted) > 1:
                 # Check for reads counted more than once in the window,
                 # which means that they have proximal mutations.
                 nonprox &= read_counts <= 1
         return self.read_nums[nonprox]
+
+    def iter_reads(self, refseq: DNA, pattern: RelPattern):
+        """ Yield the 5'/3' end/middle positions and the positions that
+        are mutated in each read. """
+        reads_per_pos = self.reads_per_pos(refseq, pattern)
+        # Find the maximum number of mutations in any read.
+        max_mut_count = max(sum(map(Counter, reads_per_pos.values()),
+                                start=Counter()).values(),
+                            default=0)
+        # Initialize a matrix of the positions mutated in each read.
+        mut_pos = np.zeros((self.num_reads, max_mut_count),
+                           dtype=self.pos_dtype)
+        # Fill in the matrix one position at a time.
+        for pos, reads in reads_per_pos.items():
+            # Append the position to the end of each row corresponding
+            # to a read that has a mutation at the position.
+            row_idxs = self.read_indexes[reads]
+            mut_pos[row_idxs, np.count_nonzero(mut_pos[row_idxs], axis=1)] = pos
+        # Count the mutations in each read.
+        mut_counts = np.count_nonzero(mut_pos, axis=1)
+        # For each read, yield the 5'/3' end/middle positions and the
+        # mutated positions as a tuple.
+        for ends, muts, count in zip(self.ends,
+                                     mut_pos,
+                                     mut_counts,
+                                     strict=True):
+            yield tuple(ends), tuple(muts[:count])
 
     def mask(self,
              positions: Iterable[int] | None = None,
@@ -278,7 +314,7 @@ class MutsBatch(ReadBatch, ABC):
                                   else pos_mut_reads)
         if reads is not None:
             read_nums = np.asarray(reads, dtype=self.read_dtype)
-            read_indexes = self.read_idx[read_nums]
+            read_indexes = self.read_indexes[read_nums]
             end5s = self.end5s[read_indexes]
             mid5s = self.mid5s[read_indexes]
             mid3s = self.mid3s[read_indexes]
@@ -297,7 +333,6 @@ class MutsBatch(ReadBatch, ABC):
                              mid3s=mid3s,
                              end3s=end3s,
                              read_nums=read_nums,
-                             max_read=self.max_read,
                              sanitize=False)
 
 

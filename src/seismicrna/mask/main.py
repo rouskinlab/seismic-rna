@@ -26,7 +26,7 @@ from ..core.cli import (CMD_MASK,
                         opt_max_fmut_pos,
                         opt_max_procs,
                         opt_parallel,
-                        opt_rerun)
+                        opt_force)
 from ..core.io import load_data
 from ..core.parallel import dispatch
 from ..core.seq import DNA, RefSections
@@ -59,7 +59,7 @@ params = [
     opt_max_procs,
     opt_parallel,
     # Effort
-    opt_rerun,
+    opt_force,
 ]
 
 
@@ -94,7 +94,7 @@ def run(input_path: tuple[str, ...], *,
         max_procs: int,
         parallel: bool,
         # Effort
-        rerun: bool) -> list[Path]:
+        force: bool) -> list[Path]:
     """ Run the mask command. """
     # Open all relation vector loaders and get the sections for each.
     loaders, sections = load_sections(map(Path, input_path),
@@ -119,7 +119,7 @@ def run(input_path: tuple[str, ...], *,
                   min_mut_gap=min_mut_gap,
                   min_ninfo_pos=min_ninfo_pos,
                   max_fmut_pos=max_fmut_pos,
-                  rerun=rerun)
+                  force=force)
     # Call the mutations and filter the relation vectors.
     reports = dispatch(mask_section,
                        max_procs=max_procs,
