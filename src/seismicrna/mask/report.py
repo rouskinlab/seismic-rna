@@ -1,4 +1,4 @@
-from .io import MaskIO, MaskReadBatchIO
+from .io import MaskIO, MaskBatchIO
 from ..core import path
 from ..core.io import (BatchedReport,
                        SampleF,
@@ -44,7 +44,7 @@ class MaskReport(BatchedReport, MaskIO):
 
     @classmethod
     def _batch_types(cls):
-        return MaskReadBatchIO,
+        return MaskBatchIO,
 
     @classmethod
     def fields(cls):

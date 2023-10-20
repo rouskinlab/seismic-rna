@@ -1,6 +1,6 @@
 from functools import cached_property
 
-from .io import MaskReadBatchIO
+from .io import MaskBatchIO
 from .report import MaskReport
 from ..core.batch import MaskMutsBatch
 from ..core.io import (CountMutsF,
@@ -24,7 +24,7 @@ class MaskLoader(BatchedLoadedDataset):
 
     @classmethod
     def get_data_type(cls):
-        return MaskReadBatchIO
+        return MaskBatchIO
 
     @property
     def min_mut_gap(self):
@@ -71,7 +71,7 @@ class MaskMerger(BatchedMergedDataset, MergedMutsDataset):
         section.add_mask(self.MASK_NAME, self.data2.pos_kept, invert=True)
         return section
 
-    def _merge(self, batch1: RelateBatchIO, batch2: MaskReadBatchIO):
+    def _merge(self, batch1: RelateBatchIO, batch2: MaskBatchIO):
         return batch1.mask(positions=self.data2.pos_kept,
                            reads=batch2.read_nums)
 

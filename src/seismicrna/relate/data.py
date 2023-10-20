@@ -1,14 +1,6 @@
-from logging import getLogger
-
 from .io import RelateBatchIO
 from .report import RelateReportIO
 from ..core.io import BatchedLoadedDataset, LoadedMutsDataset
-
-logger = getLogger(__name__)
-
-POS = "by_position"
-VEC = "by_vector"
-READ = "Read Name"
 
 
 class RelateLoader(BatchedLoadedDataset, LoadedMutsDataset):

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from click import command
 
-from .krun import cluster
+from .write import cluster
 from ..core import path
 from ..core.cli import (CMD_CLUST,
                         docdef,
@@ -14,6 +14,7 @@ from ..core.cli import (CMD_CLUST,
                         opt_em_thresh,
                         opt_min_em_iter,
                         opt_max_em_iter,
+                        opt_brotli_level,
                         opt_parallel,
                         opt_max_procs,
                         opt_force)
@@ -33,6 +34,8 @@ params = [
     opt_em_thresh,
     opt_min_em_iter,
     opt_max_em_iter,
+    # Compression
+    opt_brotli_level,
     # Parallelization
     opt_max_procs,
     opt_parallel,
@@ -59,11 +62,12 @@ def cli(*args, max_clusters: int, **kwargs):
 @docdef.auto()
 def run(input_path: tuple[str, ...], *,
         max_clusters: int,
-        min_nmut_read: int,
         em_runs: int,
-        em_thresh: float,
+        min_nmut_read: int,
         min_em_iter: int,
         max_em_iter: int,
+        em_thresh: float,
+        brotli_level: int,
         max_procs: int,
         parallel: bool,
         force: bool) -> list[Path]:
@@ -73,14 +77,17 @@ def run(input_path: tuple[str, ...], *,
         return list()
     # Run clustering on each set of called mutations.
     files = path.find_files_chain(map(Path, input_path), [path.MaskRepSeg])
-    return dispatch(cluster, max_procs, parallel,
+    return dispatch(cluster,
+                    max_procs,
+                    parallel,
                     args=as_list_of_tuples(files),
                     kwargs=dict(max_order=max_clusters,
-                                min_muts=min_nmut_read,
                                 n_runs=em_runs,
-                                conv_thresh=em_thresh,
+                                min_muts=min_nmut_read,
                                 min_iter=min_em_iter,
                                 max_iter=max_em_iter,
+                                conv_thresh=em_thresh,
+                                brotli_level=brotli_level,
                                 force=force))
 
 ########################################################################

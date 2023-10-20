@@ -9,7 +9,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .read import ReadBatch, MaskReadBatch
+from .read import ReadBatch, PartialReadBatch, MaskReadBatch
 from .util import (POS_INDEX,
                    get_coverage_matrix,
                    get_length,
@@ -36,8 +36,8 @@ class MutsBatch(ReadBatch, ABC):
         super().__init__(**kwargs)
         self.seqlen = seqlen
         (self.end5s,
-         self.mid5s,
-         self.mid3s,
+         self._mid5s,
+         self._mid3s,
          self.end3s) = (sanitize_ends(self.max_pos, end5s, mid5s, mid3s, end3s)
                         if sanitize
                         else (end5s, mid5s, mid3s, end3s))
@@ -66,6 +66,14 @@ class MutsBatch(ReadBatch, ABC):
     @abstractmethod
     def pos_nums(self) -> np.ndarray:
         """ Positions in use. """
+
+    @property
+    def mid5s(self):
+        return self._mid5s if self._mid5s is not None else self.end5s
+
+    @property
+    def mid3s(self):
+        return self._mid3s if self._mid3s is not None else self.end3s
 
     @cached_property
     def ends(self):
@@ -336,11 +344,15 @@ class MutsBatch(ReadBatch, ABC):
                              sanitize=False)
 
 
-class MaskMutsBatch(MaskReadBatch, MutsBatch, ABC):
+class PartialMutsBatch(PartialReadBatch, MutsBatch, ABC):
 
     @cached_property
     def pos_nums(self):
         return np.array(list(self.muts))
+
+
+class MaskMutsBatch(MaskReadBatch, PartialMutsBatch, ABC):
+    pass
 
 
 def accumulate(positions: np.ndarray,

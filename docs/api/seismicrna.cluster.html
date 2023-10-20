@@ -245,8 +245,8 @@ into the specified number of clusters.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.cluster_nums">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cluster_nums</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.cluster_nums" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.clusters">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">clusters</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.clusters" title="Permalink to this definition"></a></dt>
 <dd><p>Return an index of the cluster numbers, starting from 1.</p>
 </dd></dl>
 
@@ -299,15 +299,15 @@ of likelihood.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.output_mus">
-<span class="sig-name descname"><span class="pre">output_mus</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.output_mus" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.get_mus">
+<span class="sig-name descname"><span class="pre">get_mus</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.get_mus" title="Permalink to this definition"></a></dt>
 <dd><p>Return a DataFrame of the log mutation rate at each position
 for each cluster.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.output_props">
-<span class="sig-name descname"><span class="pre">output_props</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.output_props" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.get_props">
+<span class="sig-name descname"><span class="pre">get_props</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.get_props" title="Permalink to this definition"></a></dt>
 <dd><p>Return a DataFrame of the real and observed log proportion
 of each cluster.</p>
 </dd></dl>
@@ -704,14 +704,14 @@ to a CSV file.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.cluster.write.write_mus">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.write.</span></span><span class="sig-name descname"><span class="pre">write_mus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">run:</span> <span class="pre">seismicrna.cluster.em.EmClustering,</span> <span class="pre">rank:</span> <span class="pre">int,</span> <span class="pre">*,</span> <span class="pre">output_func:</span> <span class="pre">typing.Callable[[seismicrna.cluster.em.EmClustering],</span> <span class="pre">pandas.core.frame.DataFrame]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">EmClustering.output_mus&gt;,</span> <span class="pre">table:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'mus'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.write.write_mus" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.write.</span></span><span class="sig-name descname"><span class="pre">write_mus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">run:</span> <span class="pre">seismicrna.cluster.em.EmClustering,</span> <span class="pre">rank:</span> <span class="pre">int,</span> <span class="pre">*,</span> <span class="pre">output_func:</span> <span class="pre">typing.Callable[[seismicrna.cluster.em.EmClustering],</span> <span class="pre">pandas.core.frame.DataFrame]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">EmClustering.get_mus&gt;,</span> <span class="pre">table:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'mus'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.write.write_mus" title="Permalink to this definition"></a></dt>
 <dd><p>Write a DataFrame of one type of data from one independent run
 of EM clustering to a CSV file.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.cluster.write.write_props">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.write.</span></span><span class="sig-name descname"><span class="pre">write_props</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">run:</span> <span class="pre">seismicrna.cluster.em.EmClustering,</span> <span class="pre">rank:</span> <span class="pre">int,</span> <span class="pre">*,</span> <span class="pre">output_func:</span> <span class="pre">typing.Callable[[seismicrna.cluster.em.EmClustering],</span> <span class="pre">pandas.core.frame.DataFrame]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">EmClustering.output_props&gt;,</span> <span class="pre">table:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'props'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.write.write_props" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.write.</span></span><span class="sig-name descname"><span class="pre">write_props</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">run:</span> <span class="pre">seismicrna.cluster.em.EmClustering,</span> <span class="pre">rank:</span> <span class="pre">int,</span> <span class="pre">*,</span> <span class="pre">output_func:</span> <span class="pre">typing.Callable[[seismicrna.cluster.em.EmClustering],</span> <span class="pre">pandas.core.frame.DataFrame]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">EmClustering.get_props&gt;,</span> <span class="pre">table:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'props'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.write.write_props" title="Permalink to this definition"></a></dt>
 <dd><p>Write a DataFrame of one type of data from one independent run
 of EM clustering to a CSV file.</p>
 </dd></dl>

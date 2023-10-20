@@ -1,28 +1,70 @@
 from .compare import RunOrderResults, find_best_order
-from ..mask.data import MaskLoader
+from .io import ClusterIO, ClusterBatchIO
+from .uniq import UniqReads
 from ..core import path
-from ..core.bitvect import UniqMutBits
-from ..core.io import BatchedReport
+from ..core.io import (BatchedReport,
+                       SampleF,
+                       RefF,
+                       SectF,
+                       End5F,
+                       End3F,
+                       NumUniqReadKeptF,
+                       MaxClustsF,
+                       ClustNumRunsF,
+                       MinIterClustF,
+                       MaxIterClustF,
+                       ClustConvThreshF,
+                       ClustsConvF,
+                       ClustsLogLikesF,
+                       ClustsLikeMeanF,
+                       ClustsLikeStdF,
+                       ClustsVarInfoF,
+                       ClustsBicF,
+                       NumClustsF)
 
 
-class ClustReport(BatchedReport):
-    __slots__ = (
-        # Sample, reference, and section information.
-        "sample",
-        "ref",
-        "sect", "end5", "end3", "n_uniq_reads",
-        # Clustering parameters.
-        "max_order", "num_runs", "min_iter", "max_iter", "conv_thresh",
-        # Batch information.
-        "checksums", "n_batches",
-        # Clustering results.
-        "converged", "log_likes", "log_like_mean", "log_like_std", "var_info",
-        "bic", "best_order",
-    )
+class ClustReport(BatchedReport, ClusterIO):
+
+    @classmethod
+    def file_seg_type(cls):
+        return path.ClustRepSeg
+
+    @classmethod
+    def _batch_types(cls):
+        return ClusterBatchIO,
+
+    @classmethod
+    def fields(cls):
+        return [
+            # Sample, reference, and section information.
+            SampleF,
+            RefF,
+            SectF,
+            End5F,
+            End3F,
+            NumUniqReadKeptF,
+            # Clustering parameters.
+            MaxClustsF,
+            ClustNumRunsF,
+            MinIterClustF,
+            MaxIterClustF,
+            ClustConvThreshF,
+            # Clustering results.
+            ClustsConvF,
+            ClustsLogLikesF,
+            ClustsLikeMeanF,
+            ClustsLikeStdF,
+            ClustsVarInfoF,
+            ClustsBicF,
+            NumClustsF,
+        ] + super().fields()
 
     @classmethod
     def path_segs(cls):
-        return (path.SampSeg, path.CmdSeg, path.RefSeg, path.SectSeg,
+        return (path.SampSeg,
+                path.CmdSeg,
+                path.RefSeg,
+                path.SectSeg,
                 path.ClustRepSeg)
 
     @classmethod
@@ -34,25 +76,23 @@ class ClustReport(BatchedReport):
         return path.ClustBatSeg
 
     @classmethod
-    def from_clusters(cls, /,
+    def from_clusters(cls,
                       ord_runs: dict[int, RunOrderResults],
-                      loader: MaskLoader,
-                      uniq_muts: UniqMutBits,
+                      uniq_reads: UniqReads,
                       max_order: int,
                       num_runs: int, *,
                       min_iter: int,
                       max_iter: int,
                       conv_thresh: float,
-                      checksums: list[str]):
+                      checksums: dict[str, list[str]]):
         """ Create a ClusterReport from EmClustering objects. """
         # Initialize a new ClusterReport.
-        return cls(out_dir=loader.out_dir,
-                   sample=loader.sample,
-                   ref=loader.ref,
-                   sect=loader.sect,
-                   end5=loader.end5,
-                   end3=loader.end3,
-                   n_uniq_reads=uniq_muts.n_uniq,
+        return cls(sample=uniq_reads.sample,
+                   ref=uniq_reads.ref,
+                   sect=uniq_reads.section.name,
+                   end5=uniq_reads.section.end5,
+                   end3=uniq_reads.section.end3,
+                   n_uniq_reads=uniq_reads.num_uniq,
                    max_order=max_order,
                    num_runs=num_runs,
                    min_iter=min_iter,

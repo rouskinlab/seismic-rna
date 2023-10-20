@@ -24,6 +24,7 @@ from ..core.cli import (CMD_MASK,
                         opt_min_mut_gap,
                         opt_min_ninfo_pos,
                         opt_max_fmut_pos,
+                        opt_brotli_level,
                         opt_max_procs,
                         opt_parallel,
                         opt_force)
@@ -55,6 +56,8 @@ params = [
     opt_min_mut_gap,
     opt_min_ninfo_pos,
     opt_max_fmut_pos,
+    # Compression
+    opt_brotli_level,
     # Parallelization
     opt_max_procs,
     opt_parallel,
@@ -90,23 +93,25 @@ def run(input_path: tuple[str, ...], *,
         min_mut_gap: int,
         min_ninfo_pos: int,
         max_fmut_pos: float,
+        # Compression
+        brotli_level: int,
         # Parallelization
         max_procs: int,
         parallel: bool,
         # Effort
         force: bool) -> list[Path]:
     """ Run the mask command. """
-    # Open all relation vector loaders and get the sections for each.
-    loaders, sections = load_sections(map(Path, input_path),
-                                      coords=coords,
-                                      primers=primers,
-                                      primer_gap=primer_gap,
-                                      sections_file=(Path(sections_file)
-                                                     if sections_file
-                                                     else None))
-    # List the relation loaders and their sections.
-    args = [(loader, section) for loader in loaders
-            for section in sections.list(loader.ref)]
+    # Load all relation vector datasets and get the sections for each.
+    datasets, sections = load_sections(map(Path, input_path),
+                                       coords=coords,
+                                       primers=primers,
+                                       primer_gap=primer_gap,
+                                       sections_file=(Path(sections_file)
+                                                      if sections_file
+                                                      else None))
+    # List the relation datasets and their sections.
+    args = [(dataset, section) for dataset in datasets
+            for section in sections.list(dataset.ref)]
     # Define the keyword arguments.
     kwargs = dict(count_del=count_del,
                   count_ins=count_ins,
@@ -119,6 +124,7 @@ def run(input_path: tuple[str, ...], *,
                   min_mut_gap=min_mut_gap,
                   min_ninfo_pos=min_ninfo_pos,
                   max_fmut_pos=max_fmut_pos,
+                  brotli_level=brotli_level,
                   force=force)
     # Call the mutations and filter the relation vectors.
     reports = dispatch(mask_section,
@@ -136,15 +142,15 @@ def load_sections(report_files: Iterable[Path],
                   primer_gap: int,
                   sections_file: Path | None = None):
     """ Open sections of relate reports. """
-    loaders = list(load_data(path.find_files_chain(report_files,
-                                                   [path.RelateRepSeg]),
-                             RelateLoader))
-    sections = RefSections({(loader.ref, loader.refseq) for loader in loaders},
+    datasets = list(load_data(path.find_files_chain(report_files,
+                                                    [path.RelateRepSeg]),
+                              RelateLoader))
+    sections = RefSections({(loader.ref, loader.refseq) for loader in datasets},
                            coords=coords,
                            primers=primers,
                            primer_gap=primer_gap,
                            sects_file=sections_file)
-    return loaders, sections
+    return datasets, sections
 
 ########################################################################
 #                                                                      #

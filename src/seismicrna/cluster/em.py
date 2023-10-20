@@ -6,19 +6,27 @@ import pandas as pd
 from scipy.special import logsumexp
 from scipy.stats import dirichlet
 
-from .names import CLS_NAME
-from ..core.bitvect import UniqMutBits, iter_all_bit_vectors
+from .names import ORD_CLS_NAME
+from .uniq import UniqReads
 from ..core.mu import calc_mu_adj_numpy, calc_f_obs_numpy
 from ..core.rand import rng
-from ..mask.data import MaskLoader
 
 logger = getLogger(__name__)
 
 LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
 FIRST_ITER = 1  # number of the first iteration
 
+# Names
+OBSERVED = "Observed"
+ADJUSTED = "Adjusted"
+BITVECTOR = "Bit Vector"
+LOGOBS = "Log Observed"
+LOGEXP = "Log Expected"
 
-def calc_bic(n_params: int, n_data: int, log_like: float,
+
+def calc_bic(n_params: int,
+             n_data: int,
+             log_like: float,
              min_data_param_ratio: float = 10.):
     """
     Compute the Bayesian Information Criterion (BIC) of a model.
@@ -59,27 +67,18 @@ class EmClustering(object):
     """ Run expectation-maximization to cluster the given bit vectors
     into the specified number of clusters."""
 
-    OBSERVED = "Observed"
-    ADJUSTED = "Adjusted"
-    BITVECTOR = "Bit Vector"
-    LOGOBS = "Log Observed"
-    LOGEXP = "Log Expected"
-
     def __init__(self,
-                 loader: MaskLoader,
-                 muts: UniqMutBits,
-                 n_clusters: int, *,
+                 uniq_reads: UniqReads,
+                 order: int, *,
                  min_iter: int,
                  max_iter: int,
                  conv_thresh: float):
         """
         Parameters
         ----------
-        loader: MaskLoader
-            Loader of the filtered bit vectors
-        muts: UniqMutBits
-            Container of unique bit vectors of mutations
-        n_clusters: int
+        uniq_reads: UniqReads
+            Container of unique reads
+        order: int
             Number of clusters into which to cluster the bit vectors;
             must be a positive integer
         min_iter: int
@@ -94,14 +93,12 @@ class EmClustering(object):
             convergence threshold (and at least min_iter iterations have
             run). Must be a positive real number (ideally close to 0).
         """
-        # Mask loader
-        self.loader = loader
         # Unique bit vectors of mutations
-        self.muts = muts
+        self.uniq_reads = uniq_reads
         # Number of clusters (i.e. order)
-        if not n_clusters >= 1:
-            raise ValueError(f"n_clusters must be ≥ 1, but got {n_clusters}")
-        self.order = n_clusters
+        if not order >= 1:
+            raise ValueError(f"order must be ≥ 1, but got {order}")
+        self.order = order
         # Minimum number of iterations of EM
         if not min_iter >= 1:
             raise ValueError(f"min_iter must be ≥ 1, but got {min_iter}")
@@ -121,14 +118,15 @@ class EmClustering(object):
         self.log_f_obs = np.empty(self.order, dtype=float)
         # Mutation rates of used positions (row) in each cluster (col),
         # adjusted for observer bias
-        self.mus = np.empty((self.loader.section.size, self.order), dtype=float)
+        self.mus = np.empty((self.uniq_reads.num_pos, self.order), dtype=float)
         # Positions of the section that will be used for clustering
         # (0-indexed from the beginning of the section)
-        self.sparse_pos = self.loader.section.unmasked_zero
+        self.sparse_pos = self.uniq_reads.section.unmasked_zero
         # Likelihood of each vector (col) coming from each cluster (row)
-        self.resps = np.empty((self.order, self.muts.n_uniq), dtype=float)
+        self.resps = np.empty((self.order, self.uniq_reads.num_uniq),
+                              dtype=float)
         # Marginal probabilities of observing each bit vector.
-        self.log_marginals = np.empty(self.muts.n_uniq, dtype=float)
+        self.log_marginals = np.empty(self.uniq_reads.num_uniq, dtype=float)
         # Trajectory of log likelihood values.
         self.log_likes: list[float] = list()
         # Number of iterations.
@@ -139,7 +137,7 @@ class EmClustering(object):
     @cached_property
     def nreads_total(self):
         """ Total number of reads, including redundant ones. """
-        return int(round(self.muts.counts.sum()))
+        return int(round(self.uniq_reads.counts_per_uniq.sum()))
 
     @property
     def sparse_mus(self):
@@ -148,7 +146,7 @@ class EmClustering(object):
         for every unused position always remains zero. """
         # Initialize an array of zeros with one row for each position in
         # the section and one column for each cluster.
-        sparse_mus = np.zeros((self.loader.section.length, self.order),
+        sparse_mus = np.zeros((self.uniq_reads.section.length, self.order),
                               dtype=float)
         # Copy the rows of self.mus that correspond to used positions.
         # The rows for unused positions remain zero (hence "sparse").
@@ -156,9 +154,11 @@ class EmClustering(object):
         return sparse_mus
 
     @cached_property
-    def cluster_nums(self):
-        """ Return an index of the cluster numbers, starting from 1. """
-        return pd.RangeIndex(1, self.order + 1, name=CLS_NAME)
+    def clusters(self):
+        """ Return a MultiIndex of the order and cluster numbers. """
+        return pd.MultiIndex.from_product([[self.order],
+                                           range(1, self.order + 1)],
+                                          names=ORD_CLS_NAME)
 
     @property
     def prop_obs(self):
@@ -211,7 +211,7 @@ class EmClustering(object):
         # the sample (a bit vector), not a parameter of the population.
         # The number of data points is the number of unique bit vectors.
         return calc_bic(self.mus.size + self.prop_adj.size,
-                        self.muts.n_uniq,
+                        self.uniq_reads.num_uniq,
                         self.log_like)
 
     def _max_step(self):
@@ -219,7 +219,7 @@ class EmClustering(object):
         # Calculate the number of reads in each cluster by summing the
         # count-weighted likelihood that each bit vector came from the
         # cluster.
-        self.nreads = self.resps @ self.muts.counts
+        self.nreads = self.resps @ self.uniq_reads.counts_per_uniq
         # If this iteration is not the first, then use mutation rates
         # from the previous iteration as the initial guess for this one.
         mus_guess = self.sparse_mus if self.iter > FIRST_ITER else None
@@ -227,25 +227,26 @@ class EmClustering(object):
         # To save memory and enable self.sparse_mus to use the observed
         # rates of mutation, overwrite self.mus rather than allocate a
         # new array.
-        for j, muts_j in enumerate(self.muts.indexes):
+        for j, muts_j in enumerate(self.uniq_reads.muts_per_pos):
             # Calculate the number of mutations at each position in each
             # cluster by summing the count-weighted likelihood that each
             # bit vector with a mutation at (j) came from the cluster,
             # then divide by the count-weighted sum of the number of
             # reads in the cluster to find the observed mutation rate.
-            self.mus[j] = ((self.resps[:, muts_j] @ self.muts.counts[muts_j])
+            self.mus[j] = ((self.resps[:, muts_j]
+                            @ self.uniq_reads.counts_per_uniq[muts_j])
                            / self.nreads)
         # Solve for the real mutation rates that are expected to yield
         # the observed mutation rates after considering read drop-out.
         self.mus = calc_mu_adj_numpy(self.sparse_mus,
-                                     self.loader.min_mut_gap,
+                                     self.uniq_reads.min_mut_gap,
                                      mus_guess)[self.sparse_pos]
 
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
         # Update the log fraction observed of each cluster.
         self.log_f_obs = np.log(calc_f_obs_numpy(self.sparse_mus,
-                                                 self.loader.min_mut_gap))
+                                                 self.uniq_reads.min_mut_gap))
         # Compute the logs of the mutation and non-mutation rates.
         with np.errstate(divide="ignore"):
             # Suppress warnings about taking the log of zero, which is a
@@ -276,7 +277,7 @@ class EmClustering(object):
             # Using accumulation with this loop also uses less memory
             # than would holding the PMF for every position in an array
             # and then summing over the position axis.
-            for j in range(self.loader.pos_kept.size):
+            for j in range(self.uniq_reads.num_pos):
                 # Compute the probability that each bit vector would
                 # have the bit observed at position (j). The probability
                 # is modeled using a Bernoulli distribution, with PMF:
@@ -293,7 +294,7 @@ class EmClustering(object):
                 # probability that the base is mutated minus the log of
                 # the probability that the base is not mutated.
                 log_adjust_jk = log_mus[j, k] - log_nos[j, k]
-                self.resps[k][self.muts.indexes[j]] += log_adjust_jk
+                self.resps[k][self.uniq_reads.muts_per_pos[j]] += log_adjust_jk
         # For each observed bit vector, the marginal probability that a
         # random read would have the same series of bits (regardless of
         # which cluster it came from) is the sum over all clusters of
@@ -309,7 +310,8 @@ class EmClustering(object):
         # by summing the log probability over all bit vectors, weighted
         # by the number of times each bit vector occurs. Cast to a float
         # explicitly to verify that the product is a scalar.
-        log_like = float(np.vdot(self.log_marginals, self.muts.counts))
+        log_like = float(np.vdot(self.log_marginals,
+                                 self.uniq_reads.counts_per_uniq))
         self.log_likes.append(round(log_like, LOG_LIKE_PRECISION))
 
     def run(self):
@@ -328,7 +330,7 @@ class EmClustering(object):
         # parameter of a Dirichlet distribution can be 1 but not 0.
         conc_params = 1. - rng.random(self.order)
         # Initialize cluster membership with a Dirichlet distribution.
-        self.resps = dirichlet.rvs(conc_params, self.muts.n_uniq).T
+        self.resps = dirichlet.rvs(conc_params, self.uniq_reads.num_uniq).T
         # Run EM until the log likelihood converges or the number of
         # iterations reaches max_iter, whichever happens first.
         self.converged = False
@@ -371,26 +373,27 @@ class EmClustering(object):
         """ Log number of expected observations of each bit vector. """
         return np.log(self.nreads_total) + self.log_marginals
 
-    def output_props(self):
-        """ Return a DataFrame of the real and observed log proportion
-        of each cluster. """
+    def get_props(self):
+        """ Real and observed log proportion of each cluster. """
         return pd.DataFrame(np.vstack([self.prop_obs, self.prop_adj]).T,
-                            index=self.cluster_nums,
-                            columns=[self.OBSERVED, self.ADJUSTED])
+                            index=self.clusters,
+                            columns=[OBSERVED, ADJUSTED])
 
-    def output_mus(self):
-        """ Return a DataFrame of the log mutation rate at each position
-        for each cluster. """
+    def get_mus(self):
+        """ Log mutation rate at each position for each cluster. """
         return pd.DataFrame(self.mus,
-                            index=self.loader.section.unmasked,
-                            columns=self.cluster_nums)
+                            index=self.uniq_reads.section.unmasked,
+                            columns=self.clusters)
 
-    def output_resps(self):
-        """ Return the responsibilities of the reads. """
-        return pd.DataFrame(self.resps.T[self.muts.inverse],
-                            index=self.loader.get_read_names(),
-                            columns=self.cluster_nums)
+    def get_resps(self, batch_num: int):
+        """ Responsibilities of the reads in the batch. """
+        batch_uniq_nums = self.uniq_reads.batch_to_uniq[batch_num]
+        return pd.DataFrame(self.resps.T[batch_uniq_nums],
+                            index=pd.RangeIndex(batch_uniq_nums.size),
+                            columns=self.clusters)
 
+    '''
+    
     @property
     def logp_contig(self):
         """ Log probability of every bit vector from the most likely to
@@ -399,9 +402,10 @@ class EmClustering(object):
         # Find the log probability of the rarest observed bit vector.
         min_logp = np.min(self.log_marginals)
         # Initialize a bit vector iterator for each cluster.
-        bvecs = {clust: iter_all_bit_vectors(cmus, self.loader.section,
-                                             self.loader.min_mut_gap)
-                 for clust, cmus in self.output_mus().items()}
+        bvecs = {clust: iter_all_bit_vectors(cmus,
+                                             self.data.section,
+                                             self.data.min_mut_gap)
+                 for clust, cmus in self.get_mus().items()}
         # For each cluster, iterate through the bit vectors up to and
         # including the rarest observed bit vector; record the log
         # probability of each bit vector encountered.
@@ -447,7 +451,7 @@ class EmClustering(object):
         # Compute the joint probability that a random bit vector would
         # match the bit vector corresponding to a row in logps_df and
         # come from the cluster corresponding to a column in logps_df.
-        logps_joint = logps_df + np.log(self.output_props()[self.ADJUSTED])
+        logps_joint = logps_df + np.log(self.get_props()[self.ADJUSTED])
         # Compute the marginal probability of observing each bit vector,
         # regardless of the cluster from which it came.
         logps_marginal = logsumexp(logps_joint, axis=0)
@@ -462,7 +466,8 @@ class EmClustering(object):
         ns_obs: dict[str, int] = dict()
         logps: dict[int, dict[str, float]] = {c: dict() for c in bvecs}
         # Iterate through each unique bit vector that was observed.
-        for bvec_arr, n_obs in zip(self.muts.get_full(), self.muts.counts,
+        for bvec_arr, n_obs in zip(self.data.get_matrix(),
+                                   self.data.counts_per_uniq,
                                    strict=True):
             # Convert the bit vector from an array to a str so that it
             # becomes hashable and internable (unlike bytes).
@@ -480,10 +485,12 @@ class EmClustering(object):
                     clogps[bvec.tobytes().decode()] = logp
         # Find the bit vectors that are
         # Compute the adjusted proportion of each cluster.
-        props = self.output_props()[self.ADJUSTED]
+        props = self.get_props()[self.ADJUSTED]
+    
+    '''
 
     def __str__(self):
-        return f"Clustering {self.loader} to order {self.order}"
+        return f"Clustering {self.uniq_reads} to order {self.order}"
 
 ########################################################################
 #                                                                      #

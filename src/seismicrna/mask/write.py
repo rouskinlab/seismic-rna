@@ -9,7 +9,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .io import MaskReadBatchIO
+from .io import MaskBatchIO
 from .report import MaskReport
 from ..core.batch import accum_per_pos, ReadBatch, MutsBatch
 from ..core.io import DEFAULT_BROTLI_LEVEL
@@ -34,7 +34,7 @@ class RelMasker(object):
     CHECKSUM_KEY = MaskReport.get_batch_type().btype()
 
     def __init__(self,
-                 loader: RelateLoader,
+                 dataset: RelateLoader,
                  section: Section,
                  pattern: RelPattern, *,
                  exclude_polya: int = 0,
@@ -49,7 +49,7 @@ class RelMasker(object):
         """
         Parameters
         ----------
-        loader: RelateLoader
+        dataset: RelateLoader
             Relation vector loader
         section: Section
             The section over which to mask
@@ -82,9 +82,9 @@ class RelMasker(object):
             reads. Must be in [0, 1].
         """
         # Set the general parameters.
-        self.loader = loader
-        self.section = Section(loader.ref,
-                               loader.refseq,
+        self.dataset = dataset
+        self.section = Section(dataset.ref,
+                               dataset.refseq,
                                end5=section.end5,
                                end3=section.end3,
                                name=section.name)
@@ -93,7 +93,7 @@ class RelMasker(object):
         self.exclude_polya = exclude_polya
         self.exclude_gu = exclude_gu
         self.exclude_pos = np.array([pos for ref, pos in exclude_pos
-                                     if ref == self.loader.ref],
+                                     if ref == self.dataset.ref],
                                     dtype=int)
         # Set the parameters for filtering reads.
         self.min_mut_gap = min_mut_gap
@@ -110,7 +110,7 @@ class RelMasker(object):
                 f"max_fmut_pos must be in [0, 1], but got {max_fmut_pos}")
         self.max_fmut_pos = max_fmut_pos
         # Set the parameters for saving files.
-        self.top = loader.top
+        self.top = dataset.top
         self.brotli_level = brotli_level
         self.checksums = list()
 
@@ -181,7 +181,7 @@ class RelMasker(object):
                          f"informative fractions in {batch}")
             return batch
         # Find the reads with sufficiently many informative positions.
-        info, muts = batch.count_per_read(self.loader.refseq, self.pattern)
+        info, muts = batch.count_per_read(self.dataset.refseq, self.pattern)
         with np.errstate(invalid="ignore"):
             finfo_read = info.values / self.pos_kept.size
         reads = info.index[finfo_read >= self.min_finfo_read]
@@ -201,7 +201,7 @@ class RelMasker(object):
                          f"mutation fractions in {batch}")
             return batch
         # Find the reads with sufficiently few mutations.
-        info, muts = batch.count_per_read(self.loader.refseq, self.pattern)
+        info, muts = batch.count_per_read(self.dataset.refseq, self.pattern)
         with np.errstate(invalid="ignore"):
             fmut_read = muts.values / info.values
         reads = info.index[fmut_read <= self.max_fmut_read]
@@ -220,7 +220,7 @@ class RelMasker(object):
             logger.debug(f"{self} skipped filtering reads with pairs of "
                          f"mutations too close in {batch}")
             return batch
-        reads = batch.nonprox_muts(self.loader.refseq,
+        reads = batch.nonprox_muts(self.dataset.refseq,
                                    self.pattern,
                                    self.min_mut_gap)
         logger.debug(f"{self} kept {reads.size} reads with no two mutations "
@@ -251,11 +251,11 @@ class RelMasker(object):
         # Record the number of reads remaining after filtering.
         self._n_reads[self.MASK_READ_KEPT] += n
         # Save the batch.
-        batch_file = MaskReadBatchIO(sample=self.loader.sample,
-                                     ref=self.loader.ref,
-                                     sect=self.section.name,
-                                     batch=batch.batch,
-                                     read_nums=batch.read_nums)
+        batch_file = MaskBatchIO(sample=self.dataset.sample,
+                                 ref=self.dataset.ref,
+                                 sect=self.section.name,
+                                 batch=batch.batch,
+                                 read_nums=batch.read_nums)
         _, checksum = batch_file.save(self.top,
                                       brotli_level=self.brotli_level,
                                       overwrite=True)
@@ -281,10 +281,10 @@ class RelMasker(object):
         # Filter out reads based on the parameters and count the number
         # of informative and mutated positions remaining.
         info, muts = accum_per_pos(self.pos_kept,
-                                   self.loader.refseq,
+                                   self.dataset.refseq,
                                    {self.PATTERN_KEY: self.pattern},
                                    map(self._filter_batch_reads,
-                                       self.loader.iter_batches()))
+                                       self.dataset.iter_batches()))
         if self.n_reads_kept == 0:
             logger.warning(f"No reads remained after filtering with {self}")
         # Filter out positions based on the parameters.
@@ -294,8 +294,8 @@ class RelMasker(object):
 
     def create_report(self):
         return MaskReport(
-            sample=self.loader.sample,
-            ref=self.loader.ref,
+            sample=self.dataset.sample,
+            ref=self.dataset.ref,
             sect=self.section.name,
             end5=self.section.end5,
             end3=self.section.end3,
@@ -332,28 +332,29 @@ class RelMasker(object):
         )
 
     def __str__(self):
-        return f"Mask {self.loader} over {self.section} with {self.pattern}"
+        return f"Mask {self.dataset} over {self.section} with {self.pattern}"
 
 
-def mask_section(loader: RelateLoader,
+def mask_section(dataset: RelateLoader,
                  section: Section,
                  count_del: bool,
                  count_ins: bool,
                  discount: Iterable[str], *,
+                 brotli_level: int,
                  force: bool,
                  **kwargs):
     """ Filter a section of a set of bit vectors. """
     # Check if the report file already exists.
-    report_file = MaskReport.build_path(top=loader.top,
-                                        sample=loader.sample,
-                                        ref=loader.ref,
+    report_file = MaskReport.build_path(top=dataset.top,
+                                        sample=dataset.sample,
+                                        ref=dataset.ref,
                                         sect=section.name)
     if force or not report_file.is_file():
         pattern = RelPattern.from_counts(count_del, count_ins, discount)
-        masker = RelMasker(loader, section, pattern, **kwargs)
+        masker = RelMasker(dataset, section, pattern, **kwargs)
         masker.mask()
         report = masker.create_report()
-        report.save(loader.top, overwrite=True)
+        report.save(dataset.top, overwrite=True)
     else:
         logger.warning(f"File exists: {report_file}")
     return report_file

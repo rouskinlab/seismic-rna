@@ -90,10 +90,10 @@ def format_exp_count_col(order: int):
 def get_log_exp_obs_counts(ord_runs: dict[int, RunOrderResults]):
     """ Get the expected and observed log counts of each bit vector. """
     # Retrieve the unique bit vectors from the clusters.
-    uniq_muts = get_common_best_run_attr(ord_runs, "muts")
+    uniq_reads = get_common_best_run_attr(ord_runs, "uniq_reads")
     # Compute the observed log counts of the bit vectors.
-    log_obs = pd.Series(np.log(uniq_muts.counts),
-                        index=uniq_muts.get_uniq_names())
+    log_obs = pd.Series(np.log(uniq_reads.counts_per_uniq),
+                        index=uniq_reads.get_uniq_names())
     # For each order of clustering, compute the expected log counts.
     log_exp = ((format_exp_count_col(order),
                 pd.Series(runs.best.logn_exp, index=log_obs.index))

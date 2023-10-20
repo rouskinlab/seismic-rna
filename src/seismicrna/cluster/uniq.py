@@ -1,0 +1,153 @@
+from collections import defaultdict
+from functools import cached_property
+from typing import Iterable
+
+import numpy as np
+import pandas as pd
+
+from ..core.batch import MutsBatch, get_length
+from ..core.rel import REL_TYPE, RelPattern
+from ..core.seq import DNA, Section
+from ..mask.data import MaskMerger
+
+BIT_VECTOR_NAME = "Bit Vector"
+
+
+class UniqReads(object):
+    """ Collection of bit vectors of unique reads. """
+
+    @classmethod
+    def from_dataset(cls, dataset: MaskMerger):
+        (muts_per_pos,
+         batch_to_uniq,
+         count_per_uniq) = get_uniq_reads(dataset.section.unmasked_int,
+                                          dataset.refseq,
+                                          dataset.pattern,
+                                          dataset.iter_batches())
+        return cls(dataset.sample,
+                   dataset.ref,
+                   dataset.section,
+                   dataset.min_mut_gap,
+                   muts_per_pos,
+                   batch_to_uniq,
+                   count_per_uniq)
+
+    def __init__(self,
+                 sample: str,
+                 ref: str,
+                 section: Section,
+                 min_mut_gap: int,
+                 muts_per_pos: tuple[np.ndarray, ...],
+                 batch_to_uniq: tuple[np.ndarray, ...],
+                 counts_per_uniq: np.ndarray):
+        self.sample = sample
+        self.ref = ref
+        self.section = section
+        self.min_mut_gap = min_mut_gap
+        if len(muts_per_pos) != self.num_pos:
+            raise ValueError(f"Expected {self.num_pos} positions, "
+                             f"but got {len(muts_per_pos)}")
+        self.muts_per_pos = muts_per_pos
+        self.batch_to_uniq = batch_to_uniq
+        if np.sum(counts_per_uniq) != self.num_reads:
+            raise ValueError(f"Expected {self.num_reads} total reads, "
+                             f"but got {np.sum(counts_per_uniq)}")
+        self.counts_per_uniq = counts_per_uniq
+
+    @cached_property
+    def pos_nums(self):
+        return self.section.unmasked_int
+
+    @cached_property
+    def num_pos(self):
+        """ Number of positions in each bit vector. """
+        return get_length(self.pos_nums, "pos_nums")
+
+    @cached_property
+    def num_uniq(self):
+        """ Number of unique reads. """
+        return get_length(self.counts_per_uniq, "counts")
+
+    @cached_property
+    def num_reads(self):
+        """ Number of total reads (including duplicates). """
+        return sum(map(get_length, self.batch_to_uniq))
+
+    def get_matrix(self):
+        """ Full boolean matrix of the unique bit vectors. """
+        # Initialize an all-False matrix with one row for each unique
+        # bit vector and one column for each position.
+        full = np.zeros((self.num_uniq, self.num_pos), dtype=bool)
+        # For each position (j), set the mutated elements to True.
+        for j, indexes in enumerate(self.muts_per_pos):
+            full[indexes, j] = True
+        return full
+
+    def get_uniq_names(self):
+        """ Unique bit vectors as byte strings. """
+        # Get the full boolean matrix of the unique bit vectors and cast
+        # the data from boolean to unsigned 8-bit integer type.
+        chars = self.get_matrix().astype(REL_TYPE, copy=False)
+        if chars.size > 0:
+            # Add ord('0') to transform every 0 into b'0' and every 1
+            # into # b'1', and convert each row (bit vector) into a
+            # bytes object of b'0' and b'1' characters.
+            names = np.apply_along_axis(np.ndarray.tobytes, 1, chars + ord('0'))
+        else:
+            # If there are no unique bit vectors, then apply_along_axis
+            # will fail, so set names to an empty list.
+            names = list()
+        return pd.Index(names, name=BIT_VECTOR_NAME)
+
+
+def uniq_reads_to_mutations(uniq_reads: Iterable[tuple],
+                            pos_nums: Iterable[int]):
+    """ Map each position to the numbers of the unique reads that are
+    mutated at the position. """
+    mutations = defaultdict(list)
+    for uniq_read_num, read_muts_pos in enumerate(uniq_reads):
+        for pos in read_muts_pos:
+            mutations[pos].append(uniq_read_num)
+    return tuple(np.array(mutations[pos]) for pos in pos_nums)
+
+
+def count_uniq_reads(uniq_read_nums: Iterable[list]):
+    """ Count the occurrances of each unique value in the original. """
+    return np.array(list(map(len, uniq_read_nums)))
+
+
+def batch_to_uniq_read_num(num_reads_per_batch: list[int],
+                           uniq_read_nums: Iterable[list]):
+    """ Map each read's number in its own batch to its unique number in
+    the pool of all batches. """
+    # For each batch, initialize a map with one item per read in the batch.
+    batch_to_uniq = tuple(np.full(count, -1) for count in num_reads_per_batch)
+    # Fill in the map for each unique read.
+    for uniq_read_num, batch_read_nums in enumerate(uniq_read_nums):
+        for batch_num, read_num in batch_read_nums:
+            batch_to_uniq[batch_num][read_num] = uniq_read_num
+    for batch_num, uniq_nums in enumerate(batch_to_uniq):
+        if uniq_nums.min(initial=0) < 0:
+            raise ValueError(f"Unmapped read numbers for batch {batch_num}: "
+                             f"{np.arange(len(uniq_nums))[uniq_nums < 0]}")
+    return batch_to_uniq
+
+
+def get_uniq_reads(pos_nums: Iterable[int],
+                   refseq: DNA,
+                   pattern: RelPattern,
+                   batches: Iterable[MutsBatch]):
+    num_reads_per_batch = list()
+    uniq_reads = defaultdict(list)
+    for batch_num, batch in enumerate(batches):
+        if batch.batch != batch_num:
+            raise ValueError(
+                f"Batch {batch} is not in order (expected {batch_num})")
+        num_reads_per_batch.append(batch.num_reads)
+        for read_num, (e, m) in enumerate(batch.iter_reads(refseq, pattern)):
+            uniq_reads[m].append([batch_num, read_num])
+    muts_per_pos = uniq_reads_to_mutations(uniq_reads, pos_nums)
+    batch_to_uniq = batch_to_uniq_read_num(num_reads_per_batch,
+                                           uniq_reads.values())
+    count_per_uniq = count_uniq_reads(uniq_reads.values())
+    return muts_per_pos, batch_to_uniq, count_per_uniq

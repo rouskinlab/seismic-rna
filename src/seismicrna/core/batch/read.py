@@ -4,7 +4,7 @@ from functools import cached_property
 import numpy as np
 import pandas as pd
 
-from .util import INDEX_NAMES, get_length, get_max_read, get_read_inverse
+from .util import INDEX_NAMES, NO_READ, get_inverse, get_length
 from ..types import fit_uint_type
 
 
@@ -67,7 +67,22 @@ class AllReadBatch(ReadBatch, ABC):
         return self.read_nums
 
 
-class MaskReadBatch(ReadBatch):
+class PartialReadBatch(ReadBatch, ABC):
+
+    @cached_property
+    def num_reads(self):
+        return get_length(self.read_nums, "read_nums")
+
+    @cached_property
+    def max_read(self):
+        return self.read_nums.max(initial=NO_READ)
+
+    @cached_property
+    def read_indexes(self):
+        return get_inverse(self.read_nums, "read_nums")
+
+
+class MaskReadBatch(PartialReadBatch):
 
     def __init__(self, *, read_nums: np.ndarray, **kwargs):
         self._read_nums = read_nums
@@ -76,15 +91,3 @@ class MaskReadBatch(ReadBatch):
     @cached_property
     def read_nums(self):
         return self._read_nums
-
-    @cached_property
-    def num_reads(self):
-        return get_length(self.read_nums, "read_nums")
-
-    @cached_property
-    def max_read(self):
-        return get_max_read(self.read_nums)
-
-    @cached_property
-    def read_indexes(self):
-        return get_read_inverse(self.read_nums)

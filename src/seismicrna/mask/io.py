@@ -12,7 +12,7 @@ class MaskIO(SectIO, ABC):
         return super().auto_fields() | {path.CMD: path.CMD_MSK_DIR}
 
 
-class MaskReadBatchIO(ReadBatchIO, MaskIO, MaskReadBatch):
+class MaskBatchIO(ReadBatchIO, MaskIO, MaskReadBatch):
 
     @classmethod
     def file_seg_type(cls):

@@ -13,7 +13,8 @@ INDEX_NAMES = BATCH_NUM, READ_NUM
 BATCH_INDEX = 0
 POS_INDEX = 1
 
-# Missing read identifier.
+# Missing identifiers.
+NO_POS = POS_INDEX - 1
 NO_READ = -1
 
 
@@ -29,18 +30,25 @@ def get_length(array: np.ndarray, what: str = "array") -> int:
     return length
 
 
-def get_max_read(read_nums: np.ndarray):
-    """ Get the maximum read number, or -1 if there are no reads. """
-    return read_nums.max(initial=NO_READ)
-
-
-def get_read_inverse(read_nums: np.ndarray):
-    """ Map a nonnegative integer to the position of that integer in
-    `read_nums`, or to -1 if that integer is not in `read_nums`. """
-    num_reads = get_length(read_nums, "read_nums")
-    read_inv = np.full(get_max_read(read_nums) + 1, NO_READ)
-    read_inv[read_nums] = np.arange(num_reads)
-    return read_inv
+def get_inverse(target: np.ndarray, what: str = "array"):
+    """ Map integers in [0, max(target)] to their 0-based indexes in
+    `target`, or to -1 if not in `target`. """
+    uniq, counts = np.unique(target, return_counts=True)
+    # Verify that all values in target are non-negative.
+    if get_length(uniq, what) > 0 > uniq[0]:
+        raise ValueError(f"{what} has negative values: {uniq[uniq < 0]}")
+    # Verify that all values in target are unique.
+    if np.max(counts) > 1:
+        raise ValueError(f"{what} has repeated values: {uniq[counts > 1]}")
+    # Initialize a 1-dimensional array whose length is one more than the
+    # maximum value of target. This way, all indexes in [0, max(target)]
+    # are valid. If target is empty, then create a 1D array of length 0.
+    # Initialize all elements in the array to -1, a placeholder value.
+    inverse = np.full(target.max(initial=-1) + 1, -1)
+    # For each value n with index i in target, set the value at index n
+    # of inverse to i.
+    inverse[target] = np.arange(get_length(target, what))
+    return inverse
 
 
 def ensure_same_length(arr1: np.ndarray,
@@ -139,11 +147,20 @@ def sanitize_ends(max_pos: int,
                  np.broadcast_to(max_pos, end3s.shape),
                  "3' end positions",
                  f"maximum position ({max_pos})")
-    # For contiguous mates, set the 5' and 3' ends of both mates to the
-    # 5' and 3' ends of the contiguous region that they cover.
+    # Check which reads are made of contiguous mates, i.e. the mates
+    # overlap or at least abut with no gap between.
     is_contiguous = contiguous_mates(mid5s, mid3s)
-    mid5s[is_contiguous] = end5s[is_contiguous]
-    mid3s[is_contiguous] = end3s[is_contiguous]
+    if np.all(is_contiguous):
+        # In the special case that all mates are contiguous (which is
+        # very common with short read sequencing data and hence worth
+        # optimizing), nullify the middle positions to save space.
+        mid5s = None
+        mid3s = None
+    else:
+        # For contiguous mates, set the 5' and 3' ends of both mates to
+        # the 5' and 3' ends of the contiguous region that they cover.
+        mid5s[is_contiguous] = end5s[is_contiguous]
+        mid3s[is_contiguous] = end3s[is_contiguous]
     return end5s, mid5s, mid3s, end3s
 
 
