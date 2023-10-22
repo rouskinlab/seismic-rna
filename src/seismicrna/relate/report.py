@@ -6,15 +6,10 @@ from pathlib import Path
 from .io import RelateIO, QnamesBatchIO, RelateBatchIO
 from ..core import path
 from ..core.io import (BatchedRefseqReport,
-                       calc_speed,
                        calc_taken,
                        RefF,
                        SampleF,
-                       NumReadsRel,
-                       TimeBeganF,
-                       TimeEndedF,
-                       TimeTakenF,
-                       SpeedF)
+                       NumReadsRel)
 
 BATCH_INDEX_COL = "Read Name"
 
@@ -23,15 +18,7 @@ class RelateReportIO(BatchedRefseqReport, RelateIO):
 
     @classmethod
     def fields(cls):
-        return [
-            SampleF,
-            RefF,
-            NumReadsRel,
-            TimeBeganF,
-            TimeEndedF,
-            TimeTakenF,
-            SpeedF,
-        ] + super().fields()
+        return [SampleF, RefF, NumReadsRel] + super().fields()
 
     @classmethod
     def file_seg_type(cls):
@@ -40,13 +27,6 @@ class RelateReportIO(BatchedRefseqReport, RelateIO):
     @classmethod
     def _batch_types(cls):
         return QnamesBatchIO, RelateBatchIO
-
-    def __init__(self, *, taken=calc_taken, speed=calc_speed, **kwargs):
-        # Note that the named keyword arguments must come after **kwargs
-        # because they are calculated using the values of the arguments
-        # in **kwargs. If **kwargs was given last, those values would be
-        # undefined when the named keyword arguments would be computed.
-        super().__init__(**kwargs, taken=taken, speed=speed)
 
     def refseq_file(self, top: Path):
         return refseq_file_path(top,

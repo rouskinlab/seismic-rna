@@ -1,5 +1,7 @@
+from datetime import datetime
+
 from .compare import RunOrderResults, find_best_order
-from .io import ClusterIO, ClusterBatchIO
+from .io import ClustIO, ClustBatchIO
 from .uniq import UniqReads
 from ..core import path
 from ..core.io import (BatchedReport,
@@ -23,7 +25,7 @@ from ..core.io import (BatchedReport,
                        NumClustsF)
 
 
-class ClustReport(BatchedReport, ClusterIO):
+class ClustReport(BatchedReport, ClustIO):
 
     @classmethod
     def file_seg_type(cls):
@@ -31,7 +33,7 @@ class ClustReport(BatchedReport, ClusterIO):
 
     @classmethod
     def _batch_types(cls):
-        return ClusterBatchIO,
+        return ClustBatchIO,
 
     @classmethod
     def fields(cls):
@@ -84,7 +86,9 @@ class ClustReport(BatchedReport, ClusterIO):
                       min_iter: int,
                       max_iter: int,
                       conv_thresh: float,
-                      checksums: dict[str, list[str]]):
+                      checksums: list[str],
+                      began: datetime,
+                      ended: datetime):
         """ Create a ClusterReport from EmClustering objects. """
         # Initialize a new ClusterReport.
         return cls(sample=uniq_reads.sample,
@@ -98,7 +102,7 @@ class ClustReport(BatchedReport, ClusterIO):
                    min_iter=min_iter,
                    max_iter=max_iter,
                    conv_thresh=conv_thresh,
-                   checksums=checksums,
+                   checksums={ClustBatchIO.btype(): checksums},
                    n_batches=len(checksums),
                    converged={order: runs.converged
                               for order, runs in ord_runs.items()},
@@ -112,7 +116,9 @@ class ClustReport(BatchedReport, ClusterIO):
                              for order, runs in ord_runs.items()},
                    bic={order: runs.best.bic
                         for order, runs in ord_runs.items()},
-                   best_order=find_best_order(ord_runs))
+                   best_order=find_best_order(ord_runs),
+                   began=began,
+                   ended=ended)
 
 ########################################################################
 #                                                                      #

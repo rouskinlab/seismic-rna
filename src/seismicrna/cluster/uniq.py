@@ -37,8 +37,8 @@ class UniqReads(object):
                  ref: str,
                  section: Section,
                  min_mut_gap: int,
-                 muts_per_pos: tuple[np.ndarray, ...],
-                 batch_to_uniq: tuple[np.ndarray, ...],
+                 muts_per_pos: list[np.ndarray],
+                 batch_to_uniq: list[pd.Series],
                  counts_per_uniq: np.ndarray):
         self.sample = sample
         self.ref = ref
@@ -49,9 +49,6 @@ class UniqReads(object):
                              f"but got {len(muts_per_pos)}")
         self.muts_per_pos = muts_per_pos
         self.batch_to_uniq = batch_to_uniq
-        if np.sum(counts_per_uniq) != self.num_reads:
-            raise ValueError(f"Expected {self.num_reads} total reads, "
-                             f"but got {np.sum(counts_per_uniq)}")
         self.counts_per_uniq = counts_per_uniq
 
     @cached_property
@@ -64,6 +61,11 @@ class UniqReads(object):
         return get_length(self.pos_nums, "pos_nums")
 
     @cached_property
+    def num_batches(self):
+        """ Number of batches. """
+        return len(self.batch_to_uniq)
+
+    @cached_property
     def num_uniq(self):
         """ Number of unique reads. """
         return get_length(self.counts_per_uniq, "counts")
@@ -71,7 +73,7 @@ class UniqReads(object):
     @cached_property
     def num_reads(self):
         """ Number of total reads (including duplicates). """
-        return sum(map(get_length, self.batch_to_uniq))
+        return np.sum(self.counts_per_uniq)
 
     def get_matrix(self):
         """ Full boolean matrix of the unique bit vectors. """
@@ -99,6 +101,27 @@ class UniqReads(object):
             names = list()
         return pd.Index(names, name=BIT_VECTOR_NAME)
 
+    def __eq__(self, other):
+        if isinstance(other, UniqReads):
+            return (self.sample == other.sample
+                    and self.ref == other.ref
+                    and self.section == other.section
+                    and self.min_mut_gap == other.min_mut_gap
+                    and np.array_equal(self.pos_nums,
+                                       other.pos_nums)
+                    and all(np.array_equal(m1, m2)
+                            for m1, m2 in zip(self.muts_per_pos,
+                                              other.muts_per_pos,
+                                              strict=True))
+                    and self.num_batches == other.num_batches
+                    and all(b1.equals(b2)
+                            for b1, b2 in zip(self.batch_to_uniq,
+                                              other.batch_to_uniq,
+                                              strict=True))
+                    and np.array_equal(self.counts_per_uniq,
+                                       other.counts_per_uniq))
+        return NotImplemented
+
 
 def uniq_reads_to_mutations(uniq_reads: Iterable[tuple],
                             pos_nums: Iterable[int]):
@@ -108,7 +131,7 @@ def uniq_reads_to_mutations(uniq_reads: Iterable[tuple],
     for uniq_read_num, read_muts_pos in enumerate(uniq_reads):
         for pos in read_muts_pos:
             mutations[pos].append(uniq_read_num)
-    return tuple(np.array(mutations[pos]) for pos in pos_nums)
+    return [np.array(mutations[pos]) for pos in pos_nums]
 
 
 def count_uniq_reads(uniq_read_nums: Iterable[list]):
@@ -116,20 +139,21 @@ def count_uniq_reads(uniq_read_nums: Iterable[list]):
     return np.array(list(map(len, uniq_read_nums)))
 
 
-def batch_to_uniq_read_num(num_reads_per_batch: list[int],
+def batch_to_uniq_read_num(read_nums_per_batch: list[np.ndarray],
                            uniq_read_nums: Iterable[list]):
     """ Map each read's number in its own batch to its unique number in
     the pool of all batches. """
-    # For each batch, initialize a map with one item per read in the batch.
-    batch_to_uniq = tuple(np.full(count, -1) for count in num_reads_per_batch)
+    # For each batch, initialize a map from the read numbers of the .
+    batch_to_uniq = [pd.Series(-1, index=read_nums)
+                     for read_nums in read_nums_per_batch]
     # Fill in the map for each unique read.
     for uniq_read_num, batch_read_nums in enumerate(uniq_read_nums):
         for batch_num, read_num in batch_read_nums:
             batch_to_uniq[batch_num][read_num] = uniq_read_num
-    for batch_num, uniq_nums in enumerate(batch_to_uniq):
-        if uniq_nums.min(initial=0) < 0:
-            raise ValueError(f"Unmapped read numbers for batch {batch_num}: "
-                             f"{np.arange(len(uniq_nums))[uniq_nums < 0]}")
+    for batch, read_nums in enumerate(batch_to_uniq):
+        if read_nums.size > 0 > read_nums.min():
+            raise ValueError(f"Got unmapped read numbers in batch {batch}: "
+                             f"{read_nums.index[read_nums < 0]}")
     return batch_to_uniq
 
 
@@ -137,17 +161,17 @@ def get_uniq_reads(pos_nums: Iterable[int],
                    refseq: DNA,
                    pattern: RelPattern,
                    batches: Iterable[MutsBatch]):
-    num_reads_per_batch = list()
     uniq_reads = defaultdict(list)
+    read_nums_per_batch = list()
     for batch_num, batch in enumerate(batches):
         if batch.batch != batch_num:
             raise ValueError(
                 f"Batch {batch} is not in order (expected {batch_num})")
-        num_reads_per_batch.append(batch.num_reads)
-        for read_num, (e, m) in enumerate(batch.iter_reads(refseq, pattern)):
-            uniq_reads[m].append([batch_num, read_num])
+        read_nums_per_batch.append(batch.read_nums)
+        for read_num, (e, m) in batch.iter_reads(refseq, pattern):
+            uniq_reads[m].append((batch_num, read_num))
     muts_per_pos = uniq_reads_to_mutations(uniq_reads, pos_nums)
-    batch_to_uniq = batch_to_uniq_read_num(num_reads_per_batch,
+    batch_to_uniq = batch_to_uniq_read_num(read_nums_per_batch,
                                            uniq_reads.values())
     count_per_uniq = count_uniq_reads(uniq_reads.values())
     return muts_per_pos, batch_to_uniq, count_per_uniq

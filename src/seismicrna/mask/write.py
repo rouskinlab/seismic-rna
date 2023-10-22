@@ -3,15 +3,17 @@ Mask -- Write Module
 """
 
 from collections import defaultdict
+from datetime import datetime
 from logging import getLogger
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
+from .batch import apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
-from ..core.batch import accum_per_pos, ReadBatch, MutsBatch
+from ..core.batch import ReadBatch, MutsBatch, accum_per_pos
 from ..core.io import DEFAULT_BROTLI_LEVEL
 from ..core.rel import RelPattern
 from ..core.seq import Section, index_to_pos
@@ -188,7 +190,7 @@ class RelMasker(object):
         logger.debug(f"{self} kept {reads.size} reads with informative "
                      f"fractions ≥ {self.min_finfo_read} in {batch}")
         # Return a new batch of only those reads.
-        return batch.mask(reads=reads)
+        return apply_mask(batch, reads)
 
     def _filter_max_fmut_read(self, batch: MutsBatch):
         """ Filter out reads with too many mutations. """
@@ -208,7 +210,7 @@ class RelMasker(object):
         logger.debug(f"{self} kept {reads.size} reads with mutated "
                      f"fractions ≤ {self.max_fmut_read} in {batch}")
         # Return a new batch of only those reads.
-        return batch.mask(reads=reads)
+        return apply_mask(batch, reads)
 
     def _mask_min_mut_gap(self, batch: MutsBatch):
         """ Filter out reads with mutations that are too close. """
@@ -225,7 +227,7 @@ class RelMasker(object):
                                    self.min_mut_gap)
         logger.debug(f"{self} kept {reads.size} reads with no two mutations "
                      f"separated by < {self.min_mut_gap} nt in {batch}")
-        return batch.mask(reads=reads)
+        return apply_mask(batch, reads)
 
     def _exclude_positions(self):
         """ Exclude positions from the section. """
@@ -237,7 +239,7 @@ class RelMasker(object):
         """ Remove the reads in the batch that do not pass the filters
         and return a new batch without those reads. """
         # Keep only the unmasked positions.
-        batch = batch.mask(positions=self.pos_kept)
+        batch = apply_mask(batch, positions=self.pos_kept)
         self._n_reads[self.MASK_READ_INIT] += (n := batch.num_reads)
         # Remove reads with too few informative positions.
         batch = self._filter_min_finfo_read(batch)
@@ -280,11 +282,11 @@ class RelMasker(object):
             logger.warning(f"No positions remained after excluding with {self}")
         # Filter out reads based on the parameters and count the number
         # of informative and mutated positions remaining.
-        info, muts = accum_per_pos(self.pos_kept,
-                                   self.dataset.refseq,
-                                   {self.PATTERN_KEY: self.pattern},
-                                   map(self._filter_batch_reads,
-                                       self.dataset.iter_batches()))
+        _, muts, info = accum_per_pos(map(self._filter_batch_reads,
+                                          self.dataset.iter_batches()),
+                                      self.dataset.refseq,
+                                      self.pos_kept,
+                                      {self.PATTERN_KEY: self.pattern})
         if self.n_reads_kept == 0:
             logger.warning(f"No reads remained after filtering with {self}")
         # Filter out positions based on the parameters.
@@ -292,7 +294,7 @@ class RelMasker(object):
         if self.pos_kept.size == 0:
             logger.warning(f"No positions remained after filtering with {self}")
 
-    def create_report(self):
+    def create_report(self, began: datetime, ended: datetime):
         return MaskReport(
             sample=self.dataset.sample,
             ref=self.dataset.ref,
@@ -309,12 +311,12 @@ class RelMasker(object):
             min_ninfo_pos=self.min_ninfo_pos,
             max_fmut_pos=self.max_fmut_pos,
             n_pos_init=self.section.length,
-            n_pos_gu=len(self.pos_gu),
-            n_pos_polya=len(self.pos_polya),
-            n_pos_user=len(self.pos_user),
-            n_pos_min_ninfo=len(self.pos_min_ninfo),
-            n_pos_max_fmut=len(self.pos_max_fmut),
-            n_pos_kept=len(self.pos_kept),
+            n_pos_gu=self.pos_gu.size,
+            n_pos_polya=self.pos_polya.size,
+            n_pos_user=self.pos_user.size,
+            n_pos_min_ninfo=self.pos_min_ninfo.size,
+            n_pos_max_fmut=self.pos_max_fmut.size,
+            n_pos_kept=self.pos_kept.size,
             pos_gu=self.pos_gu,
             pos_polya=self.pos_polya,
             pos_user=self.pos_user,
@@ -329,6 +331,8 @@ class RelMasker(object):
             n_reads_max_fmut=self.n_reads_max_fmut,
             n_reads_min_gap=self.n_reads_min_gap,
             n_reads_kept=self.n_reads_kept,
+            began=began,
+            ended=ended,
         )
 
     def __str__(self):
@@ -340,7 +344,6 @@ def mask_section(dataset: RelateLoader,
                  count_del: bool,
                  count_ins: bool,
                  discount: Iterable[str], *,
-                 brotli_level: int,
                  force: bool,
                  **kwargs):
     """ Filter a section of a set of bit vectors. """
@@ -350,10 +353,12 @@ def mask_section(dataset: RelateLoader,
                                         ref=dataset.ref,
                                         sect=section.name)
     if force or not report_file.is_file():
+        began = datetime.now()
         pattern = RelPattern.from_counts(count_del, count_ins, discount)
         masker = RelMasker(dataset, section, pattern, **kwargs)
         masker.mask()
-        report = masker.create_report()
+        ended = datetime.now()
+        report = masker.create_report(began, ended)
         report.save(dataset.top, overwrite=True)
     else:
         logger.warning(f"File exists: {report_file}")

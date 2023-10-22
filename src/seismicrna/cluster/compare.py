@@ -14,7 +14,8 @@ import numpy as np
 import pandas as pd
 
 from .em import EmClustering
-from .names import EXP_NAME, OBS_NAME, ORD_NAME
+from .names import EXP_NAME, OBS_NAME
+from ..core.batch import ORDER_NAME
 
 EXP_COUNT_PRECISION = 3  # Number of digits to round expected log counts
 
@@ -84,7 +85,7 @@ def find_best_order(ord_runs: dict[int, RunOrderResults]) -> int:
 
 
 def format_exp_count_col(order: int):
-    return f"{EXP_NAME}, {ORD_NAME} {order}"
+    return f"{EXP_NAME}, {ORDER_NAME} {order}"
 
 
 def get_log_exp_obs_counts(ord_runs: dict[int, RunOrderResults]):
@@ -218,8 +219,10 @@ def calc_mean_var_info(runs: list[EmClustering]):
     if not pairs:
         # Variation of information defaults to 0 if no pairs exist.
         return 0.
+    # FIXME: implement variation of information
+    return 0.
     # Compute and cache the responsibilities of each run.
-    resps = [run.output_resps() for run in runs]
+    resps = [run.get_resps() for run in runs]
     # Compute the variation of information for each pair of EM runs.
     vinfo = {(i, j): calc_var_info_pair(resps[i], resps[j]) for i, j in pairs}
     # Return the mean variation of information among pairs of EM runs.

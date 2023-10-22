@@ -1,3 +1,4 @@
+from datetime import datetime
 from logging import getLogger
 from math import inf
 from pathlib import Path
@@ -7,7 +8,7 @@ import pandas as pd
 from .compare import RunOrderResults, find_best_order, sort_replicate_runs
 from .csv import write_log_counts, write_mus, write_props
 from .em import EmClustering
-from .io import ClusterBatchIO
+from .io import ClustBatchIO
 from .report import ClustReport
 from .uniq import UniqReads
 from ..core.parallel import dispatch
@@ -25,17 +26,17 @@ def write_batches(dataset: MaskMerger,
     for batch_num in dataset.batch_nums:
         resps = pd.concat((ord_runs[order].best.get_resps(batch_num)
                            for order in range(1, best_order + 1)),
-                          axis=0)
-        batch = ClusterBatchIO(sample=dataset.sample,
-                               ref=dataset.ref,
-                               sect=dataset.sect,
-                               batch=batch_num,
-                               resps=resps)
+                          axis=1)
+        batch = ClustBatchIO(sample=dataset.sample,
+                             ref=dataset.ref,
+                             sect=dataset.sect,
+                             batch=batch_num,
+                             resps=resps)
         _, checksum = batch.save(top=dataset.top,
                                  brotli_level=brotli_level,
                                  overwrite=True)
         checksums.append(checksum)
-    return {ClusterBatchIO.btype(): checksums}
+    return checksums
 
 
 def run_order(uniq_reads: UniqReads,
@@ -146,6 +147,7 @@ def cluster(mask_report_file: Path,
     # Check if the clustering report file already exists.
     cluster_report_file = ClustReport.build_path(**path_kwargs)
     if force or not cluster_report_file.is_file():
+        began = datetime.now()
         logger.info(f"Began clustering {dataset} up to order {max_order} "
                     f"cluster(s) and {n_runs} independent run(s) per order")
         # Get the unique reads.
@@ -165,6 +167,7 @@ def cluster(mask_report_file: Path,
         write_log_counts(results, **path_kwargs)
         # Output the cluster memberships in batches of reads.
         checksums = write_batches(dataset, results, brotli_level)
+        ended = datetime.now()
         report = ClustReport.from_clusters(results,
                                            uniq_reads,
                                            max_order,
@@ -172,7 +175,9 @@ def cluster(mask_report_file: Path,
                                            min_iter=min_iter,
                                            max_iter=max_iter,
                                            conv_thresh=conv_thresh,
-                                           checksums=checksums)
+                                           checksums=checksums,
+                                           began=began,
+                                           ended=ended)
         report.save(top=dataset.top, overwrite=True)
     else:
         logger.warning(f"File exists: {cluster_report_file}")

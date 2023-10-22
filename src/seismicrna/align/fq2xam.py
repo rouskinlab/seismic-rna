@@ -1,3 +1,4 @@
+from datetime import datetime
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
@@ -107,6 +108,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                 n_procs: int = 1) -> list[Path]:
     """ Run all steps of the alignment pipeline for one FASTQ file or
     one pair of mated FASTQ files. """
+    began = datetime.now()
     # Get attributes of the sample and references.
     sample = fq_inp.sample
     refset = path.parse(fasta, path.FastaSeg)[path.REF]
@@ -278,6 +280,7 @@ def fq_pipeline(fq_inp: FastqUnit,
             copyfile(fasta, refs_file)
         # Index the new hard-linked FASTA file.
         run_index_fasta(refs_file)
+    ended = datetime.now()
     # Write a report to summarize the alignment.
     report = AlignReport(sample=sample,
                          demultiplexed=fq_inp.ref is not None,
@@ -320,7 +323,9 @@ def fq_pipeline(fq_inp: FastqUnit,
                          reads_trim=reads_trim,
                          reads_align=reads_align,
                          reads_filter=reads_filter,
-                         reads_refs=reads_refs)
+                         reads_refs=reads_refs,
+                         began=began,
+                         ended=ended)
     report.save(out_dir, overwrite=True)
     # Return a list of name-sorted XAM files, each of which contains a
     # set of reads that all align to the same reference.

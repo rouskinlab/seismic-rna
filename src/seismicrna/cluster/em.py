@@ -6,9 +6,9 @@ import pandas as pd
 from scipy.special import logsumexp
 from scipy.stats import dirichlet
 
-from .names import ORD_CLS_NAME
 from .uniq import UniqReads
-from ..core.mu import calc_mu_adj_numpy, calc_f_obs_numpy
+from ..core.batch import get_clusters_index
+from ..core.mu import calc_f_obs_numpy, calc_mu_adj_numpy, calc_prop_adj_numpy
 from ..core.rand import rng
 
 logger = getLogger(__name__)
@@ -156,9 +156,7 @@ class EmClustering(object):
     @cached_property
     def clusters(self):
         """ Return a MultiIndex of the order and cluster numbers. """
-        return pd.MultiIndex.from_product([[self.order],
-                                           range(1, self.order + 1)],
-                                          names=ORD_CLS_NAME)
+        return get_clusters_index(self.order, self.order)
 
     @property
     def prop_obs(self):
@@ -170,10 +168,7 @@ class EmClustering(object):
     def prop_adj(self):
         """ Calculate the proportion of each cluster, adjusted for
         observer bias. """
-        # Adjust the proportions of reads in each cluster by
-        # re-weighting them by their reciprocal fractions observed.
-        weighted_prop_obs = self.prop_obs / np.exp(self.log_f_obs)
-        return weighted_prop_obs / np.sum(weighted_prop_obs)
+        return calc_prop_adj_numpy(self.prop_obs, np.exp(self.log_f_obs))
 
     @property
     def log_like(self):
@@ -389,7 +384,7 @@ class EmClustering(object):
         """ Responsibilities of the reads in the batch. """
         batch_uniq_nums = self.uniq_reads.batch_to_uniq[batch_num]
         return pd.DataFrame(self.resps.T[batch_uniq_nums],
-                            index=pd.RangeIndex(batch_uniq_nums.size),
+                            index=batch_uniq_nums.index,
                             columns=self.clusters)
 
     '''

@@ -6,8 +6,6 @@ from typing import Iterable
 import pandas as pd
 
 from .base import (MUTAT_REL,
-                   CLUST_INDEX_NAMES,
-                   REL_NAME,
                    Table,
                    RelTypeTable,
                    PosTable,
@@ -19,8 +17,9 @@ from .base import (MUTAT_REL,
                    ClustPosTable,
                    ClustReadTable,
                    ClustFreqTable)
-from ..cluster.names import ENSEMBLE_NAME, ORD_CLS_NAME, fmt_clust_name
+from ..cluster.names import AVERAGE_NAME, fmt_clust_name
 from ..core import path
+from ..core.batch import OC_INDEX_NAMES, POC_INDEX_NAMES, PATTERN_NAME
 from ..core.rna.profile import RnaProfile
 from ..core.seq import INDEX_NAMES, Section
 
@@ -119,7 +118,7 @@ class AvgTableLoader(RelTypeTableLoader, ABC):
         # Load the data in the same manner as the superclass.
         data = super().data
         # Rename the column level of the relationships.
-        data.columns.rename(REL_NAME, inplace=True)
+        data.columns.rename(PATTERN_NAME, inplace=True)
         return data
 
 
@@ -135,7 +134,7 @@ class ClustTableLoader(RelTypeTableLoader, ABC):
 
     @classmethod
     def header_row(cls):
-        return list(range(len(CLUST_INDEX_NAMES)))
+        return list(range(len(POC_INDEX_NAMES)))
 
     @cached_property
     def data(self):
@@ -166,7 +165,7 @@ class MaskPosTableLoader(MaskTableLoader, PosTableLoader, MaskPosTable):
 
     def iter_profiles(self, sections: Iterable[Section], quantile: float):
         for section in sections:
-            yield RnaProfile(path.fill_whitespace(ENSEMBLE_NAME),
+            yield RnaProfile(path.fill_whitespace(AVERAGE_NAME),
                              section=section,
                              sample=self.sample,
                              data_sect=self.sect,
@@ -201,7 +200,7 @@ class ClustFreqTableLoader(TableLoader, ClustFreqTable):
 
     @classmethod
     def index_col(cls):
-        return list(range(len(ORD_CLS_NAME)))
+        return list(range(len(OC_INDEX_NAMES)))
 
     @classmethod
     def header_row(cls):
@@ -243,7 +242,7 @@ def reformat_cluster_index(index: pd.MultiIndex):
     """ Ensure that the columns are a MultiIndex and that the order and
     cluster numbers are integers, not strings. """
     return pd.MultiIndex.from_arrays(
-        [index.get_level_values(n).astype(int if n in ORD_CLS_NAME else str)
+        [index.get_level_values(n).astype(int if n in OC_INDEX_NAMES else str)
          for n in index.names],
         names=index.names
     )
@@ -254,14 +253,14 @@ def get_clusters(columns: pd.Index | pd.MultiIndex, allow_zero: bool = False):
     from columns with order and cluster numbers as levels. """
     try:
         return pd.MultiIndex.from_arrays([columns.get_level_values(level)
-                                          for level in ORD_CLS_NAME],
-                                         names=ORD_CLS_NAME).drop_duplicates()
+                                          for level in OC_INDEX_NAMES],
+                                         names=OC_INDEX_NAMES).drop_duplicates()
     except KeyError:
         # The index did not contain levels named "order" and "cluster".
         if allow_zero:
             # Default to an index of zero for each level.
-            return pd.MultiIndex.from_tuples([(0,) * len(ORD_CLS_NAME)],
-                                             names=ORD_CLS_NAME)
+            return pd.MultiIndex.from_tuples([(0,) * len(OC_INDEX_NAMES)],
+                                             names=OC_INDEX_NAMES)
         # Re-raise the error.
         raise
 

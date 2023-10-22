@@ -4,7 +4,7 @@ from functools import cached_property
 import numpy as np
 import pandas as pd
 
-from .util import INDEX_NAMES, NO_READ, get_inverse, get_length
+from .index import RB_INDEX_NAMES, NO_READ, get_inverse, get_length
 from ..types import fit_uint_type
 
 
@@ -41,15 +41,17 @@ class ReadBatch(ABC):
         """ Map each read number to its index in self.read_nums. """
 
     @cached_property
-    def multiindex(self):
+    def batch_read_index(self):
         """ MultiIndex of the batch number and read numbers. """
-        return pd.MultiIndex.from_arrays([np.broadcast_to(self.batch,
-                                                          self.num_reads),
-                                          self.read_nums],
-                                         names=INDEX_NAMES)
+        return pd.MultiIndex.from_arrays(
+            [np.broadcast_to(self.batch,
+                             get_length(self.read_nums, "read_nums")),
+             self.read_nums],
+            names=RB_INDEX_NAMES)
 
     def __str__(self):
-        return f"{type(self).__name__} {self.batch} with {self.num_reads} reads"
+        return (f"{type(self).__name__} {self.batch} with "
+                f"{get_length(self.read_nums, 'read_nums')} reads")
 
 
 class AllReadBatch(ReadBatch, ABC):
@@ -80,14 +82,3 @@ class PartialReadBatch(ReadBatch, ABC):
     @cached_property
     def read_indexes(self):
         return get_inverse(self.read_nums, "read_nums")
-
-
-class MaskReadBatch(PartialReadBatch):
-
-    def __init__(self, *, read_nums: np.ndarray, **kwargs):
-        self._read_nums = read_nums
-        super().__init__(**kwargs)
-
-    @cached_property
-    def read_nums(self):
-        return self._read_nums

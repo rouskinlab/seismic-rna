@@ -11,10 +11,8 @@ from .base import CartesianGraph, TwoTableSeqGraph, PRECISION
 from .color import SeqColorMap
 from .seq import get_table_params
 from .write import TwoTableGraphWriter
-from ..cluster.names import (CLS_NAME,
-                             ORD_NAME,
-                             ORD_CLS_NAME,
-                             validate_order_cluster)
+from ..cluster.names import validate_order_cluster
+from ..core.batch import CLUST_NAME, ORDER_NAME, OC_INDEX_NAMES
 from ..core.cli import (docdef,
                         arg_input_path,
                         opt_rels,
@@ -162,7 +160,9 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
                 logger.warning(f"{self} cannot use order {order} with {table}")
         elif cluster is not None:
             logger.warning(f"{self} cannot use cluster {cluster} with no order")
-        return table.process(self.y_ratio, self.quantile, PRECISION, **select)
+        return table.process(ratio=self.y_ratio,
+                             quantile=self.quantile,
+                             precision=PRECISION, **select)
 
     @cached_property
     def data1(self):
@@ -263,12 +263,14 @@ class SeqPairTwoAxisGraph(SeqPairGraph, ABC):
             samples = [sample] * columns.size
             # Clusters (if any).
             try:
-                orders = columns.get_level_values(ORD_NAME).to_list()
-                clusters = columns.get_level_values(CLS_NAME).to_list()
+                orders = columns.get_level_values(ORDER_NAME).to_list()
+                clusters = columns.get_level_values(CLUST_NAME).to_list()
             except KeyError:
                 orders = [0] * columns.size
                 clusters = [0] * columns.size
-            cols = {SAMPLE_NAME: samples, ORD_NAME: orders, CLS_NAME: clusters}
+            cols = {SAMPLE_NAME: samples,
+                    ORDER_NAME: orders,
+                    CLUST_NAME: clusters}
             return pd.MultiIndex.from_arrays(list(cols.values()),
                                              names=list(cols.keys()))
 
@@ -277,7 +279,7 @@ class SeqPairTwoAxisGraph(SeqPairGraph, ABC):
         cols1 = make_columns(self.data1.columns, self.sample1)
         cols2 = make_columns(self.data2.columns, self.sample2)
         # Drop the order/cluster numbers if they are all zero.
-        names = [SAMPLE_NAME] + [name for name in ORD_CLS_NAME
+        names = [SAMPLE_NAME] + [name for name in OC_INDEX_NAMES
                                  if ((cols1.get_level_values(name) != 0).any()
                                      and
                                      (cols2.get_level_values(name) != 0).any())]

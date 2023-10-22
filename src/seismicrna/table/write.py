@@ -15,11 +15,11 @@ from .base import (Table,
                    ClustReadTable,
                    ClustFreqTable)
 from .tabulate import (Tabulator,
-                       RelTabulator,
+                       RelateTabulator,
                        MaskTabulator,
-                       ClusterTabulator,
+                       ClustTabulator,
                        tabulate_loader)
-from ..cluster.load import ClustLoader
+from ..cluster.data import ClustMerger
 from ..core import path
 from ..mask.data import MaskMerger
 from ..relate.data import RelateLoader
@@ -34,7 +34,7 @@ PRECISION = 1
 class TableWriter(Table, ABC):
     """ Write a table to a file. """
 
-    def __init__(self, tabulator: Tabulator | ClusterTabulator):
+    def __init__(self, tabulator: Tabulator | ClustTabulator):
         self.tab = tabulator
 
     @property
@@ -124,7 +124,7 @@ class ClustFreqTableWriter(TableWriter, ClustFreqTable):
         return False
 
     def load_data(self):
-        return self.tab.tabulate_by_clust()
+        return self.tab.table_per_clust()
 
 
 # Helper Functions #####################################################
@@ -136,16 +136,16 @@ def infer_report_loader_type(report_file: Path):
     if path.MaskRepSeg.ptrn.match(report_file.name):
         return MaskMerger
     if path.ClustRepSeg.ptrn.match(report_file.name):
-        return ClustLoader
+        return ClustMerger
     raise ValueError(f"Failed to infer loader type for {report_file}")
 
 
 def get_tabulator_writer_types(tabulator: Tabulator):
-    if isinstance(tabulator, RelTabulator):
+    if isinstance(tabulator, RelateTabulator):
         return RelPosTableWriter, RelReadTableWriter
     if isinstance(tabulator, MaskTabulator):
         return MaskPosTableWriter, MaskReadTableWriter
-    if isinstance(tabulator, ClusterTabulator):
+    if isinstance(tabulator, ClustTabulator):
         return ClustPosTableWriter, ClustReadTableWriter, ClustFreqTableWriter
     raise TypeError(f"Invalid tabulator type: {type(tabulator).__name__}")
 

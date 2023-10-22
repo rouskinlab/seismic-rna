@@ -5,8 +5,8 @@ from typing import Any
 
 import pandas as pd
 
-from ..cluster.names import CLS_NAME, ORD_NAME
 from ..core import path
+from ..core.batch import CLUST_NAME, ORDER_NAME, PATTERN_NAME
 from ..core.mu import winsorize
 from ..core.seq import index_to_pos, index_to_seq
 
@@ -14,8 +14,6 @@ from ..core.seq import index_to_pos, index_to_seq
 READ_TITLE = "Read Name"
 R_OBS_TITLE = "Reads Observed"
 R_ADJ_TITLE = "Reads Adjusted"
-REL_NAME = "Relationship"
-CLUST_INDEX_NAMES = ORD_NAME, CLS_NAME, REL_NAME
 
 # Count relationships
 COVER_REL = "Covered"
@@ -137,7 +135,7 @@ class RelTypeTable(Table, ABC):
     @property
     def _rel_level_index(self):
         """ Index of the column level indicating the relationship. """
-        return self.data.columns.names.index(REL_NAME)
+        return self.data.columns.names.index(PATTERN_NAME)
 
     def _switch_rel(self, column: tuple, new_rel: str):
         """ Switch the relationship in a column label. """
@@ -174,9 +172,9 @@ class RelTypeTable(Table, ABC):
     def _format_selection(**kwargs) -> dict[str, list]:
         """ Format keyword arguments into a valid column selection. """
         selection = dict()
-        for key, level in dict(order=ORD_NAME,
-                               cluster=CLS_NAME,
-                               rels=REL_NAME).items():
+        for key, level in dict(order=ORDER_NAME,
+                               cluster=CLUST_NAME,
+                               rels=PATTERN_NAME).items():
             try:
                 selection[level] = kwargs[key]
             except KeyError:
@@ -185,7 +183,7 @@ class RelTypeTable(Table, ABC):
 
     def _get_indexer(self, selection: dict[str, list]):
         """ Format a column selection into a column indexer. """
-        return selection.get(REL_NAME, slice(None))
+        return selection.get(PATTERN_NAME, slice(None))
 
     def process(self, *,
                 ratio: bool,
@@ -219,17 +217,17 @@ class ClustTable(RelTypeTable, ABC):
     @cached_property
     def ord_clust(self):
         """ MultiIndex of all order-cluster pairs. """
-        return self.data.columns.droplevel(REL_NAME).drop_duplicates()
+        return self.data.columns.droplevel(PATTERN_NAME).drop_duplicates()
 
     @cached_property
     def orders(self):
         """ Index of all order numbers. """
-        return self.data.columns.get_level_values(ORD_NAME).drop_duplicates()
+        return self.data.columns.get_level_values(ORDER_NAME).drop_duplicates()
 
     def get_clusters(self, orders: list):
         """ Index of cluster numbers for the given orders. """
         data = self.data.loc[:, orders]
-        return data.columns.get_level_values(CLS_NAME).drop_duplicates()
+        return data.columns.get_level_values(CLUST_NAME).drop_duplicates()
 
     def _switch_rel(self, column: tuple, new_rel: str):
         return (column[: self._rel_level_index]

@@ -1,7 +1,7 @@
 from abc import ABC
 
+from .batch import MaskReadBatch
 from ..core import path
-from ..core.batch import MaskReadBatch
 from ..core.io import ReadBatchIO, SectIO
 
 

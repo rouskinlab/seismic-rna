@@ -12,7 +12,7 @@ from logging import Filter, LogRecord
 import numpy as np
 import pandas as pd
 
-from ..mu import (MAX_MU, clip, _calc_mu_obs,
+from ..mu import (MAX_MU, norm, _calc_mu_obs,
                   calc_mu_adj_numpy, calc_mu_adj_df, calc_mu_adj_series,
                   calc_f_obs_numpy, calc_f_obs_df, calc_f_obs_series,
                   get_mu_quantile, normalize, winsorize,

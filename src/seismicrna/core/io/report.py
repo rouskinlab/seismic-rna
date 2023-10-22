@@ -8,7 +8,7 @@ from datetime import datetime
 from functools import cache
 from inspect import getmembers
 from logging import getLogger
-from math import isclose, isnan, inf, nan
+from math import isclose, isnan
 from numbers import Integral
 from pathlib import Path
 from typing import Any, Hashable, Callable, Iterable
@@ -103,15 +103,6 @@ def calc_taken(report: Report):
     if minutes < 0.:
         raise ValueError(f"Time taken must be positive, but got {minutes} min")
     return minutes
-
-
-def calc_speed(report: Report):
-    nvecs = report.get_field(NumReadsRel)
-    taken = report.get_field(TimeTakenF)
-    try:
-        return nvecs / taken
-    except ZeroDivisionError:
-        return inf if nvecs > 0 else nan
 
 
 # Field value checking functions
@@ -251,7 +242,6 @@ DATETIME_FORMAT = "%Y-%m-%d at %H:%M:%S"
 DECIMAL_PRECISION = 3  # general precision for decimals
 PERC_VEC_PRECISION = 1
 TIME_TAKEN_PRECISION = 2
-SPEED_PRECISION = 0
 
 
 def iconv_int_keys(mapping: dict[Any, Any]):
@@ -475,8 +465,6 @@ ChecksumsF = Field("checksums",
 RefseqChecksumF = Field("refseq_checksum",
                         "MD5 Checksum of Reference Sequence File",
                         str)
-SpeedF = Field("speed", "Speed (reads per minute)", float,
-               oconv=get_oconv_float(SPEED_PRECISION))
 
 # Mutation calling
 CountMutsF = Field("count_muts",
@@ -742,13 +730,23 @@ class Report(FileIO, ABC):
     @abstractmethod
     def fields(cls):
         """ All fields of the report. """
-        return [VersionF]
+        return [TimeBeganF, TimeEndedF, TimeTakenF, VersionF]
 
     @classmethod
     @cache
     def field_names(cls):
         """ Names of all fields of the report. """
         return [field.key for field in cls.fields()]
+
+    @classmethod
+    def default_report_fields(cls):
+        """ Default values of report fields. """
+        return dict(taken=calc_taken, version=__version__)
+
+    @classmethod
+    def autofill_report_fields(cls, **kwargs):
+        """ Add any missing fields if they have default values.  """
+        return cls.default_report_fields() | kwargs
 
     @classmethod
     def from_dict(cls, odata: dict[str, Any]):
@@ -783,12 +781,12 @@ class Report(FileIO, ABC):
         return report
 
     def __init__(self, **kwargs: Any | Callable[[Report], Any]):
+        # Add any missing arguments if they have default values.
+        kwargs = self.autofill_report_fields(**kwargs)
+        # Ensure the report is compatible with this version of SEISMIC.
+        check_compatibility(kwargs[VersionF.key], self)
         for name in self.field_names():
-            if name == VersionF.key:
-                value = kwargs.pop(name, __version__)
-                check_compatibility(value, self)
-            else:
-                value = kwargs.pop(name)
+            value = kwargs.pop(name)
             if callable(value):
                 # If the value of the keyword argument is callable, then
                 # it must accept one argument -- self -- and return the

@@ -13,8 +13,8 @@ from .base import CartesianGraph, OneTableSeqGraph, PRECISION
 from .seq import get_table_params
 from .traces import iter_seq_base_bar_traces, iter_seq_stack_bar_traces
 from .write import OneTableGraphWriter
-from ..cluster.names import (ENSEMBLE_NAME, CLS_NAME, ORD_NAME, fmt_clust_name,
-                             validate_order_cluster)
+from ..cluster.names import AVERAGE_NAME, fmt_clust_name, validate_order_cluster
+from ..core.batch import CLUST_NAME, ORDER_NAME, PATTERN_NAME
 from ..core.cli import (docdef,
                         arg_input_path,
                         opt_rels,
@@ -28,9 +28,13 @@ from ..core.cli import (docdef,
                         opt_parallel)
 from ..core.parallel import dispatch
 from ..core.seq import POS_NAME
-from ..table.base import REL_CODES, REL_NAME
-from ..table.load import (PosTableLoader, RelPosTableLoader, MaskPosTableLoader,
-                          ClustPosTableLoader, find_tables, get_clusters)
+from ..table.base import REL_CODES
+from ..table.load import (PosTableLoader,
+                          RelPosTableLoader,
+                          MaskPosTableLoader,
+                          ClustPosTableLoader,
+                          find_tables,
+                          get_clusters)
 
 logger = getLogger(__name__)
 
@@ -193,7 +197,7 @@ class EnsembleSeqBarGraph(SeqBarGraph, ABC):
 
     @property
     def subplot_titles(self):
-        return [ENSEMBLE_NAME]
+        return [AVERAGE_NAME]
 
     @property
     def subject(self):
@@ -233,8 +237,8 @@ class ClusterSeqBarGraph(SeqBarGraph, ABC):
     def subplot_titles(self):
         level_values = self.clusters.get_level_values
         return [fmt_clust_name(order, cluster)
-                for order, cluster in zip(level_values(ORD_NAME),
-                                          level_values(CLS_NAME),
+                for order, cluster in zip(level_values(ORDER_NAME),
+                                          level_values(CLUST_NAME),
                                           strict=True)]
 
     @classmethod
@@ -307,7 +311,7 @@ class EnsembleMultiRelSeqBarGraph(EnsembleSeqBarGraph, MultiRelSeqBarGraph):
             raise ValueError(
                 f"Expected 1 level of columns, but got {data.columns.names}")
         # Replace the columns with a single index.
-        data.columns = data.columns.get_level_values(REL_NAME)
+        data.columns = data.columns.get_level_values(PATTERN_NAME)
         for trace in iter_seq_stack_bar_traces(self.data, self.cmap):
             yield (1, 1), trace
 

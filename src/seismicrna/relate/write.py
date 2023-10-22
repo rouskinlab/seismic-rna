@@ -197,10 +197,10 @@ class RelationWriter(object):
                                                 ref=self.ref)
         # Check if the report file already exists.
         if force or not report_file.is_file():
+            began = datetime.now()
             # Write the reference sequence to a file.
             refcheck = self._write_refseq(out_dir, brotli_level)
             # Compute relation vectors and time how long it takes.
-            began = datetime.now()
             (nreads,
              nbats,
              checks) = self._generate_batches(out_dir=out_dir,

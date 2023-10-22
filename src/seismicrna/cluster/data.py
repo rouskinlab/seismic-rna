@@ -1,78 +1,82 @@
 from functools import cached_property
+from logging import getLogger
 
-from .batch import MaskMutsBatch, apply_mask
-from .io import MaskBatchIO
-from .report import MaskReport
-from ..core.io import (CountMutsF,
-                       CountRefsF,
-                       MinMutGapF,
-                       PosKeptF,
+from .batch import ClustMutsBatch
+from .io import ClustBatchIO
+from .report import ClustReport
+from ..core.batch import get_clusters_index
+from ..core.io import (NumClustsF,
                        BatchedLoadedDataset,
                        BatchedMergedDataset,
                        MergedMutsDataset)
-from ..core.rel import RelPattern
-from ..relate.data import RelateLoader
-from ..relate.io import RelateBatchIO
+from ..mask.batch import MaskMutsBatch
+from ..mask.data import MaskMerger
+
+logger = getLogger(__name__)
 
 
-class MaskLoader(BatchedLoadedDataset):
-    """ Load batches of masked relation vectors. """
+class ClustLoader(BatchedLoadedDataset):
+    """ Load clustering results. """
 
     @classmethod
     def get_report_type(cls):
-        return MaskReport
+        return ClustReport
 
     @classmethod
     def get_data_type(cls):
-        return MaskBatchIO
-
-    @property
-    def min_mut_gap(self):
-        return self.report.get_field(MinMutGapF)
-
-    @property
-    def pos_kept(self):
-        return self.report.get_field(PosKeptF)
+        return ClustBatchIO
 
     @cached_property
-    def pattern(self):
-        return RelPattern(self.report.get_field(CountMutsF),
-                          self.report.get_field(CountRefsF))
+    def num_clusters(self):
+        """ Number of clusters. """
+        return self.report.get_field(NumClustsF)
 
 
-class MaskMerger(BatchedMergedDataset, MergedMutsDataset):
-    """ Merge mutation data with masked reads. """
-
-    MASK_NAME = "mask"
+class ClustMerger(BatchedMergedDataset, MergedMutsDataset):
+    """ Merge cluster responsibilities with mutation data. """
 
     @classmethod
     def get_data_type(cls):
-        return MaskMutsBatch
+        return ClustMutsBatch
 
     @classmethod
     def get_dataset1_type(cls):
-        return RelateLoader
+        return MaskMerger
 
     @classmethod
     def get_dataset2_type(cls):
-        return MaskLoader
+        return ClustLoader
 
     @property
     def min_mut_gap(self):
-        return self.data2.min_mut_gap
+        return self.data1.min_mut_gap
 
     @property
     def pattern(self):
-        return self.data2.pattern
+        return self.data1.pattern
 
     @cached_property
     def section(self):
-        section = super().section
-        section.add_mask(self.MASK_NAME, self.data2.pos_kept, invert=True)
-        return section
+        return self.data1.section
 
-    def _merge(self, batch1: RelateBatchIO, batch2: MaskBatchIO):
-        return apply_mask(batch1, batch2.read_nums, self.data2.pos_kept)
+    @cached_property
+    def num_clusters(self):
+        return self.data2.num_clusters
+
+    @cached_property
+    def clusters(self):
+        return get_clusters_index(self.num_clusters)
+
+    def _merge(self, batch1: MaskMutsBatch, batch2: ClustBatchIO):
+        return self.get_data_type()(batch=batch1.batch,
+                                    muts=batch1.muts,
+                                    seqlen=batch1.seqlen,
+                                    end5s=batch1.end5s,
+                                    mid5s=batch1.mid5s,
+                                    mid3s=batch1.mid3s,
+                                    end3s=batch1.end3s,
+                                    resps=batch2.resps,
+                                    sanitize=False)
 
 ########################################################################
 #                                                                      #

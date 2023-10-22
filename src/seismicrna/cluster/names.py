@@ -6,21 +6,12 @@ Auth: Matty
 Define names for the indexes of the cluster tables.
 """
 
-
-# Cluster indexes
-ORD_NAME = "Order"
-CLS_NAME = "Cluster"
-ORD_CLS_NAME = ORD_NAME, CLS_NAME
-
-# Cluster memberships
-READ_NAME = "Read Name"
-
 # Bit vector counts
 OBS_NAME = "Log Observed"
 EXP_NAME = "Log Expected"
 
-# Ensemble name
-ENSEMBLE_NAME = "Ensemble"
+# Ensemble average name
+AVERAGE_NAME = "Average"
 
 
 def validate_order_cluster(order: int, cluster: int, allow_zero: bool = False):
@@ -39,7 +30,7 @@ def validate_order_cluster(order: int, cluster: int, allow_zero: bool = False):
 
 def fmt_clust_name(order: int, cluster: int, allow_zero: bool = False):
     validate_order_cluster(order, cluster, allow_zero)
-    return f"Cluster {order}-{cluster}" if order > 0 else ENSEMBLE_NAME
+    return f"Cluster {order}-{cluster}" if order > 0 else AVERAGE_NAME
 
 ########################################################################
 #                                                                      #

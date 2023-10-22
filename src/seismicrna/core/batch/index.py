@@ -1,13 +1,11 @@
+from itertools import product
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
+from ..seq import BASE_NAME
 from ..types import fit_uint_type, get_uint_type, UINT_NBYTES
-
-READ_NUM = "Read Number"
-BATCH_NUM = "Batch Number"
-INDEX_NAMES = BATCH_NUM, READ_NUM
 
 # Whether numbers are 0-indexed or 1-indexed.
 BATCH_INDEX = 0
@@ -16,6 +14,18 @@ POS_INDEX = 1
 # Missing identifiers.
 NO_POS = POS_INDEX - 1
 NO_READ = -1
+
+# Indexes of read and batch numbers.
+READ_NUM = "Read Number"
+BATCH_NUM = "Batch Number"
+RB_INDEX_NAMES = [BATCH_NUM, READ_NUM]
+
+# Indexes of relationships and cluster numbers.
+PATTERN_NAME = "Relationship"
+ORDER_NAME = "Order"
+CLUST_NAME = "Cluster"
+OC_INDEX_NAMES = [ORDER_NAME, CLUST_NAME]
+POC_INDEX_NAMES = [PATTERN_NAME] + OC_INDEX_NAMES
 
 
 def list_batch_nums(num_batches: int):
@@ -28,6 +38,43 @@ def get_length(array: np.ndarray, what: str = "array") -> int:
         raise ValueError(f"{what} must have 1 dimension, but got {array.ndim}")
     length, = array.shape
     return length
+
+
+def get_clusters_index(order: int, max_order: int | None = None):
+    if max_order is not None:
+        min_order = order
+    else:
+        min_order = 1
+        max_order = order
+    if not 1 <= min_order <= max_order:
+        raise ValueError(f"Must have 1 ≤ min_order ≤ max_order, but got "
+                         f"min_order = {min_order} and max_order = {max_order}")
+    return pd.MultiIndex.from_tuples([(order, cluster)
+                                      for order in range(min_order,
+                                                         max_order + 1)
+                                      for cluster in range(1, order + 1)],
+                                     names=OC_INDEX_NAMES)
+
+
+def get_rel_index(relationships: Iterable[str],
+                  clusters: Iterable[tuple[int, int]] | None = None):
+    if clusters is not None:
+        return pd.MultiIndex.from_tuples([(r, o, c) for r, (o, c)
+                                          in product(relationships, clusters)],
+                                         names=POC_INDEX_NAMES)
+    return pd.Index(relationships, name=PATTERN_NAME)
+
+
+def add_to_rel(frame: pd.DataFrame, added: pd.Series | pd.DataFrame, rel: str):
+    frame_rel = frame[rel]
+    if not frame_rel.index.equals(added.index):
+        raise ValueError(f"Got different indexes for frame {frame_rel.index} "
+                         f"and added values {added.index}")
+    if (isinstance(added, pd.DataFrame)
+            and not frame_rel.columns.equals(added.columns)):
+        raise ValueError(f"Got different columns for frame {frame_rel.columns} "
+                         f"and added values {added.columns}")
+    frame[rel] = (frame_rel + added).values
 
 
 def get_inverse(target: np.ndarray, what: str = "array"):
@@ -164,16 +211,38 @@ def sanitize_ends(max_pos: int,
     return end5s, mid5s, mid3s, end3s
 
 
-def get_coverage_matrix(positions: np.ndarray,
-                        end5s: np.ndarray,
-                        end3s: np.ndarray):
-    # Determine and validate the dimensions.
-    npos = get_length(positions)
-    nreads = get_length(end5s, "5' end positions")
-    # Reshape the positions and 5'/3' ends to row and column vectors.
-    pos_row = positions.reshape((1, npos))
-    end5s_col = end5s.reshape((nreads, 1))
-    end3s_col = end3s.reshape((nreads, 1))
-    # Generate a boolean matrix where each element indicates whether
-    # the read (row) covers the position (column).
-    return np.logical_and(end5s_col <= pos_row, pos_row <= end3s_col)
+def count_base_types(base_pos_index: pd.Index):
+    """ Return the number of each type of base in the index of positions
+    and bases. """
+    base_types, counts = np.unique(base_pos_index.get_level_values(BASE_NAME),
+                                   return_counts=True)
+    return pd.Series(counts, base_types)
+
+
+def iter_base_types(base_pos_index: pd.Index):
+    """ For each type of base in the index of positions and bases, yield
+    the positions in the index with that type of base. """
+    bases, inverse = np.unique(base_pos_index.get_level_values(BASE_NAME),
+                               return_inverse=True)
+    for i, base in enumerate(bases):
+        yield base, base_pos_index[inverse == i]
+
+
+def iter_windows(pos_nums: np.ndarray, size: int):
+    """ Yield the positions in each window of size positions of the
+    section. """
+    if size < 1:
+        raise ValueError(f"size must be ≥ 1, but got {size}")
+    if get_length(pos_nums, "pos_nums") > 0:
+        # Create a Series with the position numbers as its index.
+        pos_series = pd.Series(True, pos_nums)
+        min_pos = pos_series.index[0]
+        max_pos = pos_series.index[-1]
+        # Define the 5' and 3' ends of the window.
+        win5 = min_pos
+        win3 = min(win5 + (size - 1), max_pos)
+        # Yield the positions in each window.
+        while win3 <= max_pos:
+            yield (win5, win3), pos_series.loc[win5: win3].index.values
+            win5 += 1
+            win3 += 1

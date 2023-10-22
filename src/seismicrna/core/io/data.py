@@ -280,21 +280,21 @@ class Merger(Generic[S1, S2], ABC):
 
     @classmethod
     @abstractmethod
-    def get_data1_type(cls) -> type[S1]:
+    def get_dataset1_type(cls) -> type[S1]:
         """ Type of Dataset 1. """
 
     @classmethod
     @abstractmethod
-    def get_data2_type(cls) -> type[S2]:
+    def get_dataset2_type(cls) -> type[S2]:
         """ Type of Dataset 2. """
 
     @classmethod
     def verify_data_types(cls, data1: S1, data2: S2):
-        if not isinstance(data1, cls.get_data1_type()):
-            raise TypeError(f"Expected a {cls.get_data1_type().__name__} for "
+        if not isinstance(data1, cls.get_dataset1_type()):
+            raise TypeError(f"Expected a {cls.get_dataset1_type().__name__} for "
                             f"data1, but got {type(data1).__name__}")
-        if not isinstance(data2, cls.get_data2_type()):
-            raise TypeError(f"Expected a {cls.get_data2_type().__name__} for "
+        if not isinstance(data2, cls.get_dataset2_type()):
+            raise TypeError(f"Expected a {cls.get_dataset2_type().__name__} for "
                             f"data2, but got {type(data2).__name__}")
 
 
@@ -303,14 +303,17 @@ class MergedDataset(Dataset[D], Merger[S1, S2], ABC):
     returns a third "merged" dataset. """
 
     @classmethod
+    def get_report_type(cls):
+        return cls.get_dataset2_type().get_report_type()
+
+    @classmethod
     def load(cls, report_file: Path):
         """ Create a new MergedDataset from a report file. """
-        data1_type = cls.get_data1_type()
-        data2_type = cls.get_data2_type()
+        data1_type = cls.get_dataset1_type()
         data1 = data1_type.load(convert_path(report_file,
-                                             data2_type.get_report_type(),
+                                             cls.get_report_type(),
                                              data1_type.get_report_type()))
-        data2 = data2_type.load(report_file)
+        data2 = cls.get_dataset2_type().load(report_file)
         return cls(data1, data2)
 
     def __init__(self, data1: S1, data2: S2):
@@ -371,7 +374,7 @@ class UnifiedMergedDataset(MergedDataset[D, S1, S2], UnifiedDataset[D], ABC):
 
 
 class BatchedMergedDataset(MergedDataset[D, S1, S2], BatchedDataset[D], ABC):
-    """ Linked batched dataset. """
+    """ Merged batched dataset. """
 
     @abstractmethod
     def _merge(self, batch1, batch2) -> D:
@@ -385,6 +388,8 @@ class BatchedMergedDataset(MergedDataset[D, S1, S2], BatchedDataset[D], ABC):
         for batch1, batch2 in zip(self.data1.iter_batches(),
                                   self.data2.iter_batches(),
                                   strict=True):
+            if batch1.batch != batch2.batch:
+                raise ValueError(f"Batch numbers differ: {batch1} and {batch2}")
             yield self._merge(batch1, batch2)
 
 
