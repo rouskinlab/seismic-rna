@@ -173,7 +173,7 @@ def get_reads_per_pos(pattern: RelPattern,
         pos_reads = [pos_mut_reads for mut, pos_mut_reads
                      in mutations.get(pos, dict()).items()
                      if all(pattern.fits(base, mut))]
-        reads[pos] = np.hstack(pos_reads) if pos_reads else np.array([])
+        reads[pos] = np.hstack(pos_reads) if pos_reads else np.array([], int)
     return reads
 
 

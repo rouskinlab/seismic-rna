@@ -34,10 +34,7 @@ def sort_replicate_runs(runs: list[EmClustering]):
     """ Sort the runs of EM clustering by decreasing likelihood so that
     the run with the best (largest) likelihood comes first. """
     # Verify that every run has the same order.
-    try:
-        get_common_order(runs)
-    except ValueError:
-        raise ValueError("Cannot sort replicate runs of multiple orders")
+    get_common_order(runs)
     return sorted(runs, key=lambda run: run.log_like, reverse=True)
 
 

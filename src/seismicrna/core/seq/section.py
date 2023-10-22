@@ -305,7 +305,7 @@ class Section(object):
     def masked_int(self) -> np.ndarray:
         """ Masked positions as integers. """
         # Do not cache this method since self._masks can change.
-        return reduce(np.union1d, self._masks.values(), np.array([], dtype=int))
+        return reduce(np.union1d, self._masks.values(), np.array([], int))
 
     @property
     def masked_bool(self) -> np.ndarray:
