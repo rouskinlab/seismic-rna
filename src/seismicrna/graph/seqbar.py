@@ -14,7 +14,7 @@ from .seq import get_table_params
 from .traces import iter_seq_base_bar_traces, iter_seq_stack_bar_traces
 from .write import OneTableGraphWriter
 from ..cluster.names import AVERAGE_NAME, fmt_clust_name, validate_order_cluster
-from ..core.batch import CLUST_NAME, ORDER_NAME, PATTERN_NAME
+from ..core.batch import CLUST_NAME, ORDER_NAME, REL_NAME
 from ..core.cli import (docdef,
                         arg_input_path,
                         opt_rels,
@@ -76,10 +76,16 @@ def run(input_path: tuple[str, ...],
     """ Run the graph seqbar module. """
     writers = list(map(SeqBarGraphWriter, find_tables(input_path)))
     return list(chain(*dispatch([writer.write for writer in writers],
-                                max_procs, parallel, pass_n_procs=False,
-                                kwargs=dict(rels_sets=rels, y_ratio=y_ratio,
-                                            quantile=quantile, arrange=arrange,
-                                            csv=csv, html=html, pdf=pdf))))
+                                max_procs,
+                                parallel,
+                                pass_n_procs=False,
+                                kwargs=dict(rels_sets=rels,
+                                            y_ratio=y_ratio,
+                                            quantile=quantile,
+                                            arrange=arrange,
+                                            csv=csv,
+                                            html=html,
+                                            pdf=pdf))))
 
 
 # Sequence Bar Graph Writer ############################################
@@ -88,16 +94,19 @@ class SeqBarGraphWriter(OneTableGraphWriter):
 
     def iter(self, rels_sets: tuple[str, ...],
              y_ratio: bool, quantile: float, arrange: str):
-        stype, mtype, csparams = get_table_params(self.table, arrange,
-                                                  EnsembleSingleRelSeqBarGraph,
+        stype, mtype, csparams = get_table_params(self.table,
+                                                  arrange,
+                                                  AverageSingleRelSeqBarGraph,
                                                   ClusterSingleRelSeqBarGraph,
-                                                  EnsembleMultiRelSeqBarGraph,
+                                                  AverageMultiRelSeqBarGraph,
                                                   ClusterMultiRelSeqBarGraph)
         for cparams in csparams:
             for rels in rels_sets:
                 graph_type = stype if len(rels) == 1 else mtype
-                yield graph_type(table=self.table, rels=rels,
-                                 y_ratio=y_ratio, quantile=quantile,
+                yield graph_type(table=self.table,
+                                 rels=rels,
+                                 y_ratio=y_ratio,
+                                 quantile=quantile,
                                  **cparams)
 
 
@@ -106,9 +115,8 @@ class SeqBarGraphWriter(OneTableGraphWriter):
 class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
     """ Bar graph wherein each bar represents one sequence position. """
 
-    def __init__(self, *args, rels: str, y_ratio: bool, quantile: float,
-                 **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *, rels: str, y_ratio: bool, quantile: float, **kwargs):
+        super().__init__(**kwargs)
         self.rel_codes = rels
         self.y_ratio = y_ratio
         self.quantile = quantile
@@ -178,7 +186,7 @@ class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
 
 # Sequence Graphs by Source ############################################
 
-class EnsembleSeqBarGraph(SeqBarGraph, ABC):
+class AverageSeqBarGraph(SeqBarGraph, ABC):
 
     @cached_property
     def data(self):
@@ -284,7 +292,7 @@ class MultiRelSeqBarGraph(SeqBarGraph, ABC):
 
 # Instantiable Sequence Graphs #########################################
 
-class EnsembleSingleRelSeqBarGraph(EnsembleSeqBarGraph, SingleRelSeqBarGraph):
+class AverageSingleRelSeqBarGraph(AverageSeqBarGraph, SingleRelSeqBarGraph):
 
     def get_traces(self):
         if self.nrows != 1:
@@ -301,7 +309,7 @@ class ClusterSingleRelSeqBarGraph(ClusterSeqBarGraph, SingleRelSeqBarGraph):
                 yield (row, 1), trace
 
 
-class EnsembleMultiRelSeqBarGraph(EnsembleSeqBarGraph, MultiRelSeqBarGraph):
+class AverageMultiRelSeqBarGraph(AverageSeqBarGraph, MultiRelSeqBarGraph):
 
     def get_traces(self):
         if self.nrows != 1:
@@ -311,7 +319,7 @@ class EnsembleMultiRelSeqBarGraph(EnsembleSeqBarGraph, MultiRelSeqBarGraph):
             raise ValueError(
                 f"Expected 1 level of columns, but got {data.columns.names}")
         # Replace the columns with a single index.
-        data.columns = data.columns.get_level_values(PATTERN_NAME)
+        data.columns = data.columns.get_level_values(REL_NAME)
         for trace in iter_seq_stack_bar_traces(self.data, self.cmap):
             yield (1, 1), trace
 
@@ -319,8 +327,10 @@ class EnsembleMultiRelSeqBarGraph(EnsembleSeqBarGraph, MultiRelSeqBarGraph):
 class ClusterMultiRelSeqBarGraph(ClusterSeqBarGraph, MultiRelSeqBarGraph):
 
     def get_traces(self):
-        for row, ok in enumerate(self.clusters, start=1):
-            for trace in iter_seq_stack_bar_traces(self.data.loc[:, ok], self.cmap):
+        for row, (order, cluster) in enumerate(self.clusters, start=1):
+            column = slice(None), order, cluster
+            for trace in iter_seq_stack_bar_traces(self.data.loc[:, column],
+                                                   self.cmap):
                 yield (row, 1), trace
 
 ########################################################################

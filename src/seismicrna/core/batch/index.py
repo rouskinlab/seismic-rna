@@ -21,11 +21,11 @@ BATCH_NUM = "Batch Number"
 RB_INDEX_NAMES = [BATCH_NUM, READ_NUM]
 
 # Indexes of relationships and cluster numbers.
-PATTERN_NAME = "Relationship"
+REL_NAME = "Relationship"
 ORDER_NAME = "Order"
 CLUST_NAME = "Cluster"
 OC_INDEX_NAMES = [ORDER_NAME, CLUST_NAME]
-POC_INDEX_NAMES = [PATTERN_NAME] + OC_INDEX_NAMES
+POC_INDEX_NAMES = [REL_NAME] + OC_INDEX_NAMES
 
 
 def list_batch_nums(num_batches: int):
@@ -62,7 +62,7 @@ def get_rel_index(relationships: Iterable[str],
         return pd.MultiIndex.from_tuples([(r, o, c) for r, (o, c)
                                           in product(relationships, clusters)],
                                          names=POC_INDEX_NAMES)
-    return pd.Index(relationships, name=PATTERN_NAME)
+    return pd.Index(relationships, name=REL_NAME)
 
 
 def add_to_rel(frame: pd.DataFrame, added: pd.Series | pd.DataFrame, rel: str):

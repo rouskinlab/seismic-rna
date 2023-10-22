@@ -6,7 +6,7 @@ from typing import Any
 import pandas as pd
 
 from ..core import path
-from ..core.batch import CLUST_NAME, ORDER_NAME, PATTERN_NAME
+from ..core.batch import CLUST_NAME, ORDER_NAME, REL_NAME
 from ..core.mu import winsorize
 from ..core.seq import index_to_pos, index_to_seq
 
@@ -45,6 +45,9 @@ REL_CODES = {
 
 # Columns of each relation-based table
 TABLE_RELS = list(REL_CODES.values())
+
+# Keyword argument for each level of the column MultiIndex.
+LEVEL_KEYS = {REL_NAME: "rels", ORDER_NAME: "order", CLUST_NAME: "cluster"}
 
 
 # Table Base Classes ###################################################
@@ -132,34 +135,39 @@ class Table(ABC):
 class RelTypeTable(Table, ABC):
     """ Table with multiple types of relationships. """
 
-    @property
-    def _rel_level_index(self):
+    @cached_property
+    def multiindexed(self):
+        """ Whether the columns are a MultiIndex. """
+        return isinstance(self.data.columns, pd.MultiIndex)
+
+    @cached_property
+    def rel_level(self):
         """ Index of the column level indicating the relationship. """
-        return self.data.columns.names.index(PATTERN_NAME)
+        return self.data.columns.names.index(REL_NAME)
 
-    def _switch_rel(self, column: tuple, new_rel: str):
+    def _switch_rel(self, column: str | tuple, new_rel: str):
         """ Switch the relationship in a column label. """
-        return new_rel,
+        if isinstance(column, str):
+            column = column,
+        return (
+            column[: self.rel_level] + (new_rel,) + column[self.rel_level + 1:]
+            if self.multiindexed else new_rel
+        )
 
     @cache
-    def _count_col(self, column: tuple):
-        """ Count the bits for a column. """
-        return self.data.loc[:, column].squeeze()
-
-    @cache
-    def _ratio_col(self,
-                   column: tuple,
-                   quantile: float,
-                   precision: int | None = None):
+    def get_ratio(self,
+                  column: tuple,
+                  quantile: float,
+                  precision: int | None = None):
         """ Compute the ratio for a column. """
         # Determine the relationship to use as the numerator.
-        numer_rel = column[self._rel_level_index]
+        numer_rel = column[self.rel_level]
         # Determine the relationship to use as the denominator.
         denom_rel = COVER_REL if numer_rel == INFOR_REL else INFOR_REL
         # Determine the column to use as the denominator.
         denom_col = self._switch_rel(column, denom_rel)
         # Compute the ratio of the numerator and the denominator.
-        ratio = self._count_col(column) / self._count_col(denom_col)
+        ratio = self.data[column] / self.data[denom_col]
         # If a quantile was given, then winsorize to it.
         if quantile is not None:
             ratio = winsorize(ratio, quantile)
@@ -168,22 +176,14 @@ class RelTypeTable(Table, ABC):
             ratio = ratio.round(precision)
         return ratio
 
-    @staticmethod
-    def _format_selection(**kwargs) -> dict[str, list]:
-        """ Format keyword arguments into a valid column selection. """
-        selection = dict()
-        for key, level in dict(order=ORDER_NAME,
-                               cluster=CLUST_NAME,
-                               rels=PATTERN_NAME).items():
-            try:
-                selection[level] = kwargs[key]
-            except KeyError:
-                pass
-        return selection
-
-    def _get_indexer(self, selection: dict[str, list]):
+    def _get_indexer(self, **kwargs):
         """ Format a column selection into a column indexer. """
-        return selection.get(PATTERN_NAME, slice(None))
+        return (
+            tuple(kwargs.get(LEVEL_KEYS[level_name], slice(None))
+                  for level_name in self.data.columns.names)
+            if self.multiindexed
+            else kwargs.get(LEVEL_KEYS[self.data.columns.name], slice(None))
+        )
 
     def process(self, *,
                 ratio: bool,
@@ -192,13 +192,12 @@ class RelTypeTable(Table, ABC):
                 **kwargs: list):
         """ Select, process, and return data from the table. """
         # Instantiate an empty DataFrame with the index and columns.
-        indexer = self._get_indexer(self._format_selection(**kwargs))
-        columns = self.data.loc[:, indexer].columns
+        columns = self.data.loc[:, self._get_indexer(**kwargs)].columns
         data = pd.DataFrame(index=self.data.index, columns=columns, dtype=float)
         # Fill in the DataFrame one column at a time.
         for column in columns:
-            data.loc[:, column] = (self._ratio_col(column, quantile, precision)
-                                   if ratio else self._count_col(column))
+            data[column] = (self.get_ratio(column, quantile, precision) if ratio
+                            else self.data[column]).values
         return data
 
 
@@ -217,7 +216,7 @@ class ClustTable(RelTypeTable, ABC):
     @cached_property
     def ord_clust(self):
         """ MultiIndex of all order-cluster pairs. """
-        return self.data.columns.droplevel(PATTERN_NAME).drop_duplicates()
+        return self.data.columns.droplevel(REL_NAME).drop_duplicates()
 
     @cached_property
     def orders(self):
@@ -228,15 +227,6 @@ class ClustTable(RelTypeTable, ABC):
         """ Index of cluster numbers for the given orders. """
         data = self.data.loc[:, orders]
         return data.columns.get_level_values(CLUST_NAME).drop_duplicates()
-
-    def _switch_rel(self, column: tuple, new_rel: str):
-        return (column[: self._rel_level_index]
-                + (new_rel,)
-                + column[self._rel_level_index + 1:])
-
-    def _get_indexer(self, selection: dict[str, list]):
-        return tuple(selection.get(level, slice(None))
-                     for level in self.data.columns.names)
 
 
 # Table by Index (position/read/frequency) #############################

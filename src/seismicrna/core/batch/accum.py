@@ -3,7 +3,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .index import PATTERN_NAME, add_to_rel, get_rel_index
+from .index import REL_NAME, add_to_rel, get_rel_index
 from .muts import MutsBatch
 from ..rel import RelPattern
 from ..seq import POS_INDEX, DNA, seq_pos_to_index
@@ -20,7 +20,7 @@ def accumulate(batches: Iterable[MutsBatch],
     poc_index = get_rel_index(patterns, clusters)
     # Initialize the total read counts.
     if clusters is not None:
-        num_reads_index = poc_index.droplevel(PATTERN_NAME).drop_duplicates()
+        num_reads_index = poc_index.droplevel(REL_NAME).drop_duplicates()
         num_reads = pd.Series(0, index=num_reads_index)
     else:
         num_reads = 0

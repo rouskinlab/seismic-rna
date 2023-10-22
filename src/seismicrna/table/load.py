@@ -19,7 +19,7 @@ from .base import (MUTAT_REL,
                    ClustFreqTable)
 from ..cluster.names import AVERAGE_NAME, fmt_clust_name
 from ..core import path
-from ..core.batch import OC_INDEX_NAMES, POC_INDEX_NAMES, PATTERN_NAME
+from ..core.batch import OC_INDEX_NAMES, POC_INDEX_NAMES, REL_NAME
 from ..core.rna.profile import RnaProfile
 from ..core.seq import INDEX_NAMES, Section
 
@@ -118,7 +118,7 @@ class AvgTableLoader(RelTypeTableLoader, ABC):
         # Load the data in the same manner as the superclass.
         data = super().data
         # Rename the column level of the relationships.
-        data.columns.rename(PATTERN_NAME, inplace=True)
+        data.columns.rename(REL_NAME, inplace=True)
         return data
 
 
@@ -169,7 +169,7 @@ class MaskPosTableLoader(MaskTableLoader, PosTableLoader, MaskPosTable):
                              section=section,
                              sample=self.sample,
                              data_sect=self.sect,
-                             reacts=self._ratio_col((MUTAT_REL,), quantile))
+                             reacts=self.get_ratio((MUTAT_REL,), quantile))
 
 
 class MaskReadTableLoader(MaskTableLoader, ReadTableLoader, MaskReadTable):
@@ -187,8 +187,8 @@ class ClustPosTableLoader(ClustTableLoader, PosTableLoader, ClustPosTable):
                                  section=section,
                                  sample=self.sample,
                                  data_sect=self.sect,
-                                 reacts=self._ratio_col(ok + (MUTAT_REL,),
-                                                        quantile))
+                                 reacts=self.get_ratio(ok + (MUTAT_REL,),
+                                                       quantile))
 
 
 class ClustReadTableLoader(ClustTableLoader, ReadTableLoader, ClustReadTable):
