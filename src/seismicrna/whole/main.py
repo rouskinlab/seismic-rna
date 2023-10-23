@@ -15,7 +15,7 @@ from .. import (demult as demultiplex_mod,
                 table as table_mod,
                 fold as fold_mod,
                 fastc as fastc_mod)
-from ..core.cli import (CMD_WHOLE,
+from ..core.arg import (CMD_WHOLE,
                         docdef,
                         merge_params,
                         opt_demultiplex,

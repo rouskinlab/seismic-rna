@@ -5,7 +5,7 @@ from click import command
 
 from .fq2xam import get_xam_files
 from .fqops import FastqUnit
-from ..core.cli import (CMD_ALIGN,
+from ..core.arg import (CMD_ALIGN,
                         docdef,
                         arg_fasta,
                         opt_fastqs,
@@ -57,13 +57,13 @@ from ..core.cli import (CMD_ALIGN,
                         opt_min_mapq,
                         opt_min_reads,
                         opt_cram)
-from ..core.depend import require_dependency
+from ..core.extern import (BOWTIE2_CMD,
+                           BOWTIE2_BUILD_CMD,
+                           CUTADAPT_CMD,
+                           FASTQC_CMD,
+                           SAMTOOLS_CMD,
+                           require_dependency)
 from ..core.parallel import lock_temp_dir
-from ..core.shell import (BOWTIE2_CMD,
-                          BOWTIE2_BUILD_CMD,
-                          CUTADAPT_CMD,
-                          FASTQC_CMD,
-                          SAMTOOLS_CMD)
 
 logger = getLogger(__name__)
 

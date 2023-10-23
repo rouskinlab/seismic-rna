@@ -13,7 +13,7 @@ from .seq import get_table_params
 from .write import TwoTableGraphWriter
 from ..cluster.names import validate_order_cluster
 from ..core.batch import CLUST_NAME, ORDER_NAME, OC_INDEX_NAMES
-from ..core.cli import (docdef,
+from ..core.arg import (docdef,
                         arg_input_path,
                         opt_rels,
                         opt_y_ratio,

@@ -8,7 +8,7 @@ from click import command
 
 from .write import write
 from ..core import path
-from ..core.cli import (CMD_TABLE,
+from ..core.arg import (CMD_TABLE,
                         docdef,
                         arg_input_path,
                         opt_max_procs,

@@ -6,12 +6,17 @@ from pathlib import Path
 from string import printable, whitespace
 from tempfile import NamedTemporaryFile as NTFile
 
-from .. import path
-from ..fasta import (FASTA_NAME_MARK, FASTA_NAME_CHARS,
-                     valid_fasta_seqname, format_fasta_name_line,
-                     format_fasta_record, format_fasta_seq_lines,
-                     parse_fasta, write_fasta, logger as fasta_logger)
-from ..seq import DNA, RNA
+from ... import path
+from ..fasta import (FASTA_NAME_MARK,
+                     FASTA_NAME_CHARS,
+                     valid_fasta_seqname,
+                     format_fasta_name_line,
+                     format_fasta_record,
+                     format_fasta_seq_lines,
+                     parse_fasta,
+                     write_fasta,
+                     logger as fasta_logger)
+from ..xna import DNA, RNA
 
 
 class TestValidFastaSeqname(ut.TestCase):

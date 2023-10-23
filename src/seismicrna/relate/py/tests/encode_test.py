@@ -1,10 +1,18 @@
 import unittest as ut
 
 from ..encode import encode_match, encode_relate
-from ...core.qual import LO_QUAL, HI_QUAL
-from ...core.rel import (MATCH,
-                         SUB_A, SUB_C, SUB_G, SUB_T, SUB_N,
-                         ANY_B, ANY_D, ANY_H, ANY_V, ANY_N)
+from ....core.ngs import LO_QUAL, HI_QUAL
+from ....core.rel import (MATCH,
+                          SUB_A,
+                          SUB_C,
+                          SUB_G,
+                          SUB_T,
+                          SUB_N,
+                          ANY_B,
+                          ANY_D,
+                          ANY_H,
+                          ANY_V,
+                          ANY_N)
 
 
 class TestEncodeRelate(ut.TestCase):

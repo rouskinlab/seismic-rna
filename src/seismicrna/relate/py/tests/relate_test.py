@@ -5,40 +5,11 @@ import pandas as pd
 
 from ..iterread import iter_alignments
 from ..relate import relate_line
-from ..seqpos import format_seq_pos
-from ...align.sim import as_sam
-from ...core.cliparam import opt_min_mapq
-from ...core.qual import OK_QUAL
-from ...core.rel import NOCOV
-from ...core.seq import DNA
-
-
-class TestSeqposFormatSeqPos(ut.TestCase):
-    """ Test function `seqpos.format_seq_pos`. """
-
-    def test_acgt_index_1_acgt(self):
-        """ Test with ACGT, 1-indexed. """
-        index = format_seq_pos(DNA("ACGT"), [1, 2, 3, 4], 1)
-        expect = pd.Index(["A1", "C2", "G3", "T4"])
-        self.assertTrue(index.equals(expect))
-
-    def test_acgt_index_1_cg(self):
-        """ Test with ACGT, 1-indexed. """
-        index = format_seq_pos(DNA("ACGT"), [2, 3], 1)
-        expect = pd.Index(["C2", "G3"])
-        self.assertTrue(index.equals(expect))
-
-    def test_acgt_index_58_acgt(self):
-        """ Test with ACGT, 58-indexed. """
-        index = format_seq_pos(DNA("ACGT"), [58, 59, 60, 61], 58)
-        expect = pd.Index(["A58", "C59", "G60", "T61"])
-        self.assertTrue(index.equals(expect))
-
-    def test_acgt_index_58_cg(self):
-        """ Test with ACGT, 58-indexed. """
-        index = format_seq_pos(DNA("ACGT"), [59, 60], 58)
-        expect = pd.Index(["C59", "G60"])
-        self.assertTrue(index.equals(expect))
+from ....align.sim import as_sam
+from ....core.arg import opt_min_mapq
+from ....core.ngs import OK_QUAL
+from ....core.rel import NOCOV
+from ....core.seq import DNA
 
 
 class TestRelateRelateLineAmbrel(ut.TestCase):

@@ -3,8 +3,8 @@ from logging import getLogger
 from pathlib import Path
 from subprocess import CompletedProcess
 
-from . import path
-from .shell import SAMTOOLS_CMD, args_to_cmd, ShellCommand
+from .. import path
+from ..extern import SAMTOOLS_CMD, args_to_cmd, ShellCommand
 
 logger = getLogger(__name__)
 

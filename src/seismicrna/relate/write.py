@@ -15,12 +15,12 @@ from pathlib import Path
 from typing import Iterable
 
 from .io import from_reads, QnamesBatchIO, RelateBatchIO
-from .c.relate import find_rels_line
+from .py.relate import find_rels_line
 from .report import RelateReportIO
 from .sam import XamViewer
 from ..core import path
 from ..core.parallel import as_list_of_tuples, dispatch
-from ..core.qual import encode_phred
+from ..core.ngs import encode_phred
 from ..core.io import RefseqIO
 from ..core.seq import DNA, get_fasta_seq
 

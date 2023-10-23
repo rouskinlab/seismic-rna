@@ -29,7 +29,7 @@ from . import (whole,
                fastc,
                __version__)
 from .core import logs
-from .core.cli import (opt_log,
+from .core.arg import (opt_log,
                        opt_log_color,
                        opt_profile,
                        opt_quiet,

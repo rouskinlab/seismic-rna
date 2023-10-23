@@ -10,8 +10,11 @@ from pathlib import Path
 
 from ..core import path
 from ..core.rna.profile import RnaProfile
-from ..core.shell import (args_to_cmd, run_cmd, RNASTRUCTURE_FOLD_CMD,
-                          RNASTRUCTURE_CT2DOT_CMD, RNASTRUCTURE_DOT2CT_CMD)
+from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
+                           RNASTRUCTURE_DOT2CT_CMD,
+                           RNASTRUCTURE_FOLD_CMD,
+                           args_to_cmd,
+                           run_cmd, )
 
 logger = getLogger(__name__)
 

@@ -2,7 +2,7 @@ from logging import getLogger
 from pathlib import Path
 
 from .fqunit import FastqUnit
-from ..core.shell import CUTADAPT_CMD, FASTQC_CMD, args_to_cmd, ShellCommand
+from ..core.extern import CUTADAPT_CMD, FASTQC_CMD, ShellCommand, args_to_cmd
 
 logger = getLogger(__name__)
 

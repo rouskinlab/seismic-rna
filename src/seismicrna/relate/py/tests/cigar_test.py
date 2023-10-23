@@ -1,40 +1,32 @@
-"""
-
-Tests for the Quality Core Module
-
-========================================================================
-
-"""
-
 import unittest as ut
 
-from ..qual import (LO_QUAL, OK_QUAL, HI_QUAL, LO_PHRED, OK_PHRED, HI_PHRED,
-                    decode_phred, encode_phred)
+from ..cigar import (CIG_ALIGN,
+                     CIG_MATCH,
+                     CIG_SUBST,
+                     CIG_DELET,
+                     CIG_INSRT,
+                     CIG_SCLIP,
+                     parse_cigar)
 
 
-class TestConstants(ut.TestCase):
+class TestParseCigar(ut.TestCase):
+    """ Test function `parse_cigar`. """
 
-    def test_quals(self):
-        self.assertLess(LO_QUAL, OK_QUAL)
-        self.assertLess(OK_QUAL, HI_QUAL)
+    def test_cigar_match_subst_valid(self):
+        """ Parse a valid CIGAR string with match and subst codes. """
+        cigar = "9S23=1X13=1D9=2I56=3S"
+        expect = [(CIG_SCLIP, 9), (CIG_MATCH, 23), (CIG_SUBST, 1),
+                  (CIG_MATCH, 13), (CIG_DELET, 1), (CIG_MATCH, 9),
+                  (CIG_INSRT, 2), (CIG_MATCH, 56), (CIG_SCLIP, 3)]
+        self.assertEqual(list(parse_cigar(cigar)), expect)
 
-    def test_phreds(self):
-        self.assertLess(LO_PHRED, OK_PHRED)
-        self.assertLess(OK_PHRED, HI_PHRED)
-
-
-class TestDecode(ut.TestCase):
-
-    def test_decode(self):
-        self.assertEqual(decode_phred('I', 33), 40)
-        self.assertEqual(decode_phred('!', 33), 0)
-
-
-class TestEncode(ut.TestCase):
-
-    def test_encode(self):
-        self.assertEqual(encode_phred(40, 33), 'I')
-        self.assertEqual(encode_phred(0, 33), '!')
+    def test_cigar_align_valid(self):
+        """ Parse a valid CIGAR string with align codes. """
+        cigar = "9S37M1D9M2I56M3S"
+        expect = [(CIG_SCLIP, 9), (CIG_ALIGN, 37), (CIG_DELET, 1),
+                  (CIG_ALIGN, 9), (CIG_INSRT, 2), (CIG_ALIGN, 56),
+                  (CIG_SCLIP, 3)]
+        self.assertEqual(list(parse_cigar(cigar)), expect)
 
 ########################################################################
 #                                                                      #

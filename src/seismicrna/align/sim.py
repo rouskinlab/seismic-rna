@@ -12,11 +12,9 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 
-from ..core.qual import HI_QUAL, LO_QUAL
-from ..core.rand import rng
-from ..core.rel import NOCOV
-from ..core.seq import DNA, index_to_seq
-from ..core.xam import (FLAG_PAIRED,
+from ..core.ngs import (HI_QUAL,
+                        LO_QUAL,
+                        FLAG_PAIRED,
                         FLAG_PROPER,
                         FLAG_FIRST,
                         FLAG_SECOND,
@@ -28,6 +26,9 @@ from ..core.xam import (FLAG_PAIRED,
                         SAM_SEQLEN,
                         SAM_SEQLINE,
                         SAM_SEQNAME)
+from ..core.rand import rng
+from ..core.rel import NOCOV
+from ..core.seq import DNA, index_to_seq
 from ..relate.invert import find_relvec_ends, inverse_relate
 
 

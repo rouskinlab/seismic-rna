@@ -5,7 +5,7 @@ from click import command
 
 from .rnastructure import fold, ct2dot
 from ..core import path
-from ..core.cli import (CMD_FOLD,
+from ..core.arg import (CMD_FOLD,
                         docdef,
                         arg_input_path,
                         opt_temp_dir,
@@ -19,11 +19,12 @@ from ..core.cli import (CMD_FOLD,
                         opt_max_procs,
                         opt_parallel,
                         opt_force)
-from ..core.depend import require_dependency
+from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
+                           RNASTRUCTURE_FOLD_CMD,
+                           require_dependency)
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rna import RnaProfile
 from ..core.seq import DNA, RefSections, Section, parse_fasta
-from ..core.shell import RNASTRUCTURE_CT2DOT_CMD, RNASTRUCTURE_FOLD_CMD
 from ..core.parallel import lock_temp_dir
 from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader
 

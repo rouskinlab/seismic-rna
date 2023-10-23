@@ -5,7 +5,7 @@ from typing import Callable, TextIO
 
 from ..core import path
 from ..core.batch import BATCH_INDEX
-from ..core.xam import (SAM_DELIM,
+from ..core.ngs import (SAM_DELIM,
                         count_total_reads,
                         run_view_xam,
                         run_flagstat,

@@ -11,7 +11,7 @@ from string import printable
 
 import numpy as np
 
-from ..seq import XNA, DNA, RNA, expand_degenerate_seq
+from ..xna import XNA, DNA, RNA, expand_degenerate_seq
 
 
 class TestDna(ut.TestCase):

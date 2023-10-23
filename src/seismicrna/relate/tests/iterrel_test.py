@@ -4,7 +4,7 @@ from typing import Generator, Sequence
 
 import numpy as np
 
-from ..iterrelv import iter_relvecs_q53, iter_relvecs_all
+from ..iterrel import iter_relvecs_q53, iter_relvecs_all
 from ...core.rel import (MATCH, DELET, INS_5, INS_3,
                          SUB_A, SUB_C, SUB_G, SUB_T,
                          ANY_B, ANY_D, ANY_H, ANY_V,
@@ -16,43 +16,53 @@ class TestIterRelvecsQ53(ut.TestCase):
     """ Test function `iter_relvecs_q53`. """
 
     @staticmethod
-    def list_rels(seq: str, low_qual: Sequence[int] = (),
-                  end5: int | None = None, end3: int | None = None):
+    def list_rels(seq: str,
+                  low_qual: Sequence[int] = (),
+                  end5: int | None = None,
+                  end3: int | None = None,
+                  max_ins: int | None = 0):
         """ Convenience function to run `rel.iter_relvecs_q53` from a
         sequence of str and return a list of lists of ints. """
-        return list(map(np.ndarray.tolist,
-                        iter_relvecs_q53(DNA(seq), low_qual, end5, end3)))
+        return list(iter_relvecs_q53(DNA(seq), low_qual, end5, end3, max_ins))
 
     def test_type(self):
-        """ Test that the result is a Generator of NumPy arrays. """
-        self.assertTrue(isinstance(iter_relvecs_q53(DNA('A')), Generator))
-        self.assertTrue(all(isinstance(relvec, np.ndarray)
-                            for relvec in iter_relvecs_q53(DNA('A'))))
-        self.assertIs(list(iter_relvecs_q53(DNA('A')))[0].dtype.type, np.uint8)
+        """ Test that the function yields (int, int, dict) tuples. """
+        self.assertTrue(isinstance(iter_relvecs_q53(DNA("ACGT")), Generator))
+        relvecs = list(iter_relvecs_q53(DNA("ACGT")))
+        self.assertTrue(all(isinstance(relvec, tuple) for relvec in relvecs))
+        self.assertTrue(all(len(relvec) == 3 for relvec in relvecs))
+        self.assertTrue(all(isinstance(relvec[0], int) for relvec in relvecs))
+        self.assertTrue(all(isinstance(relvec[1], int) for relvec in relvecs))
+        self.assertTrue(all(isinstance(relvec[2], dict) for relvec in relvecs))
 
     def test_a(self):
         """ Test with sequence 'A'. """
-        self.assertEqual(self.list_rels('A'),
-                         [[MATCH], [SUB_C], [SUB_G], [SUB_T]])
+        self.assertEqual(
+            self.list_rels("A"),
+            [(1, 1, {}),
+             {1, 1, {1: SUB_C}},
+             {1, 1, {1: SUB_G}},
+             {1, 1, {1: SUB_T}}]
+        )
 
     def test_c(self):
         """ Test with sequence 'C'. """
-        self.assertEqual(self.list_rels('C'),
+        self.assertEqual(self.list_rels("C"),
                          [[SUB_A], [MATCH], [SUB_G], [SUB_T]])
 
     def test_g(self):
         """ Test with sequence 'G'. """
-        self.assertEqual(self.list_rels('G'),
+        self.assertEqual(self.list_rels("G"),
                          [[SUB_A], [SUB_C], [MATCH], [SUB_T]])
 
     def test_t(self):
         """ Test with sequence 'T'. """
-        self.assertEqual(self.list_rels('T'),
+        self.assertEqual(self.list_rels("T"),
                          [[SUB_A], [SUB_C], [SUB_G], [MATCH]])
 
     def test_n(self):
         """ Test with sequence 'N'. """
-        self.assertEqual(self.list_rels('N'),
+        self.assertEqual(self.list_rels("N"),
                          [[ANY_N], [ANY_N], [ANY_N], [ANY_N]])
 
     def test_aa(self):

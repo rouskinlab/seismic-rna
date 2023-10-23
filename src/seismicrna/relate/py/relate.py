@@ -14,7 +14,7 @@ from .encode import encode_match, encode_relate
 from .error import RelateValueError
 from ...core.rel import MATCH, DELET, NOCOV
 from ...core.seq import DNA
-from ...core.xam import MAX_FLAG
+from ...core.ngs import MAX_FLAG
 
 
 class SamFlag(object):

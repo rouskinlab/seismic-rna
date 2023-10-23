@@ -5,7 +5,7 @@ from click import command
 
 from .write import cluster
 from ..core import path
-from ..core.cli import (CMD_CLUST,
+from ..core.arg import (CMD_CLUST,
                         docdef,
                         arg_input_path,
                         opt_max_clusters,

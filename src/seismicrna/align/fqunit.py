@@ -5,8 +5,11 @@ from pathlib import Path
 from subprocess import CompletedProcess
 
 from ..core import path
-from ..core.shell import (GUNZIP_CMD, WORD_COUNT_CMD, args_to_cmd, cmds_to_pipe,
-                          ShellCommand)
+from ..core.extern import (GUNZIP_CMD,
+                           WORD_COUNT_CMD,
+                           ShellCommand,
+                           args_to_cmd,
+                           cmds_to_pipe)
 
 logger = getLogger(__name__)
 

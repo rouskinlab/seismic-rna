@@ -12,22 +12,19 @@ from itertools import (product,
                        combinations_with_replacement as cwr)
 from typing import Sequence
 
-import numpy as np
-
-from .c.encode import encode_relate
-from ..core.rel import DELET, INS_5, INS_3, REL_TYPE, NOCOV
-from ..core.seq import BASEA, BASEC, BASEG, BASET, DNA, Section
+from .py.encode import encode_relate
+from ..core.ngs import LO_QUAL, OK_QUAL, HI_QUAL
+from ..core.rel import DELET, INS_5, INS_3, MATCH
+from ..core.seq import DNA, Section
 
 MIN_INDEL_GAP = 1
-MIN_MAX_INS = 0
-MAX_MAX_INS = 2
 
 
 def iter_relvecs_q53(refseq: DNA,
                      low_qual: Sequence[int] = (),
                      end5: int | None = None,
                      end3: int | None = None,
-                     max_ins: int = MAX_MAX_INS):
+                     max_ins: int | None = None):
     """
     For a given reference sequence, yield every possible unambiguous
     relation vector between positions end5 and end3 that follows the
@@ -43,75 +40,66 @@ def iter_relvecs_q53(refseq: DNA,
         5' end of the read; 1-indexed with respect to `refseq`.
     end3: int | None = None
         3' end of the read; 1-indexed with respect to `refseq`.
-    max_ins: int = 2
-        Maximum number of insertions in the read. Must be in [0, 2].
+    max_ins: int | None = None
+        Maximum number of insertions in the read.
     """
+    if max_ins is not None and max_ins < 0:
+        raise ValueError(f"max_ins must be ≥ 0, but got {max_ins}")
     low_qual = set(low_qual)
     # Determine the section of the reference sequence that is occupied
     # by the read.
     sect = Section("", refseq, end5=end5, end3=end3)
-    if low_qual - set(sect.range_int):
+    all_positions = set(sect.range_int)
+    all5_positions = set(sect.range_int[:-1]) if sect.length > 0 else set()
+    if low_qual - all_positions:
         raise ValueError(f"Invalid positions in low_qual: "
                          f"{sorted(low_qual - set(sect.range))}")
-    if max_ins not in range(MIN_MAX_INS, MAX_MAX_INS + 1):
-        raise ValueError(f"Invalid value for max_ins: {max_ins}")
     # Find the possible relationships at each position in the section,
     # not including insertions.
-    rel_opts: list[tuple[int, ...]] = [(NOCOV,)] * len(refseq)
+    subdel_opts = dict()
     for pos in sect.range_int:
         # Find the base in the reference sequence (pos is 1-indexed).
         ref_base = refseq[pos - 1]
         if low_qual:
             # The only option is low-quality.
-            opts = encode_relate(ref_base, ref_base, '0', '1'),
+            opts = [encode_relate(ref_base, ref_base, LO_QUAL, OK_QUAL)]
         else:
-            # The options are a match and three substitutions.
-            opts = tuple(encode_relate(ref_base, read_base, '1', '1')
-                         for read_base in (BASEA, BASEC, BASEG, BASET))
+            # The options are three substitutions.
+            opts = [encode_relate(ref_base, read_base, HI_QUAL, OK_QUAL)
+                    for read_base in DNA.four() if read_base != ref_base]
         # A deletion is an option at every position except the ends of
         # the covered region.
         if sect.end5 < pos < sect.end3:
-            opts = opts + (DELET,)
-        rel_opts[pos - 1] = opts
+            opts.append(DELET)
+        subdel_opts[pos] = [(pos, rel) for rel in opts]
     # Iterate through all possible relationships at each position.
     margin = MIN_INDEL_GAP + 1
-    for rel in product(*rel_opts):
-        # Generate a relation vector from the relationships.
-        relvec = np.array(rel, dtype=REL_TYPE)
-        yield relvec
-        if max_ins == 0:
-            # Do not introduce any insertions into the read.
-            continue
-        # Allow up to two insertions in one read, at every position
-        # except the ends of the covered region and near deletions.
-        for ins1_pos5, ins2_pos5 in cwr(range(sect.end5, sect.end3), 2):
-            if max_ins == 1 and ins1_pos5 != ins2_pos5:
-                # If at most one insertion can be in the read, then skip
-                # cases where ins1_pos5 and ins2_pos5 are not equal.
-                continue
-            # Skip insertions nearby any deletion.
-            mrg15 = max(ins1_pos5 - margin, 0)
-            mrg13 = min(ins1_pos5 + margin, relvec.size)
-            if np.any(relvec[mrg15: mrg13] == DELET):
-                continue
-            mrg25 = max(ins2_pos5 - margin, 0)
-            mrg23 = min(ins2_pos5 + margin, relvec.size)
-            if np.any(relvec[mrg25: mrg23] == DELET):
-                continue
-            # Yield the relation vector with these insertions.
-            relvec_ins = relvec.copy()
-            if ins1_pos5 >= 1:
-                relvec_ins[ins1_pos5 - 1] |= INS_5
-            if ins1_pos5 < relvec.size:
-                relvec_ins[ins1_pos5] |= INS_3
-            if ins2_pos5 >= 1:
-                relvec_ins[ins2_pos5 - 1] |= INS_5
-            if ins2_pos5 < relvec.size:
-                relvec_ins[ins2_pos5] |= INS_3
-            yield relvec_ins
+    for num_subdels in range(len(subdel_opts) + 1):
+        for subdels_pos in combinations(subdel_opts, num_subdels):
+            for subdels in product(*(subdel_opts[pos] for pos in subdels_pos)):
+                # Generate a relation vector from the relationships.
+                relvec = dict(subdels)
+                yield sect.end5, sect.end3, relvec
+                if max_ins is None or max_ins > 0:
+                    no_ins5_pos = {pos for del_pos, rel in relvec.items()
+                                   if rel == DELET
+                                   for pos in range(del_pos - margin,
+                                                    del_pos + margin)}
+                    ins5_pos = sorted(all5_positions - no_ins5_pos)
+                    for num_ins in range(1, 1 + min(max_ins
+                                                    if max_ins is not None
+                                                    else len(ins5_pos),
+                                                    len(ins5_pos))):
+                        for ins5s in combinations(ins5_pos, num_ins):
+                            rv_ins = relvec.copy()
+                            for i5 in ins5s:
+                                i3 = i5 + 1
+                                rv_ins[i5] = rv_ins.get(i5, MATCH) | INS_5
+                                rv_ins[i3] = rv_ins.get(i3, MATCH) | INS_3
+                            yield sect.end5, sect.end3, rv_ins
 
 
-def iter_relvecs_all(refseq: DNA, max_ins: int = 2):
+def iter_relvecs_all(refseq: DNA, max_ins: int | None = None):
     """
     For a given reference sequence, yield every possible unambiguous
     relation vector that has at most two insertions.
@@ -130,7 +118,10 @@ def iter_relvecs_all(refseq: DNA, max_ins: int = 2):
             # Use every possible set of low-quality positions.
             for low_qual in combinations(range(end5, end3 + 1), n_low_qual):
                 # Yield every possible relation vector.
-                yield from iter_relvecs_q53(refseq, low_qual, end5, end3,
+                yield from iter_relvecs_q53(refseq,
+                                            low_qual,
+                                            end5,
+                                            end3,
                                             max_ins)
 
 ########################################################################

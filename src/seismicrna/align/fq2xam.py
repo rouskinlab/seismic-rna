@@ -12,10 +12,10 @@ from .xamgen import (run_bowtie2_build,
                      run_export,
                      run_xamgen)
 from ..core import path
-from ..core.cli import CMD_ALIGN, CMD_QC
+from ..core.arg import CMD_ALIGN, CMD_QC
 from ..core.parallel import dispatch
 from ..core.seq import DNA, parse_fasta, write_fasta
-from ..core.xam import (count_single_paired,
+from ..core.ngs import (count_single_paired,
                         run_flagstat,
                         run_ref_header,
                         run_index_xam,

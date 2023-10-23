@@ -1,9 +1,13 @@
 import string
 import unittest as ut
 
-from ..cigar import (CIG_ALIGN, CIG_MATCH, CIG_SUBST,
-                     CIG_DELET, CIG_INSRT, CIG_SCLIP)
-from ..cigarcount import CigarOp, count_cigar_muts, find_cigar_op_pos
+from ..cigar import (CIG_ALIGN,
+                     CIG_MATCH,
+                     CIG_SUBST,
+                     CIG_DELET,
+                     CIG_INSRT,
+                     CIG_SCLIP)
+from ..cigcount import CigarOp, count_cigar_muts, find_cigar_op_pos
 
 
 class TestCigarOp(ut.TestCase):

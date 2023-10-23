@@ -3,7 +3,7 @@ from pathlib import Path
 from .demultiplex import demultiplex_run
 from ..align.fqops import FastqUnit
 from ..core.parallel import lock_temp_dir
-from ..core.cli import (CMD_DEMULT,
+from ..core.arg import (CMD_DEMULT,
                         opt_barcode_length,
                         opt_barcode_start,
                         opt_parallel_demultiplexing,

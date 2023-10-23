@@ -8,7 +8,7 @@ import fastqsplitter
 import pandas as pd
 
 from ..align.fqops import FastqUnit
-from ..core.cli import (opt_barcode_length,
+from ..core.arg import (opt_barcode_length,
                         opt_barcode_start,
                         opt_parallel_demultiplexing,
                         opt_clipped_demultiplexing,
