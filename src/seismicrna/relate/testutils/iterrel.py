@@ -12,10 +12,10 @@ from itertools import (product,
                        combinations_with_replacement as cwr)
 from typing import Sequence
 
-from .py.encode import encode_relate
-from ..core.ngs import LO_QUAL, OK_QUAL, HI_QUAL
-from ..core.rel import DELET, INS_5, INS_3, MATCH
-from ..core.seq import DNA, Section
+from ..py.encode import encode_relate
+from ...core.ngs import LO_QUAL, OK_QUAL, HI_QUAL
+from ...core.rel import DELET, INS_5, INS_3, MATCH
+from ...core.seq import DNA, Section
 
 MIN_INDEL_GAP = 1
 
@@ -56,7 +56,7 @@ def iter_relvecs_q53(refseq: DNA,
                          f"{sorted(low_qual - set(sect.range))}")
     # Find the possible relationships at each position in the section,
     # not including insertions.
-    subdel_opts = dict()
+    rel_opts = list()
     for pos in sect.range_int:
         # Find the base in the reference sequence (pos is 1-indexed).
         ref_base = refseq[pos - 1]
@@ -66,37 +66,35 @@ def iter_relvecs_q53(refseq: DNA,
         else:
             # The options are three substitutions.
             opts = [encode_relate(ref_base, read_base, HI_QUAL, OK_QUAL)
-                    for read_base in DNA.four() if read_base != ref_base]
+                    for read_base in DNA.four()]
         # A deletion is an option at every position except the ends of
         # the covered region.
         if sect.end5 < pos < sect.end3:
             opts.append(DELET)
-        subdel_opts[pos] = [(pos, rel) for rel in opts]
+        rel_opts.append([(pos, rel) for rel in opts])
     # Iterate through all possible relationships at each position.
     margin = MIN_INDEL_GAP + 1
-    for num_subdels in range(len(subdel_opts) + 1):
-        for subdels_pos in combinations(subdel_opts, num_subdels):
-            for subdels in product(*(subdel_opts[pos] for pos in subdels_pos)):
-                # Generate a relation vector from the relationships.
-                relvec = dict(subdels)
-                yield sect.end5, sect.end3, relvec
-                if max_ins is None or max_ins > 0:
-                    no_ins5_pos = {pos for del_pos, rel in relvec.items()
-                                   if rel == DELET
-                                   for pos in range(del_pos - margin,
-                                                    del_pos + margin)}
-                    ins5_pos = sorted(all5_positions - no_ins5_pos)
-                    for num_ins in range(1, 1 + min(max_ins
-                                                    if max_ins is not None
-                                                    else len(ins5_pos),
-                                                    len(ins5_pos))):
-                        for ins5s in combinations(ins5_pos, num_ins):
-                            rv_ins = relvec.copy()
-                            for i5 in ins5s:
-                                i3 = i5 + 1
-                                rv_ins[i5] = rv_ins.get(i5, MATCH) | INS_5
-                                rv_ins[i3] = rv_ins.get(i3, MATCH) | INS_3
-                            yield sect.end5, sect.end3, rv_ins
+    for rels in product(*rel_opts):
+        # Generate a relation vector from the relationships.
+        relvec = dict((pos, rel) for pos, rel in rels if rel != MATCH)
+        yield sect.end5, sect.end3, relvec
+        if max_ins is None or max_ins > 0:
+            no_ins5_pos = {pos for del_pos, rel in relvec.items()
+                           if rel == DELET
+                           for pos in range(del_pos - margin,
+                                            del_pos + margin)}
+            ins5_pos = sorted(all5_positions - no_ins5_pos)
+            for num_ins in range(1, 1 + min(max_ins
+                                            if max_ins is not None
+                                            else len(ins5_pos),
+                                            len(ins5_pos))):
+                for ins5s in combinations(ins5_pos, num_ins):
+                    rv_ins = relvec.copy()
+                    for i5 in ins5s:
+                        i3 = i5 + 1
+                        rv_ins[i5] = rv_ins.get(i5, MATCH) | INS_5
+                        rv_ins[i3] = rv_ins.get(i3, MATCH) | INS_3
+                    yield sect.end5, sect.end3, rv_ins
 
 
 def iter_relvecs_all(refseq: DNA, max_ins: int | None = None):

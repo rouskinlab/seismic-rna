@@ -29,7 +29,7 @@ from ..core.ngs import (HI_QUAL,
 from ..core.rand import rng
 from ..core.rel import NOCOV
 from ..core.seq import DNA, index_to_seq
-from ..relate.invert import find_relvec_ends, inverse_relate
+from ..relate.testutils.invert import inverse_relate
 
 
 def sam_header(ref: str, length: int | DNA):

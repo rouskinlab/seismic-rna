@@ -8,20 +8,21 @@ Read Iteration Module
 """
 
 from collections import defaultdict
+from functools import partial
 from itertools import product
 
 import numpy as np
 
+from .cigcount import count_cigar_muts, find_cigar_op_pos
 from .invert import inverse_relate
 from .iterrel import iter_relvecs_all
-from .py.cigar import CIG_INSRT
-from .py.cigcount import count_cigar_muts, find_cigar_op_pos
-from ..core.rel import INS_5, INS_3, REL_TYPE, NOCOV
-from ..core.seq import DNA, expand_degenerate_seq
+from ..py.cigar import CIG_INSRT
+from ...core.rel import INS_5, INS_3, MATCH
+from ...core.seq import DNA, expand_degenerate_seq
 
 
 def ref_to_alignments(refseq: DNA,
-                      max_ins: int = 2,
+                      max_ins: int | None = None,
                       max_ins_len: int = 1,
                       max_ins_bases: int | None = None):
     """
@@ -44,9 +45,8 @@ def ref_to_alignments(refseq: DNA,
     """
     # Initialize maps of reads to CIGAR strings and relation vectors.
     quals = dict()
-    cigars = defaultdict(lambda: defaultdict(list))
-    relvecs = defaultdict(lambda: defaultdict(lambda: np.zeros(len(refseq),
-                                                               dtype=REL_TYPE)))
+    cigars = defaultdict(partial(defaultdict, list))
+    relvecs = defaultdict(partial(defaultdict, dict))
     if max_ins < 0:
         raise ValueError(f"max_ins must be ≥ 0, but got {max_ins}")
     if max_ins > 0:
@@ -56,14 +56,13 @@ def ref_to_alignments(refseq: DNA,
             raise ValueError(f"max_ins_bases ({max_ins_bases}) "
                              f"must be ≥ max_ins ({max_ins})")
     # Iterate through all possible relation vectors.
-    for relvec in iter_relvecs_all(refseq, max_ins):
+    for end5, end3, muts in iter_relvecs_all(refseq, max_ins):
         # Check if there are insertions in the relation vector.
-        n_ins = int(np.count_nonzero(np.logical_and(relvec & INS_5,
-                                                    relvec != NOCOV)))
-        n_ins3 = int(np.count_nonzero(np.logical_and(relvec & INS_3,
-                                                     relvec != NOCOV)))
+        n_ins = sum(bool(rel & INS_5) for rel in muts.values())
+        n_ins3 = sum(bool(rel & INS_3) for rel in muts.values())
         if n_ins != n_ins3:
-            raise ValueError(f"Got {n_ins} 5' and {n_ins3} 3' insertions")
+            raise ValueError(
+                f"Got {n_ins} 5' and {n_ins3} 3' insertions in {muts}")
         if n_ins > max_ins:
             # This should not happen. Checking just in case.
             raise ValueError(f"Got {n_ins} insertions, but max_ins = {max_ins}")
@@ -73,8 +72,11 @@ def ref_to_alignments(refseq: DNA,
                 # Skip insertion lengths whose sum exceeds the limit.
                 continue
             # Determine the read(s) corresponding to this relation vector.
-            degen, qual, cigar, end5, end3 = inverse_relate(refseq, relvec,
-                                                            ins_len=ins_len)
+            degen, qual, cigar = inverse_relate(refseq,
+                                                end5,
+                                                end3,
+                                                muts,
+                                                ins_len=ins_len)
             if n_ins > 0:
                 # If there are insertions, find their positions.
                 ins_pos = list(find_cigar_op_pos(cigar, CIG_INSRT))
@@ -87,15 +89,17 @@ def ref_to_alignments(refseq: DNA,
             else:
                 qual_no_ins = qual
             # Count the mutations in the CIGAR string.
-            nmuts = count_cigar_muts(cigar)
+            num_muts = count_cigar_muts(cigar)
             for read in expand_degenerate_seq(degen):
                 key = read, qual_no_ins, end5, end3
                 # Record the original quality score.
                 quals[key] = qual
                 # Gather every CIGAR string for the read.
-                cigars[key][nmuts].append(cigar)
+                cigars[key][num_muts].append(cigar)
                 # Accumulate the bitwise OR of all relation vectors.
-                relvecs[key][nmuts] |= relvec
+                relvec = relvecs[key][len(muts)]
+                relvec.update({pos: mut | relvec.get(pos, MATCH)
+                               for pos, mut in muts.items()})
     # For every read-quality-end5-end3 key, keep only the CIGAR strings
     # and relation vector with the fewest mutations.
     cigars_best: dict[tuple[DNA, str, int, int], list[str]] = dict()

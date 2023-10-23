@@ -14,11 +14,11 @@ import numpy as np
 from ..xna import XNA, DNA, RNA, expand_degenerate_seq
 
 
-class TestDna(ut.TestCase):
+class TestDNA(ut.TestCase):
     """ Test class `DNA`. """
 
     def test_alph(self):
-        self.assertEqual(DNA.alph, ('A', 'C', 'N', 'G', 'T'))
+        self.assertEqual(DNA.alph(), ('A', 'C', 'N', 'G', 'T'))
 
     def test_get_comp(self):
         self.assertEqual(DNA.get_comp(), ('T', 'G', 'N', 'C', 'A'))
@@ -120,11 +120,11 @@ class TestDna(ut.TestCase):
             self.assertTrue(DNA.random(length))
 
 
-class TestRna(ut.TestCase):
+class TestRNA(ut.TestCase):
     """ Test class `RNA`. """
 
     def test_alph(self):
-        self.assertEqual(RNA.alph, ('A', 'C', 'N', 'G', 'U'))
+        self.assertEqual(RNA.alph(), ('A', 'C', 'N', 'G', 'U'))
 
     def test_get_comp(self):
         self.assertEqual(RNA.get_comp(), ('U', 'G', 'N', 'C', 'A'))
@@ -226,12 +226,15 @@ class TestRna(ut.TestCase):
             self.assertTrue(RNA.random(length))
 
 
-class TestSeq(ut.TestCase):
-    """ Test basic properties of the Seq class. """
+class TestXNA(ut.TestCase):
+    """ Test basic properties of the XNA abstract base class. """
 
     def test_abstract_base_class(self):
-        """ Test that instantiating a Seq raises AttributeError. """
-        self.assertRaises(AttributeError, XNA, "ACGN")
+        """ Test that instantiating an XNA raises a TypeError. """
+        self.assertRaisesRegex(TypeError,
+                               "Can't instantiate abstract class XNA",
+                               XNA,
+                               "ACGN")
 
     def test_equal_dna_dna(self):
         """ Test that DNA instances with the same sequences compare as

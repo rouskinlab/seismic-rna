@@ -1,10 +1,10 @@
-from .cigar import (CIG_ALIGN,
-                    CIG_MATCH,
-                    CIG_SUBST,
-                    CIG_DELET,
-                    CIG_INSRT,
-                    CIG_SCLIP,
-                    parse_cigar)
+from ..py.cigar import (CIG_ALIGN,
+                        CIG_MATCH,
+                        CIG_SUBST,
+                        CIG_DELET,
+                        CIG_INSRT,
+                        CIG_SCLIP,
+                        parse_cigar)
 
 
 class CigarOp(object):

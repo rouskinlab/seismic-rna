@@ -105,7 +105,7 @@ class TestGetMuQuantile(ut.TestCase):
         """ Test that invalid quantiles raise errors. """
         n = 11
         mus = rng.random(n)
-        errmsg = "Quantiles must be in the range [[]0, 1[]]"
+        errmsg = "Quantiles must be in the range [\[0, 1\]]"
         # Test that negative quantiles are invalid.
         for quantile in np.linspace(0., -1., n)[1:]:
             self.assertRaisesRegex(ValueError, errmsg,

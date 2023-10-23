@@ -57,6 +57,9 @@ class RnaSection(object):
     def subsection(self, end5: int, end3: int, title: str | None = None):
         return self.__class__(**self._subsect_kwargs(end5, end3, title))
 
+    def __str__(self):
+        return f"{type(self).__name__} {repr(self.title)} over {self.section}"
+
 ########################################################################
 #                                                                      #
 # Copyright ©2023, the Rouskin Lab.                                    #

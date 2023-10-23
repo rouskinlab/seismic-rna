@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
+from itertools import product
 from pathlib import Path
 from typing import Iterable
 
@@ -169,7 +170,9 @@ class MaskPosTableLoader(MaskTableLoader, PosTableLoader, MaskPosTable):
                              section=section,
                              sample=self.sample,
                              data_sect=self.sect,
-                             reacts=self.get_ratio((MUTAT_REL,), quantile))
+                             reacts=self.process(ratio=True,
+                                                 quantile=quantile,
+                                                 rels=[MUTAT_REL])[MUTAT_REL])
 
 
 class MaskReadTableLoader(MaskTableLoader, ReadTableLoader, MaskReadTable):
@@ -181,14 +184,16 @@ class ClustPosTableLoader(ClustTableLoader, PosTableLoader, ClustPosTable):
 
     def iter_profiles(self, sections: Iterable[Section], quantile: float):
         """ Yield RNA mutational profiles from a table. """
-        for section in sections:
-            for ok in self.ord_clust:
-                yield RnaProfile(path.fill_whitespace(fmt_clust_name(*ok)),
-                                 section=section,
-                                 sample=self.sample,
-                                 data_sect=self.sect,
-                                 reacts=self.get_ratio(ok + (MUTAT_REL,),
-                                                       quantile))
+        for section, (order, clust) in product(sections, self.ord_clust):
+            yield RnaProfile(path.fill_whitespace(fmt_clust_name(order, clust)),
+                             section=section,
+                             sample=self.sample,
+                             data_sect=self.sect,
+                             reacts=self.process(ratio=True,
+                                                 quantile=quantile,
+                                                 rels=[MUTAT_REL],
+                                                 order=[order],
+                                                 cluster=[clust])[MUTAT_REL])
 
 
 class ClustReadTableLoader(ClustTableLoader, ReadTableLoader, ClustReadTable):

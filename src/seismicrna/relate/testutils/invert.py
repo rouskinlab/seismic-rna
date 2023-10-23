@@ -1,40 +1,28 @@
 from typing import Sequence
 
-import numpy as np
-
-from .cigar import CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_DELET, CIG_INSRT
-from .cigarcount import CigarOp
-from .encode import BASE_DECODINGS
-from ..core.qual import LO_QUAL, HI_QUAL
-from ..core.rel import (MATCH, DELET, INS_5, INS_3, INS_8,
-                        SUB_A, SUB_C, SUB_G, SUB_T, ANY_N,
-                        IRREC, NOCOV, REL_TYPE)
-from ..core.seq import BASEN, DNA
-
-
-def find_relvec_ends(relvec: np.ndarray):
-    """ Find the 5' and 3' ends of a relation vector. """
-    if not isinstance(relvec, np.ndarray):
-        raise TypeError(f"Expected {np.ndarray}, but got {type(relvec)}")
-    if relvec.dtype.type is not REL_TYPE:
-        raise TypeError(f"Expected an array of type {REL_TYPE}, but got "
-                        f"type {relvec.dtype.type}")
-    if relvec.ndim != 1:
-        raise ValueError("Expected an array with 1 dimension, but got "
-                         f"{relvec.ndim} dimensions")
-    called = np.flatnonzero(relvec != NOCOV)
-    if called.size == 0:
-        raise ValueError("Relation vector is blank")
-    end5 = int(called[0]) + 1
-    end3 = int(called[-1]) + 1
-    if (nexp := end3 - end5 + 1) != called.size:
-        raise ValueError(f"Expected {nexp} base calls "
-                         f"({np.arange(end5, end3 + 1)}), but got "
-                         f"{called.size} ({called})")
-    return end5, end3
+from .cigcount import CigarOp
+from ..py.cigar import CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_DELET, CIG_INSRT
+from ..py.encode import BASE_DECODINGS
+from ...core.ngs import LO_QUAL, HI_QUAL
+from ...core.rel import (MATCH,
+                         DELET,
+                         INS_5,
+                         INS_3,
+                         INS_8,
+                         SUB_A,
+                         SUB_C,
+                         SUB_G,
+                         SUB_T,
+                         ANY_N,
+                         IRREC,
+                         NOCOV)
+from ...core.seq import BASEN, POS_INDEX, DNA
 
 
-def inverse_relate(refseq: DNA, relvec: np.ndarray,
+def inverse_relate(refseq: DNA,
+                   end5: int,
+                   end3: int,
+                   muts: dict[int, int],
                    hi_qual: str = HI_QUAL,
                    lo_qual: str = LO_QUAL,
                    ins_len: int | Sequence[int] = 1):
@@ -46,8 +34,12 @@ def inverse_relate(refseq: DNA, relvec: np.ndarray,
     ----------
     refseq: DNA
         Sequence of the reference.
-    relvec: ndarray
-        Relation vector.
+    end5: int
+        5' end of the read with respect to the reference.
+    end3: int
+        3' end of the read with respect to the reference.
+    muts: dict[int, int]
+        Mutations in the read, keyed by their positions.
     hi_qual: str = MAX_QUAL
         Character to put in the quality string at every position that is
         high-quality according to the relation vector.
@@ -66,18 +58,25 @@ def inverse_relate(refseq: DNA, relvec: np.ndarray,
 
     """
     # Validate the relation vector and reference sequence.
-    end5, end3 = find_relvec_ends(relvec)
-    if len(refseq) != len(relvec):
-        raise ValueError(f"Reference sequence has {len(refseq)} nt, "
-                         f"but relation vector has {len(relvec)} nt")
-    if hi_qual < lo_qual:
-        raise ValueError(f"The high-quality score ({hi_qual}) is less than "
-                         f"than the low-quality score ({lo_qual})")
+    if end5 < POS_INDEX:
+        raise ValueError(f"end5 must be ≥ {POS_INDEX}, but got {end5}")
+    if end3 > len(refseq):
+        raise ValueError(f"end3 must be ≤ {len(refseq)}, but got {end3}")
+    if muts:
+        if min(muts) < end5:
+            raise ValueError(f"All positions must be ≥ {end5}, "
+                             f"but got {[pos for pos in muts if pos < end5]}")
+        if max(muts) > end3:
+            raise ValueError(f"All positions must be ≤ {end3}, "
+                             f"but got {[pos for pos in muts if pos > end5]}")
     # Validate the quality codes.
     if len(hi_qual) != 1:
         raise ValueError(f"hi_qual must be 1 character, but got {len(hi_qual)}")
     if len(lo_qual) != 1:
         raise ValueError(f"lo_qual must be 1 character, but got {len(hi_qual)}")
+    if hi_qual < lo_qual:
+        raise ValueError(f"The high-quality score ({hi_qual}) is less than "
+                         f"than the low-quality score ({lo_qual})")
     # Build the read sequence, quality scores, and CIGAR string one base
     # at a time.
     read: list[str] = list()
@@ -99,7 +98,7 @@ def inverse_relate(refseq: DNA, relvec: np.ndarray,
 
     for pos in range(end5, end3 + 1):
         ref_base = refseq[pos - 1]
-        rel = relvec[pos - 1]
+        rel = muts.get(pos, MATCH)
         if rel == NOCOV:
             raise ValueError(f"Position {pos} in {end5}-{end3} is not covered")
         if rel & INS_8:
@@ -107,7 +106,7 @@ def inverse_relate(refseq: DNA, relvec: np.ndarray,
             # other relation except for a deletion.
             if rel & DELET:
                 # Being both a deletion and an insertion is forbidden.
-                raise ValueError(f"Relation {rel} in {relvec} is del and ins")
+                raise ValueError(f"Position {pos} in {muts} is del and ins")
             if rel & INS_3:
                 if not pos > end5:
                     # Insertions cannot occur before the beginning of
@@ -115,7 +114,7 @@ def inverse_relate(refseq: DNA, relvec: np.ndarray,
                     raise ValueError(f"Position {pos} in {end5}-{end3} cannot "
                                      f"be 3' of an insertion")
                 if not ins3_next:
-                    raise ValueError(f"Unexpected 3' ins at {pos} in {relvec}")
+                    raise ValueError(f"Unexpected 3' ins at {pos} in {muts}")
                 # The current position is 5' of an insertion, so the
                 # inserted base must be added before the base at the
                 # current position is added. Insert a number of bases
@@ -136,7 +135,7 @@ def inverse_relate(refseq: DNA, relvec: np.ndarray,
                 ins3_next = False
             elif ins3_next:
                 # Check if this position should be 3' of an insertion.
-                raise ValueError(f"Missing 3' ins at {pos} in {relvec}")
+                raise ValueError(f"Missing 3' ins at {pos} in {muts}")
             if rel & INS_5:
                 if not pos < end3:
                     raise ValueError(f"Position {pos} in {end5}-{end3} cannot "
@@ -153,7 +152,7 @@ def inverse_relate(refseq: DNA, relvec: np.ndarray,
             rel = rel & ~INS_8
         elif ins3_next:
             # Check if this position should be 3' of an insertion.
-            raise ValueError(f"Missing 3' ins at {pos} in {relvec}")
+            raise ValueError(f"Missing 3' ins at {pos} in {muts}")
         if rel == MATCH:
             # Match: Add the reference base to the read.
             read.append(ref_base)
@@ -176,26 +175,20 @@ def inverse_relate(refseq: DNA, relvec: np.ndarray,
             try:
                 read_base = BASE_DECODINGS[rel]
             except KeyError:
-                raise ValueError(f"Invalid relation {rel} in {relvec}")
+                raise ValueError(f"Invalid relation {rel} in {muts}[{pos}]")
             if ref_base == read_base:
                 raise ValueError(
-                    f"Cannot substitute {ref_base} to itself in {relvec}")
+                    f"Cannot substitute {ref_base} to itself in {muts}[{pos}]")
             read.append(read_base)
             qual.append(hi_qual)
             add_to_cigar(CIG_SUBST)
-    # Check that the 5' end was found.
-    if end5 == 0:
-        raise ValueError(f"Relation vector had no 5' end: {relvec}")
     if len(read) != len(qual):
         raise ValueError(
             f"Lengths of read ({len(read)}) and qual ({len(qual)}) differed")
     if not read:
         raise ValueError("Read contained no bases")
     # Assemble and return the read, quality, and CIGAR strings.
-    read_seq = DNA("".join(read))
-    qual_string = "".join(qual)
-    cigar_string = "".join(map(str, cigars))
-    return read_seq, qual_string, cigar_string, end5, end3
+    return DNA("".join(read)), "".join(qual), "".join(map(str, cigars))
 
 ########################################################################
 #                                                                      #
