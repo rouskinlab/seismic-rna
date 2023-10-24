@@ -113,7 +113,7 @@
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-demult-phred-enc">
 <span class="sig-name descname"><span class="pre">--phred-enc</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;phred_enc&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-phred-enc" title="Permalink to this definition"></a></dt>
-<dd><p>Phred score encoding in FASTQ/SAM/BAM files</p>
+<dd><p>Phred score encoding in FASTQ and SAM/BAM/CRAM files</p>
 </dd></dl>
 
 <dl class="std option">
@@ -136,7 +136,7 @@
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-demult-o">
-<span id="cmdoption-seismic-demult-out-dir"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--out-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;top&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-o" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-seismic-demult-out-dir"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--out-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;out_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-o" title="Permalink to this definition"></a></dt>
 <dd><p>Where to output all finished files</p>
 </dd></dl>
 
@@ -225,12 +225,12 @@ FASTQC (optional), and align them to a FASTA file with Bowtie2.</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-align-phred-enc">
 <span class="sig-name descname"><span class="pre">--phred-enc</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;phred_enc&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-phred-enc" title="Permalink to this definition"></a></dt>
-<dd><p>Phred score encoding in FASTQ/SAM/BAM files</p>
+<dd><p>Phred score encoding in FASTQ and SAM/BAM/CRAM files</p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-align-o">
-<span id="cmdoption-seismic-align-out-dir"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--out-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;top&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-o" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-seismic-align-out-dir"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--out-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;out_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-o" title="Permalink to this definition"></a></dt>
 <dd><p>Where to output all finished files</p>
 </dd></dl>
 
@@ -241,9 +241,9 @@ FASTQC (optional), and align them to a FASTA file with Bowtie2.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-align-rerun">
-<span id="cmdoption-seismic-align-no-rerun"></span><span class="sig-name descname"><span class="pre">--rerun</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-rerun</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-rerun" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to regenerate files that already exist</p>
+<dt class="sig sig-object std" id="cmdoption-seismic-align-force">
+<span id="cmdoption-seismic-align-no-force"></span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-force" title="Permalink to this definition"></a></dt>
+<dd><p>Force all tasks to run, even those whose output files already exist</p>
 </dd></dl>
 
 <dl class="std option">
@@ -254,8 +254,8 @@ FASTQC (optional), and align them to a FASTA file with Bowtie2.</p>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-align-parallel">
-<span id="cmdoption-seismic-align-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-parallel" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to run multiple tasks in parallel</p>
+<span id="cmdoption-seismic-align-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to process input files in parallel or in series</p>
 </dd></dl>
 
 <dl class="std option">
@@ -479,6 +479,12 @@ FASTQC (optional), and align them to a FASTA file with Bowtie2.</p>
 <dd><p>Do not analyze datasets with fewer than this minimum number of reads</p>
 </dd></dl>
 
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-cram">
+<span id="cmdoption-seismic-align-bam"></span><span class="sig-name descname"><span class="pre">--cram</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--bam</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-cram" title="Permalink to this definition"></a></dt>
+<dd><p>Output alignment maps in BAM or CRAM format. BAM format has faster read/write speeds, while CRAM format yields smaller files.</p>
+</dd></dl>
+
 <p class="rubric">Arguments</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-align-arg-FASTA">
@@ -497,7 +503,7 @@ the reference base to which it aligned.</p>
 <p class="rubric">Options</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-relate-o">
-<span id="cmdoption-seismic-relate-out-dir"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--out-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;top&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-o" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-seismic-relate-out-dir"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--out-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;out_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-o" title="Permalink to this definition"></a></dt>
 <dd><p>Where to output all finished files</p>
 </dd></dl>
 
@@ -516,7 +522,7 @@ the reference base to which it aligned.</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-relate-phred-enc">
 <span class="sig-name descname"><span class="pre">--phred-enc</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;phred_enc&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-phred-enc" title="Permalink to this definition"></a></dt>
-<dd><p>Phred score encoding in FASTQ/SAM/BAM files</p>
+<dd><p>Phred score encoding in FASTQ and SAM/BAM/CRAM files</p>
 </dd></dl>
 
 <dl class="std option">
@@ -544,6 +550,12 @@ the reference base to which it aligned.</p>
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-brotli-level">
+<span class="sig-name descname"><span class="pre">--brotli-level</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;brotli_level&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-brotli-level" title="Permalink to this definition"></a></dt>
+<dd><p>Compression level for brotli: 0 (fastest, but worst compression) to 11 (best compression, but slowest)</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-relate-max-procs">
 <span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-max-procs" title="Permalink to this definition"></a></dt>
 <dd><p>Maximum number of simultaneous processes</p>
@@ -551,14 +563,14 @@ the reference base to which it aligned.</p>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-relate-parallel">
-<span id="cmdoption-seismic-relate-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-relate-parallel" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to run multiple tasks in parallel</p>
+<span id="cmdoption-seismic-relate-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-relate-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to process input files in parallel or in series</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-relate-rerun">
-<span id="cmdoption-seismic-relate-no-rerun"></span><span class="sig-name descname"><span class="pre">--rerun</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-rerun</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-relate-rerun" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to regenerate files that already exist</p>
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-force">
+<span id="cmdoption-seismic-relate-no-force"></span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-relate-force" title="Permalink to this definition"></a></dt>
+<dd><p>Force all tasks to run, even those whose output files already exist</p>
 </dd></dl>
 
 <dl class="std option">
@@ -680,6 +692,12 @@ count as mutations, and filter out unusable positions and reads.</p>
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-brotli-level">
+<span class="sig-name descname"><span class="pre">--brotli-level</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;brotli_level&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-brotli-level" title="Permalink to this definition"></a></dt>
+<dd><p>Compression level for brotli: 0 (fastest, but worst compression) to 11 (best compression, but slowest)</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-mask-max-procs">
 <span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-max-procs" title="Permalink to this definition"></a></dt>
 <dd><p>Maximum number of simultaneous processes</p>
@@ -687,14 +705,14 @@ count as mutations, and filter out unusable positions and reads.</p>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-mask-parallel">
-<span id="cmdoption-seismic-mask-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-mask-parallel" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to run multiple tasks in parallel</p>
+<span id="cmdoption-seismic-mask-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-mask-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to process input files in parallel or in series</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-mask-rerun">
-<span id="cmdoption-seismic-mask-no-rerun"></span><span class="sig-name descname"><span class="pre">--rerun</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-rerun</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-mask-rerun" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to regenerate files that already exist</p>
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-force">
+<span id="cmdoption-seismic-mask-no-force"></span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-mask-force" title="Permalink to this definition"></a></dt>
+<dd><p>Force all tasks to run, even those whose output files already exist</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>
@@ -750,6 +768,12 @@ alternative structures in the RNA ensemble.</p>
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-brotli-level">
+<span class="sig-name descname"><span class="pre">--brotli-level</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;brotli_level&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-cluster-brotli-level" title="Permalink to this definition"></a></dt>
+<dd><p>Compression level for brotli: 0 (fastest, but worst compression) to 11 (best compression, but slowest)</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-cluster-max-procs">
 <span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-cluster-max-procs" title="Permalink to this definition"></a></dt>
 <dd><p>Maximum number of simultaneous processes</p>
@@ -757,14 +781,14 @@ alternative structures in the RNA ensemble.</p>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-cluster-parallel">
-<span id="cmdoption-seismic-cluster-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-cluster-parallel" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to run multiple tasks in parallel</p>
+<span id="cmdoption-seismic-cluster-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-cluster-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to process input files in parallel or in series</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-cluster-rerun">
-<span id="cmdoption-seismic-cluster-no-rerun"></span><span class="sig-name descname"><span class="pre">--rerun</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-rerun</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-cluster-rerun" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to regenerate files that already exist</p>
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-force">
+<span id="cmdoption-seismic-cluster-no-force"></span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-cluster-force" title="Permalink to this definition"></a></dt>
+<dd><p>Force all tasks to run, even those whose output files already exist</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>
@@ -784,12 +808,6 @@ alternative structures in the RNA ensemble.</p>
 </div>
 <p class="rubric">Options</p>
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-table-r">
-<span id="cmdoption-seismic-table-rels"></span><span class="sig-name descname"><span class="pre">-r</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--rels</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;rels&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-table-r" title="Permalink to this definition"></a></dt>
-<dd><p>Output these relationships between the read and the reference</p>
-</dd></dl>
-
-<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-table-max-procs">
 <span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-table-max-procs" title="Permalink to this definition"></a></dt>
 <dd><p>Maximum number of simultaneous processes</p>
@@ -797,14 +815,14 @@ alternative structures in the RNA ensemble.</p>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-table-parallel">
-<span id="cmdoption-seismic-table-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-table-parallel" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to run multiple tasks in parallel</p>
+<span id="cmdoption-seismic-table-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-table-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to process input files in parallel or in series</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-table-rerun">
-<span id="cmdoption-seismic-table-no-rerun"></span><span class="sig-name descname"><span class="pre">--rerun</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-rerun</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-table-rerun" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to regenerate files that already exist</p>
+<dt class="sig sig-object std" id="cmdoption-seismic-table-force">
+<span id="cmdoption-seismic-table-no-force"></span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-table-force" title="Permalink to this definition"></a></dt>
+<dd><p>Force all tasks to run, even those whose output files already exist</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>
@@ -873,14 +891,14 @@ individual clusters or the ensemble average (‘mask’ step).</p>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-fold-parallel">
-<span id="cmdoption-seismic-fold-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-parallel" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to run multiple tasks in parallel</p>
+<span id="cmdoption-seismic-fold-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to process input files in parallel or in series</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-fold-rerun">
-<span id="cmdoption-seismic-fold-no-rerun"></span><span class="sig-name descname"><span class="pre">--rerun</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-rerun</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-rerun" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to regenerate files that already exist</p>
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-force">
+<span id="cmdoption-seismic-fold-no-force"></span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-force" title="Permalink to this definition"></a></dt>
+<dd><p>Force all tasks to run, even those whose output files already exist</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>
@@ -961,8 +979,8 @@ individual clusters or the ensemble average (‘mask’ step).</p>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-seqbar-parallel">
-<span id="cmdoption-seismic-graph-seqbar-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqbar-parallel" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to run multiple tasks in parallel</p>
+<span id="cmdoption-seismic-graph-seqbar-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqbar-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to process input files in parallel or in series</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>
@@ -1036,8 +1054,8 @@ each position in a sequence.</p>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-seqdiff-parallel">
-<span id="cmdoption-seismic-graph-seqdiff-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqdiff-parallel" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to run multiple tasks in parallel</p>
+<span id="cmdoption-seismic-graph-seqdiff-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqdiff-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to process input files in parallel or in series</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>
@@ -1110,8 +1128,8 @@ each position in a sequence.</p>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-parallel">
-<span id="cmdoption-seismic-graph-seqcorr-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-parallel" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to run multiple tasks in parallel</p>
+<span id="cmdoption-seismic-graph-seqcorr-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to process input files in parallel or in series</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>
@@ -1185,8 +1203,8 @@ in a sequence.</p>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-parallel">
-<span id="cmdoption-seismic-graph-scatter-no-parallel"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-parallel</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-parallel" title="Permalink to this definition"></a></dt>
-<dd><p>Whether to run multiple tasks in parallel</p>
+<span id="cmdoption-seismic-graph-scatter-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to process input files in parallel or in series</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>

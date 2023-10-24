@@ -12,85 +12,24 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   seismicrna.core.arg
+   seismicrna.core.batch
+   seismicrna.core.extern
+   seismicrna.core.io
+   seismicrna.core.meta
+   seismicrna.core.mu
+   seismicrna.core.ngs
+   seismicrna.core.parallel
+   seismicrna.core.rel
+   seismicrna.core.rna
+   seismicrna.core.seq
    seismicrna.core.tests
 
 Submodules
 ----------
 
 
-.. automodule:: seismicrna.core.bitcall
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.bitvect
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.cli
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.cmd
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.depend
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.docdef
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.fasta
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.files
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.load
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 .. automodule:: seismicrna.core.logs
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.mu
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.pair
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.parallel
    :members:
    :undoc-members:
    :show-inheritance:
@@ -102,49 +41,7 @@ Submodules
    :show-inheritance:
 
 
-.. automodule:: seismicrna.core.qual
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 .. automodule:: seismicrna.core.rand
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.rel
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.report
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.rna
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.sect
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.seq
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.shell
    :members:
    :undoc-members:
    :show-inheritance:
@@ -156,13 +53,7 @@ Submodules
    :show-inheritance:
 
 
-.. automodule:: seismicrna.core.temp
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.xam
+.. automodule:: seismicrna.core.types
    :members:
    :undoc-members:
    :show-inheritance:

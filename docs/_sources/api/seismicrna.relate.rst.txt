@@ -12,91 +12,34 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   seismicrna.relate.aux
+   seismicrna.relate.c
+   seismicrna.relate.py
    seismicrna.relate.tests
 
 Submodules
 ----------
 
 
-.. automodule:: seismicrna.relate.ambrel
+.. automodule:: seismicrna.relate.batch
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.relate.blank
+.. automodule:: seismicrna.relate.data
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.relate.cigar
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.relate.cigar2
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.relate.encode
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.relate.error
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.relate.export
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.relate.human
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.relate.invert
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.relate.iterread
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.relate.iterrelv
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.relate.load
+.. automodule:: seismicrna.relate.io
    :members:
    :undoc-members:
    :show-inheritance:
 
 
 .. automodule:: seismicrna.relate.main
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.relate.relate
    :members:
    :undoc-members:
    :show-inheritance:
@@ -109,12 +52,6 @@ Submodules
 
 
 .. automodule:: seismicrna.relate.sam
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.relate.seqpos
    :members:
    :undoc-members:
    :show-inheritance:
