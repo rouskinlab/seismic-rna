@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
+
 from ..core import path
 from ..core.io import (Report,
                        SampleF,
+                       RefF,
                        IsDemultF,
                        IsPairedEndF,
                        PhredEncF,
@@ -45,12 +48,12 @@ from ..core.io import (Report,
                        ReadsRefs)
 
 
-class AlignReport(Report):
+class AlignReport(Report, ABC):
 
     @classmethod
+    @abstractmethod
     def fields(cls):
-        return [SampleF,
-                IsDemultF,
+        return [IsDemultF,
                 IsPairedEndF,
                 PhredEncF,
                 UseFastqcF,
@@ -96,12 +99,40 @@ class AlignReport(Report):
         return path.SampSeg, path.CmdSeg
 
     @classmethod
-    def file_seg_type(cls):
-        return path.AlignRepSeg
-
-    @classmethod
     def auto_fields(cls):
         return {**super().auto_fields(), path.CMD: path.CMD_ALN_DIR}
+
+
+class AlignSampleReport(AlignReport):
+
+    @classmethod
+    def fields(cls):
+        return [SampleF] + super().fields()
+
+    @classmethod
+    def file_seg_type(cls):
+        return path.AlignSampleRepSeg
+
+    def __init__(self, ref: str | None = None, **kwargs):
+        if ref is not None:
+            raise TypeError(f"Got an unexpected reference name: {repr(ref)}")
+        super().__init__(demultiplexed=False, **kwargs)
+
+
+class AlignRefReport(AlignReport):
+
+    @classmethod
+    def fields(cls):
+        return [SampleF, RefF] + super().fields()
+
+    @classmethod
+    def file_seg_type(cls):
+        return path.AlignRefRepSeg
+
+    def __init__(self, ref: str, **kwargs):
+        if ref is None:
+            raise TypeError(f"Expected a reference name, but got {repr(ref)}")
+        super().__init__(ref=ref, demultiplexed=True, **kwargs)
 
 ########################################################################
 #                                                                      #

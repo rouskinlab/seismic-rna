@@ -326,6 +326,10 @@ VersionF = Field("version",
                  "Version of SEISMIC-RNA",
                  str,
                  check_val=check_name)
+BranchesF = Field("branches",
+                  "Branches",
+                  list,
+                  check_val=check_list_str)
 SampleF = Field("sample",
                 "Name of Sample",
                 str,
@@ -368,29 +372,48 @@ IsPairedEndF = Field("paired_end", "Use paired-end mode", bool)
 PhredEncF = Field("phred_enc", "Phred score encoding", int)
 UseFastqcF = Field("fastqc", "Check quality with FastQC", bool)
 UseCutadaptF = Field("cut", "Trim with Cutadapt", bool)
-CutadaptQ1 = Field("cut_q1", "Minimum Phred score for read 1",
-                   int, check_val=check_nonneg_int)
-CutadaptQ2 = Field("cut_q2", "Minimum Phred score for read 2",
-                   int, check_val=check_nonneg_int)
-CutadaptG1 = Field("cut_g1", "5' adapter for read 1",
-                   list, check_val=check_list_str)
-CutadaptA1 = Field("cut_a1", "3' adapter for read 1",
-                   list, check_val=check_list_str)
-CutadaptG2 = Field("cut_g2", "5' adapter for read 2",
-                   list, check_val=check_list_str)
-CutadaptA2 = Field("cut_a2", "3' adapter for read 2",
-                   list, check_val=check_list_str)
-CutadaptOverlap = Field("cut_o", "Minimum adapter length (nt)",
-                        int, check_val=check_nonneg_int)
-CutadaptErrors = Field("cut_e", "Minimum adapter error rate",
-                       float, check_val=check_probability)
+CutadaptQ1 = Field("cut_q1",
+                   "Minimum Phred score for read 1",
+                   int,
+                   check_val=check_nonneg_int)
+CutadaptQ2 = Field("cut_q2",
+                   "Minimum Phred score for read 2",
+                   int,
+                   check_val=check_nonneg_int)
+CutadaptG1 = Field("cut_g1",
+                   "5' adapter for read 1",
+                   list,
+                   check_val=check_list_str)
+CutadaptA1 = Field("cut_a1",
+                   "3' adapter for read 1",
+                   list,
+                   check_val=check_list_str)
+CutadaptG2 = Field("cut_g2",
+                   "5' adapter for read 2",
+                   list,
+                   check_val=check_list_str)
+CutadaptA2 = Field("cut_a2",
+                   "3' adapter for read 2",
+                   list,
+                   check_val=check_list_str)
+CutadaptOverlap = Field("cut_o",
+                        "Minimum adapter length (nt)",
+                        int,
+                        check_val=check_nonneg_int)
+CutadaptErrors = Field("cut_e",
+                       "Minimum adapter error rate",
+                       float,
+                       check_val=check_probability)
 CutadaptIndels = Field("cut_indels", "Allow indels in adapters", bool)
 CutadaptNextSeq = Field("cut_nextseq", "Trim in NextSeq mode", bool)
-CutadaptNoTrimmed = Field("cut_discard_trimmed", "Discard trimmed reads",
+CutadaptNoTrimmed = Field("cut_discard_trimmed",
+                          "Discard trimmed reads",
                           bool)
-CutadaptNoUntrimmed = Field("cut_discard_untrimmed", "Discard untrimmed reads",
+CutadaptNoUntrimmed = Field("cut_discard_untrimmed",
+                            "Discard untrimmed reads",
                             bool)
-CutadaptMinLength = Field("cut_m", "Minimum length of read after trimming (nt)",
+CutadaptMinLength = Field("cut_m",
+                          "Minimum length of read after trimming (nt)",
                           int, check_val=check_nonneg_int)
 Bowtie2Local = Field("bt2_local", "Align in local mode", bool)
 Bowtie2Discord = Field("bt2_discordant", "Keep discordant alignments", bool)
@@ -730,7 +753,7 @@ class Report(FileIO, ABC):
     @abstractmethod
     def fields(cls):
         """ All fields of the report. """
-        return [TimeBeganF, TimeEndedF, TimeTakenF, VersionF]
+        return [BranchesF, TimeBeganF, TimeEndedF, TimeTakenF, VersionF]
 
     @classmethod
     @cache
@@ -741,7 +764,7 @@ class Report(FileIO, ABC):
     @classmethod
     def default_report_fields(cls):
         """ Default values of report fields. """
-        return dict(taken=calc_taken, version=__version__)
+        return dict(branches=list(), taken=calc_taken, version=__version__)
 
     @classmethod
     def autofill_report_fields(cls, **kwargs):

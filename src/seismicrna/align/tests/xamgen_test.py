@@ -8,7 +8,7 @@ Tests for Alignment XAM Generation Module
 
 import unittest as ut
 
-from ..xamgen import (MATCH_BONUS, MISMATCH_PENALTY, N_PENALTY,
+from ..xamops import (MATCH_BONUS, MISMATCH_PENALTY, N_PENALTY,
                       REF_GAP_PENALTY, READ_GAP_PENALTY)
 
 

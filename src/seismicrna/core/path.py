@@ -461,7 +461,12 @@ DmFastq2Seg = Segment("dm-fastq2", {REF: NameField, EXT: Fastq2Ext})
 
 # Alignment
 XamSeg = Segment("xam", {REF: NameField, EXT: XamExt})
-AlignRepSeg = Segment("align-rep", {EXT: ReportExt}, frmt="align-report{ext}")
+AlignSampleRepSeg = Segment("align-samp-rep",
+                          {EXT: ReportExt},
+                          frmt="align-report{ext}")
+AlignRefRepSeg = Segment("align-ref-rep",
+                         {REF: NameField, EXT: ReportExt},
+                         frmt="{ref}__align-report{ext}")
 
 # Relation Vectors
 RefseqFileSeg = Segment("refseq-file", {EXT: RefseqFileExt}, frmt="refseq{ext}")

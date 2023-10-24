@@ -3,7 +3,7 @@ from pathlib import Path
 
 from click import command
 
-from .fq2xam import get_xam_files
+from .write import align_samples
 from .fqops import FastqUnit
 from ..core.arg import (CMD_ALIGN,
                         docdef,
@@ -227,7 +227,7 @@ def run(*,
                                          phred_enc=phred_enc))
 
     # Generate and return a BAM file for every FASTQ-reference pair.
-    return get_xam_files(fq_units=fq_units,
+    return align_samples(fq_units=fq_units,
                          fasta=Path(fasta),
                          out_dir=Path(out_dir),
                          temp_dir=Path(temp_dir),
