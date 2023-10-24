@@ -81,17 +81,21 @@ def get_inverse(target: np.ndarray, what: str = "array"):
     """ Map integers in [0, max(target)] to their 0-based indexes in
     `target`, or to -1 if not in `target`. """
     uniq, counts = np.unique(target, return_counts=True)
-    # Verify that all values in target are non-negative.
-    if get_length(uniq, what) > 0 > uniq[0]:
-        raise ValueError(f"{what} has negative values: {uniq[uniq < 0]}")
-    # Verify that all values in target are unique.
-    if np.max(counts) > 1:
-        raise ValueError(f"{what} has repeated values: {uniq[counts > 1]}")
-    # Initialize a 1-dimensional array whose length is one more than the
-    # maximum value of target. This way, all indexes in [0, max(target)]
-    # are valid. If target is empty, then create a 1D array of length 0.
+    if uniq.size > 0:
+        # Verify that all values in target are non-negative.
+        if get_length(uniq, what) > 0 > uniq[0]:
+            raise ValueError(f"{what} has negative values: {uniq[uniq < 0]}")
+        # Verify that all values in target are unique.
+        if np.max(counts) > 1:
+            raise ValueError(f"{what} has repeated values: {uniq[counts > 1]}")
+        # Initialize a 1-dimensional array whose length is one more than
+        # the maximum value of target, so that the array has every index
+        # in the range [0, max(target)].
+        inverse_size = np.max(target) + 1
+    else:
+        inverse_size = 0
     # Initialize all elements in the array to -1, a placeholder value.
-    inverse = np.full(target.max(initial=-1) + 1, -1)
+    inverse = np.full(inverse_size, -1)
     # For each value n with index i in target, set the value at index n
     # of inverse to i.
     inverse[target] = np.arange(get_length(target, what))
