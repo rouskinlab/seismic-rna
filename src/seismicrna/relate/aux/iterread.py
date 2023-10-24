@@ -11,9 +11,7 @@ from collections import defaultdict
 from functools import partial
 from itertools import product
 
-import numpy as np
-
-from .cigop import count_cigar_muts, find_cigar_op_pos
+from .cigarop import count_cigar_muts, find_cigar_op_pos
 from .infer import infer_read
 from .iterrel import iter_relvecs_all
 from ..py.cigar import CIG_INSRT
@@ -45,7 +43,7 @@ def ref_to_alignments(refseq: DNA,
     # Initialize maps of reads to CIGAR strings and relation vectors.
     quals = dict()
     cigars = defaultdict(partial(defaultdict, list))
-    relvecs = defaultdict(partial(defaultdict, dict))
+    relvecs = defaultdict(partial(defaultdict, partial(defaultdict, int)))
     if max_ins < 0:
         raise ValueError(f"max_ins must be ≥ 0, but got {max_ins}")
     if max_ins > 0:
@@ -97,18 +95,20 @@ def ref_to_alignments(refseq: DNA,
                 cigars[key][num_muts].append(cigar)
                 # Accumulate the bitwise OR of all relation vectors.
                 relvec = relvecs[key][num_muts]
-                relvec.update({pos: mut | relvec.get(pos, MATCH)
-                               for pos, mut in muts.items()})
+                for pos in range(end5, end3 + 1):
+                    relvec[pos] |= muts.get(pos, MATCH)
     # For every read-quality-end5-end3 key, keep only the CIGAR strings
     # and relation vector with the fewest mutations.
     cigars_best: dict[tuple[DNA, str, int, int], list[str]] = dict()
-    relvec_best: dict[tuple[DNA, str, int, int], np.ndarray] = dict()
+    relvec_best: dict[tuple[DNA, str, int, int], dict[int, int]] = dict()
     for key, cig_key in cigars.items():
         # Find the minimum number of mutations for this key.
         min_nmuts = min(cig_key)
         # Export the results with the fewest mutations.
         cigars_best[key] = cigars[key][min_nmuts]
-        relvec_best[key] = relvecs[key][min_nmuts]
+        relvec_best[key] = {pos: mut
+                            for pos, mut in relvecs[key][min_nmuts].items()
+                            if mut != MATCH}
     return quals, cigars_best, relvec_best
 
 

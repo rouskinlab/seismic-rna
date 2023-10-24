@@ -11,6 +11,8 @@ from ....core.seq import DNA
 class TestRelateRelateLineAmbrel(ut.TestCase):
     """ Test function `relate.relate_line`. """
 
+    MAPQ = opt_min_mapq.default
+
     @staticmethod
     def relate(ref: str,
                refseq: DNA,
@@ -42,34 +44,41 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
 
     def iter_cases(self, refseq: DNA, max_ins: int = 2):
         """ Iterate through every test case. """
-        for read, qual, cigar, end5, end3, relvec in iter_alignments(refseq,
-                                                                     max_ins,
-                                                                     max_ins,
-                                                                     max_ins):
-            result = self.relate("ref",
-                                 refseq,
-                                 read,
-                                 qual,
-                                 opt_min_mapq.default,
-                                 cigar,
-                                 end5)
-            with self.subTest(relvec=relvec, result=result):
-                self.assertEqual(relvec.tobytes(), result)
+        for read, qual, cigar, end5, end3, rels in iter_alignments(refseq,
+                                                                   max_ins,
+                                                                   max_ins,
+                                                                   max_ins):
+            name, end5_, mid5, mid3, end3_, rels_ = self.relate("ref",
+                                                                refseq,
+                                                                read,
+                                                                qual,
+                                                                self.MAPQ,
+                                                                cigar,
+                                                                end5)
+            with self.subTest(refseq=refseq,
+                              read=read,
+                              qual=qual,
+                              end5=end5,
+                              cigar=cigar,
+                              rels=rels):
+                self.assertEqual(end5_, end5)
+                self.assertEqual(mid5, end5)
+                self.assertEqual(mid3, end3)
+                self.assertEqual(end3_, end3)
+                self.assertEqual(rels_, rels)
 
-    @ut.skip("Work in progress")
     def test_aaaa_0ins(self):
         """ Test all possible reads with 0 insertions from AAAA. """
         self.iter_cases(DNA("AAAA"), 0)
 
-    @ut.skip("Takes a long time to run")
     def test_aaaaaa_0ins(self):
         """ Test all possible reads with 0 insertions from AAAAAA. """
         self.iter_cases(DNA("AAAAAA"), 0)
-    @ut.skip("Work in progress")
+
     def test_aacc_1ins(self):
         """ Test all possible reads with ≤ 1 insertion from AACC. """
         self.iter_cases(DNA("AACC"), 1)
-    @ut.skip("Work in progress")
+
     def test_acgt_1ins(self):
         """ Test all possible reads with ≤ 1 insertion from ACGT. """
         self.iter_cases(DNA("ACGT"), 1)

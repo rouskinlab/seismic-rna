@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from .cigop import CigarOp
+from .cigarop import CigarOp
 from ..py.cigar import CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_DELET, CIG_INSRT
 from ..py.encode import BASE_DECODINGS
 from ...core.ngs import LO_QUAL, HI_QUAL

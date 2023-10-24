@@ -154,7 +154,7 @@ def find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambrel: bool):
             if ref_pos + op_length > reflen:
                 raise ValueError("CIGAR operation overshot the reference")
             read_pos += 1  # 1-indexed now until explicitly reset
-            if not 1 < read_pos < len(read.seq):
+            if not 1 < read_pos <= len(read.seq):
                 raise ValueError(f"Deletion in {read}, pos {read_pos}")
             for _ in range(op_length):
                 ref_pos += 1  # 1-indexed now until this iteration ends
@@ -183,7 +183,7 @@ def find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambrel: bool):
             if read_pos + op_length > len(read.seq):
                 raise ValueError("CIGAR operation overshot the read")
             ref_pos += 1  # 1-indexed now until explicitly reset
-            if not 1 < ref_pos < reflen:
+            if not 1 < ref_pos <= reflen:
                 raise ValueError(f"Insertion in {read}, ref {ref_pos}")
             for _ in range(op_length):
                 read_pos += 1  # 1-indexed now until this iteration ends
@@ -220,7 +220,7 @@ def find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambrel: bool):
     # Find and label all relationships that are ambiguous due to indels.
     if ambrel and (dels or inns):
         find_ambrels(rels, refseq, read.seq, read.qual, min_qual, dels, inns)
-    return read.pos, ref_pos, rels
+    return read.pos, ref_pos, dict(rels)
 
 
 def validate_read(read: SamRead, ref: str, min_mapq: int):
