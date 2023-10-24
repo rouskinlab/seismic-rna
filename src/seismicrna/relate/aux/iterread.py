@@ -13,8 +13,8 @@ from itertools import product
 
 import numpy as np
 
-from .cigcount import count_cigar_muts, find_cigar_op_pos
-from .invert import inverse_relate
+from .cigop import count_cigar_muts, find_cigar_op_pos
+from .infer import infer_read
 from .iterrel import iter_relvecs_all
 from ..py.cigar import CIG_INSRT
 from ...core.rel import INS_5, INS_3, MATCH
@@ -26,9 +26,8 @@ def ref_to_alignments(refseq: DNA,
                       max_ins_len: int = 1,
                       max_ins_bases: int | None = None):
     """
-    For a given reference sequence, return maps from every possible read
-    to the CIGAR string(s) and (possibly ambiguous) relation vector for
-    the read.
+    For a given reference sequence, map every possible read to its CIGAR
+    string(s) and (possibly ambiguous) relation vector.
 
     Parameters
     ----------
@@ -72,11 +71,11 @@ def ref_to_alignments(refseq: DNA,
                 # Skip insertion lengths whose sum exceeds the limit.
                 continue
             # Determine the read(s) corresponding to this relation vector.
-            degen, qual, cigar = inverse_relate(refseq,
-                                                end5,
-                                                end3,
-                                                muts,
-                                                ins_len=ins_len)
+            degen, qual, cigar = infer_read(refseq,
+                                            end5,
+                                            end3,
+                                            muts,
+                                            ins_len=ins_len)
             if n_ins > 0:
                 # If there are insertions, find their positions.
                 ins_pos = list(find_cigar_op_pos(cigar, CIG_INSRT))
@@ -97,7 +96,7 @@ def ref_to_alignments(refseq: DNA,
                 # Gather every CIGAR string for the read.
                 cigars[key][num_muts].append(cigar)
                 # Accumulate the bitwise OR of all relation vectors.
-                relvec = relvecs[key][len(muts)]
+                relvec = relvecs[key][num_muts]
                 relvec.update({pos: mut | relvec.get(pos, MATCH)
                                for pos, mut in muts.items()})
     # For every read-quality-end5-end3 key, keep only the CIGAR strings

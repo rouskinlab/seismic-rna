@@ -7,7 +7,7 @@ from ...py.cigar import (CIG_ALIGN,
                          CIG_DELET,
                          CIG_INSRT,
                          CIG_SCLIP)
-from ..cigcount import CigarOp, count_cigar_muts, find_cigar_op_pos
+from ..cigop import CigarOp, count_cigar_muts, find_cigar_op_pos
 
 
 class TestCigarOp(ut.TestCase):

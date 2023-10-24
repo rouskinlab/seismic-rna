@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from .cigcount import CigarOp
+from .cigop import CigarOp
 from ..py.cigar import CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_DELET, CIG_INSRT
 from ..py.encode import BASE_DECODINGS
 from ...core.ngs import LO_QUAL, HI_QUAL
@@ -19,13 +19,13 @@ from ...core.rel import (MATCH,
 from ...core.seq import BASEN, POS_INDEX, DNA
 
 
-def inverse_relate(refseq: DNA,
-                   end5: int,
-                   end3: int,
-                   muts: dict[int, int],
-                   hi_qual: str = HI_QUAL,
-                   lo_qual: str = LO_QUAL,
-                   ins_len: int | Sequence[int] = 1):
+def infer_read(refseq: DNA,
+               end5: int,
+               end3: int,
+               muts: dict[int, int],
+               hi_qual: str = HI_QUAL,
+               lo_qual: str = LO_QUAL,
+               ins_len: int | Sequence[int] = 1):
     """
     Infer a read sequence and quality string from a reference sequence
     and relation vector.
@@ -68,7 +68,7 @@ def inverse_relate(refseq: DNA,
                              f"but got {[pos for pos in muts if pos < end5]}")
         if max(muts) > end3:
             raise ValueError(f"All positions must be ≤ {end3}, "
-                             f"but got {[pos for pos in muts if pos > end5]}")
+                             f"but got {[pos for pos in muts if pos > end3]}")
     # Validate the quality codes.
     if len(hi_qual) != 1:
         raise ValueError(f"hi_qual must be 1 character, but got {len(hi_qual)}")

@@ -1,7 +1,7 @@
 import unittest as ut
 
 from ..relate import find_rels_line
-from ...testutils.iterread import iter_alignments
+from ...aux.iterread import iter_alignments
 from ....align.sim import as_sam
 from ....core.arg import opt_min_mapq
 from ....core.ngs import OK_QUAL

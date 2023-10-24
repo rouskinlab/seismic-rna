@@ -169,7 +169,7 @@ class XamViewer(object):
         batch = BATCH_INDEX
         with self.open_temp_sam() as sam_file:
             # Current position in the SAM file.
-            position = 0
+            position = sam_file.tell()
             while line := sam_file.readline():
                 # The current batch starts at the current position.
                 batch_start = position
