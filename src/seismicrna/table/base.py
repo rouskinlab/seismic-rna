@@ -1,13 +1,15 @@
 from abc import ABC, abstractmethod
 from functools import cache, cached_property
 from pathlib import Path
-from typing import Any
+from typing import Any, Generator, Iterable
 
 import pandas as pd
 
+from ..cluster.names import AVERAGE_NAME, fmt_clust_name
 from ..core import path
 from ..core.batch import CLUST_NAME, ORDER_NAME, REL_NAME
 from ..core.mu import winsorize
+from ..core.rna import RnaProfile
 from ..core.seq import Section, index_to_pos, index_to_seq
 
 # General fields
@@ -267,6 +269,20 @@ class PosTable(RelTypeTable, ABC):
         section.add_mask(self.MASK, self.positions, invert=True)
         return section
 
+    @abstractmethod
+    def _iter_profiles(self,
+                       sections: Iterable[Section],
+                       quantile: float) -> Generator[RnaProfile, Any, Any]:
+        """ Yield RNA mutational profiles from the table. """
+
+    def iter_profiles(self,
+                      sections: Iterable[Section] | None = None,
+                      quantile: float = 0.):
+        """ Yield RNA mutational profiles from the table. """
+        yield from self._iter_profiles((sections if sections is not None
+                                        else [self.section]),
+                                       quantile)
+
 
 class ReadTable(RelTypeTable, ABC):
     """ Table indexed by read. """
@@ -288,6 +304,11 @@ class RelPosTable(RelTable, PosTable, ABC):
     def kind(cls):
         return path.RELATE_POS_TAB
 
+    def _iter_profiles(self, sections: Iterable[Section], quantile: float):
+        # Relation table loaders have unmasked, unfiltered reads and are
+        # thus unsuitable for making RNA profiles. Yield no profiles.
+        yield from ()
+
 
 class MaskPosTable(MaskTable, PosTable, ABC):
 
@@ -295,12 +316,37 @@ class MaskPosTable(MaskTable, PosTable, ABC):
     def kind(cls):
         return path.MASKED_POS_TAB
 
+    def _iter_profiles(self, sections: Iterable[Section], quantile: float):
+        for section in sections if sections is not None else [self.section]:
+            yield RnaProfile(path.fill_whitespace(AVERAGE_NAME),
+                             section=section,
+                             sample=self.sample,
+                             data_sect=self.sect,
+                             reacts=self.fetch(ratio=True,
+                                               quantile=quantile,
+                                               rels=[MUTAT_REL])[MUTAT_REL])
+
 
 class ClustPosTable(ClustTable, PosTable, ABC):
 
     @classmethod
     def kind(cls):
         return path.CLUST_POS_TAB
+
+    def _iter_profiles(self, sections: Iterable[Section], quantile: float):
+        """ Yield RNA mutational profiles from a table. """
+        for section in sections if sections is not None else [self.section]:
+            for order, clust in self.ord_clust:
+                yield RnaProfile(path.fill_whitespace(fmt_clust_name(order,
+                                                                     clust)),
+                                 section=section,
+                                 sample=self.sample,
+                                 data_sect=self.sect,
+                                 reacts=self.fetch(ratio=True,
+                                                   quantile=quantile,
+                                                   rels=[MUTAT_REL],
+                                                   order=[order],
+                                                   cluster=[clust])[MUTAT_REL])
 
 
 class RelReadTable(RelTable, ReadTable, ABC):

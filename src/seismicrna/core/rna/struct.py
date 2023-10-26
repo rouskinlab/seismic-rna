@@ -1,4 +1,5 @@
 from functools import cached_property
+from logging import getLogger
 from pathlib import Path
 from typing import Iterable
 
@@ -14,6 +15,8 @@ from .section import (BASE_FIELD,
                       PREV_FIELD,
                       RnaSection)
 from ..seq import intersection, POS_NAME, Section
+
+logger = getLogger(__name__)
 
 
 class Rna2dPart(object):
@@ -135,9 +138,10 @@ class Rna2dStructure(RnaSection):
 def from_ct(ct_file: Path, section: Section):
     section_rna_seq = section.seq.tr()
     for title, seq, pairs in parse_ct(ct_file, section.end5):
-        if seq != section_rna_seq:
-            raise ValueError(f"Expected {section_rna_seq}, but got {seq}")
-        yield Rna2dStructure(title=title, section=section, pairs=pairs)
+        if seq == section_rna_seq:
+            yield Rna2dStructure(title=title, section=section, pairs=pairs)
+        else:
+            logger.error(f"Expected {section_rna_seq}, but got {seq}")
 
 ########################################################################
 #                                                                      #

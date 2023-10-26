@@ -22,6 +22,7 @@ from ..core.arg import (docdef,
                         opt_csv,
                         opt_html,
                         opt_pdf,
+opt_quantile,
                         opt_force,
                         opt_max_procs,
                         opt_parallel)

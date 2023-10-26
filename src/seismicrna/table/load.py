@@ -1,13 +1,10 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from itertools import product
 from pathlib import Path
-from typing import Any, Generator, Iterable
 
 import pandas as pd
 
-from .base import (MUTAT_REL,
-                   Table,
+from .base import (Table,
                    RelTypeTable,
                    PosTable,
                    ReadTable,
@@ -18,11 +15,9 @@ from .base import (MUTAT_REL,
                    ClustPosTable,
                    ClustReadTable,
                    ClustFreqTable)
-from ..cluster.names import AVERAGE_NAME, fmt_clust_name
 from ..core import path
 from ..core.batch import OC_INDEX_NAMES, POC_INDEX_NAMES, REL_NAME
-from ..core.rna.profile import RnaProfile
-from ..core.seq import INDEX_NAMES, Section
+from ..core.seq import INDEX_NAMES
 
 
 # Table Loader Base Classes ############################################
@@ -87,12 +82,6 @@ class PosTableLoader(RelTypeTableLoader, PosTable, ABC):
     def index_col(cls):
         return list(range(len(INDEX_NAMES)))
 
-    @abstractmethod
-    def iter_profiles(self,
-                      sections: Iterable[Section] | None = None,
-                      quantile: float = 0.) -> Generator[RnaProfile, Any, Any]:
-        """ Yield RNA mutational profiles from the table. """
-
 
 class ReadTableLoader(RelTypeTableLoader, ReadTable, ABC):
     """ Load data indexed by read. """
@@ -148,13 +137,6 @@ class ClustTableLoader(RelTypeTableLoader, ABC):
 class RelPosTableLoader(RelTableLoader, PosTableLoader, RelPosTable):
     """ Load relation data indexed by position. """
 
-    def iter_profiles(self,
-                      _: Iterable[Section] | None = None,
-                      __: float = 0.):
-        # Relation table loaders have unmasked, unfiltered reads and are
-        # thus unsuitable for making RNA profiles. Yield no profiles.
-        yield from ()
-
 
 class RelReadTableLoader(RelTableLoader, ReadTableLoader, RelReadTable):
     """ Load relation data indexed by read. """
@@ -163,20 +145,6 @@ class RelReadTableLoader(RelTableLoader, ReadTableLoader, RelReadTable):
 class MaskPosTableLoader(MaskTableLoader, PosTableLoader, MaskPosTable):
     """ Load masked bit vector data indexed by position. """
 
-    def iter_profiles(self,
-                      sections: Iterable[Section] | None = None,
-                      quantile: float = 0.):
-        if sections is None:
-            sections = [self.section]
-        for section in sections:
-            yield RnaProfile(path.fill_whitespace(AVERAGE_NAME),
-                             section=section,
-                             sample=self.sample,
-                             data_sect=self.sect,
-                             reacts=self.fetch(ratio=True,
-                                               quantile=quantile,
-                                               rels=[MUTAT_REL])[MUTAT_REL])
-
 
 class MaskReadTableLoader(MaskTableLoader, ReadTableLoader, MaskReadTable):
     """ Load masked bit vector data indexed by read. """
@@ -184,23 +152,6 @@ class MaskReadTableLoader(MaskTableLoader, ReadTableLoader, MaskReadTable):
 
 class ClustPosTableLoader(ClustTableLoader, PosTableLoader, ClustPosTable):
     """ Load cluster data indexed by position. """
-
-    def iter_profiles(self,
-                      sections: Iterable[Section] | None = None,
-                      quantile: float = 0.):
-        """ Yield RNA mutational profiles from a table. """
-        if sections is None:
-            sections = [self.section]
-        for section, (order, clust) in product(sections, self.ord_clust):
-            yield RnaProfile(path.fill_whitespace(fmt_clust_name(order, clust)),
-                             section=section,
-                             sample=self.sample,
-                             data_sect=self.sect,
-                             reacts=self.fetch(ratio=True,
-                                               quantile=quantile,
-                                               rels=[MUTAT_REL],
-                                               order=[order],
-                                               cluster=[clust])[MUTAT_REL])
 
 
 class ClustReadTableLoader(ClustTableLoader, ReadTableLoader, ClustReadTable):
