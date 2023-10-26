@@ -18,7 +18,7 @@ from typing import Iterable, Sequence
 import numpy as np
 import pandas as pd
 
-from .xna import BASEA, BASEC, BASEN, DNA
+from .xna import BASEA, BASEC, DNA
 
 logger = getLogger(__name__)
 
@@ -213,7 +213,9 @@ class Section(object):
 
     def __init__(self,
                  ref: str,
-                 refseq: DNA, *,
+                 seq: DNA, *,
+                 seq5: int = POS_INDEX,
+                 reflen: int | None = None,
                  end5: int | None = None,
                  end3: int | None = None,
                  name: str | None = None):
@@ -221,53 +223,68 @@ class Section(object):
         Parameters
         ----------
         ref: str
-            Name of the reference sequence
-        refseq: DNA
-            Sequence of the entire reference (not just the section)
+            Name of the reference sequence.
+        seq: DNA
+            The full reference sequence or a part of it.
+        seq5: int = 1
+            Positional number to assign the 5' end of the given part of
+            the reference sequence. Must be ≥ 1.
+        reflen: int | None = None
+            Length of the full reference sequence. Must be ≥ 0. If None,
+            defaults to the 3' end position in `seq`.
         end5: int | None = None
-            Coordinate of the reference sequence at which the 5' end of
-            the section is located. If positive, number the coordinates
-            of the reference sequence 1, 2, ... starting at the 5' end
-            (i.e. 1-based indexing). If negative, number the coordinates
-            of the reference sequence -1, -2, ... starting at the 3' end
-            (i.e. 1-based indexing from the other side), then convert to
-            the corresponding (positive) 1-based index from the 5' end
+            Coordinate of the reference sequence at which the section's
+            5' end is located.
         end3: int | None = None
             Coordinate of the reference sequence at which the section's
-            3' end is located. Follows the same coordinate numbering
-            convention as end5
+            3' end is located.
         name: str | None = None
-            Name of the section. If blank, defaults to `self.range`.
+            Name of the section. If None, defaults to `self.range`.
         """
         self.ref = ref
-        if end5 is None and end3 is None and name is None:
-            # Set the name to 'full' if not given.
-            name = FULL_NAME
-        if end5 is None:
-            # Set the 5' end to the first position in the reference.
-            end5 = POS_INDEX
-        elif end5 < 0:
-            # Compute the corresponding positive 5' coordinate.
-            end5 += len(refseq) + 1
-        if end3 is None:
-            # Set the 3' end to the last position in the reference.
-            end3 = len(refseq)
-        elif end3 < 0:
-            # Compute the corresponding positive 3' coordinate.
-            end3 += len(refseq) + 1
-        if end5 < POS_INDEX:
-            raise ValueError(f"Need end5 ≥ {POS_INDEX}, but got {end5}")
-        if end3 > len(refseq):
-            raise ValueError(f"Need end3 ≤ {len(refseq)}, but got {end3}")
-        if end5 > end3 + 1:
-            raise ValueError(f"Need end5 ≤ end3 + 1, but got {end5} and {end3}")
-        self.end5: int = end5
-        self.end3: int = end3
-        self.seq = DNA(refseq[end5 - POS_INDEX: end3 - (POS_INDEX - 1)])
-        self.full = end5 == POS_INDEX and end3 == len(refseq)
+        if seq5 < POS_INDEX:
+            raise ValueError(f"seq5 must be ≥ {POS_INDEX}, but got {seq5}")
+        # Compute the 3' end position of the given sequence.
+        seq3 = seq5 + len(seq) - 1
+        if reflen is None:
+            # Default to the 3' end position of the given sequence.
+            reflen = seq3 - (POS_INDEX - 1)
+        elif reflen < 0:
+            raise ValueError(f"reflen must be ≥ 0, but got {reflen}")
+        elif reflen < seq3:
+            raise ValueError(f"The 3' end of the given sequence is {seq3}, "
+                             f"but the full reference is only {reflen} nt")
+        # Validate that the section lies within the given sequence.
+        if end5 is not None:
+            if end5 < seq5:
+                raise ValueError(f"Need end5 ≥ seq5, but got {end5} < {seq5}")
+            self.end5 = end5
+        else:
+            self.end5 = seq5
+        if end3 is not None:
+            if end3 > seq3:
+                raise ValueError(f"Need end3 ≤ seq3, but got {end3} > {seq3}")
+            self.end3 = end3
+        else:
+            self.end3 = seq3
+        if self.end5 > self.end3 + 1:
+            raise ValueError(
+                f"Need end5 ≤ end3 + 1, but got {self.end5} > {self.end3 + 1}")
+        # Determine the sequence of the section and whether it is the
+        # full reference sequence.
+        self.seq = DNA(seq[self.end5 - seq5: self.end3 - (seq5 - 1)])
+        self.full = self.end5 == POS_INDEX and self.end3 == reflen
+        # Assign the name of the section.
         if name is None:
-            self.name = self.hyphen
+            # Default to 'full' if the section spans the full reference
+            # sequence and neither the 5' nor 3' coordinate was given.
+            # Otherwise, default to the hyphenated coordinates.
+            self.name = (FULL_NAME
+                         if self.full and end5 is None and end3 is None
+                         else self.hyphen)
         elif isinstance(name, str):
+            # Use the given name unless it is an empty string, in which
+            # case default to the hyphenated coordinates.
             self.name = name if name else self.hyphen
         else:
             raise TypeError(f"Parameter 'name' must be 'str', not {type(str)}")
@@ -293,8 +310,11 @@ class Section(object):
         return f"{self.ref}__{self.name}"
 
     def to_dict(self):
-        return {"ref": self.ref, "seq": self.seq, "sect": self.name,
-                "end5": self.end5, "end3": self.end3}
+        return dict(ref=self.ref,
+                    seq=self.seq,
+                    sect=self.name,
+                    end5=self.end5,
+                    end3=self.end3)
 
     @property
     def mask_names(self):
@@ -384,7 +404,7 @@ class Section(object):
         # Check for positions outside the section.
         if np.any(p < self.end5) or np.any(p > self.end3):
             out = p[np.logical_or(p < self.end5, p > self.end3)]
-            raise ValueError(f"Got positions to mask ouside of {self}: {out}")
+            raise ValueError(f"Got positions to mask outside of {self}: {out}")
         if invert:
             # Mask all positions except those listed.
             p = np.setdiff1d(self.range_int, p, assume_unique=True)
@@ -392,20 +412,17 @@ class Section(object):
         self._masks[name] = np.setdiff1d(p, self.masked_int, assume_unique=True)
         logger.debug(f"Added mask {repr(name)} ({self._masks[name]}) to {self}")
 
-    def _find_gu(self, exclude_gu: bool) -> np.ndarray:
+    def _find_gu(self) -> np.ndarray:
         """ Array of each position whose base is neither A nor C. """
-        if exclude_gu:
-            # Mark whether each position is neither A nor C.
-            gu_pos = np.logical_and(self.seq.to_array() != BASEA,
-                                    self.seq.to_array() != BASEC)
-            # Return the integer positions.
-            return self.range_int[gu_pos]
-        # Mask no positions.
-        return np.array([], dtype=int)
+        # Mark whether each position is neither A nor C.
+        gu_pos = np.logical_and(self.seq.to_array() != BASEA,
+                                self.seq.to_array() != BASEC)
+        # Return the integer positions.
+        return self.range_int[gu_pos]
 
-    def mask_gu(self, exclude: bool = True):
+    def mask_gu(self):
         """ Mask positions whose base is neither A nor C. """
-        self.add_mask(self.MASK_GU, self._find_gu(exclude))
+        self.add_mask(self.MASK_GU, self._find_gu())
 
     def _find_polya(self, min_length: int) -> np.ndarray:
         """ Array of each position within a stretch of `min_length` or
@@ -432,16 +449,21 @@ class Section(object):
         """ Mask arbitrary positions. """
         self.add_mask(self.MASK_POS, pos)
 
-    def subsection(self, end5: int, end3: int, name: str | None = None):
-        if end5 < self.end5:
-            raise ValueError(f"end5 must be ≥ {self.end5}, but got {end5}")
-        if end3 > self.end3:
-            raise ValueError(f"end3 must be ≤ {self.end3}, but got {end3}")
+    def subsection(self,
+                   end5: int | None = None,
+                   end3: int | None = None,
+                   name: str | None = None):
+        """ Return a new section from part of this section. """
         return self.__class__(self.ref,
-                              DNA(BASEN * (self.end5 - POS_INDEX)) + self.seq,
-                              end5=end5,
-                              end3=end3,
-                              name=name)
+                              self.seq,
+                              seq5=self.end5,
+                              end5=end5 if end5 is not None else self.end5,
+                              end3=end3 if end3 is not None else self.end3,
+                              name=(FULL_NAME if (self.full
+                                                  and end5 is None
+                                                  and end3 is None
+                                                  and name is None)
+                                    else name))
 
     def __str__(self):
         return f"Section {self.ref_sect} ({self.hyphen}) {self.mask_names}"
@@ -454,8 +476,11 @@ class Section(object):
             # Cannot compare to an object that is not a Section.
             return NotImplemented
         # Compare the sections' sequences, positions, and names.
-        if not (self.ref == other.ref and self.seq == other.seq
-                and self.end5 == other.end5 and self.end3 == other.end3
+        if not (self.ref == other.ref
+                and self.seq == other.seq
+                and self.full == other.full
+                and self.end5 == other.end5
+                and self.end3 == other.end3
                 and self.name == other.name):
             return False
         # If that comparison passed, then compare their mask names.
@@ -472,25 +497,36 @@ class Section(object):
 def intersection(*sections: Section, name: str | None = None):
     """ Return the intersection of sections. """
     if not sections:
-        raise ValueError("Cannot take intersection of zero sections")
+        raise ValueError("Cannot intersect zero sections")
     # Confirm that all reference names match.
     refs = list(set(section.ref for section in sections))
     if len(refs) != 1:
         raise ValueError(f"Expected exactly one reference, but got {refs}")
+    ref = refs[0]
     # Compute the 5' and 3' coordinates of the intersection.
     end5 = max(section.end5 for section in sections)
     end3 = min(section.end3 for section in sections)
-    if end5 > end3:
+    if end5 <= end3:
+        # Confirm that the sequences match over the intersection.
+        seqs = list(set(section.seq[end5 - section.end5:
+                                    end3 - section.end5 + 1]
+                        for section in sections))
+        if len(seqs) != 1:
+            raise ValueError(f"Expected exactly one sequence, but got {seqs}")
+        seq = seqs[0]
+    else:
         # The intersection among the given sections is empty.
-        return Section(refs[0], DNA(''))
-    # Confirm that the reference sequences match.
-    seqs = list(set(section.seq[end5 - section.end5: end3 - section.end5]
-                    for section in sections))
-    if len(seqs) != 1:
-        raise ValueError(f"Expected exactly one sequence, but got {seqs}")
-    # Pad the intersection with artificial sequence on the 5' side.
-    refseq = DNA(BASEN * (end5 - POS_INDEX)) + seqs[0]
-    return Section(refs[0], refseq, end5=end5, end3=end3, name=name)
+        seq = DNA('')
+        end3 = end5 - 1
+    if all(section.full for section in sections):
+        # If all sections are full-length, then make the intersection
+        # full-length as well.
+        seq5 = 1
+        end5 = None
+        end3 = None
+    else:
+        seq5 = end5
+    return Section(ref, seq, seq5=seq5, end5=end5, end3=end3, name=name)
 
 
 class SectionFinder(Section):
@@ -511,26 +547,30 @@ class SectionFinder(Section):
 
     def __init__(self,
                  ref: str,
-                 refseq: DNA | None, *,
-                 name: str | None = None,
+                 seq: DNA, *,
+                 seq5: int = POS_INDEX,
                  end5: int | None = None,
                  end3: int | None = None,
                  fwd: DNA | None = None,
                  rev: DNA | None = None,
-                 primer_gap: int | None = None):
+                 primer_gap: int | None = None,
+                 **kwargs):
         """
         Parameters
         ----------
         ref: str
-            see superclass
-        refseq: DNA
-            see superclass
-        name: str | None = None
-            see superclass
+            Name of the reference sequence.
+        seq: DNA
+            The full reference sequence or a part of it.
+        seq5: int = 1
+            Positional number to assign the 5' end of the given part of
+            the reference sequence. Must be ≥ 1.
         end5: int | None = None
-            If given, behaves as in the superclass; otherwise, ignored.
+            Coordinate of the reference sequence at which the section's
+            5' end is located.
         end3: int | None = None
-            If given, behaves as in the superclass; otherwise, ignored.
+            Coordinate of the reference sequence at which the section's
+            3' end is located.
         fwd: DNA | None = None
             (For amplicons only) Sequence of the forward PCR primer
             that was used to generate the amplicon
@@ -550,8 +590,8 @@ class SectionFinder(Section):
         """
         if primer_gap < 0:
             raise ValueError(f"primer_gap must be ≥ 0, but got {primer_gap}")
-        if refseq is None:
-            raise ValueError(f"No sequence for reference named '{ref}'. Check "
+        if seq is None:
+            raise ValueError(f"No sequence for reference {repr(ref)}. Check "
                              "that you gave the right reference sequence file "
                              "and spelled the name of the reference correctly.")
         if end5 is None:
@@ -562,7 +602,7 @@ class SectionFinder(Section):
                     raise TypeError("Must give primer_gap if using primers")
                 # Locate the end of the forward primer, then start the
                 # section (primer_gap + 1) positions downstream.
-                end5 = self.locate(refseq, fwd).pos3 + (primer_gap + 1)
+                end5 = self.locate(seq, fwd, seq5).pos3 + (primer_gap + 1)
         if end3 is None:
             # No 3' end coordinate was given.
             if rev is not None:
@@ -571,15 +611,11 @@ class SectionFinder(Section):
                     raise TypeError("Must give primer_gap if using primers")
                 # Locate the start of the reverse primer, then end the
                 # section (primer_gap + 1) positions upstream.
-                end3 = self.locate(refseq, rev.rc).pos5 - (primer_gap + 1)
-        super().__init__(refseq=refseq,
-                         ref=ref,
-                         end5=end5,
-                         end3=end3,
-                         name=name)
+                end3 = self.locate(seq, rev.rc, seq5).pos5 - (primer_gap + 1)
+        super().__init__(ref, seq, seq5=seq5, end5=end5, end3=end3, **kwargs)
 
     @staticmethod
-    def locate(refseq: DNA, primer: DNA) -> SectionTuple:
+    def locate(seq: DNA, primer: DNA, seq5: int) -> SectionTuple:
         """
         Return the 5' and 3' positions (1-indexed) of a primer within a
         reference sequence. The primer must occur exactly once in the
@@ -587,12 +623,14 @@ class SectionFinder(Section):
 
         Parameters
         ----------
-        refseq: DNA
-            Sequence of the entire reference (not just the section of
-            interest)
+        seq: DNA
+            The full reference sequence or a part of it.
         primer: DNA
             Sequence of the forward PCR primer or the reverse complement
             of the reverse PCR primer
+        seq5: int = 1
+            Positional number to assign the 5' end of the given part of
+            the reference sequence. Must be ≥ 1.
 
         Returns
         -------
@@ -601,17 +639,14 @@ class SectionFinder(Section):
             occupies in the reference sequence. Positions are 1-indexed
             and include the first and last coordinates.
         """
-        matches = list(re.finditer(str(primer), str(refseq)))
+        matches = list(re.finditer(str(primer), str(seq)))
         if not matches:
-            raise ValueError(f"Primer {primer} is not in ref {refseq}")
+            raise ValueError(f"Primer {primer} is not in ref {seq}")
         if len(matches) > 1:
             raise ValueError(f"Primer {primer} occurs {len(matches)} times "
-                             f"in ref {refseq}")
-        # Add 1 to convert from 0-indexed to 1-indexed.
-        pos5 = matches[0].start() + 1
-        # No change is needed to convert from exclusive 0-indexed to
-        # inclusive 1-indexed.
-        pos3 = matches[0].end()
+                             f"in ref {seq}")
+        pos5 = matches[0].start() + seq5
+        pos3 = matches[0].end() + (seq5 - 1)
         return SectionTuple(pos5, pos3)
 
 
@@ -658,16 +693,16 @@ class RefSections(object):
             self._sections[ref] = dict()
             for end5, end3 in ref_coords[ref]:
                 # Add a section for each pair of 5' and 3' coordinates.
-                self._add_section(ref=ref,
-                                  refseq=seq,
+                self._add_section(ref,
+                                  seq,
                                   end5=end5,
                                   end3=end3,
                                   primer_gap=primer_gap,
                                   name=sect_coords.get((ref, end5, end3)))
             for fwd, rev in ref_primers[ref]:
                 # Add a section for each pair of fwd and rev primers.
-                self._add_section(ref=ref,
-                                  refseq=seq,
+                self._add_section(ref,
+                                  seq,
                                   fwd=fwd,
                                   rev=rev,
                                   primer_gap=primer_gap,
@@ -679,12 +714,13 @@ class RefSections(object):
         if extra := (set(ref_coords) | set(ref_primers)) - set(self._sections):
             logger.warning(f"No sequences given for references {sorted(extra)}")
 
-    def _add_section(self, **kwargs):
+    def _add_section(self, *args, **kwargs):
         """ Create a section and add it to the object. """
         try:
-            section = SectionFinder(**kwargs)
+            section = SectionFinder(*args, **kwargs)
         except Exception as error:
-            logger.error(f"Failed to create section with {kwargs}: {error}")
+            logger.error(
+                f"Failed to create section with {args, kwargs}: {error}")
         else:
             # Check if the section was seen already.
             if (seen := self._sections[section.ref].get(section.coord)) is None:

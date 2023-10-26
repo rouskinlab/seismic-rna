@@ -41,19 +41,19 @@ class TableLoader(Table, ABC):
                              f"{table_file} (expected {self.path})")
 
     @property
-    def top(self):
+    def top(self) -> Path:
         return self._out_dir
 
     @property
-    def sample(self):
+    def sample(self) -> str:
         return self._sample
 
     @property
-    def ref(self):
+    def ref(self) -> str:
         return self._ref
 
     @property
-    def sect(self):
+    def sect(self) -> str:
         return self._sect
 
     @classmethod
@@ -222,16 +222,14 @@ class ClustFreqTableLoader(TableLoader, ClustFreqTable):
 
 # Helper Functions #####################################################
 
-def find_tables(tables: tuple[str, ...]):
-    """ Return a file for each given file/directory of a table. """
-    yield from path.find_files_chain(map(Path, tables), [path.TableSeg])
-
-
 def load(table_file: Path):
     """ Helper function to load a TableLoader from a table file. """
-    for loader_type in (RelPosTableLoader, RelReadTableLoader,
-                        MaskPosTableLoader, MaskReadTableLoader,
-                        ClustPosTableLoader, ClustReadTableLoader,
+    for loader_type in (RelPosTableLoader,
+                        RelReadTableLoader,
+                        MaskPosTableLoader,
+                        MaskReadTableLoader,
+                        ClustPosTableLoader,
+                        ClustReadTableLoader,
                         ClustFreqTableLoader):
         try:
             # Try to load the table file using the type of TableLoader.
@@ -241,6 +239,16 @@ def load(table_file: Path):
             pass
     # None of the TableLoader types were able to open the file.
     raise ValueError(f"Failed to open table: {table_file}")
+
+
+def find_tables(tables: tuple[str, ...]):
+    """ Yield a file for each given file/directory of a table. """
+    yield from path.find_files_chain(map(Path, tables), [path.TableSeg])
+
+
+def load_tables(tables: tuple[str, ...]):
+    """ Yield a table for each given file/directory of a table. """
+    yield from map(load, find_tables(tables))
 
 
 def reformat_cluster_index(index: pd.MultiIndex):

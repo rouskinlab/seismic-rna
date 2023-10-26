@@ -303,6 +303,7 @@ ConnectTableExt = Field(str, [CT_EXT], is_ext=True)
 DotBracketExt = Field(str, DOT_EXTS, is_ext=True)
 DmsReactsExt = Field(str, [DMS_EXT], is_ext=True)
 GraphExt = Field(str, GRAPH_EXTS, is_ext=True)
+WebAppFileExt = Field(str, [JSON_EXT], is_ext=True)
 
 
 # Path Segments ########################################################
@@ -462,8 +463,8 @@ DmFastq2Seg = Segment("dm-fastq2", {REF: NameField, EXT: Fastq2Ext})
 # Alignment
 XamSeg = Segment("xam", {REF: NameField, EXT: XamExt})
 AlignSampleRepSeg = Segment("align-samp-rep",
-                          {EXT: ReportExt},
-                          frmt="align-report{ext}")
+                            {EXT: ReportExt},
+                            frmt="align-report{ext}")
 AlignRefRepSeg = Segment("align-ref-rep",
                          {REF: NameField, EXT: ReportExt},
                          frmt="{ref}__align-report{ext}")
@@ -505,10 +506,15 @@ DotBracketSeg = Segment("rna-dot", {STRUCT: NameField, EXT: DotBracketExt})
 DmsReactsSeg = Segment("dms-reacts", {REACTS: NameField, EXT: DmsReactsExt})
 VarnaColorSeg = Segment("varna-color",
                         {REACTS: NameField, EXT: TextExt},
-                        frmt="{reacts}_varna-color{ext}")
+                        frmt="{reacts}__varna-color{ext}")
 
 # Graphs
 GraphSeg = Segment("graph", {GRAPH: NameField, EXT: GraphExt})
+
+# Web App Export
+WebAppFileSeg = Segment("webapp",
+                        {SAMP: NameField, EXT: WebAppFileExt},
+                        frmt="{sample}__webapp{ext}")
 
 # Path segment patterns
 

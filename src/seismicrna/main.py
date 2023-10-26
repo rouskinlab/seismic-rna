@@ -25,6 +25,7 @@ from . import (whole,
                table,
                fold,
                graph,
+               export,
                test,
                fastc,
                __version__)
@@ -92,6 +93,7 @@ for module in (whole,
                table,
                fold,
                graph,
+               export,
                test,
                fastc):
     cli.add_command(module.cli)

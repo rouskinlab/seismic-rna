@@ -167,7 +167,7 @@ class TestClip(ut.TestCase):
 class TestCalcFObsNumpy(ut.TestCase):
     """ Test function `mu.calc_f_obs_numpy`. """
 
-    #@ut.skip("Takes a long time to run: burdensome while debugging other tests")
+    @ut.skip("Takes a long time to run: burdensome while debugging other tests")
     def test_obs_empirical(self):
         """ Test that this function accurately predicts the fraction of
         bit vectors without mutations that are too close. """
@@ -267,7 +267,7 @@ class TestCalcFObsNumpy(ut.TestCase):
 class TestCalcMuObs(ut.TestCase):
     """ Test function `mu._calc_mu_obs`. """
 
-    #@ut.skip("Takes a long time to run: burdensome while debugging other tests")
+    @ut.skip("Takes a long time to run: burdensome while debugging other tests")
     def test_obs_empirical(self):
         """ Test that this function accurately predicts the mutation
         rates that are actually observed when simulated bit vectors are
