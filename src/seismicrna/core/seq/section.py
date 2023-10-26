@@ -710,7 +710,7 @@ class RefSections(object):
             if not self._sections[ref]:
                 # If no sections were given for the reference, then add
                 # a section that spans the full reference.
-                self._add_section(ref=ref, refseq=seq, primer_gap=primer_gap)
+                self._add_section(ref, seq, primer_gap=primer_gap)
         if extra := (set(ref_coords) | set(ref_primers)) - set(self._sections):
             logger.warning(f"No sequences given for references {sorted(extra)}")
 

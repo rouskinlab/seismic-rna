@@ -75,6 +75,11 @@ def run(fasta: str,
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_dependency(RNASTRUCTURE_CT2DOT_CMD, __name__)
 
+    # Reactivities must be normalized before using them to fold.
+    if quantile <= 0.:
+        logger.warning("Fold requires normalized mutation rates, but got "
+                       f"quantile = {quantile}; setting quantile to 1.0")
+        quantile = 1.
     # Get the sections for every reference sequence.
     ref_sections = RefSections(parse_fasta(Path(fasta), DNA),
                                sects_file=(Path(sections_file) if sections_file
