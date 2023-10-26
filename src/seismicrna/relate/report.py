@@ -14,7 +14,7 @@ from ..core.io import (BatchedRefseqReport,
 BATCH_INDEX_COL = "Read Name"
 
 
-class RelateReportIO(BatchedRefseqReport, RelateIO):
+class RelateReport(BatchedRefseqReport, RelateIO):
 
     @classmethod
     def fields(cls):
@@ -36,12 +36,12 @@ class RelateReportIO(BatchedRefseqReport, RelateIO):
 
 @cache
 def refseq_file_seg_types():
-    return RelateReportIO.seg_types()[:-1] + (path.RefseqFileSeg,)
+    return RelateReport.seg_types()[:-1] + (path.RefseqFileSeg,)
 
 
 @cache
 def refseq_file_auto_fields():
-    return {**RelateReportIO.auto_fields(), path.EXT: path.BROTLI_PICKLE_EXT}
+    return {**RelateReport.auto_fields(), path.EXT: path.BROTLI_PICKLE_EXT}
 
 
 def refseq_file_path(top: Path, sample: str, ref: str):

@@ -10,7 +10,7 @@ from typing import Any, Iterable
 from click import command
 from plotly import graph_objects as go
 
-from ..relate.report import RelateReportIO, NumReadsRel
+from ..relate.report import RelateReport, NumReadsRel
 from ..relate.data import RelateLoader
 from ..core import path
 from ..core.arg import (docdef,
@@ -27,6 +27,8 @@ from ..core.arg import (docdef,
                         opt_parallel)
 from ..core.parallel import dispatch
 from ..table.base import REL_CODES
+from ..mask.data import MaskLoader
+from ..mask.report import MaskReport
 from ..table.load import (TableLoader,
                           MaskPosTableLoader,
                           MaskReadTableLoader,
@@ -66,9 +68,9 @@ def combine_metadata(special_metadata: dict[str, Any],
     # special metadata.
     for field in set(special_metadata) & set(item_metadata):
         if (s := special_metadata[field]) != (p := item_metadata[field]):
-            raise ValueError(f"Metadata {repr(field)} of {what} {repr(item)} "
-                             f"is {repr(s)}, but was also given as {repr(p)} "
-                             f"in the metadata file")
+            raise ValueError(f"Metadata field {repr(field)} of {what} "
+                             f"{repr(item)} is {repr(s)}, but was also given "
+                             f"as {repr(p)} in the metadata file")
     return special_metadata | item_metadata
 
 
@@ -85,9 +87,9 @@ def get_ref_metadata(top: Path,
                      sample: str,
                      ref: str,
                      refs_metadata: dict[str, dict]):
-    dataset = RelateLoader.load(RelateReportIO.build_path(top=top,
-                                                          sample=sample,
-                                                          ref=ref))
+    dataset = RelateLoader.load(RelateReport.build_path(top=top,
+                                                        sample=sample,
+                                                        ref=ref))
     ref_metadata = {"sequence": dataset.refseq,
                     "num_aligned": dataset.report.get_field(NumReadsRel)}
     return format_metadata(combine_metadata(ref_metadata,
@@ -101,15 +103,17 @@ def get_section_metadata(top: Path,
                          ref: str,
                          sect: str,
                          sects_metadata: dict[tuple[str, str], dict]):
-    dataset = RelateLoader.load(RelateReportIO.build_path(top=top,
-                                                          sample=sample,
-                                                          ref=ref))
-    ref_metadata = {"sequence": dataset.refseq,
-                    "num_aligned": dataset.report.get_field(NumReadsRel)}
-    return format_metadata(combine_metadata(ref_metadata,
-                                            refs_metadata,
-                                            ref,
-                                            "reference"))
+    dataset = MaskLoader.load(MaskReport.build_path(top=top,
+                                                    sample=sample,
+                                                    ref=ref,
+                                                    sect=sect))
+    sect_metadata = {"section_start": dataset.end5,
+                     "section_end": dataset.end3,
+                     "positions": dataset.section.unmasked_int.tolist()}
+    return format_metadata(combine_metadata(sect_metadata,
+                                            sects_metadata,
+                                            sect,
+                                            "section"))
 
 
 def get_table_data(table: TableLoader):

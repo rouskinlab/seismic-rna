@@ -1,5 +1,5 @@
 from .io import RelateBatchIO
-from .report import RelateReportIO
+from .report import RelateReport
 from ..core.io import BatchedLoadedDataset, LoadedMutsDataset
 
 
@@ -12,7 +12,7 @@ class RelateLoader(BatchedLoadedDataset, LoadedMutsDataset):
 
     @classmethod
     def get_report_type(cls):
-        return RelateReportIO
+        return RelateReport
 
     @property
     def pattern(self):

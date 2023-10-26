@@ -16,7 +16,7 @@ from typing import Iterable
 
 from .io import from_reads, QnamesBatchIO, RelateBatchIO
 from .py.relate import find_rels_line
-from .report import RelateReportIO
+from .report import RelateReport
 from .sam import XamViewer
 from ..core import path
 from ..core.parallel import as_list_of_tuples, dispatch
@@ -119,9 +119,9 @@ class RelationWriter(object):
         return self.xam.ref
 
     def _write_report(self, *, out_dir: Path, **kwargs):
-        report = RelateReportIO(sample=self.sample,
-                                ref=self.ref,
-                                **kwargs)
+        report = RelateReport(sample=self.sample,
+                              ref=self.ref,
+                              **kwargs)
         return report.save(out_dir, overwrite=True)
 
     def _write_refseq(self, out_dir: Path, brotli_level: int):
@@ -192,9 +192,9 @@ class RelationWriter(object):
         """ Compute a relation vector for every record in a BAM file,
         write the vectors into one or more batch files, compute their
         checksums, and write a report summarizing the results. """
-        report_file = RelateReportIO.build_path(top=out_dir,
-                                                sample=self.sample,
-                                                ref=self.ref)
+        report_file = RelateReport.build_path(top=out_dir,
+                                              sample=self.sample,
+                                              ref=self.ref)
         # Check if the report file already exists.
         if force or not report_file.is_file():
             began = datetime.now()
