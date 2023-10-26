@@ -99,7 +99,7 @@ class MutsDataset(Dataset[D], ABC):
     def section(self):
         """ Section of the dataset. """
         return Section(ref=self.ref,
-                       refseq=self.refseq,
+                       seq=self.refseq,
                        end5=self.end5,
                        end3=self.end3,
                        name=self.sect)

@@ -232,7 +232,8 @@ class RelMasker(object):
     def _exclude_positions(self):
         """ Exclude positions from the section. """
         self.section.mask_polya(self.exclude_polya)
-        self.section.mask_gu(self.exclude_gu)
+        if self.exclude_gu:
+            self.section.mask_gu()
         self.section.mask_pos(self.exclude_pos)
 
     def _filter_batch_reads(self, batch: ReadBatch | MutsBatch):
