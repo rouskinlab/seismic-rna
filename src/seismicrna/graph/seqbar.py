@@ -190,10 +190,10 @@ class AverageSeqBarGraph(SeqBarGraph, ABC):
 
     @cached_property
     def data(self):
-        return self.table.process(ratio=self.y_ratio,
-                                  quantile=self.quantile,
-                                  precision=PRECISION,
-                                  rels=self.rels)
+        return self.table.fetch(ratio=self.y_ratio,
+                                quantile=self.quantile,
+                                precision=PRECISION,
+                                rels=self.rels)
 
     @classmethod
     def sources(cls):
@@ -228,10 +228,10 @@ class ClusterSeqBarGraph(SeqBarGraph, ABC):
             select.update(dict(order=self._order))
             if self._cluster is not None:
                 select.update(dict(cluster=self._cluster))
-        return self.table.process(ratio=self.y_ratio,
-                                  quantile=self.quantile,
-                                  precision=PRECISION,
-                                  **select)
+        return self.table.fetch(ratio=self.y_ratio,
+                                quantile=self.quantile,
+                                precision=PRECISION,
+                                **select)
 
     @cached_property
     def clusters(self):

@@ -8,7 +8,7 @@ import pandas as pd
 from ..core import path
 from ..core.batch import CLUST_NAME, ORDER_NAME, REL_NAME
 from ..core.mu import winsorize
-from ..core.seq import index_to_pos, index_to_seq
+from ..core.seq import Section, index_to_pos, index_to_seq
 
 # General fields
 READ_TITLE = "Read Name"
@@ -185,11 +185,11 @@ class RelTypeTable(Table, ABC):
             else kwargs.get(LEVEL_KEYS[self.data.columns.name], slice(None))
         )
 
-    def process(self, *,
-                ratio: bool,
-                quantile: float = 0.,
-                precision: int | None = None,
-                **kwargs: list):
+    def fetch(self, *,
+              ratio: bool,
+              quantile: float = 0.,
+              precision: int | None = None,
+              **kwargs: list):
         """ Select, process, and return data from the table. """
         # Instantiate an empty DataFrame with the index and columns.
         columns = self.data.loc[:, self._get_indexer(**kwargs)].columns
@@ -234,6 +234,8 @@ class ClustTable(RelTypeTable, ABC):
 class PosTable(RelTypeTable, ABC):
     """ Table indexed by position. """
 
+    MASK = "pos-mask"
+
     @classmethod
     def by_read(cls):
         return False
@@ -242,7 +244,7 @@ class PosTable(RelTypeTable, ABC):
     def seq(self):
         return index_to_seq(self.data.index)
 
-    @property
+    @cached_property
     def positions(self):
         return index_to_pos(self.data.index)
 
@@ -253,6 +255,17 @@ class PosTable(RelTypeTable, ABC):
     @property
     def end3(self):
         return int(self.positions[-1])
+
+    @cached_property
+    def section(self):
+        section = Section(self.ref,
+                          self.seq,
+                          seq5=self.end5,
+                          end5=self.end5,
+                          end3=self.end3,
+                          name=self.sect)
+        section.add_mask(self.MASK, self.positions, invert=True)
+        return section
 
 
 class ReadTable(RelTypeTable, ABC):

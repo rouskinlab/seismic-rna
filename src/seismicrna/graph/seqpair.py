@@ -160,9 +160,9 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
                 logger.warning(f"{self} cannot use order {order} with {table}")
         elif cluster is not None:
             logger.warning(f"{self} cannot use cluster {cluster} with no order")
-        return table.process(ratio=self.y_ratio,
-                             quantile=self.quantile,
-                             precision=PRECISION, **select)
+        return table.fetch(ratio=self.y_ratio,
+                           quantile=self.quantile,
+                           precision=PRECISION, **select)
 
     @cached_property
     def data1(self):
