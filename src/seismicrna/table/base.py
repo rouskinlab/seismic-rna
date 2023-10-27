@@ -243,20 +243,40 @@ class PosTable(RelTypeTable, ABC):
         return False
 
     @cached_property
-    def seq(self):
-        return index_to_seq(self.data.index)
+    def range(self):
+        return self.data.index
 
     @cached_property
-    def positions(self):
-        return index_to_pos(self.data.index)
+    def range_int(self):
+        return index_to_pos(self.range)
+
+    @cached_property
+    def seq(self):
+        return index_to_seq(self.range)
 
     @property
     def end5(self):
-        return int(self.positions[0])
+        return int(self.range_int[0])
 
     @property
     def end3(self):
-        return int(self.positions[-1])
+        return int(self.range_int[-1])
+
+    @cached_property
+    def masked_bool(self):
+        return self.data.isna().all(axis=1)
+
+    @cached_property
+    def unmasked_bool(self):
+        return ~self.masked_bool
+
+    @cached_property
+    def unmasked(self):
+        return self.data.index[self.unmasked_bool]
+
+    @cached_property
+    def unmasked_int(self):
+        return index_to_pos(self.unmasked)
 
     @cached_property
     def section(self):
@@ -266,8 +286,12 @@ class PosTable(RelTypeTable, ABC):
                           end5=self.end5,
                           end3=self.end3,
                           name=self.sect)
-        section.add_mask(self.MASK, self.positions, invert=True)
+        section.add_mask(self.MASK, self.unmasked_int, invert=True)
         return section
+
+    @cached_property
+    def unmasked_data(self):
+        return self.data.loc[self.unmasked]
 
     @abstractmethod
     def _iter_profiles(self,
