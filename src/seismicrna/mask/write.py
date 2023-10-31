@@ -312,13 +312,13 @@ class RelMasker(object):
             min_ninfo_pos=self.min_ninfo_pos,
             max_fmut_pos=self.max_fmut_pos,
             n_pos_init=self.section.length,
-            n_pos_gu=self.pos_gu.size,
+            n_pos_gu=self.pos_gu.size if self.exclude_gu else 0, # Not sure how to handle this properly.
             n_pos_polya=self.pos_polya.size,
             n_pos_user=self.pos_user.size,
             n_pos_min_ninfo=self.pos_min_ninfo.size,
             n_pos_max_fmut=self.pos_max_fmut.size,
             n_pos_kept=self.pos_kept.size,
-            pos_gu=self.pos_gu,
+            pos_gu=self.pos_gu if self.exclude_gu else np.array([], dtype=int), # Not sure how to handle this properly.
             pos_polya=self.pos_polya,
             pos_user=self.pos_user,
             pos_min_ninfo=self.pos_min_ninfo,
@@ -361,6 +361,11 @@ def mask_section(dataset: RelateLoader,
         ended = datetime.now()
         report = masker.create_report(began, ended)
         report.save(dataset.top, overwrite=True)
+        # Clear section cache.
+        section.clear_cache()
+        # Clear dataset caches.
+        dataset.clear_cache()
+        
     else:
         logger.warning(f"File exists: {report_file}")
     return report_file
