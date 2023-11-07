@@ -167,6 +167,9 @@ class XNA(ABC):
         """ Compress the sequence. """
         return CompressedSeq(self)
 
+    def clear_cache(self):
+        self.to_array.cache_clear()
+
     def __str__(self):
         return self._seq
 

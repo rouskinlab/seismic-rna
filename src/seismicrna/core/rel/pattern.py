@@ -248,6 +248,9 @@ class HalfRelPattern(object):
         """ Intersect the HalfRelPattern with another. """
         return self.__class__(*(set(self.codes) & set(other.codes)))
 
+    def clear_cache(self):
+        self.fits.cache_clear()
+
     def __str__(self):
         return f"{type(self).__name__} {self.to_report_format()}"
 
@@ -301,6 +304,12 @@ class RelPattern(object):
             yes = self.yes
             nos = self.nos
         return self.__class__(nos, yes) if invert else self.__class__(yes, nos)
+
+    def clear_cache(self):
+        self.fits.cache_clear()
+        self.intersect.cache_clear()
+        self.yes.clear_cache()
+        self.nos.clear_cache()
 
     def __str__(self):
         return f"{type(self).__name__}  ++ {self.yes}  -- {self.nos}"

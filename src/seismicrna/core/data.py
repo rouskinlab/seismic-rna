@@ -270,6 +270,10 @@ class BatchedLoadedDataset(LoadedDataset[D, R], BatchedDataset[D], ABC):
         return self.get_data_type().load(self.get_batch_path(batch),
                                          self.report_checksum(batch))
 
+    def clear_cache(self):
+        self.get_batch_path.cache_clear()
+        self.report_checksum.cache_clear()
+
     def _iter_batches(self):
         for batch in self.batch_nums:
             yield self.load_batch(batch)

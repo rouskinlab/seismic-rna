@@ -410,7 +410,8 @@ class Section(object):
             p = np.setdiff1d(self.range_int, p, assume_unique=True)
         # Record the positions that have not already been masked.
         self._masks[name] = np.setdiff1d(p, self.masked_int, assume_unique=True)
-        logger.debug(f"Added mask {repr(name)} ({self._masks[name]}) to {self}")
+        # Do not log self._masks[name] due to memory leak.
+        logger.debug(f"Added mask {repr(name)} to {self}")
 
     def _find_gu(self) -> np.ndarray:
         """ Array of each position whose base is neither A nor C. """
@@ -464,6 +465,9 @@ class Section(object):
                                                   and end3 is None
                                                   and name is None)
                                     else name))
+
+    def clear_cache(self):
+        self.seq.clear_cache()
 
     def __str__(self):
         return f"Section {self.ref_sect} ({self.hyphen}) {self.mask_names}"
