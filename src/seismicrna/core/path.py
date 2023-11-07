@@ -30,13 +30,13 @@ This module defines all file path conventions for all other modules.
 
 from __future__ import annotations
 
+import os
+import pathlib as pl
+import re
 from collections import Counter
 from functools import cache, cached_property, partial
 from itertools import chain, product
 from logging import getLogger
-import os
-import pathlib as pl
-import re
 from string import ascii_letters, digits, printable
 from typing import Any, Iterable, Sequence
 
@@ -285,13 +285,9 @@ ClustTabField = Field(str, CLUST_TABLES)
 TextExt = Field(str, [TXT_EXT], is_ext=True)
 ReportExt = Field(str, [JSON_EXT], is_ext=True)
 RefseqFileExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
-QnamesBatExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
-RelVecBatExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
-MaskRepExt = Field(str, [JSON_EXT], is_ext=True)
-MaskBatExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
+BatchExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 ClustTabExt = Field(str, CSV_EXTS, is_ext=True)
 ClustCountExt = Field(str, CSV_EXTS, is_ext=True)
-ClustBatExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 MutTabExt = Field(str, CSV_EXTS, is_ext=True)
 FastaExt = Field(str, FASTA_EXTS, is_ext=True)
 FastaIndexExt = Field(str, BOWTIE2_INDEX_EXTS, is_ext=True)
@@ -472,16 +468,16 @@ AlignRefRepSeg = Segment("align-ref-rep",
 # Relation Vectors
 RefseqFileSeg = Segment("refseq-file", {EXT: RefseqFileExt}, frmt="refseq{ext}")
 QnamesBatSeg = Segment("name-bat",
-                       {BATCH: IntField, EXT: QnamesBatExt},
+                       {BATCH: IntField, EXT: BatchExt},
                        frmt="qnames-batch-{batch}{ext}")
 RelateBatSeg = Segment("rel-bat",
-                       {BATCH: IntField, EXT: RelVecBatExt},
+                       {BATCH: IntField, EXT: BatchExt},
                        frmt="relate-batch-{batch}{ext}")
 RelateRepSeg = Segment("rel-rep", {EXT: ReportExt}, frmt="relate-report{ext}")
 
 # Masking
 MaskBatSeg = Segment("mask-bat",
-                     {BATCH: IntField, EXT: MaskBatExt},
+                     {BATCH: IntField, EXT: BatchExt},
                      frmt="mask-batch-{batch}{ext}")
 MaskRepSeg = Segment("mask-rep", {EXT: ReportExt}, frmt="mask-report{ext}")
 
@@ -493,7 +489,7 @@ ClustTabSeg = Segment("clust-tab", {TABLE: ClustTabField,
                       frmt="{table}-k{k}-r{run}{ext}")
 ClustCountSeg = Segment("clust-count", {EXT: ClustCountExt}, frmt="counts{ext}")
 ClustBatSeg = Segment("clust-bat",
-                      {BATCH: IntField, EXT: ClustBatExt},
+                      {BATCH: IntField, EXT: BatchExt},
                       frmt="cluster-batch-{batch}{ext}")
 ClustRepSeg = Segment("clust-rep", {EXT: ReportExt}, frmt="cluster-report{ext}")
 
@@ -517,7 +513,6 @@ WebAppFileSeg = Segment("webapp",
                         frmt="{sample}__webapp{ext}")
 
 # Path segment patterns
-
 FASTA_STEP_SEGS = StepSeg, FastaSeg
 FASTA_INDEX_DIR_STEP_SEGS = StepSeg, RefSeg
 FASTQ_SEGS = FastqSeg,

@@ -69,7 +69,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                 bowtie2_index: Path, *,
                 out_dir: Path,
                 temp_dir: Path,
-                save_temp: bool,
+                keep_temp: bool,
                 fastqc: bool,
                 qc_extract: bool,
                 cut: bool,
@@ -91,7 +91,6 @@ def fq_pipeline(fq_inp: FastqUnit,
                 bt2_mixed: bool,
                 bt2_dovetail: bool,
                 bt2_contain: bool,
-                bt2_unal: bool,
                 bt2_score_min_e2e: str,
                 bt2_score_min_loc: str,
                 bt2_i: int,
@@ -103,6 +102,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                 bt2_r: int,
                 bt2_dpad: int,
                 bt2_orient: str,
+                bt2_un: bool,
                 min_mapq: int,
                 min_reads: int,
                 cram: bool,
@@ -190,7 +190,6 @@ def fq_pipeline(fq_inp: FastqUnit,
                              bt2_mixed=bt2_mixed,
                              bt2_dovetail=bt2_dovetail,
                              bt2_contain=bt2_contain,
-                             bt2_unal=bt2_unal,
                              bt2_score_min_e2e=bt2_score_min_e2e,
                              bt2_score_min_loc=bt2_score_min_loc,
                              bt2_i=bt2_i,
@@ -202,8 +201,20 @@ def fq_pipeline(fq_inp: FastqUnit,
                              bt2_r=bt2_r,
                              bt2_dpad=bt2_dpad,
                              bt2_orient=bt2_orient,
-                             min_mapq=min_mapq)
-    if not save_temp and fq_cut is not None:
+                             min_mapq=min_mapq,
+                             fq_unal=(path.build(path.SampSeg,
+                                                 path.CmdSeg,
+                                                 path.DmFastqSeg,
+                                                 top=out_dir,
+                                                 sample=sample,
+                                                 cmd=CMD_ALIGN,
+                                                 ref=(f"{fq_inp.ref}__unaligned"
+                                                      if fq_inp.ref is not None
+                                                      else "unaligned"),
+                                                 ext=path.FQ_EXTS[0])
+                                      if bt2_un
+                                      else None))
+    if not keep_temp and fq_cut is not None:
         # Delete the trimmed FASTQ file (do not delete the input FASTQ
         # file even if trimming was not performed).
         for fq_file in fq_cut.paths.values():
@@ -279,17 +290,20 @@ def fq_pipeline(fq_inp: FastqUnit,
             xams_out.append(xam_ref)
             # Count the number of reads accurately and update the guess.
             reads_refs[ref] = count_total_reads(run_flagstat(xam_ref))
+            logger.debug(f"File {xam_ref} received {reads_refs[ref]} reads")
             if reads_refs[ref] < min_reads:
                 # Delete the XAM file if it did not get enough reads.
                 xam_ref.unlink()
                 # Delete the reference from sufficient_refs.
                 sufficient_refs.remove(ref)
+                logger.debug(f"Deleted {xam_ref} because it received "
+                             f"{reads_refs[ref]} reads (< {min_reads})")
         finally:
             # Remove the temporary FASTA files.
             refs_file.unlink()
             refs_file_index.unlink()
     # The whole XAM file is no longer needed.
-    if not save_temp:
+    if not keep_temp:
         xam_whole.unlink()
     if cram:
         try:
@@ -330,7 +344,6 @@ def fq_pipeline(fq_inp: FastqUnit,
                          bt2_mixed=bt2_mixed,
                          bt2_dovetail=bt2_dovetail,
                          bt2_contain=bt2_contain,
-                         bt2_unal=bt2_unal,
                          bt2_score_min=(bt2_score_min_loc if bt2_local
                                         else bt2_score_min_e2e),
                          bt2_i=bt2_i,
@@ -342,6 +355,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                          bt2_r=bt2_r,
                          bt2_dpad=bt2_dpad,
                          bt2_orient=bt2_orient,
+                         bt2_un=bt2_un,
                          min_mapq=min_mapq,
                          reads_init=reads_init,
                          reads_trim=reads_trim,
@@ -362,7 +376,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                  parallel: bool,
                  out_dir: Path,
                  temp_dir: Path,
-                 save_temp: bool,
+                 keep_temp: bool,
                  **kwargs) -> list[Path]:
     """ Run all steps of alignment for one or more FASTQ files or pairs
     of mated FASTQ files. """
@@ -453,10 +467,10 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                          args=iter_args,
                          kwargs=dict(out_dir=out_dir,
                                      temp_dir=temp_dir,
-                                     save_temp=save_temp,
+                                     keep_temp=keep_temp,
                                      **kwargs))
     xams = list(chain(*xam_lists))
-    if not save_temp:
+    if not keep_temp:
         # Delete the temporary files.
         for ref_file, index_prefix in temp_fasta_paths.values():
             # Reference file

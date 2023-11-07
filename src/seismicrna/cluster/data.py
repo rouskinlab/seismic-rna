@@ -4,11 +4,11 @@ from logging import getLogger
 from .batch import ClustMutsBatch
 from .io import ClustBatchIO
 from .report import ClustReport
-from ..core.batch import get_clusters_index
-from ..core.io import (NumClustsF,
-                       BatchedLoadedDataset,
-                       BatchedMergedDataset,
-                       MergedMutsDataset)
+from ..core.data import (BatchedLoadedDataset,
+                         BatchedMergedDataset,
+                         MergedMutsDataset)
+from ..core.header import index_orders_clusts
+from ..core.report import NumClustsF
 from ..mask.batch import MaskMutsBatch
 from ..mask.data import MaskMerger
 
@@ -27,7 +27,7 @@ class ClustLoader(BatchedLoadedDataset):
         return ClustBatchIO
 
     @cached_property
-    def num_clusters(self):
+    def max_order(self):
         """ Number of clusters. """
         return self.report.get_field(NumClustsF)
 
@@ -60,12 +60,12 @@ class ClustMerger(BatchedMergedDataset, MergedMutsDataset):
         return self.data1.section
 
     @cached_property
-    def num_clusters(self):
-        return self.data2.num_clusters
+    def max_order(self):
+        return self.data2.max_order
 
     @cached_property
     def clusters(self):
-        return get_clusters_index(self.num_clusters)
+        return index_orders_clusts(self.max_order)
 
     def _merge(self, batch1: MaskMutsBatch, batch2: ClustBatchIO):
         return self.get_data_type()(batch=batch1.batch,

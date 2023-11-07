@@ -1,4 +1,3 @@
-from itertools import product
 from typing import Iterable
 
 import numpy as np
@@ -20,13 +19,6 @@ READ_NUM = "Read Number"
 BATCH_NUM = "Batch Number"
 RB_INDEX_NAMES = [BATCH_NUM, READ_NUM]
 
-# Indexes of relationships and cluster numbers.
-REL_NAME = "Relationship"
-ORDER_NAME = "Order"
-CLUST_NAME = "Cluster"
-OC_INDEX_NAMES = [ORDER_NAME, CLUST_NAME]
-POC_INDEX_NAMES = [REL_NAME] + OC_INDEX_NAMES
-
 
 def list_batch_nums(num_batches: int):
     """ List the batch numbers. """
@@ -38,43 +30,6 @@ def get_length(array: np.ndarray, what: str = "array") -> int:
         raise ValueError(f"{what} must have 1 dimension, but got {array.ndim}")
     length, = array.shape
     return length
-
-
-def get_clusters_index(order: int, max_order: int | None = None):
-    if max_order is not None:
-        min_order = order
-    else:
-        min_order = 1
-        max_order = order
-    if not 1 <= min_order <= max_order:
-        raise ValueError(f"Must have 1 ≤ min_order ≤ max_order, but got "
-                         f"min_order = {min_order} and max_order = {max_order}")
-    return pd.MultiIndex.from_tuples([(order, cluster)
-                                      for order in range(min_order,
-                                                         max_order + 1)
-                                      for cluster in range(1, order + 1)],
-                                     names=OC_INDEX_NAMES)
-
-
-def get_rel_index(relationships: Iterable[str],
-                  clusters: Iterable[tuple[int, int]] | None = None):
-    if clusters is not None:
-        return pd.MultiIndex.from_tuples([(r, o, c) for r, (o, c)
-                                          in product(relationships, clusters)],
-                                         names=POC_INDEX_NAMES)
-    return pd.Index(relationships, name=REL_NAME)
-
-
-def add_to_rel(frame: pd.DataFrame, added: pd.Series | pd.DataFrame, rel: str):
-    frame_rel = frame[rel]
-    if not frame_rel.index.equals(added.index):
-        raise ValueError(f"Got different indexes for frame {frame_rel.index} "
-                         f"and added values {added.index}")
-    if (isinstance(added, pd.DataFrame)
-            and not frame_rel.columns.equals(added.columns)):
-        raise ValueError(f"Got different columns for frame {frame_rel.columns} "
-                         f"and added values {added.columns}")
-    frame[rel] = (frame_rel + added).values
 
 
 def get_inverse(target: np.ndarray, what: str = "array"):

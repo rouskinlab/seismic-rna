@@ -1,16 +1,22 @@
 from abc import ABC, abstractmethod
-from functools import cache, cached_property
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Generator, Iterable
 
 import pandas as pd
 
-from ..cluster.names import AVERAGE_NAME, fmt_clust_name
 from ..core import path
-from ..core.batch import CLUST_NAME, ORDER_NAME, REL_NAME
+from ..core.batch import RB_INDEX_NAMES
+from ..core.header import (REL_NAME,
+                           Header,
+                           RelHeader,
+                           ClustHeader,
+                           RelClustHeader,
+                           format_clust_name,
+                           parse_header)
 from ..core.mu import winsorize
 from ..core.rna import RnaProfile
-from ..core.seq import Section, index_to_pos, index_to_seq
+from ..core.seq import SEQ_INDEX_NAMES, Section, index_to_pos, index_to_seq
 
 # General fields
 READ_TITLE = "Read Name"
@@ -48,8 +54,36 @@ REL_CODES = {
 # Columns of each relation-based table
 TABLE_RELS = list(REL_CODES.values())
 
-# Keyword argument for each level of the column MultiIndex.
-LEVEL_KEYS = {REL_NAME: "rels", ORDER_NAME: "order", CLUST_NAME: "cluster"}
+
+def get_rel_name(rel_code: str):
+    """ Get the name of a relationship from its code. """
+    try:
+        return REL_CODES[rel_code]
+    except KeyError:
+        raise ValueError(f"Relationship code must be one of {list(REL_CODES)}, "
+                         f"but got {repr(rel_code)}")
+
+
+def _get_denom_rel(rel: str):
+    """ Get the relationship that serves as the denominator. """
+    return COVER_REL if rel == COVER_REL or rel == INFOR_REL else INFOR_REL
+
+
+def _get_denom_cols(numer_cols: pd.Index):
+    """ Get the denominator columns based on the numerator columns. """
+    if isinstance(numer_cols, pd.MultiIndex):
+        return pd.MultiIndex.from_arrays(
+            [list(map(_get_denom_rel, numer_cols.get_level_values(name)))
+             if name == REL_NAME
+             else numer_cols.get_level_values(name)
+             for name in numer_cols.names],
+            names=numer_cols.names
+        )
+    if numer_cols.name is not None and numer_cols.name != REL_NAME:
+        raise ValueError(f"Expected index to be named {repr(REL_NAME)}, "
+                         f"but got {repr(numer_cols.name)}")
+    return pd.Index(list(map(_get_denom_rel, numer_cols)),
+                    name=numer_cols.name)
 
 
 # Table Base Classes ###################################################
@@ -57,47 +91,44 @@ LEVEL_KEYS = {REL_NAME: "rels", ORDER_NAME: "order", CLUST_NAME: "cluster"}
 class Table(ABC):
     """ Table base class. """
 
-    @property
-    @abstractmethod
-    def top(self):
-        """ Path of the table's output directory. """
-        return Path()
-
-    @property
-    @abstractmethod
-    def sample(self):
-        """ Name of the table's sample. """
-        return ""
-
-    @property
-    @abstractmethod
-    def ref(self):
-        """ Name of the table's reference. """
-        return ""
-
-    @property
-    @abstractmethod
-    def sect(self):
-        """ Name of the table's section. """
-        return ""
-
-    @cached_property
-    @abstractmethod
-    def data(self) -> pd.DataFrame:
-        """ Table's data frame. """
-        return pd.DataFrame()
-
     @classmethod
     @abstractmethod
     def kind(cls) -> str:
         """ Kind of table. """
-        return ""
 
     @classmethod
     @abstractmethod
-    def by_read(cls):
+    def by_read(cls) -> bool:
         """ Whether the table contains data for each read. """
-        return False
+
+    @classmethod
+    @abstractmethod
+    def transposed(cls) -> bool:
+        """ Whether the data is saved as its transpose. """
+
+    @classmethod
+    @abstractmethod
+    def header_type(cls) -> type[Header]:
+        """ Type of the header for the table. """
+
+    @classmethod
+    def header_depth(cls):
+        return cls.header_type().num_levels()
+
+    @classmethod
+    def header_rows(cls) -> list[int]:
+        """ Row(s) of the file to use as the columns. """
+        return list(range(cls.header_depth()))
+
+    @classmethod
+    @abstractmethod
+    def index_depth(cls) -> int:
+        """ Number of columns in the index. """
+
+    @classmethod
+    def index_cols(cls) -> list[int]:
+        """ Column(s) of the file to use as the index. """
+        return list(range(cls.index_depth()))
 
     @classmethod
     def path_segs(cls):
@@ -113,6 +144,45 @@ class Table(ABC):
     def ext(cls):
         """ Table's file extension: either '.csv' or '.csv.gz'. """
         return path.CSVZIP_EXT if cls.gzipped() else path.CSV_EXT
+
+    @property
+    @abstractmethod
+    def top(self) -> Path:
+        """ Path of the table's output directory. """
+
+    @property
+    @abstractmethod
+    def sample(self) -> str:
+        """ Name of the table's sample. """
+
+    @property
+    @abstractmethod
+    def ref(self) -> str:
+        """ Name of the table's reference. """
+
+    @property
+    @abstractmethod
+    def sect(self) -> str:
+        """ Name of the table's section. """
+
+    @property
+    @abstractmethod
+    def _data(self) -> pd.DataFrame:
+        """ Table's raw data frame. """
+
+    @cached_property
+    def data(self):
+        """ Table's data frame. """
+        return self._data
+
+    @cached_property
+    def header(self):
+        """ Header for the table's data. """
+        header = parse_header(self.data.columns)
+        if not isinstance(header, self.header_type()):
+            raise TypeError(f"Expected {self.header_type().__name__}, "
+                            f"but got {type(header).__name__}")
+        return header
 
     @property
     def path_fields(self) -> dict[str, Any]:
@@ -137,98 +207,53 @@ class Table(ABC):
 class RelTypeTable(Table, ABC):
     """ Table with multiple types of relationships. """
 
-    @cached_property
-    def multiindexed(self):
-        """ Whether the columns are a MultiIndex. """
-        return isinstance(self.data.columns, pd.MultiIndex)
+    @classmethod
+    def transposed(cls):
+        return False
 
-    @cached_property
-    def rel_level(self):
-        """ Index of the column level indicating the relationship. """
-        return self.data.columns.names.index(REL_NAME)
+    def fetch_count(self, **kwargs) -> pd.Series | pd.DataFrame:
+        """ Fetch counts of one or more columns. """
+        return self.data.loc[:, self.header.select(**kwargs)]
 
-    def _switch_rel(self, column: str | tuple, new_rel: str):
-        """ Switch the relationship in a column label. """
-        if isinstance(column, str):
-            column = column,
-        return (
-            column[: self.rel_level] + (new_rel,) + column[self.rel_level + 1:]
-            if self.multiindexed else new_rel
-        )
-
-    @cache
-    def get_ratio(self,
-                  column: tuple,
-                  quantile: float,
-                  precision: int | None = None):
-        """ Compute the ratio for a column. """
-        # Determine the relationship to use as the numerator.
-        numer_rel = column[self.rel_level]
-        # Determine the relationship to use as the denominator.
-        denom_rel = COVER_REL if numer_rel == INFOR_REL else INFOR_REL
-        # Determine the column to use as the denominator.
-        denom_col = self._switch_rel(column, denom_rel)
+    def fetch_ratio(self, *,
+                    quantile: float = 0.,
+                    precision: int | None = None,
+                    **kwargs) -> pd.Series | pd.DataFrame:
+        """ Fetch ratios of one or more columns. """
+        # Fetch the data for the numerator.
+        numer = self.fetch_count(**kwargs)
+        # Fetch the data for the denominator.
+        denom = self.data.loc[:, _get_denom_cols(numer.columns)]
         # Compute the ratio of the numerator and the denominator.
-        ratio = self.data[column] / self.data[denom_col]
-        # If a quantile was given, then winsorize to it.
-        if quantile is not None:
-            ratio = winsorize(ratio, quantile)
+        ratio = winsorize(numer / denom.values, quantile)
         # Round the ratio to the desired precision.
-        if precision is not None:
-            ratio = ratio.round(precision)
-        return ratio
-
-    def _get_indexer(self, **kwargs):
-        """ Format a column selection into a column indexer. """
-        return (
-            tuple(kwargs.get(LEVEL_KEYS[level_name], slice(None))
-                  for level_name in self.data.columns.names)
-            if self.multiindexed
-            else kwargs.get(LEVEL_KEYS[self.data.columns.name], slice(None))
-        )
-
-    def fetch(self, *,
-              ratio: bool,
-              quantile: float = 0.,
-              precision: int | None = None,
-              **kwargs: list):
-        """ Select, process, and return data from the table. """
-        # Instantiate an empty DataFrame with the index and columns.
-        columns = self.data.loc[:, self._get_indexer(**kwargs)].columns
-        data = pd.DataFrame(index=self.data.index, columns=columns, dtype=float)
-        # Fill in the DataFrame one column at a time.
-        for column in columns:
-            data[column] = (self.get_ratio(column, quantile, precision) if ratio
-                            else self.data[column]).values
-        return data
+        return ratio.round(precision) if precision is not None else ratio
 
 
 # Table by Source (relate/mask/cluster) ################################
 
-class RelTable(RelTypeTable, ABC):
+class AvgTable(RelTypeTable, ABC):
+    """ Average over an ensemble of RNA structures. """
+
+    @classmethod
+    def header_type(cls):
+        return RelHeader
+
+
+class RelTable(AvgTable, ABC):
     pass
 
 
-class MaskTable(RelTypeTable, ABC):
+class MaskTable(AvgTable, ABC):
     pass
 
 
 class ClustTable(RelTypeTable, ABC):
+    """ Cluster for each RNA structure in an ensemble. """
 
-    @cached_property
-    def ord_clust(self):
-        """ MultiIndex of all order-cluster pairs. """
-        return self.data.columns.droplevel(REL_NAME).drop_duplicates()
-
-    @cached_property
-    def orders(self):
-        """ Index of all order numbers. """
-        return self.data.columns.get_level_values(ORDER_NAME).drop_duplicates()
-
-    def get_clusters(self, orders: list):
-        """ Index of cluster numbers for the given orders. """
-        data = self.data.loc[:, orders]
-        return data.columns.get_level_values(CLUST_NAME).drop_duplicates()
+    @classmethod
+    def header_type(cls):
+        return RelClustHeader
 
 
 # Table by Index (position/read/frequency) #############################
@@ -242,9 +267,13 @@ class PosTable(RelTypeTable, ABC):
     def by_read(cls):
         return False
 
+    @classmethod
+    def index_depth(cls):
+        return len(SEQ_INDEX_NAMES)
+
     @cached_property
     def range(self):
-        return self.data.index
+        return self._data.index
 
     @cached_property
     def range_int(self):
@@ -264,7 +293,7 @@ class PosTable(RelTypeTable, ABC):
 
     @cached_property
     def masked_bool(self):
-        return self.data.isna().all(axis=1)
+        return self._data.isna().all(axis=1)
 
     @cached_property
     def unmasked_bool(self):
@@ -272,7 +301,7 @@ class PosTable(RelTypeTable, ABC):
 
     @cached_property
     def unmasked(self):
-        return self.data.index[self.unmasked_bool]
+        return self._data.index[self.unmasked_bool]
 
     @cached_property
     def unmasked_int(self):
@@ -280,6 +309,7 @@ class PosTable(RelTypeTable, ABC):
 
     @cached_property
     def section(self):
+        """ Section covered by the table. """
         section = Section(self.ref,
                           self.seq,
                           seq5=self.end5,
@@ -290,8 +320,8 @@ class PosTable(RelTypeTable, ABC):
         return section
 
     @cached_property
-    def unmasked_data(self):
-        return self.data.loc[self.unmasked]
+    def data(self):
+        return self._data.loc[self.unmasked]
 
     @abstractmethod
     def _iter_profiles(self,
@@ -315,9 +345,13 @@ class ReadTable(RelTypeTable, ABC):
     def by_read(cls):
         return True
 
+    @classmethod
+    def index_depth(cls):
+        return len(RB_INDEX_NAMES)
+
     @property
     def reads(self):
-        return self.data.index.values
+        return self._data.index.values
 
 
 # Table by Source and Index ############################################
@@ -328,49 +362,45 @@ class RelPosTable(RelTable, PosTable, ABC):
     def kind(cls):
         return path.RELATE_POS_TAB
 
-    def _iter_profiles(self, sections: Iterable[Section], quantile: float):
+    def _iter_profiles(self,
+                       sections: Iterable[Section] | None = None,
+                       quantile: float = 0.):
         # Relation table loaders have unmasked, unfiltered reads and are
         # thus unsuitable for making RNA profiles. Yield no profiles.
         yield from ()
 
 
-class MaskPosTable(MaskTable, PosTable, ABC):
+class ProfilePosTable(PosTable, ABC):
+
+    def _iter_profiles(self,
+                       sections: Iterable[Section] | None = None,
+                       quantile: float = 0.):
+        """ Yield RNA mutational profiles from a table. """
+        for section in sections if sections is not None else [self.section]:
+            for order, clust in zip(self.header.names, self.header.clusts):
+                name = format_clust_name(order, clust)
+                yield RnaProfile(path.fill_whitespace(name),
+                                 section=section,
+                                 sample=self.sample,
+                                 data_sect=self.sect,
+                                 reacts=self.fetch_ratio(quantile=quantile,
+                                                         rel=MUTAT_REL,
+                                                         order=order,
+                                                         clust=clust))
+
+
+class MaskPosTable(MaskTable, ProfilePosTable, ABC):
 
     @classmethod
     def kind(cls):
         return path.MASKED_POS_TAB
 
-    def _iter_profiles(self, sections: Iterable[Section], quantile: float):
-        for section in sections if sections is not None else [self.section]:
-            yield RnaProfile(path.fill_whitespace(AVERAGE_NAME),
-                             section=section,
-                             sample=self.sample,
-                             data_sect=self.sect,
-                             reacts=self.fetch(ratio=True,
-                                               quantile=quantile,
-                                               rels=[MUTAT_REL])[MUTAT_REL])
 
-
-class ClustPosTable(ClustTable, PosTable, ABC):
+class ClustPosTable(ClustTable, ProfilePosTable, ABC):
 
     @classmethod
     def kind(cls):
         return path.CLUST_POS_TAB
-
-    def _iter_profiles(self, sections: Iterable[Section], quantile: float):
-        """ Yield RNA mutational profiles from a table. """
-        for section in sections if sections is not None else [self.section]:
-            for order, clust in self.ord_clust:
-                yield RnaProfile(path.fill_whitespace(fmt_clust_name(order,
-                                                                     clust)),
-                                 section=section,
-                                 sample=self.sample,
-                                 data_sect=self.sect,
-                                 reacts=self.fetch(ratio=True,
-                                                   quantile=quantile,
-                                                   rels=[MUTAT_REL],
-                                                   order=[order],
-                                                   cluster=[clust])[MUTAT_REL])
 
 
 class RelReadTable(RelTable, ReadTable, ABC):
@@ -404,9 +434,17 @@ class ClustFreqTable(Table, ABC):
     def by_read(cls):
         return False
 
-    @property
-    def clusters(self):
-        return self.data.index.values
+    @classmethod
+    def transposed(cls):
+        return True
+
+    @classmethod
+    def header_type(cls):
+        return ClustHeader
+
+    @classmethod
+    def index_depth(cls):
+        return 1
 
 ########################################################################
 #                                                                      #

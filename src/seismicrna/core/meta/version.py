@@ -7,9 +7,13 @@ from typing import Any
 
 logger = getLogger(__name__)
 
-__version__ = "0.9.1"
+__version__ = "0.9.2"
 
 VERSION_DELIM = '.'
+
+COMPATIBLE = {
+    (0, 9): {},
+}
 
 
 def parse_version(version: str = __version__):
@@ -28,28 +32,23 @@ def format_version(major: int = MAJOR, minor: int = MINOR, patch: int = PATCH):
 
 
 def compatible_versions(version1: str, version2: str = __version__):
-    match = 0
-    for x1, x2 in zip(parse_version(version1),
-                      parse_version(version2),
-                      strict=True):
-        if match == 0:
-            if x1 == x2:
-                match = x1
-            else:
-                return False
-    return True
+    v1 = parse_version(version1)[:2]
+    v2 = parse_version(version2)[:2]
+    return v1 == v2 or v1 in COMPATIBLE.get(v2, set())
 
 
 def check_compatibility(version: str,
                         what: Any = "An item",
-                        strict: bool = True):
+                        error: bool = True,
+                        warn: bool = True):
     if not compatible_versions(version):
-        state = "is not" if strict else "may not be"
+        state = "is not" if error else "may not be"
         msg = (f"{what} is labeled with version {version} of SEISMIC-RNA, "
                f"which {state} compatible with your version ({__version__})")
-        if strict:
+        if error:
             raise RuntimeError(msg)
-        logger.warning(msg)
+        if warn:
+            logger.warning(msg)
 
 ########################################################################
 #                                                                      #

@@ -3,15 +3,15 @@ from logging import Filter, LogRecord
 
 import numpy as np
 
-from ..norm import (get_mu_quantile,
+from ..norm import (get_quantile,
                     normalize,
                     winsorize,
                     logger as unbias_logger)
 from ...rand import rng
 
 
-class TestGetMuQuantile(ut.TestCase):
-    """ Test the function `mu.get_mu_quantile`. """
+class TestGetQuantile(ut.TestCase):
+    """ Test the function `mu.get_quantile`. """
 
     class NanFilter(Filter):
         """ Suppress warnings about NaN quantiles. """
@@ -36,7 +36,7 @@ class TestGetMuQuantile(ut.TestCase):
                 # shuffle the values.
                 mus = np.linspace(0., mu_max, n)[order]
                 # Determine the value associated with each quantile.
-                values = np.array([get_mu_quantile(mus, quantile)
+                values = np.array([get_quantile(mus, quantile)
                                    for quantile in quantiles])
                 # Since the values of mus were obtained via np.linspace,
                 # the value for each quantile should be the quantile
@@ -60,7 +60,7 @@ class TestGetMuQuantile(ut.TestCase):
                     mus = np.concatenate([np.linspace(0., mu_max, n),
                                           np.full(n_nan, np.nan)])[order]
                     # Determine the value associated with each quantile.
-                    values = np.array([get_mu_quantile(mus, quantile)
+                    values = np.array([get_quantile(mus, quantile)
                                        for quantile in quantiles])
                     # Because the finite values of mus were obtained via
                     # np.linspace, the value for each quantile should be
@@ -76,7 +76,7 @@ class TestGetMuQuantile(ut.TestCase):
             # Temporarily suppress warnings about NaN values.
             unbias_logger.addFilter(self.nan_filter)
             try:
-                values = np.array([get_mu_quantile(mus, quantile)
+                values = np.array([get_quantile(mus, quantile)
                                    for quantile in quantiles])
             finally:
                 # Re-enable warnings about NaN values.
@@ -93,7 +93,7 @@ class TestGetMuQuantile(ut.TestCase):
             # Temporarily suppress warnings about NaN values.
             unbias_logger.addFilter(self.nan_filter)
             try:
-                values = np.array([get_mu_quantile(mus, quantile)
+                values = np.array([get_quantile(mus, quantile)
                                    for quantile in quantiles])
             finally:
                 # Re-enable warnings about NaN values.
@@ -109,14 +109,14 @@ class TestGetMuQuantile(ut.TestCase):
         # Test that negative quantiles are invalid.
         for quantile in np.linspace(0., -1., n)[1:]:
             self.assertRaisesRegex(ValueError, errmsg,
-                                   get_mu_quantile, mus, quantile)
+                                   get_quantile, mus, quantile)
         # Test that quantiles greater than 1 are invalid.
         for quantile in np.linspace(1., 2., n)[1:]:
             self.assertRaisesRegex(ValueError, errmsg,
-                                   get_mu_quantile, mus, quantile)
+                                   get_quantile, mus, quantile)
         # Test that NaN is an invalid quantile.
         self.assertRaisesRegex(ValueError, errmsg,
-                               get_mu_quantile, mus, np.nan)
+                               get_quantile, mus, np.nan)
 
 
 class TestNormalize(ut.TestCase):

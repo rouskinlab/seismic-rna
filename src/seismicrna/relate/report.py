@@ -5,11 +5,7 @@ from pathlib import Path
 
 from .io import RelateIO, QnamesBatchIO, RelateBatchIO
 from ..core import path
-from ..core.io import (BatchedRefseqReport,
-                       calc_taken,
-                       RefF,
-                       SampleF,
-                       NumReadsRel)
+from ..core.report import BatchedRefseqReport, RefF, SampleF, NumReadsRel
 
 BATCH_INDEX_COL = "Read Name"
 

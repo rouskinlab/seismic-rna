@@ -14,17 +14,17 @@ def get_table_params(table: PosTableLoader | ClustPosTableLoader,
         multi_type = cm_type
         if arrange == CLUST_INDIV:
             # One file per cluster, with no subplots.
-            clusters_params = [dict(order=order, cluster=cluster)
-                               for order, cluster in table.ord_clust]
+            clusters_params = [dict(order=order, clust=cluster)
+                               for order, cluster in table.header.clusts]
         elif arrange == CLUST_ORDER:
-            # One file per order, with a subplot for each cluster.
-            orders = sorted(table.orders)
-            clusters_params = [dict(order=order) for order in orders]
+            # One file per order, with one subplot per cluster.
+            clusters_params = [dict(order=order) for order
+                               in sorted(table.header.orders)]
         elif arrange == CLUST_UNITE:
-            # One file, with subplots of all clusters of all orders.
+            # One file, with one subplot per cluster for all orders.
             clusters_params = [dict()]
         else:
-            raise ValueError(f"Invalid value for arrange: '{arrange}'")
+            raise ValueError(f"Invalid value for arrange: {repr(arrange)}")
     elif isinstance(table, PosTableLoader):
         single_type = es_type
         multi_type = em_type

@@ -104,16 +104,19 @@ class XNA(ABC):
         return max(cls.four())
 
     @classmethod
-    def random(cls, nt: int,
-               a: float = 0.25, c: float = 0.25,
-               g: float = 0.25, t: float = 0.25):
+    def random(cls,
+               nt: int,
+               a: float = 0.25,
+               c: float = 0.25,
+               g: float = 0.25,
+               t: float = 0.25):
         """
         Return a random sequence of the given length.
 
         Parameters
         ----------
         nt: int
-            Number of nucleotides to simulate. Must be ≥ 1.
+            Number of nucleotides to simulate. Must be ≥ 0.
         a: float = 0.25
             Expected proportion of A.
         c: float = 0.25
@@ -121,11 +124,11 @@ class XNA(ABC):
         g: float = 0.25
             Expected proportion of G.
         t: float = 0.25
-            Expected proportion of T (DNA) or U (RNA).
+            Expected proportion of T (if DNA) or U (if RNA).
 
         Returns
         -------
-        XNA
+        DNA | RNA
             A random sequence.
         """
         # Calculate expected proportion of N.
@@ -137,9 +140,14 @@ class XNA(ABC):
 
     def __init__(self, seq: Any):
         self._seq = str(seq)
-        if invalid := set(self._seq) - self.get_alphaset():
-            raise ValueError(
-                f"Invalid {type(self).__name__} bases: {sorted(invalid)}")
+        # Check for invalid characters, including lowercase letters.
+        if inv := set(self._seq) - self.get_alphaset():
+            # If there are any invalid characters, check whether they
+            # are valid if converted to uppercase.
+            if inv := {i for i in inv if i.upper() not in self.get_alphaset()}:
+                # If there are invalid uppercase characters, then raise.
+                raise ValueError(f"Invalid {type(self).__name__} bases: {inv}")
+            self._seq = self._seq.upper()
 
     @cached_property
     def rc(self):
@@ -151,7 +159,6 @@ class XNA(ABC):
         """ Pictogram string. """
         return str(self).translate(self.get_pictrans())
 
-    @cache
     def to_array(self):
         """ NumPy array of Unicode characters for the sequence. """
         return np.array(list(self))
@@ -218,7 +225,6 @@ class DNA(XNA):
     def pict(cls):
         return PICTA, PICTC, PICTN, PICTG, PICTT
 
-    @cache
     def tr(self):
         """ Transcribe DNA to RNA. """
         return RNA(str(self).replace(BASET, BASEU))
@@ -234,7 +240,6 @@ class RNA(XNA):
     def pict(cls):
         return PICTA, PICTC, PICTN, PICTG, PICTU
 
-    @cache
     def rt(self):
         """ Reverse transcribe RNA to DNA. """
         return DNA(str(self).replace(BASEU, BASET))

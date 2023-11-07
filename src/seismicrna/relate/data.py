@@ -1,6 +1,6 @@
 from .io import RelateBatchIO
 from .report import RelateReport
-from ..core.io import BatchedLoadedDataset, LoadedMutsDataset
+from ..core.data import BatchedLoadedDataset, LoadedMutsDataset
 
 
 class RelateLoader(BatchedLoadedDataset, LoadedMutsDataset):

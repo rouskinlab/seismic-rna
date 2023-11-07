@@ -20,7 +20,7 @@ logger = getLogger(__name__)
 
 
 def fold(rna: RnaProfile, *,
-         out_dir: Path, temp_dir: Path, save_temp: bool, force: bool):
+         out_dir: Path, temp_dir: Path, keep_temp: bool, force: bool):
     """ Run the 'Fold' program of RNAstructure. """
     ct_file = rna.ct_file(out_dir)
     if force or not ct_file.is_file():
@@ -35,7 +35,7 @@ def fold(rna: RnaProfile, *,
             # Run the command.
             run_cmd(args_to_cmd(cmd))
         finally:
-            if not save_temp:
+            if not keep_temp:
                 # Delete the temporary files.
                 fasta.unlink(missing_ok=True)
     else:

@@ -1,22 +1,35 @@
-from inspect import getmembers
-from sys import modules
-from typing import Iterable
+"""
+
+FASTA Cleaner Module
+
+"""
+
+import re
+from logging import getLogger
+from pathlib import Path
+
+from ..core.seq import BASEN, XNA, extract_fasta_seqname, format_fasta_name_line
+
+logger = getLogger(__name__)
 
 
-def get_subclasses(types: type | tuple[type], items: Iterable):
-    """ Yield every item from `items` that is a subclass of `types`. """
-    return [i for i in items if isinstance(i, type) and issubclass(i, types)]
+def get_non_seq_regex(seq_type: type[XNA]):
+    return re.compile("[" + "".join(seq_type.get_nonalphaset() + {'\n'}) + "]")
 
 
-def get_subclasses_members(types: type | tuple[type], item: object):
-    """ Yield every member of `item` that is a subclass of `types`. """
-    return get_subclasses(types, (value for name, value in getmembers(item)))
+class FastaCleaner(object):
+    __slots__ = "non_seq_regex",
 
+    def __init__(self, seq_type: type[XNA]):
+        self.non_seq_regex = get_non_seq_regex(seq_type)
 
-def get_subclasses_module(types: type | tuple[type], module_name: str):
-    """ Yield every member of the module named `module_name` that is a
-    subclass of `types`. """
-    return get_subclasses_members(types, modules[module_name])
+    def run(self, ifasta: Path, ofasta: Path, force: bool = False):
+        if force or not ofasta.is_file():
+            with open(ifasta) as fi, open(ofasta, 'w' if force else 'x') as fo:
+                for line in fi:
+                    fo.write(format_fasta_name_line(name)
+                             if (name := extract_fasta_seqname(line))
+                             else self.non_seq_regex.sub(BASEN, line.upper()))
 
 ########################################################################
 #                                                                      #

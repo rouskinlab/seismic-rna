@@ -3,6 +3,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Callable, TextIO
 
+from ..align.xamops import EXCLUDE_FLAGS
 from ..core import path
 from ..core.batch import BATCH_INDEX
 from ..core.ngs import (SAM_DELIM,

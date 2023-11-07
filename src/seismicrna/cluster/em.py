@@ -3,11 +3,9 @@ from logging import getLogger
 
 import numpy as np
 import pandas as pd
-from scipy.special import logsumexp
-from scipy.stats import dirichlet
 
 from .uniq import UniqReads
-from ..core.batch import get_clusters_index
+from ..core.header import index_order_clusts
 from ..core.mu import calc_f_obs_numpy, calc_mu_adj_numpy, calc_prop_adj_numpy
 from ..core.rand import rng
 
@@ -155,19 +153,18 @@ class EmClustering(object):
 
     @cached_property
     def clusters(self):
-        """ Return a MultiIndex of the order and cluster numbers. """
-        return get_clusters_index(self.order, self.order)
+        """ MultiIndex of the order and cluster numbers. """
+        return index_order_clusts(self.order)
 
     @property
     def prop_obs(self):
-        """ Return the observed proportion of each cluster, without
-        adjusting for observer bias. """
+        """ Observed proportion of each cluster, without adjusting for
+        observer bias. """
         return self.nreads / np.sum(self.nreads)
 
     @property
     def prop_adj(self):
-        """ Calculate the proportion of each cluster, adjusted for
-        observer bias. """
+        """ Proportion of each cluster, adjusted for observer bias. """
         return calc_prop_adj_numpy(self.prop_obs, np.exp(self.log_f_obs))
 
     @property
@@ -239,6 +236,9 @@ class EmClustering(object):
 
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
+        # Import scipy here instead of at the top of this module because
+        # its import is slow enough to impact global startup time.
+        from scipy.special import logsumexp
         # Update the log fraction observed of each cluster.
         self.log_f_obs = np.log(calc_f_obs_numpy(self.sparse_mus,
                                                  self.uniq_reads.min_mut_gap))
@@ -311,6 +311,9 @@ class EmClustering(object):
 
     def run(self):
         """ Run the EM clustering algorithm. """
+        # Import scipy here instead of at the top of this module because
+        # its import is slow enough to impact global startup time.
+        from scipy.stats import dirichlet
         logger.info(f"{self} began with {self.min_iter} - {self.max_iter} "
                     f"iterations")
         # Erase the trajectory of log likelihood values (if any).

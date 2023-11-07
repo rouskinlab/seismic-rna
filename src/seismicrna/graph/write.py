@@ -21,12 +21,18 @@ class GraphWriter(ABC):
         """ Yield every graph for the table. """
         yield GraphBase()
 
-    def write(self, *args, csv: bool, html: bool, pdf: bool, **kwargs):
+    def write(self,
+              *args,
+              csv: bool,
+              html: bool,
+              pdf: bool,
+              force: bool,
+              **kwargs):
         """ Generate and write every graph for the table. """
         # Get the paths for every graph.
         paths = list()
         for graph in self.iter(*args, **kwargs):
-            paths.extend(graph.write(csv=csv, html=html, pdf=pdf))
+            paths.extend(graph.write(csv=csv, html=html, pdf=pdf, force=force))
         return paths
 
 

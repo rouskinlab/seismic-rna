@@ -1,34 +1,47 @@
 """
 
-FASTA Cleaner Module
+FASTA Cleaning Module
+========================================================================
+
 
 """
 
-import re
 from logging import getLogger
 from pathlib import Path
 
-from ..core.seq import BASEN, XNA, extract_fasta_seqname, format_fasta_name_line
+from click import command
+
+from .fastaclean import FastaCleaner
+from ..core.arg import CMD_FASTACLEAN, docdef, arg_fasta, opt_out_dir, opt_force
+from ..core.seq import DNA
 
 logger = getLogger(__name__)
 
+params = [
+    arg_fasta,
+    opt_out_dir,
+    opt_force,
+]
 
-def get_non_seq_regex(seq_type: type[XNA]):
-    return re.compile("[" + "".join(seq_type.get_nonalphaset() + {'\n'}) + "]")
+
+@command(CMD_FASTACLEAN, params=params)
+def cli(*args, **kwargs):
+    """ Clean the names and sequences in a FASTA file. """
+    return run(*args, **kwargs)
 
 
-class FastaCleaner(object):
-    __slots__ = "non_seq_regex",
-
-    def __init__(self, seq_type: type[XNA]):
-        self.non_seq_regex = get_non_seq_regex(seq_type)
-
-    def run(self, ifasta: Path, ofasta: Path, force: bool = False):
-        with open(ifasta) as fi, open(ofasta, 'w' if force else 'x') as fo:
-            for line in fi:
-                fo.write(format_fasta_name_line(name)
-                         if (name := extract_fasta_seqname(line))
-                         else self.non_seq_regex.sub(BASEN, line.upper()))
+@docdef.auto()
+def run(fasta: str, out_dir: str, force: bool):
+    """
+    Clean a FASTA file.
+    """
+    try:
+        fc = FastaCleaner(DNA)
+        fc.run(fasta_path := Path(fasta),
+               Path(out_dir).joinpath(fasta_path.name),
+               force=force)
+    except Exception as error:
+        logger.critical(error)
 
 ########################################################################
 #                                                                      #

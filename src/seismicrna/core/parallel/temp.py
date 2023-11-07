@@ -13,7 +13,7 @@ LOCK_DIR = ".seismic-rna_lock"
 
 def lock_temp_dir(run: Callable):
     @wraps(run)
-    def wrapper(*args, temp_dir: str | Path, save_temp: bool, **kwargs):
+    def wrapper(*args, temp_dir: str | Path, keep_temp: bool, **kwargs):
         lock_error = (f"The directory {temp_dir} is currently being used by "
                       f"another instance of SEISMIC-RNA. If possible, please "
                       f"name a temporary directory that does not yet exist "
@@ -60,18 +60,18 @@ def lock_temp_dir(run: Callable):
         # temporary directory or delete the lock. Thus, this run must
         # delete the lock upon exiting, regardless of the circumstances.
         try:
-            if temp_dir_existed_before and not save_temp:
+            if temp_dir_existed_before and not keep_temp:
                 logger.critical(temp_error)
                 raise SystemExit()
             try:
                 # Run the wrapped function and return its result.
                 return run(*args, **kwargs,
                            temp_dir=temp_dir,
-                           save_temp=save_temp)
+                           keep_temp=keep_temp)
             finally:
                 # Delete the temporary directory unless the option to
                 # save it was enabled.
-                if not save_temp:
+                if not keep_temp:
                     rmtree(temp_dir, ignore_errors=True)
                     logger.debug(f"Deleted temporary directory: {temp_dir}")
         finally:

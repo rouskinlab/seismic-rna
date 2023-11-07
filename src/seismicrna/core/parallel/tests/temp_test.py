@@ -57,9 +57,9 @@ def name_lock_temp(*args, **kwargs):
 
 
 @lock_temp_dir
-def run_func(*_, temp_dir: Path, save_temp: bool, **__):
+def run_func(*_, temp_dir: Path, keep_temp: bool, **__):
     """ Placeholder for run() function. """
-    return save_temp, temp_dir.is_dir(), get_lock(temp_dir).is_dir()
+    return keep_temp, temp_dir.is_dir(), get_lock(temp_dir).is_dir()
 
 
 class TestLockTempDir(ut.TestCase):
@@ -79,14 +79,14 @@ class TestLockTempDir(ut.TestCase):
         self.assertEqual(run_func.__name__, "run_func")
         self.assertEqual(run_func.__doc__, " Placeholder for run() function. ")
 
-    def test_new_save_temp(self):
+    def test_new_keep_temp(self):
         temp_dir, lock_dir = name_lock_temp()
         try:
             # The directory should not exist initially.
             self.assertFalse(temp_dir.is_dir())
             self.assertFalse(lock_dir.is_dir())
             # The directory should be created by lock_temp_dir().
-            self.assertEqual(run_func(temp_dir=temp_dir, save_temp=True),
+            self.assertEqual(run_func(temp_dir=temp_dir, keep_temp=True),
                              (True, True, True))
             # The directory should not be deleted by lock_temp_dir().
             self.assertTrue(temp_dir.is_dir())
@@ -101,7 +101,7 @@ class TestLockTempDir(ut.TestCase):
             self.assertFalse(temp_dir.is_dir())
             self.assertFalse(lock_dir.is_dir())
             # The directory should be created by lock_temp_dir().
-            self.assertEqual(run_func(temp_dir=temp_dir, save_temp=False),
+            self.assertEqual(run_func(temp_dir=temp_dir, keep_temp=False),
                              (False, True, True))
             # The directory should be deleted by lock_temp_dir().
             self.assertFalse(temp_dir.is_dir())
@@ -109,7 +109,7 @@ class TestLockTempDir(ut.TestCase):
         finally:
             rm_temp(temp_dir)
 
-    def test_exists_save_temp(self):
+    def test_exists_keep_temp(self):
         temp_dir = make_temp()
         lock_dir = get_lock(temp_dir)
         try:
@@ -117,7 +117,7 @@ class TestLockTempDir(ut.TestCase):
             self.assertTrue(temp_dir.is_dir())
             self.assertFalse(lock_dir.is_dir())
             # The function should run normally.
-            self.assertEqual(run_func(temp_dir=temp_dir, save_temp=True),
+            self.assertEqual(run_func(temp_dir=temp_dir, keep_temp=True),
                              (True, True, True))
             # The directory should not be deleted by lock_temp_dir().
             self.assertTrue(temp_dir.is_dir())
@@ -135,7 +135,7 @@ class TestLockTempDir(ut.TestCase):
             self.assertFalse(lock_dir.is_dir())
             # The function should fail.
             self.assertRaises(SystemExit, run_func,
-                              temp_dir=temp_dir, save_temp=False)
+                              temp_dir=temp_dir, keep_temp=False)
             # The directory should not be deleted by lock_temp_dir.
             self.assertTrue(temp_dir.is_dir())
             self.assertFalse(lock_dir.is_dir())
@@ -147,13 +147,13 @@ class TestLockTempDir(ut.TestCase):
         temp_dir, lock_dir = make_lock_temp()
         temp_logger.addFilter(lock_err := self.LockErrFilter())
         try:
-            for save_temp in (True, False):
+            for keep_temp in (True, False):
                 # The directory should exist initially.
                 self.assertTrue(temp_dir.is_dir())
                 self.assertTrue(lock_dir.is_dir())
                 # The function should fail.
                 self.assertRaises(SystemExit, run_func,
-                                  temp_dir=temp_dir, save_temp=save_temp)
+                                  temp_dir=temp_dir, keep_temp=keep_temp)
                 # The directory should not be deleted by lock_temp_dir.
                 self.assertTrue(temp_dir.is_dir())
                 self.assertTrue(lock_dir.is_dir())

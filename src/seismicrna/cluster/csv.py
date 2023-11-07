@@ -5,9 +5,7 @@ from typing import Callable
 
 import pandas as pd
 
-from .compare import (RunOrderResults,
-                      get_common_best_run_attr,
-                      get_log_exp_obs_counts)
+from .compare import RunOrderResults, get_log_exp_obs_counts
 from .em import EmClustering
 from ..core import path
 

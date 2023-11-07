@@ -1,5 +1,5 @@
-from abc import ABC, abstractmethod
-from functools import cached_property
+from abc import ABC
+from logging import getLogger
 from pathlib import Path
 
 import pandas as pd
@@ -16,8 +16,9 @@ from .base import (Table,
                    ClustReadTable,
                    ClustFreqTable)
 from ..core import path
-from ..core.batch import OC_INDEX_NAMES, POC_INDEX_NAMES, REL_NAME
-from ..core.seq import INDEX_NAMES
+from ..core.header import parse_header
+
+logger = getLogger(__name__)
 
 
 # Table Loader Base Classes ############################################
@@ -31,9 +32,9 @@ class TableLoader(Table, ABC):
         self._sample = fields[path.SAMP]
         self._ref = fields[path.REF]
         self._sect = fields[path.SECT]
-        if not self.path.samefile(table_file):
-            raise ValueError(f"Invalid path for '{type(self).__name__}': "
-                             f"{table_file} (expected {self.path})")
+        if not self.path.with_suffix(table_file.suffix).samefile(table_file):
+            raise ValueError(f"{type(self).__name__} got path {table_file},"
+                             f"but expected {self.path}")
 
     @property
     def top(self) -> Path:
@@ -51,22 +52,22 @@ class TableLoader(Table, ABC):
     def sect(self) -> str:
         return self._sect
 
-    @classmethod
-    @abstractmethod
-    def index_col(cls) -> list[int]:
-        """ Column(s) of the file to use as the index. """
-
-    @classmethod
-    @abstractmethod
-    def header_row(cls) -> list[int]:
-        """ Row(s) of the file to use as the columns. """
-
-    @cached_property
-    @abstractmethod
-    def data(self):
-        return pd.read_csv(self.path,
-                           index_col=self.index_col(),
-                           header=self.header_row())
+    @property
+    def _data(self):
+        data = (pd.read_csv(self.path,
+                            index_col=self.header_rows(),
+                            header=self.index_cols()).T
+                if self.transposed() else
+                pd.read_csv(self.path,
+                            index_col=self.index_cols(),
+                            header=self.header_rows()))
+        # Any numeric data in the header will be read as strings and
+        # must be cast to integers, which can be done with parse_header.
+        header = parse_header(data.columns)
+        # The columns must be replaced with the header index explicitly
+        # in order for the type casting to take effect.
+        data.columns = header.index
+        return data
 
 
 class RelTypeTableLoader(TableLoader, RelTypeTable, ABC):
@@ -78,104 +79,39 @@ class RelTypeTableLoader(TableLoader, RelTypeTable, ABC):
 class PosTableLoader(RelTypeTableLoader, PosTable, ABC):
     """ Load data indexed by position. """
 
-    @classmethod
-    def index_col(cls):
-        return list(range(len(INDEX_NAMES)))
-
 
 class ReadTableLoader(RelTypeTableLoader, ReadTable, ABC):
     """ Load data indexed by read. """
 
-    @classmethod
-    def index_col(cls):
-        return 0
-
-
-# Load by Source (relate/mask/cluster) #################################
-
-
-class AvgTableLoader(RelTypeTableLoader, ABC):
-
-    @classmethod
-    def header_row(cls):
-        return 0
-
-    @cached_property
-    def data(self):
-        # Load the data in the same manner as the superclass.
-        data = super().data
-        # Rename the column level of the relationships.
-        data.columns.rename(REL_NAME, inplace=True)
-        return data
-
-
-class RelTableLoader(AvgTableLoader, ABC):
-    pass
-
-
-class MaskTableLoader(AvgTableLoader, ABC):
-    pass
-
-
-class ClustTableLoader(RelTypeTableLoader, ABC):
-
-    @classmethod
-    def header_row(cls):
-        return list(range(len(POC_INDEX_NAMES)))
-
-    @cached_property
-    def data(self):
-        # Load the data in the same manner as the superclass.
-        data = super().data
-        # Reformat the columns of clusters.
-        data.columns = reformat_cluster_index(data.columns)
-        return data
-
 
 # Instantiable Table Loaders ###########################################
 
-class RelPosTableLoader(RelTableLoader, PosTableLoader, RelPosTable):
+class RelPosTableLoader(PosTableLoader, RelPosTable):
     """ Load relation data indexed by position. """
 
 
-class RelReadTableLoader(RelTableLoader, ReadTableLoader, RelReadTable):
+class RelReadTableLoader(ReadTableLoader, RelReadTable):
     """ Load relation data indexed by read. """
 
 
-class MaskPosTableLoader(MaskTableLoader, PosTableLoader, MaskPosTable):
+class MaskPosTableLoader(PosTableLoader, MaskPosTable):
     """ Load masked bit vector data indexed by position. """
 
 
-class MaskReadTableLoader(MaskTableLoader, ReadTableLoader, MaskReadTable):
+class MaskReadTableLoader(ReadTableLoader, MaskReadTable):
     """ Load masked bit vector data indexed by read. """
 
 
-class ClustPosTableLoader(ClustTableLoader, PosTableLoader, ClustPosTable):
+class ClustPosTableLoader(PosTableLoader, ClustPosTable):
     """ Load cluster data indexed by position. """
 
 
-class ClustReadTableLoader(ClustTableLoader, ReadTableLoader, ClustReadTable):
+class ClustReadTableLoader(ReadTableLoader, ClustReadTable):
     """ Load cluster data indexed by read. """
 
 
 class ClustFreqTableLoader(TableLoader, ClustFreqTable):
     """ Load cluster data indexed by cluster. """
-
-    @classmethod
-    def index_col(cls):
-        return list(range(len(OC_INDEX_NAMES)))
-
-    @classmethod
-    def header_row(cls):
-        return 0
-
-    @cached_property
-    def data(self):
-        # Load the data in the same manner as the superclass.
-        data = super().data
-        # Reformat the index of clusters.
-        data.index = reformat_cluster_index(data.index)
-        return data
 
 
 # Helper Functions #####################################################
@@ -206,34 +142,11 @@ def find_tables(tables: tuple[str, ...]):
 
 def load_tables(tables: tuple[str, ...]):
     """ Yield a table for each given file/directory of a table. """
-    yield from map(load, find_tables(tables))
-
-
-def reformat_cluster_index(index: pd.MultiIndex):
-    """ Ensure that the columns are a MultiIndex and that the order and
-    cluster numbers are integers, not strings. """
-    return pd.MultiIndex.from_arrays(
-        [index.get_level_values(n).astype(int if n in OC_INDEX_NAMES else str)
-         for n in index.names],
-        names=index.names
-    )
-
-
-def get_clusters(columns: pd.Index | pd.MultiIndex, allow_zero: bool = False):
-    """ Return a MultiIndex of non-redundant orders and cluster numbers
-    from columns with order and cluster numbers as levels. """
-    try:
-        return pd.MultiIndex.from_arrays([columns.get_level_values(level)
-                                          for level in OC_INDEX_NAMES],
-                                         names=OC_INDEX_NAMES).drop_duplicates()
-    except KeyError:
-        # The index did not contain levels named "order" and "cluster".
-        if allow_zero:
-            # Default to an index of zero for each level.
-            return pd.MultiIndex.from_tuples([(0,) * len(OC_INDEX_NAMES)],
-                                             names=OC_INDEX_NAMES)
-        # Re-raise the error.
-        raise
+    for file in find_tables(tables):
+        try:
+            yield load(file)
+        except Exception as error:
+            logger.error(f"Failed to load table from {file}: {error}")
 
 ########################################################################
 #                                                                      #

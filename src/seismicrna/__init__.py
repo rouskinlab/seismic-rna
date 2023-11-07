@@ -15,7 +15,7 @@ that they can be imported from external modules and scripts::
 
 """
 
-from . import demult, align, relate, cluster, table, fastc
+from . import demult, align, relate, cluster, table, fastaclean
 from .core.meta.version import __version__
 
 ########################################################################

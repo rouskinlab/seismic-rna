@@ -28,7 +28,7 @@ POS_INDEX = 1
 # Names of the section index levels.
 POS_NAME = "Position"
 BASE_NAME = "Base"
-INDEX_NAMES = POS_NAME, BASE_NAME
+SEQ_INDEX_NAMES = POS_NAME, BASE_NAME
 FULL_NAME = "full"
 
 # Fields in the sections file.
@@ -163,7 +163,7 @@ def seq_pos_to_index(seq: DNA, positions: Sequence[int], start: int):
     # Create a 2-level MultiIndex from the positions and the bases in
     # the sequence at those positions.
     index = pd.MultiIndex.from_arrays([pos, seq.to_array()[pos - start]],
-                                      names=INDEX_NAMES)
+                                      names=SEQ_INDEX_NAMES)
     if index.has_duplicates:
         raise ValueError(f"Duplicated positions: {positions}")
     if not index.is_monotonic_increasing:
@@ -173,9 +173,9 @@ def seq_pos_to_index(seq: DNA, positions: Sequence[int], start: int):
 
 def index_to_pos(index: pd.MultiIndex):
     """ Get the positions from a MultiIndex of (pos, base) pairs. """
-    if tuple(index.names) != INDEX_NAMES:
-        raise ValueError(
-            f"Expected index with names {INDEX_NAMES}, but got {index.names}")
+    if tuple(index.names) != SEQ_INDEX_NAMES:
+        raise ValueError(f"Expected index with names {SEQ_INDEX_NAMES}, "
+                         f"but got {index.names}")
     positions = index.get_level_values(POS_NAME)
     if positions.has_duplicates:
         raise ValueError(f"Index has duplicate positions:\n{positions}")

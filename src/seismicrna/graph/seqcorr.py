@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from click import command
 from plotly import graph_objects as go
-from scipy.stats import pearsonr, spearmanr
 
 from .seqpair import SeqPairGraphRunner, SeqPairGraphWriter, SeqPairOneAxisGraph
 from .traces import iter_seq_line_traces
@@ -36,6 +35,9 @@ class SeqCorrGraph(SeqPairOneAxisGraph):
                  correl_min_n: int = 12,
                  correl_method: str = "spearman",
                  **kwargs):
+        # Import scipy here instead of at the top of this module because
+        # its import is slow enough to impact global startup time.
+        from scipy.stats import pearsonr, spearmanr
         super().__init__(*args, **kwargs)
         self._margin = margin
         self._correl_min_n = correl_min_n

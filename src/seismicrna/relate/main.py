@@ -30,7 +30,7 @@ from ..core.arg import (CMD_REL,
                         opt_parallel,
                         opt_max_procs,
                         opt_force,
-                        opt_save_temp)
+                        opt_keep_temp)
 from ..core.parallel import lock_temp_dir
 
 logger = getLogger(__name__)
@@ -57,7 +57,7 @@ params = [
     opt_parallel,
     # File generation
     opt_force,
-    opt_save_temp,
+    opt_keep_temp,
 ]
 
 
@@ -85,7 +85,7 @@ def run(fasta: str,
         parallel: bool,
         brotli_level: int,
         force: bool,
-        save_temp: bool):
+        keep_temp: bool):
     """
     Run the relation step. For each read (or each pair of reads, if the
     reads are paired-end), generate a 'relation vector' that encodes the
@@ -109,7 +109,7 @@ def run(fasta: str,
                      parallel=parallel,
                      brotli_level=brotli_level,
                      force=force,
-                     save_temp=save_temp)
+                     keep_temp=keep_temp)
 
 ########################################################################
 #                                                                      #

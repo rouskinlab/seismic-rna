@@ -28,7 +28,7 @@ from ..core.arg import (CMD_MASK,
                         opt_max_procs,
                         opt_parallel,
                         opt_force)
-from ..core.io import load_data
+from ..core.data import load_data
 from ..core.parallel import dispatch
 from ..core.seq import DNA, RefSections
 from ..relate.data import RelateLoader

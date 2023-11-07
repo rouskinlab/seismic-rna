@@ -1,7 +1,6 @@
 from logging import getLogger
 
 import numpy as np
-from scipy.optimize import newton_krylov
 
 logger = getLogger(__name__)
 
@@ -252,6 +251,9 @@ def calc_mu_adj_numpy(mus_obs: np.ndarray, min_gap: int,
         A (positions x clusters) array of the real mutation rates that
         would be expected to yield the observed mutation rates.
     """
+    # Import scipy here instead of at the top of this module because
+    # its import is slow enough to impact global startup time.
+    from scipy.optimize import newton_krylov
     if mus_obs.ndim == 1:
         # Expand the mutation rates from a vector into a matrix with one
         # column (cluster), calculate, and squeeze back into a vector.

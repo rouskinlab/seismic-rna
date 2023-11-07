@@ -5,7 +5,7 @@ from plotly import graph_objects as go
 
 from .base import PRECISION
 from .color import ColorMap
-from ..core.batch import REL_NAME
+from ..core.header import REL_NAME
 from ..core.seq import BASE_NAME, POS_NAME, DNA
 
 logger = getLogger(__name__)
@@ -96,7 +96,7 @@ def get_seq_stack_bar_trace(data: pd.Series, rel: str, cmap: ColorMap):
                   hoverinfo="text")
 
 
-def iter_seq_stack_bar_traces(data: pd.DataFrame, cmap: ColorMap):
+def iter_seqbar_stack_traces(data: pd.DataFrame, cmap: ColorMap):
     rel_level = data.columns.names.index(REL_NAME)
     for (_, series), rel in zip(data.items(),
                                 data.columns.get_level_values(rel_level),

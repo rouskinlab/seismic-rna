@@ -46,10 +46,10 @@ class TestDNA(ut.TestCase):
     def test_valid(self):
         """ Test whether valid DNA sequences can be created. """
         for length in range(1, 5):
-            for bases in product(*(["ACGTN"] * length)):
+            for bases in product(*(["ACGTNacgtn"] * length)):
                 dna = DNA("".join(bases))
                 self.assertEqual(len(dna), length)
-                self.assertEqual(str(dna), "".join(bases))
+                self.assertEqual(str(dna), "".join(bases).upper())
 
     def test_random(self):
         """ Test whether random DNA sequences can be created. """
@@ -109,7 +109,7 @@ class TestDNA(ut.TestCase):
     def test_invalid_bases(self):
         """ Test whether invalid characters raise ValueError. """
         for char in printable:
-            if char not in "ACGTN":
+            if char not in "ACGTNacgtn":
                 self.assertRaisesRegex(ValueError, f"Invalid DNA bases:",
                                        DNA, char)
 
@@ -152,10 +152,10 @@ class TestRNA(ut.TestCase):
     def test_valid(self):
         """ Test whether valid RNA sequences can be created. """
         for length in range(1, 5):
-            for bases in product(*(["ACGUN"] * length)):
+            for bases in product(*(["ACGUNacgun"] * length)):
                 rna = RNA("".join(bases))
                 self.assertEqual(len(rna), length)
-                self.assertEqual(str(rna), "".join(bases))
+                self.assertEqual(str(rna), "".join(bases).upper())
 
     def test_random(self):
         """ Test whether random RNA sequences can be created. """
@@ -215,7 +215,7 @@ class TestRNA(ut.TestCase):
     def test_invalid_bases(self):
         """ Test whether invalid characters raise ValueError. """
         for char in printable:
-            if char not in "ACGUN":
+            if char not in "ACGUNacgun":
                 self.assertRaisesRegex(ValueError, f"Invalid RNA bases:",
                                        RNA, char)
 

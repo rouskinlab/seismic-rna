@@ -15,7 +15,7 @@ import pandas as pd
 
 from .em import EmClustering
 from .names import EXP_NAME, OBS_NAME
-from ..core.batch import ORDER_NAME
+from ..core.header import ORDER_NAME
 
 EXP_COUNT_PRECISION = 3  # Number of digits to round expected log counts
 

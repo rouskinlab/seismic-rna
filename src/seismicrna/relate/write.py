@@ -134,7 +134,7 @@ class RelationWriter(object):
 
     def _generate_batches(self, *,
                           out_dir: Path,
-                          save_temp: bool,
+                          keep_temp: bool,
                           min_mapq: int,
                           phred_enc: int,
                           min_phred: int,
@@ -180,7 +180,7 @@ class RelationWriter(object):
             logger.info(f"Ended {self}: {n_reads} reads in {n_batches} batches")
             return n_reads, n_batches, checksums
         finally:
-            if not save_temp:
+            if not keep_temp:
                 # Delete the temporary SAM file before exiting.
                 self.xam.delete_temp_sam()
 

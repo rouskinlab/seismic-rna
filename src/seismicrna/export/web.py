@@ -66,6 +66,8 @@ POS_DATA = {
 }
 SUBST_RATE = "sub_rate"
 SUBST_HIST = "sub_hist"
+COUNT_PRECISION = 1
+RATIO_PRECISION = 6
 
 
 def format_metadata(metadata: dict[str, Any]):
@@ -126,14 +128,13 @@ def get_sect_metadata(top: Path,
 
 
 def iter_pos_table_data(table: PosTableLoader):
-    umd = table.unmasked_data
-    for col, key in POS_DATA.items():
-        yield key, umd[col].values.tolist()
+    for rel, key in POS_DATA.items():
+        table.fetch(ratio=False, precision=COUNT_PRECISION, rels=[rel])
+        yield key, table.data[col].values.tolist()
     yield SUBST_RATE, (umd[SUBST_REL] / umd[INFOR_REL]).values.tolist()
 
 
 def iter_read_table_data(table: ReadTableLoader):
-    print(table.data[SUBST_REL])
     read_counts = np.asarray(table.data[SUBST_REL].values.round(), dtype=int)
     yield SUBST_HIST, np.bincount(read_counts, minlength=1).tolist()
 

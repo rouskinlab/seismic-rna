@@ -15,11 +15,42 @@ from typing import Any, Hashable, Callable, Iterable
 
 import numpy as np
 
-from .batch import ReadBatchIO
-from .file import FileIO, RefIO
-from .. import path
-from ..meta.version import __version__, check_compatibility
-from ..rel import HalfRelPattern
+from . import path
+from .arg import (opt_phred_enc,
+                  opt_fastqc,
+                  opt_cutadapt,
+                  opt_cut_q1,
+                  opt_cut_q2,
+                  opt_cut_g1,
+                  opt_cut_g2,
+                  opt_cut_a1,
+                  opt_cut_a2,
+                  opt_cut_discard_trimmed,
+                  opt_cut_discard_untrimmed,
+                  opt_cut_o,
+                  opt_cut_e,
+                  opt_cut_indels,
+                  opt_cut_nextseq,
+                  opt_cut_m,
+                  opt_bt2_d,
+                  opt_bt2_r,
+                  opt_bt2_dpad,
+                  opt_bt2_orient,
+                  opt_bt2_i,
+                  opt_bt2_x,
+                  opt_bt2_s,
+                  opt_bt2_l,
+                  opt_bt2_gbar,
+                  opt_bt2_un,
+                  opt_bt2_discordant,
+                  opt_bt2_mixed,
+                  opt_bt2_dovetail,
+                  opt_bt2_contain,
+                  opt_bt2_local,
+                  opt_min_mapq)
+from .io import FileIO, ReadBatchIO, RefIO
+from .meta.version import __version__, check_compatibility
+from .rel import HalfRelPattern
 
 logger = getLogger(__name__)
 
@@ -27,10 +58,18 @@ logger = getLogger(__name__)
 # Field class
 
 class Field(object):
-    __slots__ = ["key", "title", "dtype", "iconv", "oconv",
-                 "check_val", "check_rep_val"]
+    __slots__ = ["key",
+                 "title",
+                 "dtype",
+                 "iconv",
+                 "oconv",
+                 "check_val",
+                 "check_rep_val"]
 
-    def __init__(self, key: str, title: str, dtype: type, *,
+    def __init__(self,
+                 key: str,
+                 title: str,
+                 dtype: type, *,
                  iconv: Callable[[Any], Any] | None = None,
                  oconv: Callable[[Any], Any] | None = None,
                  check_val: Callable[[Any], bool] | None = None,
@@ -369,83 +408,42 @@ TimeTakenF = Field("taken",
 # Alignment
 IsDemultF = Field("demultiplexed", "Use demultiplexed mode", bool)
 IsPairedEndF = Field("paired_end", "Use paired-end mode", bool)
-PhredEncF = Field("phred_enc", "Phred score encoding", int)
-UseFastqcF = Field("fastqc", "Check quality with FastQC", bool)
-UseCutadaptF = Field("cut", "Trim with Cutadapt", bool)
-CutadaptQ1 = Field("cut_q1",
-                   "Minimum Phred score for read 1",
-                   int,
-                   check_val=check_nonneg_int)
-CutadaptQ2 = Field("cut_q2",
-                   "Minimum Phred score for read 2",
-                   int,
-                   check_val=check_nonneg_int)
-CutadaptG1 = Field("cut_g1",
-                   "5' adapter for read 1",
-                   list,
-                   check_val=check_list_str)
-CutadaptA1 = Field("cut_a1",
-                   "3' adapter for read 1",
-                   list,
-                   check_val=check_list_str)
-CutadaptG2 = Field("cut_g2",
-                   "5' adapter for read 2",
-                   list,
-                   check_val=check_list_str)
-CutadaptA2 = Field("cut_a2",
-                   "3' adapter for read 2",
-                   list,
-                   check_val=check_list_str)
-CutadaptOverlap = Field("cut_o",
-                        "Minimum adapter length (nt)",
-                        int,
-                        check_val=check_nonneg_int)
-CutadaptErrors = Field("cut_e",
-                       "Minimum adapter error rate",
-                       float,
-                       check_val=check_probability)
-CutadaptIndels = Field("cut_indels", "Allow indels in adapters", bool)
-CutadaptNextSeq = Field("cut_nextseq", "Trim in NextSeq mode", bool)
-CutadaptNoTrimmed = Field("cut_discard_trimmed",
-                          "Discard trimmed reads",
-                          bool)
-CutadaptNoUntrimmed = Field("cut_discard_untrimmed",
-                            "Discard untrimmed reads",
-                            bool)
-CutadaptMinLength = Field("cut_m",
-                          "Minimum length of read after trimming (nt)",
-                          int, check_val=check_nonneg_int)
-Bowtie2Local = Field("bt2_local", "Align in local mode", bool)
-Bowtie2Discord = Field("bt2_discordant", "Keep discordant alignments", bool)
-Bowtie2Dovetail = Field("bt2_dovetail",
-                        "Consider dovetailed alignments concordant",
-                        bool)
-Bowtie2Contain = Field("bt2_contain",
-                       "Consider nested alignments concordant",
-                       bool)
-Bowtie2Mixed = Field("bt2_mixed", "Align in mixed mode", bool)
-Bowtie2Unal = Field("bt2_unal", "Output unaligned reads to SAM file", bool)
-Bowtie2ScoreMin = Field("bt2_score_min", "Minimum alignment score", str)
-Bowtie2MinLength = Field("bt2_i", "Minimum fragment length (nt)",
-                         int, check_val=check_nonneg_int)
-Bowtie2MaxLength = Field("bt2_x", "Maximum fragment length (nt)",
-                         int, check_val=check_nonneg_int)
-Bowtie2GBar = Field("bt2_gbar", "Gap buffer margin (nt)",
-                    int, check_val=check_nonneg_int)
-Bowtie2SeedLength = Field("bt2_l", "Seed length (nt)",
-                          int, check_val=check_nonneg_int)
-Bowtie2SeedInterval = Field("bt2_s", "Seed interval (nt)", str)
-Bowtie2ExtTries = Field("bt2_d", "Maximum seed extension attempts",
-                        int, check_val=check_nonneg_int)
-Bowtie2Reseed = Field("bt2_r", "Maximum re-seeding attempts",
-                      int, check_val=check_nonneg_int)
-Bowtie2Dpad = Field("bt2_dpad",
-                    "Dynamic programming padding (nt)",
-                    int,
-                    check_val=check_nonneg_int)
-Bowtie2Orient = Field("bt2_orient", "Orientation of mates", str)
+PhredEncF = Field("phred_enc", opt_phred_enc.help, int)
+UseFastqcF = Field("fastqc", opt_fastqc.help, bool)
+UseCutadaptF = Field("cut", opt_cutadapt.help, bool)
+CutadaptQ1 = Field("cut_q1", opt_cut_q1.help, int, check_val=check_nonneg_int)
+CutadaptQ2 = Field("cut_q2", opt_cut_q2.help, int, check_val=check_nonneg_int)
+CutadaptG1 = Field("cut_g1", opt_cut_g1.help, list, check_val=check_list_str)
+CutadaptA1 = Field("cut_a1", opt_cut_a1.help, list, check_val=check_list_str)
+CutadaptG2 = Field("cut_g2", opt_cut_g2.help, list, check_val=check_list_str)
+CutadaptA2 = Field("cut_a2", opt_cut_a2.help, list, check_val=check_list_str)
+CutadaptOverlap = Field("cut_o", opt_cut_o.help, int, check_val=check_nonneg_int)
+CutadaptErrors = Field("cut_e", opt_cut_e.help, float, check_val=check_probability)
+CutadaptIndels = Field("cut_indels", opt_cut_indels.help, bool)
+CutadaptNextSeq = Field("cut_nextseq", opt_cut_nextseq.help, bool)
+CutadaptNoTrimmed = Field("cut_discard_trimmed", opt_cut_discard_trimmed.help, bool)
+CutadaptNoUntrimmed = Field("cut_discard_untrimmed", opt_cut_discard_untrimmed.help, bool)
+CutadaptMinLength = Field("cut_m", opt_cut_m.help, int, check_val=check_nonneg_int)
+Bowtie2Local = Field("bt2_local", opt_bt2_local.help, bool)
+Bowtie2Discord = Field("bt2_discordant", opt_bt2_discordant.help, bool)
+Bowtie2Dovetail = Field("bt2_dovetail", opt_bt2_dovetail.help, bool)
+Bowtie2Contain = Field("bt2_contain", opt_bt2_contain.help, bool)
+Bowtie2Mixed = Field("bt2_mixed", opt_bt2_mixed.help, bool)
+Bowtie2Un = Field("bt2_un", opt_bt2_un.help, bool)
+Bowtie2ScoreMin = Field("bt2_score_min",
+                        "Minimum score for a valid alignment with Bowtie2",
+                        str)
+Bowtie2MinLength = Field("bt2_i", opt_bt2_i.help, int, check_val=check_nonneg_int)
+Bowtie2MaxLength = Field("bt2_x", opt_bt2_x.help, int, check_val=check_nonneg_int)
+Bowtie2GBar = Field("bt2_gbar", opt_bt2_gbar.help, int, check_val=check_nonneg_int)
+Bowtie2SeedLength = Field("bt2_l", opt_bt2_l.help, int, check_val=check_nonneg_int)
+Bowtie2SeedInterval = Field("bt2_s", opt_bt2_s.help, str)
+Bowtie2ExtTries = Field("bt2_d", opt_bt2_d.help, int, check_val=check_nonneg_int)
+Bowtie2Reseed = Field("bt2_r", opt_bt2_r.help, int, check_val=check_nonneg_int)
+Bowtie2Dpad = Field("bt2_dpad", opt_bt2_dpad.help, int, check_val=check_nonneg_int)
+Bowtie2Orient = Field("bt2_orient", opt_bt2_orient.help, str)
 MinMapQual = Field("min_mapq",
-                   "Minimum mapping quality",
+                   opt_min_mapq.help,
                    int,
                    check_val=check_nonneg_int)
 ReadsInit = Field("reads_init",

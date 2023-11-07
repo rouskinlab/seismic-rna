@@ -6,7 +6,7 @@ import pandas as pd
 
 from .index import get_length, count_base_types, iter_base_types
 from ..rel import MATCH, NOCOV, RelPattern
-from ..seq import POS_NAME
+from ..seq import POS_NAME, DNA
 
 
 def get_half_coverage_matrix(pos_nums: np.ndarray,
@@ -63,12 +63,17 @@ def get_cover_per_pos(coverage_matrix: pd.DataFrame,
 
 def get_cover_per_read(coverage_matrix: pd.DataFrame):
     """ Number of positions covered by each read. """
-    return pd.DataFrame.from_dict(
-        {base: pd.Series(np.count_nonzero(coverage_matrix.loc[:, index],
-                                          axis=1),
-                         index=coverage_matrix.index)
-         for base, index in iter_base_types(coverage_matrix.columns)}
-    )
+    cover_per_read = {
+        base: pd.Series(np.count_nonzero(coverage_matrix.loc[:, index], axis=1),
+                        index=coverage_matrix.index)
+        for base, index in iter_base_types(coverage_matrix.columns)
+    }
+    if not cover_per_read:
+        cover_per_read = {
+            base: pd.Series(0, index=coverage_matrix.index)
+            for base in DNA.alph()
+        }
+    return pd.DataFrame.from_dict(cover_per_read)
 
 
 def get_rels_per_pos(mutations: dict[int, dict[int, np.ndarray]],

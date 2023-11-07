@@ -140,9 +140,9 @@ class BrickleIO(FileIO, ABC):
         # Copy the __dict__ to avoid modifying this object's state.
         state = self.__dict__.copy()
         # Do not pickle cached properties.
-        for name, value in list(state.items()):
+        for name, value in vars(type(self)).items():
             if isinstance(value, cached_property):
-                state.pop(name)
+                state.pop(name, None)
         return state
 
     def __setstate__(self, state: dict[str, Any]):

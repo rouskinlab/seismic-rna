@@ -3,13 +3,10 @@ from functools import cached_property
 from .batch import MaskMutsBatch, apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
-from ..core.io import (CountMutsF,
-                       CountRefsF,
-                       MinMutGapF,
-                       PosKeptF,
-                       BatchedLoadedDataset,
-                       BatchedMergedDataset,
-                       MergedMutsDataset)
+from ..core.data import (BatchedLoadedDataset,
+                         BatchedMergedDataset,
+                         MergedMutsDataset)
+from ..core.report import CountMutsF, CountRefsF, MinMutGapF, PosKeptF
 from ..core.rel import RelPattern
 from ..relate.data import RelateLoader
 from ..relate.io import RelateBatchIO

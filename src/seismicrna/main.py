@@ -27,7 +27,7 @@ from . import (whole,
                graph,
                export,
                test,
-               fastc,
+               fastaclean,
                __version__)
 from .core import logs
 from .core.arg import (opt_log,
@@ -95,7 +95,7 @@ for module in (whole,
                graph,
                export,
                test,
-               fastc):
+               fastaclean):
     cli.add_command(module.cli)
 
 ########################################################################

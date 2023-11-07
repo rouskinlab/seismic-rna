@@ -6,7 +6,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Generator, Generic, Iterable, TypeVar
 
-from .file import convert_path
+from .io import RefseqIO, convert_path
 from .report import (SampleF,
                      RefF,
                      SectF,
@@ -15,11 +15,10 @@ from .report import (SampleF,
                      NumBatchF,
                      ChecksumsF,
                      RefseqChecksumF)
-from .seq import RefseqIO
-from .. import path
-from ..batch import list_batch_nums
-from ..rel import RelPattern
-from ..seq import FULL_NAME, DNA, Section, hyphenate_ends
+from . import path
+from .batch import list_batch_nums
+from .rel import RelPattern
+from .seq import FULL_NAME, DNA, Section, hyphenate_ends
 
 # Type variable for reports.
 R = TypeVar('R')

@@ -72,6 +72,13 @@ from ..core.ngs import (sort_xam_cmd,
 
 logger = getLogger(__name__)
 
+# SAM filters
+EXCLUDE_FLAGS = (FLAG_UNMAP
+                 | FLAG_SECONDARY
+                 | FLAG_QCFAIL
+                 | FLAG_DUPLICATE
+                 | FLAG_SUPPLEMENTARY)
+
 # Bowtie2 parameters
 MATCH_BONUS = "1"
 MISMATCH_PENALTY = "1,1"
@@ -109,7 +116,6 @@ def bowtie2_cmd(fq_inp: FastqUnit,
                 bt2_mixed: bool,
                 bt2_dovetail: bool,
                 bt2_contain: bool,
-                bt2_unal: bool,
                 bt2_score_min_e2e: str,
                 bt2_score_min_loc: str,
                 bt2_i: int,
@@ -120,7 +126,8 @@ def bowtie2_cmd(fq_inp: FastqUnit,
                 bt2_d: int,
                 bt2_r: int,
                 bt2_dpad: int,
-                bt2_orient: str):
+                bt2_orient: str,
+                fq_unal: Path | None):
     args = [BOWTIE2_CMD,
             # Resources
             "--threads", n_procs,
@@ -132,6 +139,7 @@ def bowtie2_cmd(fq_inp: FastqUnit,
             "-i", bt2_s,
             "-D", bt2_d,
             "-R", bt2_r,
+            "--non-deterministic",
             # Scoring
             fq_inp.phred_arg,
             "--ignore-quals",
@@ -145,14 +153,14 @@ def bowtie2_cmd(fq_inp: FastqUnit,
                             else bt2_score_min_e2e),
             "-I", bt2_i,
             "-X", bt2_x]
-    if not bt2_unal:
-        args.append("--no-unal")
     # Mate pair orientation
     if bt2_orient not in BOWTIE2_ORIENT:
         logger.warning(f"Invalid mate orientation for Bowtie2: '{bt2_orient}'. "
                        f"Setting to '{BOWTIE2_ORIENT[0]}'")
         bt2_orient = BOWTIE2_ORIENT[0]
     args.append(f"--{bt2_orient}")
+    # Selecting reads to output
+    args.append("--no-unal")
     if not bt2_discordant:
         args.append("--no-discordant")
     if not bt2_contain:
@@ -164,6 +172,14 @@ def bowtie2_cmd(fq_inp: FastqUnit,
     # Formatting
     args.append("--xeq")
     # Input and output files
+    if fq_unal is not None:
+        opts_unal = ["--un"]
+        if fq_inp.paired:
+            opts_unal.append("conc")
+        if fq_unal.suffix.endswith(".gz"):
+            opts_unal.append("gz")
+        opt_unal = "-".join(opts_unal)
+        args.extend([opt_unal, fq_unal])
     if sam_out is not None:
         args.extend(["-S", sam_out])
     args.extend(["-x", index_pfx])
@@ -230,20 +246,16 @@ def xamgen_cmd(fq_inp: FastqUnit,
     """ Wrap alignment and post-processing into one pipeline. """
     bowtie2_step = bowtie2_cmd(fq_inp, None, n_procs=n_procs, **kwargs)
     # Filter out any unaligned or otherwise unsuitable reads.
-    flags_exc = (FLAG_UNMAP
-                 | FLAG_SECONDARY
-                 | FLAG_QCFAIL
-                 | FLAG_DUPLICATE
-                 | FLAG_SUPPLEMENTARY)
-    # Ensure all output reads have the right pairing status.
     if fq_inp.paired:
         # Require the paired flag.
+        flags_exc = EXCLUDE_FLAGS
         flags_req = FLAG_PAIRED
     else:
         # Exclude the paired flag and require no flags.
-        flags_exc |= FLAG_PAIRED
+        flags_exc = EXCLUDE_FLAGS | FLAG_PAIRED
         flags_req = None
-    view_xam_step = view_xam_cmd(None, None,
+    view_xam_step = view_xam_cmd(None,
+                                 None,
                                  min_mapq=min_mapq,
                                  flags_req=flags_req,
                                  flags_exc=flags_exc,
@@ -269,7 +281,8 @@ def export_cmd(xam_in: Path | None,
     echo_step = args_to_cmd([ECHO_CMD, header])
     # Select only the reads that aligned to the reference, and ignore
     # the original header.
-    ref_step = view_xam_cmd(xam_in, None,
+    ref_step = view_xam_cmd(xam_in,
+                            None,
                             sam=True,
                             with_header=False,
                             ref=ref,

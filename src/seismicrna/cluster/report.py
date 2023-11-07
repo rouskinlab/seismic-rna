@@ -4,25 +4,25 @@ from .compare import RunOrderResults, find_best_order
 from .io import ClustIO, ClustBatchIO
 from .uniq import UniqReads
 from ..core import path
-from ..core.io import (BatchedReport,
-                       SampleF,
-                       RefF,
-                       SectF,
-                       End5F,
-                       End3F,
-                       NumUniqReadKeptF,
-                       MaxClustsF,
-                       ClustNumRunsF,
-                       MinIterClustF,
-                       MaxIterClustF,
-                       ClustConvThreshF,
-                       ClustsConvF,
-                       ClustsLogLikesF,
-                       ClustsLikeMeanF,
-                       ClustsLikeStdF,
-                       ClustsVarInfoF,
-                       ClustsBicF,
-                       NumClustsF)
+from ..core.report import (BatchedReport,
+                           SampleF,
+                           RefF,
+                           SectF,
+                           End5F,
+                           End3F,
+                           NumUniqReadKeptF,
+                           MaxClustsF,
+                           ClustNumRunsF,
+                           MinIterClustF,
+                           MaxIterClustF,
+                           ClustConvThreshF,
+                           ClustsConvF,
+                           ClustsLogLikesF,
+                           ClustsLikeMeanF,
+                           ClustsLikeStdF,
+                           ClustsVarInfoF,
+                           ClustsBicF,
+                           NumClustsF)
 
 
 class ClustReport(BatchedReport, ClustIO):

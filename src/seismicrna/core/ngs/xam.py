@@ -74,7 +74,7 @@ def sort_xam_cmd(xam_inp: Path | None,
         args.extend(["-o", xam_out])
     else:
         # To increase speed, do not compress on stdout.
-        args.append("-u")
+        args.extend(["-l", 0])
     if xam_inp:
         args.append(xam_inp)
     return args_to_cmd(args)
