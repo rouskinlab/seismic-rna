@@ -192,6 +192,15 @@ class MutsBatch(ReadBatch, ABC):
                 # which means that they have proximal mutations.
                 nonprox &= read_counts <= 1
         return self.read_nums[nonprox]
+    
+    def clear_cache(self):
+        for method in [self.pos_index, self.count_base_types,
+                self.coverage_matrix, self.cover_per_pos,
+                self.cover_per_read, self.rels_per_pos,
+                self.rels_per_read, self.reads_per_pos,
+                self.count_per_pos, self.count_per_read,
+                self.nonprox_muts]:
+            method.cache_clear()
 
     def iter_reads(self, refseq: DNA, pattern: RelPattern):
         """ Yield the 5'/3' end/middle positions and the positions that

@@ -83,7 +83,12 @@ def accumulate(batches: Iterable[MutsBatch],
                 fits_per_read_per_batch[-1].loc[:, column] = fpr.values
                 if info_per_read_per_batch is not None:
                     info_per_read_per_batch[-1].loc[:, column] = ipr.values
-
+        # Clear batch cache.
+        batch.clear_cache()
+    # Clear pattern caches.
+    for pattern in patterns.values():
+        pattern.clear_cache()
+        
     def get_data_per_read(data_per_read_per_batch: pd.DataFrame | None):
         if data_per_read_per_batch is not None:
             if data_per_read_per_batch:
