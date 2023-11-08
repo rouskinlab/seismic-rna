@@ -2,7 +2,7 @@ import logging
 import shlex
 from functools import wraps
 from pathlib import Path
-from subprocess import CompletedProcess, CalledProcessError, run as sp_run
+from subprocess import CompletedProcess, run
 from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
@@ -45,27 +45,21 @@ def run_cmd(cmd: str, text: bool | None = True):
     """ Run a command via subprocess.run(), with logging. """
     # Log the command with which the process was run.
     logger.debug(f"Running command via the shell:\n{cmd}")
-    stdout = stderr = '' if text else b''
-    try:
-        # Run the process and capture the output.
-        process = sp_run(cmd, shell=True, check=True,
-                         capture_output=text is not None, text=text)
-    except CalledProcessError as error:
-        # Capture the output (if any) before re-raising the error.
-        stdout = error.stdout
-        stderr = error.stderr
-        raise
-    else:
-        # Capture the output (if any) before returning the process.
-        stdout = process.stdout
-        stderr = process.stderr
-        return process
-    finally:
-        # Log the output of the process regardless of its success.
-        if stdout:
-            logger.debug(f"STDOUT of {cmd}:\n{stdout}")
-        if stderr:
-            logger.debug(f"STDERR of {cmd}:\n{stderr}")
+    # Run the process and capture the output.
+    process = run(cmd,
+                  shell=True,
+                  capture_output=text is not None,
+                  text=text)
+    # Format a message depending on whether the process passed.
+    passed = process.returncode == 0
+    status = "PASSED" if passed else f"FAILED with code {process.returncode}"
+    message = "\n".join([f"Shell command {status}:\n{repr(cmd)}\n",
+                         f"STDOUT:\n{process.stdout}\n",
+                         f"STDERR:\n{process.stderr}\n"])
+    if not passed:
+        raise RuntimeError(message)
+    logger.debug(message)
+    return process
 
 
 def iopaths(has_ipath: bool = True, has_opath: bool = True):
