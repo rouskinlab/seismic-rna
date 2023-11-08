@@ -13,7 +13,7 @@ import pandas as pd
 from .batch import apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
-from ..core.batch import ReadBatch, MutsBatch, accum_per_pos
+from ..core.batch import RefseqMutsBatch, accum_per_pos
 from ..core.io import DEFAULT_BROTLI_LEVEL
 from ..core.rel import RelPattern
 from ..core.seq import Section, index_to_pos
@@ -140,7 +140,9 @@ class RelMasker(object):
     @property
     def pos_gu(self):
         """ Positions masked for having a G or U base. """
-        return self.section.get_mask(self.section.MASK_GU)
+        return (self.section.get_mask(self.section.MASK_GU)
+                if self.exclude_gu
+                else np.ndarray([], dtype=int))
 
     @property
     def pos_polya(self):
@@ -172,7 +174,7 @@ class RelMasker(object):
         """ Number of batches of reads. """
         return len(self.checksums)
 
-    def _filter_min_finfo_read(self, batch: MutsBatch):
+    def _filter_min_finfo_read(self, batch: RefseqMutsBatch):
         """ Filter out reads with too few informative positions. """
         if not 0. <= self.min_finfo_read <= 1.:
             raise ValueError(f"min_finfo_read must be in [0, 1], but got "
@@ -183,7 +185,7 @@ class RelMasker(object):
                          f"informative fractions in {batch}")
             return batch
         # Find the reads with sufficiently many informative positions.
-        info, muts = batch.count_per_read(self.dataset.refseq, self.pattern)
+        info, muts = batch.count_per_read(self.pattern)
         with np.errstate(invalid="ignore"):
             finfo_read = info.values / self.pos_kept.size
         reads = info.index[finfo_read >= self.min_finfo_read]
@@ -192,7 +194,7 @@ class RelMasker(object):
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
-    def _filter_max_fmut_read(self, batch: MutsBatch):
+    def _filter_max_fmut_read(self, batch: RefseqMutsBatch):
         """ Filter out reads with too many mutations. """
         if not 0. <= self.max_fmut_read <= 1.:
             raise ValueError(f"max_fmut_read must be in [0, 1], but got "
@@ -203,7 +205,7 @@ class RelMasker(object):
                          f"mutation fractions in {batch}")
             return batch
         # Find the reads with sufficiently few mutations.
-        info, muts = batch.count_per_read(self.dataset.refseq, self.pattern)
+        info, muts = batch.count_per_read(self.pattern)
         with np.errstate(invalid="ignore"):
             fmut_read = muts.values / info.values
         reads = info.index[fmut_read <= self.max_fmut_read]
@@ -212,7 +214,7 @@ class RelMasker(object):
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
-    def _mask_min_mut_gap(self, batch: MutsBatch):
+    def _mask_min_mut_gap(self, batch: RefseqMutsBatch):
         """ Filter out reads with mutations that are too close. """
         if not self.min_mut_gap >= 0:
             raise ValueError(
@@ -222,9 +224,7 @@ class RelMasker(object):
             logger.debug(f"{self} skipped filtering reads with pairs of "
                          f"mutations too close in {batch}")
             return batch
-        reads = batch.nonprox_muts(self.dataset.refseq,
-                                   self.pattern,
-                                   self.min_mut_gap)
+        reads = batch.nonprox_muts(self.pattern, self.min_mut_gap)
         logger.debug(f"{self} kept {reads.size} reads with no two mutations "
                      f"separated by < {self.min_mut_gap} nt in {batch}")
         return apply_mask(batch, reads)
@@ -236,7 +236,7 @@ class RelMasker(object):
             self.section.mask_gu()
         self.section.mask_pos(self.exclude_pos)
 
-    def _filter_batch_reads(self, batch: ReadBatch | MutsBatch):
+    def _filter_batch_reads(self, batch: RefseqMutsBatch):
         """ Remove the reads in the batch that do not pass the filters
         and return a new batch without those reads. """
         # Keep only the unmasked positions.
@@ -312,13 +312,13 @@ class RelMasker(object):
             min_ninfo_pos=self.min_ninfo_pos,
             max_fmut_pos=self.max_fmut_pos,
             n_pos_init=self.section.length,
-            n_pos_gu=self.pos_gu.size if self.exclude_gu else 0, # Not sure how to handle this properly.
+            n_pos_gu=self.pos_gu.size,
             n_pos_polya=self.pos_polya.size,
             n_pos_user=self.pos_user.size,
             n_pos_min_ninfo=self.pos_min_ninfo.size,
             n_pos_max_fmut=self.pos_max_fmut.size,
             n_pos_kept=self.pos_kept.size,
-            pos_gu=self.pos_gu if self.exclude_gu else np.array([], dtype=int), # Not sure how to handle this properly.
+            pos_gu=self.pos_gu,
             pos_polya=self.pos_polya,
             pos_user=self.pos_user,
             pos_min_ninfo=self.pos_min_ninfo,
@@ -361,11 +361,6 @@ def mask_section(dataset: RelateLoader,
         ended = datetime.now()
         report = masker.create_report(began, ended)
         report.save(dataset.top, overwrite=True)
-        # Clear section cache.
-        section.clear_cache()
-        # Clear dataset caches.
-        dataset.clear_cache()
-        
     else:
         logger.warning(f"File exists: {report_file}")
     return report_file

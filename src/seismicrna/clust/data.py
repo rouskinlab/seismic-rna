@@ -31,6 +31,10 @@ class ClustLoader(BatchedLoadedDataset):
         """ Number of clusters. """
         return self.report.get_field(NumClustsF)
 
+    @property
+    def pattern(self):
+        return None
+
 
 class ClustMerger(BatchedMergedDataset, MergedMutsDataset):
     """ Merge cluster responsibilities with mutation data. """
@@ -69,8 +73,8 @@ class ClustMerger(BatchedMergedDataset, MergedMutsDataset):
 
     def _merge(self, batch1: MaskMutsBatch, batch2: ClustBatchIO):
         return self.get_data_type()(batch=batch1.batch,
+                                    refseq=batch1.refseq,
                                     muts=batch1.muts,
-                                    seqlen=batch1.seqlen,
                                     end5s=batch1.end5s,
                                     mid5s=batch1.mid5s,
                                     mid3s=batch1.mid3s,

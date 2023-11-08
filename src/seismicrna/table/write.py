@@ -18,7 +18,7 @@ from .calc import (Tabulator,
                    MaskTabulator,
                    ClustTabulator,
                    tabulate_loader)
-from ..cluster.data import ClustMerger
+from ..clust.data import ClustMerger
 from ..core import path
 from ..mask.data import MaskMerger
 from ..relate.data import RelateLoader

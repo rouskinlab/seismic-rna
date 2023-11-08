@@ -159,16 +159,14 @@ class XNA(ABC):
         """ Pictogram string. """
         return str(self).translate(self.get_pictrans())
 
-    def to_array(self):
+    @cached_property
+    def array(self):
         """ NumPy array of Unicode characters for the sequence. """
         return np.array(list(self))
 
     def compress(self):
         """ Compress the sequence. """
         return CompressedSeq(self)
-
-    def clear_cache(self):
-        self.to_array.cache_clear()
 
     def __str__(self):
         return self._seq

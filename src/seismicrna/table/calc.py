@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from functools import cache, cached_property
+from functools import cached_property
 from logging import getLogger
 
 import numpy as np
@@ -19,7 +19,7 @@ from .base import (COVER_REL,
                    R_ADJ_TITLE,
                    R_OBS_TITLE,
                    TABLE_RELS)
-from ..cluster.data import ClustMerger
+from ..clust.data import ClustMerger
 from ..core.batch import accum_fits
 from ..core.header import Header, make_header
 from ..core.mu import calc_f_obs_frame, calc_mu_adj_frame
@@ -241,7 +241,6 @@ def _iter_patterns(mask: RelPattern | None = None):
         yield mut, RelPattern(pattern, HalfRelPattern.refs()).intersect(mask)
 
 
-@cache
 def all_patterns(mask: RelPattern | None = None):
     """ Every RelPattern, keyed by its name. """
     return dict(_iter_patterns(mask))

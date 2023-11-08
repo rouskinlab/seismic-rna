@@ -3,7 +3,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .muts import MutsBatch
+from .muts import RefseqMutsBatch
 from ..header import make_header
 from ..rel import RelPattern
 from ..seq import POS_INDEX, DNA, seq_pos_to_index
@@ -22,7 +22,7 @@ def _add_to_rel(added: pd.Series | pd.DataFrame, frame: pd.DataFrame, rel: str):
     frame[rel] = (frame_rel + added).values
 
 
-def accumulate(batches: Iterable[MutsBatch],
+def accumulate(batches: Iterable[RefseqMutsBatch],
                refseq: DNA,
                patterns: dict[str, RelPattern], *,
                max_order: int = 0,
@@ -55,6 +55,9 @@ def accumulate(batches: Iterable[MutsBatch],
         info_per_read_per_batch = None
     # Accumulate the counts from the batches.
     for batch in batches:
+        if batch.refseq != refseq:
+            raise ValueError(f"Reference sequence of {batch} ({batch.refseq}) "
+                             f"differs from the reference sequence ({refseq})")
         if pos_nums is not None and not np.array_equal(batch.pos_nums,
                                                        pos_nums):
             raise ValueError(f"Positions of {batch} ({batch.pos_nums}) "
@@ -73,21 +76,16 @@ def accumulate(batches: Iterable[MutsBatch],
         for column, pattern in patterns.items():
             if fits_per_pos is not None:
                 # Count the matching reads per position.
-                ipp, fpp = batch.count_per_pos(refseq, pattern)
+                ipp, fpp = batch.count_per_pos(pattern)
                 _add_to_rel(fpp, fits_per_pos, column)
                 if info_per_pos is not None:
                     _add_to_rel(ipp, info_per_pos, column)
             if fits_per_read_per_batch is not None:
                 # Count the matching positions per read.
-                ipr, fpr = batch.count_per_read(refseq, pattern)
+                ipr, fpr = batch.count_per_read(pattern)
                 fits_per_read_per_batch[-1].loc[:, column] = fpr.values
                 if info_per_read_per_batch is not None:
                     info_per_read_per_batch[-1].loc[:, column] = ipr.values
-        # Clear batch cache.
-        batch.clear_cache()
-    # Clear pattern caches.
-    for pattern in patterns.values():
-        pattern.clear_cache()
         
     def get_data_per_read(data_per_read_per_batch: pd.DataFrame | None):
         if data_per_read_per_batch is not None:
@@ -104,7 +102,7 @@ def accumulate(batches: Iterable[MutsBatch],
              get_data_per_read(info_per_read_per_batch)))
 
 
-def accum_per_pos(batches: Iterable[MutsBatch],
+def accum_per_pos(batches: Iterable[RefseqMutsBatch],
                   refseq: DNA,
                   pos_nums: np.ndarray,
                   patterns: dict[str, RelPattern],
@@ -121,7 +119,7 @@ def accum_per_pos(batches: Iterable[MutsBatch],
     return num_reads, fpp, ipp
 
 
-def accum_fits(batches: Iterable[MutsBatch],
+def accum_fits(batches: Iterable[RefseqMutsBatch],
                refseq: DNA,
                pos_nums: np.ndarray,
                patterns: dict[str, RelPattern],

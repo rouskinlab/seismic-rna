@@ -11,7 +11,7 @@ from .. import (demult as demultiplex_mod,
                 align as align_mod,
                 relate as relate_mod,
                 mask as mask_mod,
-                cluster as cluster_mod,
+                clust as cluster_mod,
                 table as table_mod,
                 fold as fold_mod,
                 fastaclean as fastc_mod)

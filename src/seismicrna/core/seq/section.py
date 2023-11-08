@@ -162,7 +162,7 @@ def seq_pos_to_index(seq: DNA, positions: Sequence[int], start: int):
             f"All positions must be ≤ end ({end}), but got {positions}")
     # Create a 2-level MultiIndex from the positions and the bases in
     # the sequence at those positions.
-    index = pd.MultiIndex.from_arrays([pos, seq.to_array()[pos - start]],
+    index = pd.MultiIndex.from_arrays([pos, seq.array[pos - start]],
                                       names=SEQ_INDEX_NAMES)
     if index.has_duplicates:
         raise ValueError(f"Duplicated positions: {positions}")
@@ -416,8 +416,8 @@ class Section(object):
     def _find_gu(self) -> np.ndarray:
         """ Array of each position whose base is neither A nor C. """
         # Mark whether each position is neither A nor C.
-        gu_pos = np.logical_and(self.seq.to_array() != BASEA,
-                                self.seq.to_array() != BASEC)
+        gu_pos = np.logical_and(self.seq.array != BASEA,
+                                self.seq.array != BASEC)
         # Return the integer positions.
         return self.range_int[gu_pos]
 
@@ -465,9 +465,6 @@ class Section(object):
                                                   and end3 is None
                                                   and name is None)
                                     else name))
-
-    def clear_cache(self):
-        self.seq.clear_cache()
 
     def __str__(self):
         return f"Section {self.ref_sect} ({self.hyphen}) {self.mask_names}"

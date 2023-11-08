@@ -234,7 +234,6 @@ class HalfRelPattern(object):
         """ Return the codes of the relationships counted. """
         return list(self.decompile(self.patterns))
 
-    @cache
     def fits(self, base: str, rel: int):
         """ Test whether a relationship code fits the pattern. """
         return ((pattern := self.patterns.get(base)) is not None
@@ -247,9 +246,6 @@ class HalfRelPattern(object):
     def intersect(self, other: HalfRelPattern):
         """ Intersect the HalfRelPattern with another. """
         return self.__class__(*(set(self.codes) & set(other.codes)))
-
-    def clear_cache(self):
-        self.fits.cache_clear()
 
     def __str__(self):
         return f"{type(self).__name__} {self.to_report_format()}"
@@ -288,14 +284,12 @@ class RelPattern(object):
         self.yes = yes
         self.nos = nos
 
-    @cache
     def fits(self, base: str, rel: int):
         """ """
         is_yes = self.yes.fits(base, rel)
         is_nos = self.nos.fits(base, rel)
         return is_yes != is_nos, is_yes
 
-    @cache
     def intersect(self, other: RelPattern | None, invert: bool = False):
         if other is not None:
             yes = self.yes.intersect(other.yes)
@@ -304,12 +298,6 @@ class RelPattern(object):
             yes = self.yes
             nos = self.nos
         return self.__class__(nos, yes) if invert else self.__class__(yes, nos)
-
-    def clear_cache(self):
-        self.fits.cache_clear()
-        self.intersect.cache_clear()
-        self.yes.clear_cache()
-        self.nos.clear_cache()
 
     def __str__(self):
         return f"{type(self).__name__}  ++ {self.yes}  -- {self.nos}"

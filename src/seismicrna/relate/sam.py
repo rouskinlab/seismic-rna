@@ -1,9 +1,8 @@
-from functools import cache, cached_property, wraps
+from functools import cached_property, wraps
 from logging import getLogger
 from pathlib import Path
 from typing import Callable, TextIO
 
-from ..align.xamops import EXCLUDE_FLAGS
 from ..core import path
 from ..core.batch import BATCH_INDEX
 from ..core.ngs import (SAM_DELIM,
@@ -92,19 +91,19 @@ class XamViewer(object):
         self.temp_dir = temp_dir
         self.n_per_batch = records_per_batch
 
-    @cache
-    def _get_sample_ref(self):
+    @cached_property
+    def _sample_ref(self):
         fields = path.parse(self.xam_input, *path.XAM_SEGS)
         return fields[path.SAMP], fields[path.REF]
 
     @property
     def sample(self):
-        sample, _ = self._get_sample_ref()
+        sample, _ = self._sample_ref
         return sample
 
     @property
     def ref(self):
-        _, ref = self._get_sample_ref()
+        _, ref = self._sample_ref
         return ref
 
     @cached_property

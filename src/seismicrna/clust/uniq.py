@@ -5,9 +5,9 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from ..core.batch import MutsBatch, get_length
+from ..core.batch import RefseqMutsBatch, get_length
 from ..core.rel import REL_TYPE, RelPattern
-from ..core.seq import DNA, Section
+from ..core.seq import Section
 from ..mask.data import MaskMerger
 
 BIT_VECTOR_NAME = "Bit Vector"
@@ -21,7 +21,6 @@ class UniqReads(object):
         (muts_per_pos,
          batch_to_uniq,
          count_per_uniq) = get_uniq_reads(dataset.section.unmasked_int,
-                                          dataset.refseq,
                                           dataset.pattern,
                                           dataset.iter_batches())
         return cls(dataset.sample,
@@ -158,9 +157,8 @@ def batch_to_uniq_read_num(read_nums_per_batch: list[np.ndarray],
 
 
 def get_uniq_reads(pos_nums: Iterable[int],
-                   refseq: DNA,
                    pattern: RelPattern,
-                   batches: Iterable[MutsBatch]):
+                   batches: Iterable[RefseqMutsBatch]):
     uniq_reads = defaultdict(list)
     read_nums_per_batch = list()
     for batch_num, batch in enumerate(batches):
@@ -168,7 +166,7 @@ def get_uniq_reads(pos_nums: Iterable[int],
             raise ValueError(
                 f"Batch {batch} is not in order (expected {batch_num})")
         read_nums_per_batch.append(batch.read_nums)
-        for read_num, (e, m) in batch.iter_reads(refseq, pattern):
+        for read_num, (e, m) in batch.iter_reads(pattern):
             uniq_reads[m].append((batch_num, read_num))
     muts_per_pos = uniq_reads_to_mutations(uniq_reads, pos_nums)
     batch_to_uniq = batch_to_uniq_read_num(read_nums_per_batch,

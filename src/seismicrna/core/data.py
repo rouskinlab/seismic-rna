@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from functools import cache, cached_property
+from functools import cached_property
 from logging import getLogger
 from pathlib import Path
 from typing import Generator, Generic, Iterable, TypeVar
 
+from . import path
+from .batch import list_batch_nums
 from .io import RefseqIO, convert_path
+from .rel import RelPattern
 from .report import (SampleF,
                      RefF,
                      SectF,
@@ -15,9 +18,6 @@ from .report import (SampleF,
                      NumBatchF,
                      ChecksumsF,
                      RefseqChecksumF)
-from . import path
-from .batch import list_batch_nums
-from .rel import RelPattern
 from .seq import FULL_NAME, DNA, Section, hyphenate_ends
 
 # Type variable for reports.
@@ -73,16 +73,16 @@ class Dataset(Generic[D], ABC):
     def sect(self) -> str:
         """ Name of the section. """
 
+    @property
+    @abstractmethod
+    def pattern(self) -> RelPattern | None:
+        """ Pattern of mutations to count. """
+
     def __str__(self):
         return f"{type(self).__name__} for sample {repr(self.sample)}"
 
 
 class MutsDataset(Dataset[D], ABC):
-
-    @property
-    @abstractmethod
-    def pattern(self) -> RelPattern | None:
-        """ Pattern of relationships to count. """
 
     @property
     @abstractmethod
@@ -143,7 +143,7 @@ class BatchedDataset(Dataset[D], ABC):
         for batch in self._iter_batches():
             # Verify the type of the batch before yielding it.
             if not isinstance(batch, self.get_data_type()):
-                raise TypeError(f"Expected {self.get_data_type()}, "
+                raise TypeError(f"Expected {self.get_data_type().__name__}, "
                                 f"but got {type(batch).__name__}")
             yield batch
 
@@ -253,26 +253,24 @@ class BatchedLoadedDataset(LoadedDataset[D, R], BatchedDataset[D], ABC):
     def num_batches(self):
         return self.report.get_field(NumBatchF)
 
-    @cache
     def get_batch_path(self, batch: int):
         """ Get the path to a batch of a specific number. """
         fields = self.report.path_fields(self.top,
                                          self.get_data_type().auto_fields())
         return self.get_data_type().build_path(batch=batch, **fields)
 
-    @cache
     def report_checksum(self, batch: int):
         """ Get the checksum of a specific batch from the report. """
         return self.report.get_field(ChecksumsF)[self.get_btype_name()][batch]
 
     def load_batch(self, batch: int):
         """ Load a specific batch of data. """
-        return self.get_data_type().load(self.get_batch_path(batch),
-                                         self.report_checksum(batch))
-
-    def clear_cache(self):
-        self.get_batch_path.cache_clear()
-        self.report_checksum.cache_clear()
+        loaded_batch = self.get_data_type().load(self.get_batch_path(batch),
+                                                 self.report_checksum(batch))
+        if loaded_batch.batch != batch:
+            raise ValueError(f"Expected batch to have number {batch}, "
+                             f"but got {loaded_batch.batch}")
+        return loaded_batch
 
     def _iter_batches(self):
         for batch in self.batch_nums:

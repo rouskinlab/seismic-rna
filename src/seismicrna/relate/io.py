@@ -4,7 +4,7 @@ from typing import Any, Iterable
 
 import numpy as np
 
-from .batch import QnamesBatch, RelateBatch
+from .batch import QnamesBatch, RelateReflenBatch
 from ..core import path
 from ..core.batch import POS_INDEX
 from ..core.io import MutsBatchIO, ReadBatchIO, RefIO
@@ -36,7 +36,7 @@ class QnamesBatchIO(RelateIO, ReadBatchIO, QnamesBatch):
         self.names = np.char.decode(state["names"])
 
 
-class RelateBatchIO(RelateIO, MutsBatchIO, RelateBatch):
+class RelateBatchIO(RelateIO, MutsBatchIO, RelateReflenBatch):
 
     @classmethod
     def file_seg_type(cls):
@@ -46,7 +46,7 @@ class RelateBatchIO(RelateIO, MutsBatchIO, RelateBatch):
 def from_reads(reads: Iterable[tuple[str, int, int, int, int, dict[int, int]]],
                sample: str,
                ref: str,
-               refseq: DNA,
+               reflen: int,
                batch: int):
     """ Accumulate reads into relation vectors. """
     # Initialize empty data.
@@ -69,9 +69,9 @@ def from_reads(reads: Iterable[tuple[str, int, int, int, int, dict[int, int]]],
     if min(muts) < POS_INDEX:
         raise ValueError(f"All positions must be ≥ {POS_INDEX}, but got "
                          f"{[x for x in sorted(muts) if x < POS_INDEX]}")
-    if max(muts) > len(refseq):
-        raise ValueError(f"All positions must be ≤ {len(refseq)}, but got "
-                         f"{[x for x in sorted(muts) if x > len(refseq)]}")
+    if max(muts) > reflen:
+        raise ValueError(f"All positions must be ≤ {reflen}, but got "
+                         f"{[x for x in sorted(muts) if x > reflen]}")
     # Assemble and return the batches.
     name_batch = QnamesBatchIO(sample=sample,
                                ref=ref,
@@ -79,13 +79,13 @@ def from_reads(reads: Iterable[tuple[str, int, int, int, int, dict[int, int]]],
                                names=names)
     rel_batch = RelateBatchIO(sample=sample,
                               ref=ref,
+                              reflen=reflen,
                               batch=batch,
                               end5s=end5s,
                               mid5s=mid5s,
                               mid3s=mid3s,
                               end3s=end3s,
-                              muts=muts,
-                              seqlen=len(refseq))
+                              muts=muts)
     return name_batch, rel_batch
 
 ########################################################################

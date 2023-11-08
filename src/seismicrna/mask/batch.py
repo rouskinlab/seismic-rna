@@ -1,10 +1,9 @@
 from abc import ABC
-from functools import cached_property
 from typing import Iterable
 
 import numpy as np
 
-from ..core.batch import (MutsBatch,
+from ..core.batch import (RefseqMutsBatch,
                           PartialMutsBatch,
                           PartialReadBatch,
                           sanitize_pos)
@@ -16,16 +15,16 @@ class MaskReadBatch(PartialReadBatch):
         self._read_nums = read_nums
         super().__init__(**kwargs)
 
-    @cached_property
+    @property
     def read_nums(self):
         return self._read_nums
 
 
-class MaskMutsBatch(MaskReadBatch, PartialMutsBatch, ABC):
+class MaskMutsBatch(MaskReadBatch, RefseqMutsBatch, PartialMutsBatch, ABC):
     pass
 
 
-def apply_mask(batch: MutsBatch,
+def apply_mask(batch: RefseqMutsBatch,
                reads: Iterable[int] | None = None,
                positions: Iterable[int] | None = None):
     # Clean and validate the selection.
@@ -56,13 +55,13 @@ def apply_mask(batch: MutsBatch,
         mid3s = batch.mid3s
         end3s = batch.end3s
     return MaskMutsBatch(batch=batch.batch,
+                         refseq=batch.refseq,
                          muts=muts,
-                         seqlen=batch.seqlen,
+                         read_nums=read_nums,
                          end5s=end5s,
                          mid5s=mid5s,
                          mid3s=mid3s,
                          end3s=end3s,
-                         read_nums=read_nums,
                          sanitize=False)
 
 ########################################################################

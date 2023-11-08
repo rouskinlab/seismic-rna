@@ -1,9 +1,8 @@
-from abc import ABC
 from functools import cached_property
 
 import pandas as pd
 
-from ..core.batch import PartialMutsBatch, PartialReadBatch
+from ..core.batch import PartialMutsBatch, PartialReadBatch, RefseqMutsBatch
 
 
 class ClustReadBatch(PartialReadBatch):
@@ -20,12 +19,8 @@ class ClustReadBatch(PartialReadBatch):
     def read_nums(self):
         return self.resps.index.values
 
-    @property
-    def clusters(self):
-        return self.resps.columns
 
-
-class ClustMutsBatch(ClustReadBatch, PartialMutsBatch, ABC):
+class ClustMutsBatch(ClustReadBatch, PartialMutsBatch, RefseqMutsBatch):
 
     @property
     def read_weights(self):

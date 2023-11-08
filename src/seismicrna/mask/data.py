@@ -8,8 +8,8 @@ from ..core.data import (BatchedLoadedDataset,
                          MergedMutsDataset)
 from ..core.report import CountMutsF, CountRefsF, MinMutGapF, PosKeptF
 from ..core.rel import RelPattern
+from ..relate.batch import RelateRefseqBatch
 from ..relate.data import RelateLoader
-from ..relate.io import RelateBatchIO
 
 
 class MaskLoader(BatchedLoadedDataset):
@@ -68,7 +68,7 @@ class MaskMerger(BatchedMergedDataset, MergedMutsDataset):
         section.add_mask(self.MASK_NAME, self.data2.pos_kept, invert=True)
         return section
 
-    def _merge(self, batch1: RelateBatchIO, batch2: MaskBatchIO):
+    def _merge(self, batch1: RelateRefseqBatch, batch2: MaskBatchIO):
         return apply_mask(batch1, batch2.read_nums, self.data2.pos_kept)
 
 ########################################################################

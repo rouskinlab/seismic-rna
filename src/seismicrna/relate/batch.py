@@ -1,8 +1,13 @@
+from abc import ABC
 from functools import cached_property
 
 import numpy as np
 
-from ..core.batch import AllReadBatch, MutsBatch, get_length, sanitize_pos
+from ..core.batch import (AllReadBatch,
+                          MutsBatch,
+                          ReflenMutsBatch,
+                          RefseqMutsBatch,
+                          get_length)
 from ..core.seq import POS_INDEX
 
 
@@ -17,13 +22,7 @@ class QnamesBatch(AllReadBatch):
         return get_length(self.names, "read names")
 
 
-class RelateBatch(MutsBatch, AllReadBatch):
-
-    def __init__(self, muts: dict[int, dict], seqlen: int, **kwargs):
-        super().__init__(muts={pos: muts[pos]
-                               for pos in sanitize_pos(muts, seqlen)},
-                         seqlen=seqlen,
-                         **kwargs)
+class RelateBatch(MutsBatch, AllReadBatch, ABC):
 
     @cached_property
     def num_reads(self):
@@ -41,9 +40,13 @@ class RelateBatch(MutsBatch, AllReadBatch):
                          POS_INDEX + self.max_pos,
                          dtype=self.pos_dtype)
 
-    @cached_property
-    def pattern(self):
-        return None
+
+class RelateReflenBatch(RelateBatch, ReflenMutsBatch):
+    pass
+
+
+class RelateRefseqBatch(RelateBatch, RefseqMutsBatch):
+    pass
 
 ########################################################################
 #                                                                      #

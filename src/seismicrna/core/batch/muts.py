@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import Counter
-from functools import cache, cached_property
+from functools import cached_property
 from logging import getLogger
 
 import numpy as np
@@ -26,10 +26,10 @@ logger = getLogger(__name__)
 
 
 class MutsBatch(ReadBatch, ABC):
+    """ Batch of mutational data. """
 
     def __init__(self, *,
                  muts: dict[int, dict[int, list[int] | np.ndarray]],
-                 seqlen: int,
                  end5s: list[int] | np.ndarray,
                  mid5s: list[int] | np.ndarray,
                  mid3s: list[int] | np.ndarray,
@@ -37,7 +37,6 @@ class MutsBatch(ReadBatch, ABC):
                  sanitize: bool = True,
                  **kwargs):
         super().__init__(**kwargs)
-        self.seqlen = seqlen
         (self.end5s,
          self._mid5s,
          self._mid3s,
@@ -56,11 +55,11 @@ class MutsBatch(ReadBatch, ABC):
         return self.pos_nums.size
 
     @property
-    def max_pos(self):
+    @abstractmethod
+    def max_pos(self) -> int:
         """ Maximum allowed position. """
-        return self.seqlen + (POS_INDEX - 1)
 
-    @property
+    @cached_property
     def pos_dtype(self):
         """ Data type for position numbers. """
         return fit_uint_type(self.max_pos)
@@ -83,13 +82,37 @@ class MutsBatch(ReadBatch, ABC):
         """ Weights for each read when computing counts. """
         return None
 
-    @cache
-    def pos_index(self, refseq: DNA):
-        return seq_pos_to_index(refseq, self.pos_nums, POS_INDEX)
 
-    @cache
-    def count_base_types(self, refseq: DNA):
-        bases = self.pos_index(refseq).get_level_values(BASE_NAME)
+class ReflenMutsBatch(MutsBatch, ABC):
+    """ Batch of mutational data with only a known reference length. """
+
+    def __init__(self, *, reflen: int, **kwargs):
+        self.reflen = reflen
+        super().__init__(**kwargs)
+
+    @property
+    def max_pos(self) -> int:
+        return self.reflen
+
+
+class RefseqMutsBatch(MutsBatch, ABC):
+    """ Batch of mutational data with a known reference sequence. """
+    
+    def __init__(self, *, refseq: DNA, **kwargs):
+        super().__init__(**kwargs)
+        self.refseq = refseq
+
+    @property
+    def max_pos(self):
+        return len(self.refseq)
+
+    @cached_property
+    def pos_index(self):
+        return seq_pos_to_index(self.refseq, self.pos_nums, POS_INDEX)
+
+    @cached_property
+    def count_base_types(self):
+        bases = self.pos_index.get_level_values(BASE_NAME)
         base_types, counts = np.unique(bases, return_counts=True)
         return pd.Series(counts, base_types)
 
@@ -98,70 +121,65 @@ class MutsBatch(ReadBatch, ABC):
         section. """
         yield from iter_windows(self.pos_nums, size)
 
-    @cache
-    def coverage_matrix(self, refseq: DNA):
-        return get_coverage_matrix(self.pos_index(refseq),
+    @cached_property
+    def coverage_matrix(self):
+        return get_coverage_matrix(self.pos_index,
                                    self.end5s,
                                    self.mid5s,
                                    self.mid3s,
                                    self.end3s,
                                    self.read_nums)
 
-    @cache
-    def cover_per_pos(self, refseq: DNA):
+    @cached_property
+    def cover_per_pos(self):
         """ Number of reads covering each position. """
-        return get_cover_per_pos(self.coverage_matrix(refseq),
-                                 self.read_weights)
+        return get_cover_per_pos(self.coverage_matrix, self.read_weights)
 
-    @cache
-    def cover_per_read(self, refseq: DNA):
+    @cached_property
+    def cover_per_read(self):
         """ Number of positions covered by each read. """
-        return get_cover_per_read(self.coverage_matrix(refseq))
+        return get_cover_per_read(self.coverage_matrix)
 
-    @cache
-    def rels_per_pos(self, refseq: DNA):
+    @cached_property
+    def rels_per_pos(self):
         """ For each relationship, the number of reads at each position
         with that relationship. """
         return get_rels_per_pos(self.muts,
                                 self.num_reads,
-                                self.cover_per_pos(refseq),
+                                self.cover_per_pos,
                                 self.read_indexes,
                                 self.read_weights)
 
-    @cache
-    def rels_per_read(self, refseq: DNA):
+    @cached_property
+    def rels_per_read(self):
         """ For each relationship, the number of positions in each read
         with that relationship. """
         return get_rels_per_read(self.muts,
-                                 self.pos_index(refseq),
-                                 self.cover_per_read(refseq),
+                                 self.pos_index,
+                                 self.cover_per_read,
                                  self.read_indexes)
 
-    @cache
-    def reads_per_pos(self, refseq: DNA, pattern: RelPattern):
+    def reads_per_pos(self, pattern: RelPattern):
         """ For each position, find all reads matching a relationship
         pattern. """
-        return get_reads_per_pos(pattern, self.muts, self.pos_index(refseq))
+        return get_reads_per_pos(pattern, self.muts, self.pos_index)
 
-    @cache
-    def count_per_pos(self, refseq: DNA, pattern: RelPattern):
+    def count_per_pos(self, pattern: RelPattern):
         """ Count the reads that fit a relationship pattern at each
         position in a section. """
         return get_count_per_pos(pattern,
-                                 self.cover_per_pos(refseq),
-                                 self.rels_per_pos(refseq))
+                                 self.cover_per_pos,
+                                 self.rels_per_pos)
 
-    @cache
-    def count_per_read(self, refseq: DNA, pattern: RelPattern):
+    def count_per_read(self, pattern: RelPattern):
         """ Count the positions in a section that fit a relationship
         pattern in each read. """
         return get_count_per_read(pattern,
-                                  self.cover_per_read(refseq),
-                                  self.rels_per_read(refseq),
+                                  self.cover_per_read,
+                                  self.rels_per_read,
                                   self.read_weights)
 
-    @cache
-    def nonprox_muts(self, refseq: DNA, pattern: RelPattern, min_gap: int):
+    def nonprox_muts(self, pattern: RelPattern, min_gap: int):
         """ List the reads with non-proximal mutations. """
         if min_gap < 0:
             raise ValueError(f"min_gap must be ≥ 0, but got {min_gap}")
@@ -169,7 +187,7 @@ class MutsBatch(ReadBatch, ABC):
             # No reads can have proximal mutations.
             return self.read_nums
         # For each position, list the reads with a mutation.
-        reads_per_pos = self.reads_per_pos(refseq, pattern)
+        reads_per_pos = self.reads_per_pos(pattern)
         # Track which reads have no proximal mutations.
         nonprox = np.ones(self.num_reads, dtype=bool)
         # Count the number of times each read occurs in a window.
@@ -192,20 +210,11 @@ class MutsBatch(ReadBatch, ABC):
                 # which means that they have proximal mutations.
                 nonprox &= read_counts <= 1
         return self.read_nums[nonprox]
-    
-    def clear_cache(self):
-        for method in [self.pos_index, self.count_base_types,
-                self.coverage_matrix, self.cover_per_pos,
-                self.cover_per_read, self.rels_per_pos,
-                self.rels_per_read, self.reads_per_pos,
-                self.count_per_pos, self.count_per_read,
-                self.nonprox_muts]:
-            method.cache_clear()
 
-    def iter_reads(self, refseq: DNA, pattern: RelPattern):
+    def iter_reads(self, pattern: RelPattern):
         """ Yield the 5'/3' end/middle positions and the positions that
         are mutated in each read. """
-        reads_per_pos = self.reads_per_pos(refseq, pattern)
+        reads_per_pos = self.reads_per_pos(pattern)
         # Find the maximum number of mutations in any read.
         max_mut_count = max(sum(map(Counter, reads_per_pos.values()),
                                 start=Counter()).values(),
