@@ -60,7 +60,7 @@ class TestDNA(ut.TestCase):
 
     def test_to_array(self):
         """ Test generating NumPy arrays from DNA sequences. """
-        array = DNA("CTANG").array()
+        array = DNA("CTANG").array
         self.assertEqual(array.dtype, np.dtype("<U1"))
         self.assertTrue(np.all(array == np.array(['C', 'T', 'A', 'N', 'G'])))
 
@@ -166,7 +166,7 @@ class TestRNA(ut.TestCase):
 
     def test_to_array(self):
         """ Test generating NumPy arrays from RNA sequences. """
-        array = RNA("NGAUC").array()
+        array = RNA("NGAUC").array
         self.assertEqual(array.dtype, np.dtype("<U1"))
         self.assertTrue(np.all(array == np.array(['N', 'G', 'A', 'U', 'C'])))
 
