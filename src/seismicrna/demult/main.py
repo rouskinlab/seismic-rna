@@ -1,8 +1,9 @@
-from click import command
 from pathlib import Path
+
+from click import command
+
 from .demultiplex import demultiplex_run
 from ..align.fqops import FastqUnit
-from ..core.parallel import lock_temp_dir
 from ..core.arg import (CMD_DEMULT,
                         opt_barcode_length,
                         opt_barcode_start,
@@ -16,6 +17,7 @@ from ..core.arg import (CMD_DEMULT,
                         opt_fastqp,
                         opt_out_dir,
                         opt_phred_enc)
+from ..core.parallel import lock_temp_dir
 
 params = [
     # Inputs
@@ -26,7 +28,6 @@ params = [
     opt_barcode_start,
     opt_barcode_length,
     opt_out_dir,
-
     # options
     opt_parallel_demultiplexing,
     opt_clipped_demultiplexing,
@@ -46,10 +47,19 @@ def cli(*args, **kwargs):
 
 
 @lock_temp_dir
-def run(sections_file: str, out_dir: str, temp_dir: str, fastqp: tuple[str, ...], phred_enc: int, fasta: str,
+def run(sections_file: str,
+        out_dir: str,
+        temp_dir: str,
+        fastqp: tuple[str, ...],
+        phred_enc: int,
+        fasta: str,
         barcode_start=0,
-        barcode_length=0, clipped: int = 0, index_tolerance: int = 0, parallel_demultiplexing: bool = False,
-        mismatch_tolerence: int = 0, demulti_overwrite: bool = False):
+        barcode_length=0,
+        clipped: int = 0,
+        index_tolerance: int = 0,
+        parallel_demultiplexing: bool = False,
+        mismatch_tolerence: int = 0,
+        demulti_overwrite: bool = False):
     fq_units = list(FastqUnit.from_paths(fastqp=list(map(Path, fastqp)),
                                          phred_enc=phred_enc))
     return [demultiplex_run(sections_file_csv=sections_file,
