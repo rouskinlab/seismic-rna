@@ -8,7 +8,6 @@ from .batch import QnamesBatch, RelateReflenBatch
 from ..core import path
 from ..core.batch import POS_INDEX
 from ..core.io import MutsBatchIO, ReadBatchIO, RefIO
-from ..core.seq import DNA
 
 
 class RelateIO(RefIO, ABC):
