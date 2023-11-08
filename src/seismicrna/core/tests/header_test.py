@@ -457,7 +457,14 @@ class TestRelHeader(ut.TestCase):
         self.assertRaisesRegex(TypeError,
                                "Unexpected keyword arguments",
                                header.select,
-                               order=0)
+                               order=1)
+
+    def test_select_extra_zero(self):
+        header = RelHeader(rels=list("qwerty"))
+        selection = header.select(order=0)
+        self.assertIsInstance(selection, pd.Index)
+        self.assertNotIsInstance(selection, pd.MultiIndex)
+        self.assertTrue(selection.equals(header.index))
 
 
 class TestClustHeader(ut.TestCase):
@@ -701,7 +708,7 @@ class TestRelClustHeader(ut.TestCase):
         self.assertRaisesRegex(ValueError,
                                "Expected clust to be one of",
                                header.select,
-                               clust=0)
+                               clust=4)
 
     def test_select_extra(self):
         header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
@@ -713,6 +720,20 @@ class TestRelClustHeader(ut.TestCase):
     def test_select_extra_none(self):
         header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
         selection = header.select(rel="a", order=2, clust=1, extra=None)
+        self.assertIsInstance(selection, pd.MultiIndex)
+        self.assertEqual(selection.to_list(),
+                         [("a", 2, 1)])
+
+    def test_select_extra_zero(self):
+        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
+        selection = header.select(rel="a", order=2, clust=1, extra=0)
+        self.assertIsInstance(selection, pd.MultiIndex)
+        self.assertEqual(selection.to_list(),
+                         [("a", 2, 1)])
+
+    def test_select_extra_emptystr(self):
+        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
+        selection = header.select(rel="a", order=2, clust=1, extra="")
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [("a", 2, 1)])

@@ -275,7 +275,7 @@ class Header(ABC):
         index = self.index
         selected = np.ones(index.size, dtype=bool)
         for key, name in self.levels().items():
-            if (value := kwargs.pop(key, None)) is not None:
+            if value := kwargs.pop(key, None):
                 level_values = index.get_level_values(name)
                 equal_values = np.isin(level_values, np.atleast_1d(value))
                 if not np.any(equal_values):
@@ -283,7 +283,7 @@ class Header(ABC):
                     raise ValueError(f"Expected {key} to be one of {expect}, "
                                      f"but got {repr(value)}")
                 selected &= equal_values
-        if extras := {k: v for k, v in kwargs.items() if v is not None}:
+        if extras := {k: v for k, v in kwargs.items() if v}:
             raise TypeError("Unexpected keyword arguments for "
                             f"{type(self).__name__}: {extras}")
         return index[selected]

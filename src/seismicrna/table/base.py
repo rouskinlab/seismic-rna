@@ -377,8 +377,8 @@ class ProfilePosTable(PosTable, ABC):
                        quantile: float = 0.):
         """ Yield RNA mutational profiles from a table. """
         for section in sections if sections is not None else [self.section]:
-            for order, clust in zip(self.header.names, self.header.clusts):
-                name = format_clust_name(order, clust)
+            for order, clust in self.header.clusts:
+                name = format_clust_name(order, clust, allow_zero=True)
                 yield RnaProfile(path.fill_whitespace(name),
                                  section=section,
                                  sample=self.sample,
