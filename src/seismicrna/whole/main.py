@@ -11,13 +11,15 @@ from .. import (demult as demultiplex_mod,
                 align as align_mod,
                 relate as relate_mod,
                 mask as mask_mod,
-                cluster as cluster_mod,
+                clust as cluster_mod,
                 table as table_mod,
                 fold as fold_mod,
-                fastc as fastc_mod)
-from ..core import docdef
-from ..core.cli import merge_params, opt_demultiplex, opt_fold
-from ..core.cmd import CMD_WHOLE
+                fastaclean as fastc_mod)
+from ..core.arg import (CMD_WHOLE,
+                        docdef,
+                        merge_params,
+                        opt_demultiplex,
+                        opt_fold)
 from ..core.seq import DNA
 
 params = merge_params([opt_demultiplex],
@@ -46,9 +48,9 @@ def run(*,
         # General options
         out_dir: str,
         temp_dir: str,
-        save_temp: bool,
+        keep_temp: bool,
         brotli_level: int,
-        rerun: bool,
+        force: bool,
         max_procs: int,
         parallel: bool,
         # FASTQ options
@@ -91,7 +93,6 @@ def run(*,
         bt2_mixed: bool,
         bt2_dovetail: bool,
         bt2_contain: bool,
-        bt2_unal: bool,
         bt2_score_min_e2e: str,
         bt2_score_min_loc: str,
         bt2_i: int,
@@ -103,6 +104,7 @@ def run(*,
         bt2_r: int,
         bt2_dpad: int,
         bt2_orient: str,
+        bt2_un: bool,
         min_mapq: int,
         cram: bool,
         # Relate options
@@ -133,8 +135,6 @@ def run(*,
         min_em_iter: int,
         max_em_iter: int,
         em_thresh: float,
-        # Table options
-        rels: tuple[str, ...],
         # Fold options
         fold: bool,
         quantile: float):
@@ -158,12 +158,17 @@ def run(*,
             dmfastqs = dmfastqs + dms
             dmfastqi = dmfastqi + dmi
             dmfastqp = dmfastqp + dmm
+        # Clear the input FASTQ files once the demultiplexed FASTQ files
+        # have been generated.
+        fastqp = tuple()
+        fastqi = tuple()
+        fastqs = tuple()
     # Alignment
     input_path += tuple(map(str, align_mod.run(
         out_dir=out_dir,
         temp_dir=temp_dir,
-        save_temp=save_temp,
-        rerun=rerun,
+        keep_temp=keep_temp,
+        force=force,
         max_procs=max_procs,
         parallel=parallel,
         fasta=fasta,
@@ -195,7 +200,6 @@ def run(*,
         bt2_mixed=bt2_mixed,
         bt2_dovetail=bt2_dovetail,
         bt2_contain=bt2_contain,
-        bt2_unal=bt2_unal,
         bt2_score_min_e2e=bt2_score_min_e2e,
         bt2_score_min_loc=bt2_score_min_loc,
         bt2_i=bt2_i,
@@ -207,6 +211,7 @@ def run(*,
         bt2_r=bt2_r,
         bt2_dpad=bt2_dpad,
         bt2_orient=bt2_orient,
+        bt2_un=bt2_un,
         min_mapq=min_mapq,
         min_reads=min_reads,
         cram=cram,
@@ -226,8 +231,8 @@ def run(*,
         max_procs=max_procs,
         parallel=parallel,
         brotli_level=brotli_level,
-        rerun=rerun,
-        save_temp=save_temp,
+        force=force,
+        keep_temp=keep_temp,
     )))
     # Masking
     input_path += tuple(map(str, mask_mod.run(
@@ -247,30 +252,31 @@ def run(*,
         min_mut_gap=min_mut_gap,
         min_ninfo_pos=min_ninfo_pos,
         max_fmut_pos=max_fmut_pos,
+        brotli_level=brotli_level,
         max_procs=max_procs,
         parallel=parallel,
-        rerun=rerun,
+        force=force,
     )))
     # Clustering
     input_path += tuple(map(str, cluster_mod.run(
         input_path=input_path,
         max_clusters=max_clusters,
-        min_nmut_read=min_nmut_read,
         em_runs=em_runs,
+        min_nmut_read=min_nmut_read,
         min_em_iter=min_em_iter,
         max_em_iter=max_em_iter,
         em_thresh=em_thresh,
+        brotli_level=brotli_level,
         max_procs=max_procs,
         parallel=parallel,
-        rerun=rerun,
+        force=force,
     )))
     # Table
     input_path += tuple(map(str, table_mod.run(
         input_path=input_path,
-        rels=rels,
         max_procs=max_procs,
         parallel=parallel,
-        rerun=rerun,
+        force=force,
     )))
     # Fold
     if fold:
@@ -283,13 +289,12 @@ def run(*,
             primer_gap=primer_gap,
             quantile=quantile,
             temp_dir=temp_dir,
-            save_temp=save_temp,
+            keep_temp=keep_temp,
             max_procs=max_procs,
             parallel=parallel,
-            rerun=rerun,
+            force=force,
         )
     # Graph
-
 
 ########################################################################
 #                                                                      #

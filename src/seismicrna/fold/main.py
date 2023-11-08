@@ -4,21 +4,28 @@ from pathlib import Path
 from click import command
 
 from .rnastructure import fold, ct2dot
-from ..core import docdef, path
-from ..core.cli import (arg_input_path, opt_temp_dir, opt_save_temp,
-                        arg_fasta, opt_sections_file,
-                        opt_coords, opt_primers, opt_primer_gap,
+from ..core import path
+from ..core.arg import (CMD_FOLD,
+                        docdef,
+                        arg_input_path,
+                        opt_temp_dir,
+                        opt_keep_temp,
+                        arg_fasta,
+                        opt_sections_file,
+                        opt_coords,
+                        opt_primers,
+                        opt_primer_gap,
                         opt_quantile,
-                        opt_max_procs, opt_parallel, opt_rerun)
-from ..core.cmd import CMD_FOLD
-from ..core.depend import require_dependency
-from ..core.fasta import parse_fasta
+                        opt_max_procs,
+                        opt_parallel,
+                        opt_force)
+from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
+                           RNASTRUCTURE_FOLD_CMD,
+                           require_dependency)
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rna import RnaProfile
-from ..core.sect import RefSections, Section
-from ..core.seq import DNA
-from ..core.shell import RNASTRUCTURE_CT2DOT_CMD, RNASTRUCTURE_FOLD_CMD
-from ..core.temp import lock_temp_dir
+from ..core.seq import DNA, RefSections, Section, parse_fasta
+from ..core.parallel import lock_temp_dir
 from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader
 
 logger = getLogger(__name__)
@@ -32,10 +39,10 @@ params = [
     opt_primer_gap,
     opt_quantile,
     opt_temp_dir,
-    opt_save_temp,
+    opt_keep_temp,
     opt_max_procs,
     opt_parallel,
-    opt_rerun,
+    opt_force,
 ]
 
 
@@ -57,10 +64,10 @@ def run(fasta: str,
         primer_gap: int,
         quantile: float,
         temp_dir: str,
-        save_temp: bool,
+        keep_temp: bool,
         max_procs: int,
         parallel: bool,
-        rerun: bool):
+        force: bool):
     """
     Predict RNA structures using mutation rates as constraints.
     """
@@ -68,6 +75,11 @@ def run(fasta: str,
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_dependency(RNASTRUCTURE_CT2DOT_CMD, __name__)
 
+    # Reactivities must be normalized before using them to fold.
+    if quantile <= 0.:
+        logger.warning("Fold requires normalized mutation rates, but got "
+                       f"quantile = {quantile}; setting quantile to 1.0")
+        quantile = 1.
     # Get the sections for every reference sequence.
     ref_sections = RefSections(parse_fasta(Path(fasta), DNA),
                                sects_file=(Path(sections_file) if sections_file
@@ -85,8 +97,8 @@ def run(fasta: str,
     return dispatch(fold_rna, max_procs, parallel,
                     args=[(loader, ref_sections.list(loader.ref))
                           for loader in loaders],
-                    kwargs=dict(temp_dir=Path(temp_dir), save_temp=save_temp,
-                                quantile=quantile, rerun=rerun),
+                    kwargs=dict(temp_dir=Path(temp_dir), keep_temp=keep_temp,
+                                quantile=quantile, force=force),
                     pass_n_procs=True)
 
 
@@ -97,7 +109,7 @@ def fold_rna(loader: MaskPosTableLoader | ClustPosTableLoader,
                     args=[(profile,)
                           for profile in loader.iter_profiles(sections,
                                                               quantile)],
-                    kwargs=dict(out_dir=loader.out_dir, **kwargs),
+                    kwargs=dict(out_dir=loader.top, **kwargs),
                     pass_n_procs=False)
 
 

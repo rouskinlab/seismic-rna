@@ -12,17 +12,24 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 
-from ..core.qual import HI_QUAL, LO_QUAL
+from ..core.ngs import (HI_QUAL,
+                        LO_QUAL,
+                        FLAG_PAIRED,
+                        FLAG_PROPER,
+                        FLAG_FIRST,
+                        FLAG_SECOND,
+                        FLAG_REVERSE,
+                        FLAG_MREVERSE,
+                        MAX_FLAG,
+                        SAM_DELIM,
+                        SAM_NOREF,
+                        SAM_SEQLEN,
+                        SAM_SEQLINE,
+                        SAM_SEQNAME)
 from ..core.rand import rng
 from ..core.rel import NOCOV
-from ..core.sect import index_to_seq
-from ..core.seq import DNA
-from ..core.xam import (FLAG_PAIRED, FLAG_PROPER,
-                        FLAG_FIRST, FLAG_SECOND,
-                        FLAG_REVERSE, FLAG_MREVERSE,
-                        MAX_FLAG, SAM_DELIM, SAM_NOREF,
-                        SAM_SEQLEN, SAM_SEQLINE, SAM_SEQNAME)
-from ..relate.invert import find_relvec_ends, inverse_relate
+from ..core.seq import DNA, index_to_seq
+from ..relate.aux.infer import infer_read
 
 
 def sam_header(ref: str, length: int | DNA):
@@ -101,11 +108,11 @@ def _relvec_to_sam_line(read: str,
                         hi_qual: str = HI_QUAL,
                         lo_qual: str = LO_QUAL,
                         ins_len: int | Sequence[int] = 1):
-    seq, qual, cig, end5, end3 = inverse_relate(refseq,
-                                                relvec,
-                                                hi_qual,
-                                                lo_qual,
-                                                ins_len)
+    seq, qual, cig, end5, end3 = infer_read(refseq,
+                                            relvec,
+                                            hi_qual,
+                                            lo_qual,
+                                            ins_len)
     return as_sam(read, flag, ref, end5, mapq, cig, SAM_NOREF, 0, 0, seq, qual)
 
 

@@ -1,70 +1,138 @@
 from __future__ import annotations
-from logging import getLogger
+
+from abc import ABC, abstractmethod
 
 from ..core import path
-from ..core.cmd import CMD_ALIGN
-from ..core.report import Report
+from ..core.report import (Report,
+                           SampleF,
+                           RefF,
+                           IsDemultF,
+                           IsPairedEndF,
+                           PhredEncF,
+                           UseFastqcF,
+                           UseCutadaptF,
+                           CutadaptQ1,
+                           CutadaptQ2,
+                           CutadaptG1,
+                           CutadaptA1,
+                           CutadaptG2,
+                           CutadaptA2,
+                           CutadaptOverlap,
+                           CutadaptErrors,
+                           CutadaptIndels,
+                           CutadaptNextSeq,
+                           CutadaptNoTrimmed,
+                           CutadaptNoUntrimmed,
+                           CutadaptMinLength,
+                           Bowtie2Local,
+                           Bowtie2Discord,
+                           Bowtie2Mixed,
+                           Bowtie2Dovetail,
+                           Bowtie2Contain,
+                           Bowtie2Un,
+                           Bowtie2ScoreMin,
+                           Bowtie2MinLength,
+                           Bowtie2MaxLength,
+                           Bowtie2GBar,
+                           Bowtie2SeedLength,
+                           Bowtie2SeedInterval,
+                           Bowtie2ExtTries,
+                           Bowtie2Reseed,
+                           Bowtie2Dpad,
+                           Bowtie2Orient,
+                           MinMapQual,
+                           ReadsInit,
+                           ReadsTrim,
+                           ReadsAlign,
+                           ReadsDedup,
+                           ReadsRefs)
 
-logger = getLogger(__name__)
 
-
-class AlignReport(Report):
+class AlignReport(Report, ABC):
 
     @classmethod
-    def field_names(cls):
-        return ("sample",
-                "demultiplexed",
-                "paired_end",
-                "phred_enc",
-                "fastqc",
-                "cut",
-                "cut_q1",
-                "cut_q2",
-                "cut_g1",
-                "cut_a1",
-                "cut_g2",
-                "cut_a2",
-                "cut_o",
-                "cut_e",
-                "cut_indels",
-                "cut_nextseq",
-                "cut_discard_trimmed",
-                "cut_discard_untrimmed",
-                "cut_m",
-                "bt2_local",
-                "bt2_discordant",
-                "bt2_mixed",
-                "bt2_dovetail",
-                "bt2_contain",
-                "bt2_unal",
-                "bt2_score_min",
-                "bt2_i",
-                "bt2_x",
-                "bt2_gbar",
-                "bt2_l",
-                "bt2_s",
-                "bt2_d",
-                "bt2_r",
-                "bt2_dpad",
-                "bt2_orient",
-                "min_mapq",
-                "reads_init",
-                "reads_trim",
-                "reads_align",
-                "reads_filter",
-                "reads_refs")
+    @abstractmethod
+    def fields(cls):
+        return [IsDemultF,
+                IsPairedEndF,
+                PhredEncF,
+                UseFastqcF,
+                UseCutadaptF,
+                CutadaptQ1,
+                CutadaptQ2,
+                CutadaptG1,
+                CutadaptA1,
+                CutadaptG2,
+                CutadaptA2,
+                CutadaptOverlap,
+                CutadaptErrors,
+                CutadaptIndels,
+                CutadaptNextSeq,
+                CutadaptNoTrimmed,
+                CutadaptNoUntrimmed,
+                CutadaptMinLength,
+                Bowtie2Local,
+                Bowtie2Discord,
+                Bowtie2Mixed,
+                Bowtie2Dovetail,
+                Bowtie2Contain,
+                Bowtie2ScoreMin,
+                Bowtie2MinLength,
+                Bowtie2MaxLength,
+                Bowtie2GBar,
+                Bowtie2SeedLength,
+                Bowtie2SeedInterval,
+                Bowtie2ExtTries,
+                Bowtie2Reseed,
+                Bowtie2Dpad,
+                Bowtie2Orient,
+                Bowtie2Un,
+                MinMapQual,
+                ReadsInit,
+                ReadsTrim,
+                ReadsAlign,
+                ReadsDedup,
+                ReadsRefs] + super().fields()
 
     @classmethod
     def dir_seg_types(cls):
         return path.SampSeg, path.CmdSeg
 
     @classmethod
-    def file_seg_type(cls):
-        return path.AlignRepSeg
+    def auto_fields(cls):
+        return {**super().auto_fields(), path.CMD: path.CMD_ALN_DIR}
+
+
+class AlignSampleReport(AlignReport):
 
     @classmethod
-    def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: CMD_ALIGN}
+    def fields(cls):
+        return [SampleF] + super().fields()
+
+    @classmethod
+    def file_seg_type(cls):
+        return path.AlignSampleRepSeg
+
+    def __init__(self, ref: str | None = None, **kwargs):
+        if ref is not None:
+            raise TypeError(f"Got an unexpected reference name: {repr(ref)}")
+        super().__init__(demultiplexed=False, **kwargs)
+
+
+class AlignRefReport(AlignReport):
+
+    @classmethod
+    def fields(cls):
+        return [SampleF, RefF] + super().fields()
+
+    @classmethod
+    def file_seg_type(cls):
+        return path.AlignRefRepSeg
+
+    def __init__(self, ref: str, **kwargs):
+        if ref is None:
+            raise TypeError(f"Expected a reference name, but got {repr(ref)}")
+        super().__init__(ref=ref, demultiplexed=True, **kwargs)
 
 ########################################################################
 #                                                                      #

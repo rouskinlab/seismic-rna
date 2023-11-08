@@ -16,14 +16,30 @@ import os
 
 from click import Context, group, pass_context, version_option
 
-from . import (__version__, whole, demult, align, relate, mask, cluster, table,
-               fold, graph, test, fastc)
+from . import (whole,
+               demult,
+               align,
+               relate,
+               mask,
+               clust,
+               table,
+               fold,
+               graph,
+               export,
+               test,
+               fastaclean,
+               __version__)
 from .core import logs
-from .core.cli import opt_verbose, opt_quiet, opt_log, opt_profile
+from .core.arg import (opt_log,
+                       opt_log_color,
+                       opt_profile,
+                       opt_quiet,
+                       opt_verbose)
 
 params = [
     opt_verbose,
     opt_quiet,
+    opt_log_color,
     opt_log,
     opt_profile,
 ]
@@ -33,12 +49,15 @@ params = [
 @group(params=params, context_settings={"show_default": True})
 @version_option(__version__)
 @pass_context
-def cli(ctx: Context, verbose: int, quiet: int, log: str, profile: str,
+def cli(ctx: Context,
+        verbose: int,
+        quiet: int,
+        log_color: bool,
+        log: str,
+        profile: str,
         **kwargs):
     """
     SEISMIC-RNA main command line interface
-
-    :
     """
     # Configure logging.
     if log:
@@ -46,7 +65,7 @@ def cli(ctx: Context, verbose: int, quiet: int, log: str, profile: str,
         os.makedirs(os.path.dirname(log_file), exist_ok=True)
     else:
         log_file = None
-    logs.config(verbose, quiet, log_file=log_file)
+    logs.config(verbose, quiet, log_file, log_color)
     # If no subcommand was given, then run the entire pipeline.
     if ctx.invoked_subcommand is None:
         if profile:
@@ -65,8 +84,18 @@ def cli(ctx: Context, verbose: int, quiet: int, log: str, profile: str,
 
 
 # Add all commands to the main CLI command group.
-for module in (whole, demult, align, relate, mask, cluster, table, fold, graph,
-               test, fastc):
+for module in (whole,
+               demult,
+               align,
+               relate,
+               mask,
+               clust,
+               table,
+               fold,
+               graph,
+               export,
+               test,
+               fastaclean):
     cli.add_command(module.cli)
 
 ########################################################################

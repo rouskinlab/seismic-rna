@@ -13,7 +13,7 @@ Create and activate your virtual environment
 ------------------------------------------------------------------------
 
 Make a new virtual environment into which you will install SEISMIC-RNA.
-Give it a short, memorable name, such as ``seismic``, and select Python
+Give it a short, memorable name, such as ``seismic``, and process Python
 version 3.10, which is currently the only supported version. The rest of
 this tutorial assumes that the virtual environment is named ``seismic``,
 so if you have chosen a different name, then type that name instead::

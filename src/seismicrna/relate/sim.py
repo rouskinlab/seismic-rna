@@ -8,13 +8,11 @@ Simulate Relation Vectors Module
 import numpy as np
 import pandas as pd
 
-from .blank import blank_relvec
-from .encode import encode_match
+from .c.encode import encode_match
 from ..core.qual import HI_QUAL, LO_QUAL
 from ..core.rand import rng
 from ..core.rel import MATCH, DELET, ANY_N, SUB_A, SUB_C, SUB_G, SUB_T
-from ..core.sect import BASE_NAME, POS_NAME, index_to_seq
-from ..core.seq import BASEA, BASEC, BASEG, BASET, BASEN, DNA
+from ..core.seq import BASEA, BASEC, BASEG, BASET, BASEN, POS_NAME, index_to_seq
 
 
 def sim_relvecs(reads: pd.Index | np.ndarray | list | int,

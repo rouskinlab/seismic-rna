@@ -5,12 +5,3 @@ seismicrna.sim.tests package
    :members:
    :undoc-members:
    :show-inheritance:
-
-Submodules
-----------
-
-
-.. automodule:: seismicrna.sim.tests.sam_test
-   :members:
-   :undoc-members:
-   :show-inheritance:

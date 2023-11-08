@@ -1,18 +1,27 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from logging import getLogger
 from pathlib import Path
 
-import pandas as pd
-
-from .base import (Table, PosTable, ReadTable,
-                   RelPosTable, RelReadTable, MaskPosTable, MaskReadTable,
-                   ClustPosTable, ClustReadTable, ClustFreqTable)
-from .tabulate import (Tabulator, RelTabulator, MaskTabulator, ClusterTabulator,
-                       tabulate_loader)
-from ..cluster.load import ClustLoader
+from .base import (Table,
+                   PosTable,
+                   ReadTable,
+                   RelPosTable,
+                   RelReadTable,
+                   MaskPosTable,
+                   MaskReadTable,
+                   ClustPosTable,
+                   ClustReadTable,
+                   ClustFreqTable)
+from .calc import (Tabulator,
+                   AvgTabulator,
+                   RelateTabulator,
+                   MaskTabulator,
+                   ClustTabulator,
+                   tabulate_loader)
+from ..clust.data import ClustMerger
 from ..core import path
-from ..mask.load import MaskLoader
-from ..relate.load import RelateLoader
+from ..mask.data import MaskMerger
+from ..relate.data import RelateLoader
 
 logger = getLogger(__name__)
 
@@ -24,39 +33,38 @@ PRECISION = 1
 class TableWriter(Table, ABC):
     """ Write a table to a file. """
 
-    def __init__(self, tabulator: Tabulator | ClusterTabulator):
-        self._tab = tabulator
+    def __init__(self, tabulator: AvgTabulator | ClustTabulator):
+        self.tabulator = tabulator
 
     @property
-    def out_dir(self):
-        return self._tab.out_dir
+    def top(self):
+        return self.tabulator.top
 
     @property
     def sample(self):
-        return self._tab.sample
+        return self.tabulator.sample
 
     @property
     def ref(self):
-        return self._tab.ref
+        return self.tabulator.ref
 
     @property
     def sect(self):
-        return self._tab.sect
-
-    @abstractmethod
-    def load_data(self):
-        """ Load the table's data from a DataLoader. """
-        return pd.DataFrame()
+        return self.tabulator.section.name
 
     @property
-    def data(self):
-        return self.load_data()
+    def columns(self):
+        return self.header.index
 
-    def write(self, rerun: bool):
+    def write(self, force: bool):
         """ Write the table's rounded data to the table's CSV file. """
         # Check if the File exists.
-        if rerun or not self.path.is_file():
-            self.data.round(decimals=PRECISION).to_csv(self.path)
+        if force or not self.path.is_file():
+            # Write self._data instead of self.data because the former
+            # includes any positions that were masked out, while these
+            # positions are not present in the latter.
+            data = self._data.T if self.transposed() else self._data
+            data.round(decimals=PRECISION).to_csv(self.path)
         else:
             logger.warning(f"File exists: {self.path}")
         return self.path
@@ -66,16 +74,16 @@ class TableWriter(Table, ABC):
 
 class PosTableWriter(TableWriter, PosTable, ABC):
 
-    def load_data(self):
-        # Load the data for each position, including excluded positions.
-        all_positions = self._tab.section.range
-        return self._tab.tabulate_by_pos().reindex(index=all_positions)
+    @property
+    def _data(self):
+        return self.tabulator.table_per_pos
 
 
 class ReadTableWriter(TableWriter, ReadTable, ABC):
 
-    def load_data(self):
-        return self._tab.tabulate_by_read()
+    @property
+    def _data(self):
+        return self.tabulator.table_per_read
 
 
 # Instantiable Table Writers ###########################################
@@ -97,27 +105,18 @@ class MaskReadTableWriter(ReadTableWriter, MaskReadTable):
 
 
 class ClustPosTableWriter(PosTableWriter, ClustPosTable):
-
-    @classmethod
-    def clusters_on_columns(cls):
-        return True
+    pass
 
 
 class ClustReadTableWriter(ReadTableWriter, ClustReadTable):
-
-    @classmethod
-    def clusters_on_columns(cls):
-        return True
+    pass
 
 
 class ClustFreqTableWriter(TableWriter, ClustFreqTable):
 
-    @classmethod
-    def clusters_on_columns(cls):
-        return False
-
-    def load_data(self):
-        return self._tab.tabulate_by_clust()
+    @property
+    def _data(self):
+        return self.tabulator.table_per_clust
 
 
 # Helper Functions #####################################################
@@ -127,38 +126,38 @@ def infer_report_loader_type(report_file: Path):
     if path.RelateRepSeg.ptrn.match(report_file.name):
         return RelateLoader
     if path.MaskRepSeg.ptrn.match(report_file.name):
-        return MaskLoader
+        return MaskMerger
     if path.ClustRepSeg.ptrn.match(report_file.name):
-        return ClustLoader
-    raise ValueError(f"Failed to infer loader for {report_file}")
+        return ClustMerger
+    raise ValueError(f"Failed to infer loader type for {report_file}")
 
 
 def get_tabulator_writer_types(tabulator: Tabulator):
-    if isinstance(tabulator, RelTabulator):
+    if isinstance(tabulator, RelateTabulator):
         return RelPosTableWriter, RelReadTableWriter
     if isinstance(tabulator, MaskTabulator):
         return MaskPosTableWriter, MaskReadTableWriter
-    if isinstance(tabulator, ClusterTabulator):
+    if isinstance(tabulator, ClustTabulator):
         return ClustPosTableWriter, ClustReadTableWriter, ClustFreqTableWriter
     raise TypeError(f"Invalid tabulator type: {type(tabulator).__name__}")
 
 
-def get_tabulator_writers(tabulator: Tabulator):
+def get_tabulator_writers(tabulator: AvgTabulator | ClustTabulator):
     for writer_type in get_tabulator_writer_types(tabulator):
         yield writer_type(tabulator)
 
 
-def write(report_file: Path, rels: str, rerun: bool):
+def write(report_file: Path, force: bool):
     """ Helper function to write a table from a report file. """
     # Determine the needed type of report loader.
     report_loader_type = infer_report_loader_type(report_file)
     # Load the report.
-    report_loader = report_loader_type.open(report_file)
+    report_loader = report_loader_type.load(report_file)
     # Create the tabulator for the report's data.
-    tabulator = tabulate_loader(report_loader, rels)
+    tabulator = tabulate_loader(report_loader)
     # For each table associated with this tabulator, create the table,
     # write it, and return the path to the table output file.
-    return [table.write(rerun) for table in get_tabulator_writers(tabulator)]
+    return [table.write(force) for table in get_tabulator_writers(tabulator)]
 
 ########################################################################
 #                                                                      #

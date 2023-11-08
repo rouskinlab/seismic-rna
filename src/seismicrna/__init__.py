@@ -15,14 +15,8 @@ that they can be imported from external modules and scripts::
 
 """
 
-
-import warnings
-
-from . import demult, align, relate, cluster, table, fastc
-
-warnings.simplefilter(action='ignore', category=FutureWarning)
-
-__version__ = "0.9.0"
+from . import demult, align, relate, clust, table, fastaclean
+from .core.meta.version import __version__
 
 ########################################################################
 #                                                                      #

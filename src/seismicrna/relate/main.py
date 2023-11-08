@@ -13,16 +13,25 @@ from pathlib import Path
 from click import command
 
 from .write import write_all
-from ..core import docdef, path
-from ..core.cli import (arg_input_path, arg_fasta,
-                        opt_out_dir, opt_temp_dir,
-                        opt_min_mapq, opt_min_reads, opt_batch_size,
-                        opt_phred_enc, opt_min_phred,
-                        opt_ambrel, opt_brotli_level,
-                        opt_parallel, opt_max_procs,
-                        opt_rerun, opt_save_temp)
-from ..core.cmd import CMD_REL
-from ..core.temp import lock_temp_dir
+from ..core import path
+from ..core.arg import (CMD_REL,
+                        docdef,
+                        arg_input_path,
+                        arg_fasta,
+                        opt_out_dir,
+                        opt_temp_dir,
+                        opt_min_mapq,
+                        opt_min_reads,
+                        opt_batch_size,
+                        opt_phred_enc,
+                        opt_min_phred,
+                        opt_ambrel,
+                        opt_brotli_level,
+                        opt_parallel,
+                        opt_max_procs,
+                        opt_force,
+                        opt_keep_temp)
+from ..core.parallel import lock_temp_dir
 
 logger = getLogger(__name__)
 
@@ -47,8 +56,8 @@ params = [
     opt_max_procs,
     opt_parallel,
     # File generation
-    opt_rerun,
-    opt_save_temp,
+    opt_force,
+    opt_keep_temp,
 ]
 
 
@@ -75,8 +84,8 @@ def run(fasta: str,
         max_procs: int,
         parallel: bool,
         brotli_level: int,
-        rerun: bool,
-        save_temp: bool):
+        force: bool,
+        keep_temp: bool):
     """
     Run the relation step. For each read (or each pair of reads, if the
     reads are paired-end), generate a 'relation vector' that encodes the
@@ -85,8 +94,8 @@ def run(fasta: str,
     read matches the base in the reference, is substituted to another
     base, is deleted, or has one or more extra bases inserted beside it.
     """
-    return write_all(xam_files=list(path.find_files_chain(map(Path, input_path),
-                                                          path.XAM_SEGS)),
+    return write_all(xam_files=path.find_files_chain(map(Path, input_path),
+                                                     path.XAM_SEGS),
                      fasta=Path(fasta),
                      out_dir=Path(out_dir),
                      temp_dir=Path(temp_dir),
@@ -99,8 +108,8 @@ def run(fasta: str,
                      max_procs=max_procs,
                      parallel=parallel,
                      brotli_level=brotli_level,
-                     rerun=rerun,
-                     save_temp=save_temp)
+                     force=force,
+                     keep_temp=keep_temp)
 
 ########################################################################
 #                                                                      #

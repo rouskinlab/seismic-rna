@@ -1,12 +1,15 @@
-from functools import cache, cached_property, wraps
+from functools import cached_property, wraps
 from logging import getLogger
 from pathlib import Path
 from typing import Callable, TextIO
 
 from ..core import path
-from ..core.cmd import CMD_REL
-from ..core.xam import (run_view_xam, run_flagstat, count_total_reads, xam_paired,
-                        SAM_DELIM)
+from ..core.batch import BATCH_INDEX
+from ..core.ngs import (SAM_DELIM,
+                        count_total_reads,
+                        run_view_xam,
+                        run_flagstat,
+                        xam_paired)
 
 logger = getLogger(__name__)
 
@@ -88,19 +91,19 @@ class XamViewer(object):
         self.temp_dir = temp_dir
         self.n_per_batch = records_per_batch
 
-    @cache
-    def _get_sample_ref(self):
+    @cached_property
+    def _sample_ref(self):
         fields = path.parse(self.xam_input, *path.XAM_SEGS)
         return fields[path.SAMP], fields[path.REF]
 
     @property
     def sample(self):
-        sample, _ = self._get_sample_ref()
+        sample, _ = self._sample_ref
         return sample
 
     @property
     def ref(self):
-        _, ref = self._get_sample_ref()
+        _, ref = self._sample_ref
         return ref
 
     @cached_property
@@ -123,9 +126,12 @@ class XamViewer(object):
     def temp_sam_path(self):
         """ Get the path to the temporary SAM file. """
         return path.build(*path.XAM_STEP_SEGS,
-                          top=self.temp_dir, sample=self.sample,
-                          cmd=CMD_REL, step=path.STEPS_VECT_SAMS,
-                          ref=self.ref, ext=path.SAM_EXT)
+                          top=self.temp_dir,
+                          sample=self.sample,
+                          cmd=path.CMD_REL_DIR,
+                          step=path.STEPS_VECT_SAMS,
+                          ref=self.ref,
+                          ext=path.SAM_EXT)
 
     def create_temp_sam(self):
         """ Create the temporary SAM file. """
@@ -160,10 +166,10 @@ class XamViewer(object):
         # has at least one line) times the number of mates per record.
         n_skip = (self.n_per_batch - 1) * (self.paired + 1)
         # Count the batches.
-        batch = 0
+        batch = BATCH_INDEX
         with self.open_temp_sam() as sam_file:
             # Current position in the SAM file.
-            position = 0
+            position = sam_file.tell()
             while line := sam_file.readline():
                 # The current batch starts at the current position.
                 batch_start = position

@@ -14,3 +14,9 @@ Submodules
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+.. automodule:: seismicrna.whole.sim
+   :members:
+   :undoc-members:
+   :show-inheritance:

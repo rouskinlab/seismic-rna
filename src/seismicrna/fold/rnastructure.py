@@ -9,18 +9,21 @@ from logging import getLogger
 from pathlib import Path
 
 from ..core import path
-from ..core.rna import RnaProfile
-from ..core.shell import (args_to_cmd, run_cmd, RNASTRUCTURE_FOLD_CMD,
-                          RNASTRUCTURE_CT2DOT_CMD, RNASTRUCTURE_DOT2CT_CMD)
+from ..core.rna.profile import RnaProfile
+from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
+                           RNASTRUCTURE_DOT2CT_CMD,
+                           RNASTRUCTURE_FOLD_CMD,
+                           args_to_cmd,
+                           run_cmd, )
 
 logger = getLogger(__name__)
 
 
 def fold(rna: RnaProfile, *,
-         out_dir: Path, temp_dir: Path, save_temp: bool, rerun: bool):
+         out_dir: Path, temp_dir: Path, keep_temp: bool, force: bool):
     """ Run the 'Fold' program of RNAstructure. """
     ct_file = rna.ct_file(out_dir)
-    if rerun or not ct_file.is_file():
+    if force or not ct_file.is_file():
         cmd = [RNASTRUCTURE_FOLD_CMD]
         # Write the DMS reactivities file for the RNA.
         cmd.extend(["--DMS", rna.to_dms(temp_dir)])
@@ -32,7 +35,7 @@ def fold(rna: RnaProfile, *,
             # Run the command.
             run_cmd(args_to_cmd(cmd))
         finally:
-            if not save_temp:
+            if not keep_temp:
                 # Delete the temporary files.
                 fasta.unlink(missing_ok=True)
     else:

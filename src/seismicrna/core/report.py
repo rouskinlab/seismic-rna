@@ -8,7 +8,7 @@ from datetime import datetime
 from functools import cache
 from inspect import getmembers
 from logging import getLogger
-from math import isclose, isnan, inf, nan
+from math import isclose, isnan
 from numbers import Integral
 from pathlib import Path
 from typing import Any, Hashable, Callable, Iterable
@@ -16,9 +16,41 @@ from typing import Any, Hashable, Callable, Iterable
 import numpy as np
 
 from . import path
-from .batch import ReadBatch
-from .bitcall import SemiBitCaller
-from .output import Output, RefOutput
+from .arg import (opt_phred_enc,
+                  opt_fastqc,
+                  opt_cutadapt,
+                  opt_cut_q1,
+                  opt_cut_q2,
+                  opt_cut_g1,
+                  opt_cut_g2,
+                  opt_cut_a1,
+                  opt_cut_a2,
+                  opt_cut_discard_trimmed,
+                  opt_cut_discard_untrimmed,
+                  opt_cut_o,
+                  opt_cut_e,
+                  opt_cut_indels,
+                  opt_cut_nextseq,
+                  opt_cut_m,
+                  opt_bt2_d,
+                  opt_bt2_r,
+                  opt_bt2_dpad,
+                  opt_bt2_orient,
+                  opt_bt2_i,
+                  opt_bt2_x,
+                  opt_bt2_s,
+                  opt_bt2_l,
+                  opt_bt2_gbar,
+                  opt_bt2_un,
+                  opt_bt2_discordant,
+                  opt_bt2_mixed,
+                  opt_bt2_dovetail,
+                  opt_bt2_contain,
+                  opt_bt2_local,
+                  opt_min_mapq)
+from .io import FileIO, ReadBatchIO, RefIO
+from .meta.version import __version__, check_compatibility
+from .rel import HalfRelPattern
 
 logger = getLogger(__name__)
 
@@ -26,10 +58,18 @@ logger = getLogger(__name__)
 # Field class
 
 class Field(object):
-    __slots__ = ["key", "title", "dtype", "iconv", "oconv",
-                 "check_val", "check_rep_val"]
+    __slots__ = ["key",
+                 "title",
+                 "dtype",
+                 "iconv",
+                 "oconv",
+                 "check_val",
+                 "check_rep_val"]
 
-    def __init__(self, key: str, title: str, dtype: type, *,
+    def __init__(self,
+                 key: str,
+                 title: str,
+                 dtype: type, *,
                  iconv: Callable[[Any], Any] | None = None,
                  oconv: Callable[[Any], Any] | None = None,
                  check_val: Callable[[Any], bool] | None = None,
@@ -102,15 +142,6 @@ def calc_taken(report: Report):
     if minutes < 0.:
         raise ValueError(f"Time taken must be positive, but got {minutes} min")
     return minutes
-
-
-def calc_speed(report: Report):
-    nvecs = report.get_field(NumReadsRel)
-    taken = report.get_field(TimeTakenF)
-    try:
-        return nvecs / taken
-    except ZeroDivisionError:
-        return inf if nvecs > 0 else nan
 
 
 # Field value checking functions
@@ -250,7 +281,6 @@ DATETIME_FORMAT = "%Y-%m-%d at %H:%M:%S"
 DECIMAL_PRECISION = 3  # general precision for decimals
 PERC_VEC_PRECISION = 1
 TIME_TAKEN_PRECISION = 2
-SPEED_PRECISION = 0
 
 
 def iconv_int_keys(mapping: dict[Any, Any]):
@@ -331,6 +361,14 @@ def oconv_datetime(dtime: datetime):
 
 
 # General
+VersionF = Field("version",
+                 "Version of SEISMIC-RNA",
+                 str,
+                 check_val=check_name)
+BranchesF = Field("branches",
+                  "Branches",
+                  list,
+                  check_val=check_list_str)
 SampleF = Field("sample",
                 "Name of Sample",
                 str,
@@ -368,66 +406,44 @@ TimeTakenF = Field("taken",
                    oconv=get_oconv_float(TIME_TAKEN_PRECISION))
 
 # Alignment
-IsDemultiplexed = Field("demultiplexed", "Use demultiplexed mode", bool)
-IsPairedEnd = Field("paired_end", "Use paired-end mode", bool)
-PhredEnc = Field("phred_enc", "Phred score encoding", int)
-FastqcRun = Field("fastqc", "Check quality with FastQC", bool)
-CutadaptRun = Field("cut", "Trim with Cutadapt", bool)
-CutadaptQ1 = Field("cut_q1", "Minimum Phred score for read 1",
-                   int, check_val=check_nonneg_int)
-CutadaptQ2 = Field("cut_q2", "Minimum Phred score for read 2",
-                   int, check_val=check_nonneg_int)
-CutadaptG1 = Field("cut_g1", "5' adapter for read 1",
-                   list, check_val=check_list_str)
-CutadaptA1 = Field("cut_a1", "3' adapter for read 1",
-                   list, check_val=check_list_str)
-CutadaptG2 = Field("cut_g2", "5' adapter for read 2",
-                   list, check_val=check_list_str)
-CutadaptA2 = Field("cut_a2", "3' adapter for read 2",
-                   list, check_val=check_list_str)
-CutadaptOverlap = Field("cut_o", "Minimum adapter length (nt)",
-                        int, check_val=check_nonneg_int)
-CutadaptErrors = Field("cut_e", "Minimum adapter error rate",
-                       float, check_val=check_probability)
-CutadaptIndels = Field("cut_indels", "Allow indels in adapters", bool)
-CutadaptNextSeq = Field("cut_nextseq", "Trim in NextSeq mode", bool)
-CutadaptNoTrimmed = Field("cut_discard_trimmed", "Discard trimmed reads",
-                          bool)
-CutadaptNoUntrimmed = Field("cut_discard_untrimmed", "Discard untrimmed reads",
-                            bool)
-CutadaptMinLength = Field("cut_m", "Minimum length of read after trimming (nt)",
-                          int, check_val=check_nonneg_int)
-Bowtie2Local = Field("bt2_local", "Align in local mode", bool)
-Bowtie2Discord = Field("bt2_discordant", "Keep discordant alignments", bool)
-Bowtie2Dovetail = Field("bt2_dovetail",
-                        "Consider dovetailed alignments concordant",
-                        bool)
-Bowtie2Contain = Field("bt2_contain",
-                       "Consider nested alignments concordant",
-                       bool)
-Bowtie2Mixed = Field("bt2_mixed", "Align in mixed mode", bool)
-Bowtie2Unal = Field("bt2_unal", "Output unaligned reads to SAM file", bool)
-Bowtie2ScoreMin = Field("bt2_score_min", "Minimum alignment score", str)
-Bowtie2MinLength = Field("bt2_i", "Minimum fragment length (nt)",
-                         int, check_val=check_nonneg_int)
-Bowtie2MaxLength = Field("bt2_x", "Maximum fragment length (nt)",
-                         int, check_val=check_nonneg_int)
-Bowtie2GBar = Field("bt2_gbar", "Gap buffer margin (nt)",
-                    int, check_val=check_nonneg_int)
-Bowtie2SeedLength = Field("bt2_l", "Seed length (nt)",
-                          int, check_val=check_nonneg_int)
-Bowtie2SeedInterval = Field("bt2_s", "Seed interval (nt)", str)
-Bowtie2ExtTries = Field("bt2_d", "Maximum seed extension attempts",
-                        int, check_val=check_nonneg_int)
-Bowtie2Reseed = Field("bt2_r", "Maximum re-seeding attempts",
-                      int, check_val=check_nonneg_int)
-Bowtie2Dpad = Field("bt2_dpad",
-                    "Dynamic programming padding (nt)",
-                    int,
-                    check_val=check_nonneg_int)
-Bowtie2Orient = Field("bt2_orient", "Orientation of mates", str)
+IsDemultF = Field("demultiplexed", "Use demultiplexed mode", bool)
+IsPairedEndF = Field("paired_end", "Use paired-end mode", bool)
+PhredEncF = Field("phred_enc", opt_phred_enc.help, int)
+UseFastqcF = Field("fastqc", opt_fastqc.help, bool)
+UseCutadaptF = Field("cut", opt_cutadapt.help, bool)
+CutadaptQ1 = Field("cut_q1", opt_cut_q1.help, int, check_val=check_nonneg_int)
+CutadaptQ2 = Field("cut_q2", opt_cut_q2.help, int, check_val=check_nonneg_int)
+CutadaptG1 = Field("cut_g1", opt_cut_g1.help, list, check_val=check_list_str)
+CutadaptA1 = Field("cut_a1", opt_cut_a1.help, list, check_val=check_list_str)
+CutadaptG2 = Field("cut_g2", opt_cut_g2.help, list, check_val=check_list_str)
+CutadaptA2 = Field("cut_a2", opt_cut_a2.help, list, check_val=check_list_str)
+CutadaptOverlap = Field("cut_o", opt_cut_o.help, int, check_val=check_nonneg_int)
+CutadaptErrors = Field("cut_e", opt_cut_e.help, float, check_val=check_probability)
+CutadaptIndels = Field("cut_indels", opt_cut_indels.help, bool)
+CutadaptNextSeq = Field("cut_nextseq", opt_cut_nextseq.help, bool)
+CutadaptNoTrimmed = Field("cut_discard_trimmed", opt_cut_discard_trimmed.help, bool)
+CutadaptNoUntrimmed = Field("cut_discard_untrimmed", opt_cut_discard_untrimmed.help, bool)
+CutadaptMinLength = Field("cut_m", opt_cut_m.help, int, check_val=check_nonneg_int)
+Bowtie2Local = Field("bt2_local", opt_bt2_local.help, bool)
+Bowtie2Discord = Field("bt2_discordant", opt_bt2_discordant.help, bool)
+Bowtie2Dovetail = Field("bt2_dovetail", opt_bt2_dovetail.help, bool)
+Bowtie2Contain = Field("bt2_contain", opt_bt2_contain.help, bool)
+Bowtie2Mixed = Field("bt2_mixed", opt_bt2_mixed.help, bool)
+Bowtie2Un = Field("bt2_un", opt_bt2_un.help, bool)
+Bowtie2ScoreMin = Field("bt2_score_min",
+                        "Minimum score for a valid alignment with Bowtie2",
+                        str)
+Bowtie2MinLength = Field("bt2_i", opt_bt2_i.help, int, check_val=check_nonneg_int)
+Bowtie2MaxLength = Field("bt2_x", opt_bt2_x.help, int, check_val=check_nonneg_int)
+Bowtie2GBar = Field("bt2_gbar", opt_bt2_gbar.help, int, check_val=check_nonneg_int)
+Bowtie2SeedLength = Field("bt2_l", opt_bt2_l.help, int, check_val=check_nonneg_int)
+Bowtie2SeedInterval = Field("bt2_s", opt_bt2_s.help, str)
+Bowtie2ExtTries = Field("bt2_d", opt_bt2_d.help, int, check_val=check_nonneg_int)
+Bowtie2Reseed = Field("bt2_r", opt_bt2_r.help, int, check_val=check_nonneg_int)
+Bowtie2Dpad = Field("bt2_dpad", opt_bt2_dpad.help, int, check_val=check_nonneg_int)
+Bowtie2Orient = Field("bt2_orient", opt_bt2_orient.help, str)
 MinMapQual = Field("min_mapq",
-                   "Minimum mapping quality",
+                   opt_min_mapq.help,
                    int,
                    check_val=check_nonneg_int)
 ReadsInit = Field("reads_init",
@@ -469,19 +485,19 @@ ChecksumsF = Field("checksums",
                    check_val=check_checksums)
 RefseqChecksumF = Field("refseq_checksum",
                         "MD5 Checksum of Reference Sequence File",
-                        dict)
-SpeedF = Field("speed", "Speed (reads per minute)", float,
-               oconv=get_oconv_float(SPEED_PRECISION))
+                        str)
 
 # Mutation calling
-CountMutsF = Field("count_muts", "Count the Following as Mutations",
-                   SemiBitCaller,
-                   iconv=SemiBitCaller.from_report_format,
-                   oconv=SemiBitCaller.to_report_format)
-CountRefsF = Field("count_refs", "Count the Following as Matches",
-                   SemiBitCaller,
-                   iconv=SemiBitCaller.from_report_format,
-                   oconv=SemiBitCaller.to_report_format)
+CountMutsF = Field("count_muts",
+                   "Count the Following as Mutations",
+                   HalfRelPattern,
+                   iconv=HalfRelPattern.from_report_format,
+                   oconv=HalfRelPattern.to_report_format)
+CountRefsF = Field("count_refs",
+                   "Count the Following as Matches",
+                   HalfRelPattern,
+                   iconv=HalfRelPattern.from_report_format,
+                   oconv=HalfRelPattern.to_report_format)
 
 # Positional filtering
 ExclPolyAF = Field("exclude_polya",
@@ -728,14 +744,30 @@ def lookup_title(title: str) -> Field:
 
 # Report classes
 
-class Report(Output, ABC):
+class Report(FileIO, ABC):
     """ Abstract base class for a report from a step. """
 
     @classmethod
     @abstractmethod
-    def field_names(cls) -> tuple[str, ...]:
+    def fields(cls):
+        """ All fields of the report. """
+        return [BranchesF, TimeBeganF, TimeEndedF, TimeTakenF, VersionF]
+
+    @classmethod
+    @cache
+    def field_names(cls):
         """ Names of all fields of the report. """
-        return tuple()
+        return [field.key for field in cls.fields()]
+
+    @classmethod
+    def default_report_fields(cls):
+        """ Default values of report fields. """
+        return dict(branches=list(), taken=calc_taken, version=__version__)
+
+    @classmethod
+    def autofill_report_fields(cls, **kwargs):
+        """ Add any missing fields if they have default values.  """
+        return cls.default_report_fields() | kwargs
 
     @classmethod
     def from_dict(cls, odata: dict[str, Any]):
@@ -756,29 +788,24 @@ class Report(Output, ABC):
         return cls(**idata)
 
     @classmethod
-    def parse_file_path(cls, file: Path):
-        path_fields = path.parse(file, *cls.seg_types())
-        return path_fields.pop(path.TOP), path_fields
-
-    @classmethod
-    def load(cls, file: Path):
-        top, path_fields = cls.parse_file_path(file)
+    def load(cls, file: Path) -> Report:
         with open(file) as f:
             report = cls.from_dict(json.load(f))
         # Ensure that the path-related fields in the JSON data match the
         # actual path of the JSON file.
+        top, path_fields = cls.parse_path(file)
         for key, value in report.path_fields().items():
-            if value != path_fields[key]:
+            if value != path_fields.get(key):
                 raise ValueError(f"Got different values for field {repr(key)} "
-                                 f"from path ({repr(path_fields[key])}) and "
+                                 f"in path ({repr(path_fields.get(key))}) and "
                                  f"contents ({repr(value)}) of report {file}")
         return report
 
-    @classmethod
-    def auto_fields(cls) -> dict[str, Any]:
-        return {path.EXT: path.JSON_EXT}
-
     def __init__(self, **kwargs: Any | Callable[[Report], Any]):
+        # Add any missing arguments if they have default values.
+        kwargs = self.autofill_report_fields(**kwargs)
+        # Ensure the report is compatible with this version of SEISMIC.
+        check_compatibility(kwargs[VersionF.key], self)
         for name in self.field_names():
             value = kwargs.pop(name)
             if callable(value):
@@ -791,10 +818,15 @@ class Report(Output, ABC):
             raise ValueError(f"Invalid keywords for {type(self).__name__}: "
                              f"{list(kwargs)}")
 
-    def get_field(self, field: Field):
+    def get_field(self, field: Field, missing_ok: bool = False):
         """ Return the value of a field of the report using the field
         instance directly, not its key. """
-        return getattr(self, field.key)
+        try:
+            return getattr(self, field.key)
+        except AttributeError:
+            if missing_ok:
+                return
+            raise
 
     def to_dict(self):
         """ Return a dict of raw values of the fields, keyed by the
@@ -839,52 +871,53 @@ class Report(Output, ABC):
         return self.to_dict() == other.to_dict()
 
 
-class RefseqReport(Report, ABC):
+class RefseqReport(Report, RefIO, ABC):
+    """ Report associated with a reference sequence file. """
 
     @classmethod
     @abstractmethod
-    def field_names(cls):
-        return super().field_names() + ("refseq_checksum",)
-
-    @classmethod
-    @cache
-    def refseq_seg_types(cls):
-        return cls.seg_types()[:-1] + (path.RefseqFileSeg,)
-
-    @classmethod
-    @cache
-    def refseq_auto_fields(cls):
-        return cls.auto_fields() | {path.EXT: path.PICKLE_BROTLI_EXT}
+    def fields(cls):
+        return [RefseqChecksumF] + super().fields()
 
 
-class BatchReport(Report, ABC):
+class UnifiedReport(Report, ABC):
+    """ Report with exactly one data file. """
+
+
+class BatchedReport(Report, ABC):
+    """ Report with a number of data batches (one file per batch). """
 
     @classmethod
     @abstractmethod
-    def field_names(cls):
-        return super().field_names() + ("n_batches", "checksums")
+    def fields(cls):
+        return [NumBatchF, ChecksumsF] + super().fields()
 
     @classmethod
     @abstractmethod
-    def _batch_types(cls) -> tuple[type[ReadBatch], ...]:
+    def _batch_types(cls) -> tuple[type[ReadBatchIO], ...]:
         """ Type(s) of batch(es) for the report. """
 
     @classmethod
     @cache
-    def batch_types(cls) -> dict[str, type[ReadBatch]]:
+    def batch_types(cls) -> dict[str, type[ReadBatchIO]]:
         """ Type(s) of batch(es) for the report, keyed by name. """
         return {batch_type.btype(): batch_type
                 for batch_type in cls._batch_types()}
 
     @classmethod
-    def get_batch_type(cls, btype: str | None = None) -> type[ReadBatch]:
+    def get_batch_type(cls, btype: str | None = None) -> type[ReadBatchIO]:
         """ Return a valid type of batch based on its name. """
         if btype is None:
-            if (ntypes := len(cls.batch_types())) != 1:
+            batch_types = list(cls.batch_types().values())
+            if (ntypes := len(batch_types)) != 1:
                 raise ValueError(f"btype is optional only if there is exactly "
-                                 f"1 type of batch, but got {ntypes} types")
-            return list(cls.batch_types().values())[0]
+                                 f"one type of batch, but got {ntypes} types")
+            return batch_types[0]
         return cls.batch_types()[btype]
+
+
+class BatchedRefseqReport(BatchedReport, RefseqReport, ABC):
+    """ Convenience class used as a base for several Report classes. """
 
 ########################################################################
 #                                                                      #

@@ -3,26 +3,36 @@ from functools import cached_property
 from itertools import chain, product
 from logging import getLogger
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Callable
 
+import numpy as np
 import pandas as pd
 
-from .base import CartesianGraph, TwoTableSeqGraph, PRECISION
+from .base import PRECISION, CartesianGraph, TwoTableSeqGraph, make_subject
 from .color import SeqColorMap
 from .seq import get_table_params
 from .write import TwoTableGraphWriter
-from ..cluster.names import (CLS_NAME, ORD_NAME, ORD_CLS_NAME,
-                             validate_order_cluster)
-from ..core import docdef
-from ..core.cli import (arg_input_path, opt_rels,
-                        opt_y_ratio, opt_quantile, opt_arrange,
-                        opt_csv, opt_html, opt_pdf,
-                        opt_max_procs, opt_parallel)
+from ..core.arg import (docdef,
+                        arg_input_path,
+                        opt_rels,
+                        opt_y_ratio,
+                        opt_quantile,
+                        opt_arrange,
+                        opt_csv,
+                        opt_html,
+                        opt_pdf,
+                        opt_force,
+                        opt_max_procs,
+                        opt_parallel)
+from ..core.header import make_header
 from ..core.parallel import dispatch
-from ..core.sect import POS_NAME
-from ..table.base import REL_CODES
-from ..table.load import (PosTableLoader, RelPosTableLoader, MaskPosTableLoader,
-                          ClustPosTableLoader, find_tables, get_clusters)
+from ..core.seq import POS_NAME
+from ..table.base import get_rel_name
+from ..table.load import (PosTableLoader,
+                          RelPosTableLoader,
+                          MaskPosTableLoader,
+                          ClustPosTableLoader,
+                          find_tables)
 
 logger = getLogger(__name__)
 
@@ -32,38 +42,25 @@ ROW_NAME = "Row"
 COL_NAME = "Column"
 
 
+def _get_clusts(max_order: int,
+                min_order: int,
+                order: int | None,
+                clust: int | None):
+    return (make_header(max_order=max_order,
+                        min_order=min_order).select(order=order,
+                                                    clust=clust)
+            if max_order > 0
+            else None)
+
+
 # Base Sequence Pair Graph #############################################
 
 class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
     """ Graph that compares a pair of samples of the same sequence. """
 
-    def __init__(self, *args,
-                 rel: str, y_ratio: bool, quantile: float,
-                 order1: int = 0, cluster1: int = 0,
-                 order2: int = 0, cluster2: int = 0,
-                 **kwargs):
-        super().__init__(*args, **kwargs)
-        if rel not in REL_CODES:
-            raise ValueError(f"rel must be one of {list(REL_CODES)}, "
-                             f"but got '{rel}'")
-        self.rel_code = rel
-        self.y_ratio = y_ratio
-        self.quantile = quantile
-        validate_order_cluster(order1, cluster1, allow_zero=True)
-        self._order1 = [order1] if order1 > 0 else None
-        self._cluster1 = [cluster1] if cluster1 > 0 else None
-        validate_order_cluster(order2, cluster2, allow_zero=True)
-        self._order2 = [order2] if order2 > 0 else None
-        self._cluster2 = [cluster2] if cluster2 > 0 else None
-
-    @property
-    def rel(self):
-        """ Return the relationship to graph. """
-        return REL_CODES[self.rel_code]
-
-    @property
-    def rels(self):
-        return [self.rel]
+    @classmethod
+    def get_cmap_type(cls):
+        return SeqColorMap
 
     @classmethod
     def sources(cls) -> dict[type[PosTableLoader], str]:
@@ -71,6 +68,30 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
         return {RelPosTableLoader: "Related",
                 MaskPosTableLoader: "Masked",
                 ClustPosTableLoader: "Clustered"}
+
+    def __init__(self,
+                 *args,
+                 rel: str,
+                 y_ratio: bool,
+                 quantile: float,
+                 order1: int | None = None,
+                 clust1: int | None = None,
+                 order2: int | None = None,
+                 clust2: int | None = None,
+                 **kwargs):
+        super().__init__(*args, **kwargs)
+        self.rel_code = rel
+        self.y_ratio = y_ratio
+        self.quantile = quantile
+        self._order1 = order1
+        self._clust1 = clust1
+        self._order2 = order2
+        self._clust2 = clust2
+
+    @property
+    def rel(self):
+        """ Relationship to graph. """
+        return get_rel_name(self.rel_code)
 
     def _get_source(self, table: PosTableLoader):
         table_type = type(table)
@@ -89,10 +110,6 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
         """ Source of the second data set. """
         return self._get_source(self.table2)
 
-    @classmethod
-    def get_cmap_type(cls):
-        return SeqColorMap
-
     @property
     def title(self):
         return (f"{self.quantity} of {self.rel} bases "
@@ -102,19 +119,15 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
 
     @property
     def subject1(self):
-        if isinstance(self.table1, ClustPosTableLoader):
-            osym = 'x' if self._order1 is None else self._order1[0]
-            ksym = 'x' if self._cluster1 is None else self._cluster1[0]
-            return f"{self.source1}-{osym}-{ksym}"
-        return self.source1
+        return (make_subject(self.source1, self._order1, self._clust1)
+                if isinstance(self.table1, ClustPosTableLoader)
+                else self.source1)
 
     @property
     def subject2(self):
-        if isinstance(self.table2, ClustPosTableLoader):
-            osym = 'x' if self._order2 is None else self._order2[0]
-            ksym = 'x' if self._cluster2 is None else self._cluster2[0]
-            return f"{self.source2}-{osym}-{ksym}"
-        return self.source2
+        return (make_subject(self.source2, self._order2, self._clust2)
+                if isinstance(self.table2, ClustPosTableLoader)
+                else self.source2)
 
     @property
     def subject(self):
@@ -137,45 +150,39 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
     def graph_filename(self):
         return f"{self.subject}_{self.predicate}_{self.graph_type()}".lower()
 
-    def _select_table(self, table: PosTableLoader,
-                      order: int | None = None,
-                      cluster: int | None = None):
+    def _fetch_data(self,
+                    table: PosTableLoader,
+                    order: int | None,
+                    clust: int | None):
         # Determine which relationships, orders, and clusters to use.
-        select = dict(rels=self.rels)
-        if order is not None:
-            if isinstance(table, ClustPosTableLoader):
-                select.update(dict(order=order))
-                if cluster is not None:
-                    select.update(dict(cluster=cluster))
-            else:
-                logger.warning(f"{self} cannot use order {order} with {table}")
-        elif cluster is not None:
-            logger.warning(f"{self} cannot use cluster {cluster} with no order")
-        return table.select(self.y_ratio, self.quantile, PRECISION, **select)
+        all_kwargs = dict(rel=self.rel, order=order, clust=clust)
+        return (table.fetch_ratio(quantile=self.quantile,
+                                  precision=PRECISION,
+                                  **all_kwargs)
+                if self.y_ratio
+                else table.fetch_count(**all_kwargs))
 
     @cached_property
     def data1(self):
-        return self._select_table(self.table1, self._order1, self._cluster1)
+        return self._fetch_data(self.table1, self._order1, self._clust1)
 
     @cached_property
     def data2(self):
-        return self._select_table(self.table2, self._order2, self._cluster2)
-
-    @property
-    def nrows(self):
-        return self.data2.columns.size
-
-    @property
-    def ncols(self):
-        return self.data1.columns.size
+        return self._fetch_data(self.table2, self._order2, self._clust2)
 
     @cached_property
-    def clusters1(self):
-        return get_clusters(self.data1.columns, allow_zero=True)
+    def row_index(self):
+        return _get_clusts(self.table2.header.max_order,
+                           self.table2.header.min_order,
+                           self._order2,
+                           self._clust2)
 
     @cached_property
-    def clusters2(self):
-        return get_clusters(self.data2.columns, allow_zero=True)
+    def col_index(self):
+        return _get_clusts(self.table1.header.max_order,
+                           self.table1.header.min_order,
+                           self._order1,
+                           self._clust1)
 
 
 class SeqPairOneAxisGraph(SeqPairGraph, ABC):
@@ -187,16 +194,6 @@ class SeqPairOneAxisGraph(SeqPairGraph, ABC):
     def x_title(self) -> str:
         return POS_NAME
 
-    @cached_property
-    def col_titles(self):
-        return get_titles(sample=self.sample1, source=self.source1,
-                          clusters=self.clusters1)
-
-    @cached_property
-    def row_titles(self):
-        return get_titles(sample=self.sample2, source=self.source2,
-                          clusters=self.clusters2)
-
     @classmethod
     @abstractmethod
     def _trace_function(cls) -> Callable:
@@ -207,73 +204,49 @@ class SeqPairOneAxisGraph(SeqPairGraph, ABC):
     def _merge_data(self) -> Callable:
         """ Function to merge the two datasets into one. """
 
-    def _iter_prod(self):
-        """ Yield the product of the columns of data tables 1 and 2
-        with titles for rows and columns. """
-        for (col, (_, s1)), (row, (_, s2)) in product(zip(self.col_titles,
-                                                          self.data1.items(),
-                                                          strict=True),
-                                                      zip(self.row_titles,
-                                                          self.data2.items(),
-                                                          strict=True)):
-            yield (row, col), (s1, s2)
-
     @cached_property
     def data(self):
-        # Take the Cartesian product of the columns in datasets 1 and 2,
-        # and merge each pair using self._merge_data().
-        data = pd.DataFrame.from_dict({titles: self._merge_data(vals1, vals2)
-                                       for titles, (vals1, vals2)
-                                       in self._iter_prod()})
+        # Merge each pair in the Cartesian product of datasets 1 and 2.
+        data = pd.DataFrame.from_dict(
+            {(row, col): self._merge_data(vals1, vals2)
+             for (col, (key1, vals1)), (row, (key2, vals2))
+             in product(enumerate(self.data1.items(), start=1),
+                        enumerate(self.data2.items(), start=1))}
+        )
         # Indicate that the column index levels now correspond to the
         # rows and columns of the graph.
         data.columns.rename([ROW_NAME, COL_NAME], inplace=True)
         return data
 
     def get_traces(self):
-        for (i, row), (j, col) in product(enumerate(self.row_titles, start=1),
-                                          enumerate(self.col_titles, start=1)):
-            for trace in self._trace_function()(self.data.loc[:, (row, col)],
-                                                self.cmap):
-                yield (i, j), trace
+        for (row, col), series in self.data.items():
+            for trace in self._trace_function()(series, self.cmap):
+                yield (row, col), trace
 
 
 class SeqPairTwoAxisGraph(SeqPairGraph, ABC):
     """ Graph of a pair of datasets over the same sequence in which one
     dataset is graphed on each axis. """
 
+    @property
+    def x_title(self):
+        return self.sample1
+
+    @property
+    def y_title(self):
+        return self.sample2
+
     @cached_property
     def data(self):
         # Join data tables 1 and 2 horizontally.
         data = pd.concat([self.data1, self.data2], axis=1, join="inner")
-
-        def make_columns(columns: pd.Index | pd.MultiIndex, sample: str):
-            # Sample names.
-            samples = [sample] * columns.size
-            # Clusters (if any).
-            try:
-                orders = columns.get_level_values(ORD_NAME).to_list()
-                clusters = columns.get_level_values(CLS_NAME).to_list()
-            except KeyError:
-                orders = [0] * columns.size
-                clusters = [0] * columns.size
-            cols = {SAMPLE_NAME: samples, ORD_NAME: orders, CLS_NAME: clusters}
-            return pd.MultiIndex.from_arrays(list(cols.values()),
-                                             names=list(cols.keys()))
-
-        # Add the sample names and order/cluster numbers to the columns
-        # for tables 1 and 2.
-        cols1 = make_columns(self.data1.columns, self.sample1)
-        cols2 = make_columns(self.data2.columns, self.sample2)
-        # Drop the order/cluster numbers if they are all zero.
-        names = [SAMPLE_NAME] + [name for name in ORD_CLS_NAME
-                                 if ((cols1.get_level_values(name) != 0).any()
-                                     and
-                                     (cols2.get_level_values(name) != 0).any())]
-        # Make the columns for the merged table.
+        # Add the sample names as the first level of the columns.
+        samples = np.hstack([np.repeat(self.sample1, self.data1.columns.size),
+                             np.repeat(self.sample2, self.data2.columns.size)])
+        names = [SAMPLE_NAME] + list(data.columns.names)
         data.columns = pd.MultiIndex.from_arrays(
-            [(cols1.get_level_values(name).to_list()
-              + cols2.get_level_values(name).to_list())
+            [(samples if name == SAMPLE_NAME
+              else data.columns.get_level_values(name).values)
              for name in names],
             names=names
         )
@@ -294,30 +267,19 @@ class SeqPairGraphWriter(TwoTableGraphWriter, ABC):
         _, _, csparams1 = get_table_params(self.table1, arrange)
         _, _, csparams2 = get_table_params(self.table2, arrange)
         for cparams1, cparams2 in product(csparams1, csparams2):
-            cparams = dict()
-            if (param := cparams1.get("order")) is not None:
-                cparams["order1"] = param
-            if (param := cparams1.get("cluster")) is not None:
-                cparams["cluster1"] = param
-            if (param := cparams2.get("order")) is not None:
-                cparams["order2"] = param
-            if (param := cparams2.get("cluster")) is not None:
-                cparams["cluster2"] = param
             for rels in rels_sets:
-                yield self.graph_type(table1=self.table1, table2=self.table2,
-                                      rel=rels, y_ratio=y_ratio,
-                                      quantile=quantile, **cparams)
+                yield self.graph_type(table1=self.table1,
+                                      table2=self.table2,
+                                      rel=rels,
+                                      y_ratio=y_ratio,
+                                      quantile=quantile,
+                                      order1=cparams1.get("order"),
+                                      clust1=cparams1.get("clust"),
+                                      order2=cparams2.get("order"),
+                                      clust2=cparams2.get("clust"))
 
 
 # Helper functions #####################################################
-
-def get_titles(*, sample: str = "", source: str,
-               clusters: Iterable[tuple[int, int]]):
-    """ Return a list of column titles given the name of a sample and
-    its source, as well as one or more cluster numbers. """
-    sample_source = f"{sample}, {source}" if sample else source
-    return [f"{sample_source} {order}-{cluster}" if order > 0 else sample_source
-            for order, cluster in clusters]
 
 
 class SeqPairGraphRunner(object):
@@ -330,6 +292,7 @@ class SeqPairGraphRunner(object):
         opt_csv,
         opt_html,
         opt_pdf,
+        opt_force,
         opt_max_procs,
         opt_parallel,
     ]
@@ -350,22 +313,27 @@ class SeqPairGraphRunner(object):
             csv: bool,
             html: bool,
             pdf: bool,
+            force: bool,
             max_procs: int,
             parallel: bool) -> list[Path]:
-        """ Run the graph seqdiff module. """
+        """ Run the graph seqpair module. """
         tables = list(find_tables(input_path))
         if len(tables) % 2 != 0:
-            raise ValueError(
-                f"Number of files must be even, but got {len(tables)}")
+            raise ValueError(f"Number of files must be even, but got {tables}")
         writers = [cls.writer_type()(table1_file=t1, table2_file=t2)
                    for t1, t2 in zip(tables[0::2], tables[1::2], strict=True)]
         return list(chain(*dispatch([writer.write for writer in writers],
-                                    max_procs, parallel, pass_n_procs=False,
+                                    max_procs,
+                                    parallel,
+                                    pass_n_procs=False,
                                     kwargs=dict(rels_sets=rels,
                                                 y_ratio=y_ratio,
                                                 quantile=quantile,
                                                 arrange=arrange,
-                                                csv=csv, html=html, pdf=pdf))))
+                                                csv=csv,
+                                                html=html,
+                                                pdf=pdf,
+                                                force=force))))
 
 ########################################################################
 #                                                                      #

@@ -24,10 +24,10 @@ dependencies = [
     "cutadapt>=4.4",
     "fastqsplitter>=1.2",
     "matplotlib>=3.6",
+    "networkx>=3.1",
     "numpy>=1.23",
     "pandas>=1.5",
     "plotly>=5.11",
-    "pyarrow>=10.0",
     "pyyaml>=6.0",
     "scipy>=1.9",
     "sphinx>=4.5",
@@ -48,7 +48,7 @@ exclude = [
 packages = ["src/seismicrna"]
 
 [tool.hatch.version]
-path = "src/seismicrna/__init__.py"
+path = "src/seismicrna/core/meta/version.py"
 
 [project.scripts]
 seismic = "seismicrna.main:cli"

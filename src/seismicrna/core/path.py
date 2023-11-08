@@ -30,18 +30,15 @@ This module defines all file path conventions for all other modules.
 
 from __future__ import annotations
 
+import os
+import pathlib as pl
+import re
 from collections import Counter
 from functools import cache, cached_property, partial
 from itertools import chain, product
 from logging import getLogger
-import os
-import pathlib as pl
-import re
 from string import ascii_letters, digits, printable
 from typing import Any, Iterable, Sequence
-
-from .cmd import (CMD_QC, CMD_ALIGN, CMD_REL, CMD_MASK, CMD_CLUST, CMD_TABLE,
-                  CMD_FOLD, CMD_GRAPH)
 
 logger = getLogger(__name__)
 
@@ -62,6 +59,19 @@ STR_PATTERN = f"([{STR_CHARS}]+)"
 INT_PATTERN = f"([{INT_CHARS}]+)"
 RE_PATTERNS = {str: STR_PATTERN, int: INT_PATTERN, pl.Path: PATH_PATTERN}
 
+# Directories for commands
+
+CMD_FQC_DIR = "qc"
+CMD_ALN_DIR = "align"
+CMD_REL_DIR = "relate"
+CMD_MSK_DIR = "mask"
+CMD_CLS_DIR = "cluster"
+CMD_TBL_DIR = "table"
+CMD_FLD_DiR = "fold"
+CMD_GRA_DIR = "graph"
+
+# Directories for steps
+
 STEP_QC_INIT = "init"
 STEP_QC_TRIM = "trim"
 
@@ -72,26 +82,39 @@ STEP_ALIGN_MAP = "map"
 
 STEPS_VECT_SAMS = "sams"
 
-STEPS = (STEP_QC_INIT, STEP_QC_TRIM, STEP_ALIGN_INDEX, STEP_ALIGN_INDEX_DEMULT,
-         STEP_ALIGN_TRIM, STEP_ALIGN_MAP, STEPS_VECT_SAMS)
+STEPS = (STEP_QC_INIT,
+         STEP_QC_TRIM,
+         STEP_ALIGN_INDEX,
+         STEP_ALIGN_INDEX_DEMULT,
+         STEP_ALIGN_TRIM,
+         STEP_ALIGN_MAP,
+         STEPS_VECT_SAMS)
+
+# Tables
 
 CLUST_PROP_RUN_TABLE = "props"
 CLUST_MUS_RUN_TABLE = "mus"
 CLUST_RESP_RUN_TABLE = "resps"
 CLUST_COUNT_RUN_TABLE = "counts"
-CLUST_TABLES = (CLUST_PROP_RUN_TABLE, CLUST_MUS_RUN_TABLE,
-                CLUST_RESP_RUN_TABLE, CLUST_COUNT_RUN_TABLE)
+CLUST_TABLES = (CLUST_PROP_RUN_TABLE,
+                CLUST_MUS_RUN_TABLE,
+                CLUST_RESP_RUN_TABLE,
+                CLUST_COUNT_RUN_TABLE)
 
 RELATE_POS_TAB = "relate-per-pos"
 RELATE_READ_TAB = "relate-per-read"
 MASKED_POS_TAB = "mask-per-pos"
 MASKED_READ_TAB = "mask-per-read"
 CLUST_POS_TAB = "clust-per-pos"
-CLUST_FREQ_TAB = "clust-freq"
 CLUST_READ_TAB = "clust-per-read"
-COUNT_TABLES = (RELATE_POS_TAB, RELATE_READ_TAB,
-                MASKED_POS_TAB, MASKED_READ_TAB,
-                CLUST_POS_TAB, CLUST_FREQ_TAB, CLUST_READ_TAB)
+CLUST_FREQ_TAB = "clust-freq"
+COUNT_TABLES = (RELATE_POS_TAB,
+                RELATE_READ_TAB,
+                MASKED_POS_TAB,
+                MASKED_READ_TAB,
+                CLUST_POS_TAB,
+                CLUST_READ_TAB,
+                CLUST_FREQ_TAB)
 
 # File extensions
 
@@ -99,15 +122,24 @@ TXT_EXT = ".txt"
 CSV_EXT = ".csv"
 CSVZIP_EXT = ".csv.gz"
 CSV_EXTS = CSV_EXT, CSVZIP_EXT
-PICKLE_BROTLI_EXT = ".pkl.br"
-TEXT_BROTLI_EXT = ".txt.br"
+BROTLI_PICKLE_EXT = ".brickle"
 JSON_EXT = ".json"
 FASTA_EXTS = ".fa", ".fna", ".fasta"
-BOWTIE2_INDEX_EXTS = (".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2",
-                      ".rev.1.bt2", ".rev.2.bt2")
-FQ_EXTS = (".fq.gz", ".fastq.gz", ".fq", ".fastq",
-           "_001.fq.gz", "_001.fastq.gz", "_001.fq", "_001.fastq")
-FQ_PAIRED_EXTS_TEMPLATES = ("_R{}{}", "_mate{}{}", "_{}_sequence{}")
+BOWTIE2_INDEX_EXTS = (".1.bt2",
+                      ".2.bt2",
+                      ".3.bt2",
+                      ".4.bt2",
+                      ".rev.1.bt2",
+                      ".rev.2.bt2")
+FQ_EXTS = (".fq.gz",
+           ".fastq.gz",
+           ".fq",
+           ".fastq",
+           "_001.fq.gz",
+           "_001.fastq.gz",
+           "_001.fq",
+           "_001.fastq")
+FQ_PAIRED_EXTS_TEMPLATES = "_R{}{}", "_mate{}{}", "_{}_sequence{}"
 FQ1_EXTS = tuple(template.format(1, ext) for template, ext in
                  product(FQ_PAIRED_EXTS_TEMPLATES, FQ_EXTS))
 FQ2_EXTS = tuple(template.format(2, ext) for template, ext in
@@ -236,8 +268,14 @@ class Field(object):
 # Fields
 TopField = Field(pl.Path)
 NameField = Field(str)
-CmdField = Field(str, [CMD_QC, CMD_ALIGN, CMD_REL, CMD_MASK, CMD_CLUST,
-                       CMD_TABLE, CMD_FOLD, CMD_GRAPH])
+CmdField = Field(str, [CMD_FQC_DIR,
+                       CMD_ALN_DIR,
+                       CMD_REL_DIR,
+                       CMD_MSK_DIR,
+                       CMD_CLS_DIR,
+                       CMD_TBL_DIR,
+                       CMD_FLD_DiR,
+                       CMD_GRA_DIR])
 StepField = Field(str, STEPS)
 IntField = Field(int)
 CountTabField = Field(str, COUNT_TABLES)
@@ -246,14 +284,10 @@ ClustTabField = Field(str, CLUST_TABLES)
 # File extensions
 TextExt = Field(str, [TXT_EXT], is_ext=True)
 ReportExt = Field(str, [JSON_EXT], is_ext=True)
-RefseqFileExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
-QnamesBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
-RelVecBatExt = Field(str, [PICKLE_BROTLI_EXT], is_ext=True)
-MaskRepExt = Field(str, [JSON_EXT], is_ext=True)
-MaskBatExt = Field(str, CSV_EXTS, is_ext=True)
+RefseqFileExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
+BatchExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 ClustTabExt = Field(str, CSV_EXTS, is_ext=True)
 ClustCountExt = Field(str, CSV_EXTS, is_ext=True)
-ClustBatExt = Field(str, CSV_EXTS, is_ext=True)
 MutTabExt = Field(str, CSV_EXTS, is_ext=True)
 FastaExt = Field(str, FASTA_EXTS, is_ext=True)
 FastaIndexExt = Field(str, BOWTIE2_INDEX_EXTS, is_ext=True)
@@ -265,6 +299,7 @@ ConnectTableExt = Field(str, [CT_EXT], is_ext=True)
 DotBracketExt = Field(str, DOT_EXTS, is_ext=True)
 DmsReactsExt = Field(str, [DMS_EXT], is_ext=True)
 GraphExt = Field(str, GRAPH_EXTS, is_ext=True)
+WebAppFileExt = Field(str, [JSON_EXT], is_ext=True)
 
 
 # Path Segments ########################################################
@@ -423,21 +458,26 @@ DmFastq2Seg = Segment("dm-fastq2", {REF: NameField, EXT: Fastq2Ext})
 
 # Alignment
 XamSeg = Segment("xam", {REF: NameField, EXT: XamExt})
-AlignRepSeg = Segment("align-rep", {EXT: ReportExt}, frmt="align-report{ext}")
+AlignSampleRepSeg = Segment("align-samp-rep",
+                            {EXT: ReportExt},
+                            frmt="align-report{ext}")
+AlignRefRepSeg = Segment("align-ref-rep",
+                         {REF: NameField, EXT: ReportExt},
+                         frmt="{ref}__align-report{ext}")
 
 # Relation Vectors
 RefseqFileSeg = Segment("refseq-file", {EXT: RefseqFileExt}, frmt="refseq{ext}")
 QnamesBatSeg = Segment("name-bat",
-                       {BATCH: IntField, EXT: QnamesBatExt},
+                       {BATCH: IntField, EXT: BatchExt},
                        frmt="qnames-batch-{batch}{ext}")
 RelateBatSeg = Segment("rel-bat",
-                       {BATCH: IntField, EXT: RelVecBatExt},
+                       {BATCH: IntField, EXT: BatchExt},
                        frmt="relate-batch-{batch}{ext}")
 RelateRepSeg = Segment("rel-rep", {EXT: ReportExt}, frmt="relate-report{ext}")
 
 # Masking
 MaskBatSeg = Segment("mask-bat",
-                     {BATCH: IntField, EXT: MaskBatExt},
+                     {BATCH: IntField, EXT: BatchExt},
                      frmt="mask-batch-{batch}{ext}")
 MaskRepSeg = Segment("mask-rep", {EXT: ReportExt}, frmt="mask-report{ext}")
 
@@ -449,7 +489,7 @@ ClustTabSeg = Segment("clust-tab", {TABLE: ClustTabField,
                       frmt="{table}-k{k}-r{run}{ext}")
 ClustCountSeg = Segment("clust-count", {EXT: ClustCountExt}, frmt="counts{ext}")
 ClustBatSeg = Segment("clust-bat",
-                      {BATCH: IntField, EXT: ClustBatExt},
+                      {BATCH: IntField, EXT: BatchExt},
                       frmt="cluster-batch-{batch}{ext}")
 ClustRepSeg = Segment("clust-rep", {EXT: ReportExt}, frmt="cluster-report{ext}")
 
@@ -460,14 +500,19 @@ TableSeg = Segment("table", {TABLE: CountTabField, EXT: MutTabExt})
 ConnectTableSeg = Segment("rna-ct", {STRUCT: NameField, EXT: ConnectTableExt})
 DotBracketSeg = Segment("rna-dot", {STRUCT: NameField, EXT: DotBracketExt})
 DmsReactsSeg = Segment("dms-reacts", {REACTS: NameField, EXT: DmsReactsExt})
-VarnaColorSeg = Segment("varna-color", {REACTS: NameField, EXT: TextExt},
-                        frmt="{reacts}_varna-color{ext}")
+VarnaColorSeg = Segment("varna-color",
+                        {REACTS: NameField, EXT: TextExt},
+                        frmt="{reacts}__varna-color{ext}")
 
 # Graphs
 GraphSeg = Segment("graph", {GRAPH: NameField, EXT: GraphExt})
 
-# Path segment patterns
+# Web App Export
+WebAppFileSeg = Segment("webapp",
+                        {SAMP: NameField, EXT: WebAppFileExt},
+                        frmt="{sample}__webapp{ext}")
 
+# Path segment patterns
 FASTA_STEP_SEGS = StepSeg, FastaSeg
 FASTA_INDEX_DIR_STEP_SEGS = StepSeg, RefSeg
 FASTQ_SEGS = FastqSeg,
@@ -509,7 +554,6 @@ class Path(object):
     def build(self, **fields: Any):
         """ Return a `pathlib.Path` instance by assembling the given
         `fields` into a full path. """
-        fstr = str(fields)
         # Build the new path one segment at a time.
         segments = list()
         for seg_type in self.seg_types:
@@ -531,8 +575,6 @@ class Path(object):
                                  f"fields {exp} for segment types {segs}")
         # Assemble the segment strings into a path, and return it.
         path = pl.Path(*segments)
-        logger.debug(f"Built path: {fstr} + {tuple(map(str, self.seg_types))} "
-                     f"-> {path}")
         return path
 
     def parse(self, path: str | pl.Path):
@@ -558,8 +600,6 @@ class Path(object):
             # Parse the deepest part of the path to obtain the fields,
             # and use them to update the field names and values.
             fields.update(seg_type.parse(tail))
-        logger.debug(f"Parsed path: {path}, {tuple(map(str, self.seg_types))} "
-                     f"-> {fields}")
         return fields
 
 
@@ -594,6 +634,17 @@ def buildpar(*segment_types: Segment, **field_values: Any):
 
 
 # Path parsing routines
+
+def deduplicated(paths: Iterable[str | pl.Path]):
+    """ Yield the non-redundant paths. """
+    seen = set()
+    for path in paths:
+        if (pathstr := str(path)) in seen:
+            logger.warning(f"Duplicate path: {path}")
+        else:
+            seen.add(pathstr)
+            yield path
+
 
 def parse(path: str | pl.Path, /, *segment_types: Segment):
     """ Return the fields of a path given as a `str` based on the
@@ -633,9 +684,7 @@ def find_files(path: pl.Path, segments: Sequence[Segment]):
 
 def find_files_chain(paths: Iterable[pl.Path], segments: Sequence[Segment]):
     """ Yield from `find_files` called on every path in `paths`. """
-    for path, count in Counter(paths).items():
-        if count > 1:
-            logger.warning(f"Path {path} was given {count} times")
+    for path in deduplicated(paths):
         try:
             yield from find_files(path, segments)
         except FileNotFoundError:

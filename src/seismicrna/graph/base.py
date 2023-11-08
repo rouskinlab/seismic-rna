@@ -1,18 +1,18 @@
 from abc import ABC, abstractmethod
-from functools import cache, cached_property
+from functools import cached_property
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
+import pandas as pd
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
 from .color import ColorMap, get_cmap
 from ..core import path
-from ..core.cmd import CMD_GRAPH
+from ..core.header import format_clust_names
 from ..core.seq import DNA
-from ..table.base import Table
-from ..table.load import TableLoader, PosTableLoader
+from ..table.base import Table, PosTable
 
 logger = getLogger(__name__)
 
@@ -20,18 +20,44 @@ logger = getLogger(__name__)
 PRECISION = 6
 
 
-def _write_graph(writer: Callable[[Path], Any], file: Path):
+def _write_graph(writer: Callable[[Path], Any],
+                 file: Path,
+                 force: bool = False):
     """ Write an image or raw data for a graph to a file. """
-    if file.is_file():
-        logger.warning(f"File exists: {file}")
-    else:
+    if force or not file.is_file():
         writer(file)
+    else:
+        logger.warning(f"File exists: {file}")
     return file
+
+
+def _index_size(index: pd.Index | None):
+    return index.size if index is not None else 1
+
+
+def _index_titles(index: pd.Index | None):
+    return format_clust_names(index) if index is not None else None
+
+
+def make_subject(source: str, order: int | None, clust: int | None):
+    return "-".join(map(str, [source,
+                              order if order is not None else "x",
+                              clust if clust is not None else "x"]))
 
 
 class GraphBase(ABC):
 
-    def __init__(self, cmap: str | None = None):
+    @classmethod
+    def get_path_segs(cls):
+        """ Path segments. """
+        return path.CmdSeg, path.GraphSeg
+
+    @classmethod
+    def col_row_sep(cls):
+        """ Separator between column and row title. """
+        return " "
+
+    def __init__(self, *, cmap: str | None = None):
         self._cmap_name = cmap
 
     @cached_property
@@ -60,7 +86,7 @@ class GraphBase(ABC):
 
     @property
     @abstractmethod
-    def out_dir(self) -> Path:
+    def top(self) -> Path:
         """ Output directory. """
 
     @property
@@ -68,15 +94,10 @@ class GraphBase(ABC):
     def graph_filename(self):
         """ Name of the graph file. """
 
-    @classmethod
-    def get_path_segs(cls):
-        """ Path segments. """
-        return path.CmdSeg, path.GraphSeg
-
     def get_path_fields(self):
         """ Path fields. """
-        return {path.TOP: self.out_dir,
-                path.CMD: CMD_GRAPH,
+        return {path.TOP: self.top,
+                path.CMD: path.CMD_GRA_DIR,
                 path.GRAPH: self.graph_filename}
 
     def get_path(self, ext: str):
@@ -87,30 +108,36 @@ class GraphBase(ABC):
 
     @property
     @abstractmethod
-    def nrows(self) -> int:
-        """ Number of rows of subplots. """
+    def row_index(self) -> pd.Index | None:
+        """ Index of rows of subplots. """
 
     @property
     @abstractmethod
-    def ncols(self) -> int:
+    def col_index(self) -> pd.Index | None:
+        """ Index of columns of subplots. """
+
+    @property
+    def nrows(self):
+        """ Number of rows of subplots. """
+        return _index_size(self.row_index)
+
+    @property
+    def ncols(self):
         """ Number of columns of subplots. """
+        return _index_size(self.col_index)
+
+    @cached_property
+    def row_titles(self):
+        """ Titles of the rows. """
+        return _index_titles(self.row_index)
+
+    @cached_property
+    def col_titles(self):
+        """ Titles of the columns. """
+        return _index_titles(self.col_index)
 
     @property
-    def row_titles(self) -> list[str] | None:
-        """ Title of each row. """
-        return None
-
-    @property
-    def col_titles(self) -> list[str] | None:
-        """ Title of each column. """
-        return None
-
-    @property
-    def subplot_titles(self) -> list[str] | None:
-        """ Titles of the subplots. """
-        return None
-
-    def _get_subplots_params(self):
+    def _subplots_params(self):
         return dict(rows=self.nrows,
                     cols=self.ncols,
                     row_titles=self.row_titles,
@@ -118,51 +145,54 @@ class GraphBase(ABC):
 
     def _figure_init(self):
         """ Initialize the figure. """
-        return make_subplots(**self._get_subplots_params())
+        return make_subplots(**self._subplots_params)
 
-    def _figure_data(self, fig: go.Figure):
+    def _figure_data(self, figure: go.Figure):
         """ Add data to the figure. """
         for (row, col), trace in self.get_traces():
-            fig.add_trace(trace, row=row, col=col)
+            figure.add_trace(trace, row=row, col=col)
 
-    def _figure_layout(self, fig: go.Figure):
+    def _figure_layout(self, figure: go.Figure):
         """ Update the figure's layout. """
-        fig.update_layout(title=self.title,
-                          plot_bgcolor="#ffffff",
-                          paper_bgcolor="#ffffff")
+        figure.update_layout(title=self.title,
+                             plot_bgcolor="#ffffff",
+                             paper_bgcolor="#ffffff")
 
-    @cache
-    def get_figure(self):
+    @cached_property
+    def figure(self):
         """ Figure object. """
-        fig = self._figure_init()
-        self._figure_data(fig)
-        self._figure_layout(fig)
-        return fig
+        figure = self._figure_init()
+        self._figure_data(figure)
+        self._figure_layout(figure)
+        return figure
 
-    def write_csv(self):
+    def write_csv(self, force: bool):
         """ Write the graph's source data to a CSV file. """
         return _write_graph(self.data.to_csv,
-                            self.get_path(ext=path.CSV_EXT))
+                            self.get_path(ext=path.CSV_EXT),
+                            force)
 
-    def write_html(self):
+    def write_html(self, force: bool):
         """ Write the graph to an HTML file. """
-        return _write_graph(self.get_figure().write_html,
-                            self.get_path(ext=path.HTML_EXT))
+        return _write_graph(self.figure.write_html,
+                            self.get_path(ext=path.HTML_EXT),
+                            force)
 
-    def write_pdf(self):
+    def write_pdf(self, force: bool):
         """ Write the graph to a PDF file. """
-        return _write_graph(self.get_figure().write_image,
-                            self.get_path(ext=path.PDF_EXT))
+        return _write_graph(self.figure.write_image,
+                            self.get_path(ext=path.PDF_EXT),
+                            force)
 
-    def write(self, csv: bool, html: bool, pdf: bool):
+    def write(self, csv: bool, html: bool, pdf: bool, force: bool = False):
         """ Write the selected files. """
         files = list()
         if csv:
-            files.append(self.write_csv())
+            files.append(self.write_csv(force))
         if html:
-            files.append(self.write_html())
+            files.append(self.write_html(force))
         if pdf:
-            files.append(self.write_pdf())
+            files.append(self.write_pdf(force))
         return files
 
 
@@ -181,7 +211,7 @@ class SampleGraph(GraphBase, ABC):
         return super().get_path_segs() + (path.SampSeg,)
 
     def get_path_fields(self):
-        return {**super().get_path_fields(), path.SAMP: self.sample}
+        return super().get_path_fields() | {path.SAMP: self.sample}
 
 
 class OneSampleGraph(SampleGraph, ABC):
@@ -193,15 +223,13 @@ class TwoSampleGraph(SampleGraph, ABC):
 
     @property
     @abstractmethod
-    def sample1(self):
+    def sample1(self) -> str:
         """ Name of the first sample. """
-        return ""
 
     @property
     @abstractmethod
-    def sample2(self):
+    def sample2(self) -> str:
         """ Name of the second sample. """
-        return ""
 
     @property
     def sample(self):
@@ -213,15 +241,13 @@ class OneRefGraph(GraphBase, ABC):
 
     @property
     @abstractmethod
-    def ref(self):
+    def ref(self) -> str:
         """ Name of the reference sequence. """
-        return ""
 
     @property
     @abstractmethod
-    def sect(self):
+    def sect(self) -> str:
         """ Name of the section of the reference sequence. """
-        return ""
 
     @classmethod
     def get_path_segs(cls):
@@ -229,9 +255,8 @@ class OneRefGraph(GraphBase, ABC):
         return super().get_path_segs() + (path.RefSeg, path.SectSeg)
 
     def get_path_fields(self):
-        return {**super().get_path_fields(),
-                path.REF: self.ref,
-                path.SECT: self.sect}
+        return super().get_path_fields() | {path.REF: self.ref,
+                                            path.SECT: self.sect}
 
 
 class OneSeqGraph(OneRefGraph, ABC):
@@ -239,16 +264,15 @@ class OneSeqGraph(OneRefGraph, ABC):
 
     @property
     @abstractmethod
-    def seq(self):
+    def seq(self) -> DNA:
         """ Reference sequence as a DNA object. """
-        return DNA("")
 
 
 class OneTableGraph(OneSampleGraph, OneRefGraph, ABC):
     """ Graph of data from one TableLoader. """
 
-    def __init__(self, *args, table: TableLoader, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *, table: Table | PosTable, **kwargs):
+        super().__init__(**kwargs)
         if not isinstance(table, self.get_table_type()):
             raise TypeError(f"{type(self).__name__} expected table "
                             f"of type '{self.get_table_type().__name__}', "
@@ -257,18 +281,17 @@ class OneTableGraph(OneSampleGraph, OneRefGraph, ABC):
 
     @classmethod
     @abstractmethod
-    def get_table_type(cls):
+    def get_table_type(cls) -> type[Table | PosTable]:
         """ Type of TableLoader for this graph. """
-        return TableLoader
 
     @property
-    def table(self) -> (TableLoader | PosTableLoader | Table):
+    def table(self):
         """ Table of data. """
         return self._table
 
     @property
-    def out_dir(self):
-        return self.table.out_dir
+    def top(self):
+        return self.table.top
 
     @property
     def sample(self):
@@ -282,12 +305,18 @@ class OneTableGraph(OneSampleGraph, OneRefGraph, ABC):
     def sect(self):
         return self.table.sect
 
+    @property
+    def col_index(self):
+        return None
+
 
 class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
 
-    def __init__(self, *args, table1: TableLoader, table2: TableLoader,
+    def __init__(self, *,
+                 table1: Table | PosTable,
+                 table2: Table | PosTable,
                  **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         for table, table_type in zip((table1, table2),
                                      (self.get_table1_type(),
                                       self.get_table2_type()),
@@ -301,23 +330,21 @@ class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
 
     @classmethod
     @abstractmethod
-    def get_table1_type(cls):
+    def get_table1_type(cls) -> type[Table | PosTable]:
         """ Type of the first TableLoader for this graph. """
-        return TableLoader
 
     @classmethod
     @abstractmethod
-    def get_table2_type(cls):
+    def get_table2_type(cls) -> type[Table | PosTable]:
         """ Type of the second TableLoader for this graph. """
-        return TableLoader
 
     @property
-    def table1(self) -> (TableLoader | PosTableLoader | Table):
+    def table1(self):
         """ First table of data. """
         return self._table1
 
     @property
-    def table2(self) -> (TableLoader | PosTableLoader | Table):
+    def table2(self):
         """ Second table of data. """
         return self._table2
 
@@ -326,13 +353,13 @@ class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
         attr1 = getattr(self.table1, name)
         attr2 = getattr(self.table2, name)
         if attr1 != attr2:
-            raise ValueError(f"Attribute '{name}' differs between tables 1 "
-                             f"({repr(attr1)}) and 2 ({repr(attr2)})")
+            raise ValueError(f"Attribute {repr(name)} differs between tables "
+                             f"1 ({repr(attr1)}) and 2 ({repr(attr2)})")
         return attr1
 
     @property
-    def out_dir(self):
-        return self._get_common_attribute("out_dir")
+    def top(self):
+        return self._get_common_attribute("top")
 
     @property
     def ref(self):
@@ -352,16 +379,15 @@ class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
 
     @property
     def sample(self):
-        if self.sample1 == self.sample2:
-            return self.sample1
-        return f"{self.sample1}__and__{self.sample2}"
+        return (self.sample1 if self.sample1 == self.sample2
+                else f"{self.sample1}__and__{self.sample2}")
 
 
 class OneTableSeqGraph(OneTableGraph, OneSeqGraph, ABC):
 
     @classmethod
     def get_table_type(cls):
-        return PosTableLoader
+        return PosTable
 
     @property
     def seq(self):
@@ -372,11 +398,11 @@ class TwoTableSeqGraph(TwoTableGraph, OneSeqGraph, ABC):
 
     @classmethod
     def get_table1_type(cls):
-        return PosTableLoader
+        return PosTable
 
     @classmethod
     def get_table2_type(cls):
-        return PosTableLoader
+        return PosTable
 
     @property
     def seq(self):
@@ -384,7 +410,7 @@ class TwoTableSeqGraph(TwoTableGraph, OneSeqGraph, ABC):
 
 
 class CartesianGraph(GraphBase, ABC):
-    """ Graph with one pair of x and y axes. """
+    """ Graph with one pair of x and y axes per subplot. """
 
     @property
     @abstractmethod
@@ -396,19 +422,21 @@ class CartesianGraph(GraphBase, ABC):
     def y_title(self) -> str:
         """ Title of the y-axis. """
 
-    def _figure_layout(self, fig: go.Figure):
-        super()._figure_layout(fig)
-        fig.update_xaxes(linewidth=1,
-                         linecolor="#000000",
-                         autorange=True)
-        fig.update_yaxes(linewidth=1,
-                         linecolor="#000000",
-                         autorange=True)
+    def _figure_layout(self, figure: go.Figure):
+        super()._figure_layout(figure)
+        figure.update_xaxes(linewidth=1,
+                            linecolor="#000000",
+                            autorange=True)
+        figure.update_yaxes(linewidth=1,
+                            linecolor="#000000",
+                            autorange=True)
 
-    def _get_subplots_params(self):
-        return {**super()._get_subplots_params(),
-                **dict(shared_xaxes="all", shared_yaxes="all",
-                       x_title=self.x_title, y_title=self.y_title)}
+    @property
+    def _subplots_params(self):
+        return super()._subplots_params | dict(x_title=self.x_title,
+                                               y_title=self.y_title,
+                                               shared_xaxes="all",
+                                               shared_yaxes="all")
 
 ########################################################################
 #                                                                      #
