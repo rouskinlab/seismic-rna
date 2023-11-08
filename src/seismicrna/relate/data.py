@@ -22,9 +22,9 @@ class RelateLoader(BatchedLoadedDataset, LoadedMutsDataset):
     def load_batch(self, batch: int):
         relate_batch = super().load_batch(batch)
         # Add the reference sequence to the batch.
-        if relate_batch.reflen != len(self.refseq):
+        if relate_batch.max_pos != len(self.refseq):
             raise ValueError(f"Reference sequence is {len(self.refseq)} nt, "
-                             f"but {relate_batch} has {relate_batch.reflen} nt")
+                             f"but {relate_batch} has {relate_batch.max_pos}")
         return RelateRefseqBatch(refseq=self.refseq,
                                  batch=relate_batch.batch,
                                  muts=relate_batch.muts,

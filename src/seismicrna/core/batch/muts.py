@@ -87,12 +87,12 @@ class ReflenMutsBatch(MutsBatch, ABC):
     """ Batch of mutational data with only a known reference length. """
 
     def __init__(self, *, reflen: int, **kwargs):
-        self.reflen = reflen
+        self._reflen = reflen
         super().__init__(**kwargs)
 
     @property
     def max_pos(self) -> int:
-        return self.reflen
+        return self._reflen
 
 
 class RefseqMutsBatch(MutsBatch, ABC):
