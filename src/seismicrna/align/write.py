@@ -12,6 +12,14 @@ from .xamops import (run_bowtie2_build,
                      run_export,
                      run_xamgen)
 from ..core import path
+<<<<<<<< HEAD:src/seismicrna/align/fq2xam.py
+from ..core.cmd import CMD_ALIGN, CMD_QC
+from ..core.fasta import parse_fasta, write_fasta
+from ..core.parallel import dispatch
+from ..core.seq import DNA
+from ..core.xam import (count_single_paired, run_flagstat, run_ref_header,
+                        run_index_xam, run_index_fasta, run_idxstats)
+========
 from ..core.arg import CMD_ALIGN, CMD_QC
 from ..core.ngs import (count_single_paired,
                         count_total_reads,
@@ -22,6 +30,7 @@ from ..core.ngs import (count_single_paired,
                         run_idxstats)
 from ..core.parallel import dispatch
 from ..core.seq import DNA, parse_fasta, write_fasta
+>>>>>>>> main:src/seismicrna/align/write.py
 
 logger = getLogger(__name__)
 
@@ -175,12 +184,18 @@ def fq_pipeline(fq_inp: FastqUnit,
         fq_cut = None
     # Align the FASTQ to the reference sequence using Bowtie2.
     xam_whole = path.build(*path.XAM_STEP_SEGS,
+<<<<<<<< HEAD:src/seismicrna/align/fq2xam.py
+                           top=temp_dir, sample=sample,
+                           cmd=CMD_ALIGN, step=path.STEP_ALIGN_MAP,
+                           ref=refset, ext=path.BAM_EXT)
+========
                            top=temp_dir,
                            sample=sample,
                            cmd=CMD_ALIGN,
                            step=path.STEP_ALIGN_MAP,
                            ref=refset,
                            ext=path.BAM_EXT)
+>>>>>>>> main:src/seismicrna/align/write.py
     reads_align = run_xamgen(fq_inp if fq_cut is None else fq_cut,
                              xam_whole,
                              index_pfx=bowtie2_index,
@@ -323,8 +338,13 @@ def fq_pipeline(fq_inp: FastqUnit,
         logger.warning(f"Skipped references with fewer than {min_reads} reads: "
                        f"{sorted(insufficient_refs)}")
     # Write a report to summarize the alignment.
+<<<<<<<< HEAD:src/seismicrna/align/fq2xam.py
+    report = AlignReport(sample=sample,
+                         demultiplexed=fq_inp.ref is not None,
+========
     report = report_type(sample=sample,
                          ref=fq_inp.ref,
+>>>>>>>> main:src/seismicrna/align/write.py
                          paired_end=fq_inp.paired,
                          phred_enc=fq_inp.phred_enc,
                          fastqc=fastqc,
@@ -364,9 +384,13 @@ def fq_pipeline(fq_inp: FastqUnit,
                          reads_trim=reads_trim,
                          reads_align=reads_align,
                          reads_filter=reads_filter,
+<<<<<<<< HEAD:src/seismicrna/align/fq2xam.py
+                         reads_refs=reads_refs)
+========
                          reads_refs=reads_refs,
                          began=began,
                          ended=ended)
+>>>>>>>> main:src/seismicrna/align/write.py
     report.save(out_dir, overwrite=True)
     # Return a list of name-sorted XAM files, each of which contains a
     # set of reads that all align to the same reference.
@@ -551,7 +575,11 @@ def check_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
             if xam_expect.is_file():
                 # If the XAM file already exists, then add it to the
                 # dict of XAM files that have already been aligned.
+<<<<<<<< HEAD:src/seismicrna/align/fq2xam.py
+                xams_existing.append(xam_expect)
+========
                 xams_exist.append(xam_expect)
+>>>>>>>> main:src/seismicrna/align/write.py
                 break
         else:
             # If at least one XAM file for a FASTQ unit does not exist,
