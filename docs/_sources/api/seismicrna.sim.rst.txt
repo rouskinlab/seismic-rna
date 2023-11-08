@@ -5,3 +5,11 @@ seismicrna.sim package
    :members:
    :undoc-members:
    :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   seismicrna.sim.tests

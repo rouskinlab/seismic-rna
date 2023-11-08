@@ -7,15 +7,18 @@ from typing import Iterable
 from click import command
 
 from .write import write
-from ..core import docdef, path
-from ..core.cli import (arg_input_path, opt_rels,
-                        opt_max_procs, opt_parallel, opt_rerun)
-from ..core.cmd import CMD_TABLE
-from ..core.parallel import dispatch
+from ..core import path
+from ..core.arg import (CMD_TABLE,
+                        docdef,
+                        arg_input_path,
+                        opt_max_procs,
+                        opt_parallel,
+                        opt_force)
+from ..core.parallel import as_list_of_tuples, dispatch
 
 logger = getLogger(__name__)
 
-params = [arg_input_path, opt_rels, opt_max_procs, opt_parallel, opt_rerun]
+params = [arg_input_path, opt_max_procs, opt_parallel, opt_force]
 
 
 @command(CMD_TABLE, params=params)
@@ -26,8 +29,7 @@ def cli(*args, **kwargs):
 
 
 @docdef.auto()
-def run(input_path: tuple[str, ...], rels: tuple[str, ...],
-        max_procs: int, parallel: bool, **kwargs):
+def run(input_path: tuple[str, ...], max_procs: int, parallel: bool, **kwargs):
     """
     Run the table module.
     """
@@ -41,12 +43,14 @@ def run(input_path: tuple[str, ...], rels: tuple[str, ...],
     clust_reports = path.find_files_chain(report_files, [path.ClustRepSeg])
     if clust_reports:
         logger.debug(f"Found cluster report files: {clust_reports}")
-    rels_str = join_rels(rels)
-    tasks = [(file, rels_str) for file in chain(relate_reports,
-                                                mask_reports,
-                                                clust_reports)]
-    return list(chain(*dispatch(write, max_procs, parallel,
-                                args=tasks, kwargs=kwargs,
+    tasks = as_list_of_tuples(chain(relate_reports,
+                                    mask_reports,
+                                    clust_reports))
+    return list(chain(*dispatch(write,
+                                max_procs,
+                                parallel,
+                                args=tasks,
+                                kwargs=kwargs,
                                 pass_n_procs=False)))
 
 
@@ -56,3 +60,24 @@ def join_rels(rels: Iterable[str]):
     if dups := [item for item, count in counts.items() if count > 1]:
         logger.warning(f"Got duplicate relationships: {dups}")
     return "".join(counts)
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

@@ -8,9 +8,16 @@ import fastqsplitter
 import pandas as pd
 
 from ..align.fqops import FastqUnit
-from ..core.cli import (
-    opt_barcode_length, opt_barcode_start, opt_parallel_demultiplexing, opt_clipped_demultiplexing,
-    opt_mismatch_tolerence, opt_index_tolerence, opt_demulti_overwrite, arg_fasta, opt_sections_file, opt_fastqp)
+from ..core.arg import (opt_barcode_length,
+                        opt_barcode_start,
+                        opt_parallel_demultiplexing,
+                        opt_clipped_demultiplexing,
+                        opt_mismatch_tolerence,
+                        opt_index_tolerence,
+                        opt_demulti_overwrite,
+                        arg_fasta,
+                        opt_sections_file,
+                        opt_fastqp)
 
 # from scipy import signal
 
@@ -438,7 +445,7 @@ simple fastq dict for retrieveing sequences from fastq
 def make_dict_from_fasta(fasta_path) -> dict:
     fa = open(fasta_path, "rt").readlines()
     temp_dict = {}
-    #print(fa)
+
     for i in range(0, len(fa), 2):
         temp_dict[fa[i][1:].strip()] = fa[i + 1].strip()
 
@@ -521,7 +528,7 @@ def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_length, fas
             rev_barcode = reverse_compliment(bc)
             rev_bc_start = rev_seq.index(rev_barcode)
             rev_bc_end = rev_bc_start + len(rev_barcode)
-            
+
             if ("secondary_signature_start" in cols):
                 secondary_sign_start = df.at[x, "secondary_signature_start"]
                 secondary_sign_end = secondary_sign_start + df.at[x, "secondary_signature_length"]
@@ -814,7 +821,7 @@ def parallel_grepping(sequence_objects: dict, fwd_clips: int, rev_clips: int, in
                 else:
                     # (sequence_object:Sequence_Obj,clipped:int,rev_clipped:int,index_tolerence:int,delete_fastqs:bool,mismatches_allowed:int)
                     x = multiprocessing.Process(target=grep_both_fastq, args=(
-                    sequence_objects[seq_keys[i]], fwd_clips, rev_clips, index_tolerence, delete_fastq, mismatches))
+                        sequence_objects[seq_keys[i]], fwd_clips, rev_clips, index_tolerence, delete_fastq, mismatches))
                     x.start()
                     procs.append(x)
             # seq_index=+1
@@ -1033,7 +1040,7 @@ sections_file csv
 def demultiplex_run(sections_file_csv, demulti_workspace, report_folder, fq_unit: FastqUnit, fasta, barcode_start=0,
                     barcode_length=0, split: int = 10, clipped: int = 0, rev_clipped: int = 0, index_tolerance: int = 0,
                     parallel: bool = False, mismatch_tolerence: int = 0, overwrite: bool = False):
-    
+
 
     sample_name = fq_unit.sample
     mixed_fastq1, mixed_fastq2 = (fq_unit.paths.values())  # only works if the FASTQ has paired-end reads in two separate files
@@ -1135,3 +1142,24 @@ def demultiplex_run(sections_file_csv, demulti_workspace, report_folder, fq_unit
     create_report(sequence_objects, mixed_fastq1, mixed_fastq2, report_folder, unioned_sets_dictionary)
 
     return (), (), (report_folder + sample_name,)
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

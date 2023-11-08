@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FASTQ: Sequencing Reads &mdash; seismic-rna  documentation</title>
@@ -12,11 +12,10 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
         <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -79,7 +78,7 @@
            <div itemprop="articleBody">
              
   <section id="fastq-sequencing-reads">
-<h1>FASTQ: Sequencing Reads<a class="headerlink" href="#fastq-sequencing-reads" title="Permalink to this heading"></a></h1>
+<h1>FASTQ: Sequencing Reads<a class="headerlink" href="#fastq-sequencing-reads" title="Permalink to this headline"></a></h1>
 <p>Sequencing data files must be in <a class="reference external" href="https://en.wikipedia.org/wiki/FASTQ_format">FASTQ format</a>. Single- and paired-end
 reads are supported, and paired-end reads can be provided either as two
 files where mate 1 and mate 2 reads are separated, or as one interleaved
@@ -87,11 +86,11 @@ file where the mate 1 and mate 2 reads alternate. However, single- and
 paired-end reads cannot be mixed in one FASTQ file, nor can separate and
 interleaved reads.</p>
 <section id="endedness-of-sequencing-reads">
-<h2>Endedness of sequencing reads<a class="headerlink" href="#endedness-of-sequencing-reads" title="Permalink to this heading"></a></h2>
+<h2>Endedness of sequencing reads<a class="headerlink" href="#endedness-of-sequencing-reads" title="Permalink to this headline"></a></h2>
 <p>The following diagrams illustrate single-end, separate paired-end, and
 interleaved paired-end FASTQ files.</p>
 <section id="paired-end-two-separate-fastq-files">
-<h3>Paired-end, two separate FASTQ files<a class="headerlink" href="#paired-end-two-separate-fastq-files" title="Permalink to this heading"></a></h3>
+<h3>Paired-end, two separate FASTQ files<a class="headerlink" href="#paired-end-two-separate-fastq-files" title="Permalink to this headline"></a></h3>
 <p>2 files, 4 lines per mate in each file</p>
 <p><code class="docutils literal notranslate"><span class="pre">name_R1.fq</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@Read_1_ID</span><span class="o">/</span><span class="mi">1</span>
@@ -123,7 +122,7 @@ same order as those in file 1.</p>
 </div>
 </section>
 <section id="paired-end-one-interleaved-fastq-file">
-<h3>Paired-end, one interleaved FASTQ file<a class="headerlink" href="#paired-end-one-interleaved-fastq-file" title="Permalink to this heading"></a></h3>
+<h3>Paired-end, one interleaved FASTQ file<a class="headerlink" href="#paired-end-one-interleaved-fastq-file" title="Permalink to this headline"></a></h3>
 <p>1 file, 8 lines per paired read (4 for mate 1, then 4 for mate 2)</p>
 <p><code class="docutils literal notranslate"><span class="pre">name.fq</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@Read_1_ID</span><span class="o">/</span><span class="mi">1</span>
@@ -146,7 +145,7 @@ same order as those in file 1.</p>
 </div>
 </section>
 <section id="single-end-fastq-file">
-<h3>Single-end FASTQ file<a class="headerlink" href="#single-end-fastq-file" title="Permalink to this heading"></a></h3>
+<h3>Single-end FASTQ file<a class="headerlink" href="#single-end-fastq-file" title="Permalink to this headline"></a></h3>
 <p>1 file, 4 lines per read</p>
 <p><code class="docutils literal notranslate"><span class="pre">name.fq</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@Read_1_ID</span>
@@ -162,9 +161,9 @@ same order as those in file 1.</p>
 </section>
 </section>
 <section id="fastq-file-naming">
-<h2>FASTQ file naming<a class="headerlink" href="#fastq-file-naming" title="Permalink to this heading"></a></h2>
+<h2>FASTQ file naming<a class="headerlink" href="#fastq-file-naming" title="Permalink to this headline"></a></h2>
 <section id="fastq-file-extensions">
-<h3>FASTQ file extensions<a class="headerlink" href="#fastq-file-extensions" title="Permalink to this heading"></a></h3>
+<h3>FASTQ file extensions<a class="headerlink" href="#fastq-file-extensions" title="Permalink to this headline"></a></h3>
 <p>The following file extensions are accepted for FASTQ files:</p>
 <ul class="simple">
 <li><p>Compressed (<a class="reference external" href="https://www.gnu.org/software/gzip/">gzip</a>): <code class="docutils literal notranslate"><span class="pre">.fastq.gz</span></code>, <code class="docutils literal notranslate"><span class="pre">.fq.gz</span></code></p></li>
@@ -182,7 +181,7 @@ have that extension and be compressed.</p>
 </div>
 </section>
 <section id="fastq-mate-1-and-2-labels">
-<h3>FASTQ mate 1 and 2 labels<a class="headerlink" href="#fastq-mate-1-and-2-labels" title="Permalink to this heading"></a></h3>
+<h3>FASTQ mate 1 and 2 labels<a class="headerlink" href="#fastq-mate-1-and-2-labels" title="Permalink to this headline"></a></h3>
 <p>For paired-end reads in which mate 1s and mate 2s are in separate files,
 the file names must have one of the following labels right before the
 file extension:</p>
@@ -194,7 +193,7 @@ file extension:</p>
 extensions, please create a new issue on GitHub. [REF]</p>
 </section>
 <section id="fastq-name-parsing">
-<h3>FASTQ name parsing<a class="headerlink" href="#fastq-name-parsing" title="Permalink to this heading"></a></h3>
+<h3>FASTQ name parsing<a class="headerlink" href="#fastq-name-parsing" title="Permalink to this headline"></a></h3>
 <p>For FASTQ files given via <code class="docutils literal notranslate"><span class="pre">--fastqp</span></code> (<code class="docutils literal notranslate"><span class="pre">-x</span></code>), <code class="docutils literal notranslate"><span class="pre">--fastqi</span></code> (<code class="docutils literal notranslate"><span class="pre">-y</span></code>),
 or <code class="docutils literal notranslate"><span class="pre">--fastqs</span></code> (<code class="docutils literal notranslate"><span class="pre">-z</span></code>), the sample name is determined by parsing the
 FASTQ file name. For demultiplexed FASTQ files given via <code class="docutils literal notranslate"><span class="pre">--dmfastqp</span></code>
@@ -208,14 +207,14 @@ in separate files, the mate 1 and 2 labels are removed first.</p>
 </section>
 </section>
 <section id="fastq-symbols">
-<h2>FASTQ symbols<a class="headerlink" href="#fastq-symbols" title="Permalink to this heading"></a></h2>
+<h2>FASTQ symbols<a class="headerlink" href="#fastq-symbols" title="Permalink to this headline"></a></h2>
 <section id="fastq-dna-alphabet">
-<h3>FASTQ DNA alphabet<a class="headerlink" href="#fastq-dna-alphabet" title="Permalink to this heading"></a></h3>
+<h3>FASTQ DNA alphabet<a class="headerlink" href="#fastq-dna-alphabet" title="Permalink to this headline"></a></h3>
 <p>Read sequences may contain any uppercase characters, but all characters
 besides A, C, G, and T are treated as any nucleotide (i.e. N).</p>
 </section>
 <section id="fastq-quality-score-encodings">
-<h3>FASTQ quality score encodings<a class="headerlink" href="#fastq-quality-score-encodings" title="Permalink to this heading"></a></h3>
+<h3>FASTQ quality score encodings<a class="headerlink" href="#fastq-quality-score-encodings" title="Permalink to this headline"></a></h3>
 <p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Phred_quality_score">Phred quality scores</a> are encoded by adding an integer <em>N</em> to the
 Phred score (<a class="reference external" href="https://en.wikipedia.org/wiki/FASTQ_format#Encoding">Phred+N</a>). Most modern Illumina instruments output FASTQ
 files with Phred+33 encoding (which is the default in SEISMIC-RNA), but

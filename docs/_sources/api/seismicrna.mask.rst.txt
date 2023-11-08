@@ -10,7 +10,19 @@ Submodules
 ----------
 
 
-.. automodule:: seismicrna.mask.load
+.. automodule:: seismicrna.mask.batch
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.mask.data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.mask.io
    :members:
    :undoc-members:
    :show-inheritance:

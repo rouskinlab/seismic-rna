@@ -21,7 +21,7 @@ them to a location of your choice:
 - https://github.com/rouskinlab/seismic-rna/raw/main/example/sars2-fse_R2.fq.gz
 
 If file appears in the web browser but does not download automatically,
-then right-click on the page and select "Save Page As...".
+then right-click on the page and process "Save Page As...".
 
 Download from GitHub
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

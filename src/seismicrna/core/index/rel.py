@@ -1,0 +1,2 @@
+
+REL_NAME = "Relationship"

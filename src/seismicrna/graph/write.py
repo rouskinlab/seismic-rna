@@ -21,12 +21,18 @@ class GraphWriter(ABC):
         """ Yield every graph for the table. """
         yield GraphBase()
 
-    def write(self, *args, csv: bool, html: bool, pdf: bool, **kwargs):
+    def write(self,
+              *args,
+              csv: bool,
+              html: bool,
+              pdf: bool,
+              force: bool,
+              **kwargs):
         """ Generate and write every graph for the table. """
         # Get the paths for every graph.
         paths = list()
         for graph in self.iter(*args, **kwargs):
-            paths.extend(graph.write(csv=csv, html=html, pdf=pdf))
+            paths.extend(graph.write(csv=csv, html=html, pdf=pdf, force=force))
         return paths
 
 
@@ -41,7 +47,7 @@ class OneTableGraphWriter(GraphWriter, ABC):
         try:
             table_file, = self.table_files
         except ValueError:
-            raise ValueError(f"{self.__class__.__name__} requires exactly 1 "
+            raise ValueError(f"{type(self).__name__} requires exactly 1 "
                              f"table file, but got {len(self.table_files)}")
         return table_file
 
@@ -62,7 +68,7 @@ class TwoTableGraphWriter(GraphWriter, ABC):
         try:
             table1_file, table2_file = self.table_files
         except ValueError:
-            raise ValueError(f"{self.__class__.__name__} requires exactly 2 "
+            raise ValueError(f"{type(self).__name__} requires exactly 2 "
                              f"table file, but got {len(self.table_files)}")
         return table1_file, table2_file
 
@@ -85,3 +91,24 @@ class TwoTableGraphWriter(GraphWriter, ABC):
     def table2(self):
         """ The second table providing the data for the graph(s). """
         return load(self.table2_file)
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

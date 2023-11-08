@@ -8,7 +8,7 @@ This module is the entry point for the command line interface. Running
 
 $ seismic [OPTIONS] command [OPTIONS] [ARGS]
 
-calls the function main_cli() defined in this module.
+calls the function cli() defined in this module.
 
 """
 
@@ -17,9 +17,7 @@ from os.path import dirname
 
 from click import command
 
-from ..core import docdef
-from ..core.cli import opt_verbose
-from ..core.cmd import CMD_TEST
+from ..core.arg import CMD_TEST, docdef, opt_verbose
 
 # Parameters for command line interface
 params = [opt_verbose]
@@ -47,3 +45,24 @@ def run(verbose: int):
     # Run all unit tests.
     runner = ut.TextTestRunner(verbosity=verbose)
     runner.run(suite)
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

@@ -18,19 +18,43 @@ Submodules
 ----------
 
 
-.. automodule:: seismicrna.align.fq2bam
+.. automodule:: seismicrna.align.fqops
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.align.fqutil
+.. automodule:: seismicrna.align.fqunit
    :members:
    :undoc-members:
    :show-inheritance:
 
 
 .. automodule:: seismicrna.align.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.align.report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.align.sim
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.align.write
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.align.xamops
    :members:
    :undoc-members:
    :show-inheritance:

@@ -5,11 +5,10 @@ import numpy as np
 import pandas as pd
 from click import command
 from plotly import graph_objects as go
-from scipy.stats import pearsonr, spearmanr
 
 from .seqpair import SeqPairGraphRunner, SeqPairGraphWriter, SeqPairOneAxisGraph
 from .traces import iter_seq_line_traces
-from ..core.sect import POS_NAME
+from ..core.seq import POS_NAME
 
 logger = getLogger(__name__)
 
@@ -36,6 +35,9 @@ class SeqCorrGraph(SeqPairOneAxisGraph):
                  correl_min_n: int = 12,
                  correl_method: str = "spearman",
                  **kwargs):
+        # Import scipy here instead of at the top of this module because
+        # its import is slow enough to impact global startup time.
+        from scipy.stats import pearsonr, spearmanr
         super().__init__(*args, **kwargs)
         self._margin = margin
         self._correl_min_n = correl_min_n
@@ -107,3 +109,24 @@ class SeqCorrGraphWriter(SeqPairGraphWriter):
     @property
     def graph_type(self):
         return SeqCorrGraph
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

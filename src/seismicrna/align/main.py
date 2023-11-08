@@ -3,36 +3,67 @@ from pathlib import Path
 
 from click import command
 
-from .fq2bam import get_xam_files
+from .write import align_samples
 from .fqops import FastqUnit
-from ..core import docdef
-from ..core.cli import (arg_fasta,
-                        opt_fastqs, opt_fastqi, opt_fastqp,
-                        opt_dmfastqs, opt_dmfastqi, opt_dmfastqp,
+from ..core.arg import (CMD_ALIGN,
+                        docdef,
+                        arg_fasta,
+                        opt_fastqs,
+                        opt_fastqi,
+                        opt_fastqp,
+                        opt_dmfastqs,
+                        opt_dmfastqi,
+                        opt_dmfastqp,
                         opt_phred_enc,
-                        opt_out_dir, opt_temp_dir,
-                        opt_rerun, opt_save_temp,
-                        opt_parallel, opt_max_procs,
-                        opt_fastqc, opt_qc_extract,
+                        opt_out_dir,
+                        opt_temp_dir,
+                        opt_force,
+                        opt_keep_temp,
+                        opt_parallel,
+                        opt_max_procs,
+                        opt_fastqc,
+                        opt_qc_extract,
                         opt_cutadapt,
-                        opt_cut_a1, opt_cut_g1, opt_cut_a2, opt_cut_g2,
-                        opt_cut_o, opt_cut_e, opt_cut_q1, opt_cut_q2,
-                        opt_cut_m, opt_cut_indels,
-                        opt_cut_discard_trimmed, opt_cut_discard_untrimmed,
+                        opt_cut_a1,
+                        opt_cut_g1,
+                        opt_cut_a2,
+                        opt_cut_g2,
+                        opt_cut_o,
+                        opt_cut_e,
+                        opt_cut_q1,
+                        opt_cut_q2,
+                        opt_cut_m,
+                        opt_cut_indels,
+                        opt_cut_discard_trimmed,
+                        opt_cut_discard_untrimmed,
                         opt_cut_nextseq,
-                        opt_bt2_local, opt_bt2_unal,
-                        opt_bt2_discordant, opt_bt2_mixed,
-                        opt_bt2_dovetail, opt_bt2_contain,
-                        opt_bt2_i, opt_bt2_x,
-                        opt_bt2_score_min_loc, opt_bt2_score_min_e2e,
-                        opt_bt2_s, opt_bt2_l, opt_bt2_d, opt_bt2_r,
-                        opt_bt2_gbar, opt_bt2_dpad, opt_bt2_orient,
-                        opt_min_mapq, opt_min_reads)
-from ..core.cmd import CMD_ALIGN
-from ..core.depend import confirm_dependency
+                        opt_bt2_local,
+                        opt_bt2_discordant,
+                        opt_bt2_mixed,
+                        opt_bt2_dovetail,
+                        opt_bt2_contain,
+                        opt_bt2_i,
+                        opt_bt2_x,
+                        opt_bt2_score_min_loc,
+                        opt_bt2_score_min_e2e,
+                        opt_bt2_s,
+                        opt_bt2_l,
+                        opt_bt2_d,
+                        opt_bt2_r,
+                        opt_bt2_gbar,
+                        opt_bt2_dpad,
+                        opt_bt2_orient,
+                        opt_bt2_un,
+                        opt_min_mapq,
+                        opt_min_reads,
+                        opt_cram)
+from ..core.extern import (BOWTIE2_CMD,
+                           BOWTIE2_BUILD_CMD,
+                           CUTADAPT_CMD,
+                           FASTQC_CMD,
+                           SAMTOOLS_CMD,
+                           require_dependency)
 from ..core.parallel import lock_temp_dir
-from ..core.shell import (BOWTIE2_CMD, BOWTIE2_BUILD_CMD, CUTADAPT_CMD,
-                          FASTQC_CMD, SAMTOOLS_CMD)
 
 logger = getLogger(__name__)
 
@@ -50,8 +81,8 @@ params = [
     # Outputs
     opt_out_dir,
     opt_temp_dir,
-    opt_rerun,
-    opt_save_temp,
+    opt_force,
+    opt_keep_temp,
     # Parallelization
     opt_parallel,
     opt_max_procs,
@@ -79,7 +110,6 @@ params = [
     opt_bt2_mixed,
     opt_bt2_dovetail,
     opt_bt2_contain,
-    opt_bt2_unal,
     opt_bt2_i,
     opt_bt2_x,
     opt_bt2_score_min_e2e,
@@ -91,9 +121,11 @@ params = [
     opt_bt2_r,
     opt_bt2_dpad,
     opt_bt2_orient,
+    opt_bt2_un,
     # Samtools
     opt_min_mapq,
     opt_min_reads,
+    opt_cram,
 ]
 
 
@@ -119,8 +151,8 @@ def run(*,
         # Outputs
         out_dir: str,
         temp_dir: str,
-        save_temp: bool,
-        rerun: bool,
+        keep_temp: bool,
+        force: bool,
         # Parallelization
         max_procs: int,
         parallel: bool,
@@ -148,7 +180,6 @@ def run(*,
         bt2_mixed: bool,
         bt2_dovetail: bool,
         bt2_contain: bool,
-        bt2_unal: bool,
         bt2_score_min_e2e: str,
         bt2_score_min_loc: str,
         bt2_i: int,
@@ -160,9 +191,11 @@ def run(*,
         bt2_r: int,
         bt2_dpad: int,
         bt2_orient: str,
+        bt2_un: bool,
         # Samtools
         min_mapq: int,
-        min_reads: int) -> list[Path]:
+        min_reads: int,
+        cram: bool) -> list[Path]:
     """
     Run the alignment module.
 
@@ -174,12 +207,12 @@ def run(*,
 
     # Check for external dependencies.
     if fastqc:
-        confirm_dependency(FASTQC_CMD, __name__)
+        require_dependency(FASTQC_CMD, __name__)
     if cut:
-        confirm_dependency(CUTADAPT_CMD, __name__)
-    confirm_dependency(BOWTIE2_CMD, __name__)
-    confirm_dependency(BOWTIE2_BUILD_CMD, __name__)
-    confirm_dependency(SAMTOOLS_CMD, __name__)
+        require_dependency(CUTADAPT_CMD, __name__)
+    require_dependency(BOWTIE2_CMD, __name__)
+    require_dependency(BOWTIE2_BUILD_CMD, __name__)
+    require_dependency(SAMTOOLS_CMD, __name__)
 
     # FASTQ files of read sequences may come from up to seven different
     # sources (i.e. each argument beginning with "fq_unit"). This step
@@ -194,12 +227,12 @@ def run(*,
                                          phred_enc=phred_enc))
 
     # Generate and return a BAM file for every FASTQ-reference pair.
-    return get_xam_files(fq_units=fq_units,
+    return align_samples(fq_units=fq_units,
                          fasta=Path(fasta),
                          out_dir=Path(out_dir),
                          temp_dir=Path(temp_dir),
-                         save_temp=save_temp,
-                         rerun=rerun,
+                         keep_temp=keep_temp,
+                         force=force,
                          max_procs=max_procs,
                          parallel=parallel,
                          fastqc=fastqc,
@@ -223,7 +256,7 @@ def run(*,
                          bt2_mixed=bt2_mixed,
                          bt2_dovetail=bt2_dovetail,
                          bt2_contain=bt2_contain,
-                         bt2_unal=bt2_unal,
+                         bt2_un=bt2_un,
                          bt2_score_min_e2e=bt2_score_min_e2e,
                          bt2_score_min_loc=bt2_score_min_loc,
                          bt2_i=bt2_i,
@@ -236,4 +269,26 @@ def run(*,
                          bt2_dpad=bt2_dpad,
                          bt2_orient=bt2_orient,
                          min_mapq=min_mapq,
-                         min_reads=min_reads)
+                         min_reads=min_reads,
+                         cram=cram)
+
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################

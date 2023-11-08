@@ -5,12 +5,3 @@ seismicrna.relate.tests package
    :members:
    :undoc-members:
    :show-inheritance:
-
-Submodules
-----------
-
-
-.. automodule:: seismicrna.relate.tests.test
-   :members:
-   :undoc-members:
-   :show-inheritance:

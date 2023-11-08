@@ -65,10 +65,10 @@ class ColorFormatter(logging.Formatter):
         """ Log the message in color by adding an ANSI color escape code
         to the beginning and a color stopping code to the end. """
         # Get the ANSI format codes based on the record's logging level.
-        # Default to no color.
-        codes = self.ansi_codes.get(record.levelno, (AnsiCode.END,))
         # Wrap the formatted text with ANSI format codes.
-        return AnsiCode.wrap(super().format(record), *codes)
+        return AnsiCode.wrap(super().format(record),
+                             *self.ansi_codes.get(record.levelno,
+                                                  (AnsiCode.END,)))
 
 
 def get_top_logger():
@@ -115,7 +115,10 @@ def get_verbosity(verbose: int = 0, quiet: int = 0):
         return get_verbosity()
 
 
-def config(verbose: int, quiet: int, log_file: str | None = None):
+def config(verbose: int,
+           quiet: int,
+           log_file: str | None = None,
+           log_color: bool = True):
     """ Configure the main logger with handlers and verbosity. """
     # Set up logger.
     logger = get_top_logger()
@@ -123,7 +126,8 @@ def config(verbose: int, quiet: int, log_file: str | None = None):
     # Add stream handler.
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(get_verbosity(verbose, quiet))
-    stream_handler.setFormatter(ColorFormatter(STREAM_MSG_FORMAT))
+    stream_handler.setFormatter(ColorFormatter(STREAM_MSG_FORMAT) if log_color
+                                else logging.Formatter(STREAM_MSG_FORMAT))
     logger.addHandler(stream_handler)
     # Add file handler.
     if log_file is not None:
@@ -132,10 +136,23 @@ def config(verbose: int, quiet: int, log_file: str | None = None):
         file_handler.setFormatter(logging.Formatter(FILE_MSG_FORMAT))
         logger.addHandler(file_handler)
 
-
-def fatal_error(message: str, logger: logging.Logger | None = None):
-    """ Log a fatal error and exit. """
-    if logger is None:
-        logger = get_top_logger()
-    logger.critical(message)
-    raise SystemExit()
+########################################################################
+#                                                                      #
+# Copyright ©2023, the Rouskin Lab.                                    #
+#                                                                      #
+# This file is part of SEISMIC-RNA.                                    #
+#                                                                      #
+# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation; either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
+# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
+# Public License for more details.                                     #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
+#                                                                      #
+########################################################################
