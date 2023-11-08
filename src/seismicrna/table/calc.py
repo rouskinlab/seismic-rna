@@ -315,7 +315,7 @@ def adjust_counts(counts_obs: pd.DataFrame,
 
 
 def tabulate_loader(dataset: RelateLoader | MaskMerger | ClustMerger):
-    """ Return a new DataLoader, choosing the subclass based on the type
+    """ Return a new Dataset, choosing the subclass based on the type
     of the argument `dataset`. """
     if isinstance(dataset, RelateLoader):
         return RelateTabulator(dataset)

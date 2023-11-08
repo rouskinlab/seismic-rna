@@ -1,2 +1,0 @@
-
-REL_NAME = "Relationship"
