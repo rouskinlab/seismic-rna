@@ -53,7 +53,7 @@ def run_cmd(cmd: str, text: bool | None = True):
     # Format a message depending on whether the process passed.
     passed = process.returncode == 0
     status = "PASSED" if passed else f"FAILED with code {process.returncode}"
-    message = "\n".join([f"Shell command {status}:\n{repr(cmd)}\n",
+    message = "\n".join([f"Shell command {status}:\n{cmd}\n",
                          f"STDOUT:\n{process.stdout}\n",
                          f"STDERR:\n{process.stderr}\n"])
     if not passed:

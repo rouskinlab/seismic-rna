@@ -221,7 +221,10 @@ def fq_pipeline(fq_inp: FastqUnit,
             fq_file.unlink(missing_ok=True)
     # The number of reads after trimming is defined as the number fed to
     # Bowtie 2, regardless of whether the reads were actually trimmed.
-    reads_trim = reads_align.pop("reads")
+    reads_trim = reads_align.pop("reads", None)
+    if reads_trim is None:
+        raise RuntimeError("Failed to parse number of reads input to Bowtie2 "
+                           f"(perhaps Bowtie2 failed): got {reads_align}")
     # If the reads were trimmed, then the initial number must be found
     # by counting the reads in the input FASTQ. Otherwise, the initial
     # number equals the number after trimming.
