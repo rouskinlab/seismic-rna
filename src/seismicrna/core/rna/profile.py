@@ -25,18 +25,16 @@ class RnaProfile(RnaSection):
             raise ValueError(f"Got reactivities outside [0, 1]: {reacts}")
         self.reacts = reacts.reindex(self.section.range)
 
-    @cache
     def get_dir(self, out_dir: Path):
         """ Get the directory in which this RNA's files will go. """
         return path.builddir(*path.FOLD_SECT_DIR_SEGS,
                              top=out_dir,
-                             cmd=path.CMD_FLD_DiR,
+                             cmd=path.CMD_FOLD_DIR,
                              sample=self.sample,
                              ref=self.ref,
                              sect=self.data_sect,
                              fold_sect=self.sect)
 
-    @cache
     def get_file(self, out_dir: Path, segment: path.Segment, **kwargs):
         """ Get the path to a file of the RNA sequence. """
         return self.get_dir(out_dir).joinpath(segment.build(**kwargs))

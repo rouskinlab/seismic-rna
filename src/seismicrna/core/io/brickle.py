@@ -17,10 +17,10 @@ def digest_data(data: bytes):
     return md5(data).hexdigest()
 
 
-def save_pkl_br(item: Any,
-                file: Path,
-                brotli_level: int = DEFAULT_BROTLI_LEVEL,
-                overwrite: bool = False):
+def save_brickle(item: Any,
+                 file: Path,
+                 brotli_level: int = DEFAULT_BROTLI_LEVEL,
+                 overwrite: bool = False):
     """ Pickle an object, compress with Brotli, and save to a file. """
     data = brotli.compress(pickle.dumps(item, protocol=PICKLE_PROTOCOL),
                            quality=brotli_level)
@@ -32,9 +32,9 @@ def save_pkl_br(item: Any,
     return checksum
 
 
-def load_pkl_br(file: Path,
-                checksum: str,
-                check_type: None | type | tuple[type, ...] = None):
+def load_brickle(file: Path,
+                 checksum: str,
+                 check_type: None | type | tuple[type, ...] = None):
     """ Unpickle and return an object from a Brotli-compressed file. """
     with open(file, 'rb') as f:
         data = f.read()

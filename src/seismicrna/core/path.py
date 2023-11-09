@@ -67,7 +67,7 @@ CMD_REL_DIR = "relate"
 CMD_MSK_DIR = "mask"
 CMD_CLS_DIR = "cluster"
 CMD_TBL_DIR = "table"
-CMD_FLD_DiR = "fold"
+CMD_FOLD_DIR = "fold"
 CMD_GRA_DIR = "graph"
 
 # Directories for steps
@@ -274,7 +274,7 @@ CmdField = Field(str, [CMD_FQC_DIR,
                        CMD_MSK_DIR,
                        CMD_CLS_DIR,
                        CMD_TBL_DIR,
-                       CMD_FLD_DiR,
+                       CMD_FOLD_DIR,
                        CMD_GRA_DIR])
 StepField = Field(str, STEPS)
 IntField = Field(int)

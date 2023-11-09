@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
+from functools import cached_property
 from logging import getLogger
-from functools import cache, cached_property
 from pathlib import Path
 from typing import Iterable
 
@@ -63,7 +63,6 @@ class TwoTableGraphWriter(GraphWriter, ABC):
     def __init__(self, table1_file: Path, table2_file: Path):
         super().__init__([table1_file, table2_file])
 
-    @cache
     def _get_table_files(self) -> tuple[Path, Path]:
         try:
             table1_file, table2_file = self.table_files

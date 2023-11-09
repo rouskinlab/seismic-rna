@@ -12,8 +12,9 @@ REL_NAME = "Relationship"
 ORDER_NAME = "Order"
 CLUST_NAME = "Cluster"
 
-# Ensemble average name
-AVERAGE_NAME = "Average"
+# Profile name prefixes
+AVERAGE_PREFIX = "average"
+CLUSTER_PREFIX = "cluster"
 
 
 def validate_order_clust(order: int, clust: int, allow_zero: bool = False):
@@ -33,7 +34,7 @@ def validate_order_clust(order: int, clust: int, allow_zero: bool = False):
 
 def format_clust_name(order: int, clust: int, allow_zero: bool = False):
     validate_order_clust(order, clust, allow_zero)
-    return f"{CLUST_NAME} {order}-{clust}" if order > 0 else AVERAGE_NAME
+    return f"{CLUSTER_PREFIX} {order}-{clust}" if order > 0 else AVERAGE_PREFIX
 
 
 def format_clust_names(clusts: Iterable[tuple[int, int]],

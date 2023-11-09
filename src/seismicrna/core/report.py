@@ -305,6 +305,7 @@ def iconv_dict_str_int(mapping: dict[Any, Any]) -> dict[str, int]:
 
 @cache
 def get_oconv_float(precision: int = DECIMAL_PRECISION):
+
     def oconv_float(num: float):
         return round(num, precision)
 

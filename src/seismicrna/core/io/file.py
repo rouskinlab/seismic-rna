@@ -6,7 +6,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Iterable
 
-from .util import load_pkl_br, save_pkl_br
+from .brickle import load_brickle, save_brickle
 from .. import path
 
 logger = getLogger(__name__)
@@ -123,17 +123,17 @@ class BrickleIO(FileIO, ABC):
     @classmethod
     def load(cls, file: Path, checksum: str = ""):
         """ Load from a compressed pickle file. """
-        return load_pkl_br(file, check_type=cls, checksum=checksum)
+        return load_brickle(file, check_type=cls, checksum=checksum)
 
     def save(self,
              top: Path,
              brotli_level: int = DEFAULT_BROTLI_LEVEL,
              overwrite: bool = False):
         """ Save to a pickle file compressed with Brotli. """
-        checksum = save_pkl_br(self,
-                               save_path := self.get_path(top),
-                               brotli_level=brotli_level,
-                               overwrite=overwrite)
+        checksum = save_brickle(self,
+                                save_path := self.get_path(top),
+                                brotli_level=brotli_level,
+                                overwrite=overwrite)
         return save_path, checksum
 
     def __getstate__(self):

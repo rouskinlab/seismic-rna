@@ -1,7 +1,7 @@
 from .batch import *
 from .file import *
 from .seq import *
-from .util import *
+from .brickle import *
 
 ########################################################################
 #                                                                      #

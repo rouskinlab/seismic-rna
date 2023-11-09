@@ -3,7 +3,8 @@ import unittest as ut
 import numpy as np
 import pandas as pd
 
-from seismicrna.core.header import (AVERAGE_NAME,
+from seismicrna.core.header import (AVERAGE_PREFIX,
+CLUSTER_PREFIX,
                                     CLUST_NAME,
                                     ORDER_NAME,
                                     REL_NAME,
@@ -28,8 +29,11 @@ from seismicrna.core.header import (AVERAGE_NAME,
 
 class TestConstants(ut.TestCase):
 
-    def test_average_name(self):
-        self.assertEqual(AVERAGE_NAME, "Average")
+    def test_average_prefix(self):
+        self.assertEqual(AVERAGE_PREFIX, "average")
+
+    def test_cluster_prefix(self):
+        self.assertEqual(CLUSTER_PREFIX, "cluster")
 
     def test_clust_name(self):
         self.assertEqual(CLUST_NAME, "Cluster")
@@ -133,12 +137,12 @@ class TestFormatClustName(ut.TestCase):
 
     def test_zero_zero_allowed(self):
         self.assertEqual(format_clust_name(0, 0, allow_zero=True),
-                         AVERAGE_NAME)
+                         AVERAGE_PREFIX)
 
     def test_positive(self):
-        self.assertEqual(format_clust_name(1, 1), "Cluster 1-1")
-        self.assertEqual(format_clust_name(2, 1), "Cluster 2-1")
-        self.assertEqual(format_clust_name(2, 2), "Cluster 2-2")
+        self.assertEqual(format_clust_name(1, 1), "cluster 1-1")
+        self.assertEqual(format_clust_name(2, 1), "cluster 2-1")
+        self.assertEqual(format_clust_name(2, 2), "cluster 2-2")
 
 
 class TestFormatClustNames(ut.TestCase):
@@ -146,16 +150,16 @@ class TestFormatClustNames(ut.TestCase):
     def test_zero_zero_allowed(self):
         self.assertEqual(format_clust_names([(0, 0)],
                                             allow_zero=True),
-                         [AVERAGE_NAME])
+                         [AVERAGE_PREFIX])
 
     def test_positive_no_dups(self):
         self.assertEqual(format_clust_names([(1, 1), (2, 1), (2, 2)]),
-                         ["Cluster 1-1", "Cluster 2-1", "Cluster 2-2"])
+                         ["cluster 1-1", "cluster 2-1", "cluster 2-2"])
 
     def test_positive_valid_dups(self):
         self.assertEqual(format_clust_names([(1, 1), (2, 1), (1, 1)],
                                             allow_duplicates=True),
-                         ["Cluster 1-1", "Cluster 2-1", "Cluster 1-1"])
+                         ["cluster 1-1", "cluster 2-1", "cluster 1-1"])
 
     def test_positive_invalid_dups(self):
         self.assertRaisesRegex(ValueError,
@@ -403,7 +407,7 @@ class TestRelHeader(ut.TestCase):
 
     def test_names(self):
         header = RelHeader(rels=list("qwerty"))
-        self.assertEqual(header.names, [AVERAGE_NAME])
+        self.assertEqual(header.names, [AVERAGE_PREFIX])
 
     def test_index(self):
         index = RelHeader(rels=list("qwerty")).index
@@ -512,13 +516,13 @@ class TestClustHeader(ut.TestCase):
 
     def test_names(self):
         header = ClustHeader(max_order=4, min_order=3)
-        self.assertEqual(header.names, ["Cluster 3-1",
-                                        "Cluster 3-2",
-                                        "Cluster 3-3",
-                                        "Cluster 4-1",
-                                        "Cluster 4-2",
-                                        "Cluster 4-3",
-                                        "Cluster 4-4"])
+        self.assertEqual(header.names, ["cluster 3-1",
+                                        "cluster 3-2",
+                                        "cluster 3-3",
+                                        "cluster 4-1",
+                                        "cluster 4-2",
+                                        "cluster 4-3",
+                                        "cluster 4-4"])
 
     def test_index(self):
         for max_order in range(1, 11):
