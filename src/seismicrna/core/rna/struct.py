@@ -74,7 +74,7 @@ class Rna2dStemLoop(RnaJunction):
 class Rna2dStructure(RnaSection):
     """ RNA secondary structure. """
 
-    def __init__(self, pairs: Iterable[tuple[int, int]], **kwargs):
+    def __init__(self, *, pairs: Iterable[tuple[int, int]], **kwargs):
         super().__init__(**kwargs)
         self.table = pairs_to_table(pairs, self.section)
 

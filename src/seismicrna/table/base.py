@@ -379,14 +379,14 @@ class ProfilePosTable(PosTable, ABC):
         for section in sections if sections is not None else [self.section]:
             for order, clust in self.header.clusts:
                 name = format_clust_name(order, clust, allow_zero=True)
-                yield RnaProfile(path.fill_whitespace(name),
+                yield RnaProfile(title=path.fill_whitespace(name),
                                  section=section,
                                  sample=self.sample,
                                  data_sect=self.sect,
-                                 reacts=self.fetch_ratio(quantile=quantile,
-                                                         rel=MUTAT_REL,
-                                                         order=order,
-                                                         clust=clust))
+                                 data=self.fetch_ratio(quantile=quantile,
+                                                       rel=MUTAT_REL,
+                                                       order=order,
+                                                       clust=clust))
 
 
 class MaskPosTable(MaskTable, ProfilePosTable, ABC):

@@ -19,7 +19,7 @@ PAIR_FIELD = "Pair"
 class RnaSection(object):
     """ RNA sequence or section thereof. """
 
-    def __init__(self, title: str, section: Section, **kwargs):
+    def __init__(self, *, title: str, section: Section, **kwargs):
         super().__init__(**kwargs)
         self.title = path.fill_whitespace(title)
         self.section = section

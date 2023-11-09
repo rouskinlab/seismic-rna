@@ -248,8 +248,6 @@ def export_sample(top_sample: tuple[Path, str], *args, force: bool, **kwargs):
     if need_write(sample_file, force):
         with open(sample_file, write_mode(force)) as f:
             json.dump(get_sample_data(top, sample, *args, **kwargs), f)
-    else:
-        logger.warning(f"File exists: {sample_file}")
     return sample_file
 
 

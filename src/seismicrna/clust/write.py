@@ -12,6 +12,7 @@ from .io import ClustBatchIO
 from .report import ClustReport
 from .uniq import UniqReads
 from ..core.parallel import dispatch
+from ..core.write import need_write
 from ..mask.data import MaskMerger
 
 logger = getLogger(__name__)
@@ -146,7 +147,7 @@ def cluster(mask_report_file: Path,
                        sect=dataset.sect)
     # Check if the clustering report file already exists.
     cluster_report_file = ClustReport.build_path(**path_kwargs)
-    if force or not cluster_report_file.is_file():
+    if need_write(cluster_report_file, force):
         began = datetime.now()
         logger.info(f"Began clustering {dataset} up to order {max_order} "
                     f"cluster(s) and {n_runs} independent run(s) per order")
@@ -179,9 +180,6 @@ def cluster(mask_report_file: Path,
                                            began=began,
                                            ended=ended)
         report.save(top=dataset.top, overwrite=True)
-    else:
-        logger.warning(f"File exists: {cluster_report_file}")
-    # Return the path of the clustering report file.
     return cluster_report_file
 
 ########################################################################

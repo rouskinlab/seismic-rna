@@ -23,6 +23,7 @@ from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.ngs import encode_phred
 from ..core.io import RefseqIO
 from ..core.seq import DNA, get_fasta_seq
+from ..core.write import need_write
 
 logger = getLogger(__name__)
 
@@ -195,8 +196,7 @@ class RelationWriter(object):
         report_file = RelateReport.build_path(top=out_dir,
                                               sample=self.sample,
                                               ref=self.ref)
-        # Check if the report file already exists.
-        if force or not report_file.is_file():
+        if need_write(report_file, force):
             began = datetime.now()
             # Write the reference sequence to a file.
             refcheck = self._write_refseq(out_dir, brotli_level)
@@ -215,8 +215,6 @@ class RelationWriter(object):
                                refseq_checksum=refcheck,
                                began=began,
                                ended=ended)
-        else:
-            logger.warning(f"File exists: {report_file}")
         return report_file
 
     def __str__(self):

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from seismicrna.core.header import (AVERAGE_PREFIX,
-CLUSTER_PREFIX,
+                                    CLUSTER_PREFIX,
                                     CLUST_NAME,
                                     ORDER_NAME,
                                     REL_NAME,

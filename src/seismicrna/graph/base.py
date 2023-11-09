@@ -12,6 +12,7 @@ from .color import ColorMap, get_cmap
 from ..core import path
 from ..core.header import format_clust_names
 from ..core.seq import DNA
+from ..core.write import need_write
 from ..table.base import Table, PosTable
 
 logger = getLogger(__name__)
@@ -24,10 +25,8 @@ def _write_graph(writer: Callable[[Path], Any],
                  file: Path,
                  force: bool = False):
     """ Write an image or raw data for a graph to a file. """
-    if force or not file.is_file():
+    if need_write(file, force):
         writer(file)
-    else:
-        logger.warning(f"File exists: {file}")
     return file
 
 

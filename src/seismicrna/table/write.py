@@ -20,6 +20,7 @@ from .calc import (Tabulator,
                    tabulate_loader)
 from ..clust.data import ClustMerger
 from ..core import path
+from ..core.write import need_write
 from ..mask.data import MaskMerger
 from ..relate.data import RelateLoader
 
@@ -58,15 +59,12 @@ class TableWriter(Table, ABC):
 
     def write(self, force: bool):
         """ Write the table's rounded data to the table's CSV file. """
-        # Check if the File exists.
-        if force or not self.path.is_file():
+        if need_write(self.path, force):
             # Write self._data instead of self.data because the former
             # includes any positions that were masked out, while these
             # positions are not present in the latter.
             data = self._data.T if self.transposed() else self._data
             data.round(decimals=PRECISION).to_csv(self.path)
-        else:
-            logger.warning(f"File exists: {self.path}")
         return self.path
 
 
