@@ -664,7 +664,6 @@ def find_files(path: pl.Path, segments: Sequence[Segment]):
       `path.iterdir()`.
     """
     if path.is_file():
-        # Check if the given path is a file.
         try:
             # Determine if the file matches the segments.
             parse(path, *segments)
@@ -672,14 +671,16 @@ def find_files(path: pl.Path, segments: Sequence[Segment]):
             # If not, skip it.
             pass
         else:
-            # If so, return it.
+            # If so, yield it.
             logger.debug(f"File {path} matches {segments}")
             yield path
-    else:
-        # Otherwise, assume it is a directory and search it for reports.
+    elif path.is_dir():
+        # Search the directory for files matching the segments.
         logger.debug(f"Searching {path} for files matching {segments}")
         yield from chain(*map(partial(find_files, segments=segments),
                               path.iterdir()))
+    else:
+        logger.warning(f"Path does not exist: {path}")
 
 
 def find_files_chain(paths: Iterable[pl.Path], segments: Sequence[Segment]):
@@ -687,8 +688,6 @@ def find_files_chain(paths: Iterable[pl.Path], segments: Sequence[Segment]):
     for path in deduplicated(paths):
         try:
             yield from find_files(path, segments)
-        except FileNotFoundError:
-            logger.error(f"Path does not exist: {path}")
         except Exception as error:
             logger.error(f"Failed search for {path}: {error}")
 

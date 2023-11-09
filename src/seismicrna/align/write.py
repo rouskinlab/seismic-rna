@@ -290,11 +290,12 @@ def fq_pipeline(fq_inp: FastqUnit,
         except Exception as error:
             logger.error(f"Failed to output {ref}: {error}")
         else:
-            xams_out.append(xam_ref)
             # Count the number of reads accurately and update the guess.
             reads_refs[ref] = count_total_reads(run_flagstat(xam_ref))
             logger.debug(f"File {xam_ref} received {reads_refs[ref]} reads")
-            if reads_refs[ref] < min_reads:
+            if reads_refs[ref] >= min_reads:
+                xams_out.append(xam_ref)
+            else:
                 # Delete the XAM file if it did not get enough reads.
                 xam_ref.unlink()
                 # Delete the reference from sufficient_refs.
@@ -488,8 +489,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
 
 
 def figure_alignments(fq_units: list[FastqUnit], refs: set[str]):
-    """ Return a `dict` of every expected alignment of a sample to a
-    reference sequence. Check for and remove duplicates. """
+    """ Every expected alignment of a sample to a reference. """
     # Map each combination of a sample and reference to a FASTQ unit.
     alignments: dict[tuple[str, str], FastqUnit] = dict()
     # Keep track of any duplicate sample-reference pairs.
@@ -532,8 +532,8 @@ def check_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
                    out_dir: Path):
     """ Return every FASTQ unit on which alignment must be run and every
     expected XAM file that already exists. """
-    xams_exist: list[Path] = list()
-    xams_not_exist: dict[tuple[str, str], FastqUnit] = dict()
+    fqs_missing: dict[tuple[str, str], FastqUnit] = dict()
+    xams_extant: list[Path] = list()
     for (sample, ref), fq_unit in alignments.items():
         # Determine the path of the XAM file expected to result from the
         # alignment of the sample to the reference.
@@ -547,13 +547,13 @@ def check_fqs_xams(alignments: dict[tuple[str, str], FastqUnit],
             if xam_expect.is_file():
                 # If the XAM file already exists, then add it to the
                 # dict of XAM files that have already been aligned.
-                xams_exist.append(xam_expect)
+                xams_extant.append(xam_expect)
                 break
         else:
             # If at least one XAM file for a FASTQ unit does not exist,
             # then align the FASTQ.
-            xams_not_exist[sample, ref] = fq_unit
-    return xams_not_exist, xams_exist
+            fqs_missing[sample, ref] = fq_unit
+    return fqs_missing, xams_extant
 
 
 def merge_nondemult_fqs(fq_units: Iterable[FastqUnit]):
@@ -571,15 +571,14 @@ def merge_nondemult_fqs(fq_units: Iterable[FastqUnit]):
 def list_fqs_xams(fq_units: list[FastqUnit],
                   refs: set[str],
                   out_dir: Path):
-    """ List every FASTQ that needs to be aligned and every expected XAM
-    file that already exists. """
+    """ List every FASTQ to align and every extant XAM file. """
     # Determine all possible alignments of a sample and reference.
     alignments = figure_alignments(fq_units, refs)
-    # Determine which alignments need to be / have already been run.
-    alignments_missing, xams_existing = check_fqs_xams(alignments, out_dir)
+    # Determine which alignments need to be or have already been run.
+    fqs_missing, xams_extant = check_fqs_xams(alignments, out_dir)
     # Merge entries for each non-demultiplexed FASTQ.
-    fqs_to_align = merge_nondemult_fqs(alignments_missing.values())
-    return fqs_to_align, set(xams_existing)
+    fqs_merged = merge_nondemult_fqs(fqs_missing.values())
+    return fqs_merged, set(xams_extant)
 
 
 def align_samples(fq_units: list[FastqUnit],
@@ -595,12 +594,12 @@ def align_samples(fq_units: list[FastqUnit],
     if force:
         # force all alignments.
         fqs_to_align = fq_units
-        xams = set()
+        xams_extant = set()
     else:
         # Get the names of all reference sequences.
         refs = set(parse_fasta(fasta, None))
         # Run only the alignments whose outputs do not yet exist.
-        fqs_to_align, xams = list_fqs_xams(fq_units, refs, out_dir)
+        fqs_to_align, xams_extant = list_fqs_xams(fq_units, refs, out_dir)
     if fqs_to_align:
         # Align all FASTQs that need to be aligned.
         xams_new = set(fqs_pipeline(fqs_to_align,
@@ -611,7 +610,7 @@ def align_samples(fq_units: list[FastqUnit],
         logger.warning("All given FASTQ files have already been aligned")
         xams_new = set()
     # Merge the existing and new XAM paths into a tuple of strings.
-    return list(xams | xams_new)
+    return list(xams_extant | xams_new)
 
 ########################################################################
 #                                                                      #
