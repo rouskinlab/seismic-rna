@@ -16,7 +16,7 @@ Submodules
    :show-inheritance:
 
 
-.. automodule:: seismicrna.core.io.data
+.. automodule:: seismicrna.core.io.brickle
    :members:
    :undoc-members:
    :show-inheritance:
@@ -28,19 +28,7 @@ Submodules
    :show-inheritance:
 
 
-.. automodule:: seismicrna.core.io.report
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 .. automodule:: seismicrna.core.io.seq
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.io.util
    :members:
    :undoc-members:
    :show-inheritance:

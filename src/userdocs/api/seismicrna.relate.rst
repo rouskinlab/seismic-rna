@@ -15,7 +15,6 @@ Subpackages
    seismicrna.relate.aux
    seismicrna.relate.c
    seismicrna.relate.py
-   seismicrna.relate.tests
 
 Submodules
 ----------
@@ -52,12 +51,6 @@ Submodules
 
 
 .. automodule:: seismicrna.relate.sam
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.relate.sim
    :members:
    :undoc-members:
    :show-inheritance:

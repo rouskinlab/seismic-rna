@@ -3,7 +3,7 @@ All steps with one command
 ------------------------------------------------------------------------
 
 .. note::
-    ``seismic all`` accepts FASTQ, BAM, relate/mask/cluster report, and
+    ``seismic all`` accepts FASTQ, SAM/BAM/CRAM, relate/mask/cluster report, and
     table files and directories as inputs.
 
 From BAM, report, and/or table file(s)::

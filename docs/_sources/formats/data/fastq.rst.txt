@@ -2,17 +2,42 @@
 FASTQ: Sequencing Reads
 ------------------------------------------------------------------------
 
-Sequencing data files must be in `FASTQ format`_. Single- and paired-end
-reads are supported, and paired-end reads can be provided either as two
-files where mate 1 and mate 2 reads are separated, or as one interleaved
-file where the mate 1 and mate 2 reads alternate. However, single- and
-paired-end reads cannot be mixed in one FASTQ file, nor can separate and
-interleaved reads.
+Sequencing data files must be in `FASTQ format`_.
 
-.. _FASTQ format: https://en.wikipedia.org/wiki/FASTQ_format
 
-Endedness of sequencing reads
+.. _fastq_endedness:
+
+Endedness: single-end and paired-end reads
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Illumina sequencers can be run in two main modes: single-end mode, in
+which each molecule is read starting from one end; and paired-end mode,
+in which each molecule is read from both ends.
+For more details on endedness, see this `guide from Illumina`_.
+
+Each paired-end read comprises a pair of so-called "mates": mate 1 and
+mate 2.
+Each mate is similar to a single-end read, the difference being that it
+is paired with and shares its name with its mate.
+There are two options for paired-end reads:
+
+- A single "interleaved" file in which mates 1 and 2 alternate, each
+  mate 2 coming directly after the mate 1 to which it is paired.
+- Two separate files containing all mate 1 reads and all mate 2 reads,
+  respectively, in the same order in both files.
+
+In SEISMIC-RNA (as well as many other pieces of software), each FASTQ
+file must contain only one type of reads:
+
+- single-end reads
+- paired-end reads, with interleaved 1st and 2nd mates
+- paired-end reads, with 1st mates only
+- paired-end reads, with 2nd mates only
+
+Thus, we refer to an entire FASTQ file as "single-end" if it contains
+only single-end reads, "interleaved paired-end" if it contains only
+interleaved 1st and 2nd mates, and "separate paired-end" if it contains
+either 1st or 2nd mates of paired-end reads.
 
 The following diagrams illustrate single-end, separate paired-end, and
 interleaved paired-end FASTQ files.
@@ -145,18 +170,28 @@ FASTQ DNA alphabet
 Read sequences may contain any uppercase characters, but all characters
 besides A, C, G, and T are treated as any nucleotide (i.e. N).
 
-FASTQ quality score encodings
+.. _phred_encodings:
+
+Phred quality score encodings
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The `Phred quality scores`_ are encoded by adding an integer *N* to the
-Phred score (`Phred+N`_). Most modern Illumina instruments output FASTQ
-files with Phred+33 encoding (which is the default in SEISMIC-RNA), but
-Phred+64 is also common. The quality score encoding can be changed (in
-this example, to Phred+64) with the option ``--phred-enc``::
+Phred score (`Phred+N`_) and then converting the number to the character
+with the corresponding `ASCII code`_.
+For example, if *N* is 33, then the Phred score 25 would be encoded by
+adding 33 to 25 (obtaining 58), then writing the character whose ASCII
+code is 58 (which is ``:``).
+Most modern Illumina instruments output FASTQ files in Phred+33 encoding
+(which is the default in SEISMIC-RNA), but Phred+64 is also common.
+The quality score encoding can be changed (in this example, to Phred+64)
+with the option ``--phred-enc`` in the ``align`` step::
 
     seismic align --phred-enc 64
 
 
+.. _FASTQ format: https://en.wikipedia.org/wiki/FASTQ_format
+.. _guide from Illumina: https://www.illumina.com/science/technology/next-generation-sequencing/plan-experiments/paired-end-vs-single-read.html
 .. _gzip: https://www.gnu.org/software/gzip/
 .. _Phred quality scores: https://en.wikipedia.org/wiki/Phred_quality_score
 .. _Phred+N: https://en.wikipedia.org/wiki/FASTQ_format#Encoding
+.. _ASCII code: https://en.wikipedia.org/wiki/ASCII

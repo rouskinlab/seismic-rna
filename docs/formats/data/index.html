@@ -53,12 +53,17 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">File Formats</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Data Formats</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#fastq-sequencing-reads">FASTQ: Sequencing Reads</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#endedness-of-sequencing-reads">Endedness of sequencing reads</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#endedness-single-end-and-paired-end-reads">Endedness: single-end and paired-end reads</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#fastq-file-naming">FASTQ file naming</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#fastq-symbols">FASTQ symbols</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#sam-sequence-alignment-maps">SAM: Sequence Alignment Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sam-bam-and-cram-alignment-maps">SAM, BAM, and CRAM: Alignment Maps</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#three-formats-of-alignment-map-files">Three formats of alignment map files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#endedness-of-reads-in-xam-files">Endedness of reads in XAM files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#quality-score-encodings-in-xam-files">Quality score encodings in XAM files</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../meta.html">Metadata Formats</a></li>
@@ -98,14 +103,36 @@
 <h1>Data Formats<a class="headerlink" href="#data-formats" title="Permalink to this headline"></a></h1>
 <section id="fastq-sequencing-reads">
 <h2>FASTQ: Sequencing Reads<a class="headerlink" href="#fastq-sequencing-reads" title="Permalink to this headline"></a></h2>
-<p>Sequencing data files must be in <a class="reference external" href="https://en.wikipedia.org/wiki/FASTQ_format">FASTQ format</a>. Single- and paired-end
-reads are supported, and paired-end reads can be provided either as two
-files where mate 1 and mate 2 reads are separated, or as one interleaved
-file where the mate 1 and mate 2 reads alternate. However, single- and
-paired-end reads cannot be mixed in one FASTQ file, nor can separate and
-interleaved reads.</p>
-<section id="endedness-of-sequencing-reads">
-<h3>Endedness of sequencing reads<a class="headerlink" href="#endedness-of-sequencing-reads" title="Permalink to this headline"></a></h3>
+<p>Sequencing data files must be in <a class="reference external" href="https://en.wikipedia.org/wiki/FASTQ_format">FASTQ format</a>.</p>
+<section id="endedness-single-end-and-paired-end-reads">
+<span id="fastq-endedness"></span><h3>Endedness: single-end and paired-end reads<a class="headerlink" href="#endedness-single-end-and-paired-end-reads" title="Permalink to this headline"></a></h3>
+<p>Illumina sequencers can be run in two main modes: single-end mode, in
+which each molecule is read starting from one end; and paired-end mode,
+in which each molecule is read from both ends.
+For more details on endedness, see this <a class="reference external" href="https://www.illumina.com/science/technology/next-generation-sequencing/plan-experiments/paired-end-vs-single-read.html">guide from Illumina</a>.</p>
+<p>Each paired-end read comprises a pair of so-called “mates”: mate 1 and
+mate 2.
+Each mate is similar to a single-end read, the difference being that it
+is paired with and shares its name with its mate.
+There are two options for paired-end reads:</p>
+<ul class="simple">
+<li><p>A single “interleaved” file in which mates 1 and 2 alternate, each
+mate 2 coming directly after the mate 1 to which it is paired.</p></li>
+<li><p>Two separate files containing all mate 1 reads and all mate 2 reads,
+respectively, in the same order in both files.</p></li>
+</ul>
+<p>In SEISMIC-RNA (as well as many other pieces of software), each FASTQ
+file must contain only one type of reads:</p>
+<ul class="simple">
+<li><p>single-end reads</p></li>
+<li><p>paired-end reads, with interleaved 1st and 2nd mates</p></li>
+<li><p>paired-end reads, with 1st mates only</p></li>
+<li><p>paired-end reads, with 2nd mates only</p></li>
+</ul>
+<p>Thus, we refer to an entire FASTQ file as “single-end” if it contains
+only single-end reads, “interleaved paired-end” if it contains only
+interleaved 1st and 2nd mates, and “separate paired-end” if it contains
+either 1st or 2nd mates of paired-end reads.</p>
 <p>The following diagrams illustrate single-end, separate paired-end, and
 interleaved paired-end FASTQ files.</p>
 <section id="paired-end-two-separate-fastq-files">
@@ -232,24 +259,31 @@ in separate files, the mate 1 and 2 labels are removed first.</p>
 <p>Read sequences may contain any uppercase characters, but all characters
 besides A, C, G, and T are treated as any nucleotide (i.e. N).</p>
 </section>
-<section id="fastq-quality-score-encodings">
-<h4>FASTQ quality score encodings<a class="headerlink" href="#fastq-quality-score-encodings" title="Permalink to this headline"></a></h4>
+<section id="phred-quality-score-encodings">
+<span id="phred-encodings"></span><h4>Phred quality score encodings<a class="headerlink" href="#phred-quality-score-encodings" title="Permalink to this headline"></a></h4>
 <p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Phred_quality_score">Phred quality scores</a> are encoded by adding an integer <em>N</em> to the
-Phred score (<a class="reference external" href="https://en.wikipedia.org/wiki/FASTQ_format#Encoding">Phred+N</a>). Most modern Illumina instruments output FASTQ
-files with Phred+33 encoding (which is the default in SEISMIC-RNA), but
-Phred+64 is also common. The quality score encoding can be changed (in
-this example, to Phred+64) with the option <code class="docutils literal notranslate"><span class="pre">--phred-enc</span></code>:</p>
+Phred score (<a class="reference external" href="https://en.wikipedia.org/wiki/FASTQ_format#Encoding">Phred+N</a>) and then converting the number to the character
+with the corresponding <a class="reference external" href="https://en.wikipedia.org/wiki/ASCII">ASCII code</a>.
+For example, if <em>N</em> is 33, then the Phred score 25 would be encoded by
+adding 33 to 25 (obtaining 58), then writing the character whose ASCII
+code is 58 (which is <code class="docutils literal notranslate"><span class="pre">:</span></code>).
+Most modern Illumina instruments output FASTQ files in Phred+33 encoding
+(which is the default in SEISMIC-RNA), but Phred+64 is also common.
+The quality score encoding can be changed (in this example, to Phred+64)
+with the option <code class="docutils literal notranslate"><span class="pre">--phred-enc</span></code> in the <code class="docutils literal notranslate"><span class="pre">align</span></code> step:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">align</span> <span class="o">--</span><span class="n">phred</span><span class="o">-</span><span class="n">enc</span> <span class="mi">64</span>
 </pre></div>
 </div>
 </section>
 </section>
 </section>
-<section id="sam-sequence-alignment-maps">
-<span id="sam-format"></span><h2>SAM: Sequence Alignment Maps<a class="headerlink" href="#sam-sequence-alignment-maps" title="Permalink to this headline"></a></h2>
-<p>Aligned reads are stored as sequence alignment map (SAM) files. These
-files come in three formats – SAM, BAM, and CRAM – documented on the
-<a class="reference external" href="https://samtools.github.io/hts-specs/">Samtools website</a>:</p>
+<section id="sam-bam-and-cram-alignment-maps">
+<span id="sam-format"></span><h2>SAM, BAM, and CRAM: Alignment Maps<a class="headerlink" href="#sam-bam-and-cram-alignment-maps" title="Permalink to this headline"></a></h2>
+<p>Aligned reads are stored as alignment map files.</p>
+<section id="three-formats-of-alignment-map-files">
+<h3>Three formats of alignment map files<a class="headerlink" href="#three-formats-of-alignment-map-files" title="Permalink to this headline"></a></h3>
+<p>These files come in three formats – SAM, BAM, and CRAM – documented on
+the <a class="reference external" href="https://samtools.github.io/hts-specs/">Samtools website</a>:</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 28%" />
@@ -297,6 +331,30 @@ files come in three formats – SAM, BAM, and CRAM – documented on the
 </tr>
 </tbody>
 </table>
+<p>Throughout this documentation, we use the term “XAM format” to refer to
+all three formats collectively, when the specific format – SAM, BAM, or
+CRAM – does not matter.</p>
+</section>
+<section id="endedness-of-reads-in-xam-files">
+<h3>Endedness of reads in XAM files<a class="headerlink" href="#endedness-of-reads-in-xam-files" title="Permalink to this headline"></a></h3>
+<p>Similar to read endedness in FASTQ files (see <a class="reference internal" href="#fastq-endedness"><span class="std std-ref">Endedness: single-end and paired-end reads</span></a>),
+reads in XAM files are also single- or paired-end.
+SEISMIC-RNA also requires that each XAM file contain only single-end or
+only paired-end reads.
+Unlike with FASTQ files, paired-end XAM files must be interleaved;
+SEISMIC-RNA cannot handle XAM files with only 1st or only 2nd mates.</p>
+</section>
+<section id="quality-score-encodings-in-xam-files">
+<h3>Quality score encodings in XAM files<a class="headerlink" href="#quality-score-encodings-in-xam-files" title="Permalink to this headline"></a></h3>
+<p>SAM files encode <a class="reference external" href="https://en.wikipedia.org/wiki/Phred_quality_score">Phred quality scores</a> in the same manner as FASTQ
+files (see <a class="reference internal" href="#phred-encodings"><span class="std std-ref">Phred quality score encodings</span></a>).
+(BAM and CRAM files also encode quality scores, but in a binary format.)
+The quality score encoding can be changed (in this example, to Phred+64)
+with the option <code class="docutils literal notranslate"><span class="pre">--phred-enc</span></code> in the <code class="docutils literal notranslate"><span class="pre">relate</span></code> step:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">relate</span> <span class="o">--</span><span class="n">phred</span><span class="o">-</span><span class="n">enc</span> <span class="mi">64</span>
+</pre></div>
+</div>
+</section>
 </section>
 </section>
 

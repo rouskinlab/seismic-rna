@@ -49,6 +49,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Manuals</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="steps/index.html">Steps of the workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inputs.html">Input file patterns</a></li>
 <li class="toctree-l2"><a class="reference internal" href="logging.html">Logging messages</a></li>
 </ul>
 </li>
@@ -84,14 +85,25 @@
            <div itemprop="articleBody">
              
   <section id="manuals">
-<h1>Manuals<a class="headerlink" href="#manuals" title="Permalink to this headline"></a></h1>
+<span id="id1"></span><h1>Manuals<a class="headerlink" href="#manuals" title="Permalink to this headline"></a></h1>
+<p>Target audience: novice and intermediate users.</p>
+<p>These manuals explain how to use each component of SEISMIC-RNA.
+They are references meant to be browsed freely, not tutorials to be
+followed from start to finish.</p>
+<ul class="simple">
+<li><p>For step-by-step tutorials, see <a class="reference internal" href="../tutorials/index.html#tutorials"><span class="std std-ref">Tutorials</span></a>
+(target audience: novice users).</p></li>
+<li><p>For a complete list of commands and arguments/options, see <a class="reference internal" href="../cli.html#cli"><span class="std std-ref">Command Line Interface</span></a>
+(target audience: intermediate and experienced users).</p></li>
+</ul>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="steps/index.html">Steps of the workflow</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="steps/index.html#all-steps-with-one-command">All steps with one command</a></li>
 <li class="toctree-l2"><a class="reference internal" href="steps/index.html#align-the-sequencing-reads">Align the sequencing reads</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="steps/index.html#fasta-input-file">FASTA input file</a></li>
 <li class="toctree-l3"><a class="reference internal" href="steps/index.html#options-for-fastq-input">Options for FASTQ input</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="steps/index.html#fastq-files-of-single-end-or-paired-end-reads">FASTQ files of single-end or paired-end reads</a></li>
+<li class="toctree-l4"><a class="reference internal" href="steps/index.html#fastq-files-of-whole-samples-and-demultiplexed-samples">FASTQ files of whole samples and demultiplexed samples</a></li>
 <li class="toctree-l4"><a class="reference internal" href="steps/index.html#fastq-s-of-one-sample">FASTQ(s) of one sample</a></li>
 <li class="toctree-l4"><a class="reference internal" href="steps/index.html#fastqs-of-multiple-samples">FASTQs of multiple samples</a></li>
 <li class="toctree-l4"><a class="reference internal" href="steps/index.html#directory-of-fastq-files">Directory of FASTQ files</a></li>
@@ -111,8 +123,9 @@
 <li class="toctree-l4"><a class="reference internal" href="steps/index.html#bowtie-2-index-files-automatic-and-pre-built">Bowtie 2 index files: automatic and pre-built</a></li>
 <li class="toctree-l4"><a class="reference internal" href="steps/index.html#alignment-modes-local-and-end-to-end">Alignment modes: local and end-to-end</a></li>
 <li class="toctree-l4"><a class="reference internal" href="steps/index.html#filtering-alignments">Filtering alignments</a></li>
-<li class="toctree-l4"><a class="reference internal" href="steps/index.html#outputting-unaligned-reads-pairs">Outputting unaligned reads/pairs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="steps/index.html#examining-unaligned-reads-pairs">Examining unaligned reads/pairs</a></li>
 <li class="toctree-l4"><a class="reference internal" href="steps/index.html#paired-end-options">Paired-end options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="steps/index.html#additional-options-for-bowtie-2">Additional options for Bowtie 2</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="steps/index.html#troubleshooting-alignment">Troubleshooting alignment</a><ul>
@@ -121,6 +134,23 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="steps/index.html#relate-each-read-to-every-reference-position">Relate each read to every reference position</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="steps/index.html#input-files-for-relate">Input files for relate</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="steps/index.html#one-xam-file">One XAM file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="steps/index.html#multiple-xam-files">Multiple XAM files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="steps/index.html#xam-file-content-requirements">XAM file content requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="steps/index.html#xam-file-path-requirements">XAM file path requirements</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="steps/index.html#all-steps-with-one-command">All steps with one command</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="inputs.html">Input file patterns</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="inputs.html#example-output-directory">Example output directory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inputs.html#list-of-files">List of files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inputs.html#glob-patterns">Glob patterns</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="logging.html">Logging messages</a><ul>

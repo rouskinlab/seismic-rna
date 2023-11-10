@@ -16,6 +16,12 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.table.calc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.table.load
    :members:
    :undoc-members:
@@ -23,12 +29,6 @@ Submodules
 
 
 .. automodule:: seismicrna.table.main
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.table.tabulate
    :members:
    :undoc-members:
    :show-inheritance:

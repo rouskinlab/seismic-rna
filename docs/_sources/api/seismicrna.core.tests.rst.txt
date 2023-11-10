@@ -5,3 +5,12 @@ seismicrna.core.tests package
    :members:
    :undoc-members:
    :show-inheritance:
+
+Submodules
+----------
+
+
+.. automodule:: seismicrna.core.tests.header_test
+   :members:
+   :undoc-members:
+   :show-inheritance:

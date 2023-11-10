@@ -53,14 +53,15 @@
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.html#seismic-rna">SEISMIC-RNA</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="seismicrna.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.cluster.html">seismicrna.cluster package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.clust.html">seismicrna.clust package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="seismicrna.core.html#subpackages">Subpackages</a></li>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.logs">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.data">Submodules</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastc.html">seismicrna.fastc package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastaclean.html">seismicrna.fastaclean package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
@@ -149,8 +150,8 @@ If deemed appropriate, the record may be modified in-place.</p>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.parallel.tests.temp_test.TestLockTempDir.test_exists_save_temp">
-<span class="sig-name descname"><span class="pre">test_exists_save_temp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.parallel.tests.temp_test.TestLockTempDir.test_exists_save_temp" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.parallel.tests.temp_test.TestLockTempDir.test_exists_keep_temp">
+<span class="sig-name descname"><span class="pre">test_exists_keep_temp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.parallel.tests.temp_test.TestLockTempDir.test_exists_keep_temp" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -164,8 +165,8 @@ If deemed appropriate, the record may be modified in-place.</p>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.parallel.tests.temp_test.TestLockTempDir.test_new_save_temp">
-<span class="sig-name descname"><span class="pre">test_new_save_temp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.parallel.tests.temp_test.TestLockTempDir.test_new_save_temp" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.parallel.tests.temp_test.TestLockTempDir.test_new_keep_temp">
+<span class="sig-name descname"><span class="pre">test_new_keep_temp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.parallel.tests.temp_test.TestLockTempDir.test_new_keep_temp" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -216,7 +217,7 @@ If deemed appropriate, the record may be modified in-place.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.parallel.tests.temp_test.run_func">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.parallel.tests.temp_test.</span></span><span class="sig-name descname"><span class="pre">run_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">__</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.parallel.tests.temp_test.run_func" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.parallel.tests.temp_test.</span></span><span class="sig-name descname"><span class="pre">run_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">__</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.parallel.tests.temp_test.run_func" title="Permalink to this definition"></a></dt>
 <dd><p>Placeholder for run() function.</p>
 </dd></dl>
 

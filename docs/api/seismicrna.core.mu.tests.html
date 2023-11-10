@@ -53,14 +53,15 @@
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.html#seismic-rna">SEISMIC-RNA</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="seismicrna.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.cluster.html">seismicrna.cluster package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.clust.html">seismicrna.clust package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="seismicrna.core.html#subpackages">Subpackages</a></li>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.logs">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.data">Submodules</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastc.html">seismicrna.fastc package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastaclean.html">seismicrna.fastaclean package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
@@ -139,55 +140,55 @@
 </dd></dl>
 
 <span class="target" id="module-seismicrna.core.mu.tests.norm_test"></span><dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetMuQuantile">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.tests.norm_test.</span></span><span class="sig-name descname"><span class="pre">TestGetMuQuantile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetMuQuantile" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetQuantile">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.tests.norm_test.</span></span><span class="sig-name descname"><span class="pre">TestGetQuantile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetQuantile" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
-<p>Test the function <cite>mu.get_mu_quantile</cite>.</p>
+<p>Test the function <cite>mu.get_quantile</cite>.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.NanFilter">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">NanFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.NanFilter" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetQuantile.NanFilter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">NanFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetQuantile.NanFilter" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Filter" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">logging.Filter</span></code></a></p>
 <p>Suppress warnings about NaN quantiles.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.NanFilter.filter">
-<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.LogRecord" title="(in Python v3.12)"><span class="pre">logging.LogRecord</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.NanFilter.filter" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetQuantile.NanFilter.filter">
+<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.LogRecord" title="(in Python v3.12)"><span class="pre">logging.LogRecord</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetQuantile.NanFilter.filter" title="Permalink to this definition"></a></dt>
 <dd><p>Suppress warnings about NaN quantiles.</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.nan_filter">
-<span class="sig-name descname"><span class="pre">nan_filter</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.NanFilter</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.nan_filter" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetQuantile.nan_filter">
+<span class="sig-name descname"><span class="pre">nan_filter</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;seismicrna.core.mu.tests.norm_test.TestGetQuantile.NanFilter</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetQuantile.nan_filter" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.test_all_nan">
-<span class="sig-name descname"><span class="pre">test_all_nan</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.test_all_nan" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetQuantile.test_all_nan">
+<span class="sig-name descname"><span class="pre">test_all_nan</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetQuantile.test_all_nan" title="Permalink to this definition"></a></dt>
 <dd><p>Test that an all-NaN array returns NaN values.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.test_empty">
-<span class="sig-name descname"><span class="pre">test_empty</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.test_empty" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetQuantile.test_empty">
+<span class="sig-name descname"><span class="pre">test_empty</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetQuantile.test_empty" title="Permalink to this definition"></a></dt>
 <dd><p>Test that an empty array always returns NaN values.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.test_invalid_quantiles">
-<span class="sig-name descname"><span class="pre">test_invalid_quantiles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.test_invalid_quantiles" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetQuantile.test_invalid_quantiles">
+<span class="sig-name descname"><span class="pre">test_invalid_quantiles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetQuantile.test_invalid_quantiles" title="Permalink to this definition"></a></dt>
 <dd><p>Test that invalid quantiles raise errors.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.test_no_nan">
-<span class="sig-name descname"><span class="pre">test_no_nan</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.test_no_nan" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetQuantile.test_no_nan">
+<span class="sig-name descname"><span class="pre">test_no_nan</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetQuantile.test_no_nan" title="Permalink to this definition"></a></dt>
 <dd><p>Test with no NaN values.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.test_some_nan">
-<span class="sig-name descname"><span class="pre">test_some_nan</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetMuQuantile.test_some_nan" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.norm_test.TestGetQuantile.test_some_nan">
+<span class="sig-name descname"><span class="pre">test_some_nan</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.norm_test.TestGetQuantile.test_some_nan" title="Permalink to this definition"></a></dt>
 <dd><p>Test with some (but not all) NaN values.</p>
 </dd></dl>
 

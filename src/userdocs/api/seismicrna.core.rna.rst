@@ -16,6 +16,12 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.core.rna.db
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.core.rna.pair
    :members:
    :undoc-members:

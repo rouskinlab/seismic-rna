@@ -53,10 +53,11 @@
 <li class="toctree-l2"><a class="reference internal" href="#seismic-rna">SEISMIC-RNA</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.cluster.html">seismicrna.cluster package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.clust.html">seismicrna.clust package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastc.html">seismicrna.fastc package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastaclean.html">seismicrna.fastaclean package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
@@ -135,10 +136,10 @@ that they can be imported from external modules and scripts:</p>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="seismicrna.cluster.html">seismicrna.cluster package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="seismicrna.cluster.html#module-seismicrna.cluster.batch">Submodules</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.cluster.html#cluster-comparison-module">Cluster Comparison Module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.cluster.html#cluster-names-module">Cluster – Names Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.clust.html">seismicrna.clust package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.clust.html#module-seismicrna.clust.batch">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.clust.html#cluster-comparison-module">Cluster Comparison Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.clust.html#cluster-names-module">Cluster – Names Module</a></li>
 </ul>
 </li>
 </ul>
@@ -159,10 +160,6 @@ that they can be imported from external modules and scripts:</p>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.io.html">seismicrna.core.io package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="seismicrna.core.io.html#module-seismicrna.core.io.batch">Submodules</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.meta.html">seismicrna.core.meta package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.meta.html#module-seismicrna.core.meta.version">Submodules</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.mu.html">seismicrna.core.mu package</a><ul>
@@ -194,10 +191,13 @@ that they can be imported from external modules and scripts:</p>
 <li class="toctree-l4"><a class="reference internal" href="seismicrna.core.seq.html#module-seismicrna.core.seq.fasta">Submodules</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.tests.html">seismicrna.core.tests package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.tests.html">seismicrna.core.tests package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.tests.html#module-seismicrna.core.tests.header_test">Submodules</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.logs">Submodules</a><ul>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.data">Submodules</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html#purpose">Purpose</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html#random-core-module">Random Core Module</a></li>
 </ul>
@@ -208,9 +208,13 @@ that they can be imported from external modules and scripts:</p>
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.demult.html#module-seismicrna.demult.demultiplex">Submodules</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="seismicrna.fastc.html">seismicrna.fastc package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="seismicrna.fastc.html#module-seismicrna.fastc.fastaclean">Submodules</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastc.html#fasta-cleaning-module">FASTA Cleaning Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.export.html#module-seismicrna.export.main">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.fastaclean.html">seismicrna.fastaclean package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.fastaclean.html#module-seismicrna.fastaclean.fastaclean">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastaclean.html#fasta-cleaning-module">FASTA Cleaning Module</a></li>
 </ul>
 </li>
 </ul>
@@ -240,7 +244,6 @@ that they can be imported from external modules and scripts:</p>
 <li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.py.html#module-seismicrna.relate.py.ambrel">Submodules</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.tests.html">seismicrna.relate.tests package</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.relate.html#module-seismicrna.relate.batch">Submodules</a><ul>

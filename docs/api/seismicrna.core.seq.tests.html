@@ -53,14 +53,15 @@
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.html#seismic-rna">SEISMIC-RNA</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="seismicrna.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.cluster.html">seismicrna.cluster package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.clust.html">seismicrna.clust package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="seismicrna.core.html#subpackages">Subpackages</a></li>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.logs">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.data">Submodules</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastc.html">seismicrna.fastc package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastaclean.html">seismicrna.fastaclean package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
@@ -250,6 +251,33 @@ for trailing whitespace, which is simply ignored.</p>
 </dd></dl>
 
 <span class="target" id="module-seismicrna.core.seq.tests.section_test"></span><dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestConstants">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestConstants</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestConstants" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestConstants.test_base_name">
+<span class="sig-name descname"><span class="pre">test_base_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestConstants.test_base_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestConstants.test_full_name">
+<span class="sig-name descname"><span class="pre">test_full_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestConstants.test_full_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestConstants.test_pos_index">
+<span class="sig-name descname"><span class="pre">test_pos_index</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestConstants.test_pos_index" title="Permalink to this definition"></a></dt>
+<dd><p>Test that sequence positions are 1-indexed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestConstants.test_pos_name">
+<span class="sig-name descname"><span class="pre">test_pos_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestConstants.test_pos_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestIndexToPos">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestIndexToPos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestIndexToPos" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
@@ -314,6 +342,391 @@ for trailing whitespace, which is simply ignored.</p>
 <span class="sig-name descname"><span class="pre">test_valid_slice</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestIndexToSeq.test_valid_slice" title="Permalink to this definition"></a></dt>
 <dd><p>Test with a valid slice of a sequence.</p>
 </dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestIntersection">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestIntersection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestIntersection" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestIntersection.test_empty_invalid">
+<span class="sig-name descname"><span class="pre">test_empty_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestIntersection.test_empty_invalid" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestIntersection.test_one_full">
+<span class="sig-name descname"><span class="pre">test_one_full</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestIntersection.test_one_full" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestIntersection.test_one_full_named">
+<span class="sig-name descname"><span class="pre">test_one_full_named</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestIntersection.test_one_full_named" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestIntersection.test_one_slice">
+<span class="sig-name descname"><span class="pre">test_one_slice</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestIntersection.test_one_slice" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestIntersection.test_three_overlapping">
+<span class="sig-name descname"><span class="pre">test_three_overlapping</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestIntersection.test_three_overlapping" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestIntersection.test_two_disjoint">
+<span class="sig-name descname"><span class="pre">test_two_disjoint</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestIntersection.test_two_disjoint" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestIntersection.test_two_full">
+<span class="sig-name descname"><span class="pre">test_two_full</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestIntersection.test_two_full" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestIntersection.test_two_overlapping">
+<span class="sig-name descname"><span class="pre">test_two_overlapping</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestIntersection.test_two_overlapping" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionAddMask">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSectionAddMask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionAddMask" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionAddMask.test_add_mask">
+<span class="sig-name descname"><span class="pre">test_add_mask</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionAddMask.test_add_mask" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionAddMask.test_add_mask_invalid">
+<span class="sig-name descname"><span class="pre">test_add_mask_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionAddMask.test_add_mask_invalid" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionAddMask.test_add_mask_invert">
+<span class="sig-name descname"><span class="pre">test_add_mask_invert</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionAddMask.test_add_mask_invert" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionAddMask.test_add_overlapping_masks">
+<span class="sig-name descname"><span class="pre">test_add_overlapping_masks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionAddMask.test_add_overlapping_masks" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionAddMask.test_add_unordered_mask">
+<span class="sig-name descname"><span class="pre">test_add_unordered_mask</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionAddMask.test_add_unordered_mask" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSectionInit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_full">
+<span class="sig-name descname"><span class="pre">test_full</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_full" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from a full reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_full_blank_name">
+<span class="sig-name descname"><span class="pre">test_full_blank_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_full_blank_name" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section with a hyphenated name from a full
+reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_full_end3">
+<span class="sig-name descname"><span class="pre">test_full_end3</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_full_end3" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section with a hyphenated name from a full
+reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_full_end5">
+<span class="sig-name descname"><span class="pre">test_full_end5</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_full_end5" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section with a hyphenated name from a full
+reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_full_given_name">
+<span class="sig-name descname"><span class="pre">test_full_given_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_full_given_name" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section with a given name from a full reference
+sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_reflen_equal">
+<span class="sig-name descname"><span class="pre">test_partial_reflen_equal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_reflen_equal" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from part of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_reflen_greater">
+<span class="sig-name descname"><span class="pre">test_partial_reflen_greater</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_reflen_greater" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from part of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_reflen_less">
+<span class="sig-name descname"><span class="pre">test_partial_reflen_less</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_reflen_less" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from part of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_seq5_equal">
+<span class="sig-name descname"><span class="pre">test_partial_seq5_equal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_seq5_equal" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from part of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_seq5_greater">
+<span class="sig-name descname"><span class="pre">test_partial_seq5_greater</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_seq5_greater" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from part of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_seq5_less">
+<span class="sig-name descname"><span class="pre">test_partial_seq5_less</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_seq5_less" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from part of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_seq5_reflen">
+<span class="sig-name descname"><span class="pre">test_partial_seq5_reflen</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_seq5_reflen" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from part of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_slice">
+<span class="sig-name descname"><span class="pre">test_partial_slice</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_slice" title="Permalink to this definition"></a></dt>
+<dd><p>Section from part of a slice of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_slice_invalid_end3">
+<span class="sig-name descname"><span class="pre">test_partial_slice_invalid_end3</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_slice_invalid_end3" title="Permalink to this definition"></a></dt>
+<dd><p>Section from part of a slice of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_slice_invalid_end5">
+<span class="sig-name descname"><span class="pre">test_partial_slice_invalid_end5</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_slice_invalid_end5" title="Permalink to this definition"></a></dt>
+<dd><p>Section from part of a slice of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_slice_invalid_reflen">
+<span class="sig-name descname"><span class="pre">test_partial_slice_invalid_reflen</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_slice_invalid_reflen" title="Permalink to this definition"></a></dt>
+<dd><p>Section from part of a slice of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_slice_invalid_seq5">
+<span class="sig-name descname"><span class="pre">test_partial_slice_invalid_seq5</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_partial_slice_invalid_seq5" title="Permalink to this definition"></a></dt>
+<dd><p>Section from part of a slice of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end3_equal">
+<span class="sig-name descname"><span class="pre">test_slice_end3_equal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end3_equal" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from a slice of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end3_greater">
+<span class="sig-name descname"><span class="pre">test_slice_end3_greater</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end3_greater" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from a slice of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end3_less">
+<span class="sig-name descname"><span class="pre">test_slice_end3_less</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end3_less" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from a slice of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end5_end3">
+<span class="sig-name descname"><span class="pre">test_slice_end5_end3</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end5_end3" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from a slice of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end5_end3_invalid">
+<span class="sig-name descname"><span class="pre">test_slice_end5_end3_invalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end5_end3_invalid" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from a slice of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end5_equal">
+<span class="sig-name descname"><span class="pre">test_slice_end5_equal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end5_equal" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from a slice of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end5_greater">
+<span class="sig-name descname"><span class="pre">test_slice_end5_greater</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end5_greater" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from a slice of a reference sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end5_less">
+<span class="sig-name descname"><span class="pre">test_slice_end5_less</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionInit.test_slice_end5_less" title="Permalink to this definition"></a></dt>
+<dd><p>Create a section from a slice of a reference sequence.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionLength">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSectionLength</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionLength" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionLength.test_full_lengths">
+<span class="sig-name descname"><span class="pre">test_full_lengths</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionLength.test_full_lengths" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionLength.test_partial_lengths">
+<span class="sig-name descname"><span class="pre">test_partial_lengths</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionLength.test_partial_lengths" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionLength.test_slice_lengths">
+<span class="sig-name descname"><span class="pre">test_slice_lengths</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionLength.test_slice_lengths" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskGU">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSectionMaskGU</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskGU" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskGU.test_find_gu">
+<span class="sig-name descname"><span class="pre">test_find_gu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskGU.test_find_gu" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskGU.test_mask_gu">
+<span class="sig-name descname"><span class="pre">test_mask_gu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskGU.test_mask_gu" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskNames">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSectionMaskNames</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskNames" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskNames.test_get_mask">
+<span class="sig-name descname"><span class="pre">test_get_mask</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskNames.test_get_mask" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskNames.test_mask_names">
+<span class="sig-name descname"><span class="pre">test_mask_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskNames.test_mask_names" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskPolyA">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSectionMaskPolyA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskPolyA" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskPolyA.test_find_polya">
+<span class="sig-name descname"><span class="pre">test_find_polya</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskPolyA.test_find_polya" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskPolyA.test_mask_polya">
+<span class="sig-name descname"><span class="pre">test_mask_polya</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskPolyA.test_mask_polya" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskPos">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSectionMaskPos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskPos" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskPos.test_mask_pos">
+<span class="sig-name descname"><span class="pre">test_mask_pos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskPos.test_mask_pos" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMasked">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSectionMasked</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMasked" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMasked.test_masked_bool">
+<span class="sig-name descname"><span class="pre">test_masked_bool</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMasked.test_masked_bool" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMasked.test_masked_int">
+<span class="sig-name descname"><span class="pre">test_masked_int</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMasked.test_masked_int" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionRange">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSectionRange</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionRange" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionRange.test_range">
+<span class="sig-name descname"><span class="pre">test_range</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionRange.test_range" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionRange.test_range_int">
+<span class="sig-name descname"><span class="pre">test_range_int</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionRange.test_range_int" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionRange.test_range_one">
+<span class="sig-name descname"><span class="pre">test_range_one</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionRange.test_range_one" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionUnmasked">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSectionUnmasked</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionUnmasked" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionUnmasked.test_size">
+<span class="sig-name descname"><span class="pre">test_size</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionUnmasked.test_size" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionUnmasked.test_unmasked">
+<span class="sig-name descname"><span class="pre">test_unmasked</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionUnmasked.test_unmasked" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionUnmasked.test_unmasked_bool">
+<span class="sig-name descname"><span class="pre">test_unmasked_bool</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionUnmasked.test_unmasked_bool" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionUnmasked.test_unmasked_int">
+<span class="sig-name descname"><span class="pre">test_unmasked_int</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionUnmasked.test_unmasked_int" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionUnmasked.test_unmasked_zero">
+<span class="sig-name descname"><span class="pre">test_unmasked_zero</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionUnmasked.test_unmasked_zero" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -405,6 +818,52 @@ for trailing whitespace, which is simply ignored.</p>
 <span class="sig-name descname"><span class="pre">test_valid_slice_6</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSeqPosToIndex.test_valid_slice_6" title="Permalink to this definition"></a></dt>
 <dd><p>Test with a slice of the sequence, starting at 6.</p>
 </dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSubsection">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSubsection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSubsection" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSubsection.test_full_section_full_length_sub">
+<span class="sig-name descname"><span class="pre">test_full_section_full_length_sub</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSubsection.test_full_section_full_length_sub" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSubsection.test_full_section_full_sub">
+<span class="sig-name descname"><span class="pre">test_full_section_full_sub</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSubsection.test_full_section_full_sub" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSubsection.test_full_section_full_sub_end3">
+<span class="sig-name descname"><span class="pre">test_full_section_full_sub_end3</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSubsection.test_full_section_full_sub_end3" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSubsection.test_full_section_full_sub_end5">
+<span class="sig-name descname"><span class="pre">test_full_section_full_sub_end5</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSubsection.test_full_section_full_sub_end5" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSubsection.test_full_section_full_sub_name">
+<span class="sig-name descname"><span class="pre">test_full_section_full_sub_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSubsection.test_full_section_full_sub_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSubsection.test_partial_trunc_section_trunc_sub">
+<span class="sig-name descname"><span class="pre">test_partial_trunc_section_trunc_sub</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSubsection.test_partial_trunc_section_trunc_sub" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSubsection.test_trunc_section_full_sub">
+<span class="sig-name descname"><span class="pre">test_trunc_section_full_sub</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSubsection.test_trunc_section_full_sub" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSubsection.test_trunc_section_trunc_sub">
+<span class="sig-name descname"><span class="pre">test_trunc_section_trunc_sub</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSubsection.test_trunc_section_trunc_sub" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 

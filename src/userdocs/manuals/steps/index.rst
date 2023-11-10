@@ -2,5 +2,6 @@
 Steps of the workflow
 ========================================================================
 
-.. include:: all.rst
 .. include:: align.rst
+.. include:: relate.rst
+.. include:: all.rst

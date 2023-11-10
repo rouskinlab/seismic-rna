@@ -13,10 +13,11 @@ Subpackages
    :maxdepth: 4
 
    seismicrna.align
-   seismicrna.cluster
+   seismicrna.clust
    seismicrna.core
    seismicrna.demult
-   seismicrna.fastc
+   seismicrna.export
+   seismicrna.fastaclean
    seismicrna.fold
    seismicrna.graph
    seismicrna.mask
