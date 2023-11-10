@@ -65,7 +65,7 @@ This method is especially useful for matching files that have the same
 names and are located in different directories. For example, to process
 all report files for the reference ``ref_2`` ::
 
-    seismic table */*/ref_1/*-report.json
+    seismic table */*/ref_2/*-report.json
 
 
 .. _glob patterns: https://en.wikipedia.org/wiki/Glob_(programming)
