@@ -10,7 +10,7 @@ from .xna import XNA
 logger = getLogger(__name__)
 
 # FASTA name line format.
-FASTA_NAME_MARK = '>'
+FASTA_NAME_MARK = ">"
 FASTA_NAME_CHARS = STR_CHARS
 FASTA_NAME_REGEX = re.compile(f"^{FASTA_NAME_MARK}([{FASTA_NAME_CHARS}]*)")
 

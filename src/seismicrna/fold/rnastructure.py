@@ -5,6 +5,7 @@ Wrapper around RNAstructure from the Mathews Lab at U of Rochester:
 https://rna.urmc.rochester.edu/RNAstructure.html
 """
 
+import re
 from logging import getLogger
 from pathlib import Path
 
@@ -60,6 +61,14 @@ def dot2ct(dot_file: Path):
     cmd = [RNASTRUCTURE_DOT2CT_CMD, dot_file, ct_file]
     run_cmd(args_to_cmd(cmd))
     return ct_file
+
+
+def parse_energy(line: str):
+    """ Parse the predicted free energy of folding from a line. """
+    if not (match := re.search(f"ENERGY = (-?[0-9.]+)", line)):
+        raise ValueError(f"Failed to parse energy from line {repr(line)}")
+    return float(match.groups()[0])
+
 
 ########################################################################
 #                                                                      #

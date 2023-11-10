@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from click import command
 
-from .meta import parse_refs_metadata, parse_samples_metadata
+from .meta import combine_metadata, parse_refs_metadata, parse_samples_metadata
 from ..core import path
 from ..core.arg import (docdef,
                         arg_input_path,
@@ -21,7 +21,9 @@ from ..core.arg import (docdef,
                         opt_parallel)
 from ..core.header import format_clust_name
 from ..core.parallel import dispatch
+from ..core.rna import parse_db_strings
 from ..core.write import need_write, write_mode
+from ..fold.rnastructure import parse_energy
 from ..mask.data import MaskMerger
 from ..mask.report import MaskReport
 from ..relate.data import RelateLoader
@@ -78,6 +80,8 @@ POS_DATA = {
 SUBST_RATE = "sub_rate"
 SUBST_HIST = "sub_hist"
 CLUST_PROP = "proportion"
+STRUCTURE = "structure"
+FREE_ENERGY = "deltaG"
 PRECISION = 6
 
 
@@ -86,29 +90,13 @@ def format_metadata(metadata: dict[str, Any]):
     return {f"{META_SYMBOL}{key}": value for key, value in metadata.items()}
 
 
-def combine_metadata(special_metadata: dict[str, Any],
-                     parsed_metadata: dict[Any, dict],
-                     item: Any,
-                     what: str = "item"):
-    try:
-        item_metadata = parsed_metadata[item]
-    except KeyError:
-        logger.warning(f"No metadata were given for {what} {repr(item)}")
-        return format_metadata(special_metadata)
-    # Check for any keys in the parsed metadata that match those in the
-    # special metadata.
-    for field in set(special_metadata) & set(item_metadata):
-        if (s := special_metadata[field]) != (p := item_metadata[field]):
-            raise ValueError(f"Metadata field {repr(field)} of {what} "
-                             f"{repr(item)} is {repr(s)}, but was also given "
-                             f"as {repr(p)} in the metadata file")
-    return format_metadata(special_metadata | item_metadata)
-
-
 def get_sample_metadata(sample: str,
                         samples_metadata: dict[str, dict]):
     sample_metadata = {SAMPLE: sample}
-    return combine_metadata(sample_metadata, samples_metadata, sample, "sample")
+    return format_metadata(combine_metadata(sample_metadata,
+                                            samples_metadata,
+                                            sample,
+                                            "sample"))
 
 
 def get_ref_metadata(top: Path,
@@ -120,7 +108,10 @@ def get_ref_metadata(top: Path,
                                                         ref=ref))
     ref_metadata = {REF_SEQ: str(dataset.refseq),
                     REF_NUM_ALIGN: dataset.report.get_field(NumReadsRel)}
-    return combine_metadata(ref_metadata, refs_metadata, ref, "reference")
+    return format_metadata(combine_metadata(ref_metadata,
+                                            refs_metadata,
+                                            ref,
+                                            "reference"))
 
 
 def get_sect_metadata(top: Path,
@@ -156,7 +147,47 @@ def format_series(series: pd.Series | pd.DataFrame,
     return series.to_list()
 
 
-def iter_pos_table_data(table: PosTable, order: int, clust: int):
+def get_db_structs(table: PosTable,
+                   order: int | None = None,
+                   clust: int | None = None):
+    structs = dict()
+    energies = dict()
+    for profile in table.iter_profiles(order=order, clust=clust):
+        db_file = profile.dot_file(table.top)
+        if db_file.is_file():
+            try:
+                # Parse all structures in the dot-bracket file.
+                seq, profile_structs = parse_db_strings(db_file)
+                # Keep only the first (minimum free energy) structure.
+                header, struct = list(profile_structs.items())[0]
+                # Parse the minimum free energy of folding.
+                energy = parse_energy(header)
+            except Exception as error:
+                logger.error("Failed to parse minimum free energy structure "
+                             f"from dot-bracket file {db_file}: {error}")
+            else:
+                structs[profile.title] = struct
+                energies[profile.title] = energy
+        else:
+            logger.warning(f"No structure model available for {profile}")
+    return structs, energies
+
+
+def iter_pos_table_struct(table: PosTable, order: int, clust: int):
+    structs, energies = get_db_structs(table, order, clust)
+    keys = list(structs)
+    if keys != list(energies):
+        raise ValueError(f"Names of structures {keys} and energies "
+                         f"{list(energies)} do not match")
+    if keys:
+        if len(keys) != 1:
+            raise ValueError(f"Expected exactly one structure, but got {keys}")
+        key = keys[0]
+        yield STRUCTURE, structs[key]
+        yield FREE_ENERGY, energies[key]
+
+
+def iter_pos_table_series(table: PosTable, order: int, clust: int):
     for key, rel in POS_DATA.items():
         yield key, format_series(table.fetch_count(rel=rel,
                                                    order=order,
@@ -165,6 +196,11 @@ def iter_pos_table_data(table: PosTable, order: int, clust: int):
                                                       order=order,
                                                       clust=clust,
                                                       precision=PRECISION))
+
+
+def iter_pos_table_data(table: PosTable, order: int, clust: int):
+    yield from iter_pos_table_series(table, order, clust)
+    yield from iter_pos_table_struct(table, order, clust)
 
 
 def iter_read_table_data(table: ReadTable, order: int, clust: int):
