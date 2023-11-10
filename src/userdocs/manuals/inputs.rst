@@ -17,36 +17,36 @@ Assume that the output directory has these contents::
             ref_2.bam
         relate/
             ref_1/
-                batch-relate-0.parquet
-                report-relate.json
+                relate-batch-0.brickle
+                relate-report.json
             ref_2/
-                batch-relate-0.parquet
-                report-relate.json
+                relate-batch-0.brickle
+                relate-report.json
         mask/
             ref_1/
-                batch-mask-0.csv.gz
-                report-mask.json
+                mask-batch-0brickle
+                mask-report.json
             ref_2/
-                batch-mask-0.csv.gz
-                report-mask.json
+                mask-batch-0brickle
+                mask-report.json
     sample_2/
         align/
             ref_1.bam
             ref_2.bam
         relate/
             ref_1/
-                batch-relate-0.parquet
-                report-relate.json
+                relate-batch-0.brickle
+                relate-report.json
             ref_2/
-                batch-relate-0.parquet
-                report-relate.json
+                relate-batch-0.brickle
+                relate-report.json
         mask/
             ref_1/
-                batch-mask-0.csv.gz
-                report-mask.json
+                mask-batch-0brickle
+                mask-report.json
             ref_2/
-                batch-mask-0.csv.gz
-                report-mask.json
+                mask-batch-0brickle
+                mask-report.json
 
 List of files
 ------------------------------------------------------------------------
@@ -54,7 +54,7 @@ List of files
 The simplest manner is to list every input file explicitly. For example,
 two report files could be processed with ``table`` command like this::
 
-    seismic table sample_1/relate/ref_1/report-relate.json sample_2/mask/ref_2/report-relate.json
+    seismic table sample_1/relate/ref_1/relate-report.json sample_2/mask/ref_2/relate-report.json
 
 Glob patterns
 ------------------------------------------------------------------------
@@ -63,8 +63,9 @@ Listing many input files explicitly would be tedious. `Glob patterns`_
 use wildcard characters to match many paths with a single expression.
 This method is especially useful for matching files that have the same
 names and are located in different directories. For example, to process
-all report files for the reference ``ref_2``::
+all report files for the reference ``ref_2`` ::
 
+    seismic table */*/ref_1/*-report.json
 
 
 .. _glob patterns: https://en.wikipedia.org/wiki/Glob_(programming)

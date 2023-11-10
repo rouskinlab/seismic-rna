@@ -18,8 +18,8 @@ Sequence of Reference    str       Reference sequence as DNA (from FASTA file)
 Length of Sequence (nt)  int       Number of nucleotides in the reference sequence
 Number of Reads Passed   int       Number of reads processed into relation vectors
 Number of Reads Failed   int       Number of reads that failed to be processed
-MD5 Checksums of Batches list[str] List of the MD5 checksum of each parquet file
-Number of Batches        int       Number of parquet files
+MD5 Checksums of Batches list[str] List of the MD5 checksum of each brickle file
+Number of Batches        int       Number of brickle files
 Time Began               str       Date and time at which the step began
 Time Ended               str       Date and time at which the step ended
 Time Taken (minutes)     float     Duration of the step, in minutes
