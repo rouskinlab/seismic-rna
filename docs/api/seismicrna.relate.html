@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>seismicrna.relate package &mdash; seismic-rna  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/favicon-32x32.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="seismicrna.relate.aux package" href="seismicrna.relate.aux.html" />
+    <link rel="prev" title="seismicrna.mask package" href="seismicrna.mask.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            seismic-rna
+              <img src="../_static/logo-200.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../manuals/index.html">Manuals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="seismicrna.html">seismicrna package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.html#seismic-rna">SEISMIC-RNA</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="seismicrna.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.clust.html">seismicrna.clust package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastaclean.html">seismicrna.fastaclean package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">seismicrna.relate package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-seismicrna.relate.batch">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.html">seismicrna.sim package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.table.html">seismicrna.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.test.html">seismicrna.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.whole.html">seismicrna.whole package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.html#module-seismicrna.main">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../formats/index.html">File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/index.html">Data Structures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algos/index.html">Algorithms</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">seismic-rna</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="seismicrna.html">seismicrna package</a></li>
+      <li class="breadcrumb-item active">seismicrna.relate package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/seismicrna.relate.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-seismicrna.relate">
+<span id="seismicrna-relate-package"></span><h1>seismicrna.relate package<a class="headerlink" href="#module-seismicrna.relate" title="Permalink to this headline"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.relate.aux.html">seismicrna.relate.aux package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.relate.aux.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.aux.tests.html">seismicrna.relate.aux.tests package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.aux.tests.html#module-seismicrna.relate.aux.tests.cigarop_test">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.relate.aux.html#module-seismicrna.relate.aux.cigarop">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.aux.html#read-iteration-module">Read Iteration Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.aux.html#relate-auxiliary-module">Relate Auxiliary Module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.relate.c.html">seismicrna.relate.c package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.relate.py.html">seismicrna.relate.py package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.relate.py.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.py.tests.html">seismicrna.relate.py.tests package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.py.tests.html#module-seismicrna.relate.py.tests.ambrel_test">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.relate.py.html#module-seismicrna.relate.py.ambrel">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-seismicrna.relate.batch">
+<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.relate.batch" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.relate.batch.QnamesBatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.batch.</span></span><span class="sig-name descname"><span class="pre">QnamesBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.batch.QnamesBatch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="seismicrna.core.batch.html#seismicrna.core.batch.read.AllReadBatch" title="seismicrna.core.batch.read.AllReadBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.batch.read.AllReadBatch</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.relate.batch.QnamesBatch.num_reads">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_reads</span></span><a class="headerlink" href="#seismicrna.relate.batch.QnamesBatch.num_reads" title="Permalink to this definition"></a></dt>
+<dd><p>Number of reads that are actually in use.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.relate.batch.RelateBatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.batch.</span></span><span class="sig-name descname"><span class="pre">RelateBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">muts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end5s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mid5s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mid3s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end3s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sanitize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.batch.RelateBatch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="seismicrna.core.batch.html#seismicrna.core.batch.muts.MutsBatch" title="seismicrna.core.batch.muts.MutsBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.batch.muts.MutsBatch</span></code></a>, <a class="reference internal" href="seismicrna.core.batch.html#seismicrna.core.batch.read.AllReadBatch" title="seismicrna.core.batch.read.AllReadBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.batch.read.AllReadBatch</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.relate.batch.RelateBatch.num_reads">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_reads</span></span><a class="headerlink" href="#seismicrna.relate.batch.RelateBatch.num_reads" title="Permalink to this definition"></a></dt>
+<dd><p>Number of reads that are actually in use.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.relate.batch.RelateBatch.pos_nums">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pos_nums</span></span><a class="headerlink" href="#seismicrna.relate.batch.RelateBatch.pos_nums" title="Permalink to this definition"></a></dt>
+<dd><p>Positions in use.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.relate.batch.RelateReflenBatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.batch.</span></span><span class="sig-name descname"><span class="pre">RelateReflenBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.batch.RelateReflenBatch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.relate.batch.RelateBatch" title="seismicrna.relate.batch.RelateBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.relate.batch.RelateBatch</span></code></a>, <a class="reference internal" href="seismicrna.core.batch.html#seismicrna.core.batch.muts.ReflenMutsBatch" title="seismicrna.core.batch.muts.ReflenMutsBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.batch.muts.ReflenMutsBatch</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.relate.batch.RelateRefseqBatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.batch.</span></span><span class="sig-name descname"><span class="pre">RelateRefseqBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refseq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.DNA" title="seismicrna.core.seq.xna.DNA"><span class="pre">seismicrna.core.seq.xna.DNA</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.batch.RelateRefseqBatch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.relate.batch.RelateBatch" title="seismicrna.relate.batch.RelateBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.relate.batch.RelateBatch</span></code></a>, <a class="reference internal" href="seismicrna.core.batch.html#seismicrna.core.batch.muts.RefseqMutsBatch" title="seismicrna.core.batch.muts.RefseqMutsBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.batch.muts.RefseqMutsBatch</span></code></a></p>
+</dd></dl>
+
+<span class="target" id="module-seismicrna.relate.data"></span><dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.relate.data.RelateLoader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.data.</span></span><span class="sig-name descname"><span class="pre">RelateLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">seismicrna.core.data.R</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateLoader" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="seismicrna.core.html#seismicrna.core.data.BatchedLoadedDataset" title="seismicrna.core.data.BatchedLoadedDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.BatchedLoadedDataset</span></code></a>, <a class="reference internal" href="seismicrna.core.html#seismicrna.core.data.LoadedMutsDataset" title="seismicrna.core.data.LoadedMutsDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.LoadedMutsDataset</span></code></a></p>
+<p>Load batches of relation vectors.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.data.RelateLoader.get_data_type">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_data_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateLoader.get_data_type" title="Permalink to this definition"></a></dt>
+<dd><p>Type of the data for this dataset.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.data.RelateLoader.get_report_type">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_report_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateLoader.get_report_type" title="Permalink to this definition"></a></dt>
+<dd><p>Type of the report for this loader.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.data.RelateLoader.iter_batches">
+<span class="sig-name descname"><span class="pre">iter_batches</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateLoader.iter_batches" title="Permalink to this definition"></a></dt>
+<dd><p>Yield each batch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.data.RelateLoader.load_batch">
+<span class="sig-name descname"><span class="pre">load_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateLoader.load_batch" title="Permalink to this definition"></a></dt>
+<dd><p>Load a specific batch of data.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.relate.data.RelateLoader.pattern">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pattern</span></span><a class="headerlink" href="#seismicrna.relate.data.RelateLoader.pattern" title="Permalink to this definition"></a></dt>
+<dd><p>Pattern of mutations to count.</p>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-seismicrna.relate.io"></span><dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.relate.io.QnamesBatchIO">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.io.</span></span><span class="sig-name descname"><span class="pre">QnamesBatchIO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.io.QnamesBatchIO" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.relate.io.RelateIO" title="seismicrna.relate.io.RelateIO"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.relate.io.RelateIO</span></code></a>, <a class="reference internal" href="seismicrna.core.io.html#seismicrna.core.io.batch.ReadBatchIO" title="seismicrna.core.io.batch.ReadBatchIO"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.io.batch.ReadBatchIO</span></code></a>, <a class="reference internal" href="#seismicrna.relate.batch.QnamesBatch" title="seismicrna.relate.batch.QnamesBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.relate.batch.QnamesBatch</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.io.QnamesBatchIO.file_seg_type">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">file_seg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.io.QnamesBatchIO.file_seg_type" title="Permalink to this definition"></a></dt>
+<dd><p>Type of the last segment in the path.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.relate.io.RelateBatchIO">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.io.</span></span><span class="sig-name descname"><span class="pre">RelateBatchIO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.io.RelateBatchIO" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.relate.io.RelateIO" title="seismicrna.relate.io.RelateIO"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.relate.io.RelateIO</span></code></a>, <a class="reference internal" href="seismicrna.core.io.html#seismicrna.core.io.batch.MutsBatchIO" title="seismicrna.core.io.batch.MutsBatchIO"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.io.batch.MutsBatchIO</span></code></a>, <a class="reference internal" href="#seismicrna.relate.batch.RelateReflenBatch" title="seismicrna.relate.batch.RelateReflenBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.relate.batch.RelateReflenBatch</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.io.RelateBatchIO.file_seg_type">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">file_seg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.io.RelateBatchIO.file_seg_type" title="Permalink to this definition"></a></dt>
+<dd><p>Type of the last segment in the path.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.relate.io.RelateIO">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.io.</span></span><span class="sig-name descname"><span class="pre">RelateIO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.io.RelateIO" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="seismicrna.core.io.html#seismicrna.core.io.file.RefIO" title="seismicrna.core.io.file.RefIO"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.io.file.RefIO</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.io.RelateIO.auto_fields">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">auto_fields</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.io.RelateIO.auto_fields" title="Permalink to this definition"></a></dt>
+<dd><p>Names and automatic values of selected fields.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.io.from_reads">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.io.</span></span><span class="sig-name descname"><span class="pre">from_reads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.io.from_reads" title="Permalink to this definition"></a></dt>
+<dd><p>Accumulate reads into relation vectors.</p>
+</dd></dl>
+
+<span class="target" id="module-seismicrna.relate.main"></span><section id="relate-main-module">
+<h3>Relate – Main Module<a class="headerlink" href="#relate-main-module" title="Permalink to this headline"></a></h3>
+<p>Auth: Matty</p>
+<p>Define the command line interface for the ‘relate’ command, as well as
+its main run function that executes the relate step.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.main.run">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.main.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fasta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'./out'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'./temp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_reads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_mapq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phred_enc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">33</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_phred</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">64.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ambrel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_procs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">brotli_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.main.run" title="Permalink to this definition"></a></dt>
+<dd><p>Run the relation step. For each read (or each pair of reads, if the
+reads are paired-end), generate a ‘relation vector’ that encodes the
+relationship between each base in the read and the corresponding
+base in the reference sequence – that is, whether the base in the
+read matches the base in the reference, is substituted to another
+base, is deleted, or has one or more extra bases inserted beside it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>out_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Destination for all finished files [keyword-only, default: ‘./out’]</p></li>
+<li><p><strong>temp_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Destination for all temporary files [keyword-only, default: ‘./temp’]</p></li>
+<li><p><strong>min_reads</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Minimum number of reads in an alignment map [keyword-only, default: 1000]</p></li>
+<li><p><strong>min_mapq</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Minimum mapping quality to keep an aligned read from Bowtie2 [keyword-only, default: 25]</p></li>
+<li><p><strong>phred_enc</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Phred score encoding in FASTQ and SAM/BAM/CRAM files [keyword-only, default: 33]</p></li>
+<li><p><strong>min_phred</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Minimum Phred score to use a base call [keyword-only, default: 25]</p></li>
+<li><p><strong>batch_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Target size of each batch (megabases) [keyword-only, default: 64.0]</p></li>
+<li><p><strong>ambrel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Mark all ambiguous indels [keyword-only, default: True]</p></li>
+<li><p><strong>max_procs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Maximum number of simultaneous processes [keyword-only, default: 16]</p></li>
+<li><p><strong>parallel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Run tasks in parallel [keyword-only, default: True]</p></li>
+<li><p><strong>brotli_level</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Compression level for brotli (0 - 11) [keyword-only, default: 10]</p></li>
+<li><p><strong>force</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Force all tasks to run, even those whose output files already exist [keyword-only, default: False]</p></li>
+<li><p><strong>keep_temp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Keep temporary files after the program exits [keyword-only, default: False]</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<span class="target" id="module-seismicrna.relate.report"></span><dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.relate.report.RelateReport">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.report.</span></span><span class="sig-name descname"><span class="pre">RelateReport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><span class="pre">Union</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="seismicrna.core.html#seismicrna.core.report.Report" title="seismicrna.core.report.Report"><span class="pre">seismicrna.core.report.Report</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.report.RelateReport" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="seismicrna.core.html#seismicrna.core.report.BatchedRefseqReport" title="seismicrna.core.report.BatchedRefseqReport"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.report.BatchedRefseqReport</span></code></a>, <a class="reference internal" href="#seismicrna.relate.io.RelateIO" title="seismicrna.relate.io.RelateIO"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.relate.io.RelateIO</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.report.RelateReport.fields">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fields</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.report.RelateReport.fields" title="Permalink to this definition"></a></dt>
+<dd><p>All fields of the report.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.report.RelateReport.file_seg_type">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">file_seg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.report.RelateReport.file_seg_type" title="Permalink to this definition"></a></dt>
+<dd><p>Type of the last segment in the path.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.report.RelateReport.refseq_file">
+<span class="sig-name descname"><span class="pre">refseq_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">top</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.report.RelateReport.refseq_file" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.report.refseq_file_auto_fields">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.report.</span></span><span class="sig-name descname"><span class="pre">refseq_file_auto_fields</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.report.refseq_file_auto_fields" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.report.refseq_file_path">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.report.</span></span><span class="sig-name descname"><span class="pre">refseq_file_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">top</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.report.refseq_file_path" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.report.refseq_file_seg_types">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.report.</span></span><span class="sig-name descname"><span class="pre">refseq_file_seg_types</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.report.refseq_file_seg_types" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<span class="target" id="module-seismicrna.relate.sam"></span><dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.relate.sam.XamViewer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.sam.</span></span><span class="sig-name descname"><span class="pre">XamViewer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xam_input</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">records_per_batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.sam.XamViewer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.sam.XamViewer.create_temp_sam">
+<span class="sig-name descname"><span class="pre">create_temp_sam</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.sam.XamViewer.create_temp_sam" title="Permalink to this definition"></a></dt>
+<dd><p>Create the temporary SAM file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.sam.XamViewer.delete_temp_sam">
+<span class="sig-name descname"><span class="pre">delete_temp_sam</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.sam.XamViewer.delete_temp_sam" title="Permalink to this definition"></a></dt>
+<dd><p>Delete the temporary SAM file.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.relate.sam.XamViewer.flagstats">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">flagstats</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a></em><a class="headerlink" href="#seismicrna.relate.sam.XamViewer.flagstats" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.relate.sam.XamViewer.indexes">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">indexes</span></span><a class="headerlink" href="#seismicrna.relate.sam.XamViewer.indexes" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.sam.XamViewer.iter_records">
+<span class="sig-name descname"><span class="pre">iter_records</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.sam.XamViewer.iter_records" title="Permalink to this definition"></a></dt>
+<dd><p>Iterate through the records of the batch.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.relate.sam.XamViewer.n_reads">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_reads</span></span><a class="headerlink" href="#seismicrna.relate.sam.XamViewer.n_reads" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.sam.XamViewer.open_temp_sam">
+<span class="sig-name descname"><span class="pre">open_temp_sam</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.sam.XamViewer.open_temp_sam" title="Permalink to this definition"></a></dt>
+<dd><p>Open the temporary SAM file as a file object.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.relate.sam.XamViewer.paired">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">paired</span></span><a class="headerlink" href="#seismicrna.relate.sam.XamViewer.paired" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.relate.sam.XamViewer.ref">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ref</span></span><a class="headerlink" href="#seismicrna.relate.sam.XamViewer.ref" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.relate.sam.XamViewer.sample">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sample</span></span><a class="headerlink" href="#seismicrna.relate.sam.XamViewer.sample" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.relate.sam.XamViewer.temp_sam_path">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">temp_sam_path</span></span><a class="headerlink" href="#seismicrna.relate.sam.XamViewer.temp_sam_path" title="Permalink to this definition"></a></dt>
+<dd><p>Get the path to the temporary SAM file.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.sam.read_name">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.sam.</span></span><span class="sig-name descname"><span class="pre">read_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.sam.read_name" title="Permalink to this definition"></a></dt>
+<dd><p>Get the name of the read in the current line of a SAM file.</p>
+</dd></dl>
+
+<span class="target" id="module-seismicrna.relate.write"></span><section id="relation-vector-writing-module">
+<h3>Relation Vector Writing Module<a class="headerlink" href="#relation-vector-writing-module" title="Permalink to this headline"></a></h3>
+<p>Given alignment map (BAM) files, split each file into batches of reads,
+write the relation vectors for each batch to a compressed file, and
+write a report summarizing the results.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.relate.write.RelationWriter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.write.</span></span><span class="sig-name descname"><span class="pre">RelationWriter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xam_view</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#seismicrna.relate.sam.XamViewer" title="seismicrna.relate.sam.XamViewer"><span class="pre">seismicrna.relate.sam.XamViewer</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.DNA" title="seismicrna.core.seq.xna.DNA"><span class="pre">seismicrna.core.seq.xna.DNA</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.write.RelationWriter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Compute and write relation vectors for all reads from one sample
+mapped to one reference sequence.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.relate.write.RelationWriter.ref">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ref</span></span><a class="headerlink" href="#seismicrna.relate.write.RelationWriter.ref" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.relate.write.RelationWriter.sample">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sample</span></span><a class="headerlink" href="#seismicrna.relate.write.RelationWriter.sample" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.write.RelationWriter.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">brotli_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.write.RelationWriter.write" title="Permalink to this definition"></a></dt>
+<dd><p>Compute a relation vector for every record in a BAM file,
+write the vectors into one or more batch files, compute their
+checksums, and write a report summarizing the results.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.write.generate_batch">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.write.</span></span><span class="sig-name descname"><span class="pre">generate_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xam_view</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#seismicrna.relate.sam.XamViewer" title="seismicrna.relate.sam.XamViewer"><span class="pre">seismicrna.relate.sam.XamViewer</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">refseq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.DNA" title="seismicrna.core.seq.xna.DNA"><span class="pre">seismicrna.core.seq.xna.DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_mapq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_qual</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ambrel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">brotli_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.write.generate_batch" title="Permalink to this definition"></a></dt>
+<dd><p>Compute relation vectors for every SAM record in one batch,
+write the vectors to a batch file, and return its MD5 checksum
+and the number of vectors.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.write.get_reads_per_batch">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.write.</span></span><span class="sig-name descname"><span class="pre">get_reads_per_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bytes_per_batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.write.get_reads_per_batch" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the number of reads per batch.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.write.mib_to_bytes">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.write.</span></span><span class="sig-name descname"><span class="pre">mib_to_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.write.mib_to_bytes" title="Permalink to this definition"></a></dt>
+<dd><p>Return the number of bytes per batch of a given size in mebibytes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>batch_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Size of the batch in mebibytes (MiB): 1 MiB = 2^20 bytes</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Number of bytes per batch, to the nearest integer</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.write.write_all">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.write.</span></span><span class="sig-name descname"><span class="pre">write_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xam_files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_procs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.write.write_all" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.write.write_one">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.write.</span></span><span class="sig-name descname"><span class="pre">write_one</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xam_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fasta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_reads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.write.write_one" title="Permalink to this definition"></a></dt>
+<dd><p>Write the batches of relation vectors for one XAM file.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="seismicrna.mask.html" class="btn btn-neutral float-left" title="seismicrna.mask package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="seismicrna.relate.aux.html" class="btn btn-neutral float-right" title="seismicrna.relate.aux package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, the Rouskin Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

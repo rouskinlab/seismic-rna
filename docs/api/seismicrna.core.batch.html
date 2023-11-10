@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>seismicrna.core.batch package &mdash; seismic-rna  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/favicon-32x32.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="seismicrna.core.extern package" href="seismicrna.core.extern.html" />
+    <link rel="prev" title="seismicrna.core.arg package" href="seismicrna.core.arg.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            seismic-rna
+              <img src="../_static/logo-200.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../manuals/index.html">Manuals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="seismicrna.html">seismicrna package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.html#seismic-rna">SEISMIC-RNA</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="seismicrna.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.clust.html">seismicrna.clust package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="seismicrna.core.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.data">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastaclean.html">seismicrna.fastaclean package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html">seismicrna.relate package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.html">seismicrna.sim package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.table.html">seismicrna.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.test.html">seismicrna.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.whole.html">seismicrna.whole package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.html#module-seismicrna.main">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../formats/index.html">File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/index.html">Data Structures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algos/index.html">Algorithms</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">seismic-rna</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="seismicrna.html">seismicrna package</a></li>
+          <li class="breadcrumb-item"><a href="seismicrna.core.html">seismicrna.core package</a></li>
+      <li class="breadcrumb-item active">seismicrna.core.batch package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/seismicrna.core.batch.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-seismicrna.core.batch">
+<span id="seismicrna-core-batch-package"></span><h1>seismicrna.core.batch package<a class="headerlink" href="#module-seismicrna.core.batch" title="Permalink to this headline"></a></h1>
+<section id="module-seismicrna.core.batch.accum">
+<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.core.batch.accum" title="Permalink to this headline"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.accum.accum_fits">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.accum.</span></span><span class="sig-name descname"><span class="pre">accum_fits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batches</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.batch.muts.RefseqMutsBatch" title="seismicrna.core.batch.muts.RefseqMutsBatch"><span class="pre">seismicrna.core.batch.muts.RefseqMutsBatch</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refseq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.DNA" title="seismicrna.core.seq.xna.DNA"><span class="pre">seismicrna.core.seq.xna.DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_nums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="seismicrna.core.rel.html#seismicrna.core.rel.pattern.RelPattern" title="seismicrna.core.rel.pattern.RelPattern"><span class="pre">seismicrna.core.rel.pattern.RelPattern</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#seismicrna.core.batch.accum.accum_fits" title="Permalink to this definition"></a></dt>
+<dd><p>Count positions and reads fitting each relationship.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.accum.accum_per_pos">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.accum.</span></span><span class="sig-name descname"><span class="pre">accum_per_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batches</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.batch.muts.RefseqMutsBatch" title="seismicrna.core.batch.muts.RefseqMutsBatch"><span class="pre">seismicrna.core.batch.muts.RefseqMutsBatch</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refseq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.DNA" title="seismicrna.core.seq.xna.DNA"><span class="pre">seismicrna.core.seq.xna.DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_nums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="seismicrna.core.rel.html#seismicrna.core.rel.pattern.RelPattern" title="seismicrna.core.rel.pattern.RelPattern"><span class="pre">seismicrna.core.rel.pattern.RelPattern</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#seismicrna.core.batch.accum.accum_per_pos" title="Permalink to this definition"></a></dt>
+<dd><p>Count reads with each relationship at each position in a section
+over multiple batches.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.accum.accumulate">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.accum.</span></span><span class="sig-name descname"><span class="pre">accumulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batches</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.batch.muts.RefseqMutsBatch" title="seismicrna.core.batch.muts.RefseqMutsBatch"><span class="pre">seismicrna.core.batch.muts.RefseqMutsBatch</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refseq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.DNA" title="seismicrna.core.seq.xna.DNA"><span class="pre">seismicrna.core.seq.xna.DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="seismicrna.core.rel.html#seismicrna.core.rel.pattern.RelPattern" title="seismicrna.core.rel.pattern.RelPattern"><span class="pre">seismicrna.core.rel.pattern.RelPattern</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_nums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">per_read</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">get_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.accum.accumulate" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<span class="target" id="module-seismicrna.core.batch.count"></span><dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.count.get_count_per_pos">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.count.</span></span><span class="sig-name descname"><span class="pre">get_count_per_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.rel.html#seismicrna.core.rel.pattern.RelPattern" title="seismicrna.core.rel.pattern.RelPattern"><span class="pre">seismicrna.core.rel.pattern.RelPattern</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cover_per_pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rels_per_pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.count.get_count_per_pos" title="Permalink to this definition"></a></dt>
+<dd><p>Count the reads that fit a relationship pattern at each
+position in a section.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.count.get_count_per_read">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.count.</span></span><span class="sig-name descname"><span class="pre">get_count_per_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.rel.html#seismicrna.core.rel.pattern.RelPattern" title="seismicrna.core.rel.pattern.RelPattern"><span class="pre">seismicrna.core.rel.pattern.RelPattern</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cover_per_read</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rels_per_read</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.count.get_count_per_read" title="Permalink to this definition"></a></dt>
+<dd><p>Count the positions in a section that fit a relationship
+pattern in each read.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.count.get_cover_per_pos">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.count.</span></span><span class="sig-name descname"><span class="pre">get_cover_per_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coverage_matrix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.count.get_cover_per_pos" title="Permalink to this definition"></a></dt>
+<dd><p>Number of reads covering each position.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.count.get_cover_per_read">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.count.</span></span><span class="sig-name descname"><span class="pre">get_cover_per_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coverage_matrix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.count.get_cover_per_read" title="Permalink to this definition"></a></dt>
+<dd><p>Number of positions covered by each read.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.count.get_coverage_matrix">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.count.</span></span><span class="sig-name descname"><span class="pre">get_coverage_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.indexes.base.Index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end5s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mid5s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mid3s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end3s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_nums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.count.get_coverage_matrix" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.count.get_half_coverage_matrix">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.count.</span></span><span class="sig-name descname"><span class="pre">get_half_coverage_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos_nums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos5s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos3s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.count.get_half_coverage_matrix" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.count.get_reads_per_pos">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.count.</span></span><span class="sig-name descname"><span class="pre">get_reads_per_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.rel.html#seismicrna.core.rel.pattern.RelPattern" title="seismicrna.core.rel.pattern.RelPattern"><span class="pre">seismicrna.core.rel.pattern.RelPattern</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mutations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.indexes.base.Index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.count.get_reads_per_pos" title="Permalink to this definition"></a></dt>
+<dd><p>For each position, find all reads matching a relationship
+pattern.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.count.get_rels_per_pos">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.count.</span></span><span class="sig-name descname"><span class="pre">get_rels_per_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mutations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_reads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cover_per_pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_indexes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.count.get_rels_per_pos" title="Permalink to this definition"></a></dt>
+<dd><p>For each relationship, the number of reads at each position
+with that relationship.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.count.get_rels_per_read">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.count.</span></span><span class="sig-name descname"><span class="pre">get_rels_per_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mutations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.indexes.base.Index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cover_per_read</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_indexes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.count.get_rels_per_read" title="Permalink to this definition"></a></dt>
+<dd><p>For each relationship, the number of positions in each read
+with that relationship.</p>
+</dd></dl>
+
+<span class="target" id="module-seismicrna.core.batch.index"></span><dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.contiguous_mates">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">contiguous_mates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mid5s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mid3s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.contiguous_mates" title="Permalink to this definition"></a></dt>
+<dd><p>Return whether the two mates form a contiguous read.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.count_base_types">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">count_base_types</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_pos_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.indexes.base.Index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.count_base_types" title="Permalink to this definition"></a></dt>
+<dd><p>Return the number of each type of base in the index of positions
+and bases.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.ensure_order">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">ensure_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">array2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">what1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'array1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">what2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'array2'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gt_eq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.ensure_order" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.ensure_same_length">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">ensure_same_length</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arr2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">what1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">what2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.ensure_same_length" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.get_inverse">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">get_inverse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">what</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'array'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.get_inverse" title="Permalink to this definition"></a></dt>
+<dd><p>Map integers in [0, max(target)] to their 0-based indexes in
+<cite>target</cite>, or to -1 if not in <cite>target</cite>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.get_length">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">get_length</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">what</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'array'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></span><a class="headerlink" href="#seismicrna.core.batch.index.get_length" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.iter_base_types">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">iter_base_types</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_pos_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.indexes.base.Index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.iter_base_types" title="Permalink to this definition"></a></dt>
+<dd><p>For each type of base in the index of positions and bases, yield
+the positions in the index with that type of base.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.iter_windows">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">iter_windows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos_nums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.iter_windows" title="Permalink to this definition"></a></dt>
+<dd><p>Yield the positions in each window of size positions of the
+section.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.list_batch_nums">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">list_batch_nums</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_batches</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.list_batch_nums" title="Permalink to this definition"></a></dt>
+<dd><p>List the batch numbers.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.sanitize_ends">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">sanitize_ends</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">end5s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mid5s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mid3s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end3s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.sanitize_ends" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.sanitize_pos">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">sanitize_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">positions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.sanitize_pos" title="Permalink to this definition"></a></dt>
+<dd><p>Validate and sort positions, and return them as an array.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.sanitize_values">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">sanitize_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower_limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper_limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">whats</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'values'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.sanitize_values" title="Permalink to this definition"></a></dt>
+<dd><p>Validate and sort values, and return them as an array.</p>
+</dd></dl>
+
+<span class="target" id="module-seismicrna.core.batch.muts"></span><dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.MutsBatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.muts.</span></span><span class="sig-name descname"><span class="pre">MutsBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">muts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end5s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mid5s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mid3s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end3s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sanitize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.muts.MutsBatch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.core.batch.read.ReadBatch" title="seismicrna.core.batch.read.ReadBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.batch.read.ReadBatch</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<p>Batch of mutational data.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.MutsBatch.max_pos">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">max_pos</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></em><a class="headerlink" href="#seismicrna.core.batch.muts.MutsBatch.max_pos" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum allowed position.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.MutsBatch.mid3s">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mid3s</span></span><a class="headerlink" href="#seismicrna.core.batch.muts.MutsBatch.mid3s" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.MutsBatch.mid5s">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mid5s</span></span><a class="headerlink" href="#seismicrna.core.batch.muts.MutsBatch.mid5s" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.MutsBatch.num_pos">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_pos</span></span><a class="headerlink" href="#seismicrna.core.batch.muts.MutsBatch.num_pos" title="Permalink to this definition"></a></dt>
+<dd><p>Number of positions in use.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.MutsBatch.pos_dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pos_dtype</span></span><a class="headerlink" href="#seismicrna.core.batch.muts.MutsBatch.pos_dtype" title="Permalink to this definition"></a></dt>
+<dd><p>Data type for position numbers.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.MutsBatch.pos_nums">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pos_nums</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></em><a class="headerlink" href="#seismicrna.core.batch.muts.MutsBatch.pos_nums" title="Permalink to this definition"></a></dt>
+<dd><p>Positions in use.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.MutsBatch.read_weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_weights</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></em><a class="headerlink" href="#seismicrna.core.batch.muts.MutsBatch.read_weights" title="Permalink to this definition"></a></dt>
+<dd><p>Weights for each read when computing counts.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.PartialMutsBatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.muts.</span></span><span class="sig-name descname"><span class="pre">PartialMutsBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">muts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end5s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mid5s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mid3s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end3s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sanitize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.muts.PartialMutsBatch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.core.batch.read.PartialReadBatch" title="seismicrna.core.batch.read.PartialReadBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.batch.read.PartialReadBatch</span></code></a>, <a class="reference internal" href="#seismicrna.core.batch.muts.MutsBatch" title="seismicrna.core.batch.muts.MutsBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.batch.muts.MutsBatch</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.PartialMutsBatch.pos_nums">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pos_nums</span></span><a class="headerlink" href="#seismicrna.core.batch.muts.PartialMutsBatch.pos_nums" title="Permalink to this definition"></a></dt>
+<dd><p>Positions in use.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.ReflenMutsBatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.muts.</span></span><span class="sig-name descname"><span class="pre">ReflenMutsBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.muts.ReflenMutsBatch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.core.batch.muts.MutsBatch" title="seismicrna.core.batch.muts.MutsBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.batch.muts.MutsBatch</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<p>Batch of mutational data with only a known reference length.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.ReflenMutsBatch.max_pos">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">max_pos</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></em><a class="headerlink" href="#seismicrna.core.batch.muts.ReflenMutsBatch.max_pos" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum allowed position.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.muts.</span></span><span class="sig-name descname"><span class="pre">RefseqMutsBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refseq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.DNA" title="seismicrna.core.seq.xna.DNA"><span class="pre">seismicrna.core.seq.xna.DNA</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.core.batch.muts.MutsBatch" title="seismicrna.core.batch.muts.MutsBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.batch.muts.MutsBatch</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<p>Batch of mutational data with a known reference sequence.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.count_base_types">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">count_base_types</span></span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.count_base_types" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.count_per_pos">
+<span class="sig-name descname"><span class="pre">count_per_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.rel.html#seismicrna.core.rel.pattern.RelPattern" title="seismicrna.core.rel.pattern.RelPattern"><span class="pre">seismicrna.core.rel.pattern.RelPattern</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.count_per_pos" title="Permalink to this definition"></a></dt>
+<dd><p>Count the reads that fit a relationship pattern at each
+position in a section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.count_per_read">
+<span class="sig-name descname"><span class="pre">count_per_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.rel.html#seismicrna.core.rel.pattern.RelPattern" title="seismicrna.core.rel.pattern.RelPattern"><span class="pre">seismicrna.core.rel.pattern.RelPattern</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.count_per_read" title="Permalink to this definition"></a></dt>
+<dd><p>Count the positions in a section that fit a relationship
+pattern in each read.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.cover_per_pos">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cover_per_pos</span></span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.cover_per_pos" title="Permalink to this definition"></a></dt>
+<dd><p>Number of reads covering each position.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.cover_per_read">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cover_per_read</span></span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.cover_per_read" title="Permalink to this definition"></a></dt>
+<dd><p>Number of positions covered by each read.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.coverage_matrix">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">coverage_matrix</span></span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.coverage_matrix" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.iter_reads">
+<span class="sig-name descname"><span class="pre">iter_reads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.rel.html#seismicrna.core.rel.pattern.RelPattern" title="seismicrna.core.rel.pattern.RelPattern"><span class="pre">seismicrna.core.rel.pattern.RelPattern</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.iter_reads" title="Permalink to this definition"></a></dt>
+<dd><p>Yield the 5’/3’ end/middle positions and the positions that
+are mutated in each read.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.iter_windows">
+<span class="sig-name descname"><span class="pre">iter_windows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.iter_windows" title="Permalink to this definition"></a></dt>
+<dd><p>Yield the positions in each window of size positions of the
+section.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.max_pos">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">max_pos</span></span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.max_pos" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum allowed position.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.nonprox_muts">
+<span class="sig-name descname"><span class="pre">nonprox_muts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.rel.html#seismicrna.core.rel.pattern.RelPattern" title="seismicrna.core.rel.pattern.RelPattern"><span class="pre">seismicrna.core.rel.pattern.RelPattern</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.nonprox_muts" title="Permalink to this definition"></a></dt>
+<dd><p>List the reads with non-proximal mutations.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.pos_index">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pos_index</span></span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.pos_index" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.reads_per_pos">
+<span class="sig-name descname"><span class="pre">reads_per_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.rel.html#seismicrna.core.rel.pattern.RelPattern" title="seismicrna.core.rel.pattern.RelPattern"><span class="pre">seismicrna.core.rel.pattern.RelPattern</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.reads_per_pos" title="Permalink to this definition"></a></dt>
+<dd><p>For each position, find all reads matching a relationship
+pattern.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.rels_per_pos">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">rels_per_pos</span></span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.rels_per_pos" title="Permalink to this definition"></a></dt>
+<dd><p>For each relationship, the number of reads at each position
+with that relationship.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.muts.RefseqMutsBatch.rels_per_read">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">rels_per_read</span></span><a class="headerlink" href="#seismicrna.core.batch.muts.RefseqMutsBatch.rels_per_read" title="Permalink to this definition"></a></dt>
+<dd><p>For each relationship, the number of positions in each read
+with that relationship.</p>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-seismicrna.core.batch.read"></span><dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.AllReadBatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.read.</span></span><span class="sig-name descname"><span class="pre">AllReadBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.read.AllReadBatch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.core.batch.read.ReadBatch" title="seismicrna.core.batch.read.ReadBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.batch.read.ReadBatch</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.AllReadBatch.max_read">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">max_read</span></span><a class="headerlink" href="#seismicrna.core.batch.read.AllReadBatch.max_read" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum possible value for a read index.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.AllReadBatch.read_indexes">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_indexes</span></span><a class="headerlink" href="#seismicrna.core.batch.read.AllReadBatch.read_indexes" title="Permalink to this definition"></a></dt>
+<dd><p>Map each read number to its index in self.read_nums.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.AllReadBatch.read_nums">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_nums</span></span><a class="headerlink" href="#seismicrna.core.batch.read.AllReadBatch.read_nums" title="Permalink to this definition"></a></dt>
+<dd><p>Read numbers in use.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.PartialReadBatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.read.</span></span><span class="sig-name descname"><span class="pre">PartialReadBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.read.PartialReadBatch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.core.batch.read.ReadBatch" title="seismicrna.core.batch.read.ReadBatch"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.batch.read.ReadBatch</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.PartialReadBatch.max_read">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">max_read</span></span><a class="headerlink" href="#seismicrna.core.batch.read.PartialReadBatch.max_read" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum possible value for a read index.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.PartialReadBatch.num_reads">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_reads</span></span><a class="headerlink" href="#seismicrna.core.batch.read.PartialReadBatch.num_reads" title="Permalink to this definition"></a></dt>
+<dd><p>Number of reads that are actually in use.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.PartialReadBatch.read_indexes">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_indexes</span></span><a class="headerlink" href="#seismicrna.core.batch.read.PartialReadBatch.read_indexes" title="Permalink to this definition"></a></dt>
+<dd><p>Map each read number to its index in self.read_nums.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.ReadBatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.read.</span></span><span class="sig-name descname"><span class="pre">ReadBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.read.ReadBatch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<p>Batch of reads.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.ReadBatch.batch_read_index">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">batch_read_index</span></span><a class="headerlink" href="#seismicrna.core.batch.read.ReadBatch.batch_read_index" title="Permalink to this definition"></a></dt>
+<dd><p>MultiIndex of the batch number and read numbers.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.ReadBatch.max_read">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">max_read</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></em><a class="headerlink" href="#seismicrna.core.batch.read.ReadBatch.max_read" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum possible value for a read index.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.ReadBatch.num_reads">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_reads</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></em><a class="headerlink" href="#seismicrna.core.batch.read.ReadBatch.num_reads" title="Permalink to this definition"></a></dt>
+<dd><p>Number of reads that are actually in use.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.ReadBatch.read_dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_dtype</span></span><a class="headerlink" href="#seismicrna.core.batch.read.ReadBatch.read_dtype" title="Permalink to this definition"></a></dt>
+<dd><p>Data type for read numbers.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.ReadBatch.read_indexes">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_indexes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></em><a class="headerlink" href="#seismicrna.core.batch.read.ReadBatch.read_indexes" title="Permalink to this definition"></a></dt>
+<dd><p>Map each read number to its index in self.read_nums.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.batch.read.ReadBatch.read_nums">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_nums</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span></em><a class="headerlink" href="#seismicrna.core.batch.read.ReadBatch.read_nums" title="Permalink to this definition"></a></dt>
+<dd><p>Read numbers in use.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="seismicrna.core.arg.html" class="btn btn-neutral float-left" title="seismicrna.core.arg package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="seismicrna.core.extern.html" class="btn btn-neutral float-right" title="seismicrna.core.extern package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, the Rouskin Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
