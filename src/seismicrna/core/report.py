@@ -49,8 +49,8 @@ from .arg import (opt_phred_enc,
                   opt_bt2_local,
                   opt_min_mapq)
 from .io import FileIO, ReadBatchIO, RefIO
-from .meta.version import __version__, check_compatibility
 from .rel import HalfRelPattern
+from .version import __version__, check_compatibility
 
 logger = getLogger(__name__)
 

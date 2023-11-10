@@ -48,7 +48,7 @@ exclude = [
 packages = ["src/seismicrna"]
 
 [tool.hatch.version]
-path = "src/seismicrna/core/meta/version.py"
+path = "src/seismicrna/core/version.py"
 
 [project.scripts]
 seismic = "seismicrna.main:cli"
