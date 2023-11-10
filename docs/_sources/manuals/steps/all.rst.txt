@@ -8,7 +8,7 @@ All steps with one command
 
 From BAM, report, and/or table file(s)::
 
-    seismic all refs.fa out/sample/align/Ref.bam out/sample/*/report-*.json out/sample/table/*/*.csv
+    seismic all refs.fa out/sample/align/Ref.bam out/sample/*/*-report.json out/sample/table/*/*.csv
 
 
 .. note::
