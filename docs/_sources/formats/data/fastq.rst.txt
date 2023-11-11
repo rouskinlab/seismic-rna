@@ -149,10 +149,10 @@ then please request so by creating an issue (see ).
 FASTQ name parsing
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-For FASTQ files given via ``--fastqp`` (``-x``), ``--fastqi`` (``-y``),
-or ``--fastqs`` (``-z``), the sample name is determined by parsing the
-FASTQ file name. For demultiplexed FASTQ files given via ``--dmfastqp``
-(``-X``), ``--dmfastqi`` (``-Y``), or ``--dmfastqs`` (``-Z``), the
+For FASTQ files given via ``--fastqx`` (``-x``), ``--fastqy`` (``-y``),
+or ``--fastqz`` (``-z``), the sample name is determined by parsing the
+FASTQ file name. For demultiplexed FASTQ files given via ``--dmfastqx``
+(``-X``), ``--dmfastqy`` (``-Y``), or ``--dmfastqz`` (``-Z``), the
 reference name is determined by parsing the FASTQ file name, and the
 sample name comes from the directory in which the FASTQ file is located.
 
