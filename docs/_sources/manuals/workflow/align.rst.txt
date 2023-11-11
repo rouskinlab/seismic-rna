@@ -5,21 +5,21 @@ Align the sequencing reads
 Align: input files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Input file: FASTA
+Input: reference sequences
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Alignment requires exactly one file of reference sequences, which must
-be in FASTA format.
+be DNA sequences (only A, C, G, T, and N) in FASTA format.
+You may clean the FASTA file with the :doc:`../util/fastaclean` utility,
+if necessary.
 See :doc:`../../formats/data/fasta` for details.
-You can use the :doc:`../util/fastaclean` to clean the FASTA file before
-alignment, if necessary.
 
 
-Input file(s): FASTQ
+Input: sequencing reads
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Alignment requires one or more files of sequencing reads, which must be
-in FASTQ format.
+DNA sequences (only A, C, G, T, and N) in FASTQ format.
 See :doc:`../../formats/data/fastq` for details.
 
 
@@ -401,7 +401,7 @@ files into SEISMIC-RNA at the step :ref:`step_relate`.
 
 .. _bam_vs_cram:
 
-Formatting alignment maps
+Controlling the format of alignment maps
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 SEISMIC-RNA can output alignment map files in either BAM or CRAM format.
@@ -447,7 +447,7 @@ that accompanies them).
 Align: output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Output files: FastQC reports
+Output: FastQC reports
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 If FastQC is run, then it outputs files to ``{out}/{sample}/qc``, where
@@ -467,13 +467,10 @@ If the option ``--qc-extract`` is given, then FastQC will also unzip
 For details on these outputs, see the documentation for `FastQC`_.
 
 
-Output files: alignment maps
+Output: alignment maps
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The most important outputs of ``seismic align`` are alignment map files.
-SEISMIC-RNA can output alignment maps in either BAM or CRAM format.
-For a comparison of these formats, see :ref:`bam_vs_cram`.
-
 Alignment maps store the location in the reference sequence to which
 each read aligned, as well as the Phred quality scores, mapping quality,
 and mutated positions.
@@ -483,18 +480,52 @@ Each alignment map is written to ``{out}/{sample}/align/{ref}.{xam}``,
 where ``{out}`` is the output directory (``--out-dir``), ``{sample}`` is
 the name of the sample from which the reads came, ``{ref}`` is the name
 of the reference to which the reads aligned, and ``{xam}`` is the file
-extension (``.bam`` or ``.cram``, depending on the selected format).
+extension (depending on the selected format).
+SEISMIC-RNA can output alignment maps in either BAM or CRAM format.
+For a comparison of these formats, see :ref:`bam_vs_cram`.
 
 
-
-Examining unaligned reads/pairs
+Output: reference sequences
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-For some reasons, including troubleshooting low alignment rates, it can
-be helpful to examine the reads that did not align. Depending on the
+If the alignment maps are output in CRAM format, then FASTA file(s) of
+the reference sequence(s) are also output alongside the CRAM files.
+If the sequencing reads came from a whole sample, then a single FASTA
+file, bearing the same name as the input FASTA file, will be output.
+The output file will be a `hard link`_ to the input file, if possible,
+to avoid consuming unnecessary storage space.
+If the sequencing reads were demultiplexed before alignment, then for
+each output CRAM file, a FASTA file with the same name (up to the file
+extension) will be written to the same directory.
+In both cases, each output FASTA will be indexed using `samtools faidx`_
+to speed up reading the CRAM files.
+If the alignment maps are output in BAM format, then FASTA files are not
+output alongside them.
 
 
-Troubleshooting alignment
+Output: unaligned reads
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In addition to the alignment maps, SEISMIC-RNA outputs FASTQ file(s) of
+reads that Bowtie 2 could not align to ``{out}/{sample}/align``:
+
+- Each whole-sample FASTQ file of single-end (``-z``) or interleaved
+  (``-y``) reads yields one file: ``unaligned.fq.gz``
+- Each pair of whole-sample FASTQ files of 1st and 2nd mates (``-x``)
+  yields two files: ``unaligned.fq.1.gz`` and ``unaligned.fq.2.gz``
+- Each demultiplexed FASTQ file of single-end (``-Z``) or interleaved
+  (``-Y``) reads yields one file: ``{ref}__unaligned.fq.gz``
+- Each pair of demultiplexed FASTQ files of 1st and 2nd mates (``-X``)
+  yields two files:
+  ``{ref}__unaligned.fq.1.gz`` and ``{ref}__unaligned.fq.2.gz``
+
+where ``{ref}`` is the reference for demultiplexed FASTQ files.
+
+Outputting these files of unaligned reads can be disabled using the
+option ``--bt2-no-un``.
+
+
+Align: troubleshooting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. _low_align_rate:
@@ -512,7 +543,8 @@ then try the following steps (in this order):
     and that, if the Bowtie 2 index was pre-built before the align step,
     that the correct FASTA file was used.
 3.  Reads that failed to align with Bowtie2 are written to the file
-    ``out/{sample}/align/unaligned.`` Open the SAM file,
+    ``{out}/{sample}/align/unaligned.fq.gz`` (or ``unaligned.fq.1.gz``
+    and ``unaligned.fq.2.gz`` if the FASTQ files were ) Open this file,
     process several unaligned reads randomly, and use `BLAST`_ to discern
     their origins, which can help in deducing what went wrong.
 
@@ -532,3 +564,4 @@ then try the following steps (in this order):
 .. _Bowtie 2 manual: https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml
 .. _BLAST: https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome
 .. _hard link: https://en.wikipedia.org/wiki/Hard_link
+.. _samtools faidx: https://www.htslib.org/doc/samtools-faidx.html

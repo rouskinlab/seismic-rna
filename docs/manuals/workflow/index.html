@@ -53,7 +53,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#align-input-files">Align: input files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#align-options">Align: options</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#align-output-files">Align: output files</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#troubleshooting-alignment">Troubleshooting alignment</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#align-troubleshooting">Align: troubleshooting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#relate-each-read-to-every-reference-position">Relate each read to every reference position</a><ul>
@@ -107,18 +107,18 @@
 <h2>Align the sequencing reads<a class="headerlink" href="#align-the-sequencing-reads" title="Permalink to this headline"></a></h2>
 <section id="align-input-files">
 <h3>Align: input files<a class="headerlink" href="#align-input-files" title="Permalink to this headline"></a></h3>
-<section id="input-file-fasta">
-<h4>Input file: FASTA<a class="headerlink" href="#input-file-fasta" title="Permalink to this headline"></a></h4>
+<section id="input-reference-sequences">
+<h4>Input: reference sequences<a class="headerlink" href="#input-reference-sequences" title="Permalink to this headline"></a></h4>
 <p>Alignment requires exactly one file of reference sequences, which must
-be in FASTA format.
-See <a class="reference internal" href="../../formats/data/fasta.html"><span class="doc">FASTA: Reference sequences</span></a> for details.
-You can use the <a class="reference internal" href="../util/fastaclean.html"><span class="doc">FASTA file cleaner</span></a> to clean the FASTA file before
-alignment, if necessary.</p>
+be DNA sequences (only A, C, G, T, and N) in FASTA format.
+You may clean the FASTA file with the <a class="reference internal" href="../util/fastaclean.html"><span class="doc">FASTA file cleaner</span></a> utility,
+if necessary.
+See <a class="reference internal" href="../../formats/data/fasta.html"><span class="doc">FASTA: Reference sequences</span></a> for details.</p>
 </section>
-<section id="input-file-s-fastq">
-<h4>Input file(s): FASTQ<a class="headerlink" href="#input-file-s-fastq" title="Permalink to this headline"></a></h4>
+<section id="input-sequencing-reads">
+<h4>Input: sequencing reads<a class="headerlink" href="#input-sequencing-reads" title="Permalink to this headline"></a></h4>
 <p>Alignment requires one or more files of sequencing reads, which must be
-in FASTQ format.
+DNA sequences (only A, C, G, T, and N) in FASTQ format.
 See <a class="reference internal" href="../../formats/data/fastq.html"><span class="doc">FASTQ: Sequencing Reads</span></a> for details.</p>
 <section id="fastq-files-of-single-end-versus-paired-end-reads">
 <h5>FASTQ files of single-end versus paired-end reads<a class="headerlink" href="#fastq-files-of-single-end-versus-paired-end-reads" title="Permalink to this headline"></a></h5>
@@ -512,8 +512,8 @@ your FASTQ files outside of SEISMIC-RNA, then pass the resulting XAM
 files into SEISMIC-RNA at the step <a class="reference internal" href="relate.html#step-relate"><span class="std std-ref">Relate each read to every reference position</span></a>.</p>
 </section>
 </section>
-<section id="formatting-alignment-maps">
-<span id="bam-vs-cram"></span><h4>Formatting alignment maps<a class="headerlink" href="#formatting-alignment-maps" title="Permalink to this headline"></a></h4>
+<section id="controlling-the-format-of-alignment-maps">
+<span id="bam-vs-cram"></span><h4>Controlling the format of alignment maps<a class="headerlink" href="#controlling-the-format-of-alignment-maps" title="Permalink to this headline"></a></h4>
 <p>SEISMIC-RNA can output alignment map files in either BAM or CRAM format.
 For details on these file formats, see <a class="reference internal" href="../../formats/data/xam.html"><span class="doc">SAM, BAM, and CRAM: Alignment Maps</span></a>.
 The default is CRAM format (option <code class="docutils literal notranslate"><span class="pre">--cram</span></code>); BAM format is enabled
@@ -555,8 +555,8 @@ that accompanies them).</p>
 </section>
 <section id="align-output-files">
 <h3>Align: output files<a class="headerlink" href="#align-output-files" title="Permalink to this headline"></a></h3>
-<section id="output-files-fastqc-reports">
-<h4>Output files: FastQC reports<a class="headerlink" href="#output-files-fastqc-reports" title="Permalink to this headline"></a></h4>
+<section id="output-fastqc-reports">
+<h4>Output: FastQC reports<a class="headerlink" href="#output-fastqc-reports" title="Permalink to this headline"></a></h4>
 <p>If FastQC is run, then it outputs files to <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/qc</span></code>, where
 <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory (<code class="docutils literal notranslate"><span class="pre">--out-dir</span></code>) and <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is
 the name of the sample.
@@ -572,12 +572,10 @@ If the option <code class="docutils literal notranslate"><span class="pre">--qc-
 <code class="docutils literal notranslate"><span class="pre">{fq_name}_fastqc.zip</span></code> to the directory <code class="docutils literal notranslate"><span class="pre">{fq_name}_fastqc</span></code>.
 For details on these outputs, see the documentation for <a class="reference external" href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">FastQC</a>.</p>
 </section>
-<section id="output-files-alignment-maps">
-<h4>Output files: alignment maps<a class="headerlink" href="#output-files-alignment-maps" title="Permalink to this headline"></a></h4>
+<section id="output-alignment-maps">
+<h4>Output: alignment maps<a class="headerlink" href="#output-alignment-maps" title="Permalink to this headline"></a></h4>
 <p>The most important outputs of <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code> are alignment map files.
-SEISMIC-RNA can output alignment maps in either BAM or CRAM format.
-For a comparison of these formats, see <a class="reference internal" href="#bam-vs-cram"><span class="std std-ref">Formatting alignment maps</span></a>.</p>
-<p>Alignment maps store the location in the reference sequence to which
+Alignment maps store the location in the reference sequence to which
 each read aligned, as well as the Phred quality scores, mapping quality,
 and mutated positions.
 SEISMIC-RNA outputs alignment maps where every read aligns to the same
@@ -586,16 +584,48 @@ Each alignment map is written to <code class="docutils literal notranslate"><spa
 where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory (<code class="docutils literal notranslate"><span class="pre">--out-dir</span></code>), <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is
 the name of the sample from which the reads came, <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is the name
 of the reference to which the reads aligned, and <code class="docutils literal notranslate"><span class="pre">{xam}</span></code> is the file
-extension (<code class="docutils literal notranslate"><span class="pre">.bam</span></code> or <code class="docutils literal notranslate"><span class="pre">.cram</span></code>, depending on the selected format).</p>
+extension (depending on the selected format).
+SEISMIC-RNA can output alignment maps in either BAM or CRAM format.
+For a comparison of these formats, see <a class="reference internal" href="#bam-vs-cram"><span class="std std-ref">Controlling the format of alignment maps</span></a>.</p>
 </section>
-<section id="examining-unaligned-reads-pairs">
-<h4>Examining unaligned reads/pairs<a class="headerlink" href="#examining-unaligned-reads-pairs" title="Permalink to this headline"></a></h4>
-<p>For some reasons, including troubleshooting low alignment rates, it can
-be helpful to examine the reads that did not align. Depending on the</p>
+<section id="output-reference-sequences">
+<h4>Output: reference sequences<a class="headerlink" href="#output-reference-sequences" title="Permalink to this headline"></a></h4>
+<p>If the alignment maps are output in CRAM format, then FASTA file(s) of
+the reference sequence(s) are also output alongside the CRAM files.
+If the sequencing reads came from a whole sample, then a single FASTA
+file, bearing the same name as the input FASTA file, will be output.
+The output file will be a <a class="reference external" href="https://en.wikipedia.org/wiki/Hard_link">hard link</a> to the input file, if possible,
+to avoid consuming unnecessary storage space.
+If the sequencing reads were demultiplexed before alignment, then for
+each output CRAM file, a FASTA file with the same name (up to the file
+extension) will be written to the same directory.
+In both cases, each output FASTA will be indexed using <a class="reference external" href="https://www.htslib.org/doc/samtools-faidx.html">samtools faidx</a>
+to speed up reading the CRAM files.
+If the alignment maps are output in BAM format, then FASTA files are not
+output alongside them.</p>
+</section>
+<section id="output-unaligned-reads">
+<h4>Output: unaligned reads<a class="headerlink" href="#output-unaligned-reads" title="Permalink to this headline"></a></h4>
+<p>In addition to the alignment maps, SEISMIC-RNA outputs FASTQ file(s) of
+reads that Bowtie 2 could not align to <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/align</span></code>:</p>
+<ul class="simple">
+<li><p>Each whole-sample FASTQ file of single-end (<code class="docutils literal notranslate"><span class="pre">-z</span></code>) or interleaved
+(<code class="docutils literal notranslate"><span class="pre">-y</span></code>) reads yields one file: <code class="docutils literal notranslate"><span class="pre">unaligned.fq.gz</span></code></p></li>
+<li><p>Each pair of whole-sample FASTQ files of 1st and 2nd mates (<code class="docutils literal notranslate"><span class="pre">-x</span></code>)
+yields two files: <code class="docutils literal notranslate"><span class="pre">unaligned.fq.1.gz</span></code> and <code class="docutils literal notranslate"><span class="pre">unaligned.fq.2.gz</span></code></p></li>
+<li><p>Each demultiplexed FASTQ file of single-end (<code class="docutils literal notranslate"><span class="pre">-Z</span></code>) or interleaved
+(<code class="docutils literal notranslate"><span class="pre">-Y</span></code>) reads yields one file: <code class="docutils literal notranslate"><span class="pre">{ref}__unaligned.fq.gz</span></code></p></li>
+<li><p>Each pair of demultiplexed FASTQ files of 1st and 2nd mates (<code class="docutils literal notranslate"><span class="pre">-X</span></code>)
+yields two files:
+<code class="docutils literal notranslate"><span class="pre">{ref}__unaligned.fq.1.gz</span></code> and <code class="docutils literal notranslate"><span class="pre">{ref}__unaligned.fq.2.gz</span></code></p></li>
+</ul>
+<p>where <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is the reference for demultiplexed FASTQ files.</p>
+<p>Outputting these files of unaligned reads can be disabled using the
+option <code class="docutils literal notranslate"><span class="pre">--bt2-no-un</span></code>.</p>
 </section>
 </section>
-<section id="troubleshooting-alignment">
-<h3>Troubleshooting alignment<a class="headerlink" href="#troubleshooting-alignment" title="Permalink to this headline"></a></h3>
+<section id="align-troubleshooting">
+<h3>Align: troubleshooting<a class="headerlink" href="#align-troubleshooting" title="Permalink to this headline"></a></h3>
 <section id="alignment-rate-is-low">
 <span id="low-align-rate"></span><h4>Alignment rate is low<a class="headerlink" href="#alignment-rate-is-low" title="Permalink to this headline"></a></h4>
 <p>If the percent of reads aligning to the reference is less than expected,
@@ -608,7 +638,8 @@ running <code class="docutils literal notranslate"><span class="pre">bowtie2</sp
 and that, if the Bowtie 2 index was pre-built before the align step,
 that the correct FASTA file was used.</p></li>
 <li><p>Reads that failed to align with Bowtie2 are written to the file
-<code class="docutils literal notranslate"><span class="pre">out/{sample}/align/unaligned.</span></code> Open the SAM file,
+<code class="docutils literal notranslate"><span class="pre">{out}/{sample}/align/unaligned.fq.gz</span></code> (or <code class="docutils literal notranslate"><span class="pre">unaligned.fq.1.gz</span></code>
+and <code class="docutils literal notranslate"><span class="pre">unaligned.fq.2.gz</span></code> if the FASTQ files were ) Open this file,
 process several unaligned reads randomly, and use <a class="reference external" href="https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&amp;PAGE_TYPE=BlastSearch&amp;LINK_LOC=blasthome">BLAST</a> to discern
 their origins, which can help in deducing what went wrong.</p></li>
 </ol>

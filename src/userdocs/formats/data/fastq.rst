@@ -113,7 +113,7 @@ Single-end FASTQ file
     +
     FFFFFFF:FFFF
 
-FASTQ file naming
+FASTQ file naming conventions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 FASTQ file extensions
