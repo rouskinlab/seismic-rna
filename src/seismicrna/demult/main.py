@@ -14,7 +14,7 @@ from ..core.arg import (CMD_DEMULT,
                         opt_demulti_overwrite,
                         arg_fasta,
                         opt_sections_file,
-                        opt_fastqp,
+                        opt_fastqx,
                         opt_out_dir,
                         opt_phred_enc)
 from ..core.parallel import lock_temp_dir
@@ -22,7 +22,7 @@ from ..core.parallel import lock_temp_dir
 params = [
     # Inputs
     arg_fasta,
-    opt_fastqp,
+    opt_fastqx,
     opt_phred_enc,
     opt_sections_file,
     opt_barcode_start,
@@ -50,7 +50,7 @@ def cli(*args, **kwargs):
 def run(sections_file: str,
         out_dir: str,
         temp_dir: str,
-        fastqp: tuple[str, ...],
+        fastqx: tuple[str, ...],
         phred_enc: int,
         fasta: str,
         barcode_start=0,
@@ -60,7 +60,7 @@ def run(sections_file: str,
         parallel_demultiplexing: bool = False,
         mismatch_tolerence: int = 0,
         demulti_overwrite: bool = False):
-    fq_units = list(FastqUnit.from_paths(fastqp=list(map(Path, fastqp)),
+    fq_units = list(FastqUnit.from_paths(fastqx=list(map(Path, fastqx)),
                                          phred_enc=phred_enc))
     return [demultiplex_run(sections_file_csv=sections_file,
                             overwrite=demulti_overwrite,

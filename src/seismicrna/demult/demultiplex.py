@@ -17,7 +17,7 @@ from ..core.arg import (opt_barcode_length,
                         opt_demulti_overwrite,
                         arg_fasta,
                         opt_sections_file,
-                        opt_fastqp)
+                        opt_fastqx)
 
 # from scipy import signal
 
@@ -25,7 +25,7 @@ from ..core.arg import (opt_barcode_length,
 params = [
     # Inputs
     arg_fasta,
-    opt_fastqp,
+    opt_fastqx,
     opt_sections_file,
     opt_barcode_start,
     opt_barcode_length,

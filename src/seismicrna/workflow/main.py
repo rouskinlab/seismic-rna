@@ -55,9 +55,9 @@ def run(*,
         parallel: bool,
         # FASTQ options
         fasta: str,
-        fastqs: tuple[str, ...],
-        fastqi: tuple[str, ...],
-        fastqp: tuple[str, ...],
+        fastqz: tuple[str, ...],
+        fastqy: tuple[str, ...],
+        fastqx: tuple[str, ...],
         phred_enc: int,
         # Demultiplexing options
         demulti_overwrite: bool,
@@ -69,9 +69,9 @@ def run(*,
         barcode_start: int,
         barcode_length: int,
         # Align options
-        dmfastqs: tuple[str, ...],
-        dmfastqi: tuple[str, ...],
-        dmfastqp: tuple[str, ...],
+        dmfastqz: tuple[str, ...],
+        dmfastqy: tuple[str, ...],
+        dmfastqx: tuple[str, ...],
         fastqc: bool,
         qc_extract: bool,
         cut: bool,
@@ -147,7 +147,7 @@ def run(*,
                 out_dir=out_dir,
                 temp_dir=temp_dir,
                 demulti_overwrite=demulti_overwrite,
-                fastqp=fastqp,
+                fastqx=fastqx,
                 clipped=clipped,
                 index_tolerance=index_tolerance,
                 mismatch_tolerence=mismatch_tolerence,
@@ -155,14 +155,14 @@ def run(*,
                 barcode_start=barcode_start,
                 barcode_length=barcode_length,
                 phred_enc=phred_enc):
-            dmfastqs = dmfastqs + dms
-            dmfastqi = dmfastqi + dmi
-            dmfastqp = dmfastqp + dmm
+            dmfastqz = dmfastqz + dms
+            dmfastqy = dmfastqy + dmi
+            dmfastqx = dmfastqx + dmm
         # Clear the input FASTQ files once the demultiplexed FASTQ files
         # have been generated.
-        fastqp = tuple()
-        fastqi = tuple()
-        fastqs = tuple()
+        fastqx = tuple()
+        fastqy = tuple()
+        fastqz = tuple()
     # Alignment
     input_path += tuple(map(str, align_mod.run(
         out_dir=out_dir,
@@ -172,12 +172,12 @@ def run(*,
         max_procs=max_procs,
         parallel=parallel,
         fasta=fasta,
-        fastqs=fastqs,
-        fastqi=fastqi,
-        fastqp=fastqp,
-        dmfastqs=dmfastqs,
-        dmfastqi=dmfastqi,
-        dmfastqp=dmfastqp,
+        fastqz=fastqz,
+        fastqy=fastqy,
+        fastqx=fastqx,
+        dmfastqz=dmfastqz,
+        dmfastqy=dmfastqy,
+        dmfastqx=dmfastqx,
         phred_enc=phred_enc,
         fastqc=fastqc,
         qc_extract=qc_extract,

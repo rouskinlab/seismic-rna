@@ -8,7 +8,8 @@ Input file: FASTA
 Alignment requires exactly one file of reference sequences, which must
 be in FASTA format.
 See :doc:`../../formats/data/fasta` for details.
-You can use the  need to clean up a FASTA file that
+You can use the :doc:`../util/fastaclean` to clean the FASTA file before
+alignment, if necessary.
 
 
 Input file(s): FASTQ
@@ -49,9 +50,9 @@ indicated in this table, separated by a ``/``:
 ========================== =============== =================
 Endedness                  Whole Sample    Demultiplexed
 ========================== =============== =================
-paired-end, separate files ``--fastqp/-x`` ``--dmfastqp/-X``
-paired-end, interleaved    ``--fastqi/-y`` ``--dmfastqi/-Y``
-single-end                 ``--fastqs/-z`` ``--dmfastqs/-Z``
+paired-end, separate files ``--fastqx/-x`` ``--dmfastqx/-X``
+paired-end, interleaved    ``--fastqy/-y`` ``--dmfastqy/-Y``
+single-end                 ``--fastqz/-z`` ``--dmfastqz/-Z``
 ========================== =============== =================
 
 .. note::

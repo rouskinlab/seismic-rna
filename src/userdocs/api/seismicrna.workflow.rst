@@ -1,7 +1,7 @@
-seismicrna.whole package
-========================
+seismicrna.workflow package
+===========================
 
-.. automodule:: seismicrna.whole
+.. automodule:: seismicrna.workflow
    :members:
    :undoc-members:
    :show-inheritance:
@@ -10,13 +10,13 @@ Submodules
 ----------
 
 
-.. automodule:: seismicrna.whole.main
+.. automodule:: seismicrna.workflow.main
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.whole.sim
+.. automodule:: seismicrna.workflow.sim
    :members:
    :undoc-members:
    :show-inheritance:

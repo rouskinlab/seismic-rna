@@ -70,12 +70,12 @@ class FastqUnit(object):
 
     MAX_PHRED_ENC = 2 ** 7 - 1
 
-    KEY_SINGLE = "fastqs"
-    KEY_INTER = "fastqi"
-    KEY_MATED = "fastqp"
-    KEY_DSINGLE = "dmfastqs"
-    KEY_DINTER = "dmfastqi"
-    KEY_DMATED = "dmfastqp"
+    KEY_SINGLE = "fastqz"
+    KEY_INTER = "fastqy"
+    KEY_MATED = "fastqx"
+    KEY_DSINGLE = "dmfastqz"
+    KEY_DINTER = "dmfastqy"
+    KEY_DMATED = "dmfastqx"
     KEY_MATE1 = "fastq1"
     KEY_MATE2 = "fastq2"
 
@@ -85,22 +85,22 @@ class FastqUnit(object):
                      KEY_MATE2: "-2"}
 
     def __init__(self, *,
-                 fastqs: Path | None = None,
-                 fastqi: Path | None = None,
+                 fastqz: Path | None = None,
+                 fastqy: Path | None = None,
                  fastq1: Path | None = None,
                  fastq2: Path | None = None,
                  phred_enc: int,
                  one_ref: bool):
-        if fastqs:
-            if fastqi or fastq1 or fastq2:
+        if fastqz:
+            if fastqy or fastq1 or fastq2:
                 raise TypeError("Got too many FASTQ files")
-            self.paths: dict[str, Path] = {self.KEY_SINGLE: fastqs}
+            self.paths: dict[str, Path] = {self.KEY_SINGLE: fastqz}
             self.paired = False
             self.interleaved = False
-        elif fastqi:
+        elif fastqy:
             if fastq1 or fastq2:
                 raise TypeError("Got too many FASTQ files")
-            self.paths: dict[str, Path] = {self.KEY_INTER: fastqi}
+            self.paths: dict[str, Path] = {self.KEY_INTER: fastqy}
             self.paired = True
             self.interleaved = True
         elif fastq1:
@@ -292,12 +292,12 @@ class FastqUnit(object):
             ASCII offset for encoding Phred scores
         fastq_args: list[Path]
             FASTQ files, given as lists of paths:
-            - fastqs: FASTQ files of single-end reads
-            - fastqi: FASTQ files of interleaved paired-end reads
-            - fastqp: mated FASTQ files of paired-end reads
-            - dmfastqs: demultiplexed FASTQ files of single-end reads
-            - dmfastqi: demultiplexed FASTQ files of interleaved paired-end reads
-            - dmfastqp: demultiplexed mated FASTQ files of paired-end reads
+            - fastqz: FASTQ files of single-end reads
+            - fastqy: FASTQ files of interleaved paired-end reads
+            - fastqx: mated FASTQ files of paired-end reads
+            - dmfastqz: demultiplexed FASTQ files of single-end reads
+            - dmfastqy: demultiplexed FASTQ files of interleaved paired-end reads
+            - dmfastqx: demultiplexed mated FASTQ files of paired-end reads
 
         Yield
         -----

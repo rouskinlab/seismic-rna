@@ -116,24 +116,24 @@ opt_force = Option(
 )
 
 # Sequencing read (FASTQ) files
-opt_fastqs = Option(
-    ("--fastqs", "-z"),
+opt_fastqz = Option(
+    ("--fastqz", "-z"),
     type=Path(exists=True),
     multiple=True,
     default=(),
     help="FASTQ files of single-end reads"
 )
 
-opt_fastqi = Option(
-    ("--fastqi", "-y"),
+opt_fastqy = Option(
+    ("--fastqy", "-y"),
     type=Path(exists=True),
     multiple=True,
     default=(),
     help="FASTQ files of paired-end reads interleaved in 1 file"
 )
 
-opt_fastqp = Option(
-    ("--fastqp", "-x"),
+opt_fastqx = Option(
+    ("--fastqx", "-x"),
     type=Path(exists=True),
     multiple=True,
     default=(),
@@ -231,24 +231,24 @@ opt_demulti_overwrite = Option(
 
 # Demultiplexed sequencing read (FASTQ) directories
 
-opt_dmfastqs = Option(
-    ("--dmfastqs", "-Z"),
+opt_dmfastqz = Option(
+    ("--dmfastqz", "-Z"),
     type=Path(exists=True, file_okay=False),
     multiple=True,
     default=(),
     help="Demultiplexed FASTQ files of single-end reads"
 )
 
-opt_dmfastqi = Option(
-    ("--dmfastqi", "-Y"),
+opt_dmfastqy = Option(
+    ("--dmfastqy", "-Y"),
     type=Path(exists=True, file_okay=False),
     multiple=True,
     default=(),
     help="Demultiplexed FASTQ files of paired-end reads interleaved in one file"
 )
 
-opt_dmfastqp = Option(
-    ("--dmfastqp", "-X"),
+opt_dmfastqx = Option(
+    ("--dmfastqx", "-X"),
     type=Path(exists=True, file_okay=False),
     multiple=True,
     default=(),
