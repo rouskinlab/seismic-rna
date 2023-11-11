@@ -1,3 +1,4 @@
+
 Metadata Formats
 ========================================================================
 
@@ -5,28 +6,31 @@ Using metadata files, information can be given about samples, reference
 sequences, and sections.
 
 
-Sample Metadata File
+Metadata for Samples
 ------------------------------------------------------------------------
 
-About
+About metadata for samples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Purpose
+Purpose of metadata for samples
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 Define metadata about samples, such as the cell line or buffer in which
 the RNA was probed, the type and concentration of the chemical probe,
 and the temperature during chemical probing.
 
-Used By
+Commands that use metadata for samples
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-- ``all``
-- ``export``
 
-Format
+- ``seismic all``
+- ``seismic export``
+
+File format of metadata for samples
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 comma-separated values (``.csv``)
 
-Fields
+
+Fields of metadata for samples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ============= ===== ================================================================ ========
@@ -44,17 +48,18 @@ Duration      float Incubation time of chemical probing (seconds)               
 ...           n/a   Additional metadata of the sample                                no
 ============= ===== ================================================================ ========
 
-Notes
+Notes about metadata for samples
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 - Fields are case-sensitive and must be in the file's first line.
 - Additional fields with arbitrary names can be given. Their data types
   will be inferred as either strings or floats.
 
-Example
+
+Example metadata for samples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As Pretty Table
+Example metadata for samples as a pretty table
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 ====== ==== ========== ========= ========================== ===== ============= =========== ======== ===
@@ -66,7 +71,7 @@ aso2   Hui  2023-09-19 in vitro  sodium cacodylate (300 mM) DMS            10.5 
 ut     Hui  2023-09-19 in vitro  sodium cacodylate (300 mM) DMS             0.0         310      240   0
 ====== ==== ========== ========= ========================== ===== ============= =========== ======== ===
 
-As Plain Text
+Example metadata for samples as plain text
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ::
 
@@ -77,27 +82,28 @@ As Plain Text
     ut,Hui,2023-09-19,in vitro,sodium cacodylate (300 mM),DMS,0,310,240,0
 
 
-Reference Metadata File
+Metadata for References
 ------------------------------------------------------------------------
 
-About
+About metadata for references
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Purpose
+Purpose of metadata for references
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Define metadata about reference sequences, such as the coordinates at
 which barcodes are located.
 
-Used By
+Commands that use metadata for references
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-- ``all``
-- ``export``
 
-Format
+- ``seismic all``
+- ``seismic export``
+
+File format of metadata for references
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 comma-separated values (``.csv``)
 
-Fields
+Fields of metadata for references
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ========= ==== ========================================================= ========
@@ -109,17 +115,18 @@ Barcode3  int  Coordinate of the barcode's 3' end (1-indexed, inclusive) no
 ...       n/a  Additional metadata of the reference                      no
 ========= ==== ========================================================= ========
 
-Notes
+Notes about metadata for references
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 - Fields are case-sensitive and must be in the file's first line.
 - Additional fields with arbitrary names can be given. Their data types
   will be inferred as either strings or floats.
 
-Example
+
+Example metadata for references
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As Pretty Table
+Metadata for references as a pretty table
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 ========= ======== ========
@@ -129,7 +136,7 @@ MyFavRNA        10       17
 OtherRef         1        6
 ========= ======== ========
 
-As Plain Text
+Metadata for references as plain text
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ::
 
@@ -138,31 +145,35 @@ As Plain Text
     OtherRef,1,6
 
 
-Section Metadata File
+Metadata for Sections
 ------------------------------------------------------------------------
 
-About
+About metadata for sections
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Purpose
+Purpose of metadata for sections
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 Define and name sections of a reference sequence. For references with
 many sections, it may be more convenient, reproducible, and/or trackable
 to define the sections in a file than on the command line (using the
 option ``--coords`` or ``--primers``). The sections file additionally
 permits giving each section a name.
 
-Used By
+Commands that use metadata for sections
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-- ``all``
-- ``mask``
-- ``fold``
 
-Format
+- ``seismic all``
+- ``seismic mask``
+- ``seismic fold``
+
+File format of metadata for sections
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 comma-separated values (``.csv``)
 
-Fields
+
+Fields of metadata for sections
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ============== ==== ========================================================= ========
@@ -176,7 +187,7 @@ Forward Primer str  Sequence of the forward primer for the section            no
 Reverse Primer str  Sequence of the reverse primer for the section            no
 ============== ==== ========================================================= ========
 
-Notes
+Notes about metadata for sections
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 - Fields are case-sensitive and must be in the file's first line.
@@ -195,10 +206,11 @@ Notes
   3' end is placed upstream of the forward primer, with an intervening
   gap whose length is set via the option ``--primer-gap``.
 
-Example
+
+Example metadata for sections
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As Pretty Table
+Metadata for sections as a pretty table
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 ======= ========= ====== ====== ============== ==============
@@ -210,7 +222,7 @@ cds     MyFavRNA     104   2368
 thing1  OtherRef                ACCCGTAACTATCG TACAGGTCCGCATG
 ======= ========= ====== ====== ============== ==============
 
-As Plain Text
+Metadata for sections as plain text
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ::
 

@@ -1,4 +1,7 @@
 
+Workflow
+========================================================================
+
 Align the sequencing reads
 ------------------------------------------------------------------------
 
@@ -10,9 +13,9 @@ Input: reference sequences
 
 Alignment requires exactly one file of reference sequences, which must
 be DNA sequences (only A, C, G, T, and N) in FASTA format.
-You may clean the FASTA file with the :doc:`../util/fastaclean` utility,
+You may clean the FASTA file with the :doc:`./util/fastaclean` utility,
 if necessary.
-See :doc:`../../formats/data/fasta` for details.
+See :doc:`../formats/data/fasta` for details.
 
 
 Input: sequencing reads
@@ -20,7 +23,7 @@ Input: sequencing reads
 
 Alignment requires one or more files of sequencing reads, which must be
 DNA sequences (only A, C, G, T, and N) in FASTQ format.
-See :doc:`../../formats/data/fastq` for details.
+See :doc:`../formats/data/fastq` for details.
 
 
 FASTQ files of single-end versus paired-end reads
@@ -397,7 +400,7 @@ these options.
 These options should suffice for most users.
 If you require a more customized alignment workflow, you can align your
 your FASTQ files outside of SEISMIC-RNA, then pass the resulting XAM
-files into SEISMIC-RNA at the step :ref:`step_relate`.
+files into SEISMIC-RNA at the step :ref:`wf_relate`.
 
 .. _bam_vs_cram:
 
@@ -528,8 +531,6 @@ option ``--bt2-no-un``.
 Align: troubleshooting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. _low_align_rate:
-
 Alignment rate is low
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -549,6 +550,84 @@ then try the following steps (in this order):
     their origins, which can help in deducing what went wrong.
 
 
+.. _wf_relate:
+
+Relate each read to every reference position
+------------------------------------------------------------------------
+
+Input files for relate
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Relate requires exactly one FASTA file containing one or more reference
+sequences and any number of alignment map files in SAM/BAM/CRAM format
+(referred to collectively as "XAM" format).
+
+.. note::
+    The references in the FASTA file must match those to which the reads
+    were aligned to produce the XAM file(s); the names and the sequences
+    must be identical. If the names differ, then the XAM files using the
+    old names will be ignored; while if the sequences differ, then reads
+    can yield erroneous relation vectors or fail to yield any output.
+
+One XAM file
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A single XAM file (``sample_1/align/ref_1.bam``) can be run as follows::
+
+    seismic relate refs.fa sample_1/align/ref_1.bam
+
+
+Multiple XAM files
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Multiple XAM files can be run in parallel by giving multiple paths::
+
+    seismic relate refs.fa sample_1/align/ref_1.bam
+
+and/or by using `glob patterns`_::
+
+    seismic relate refs.fa sample_*/align/ref_1.bam sample_*/align/ref_2.bam
+
+
+XAM file content requirements
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Generally, a XAM file can contain reads that have aligned to any number
+of reference, as well as unaligned reads. However, SEISMIC-RNA requires
+that each XAM file contain reads aligned to exactly one reference. This
+restriction enables the relate step to process XAM files in parallel,
+which increases the speed. If the XAM files were created using ``seismic
+align``, then they are guaranteed follow this convention.
+
+XAM file path requirements
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The name of the XAM file (minus the file extension) must be the name of
+the reference to which it was aligned. It must be inside a directory
+named ``align``, which must be inside a directory named after the sample
+from which the reads came. If the BAM files were created using ``seismic
+align``, then they will already follow this convention.
+
+
+All steps with one command
+------------------------------------------------------------------------
+
+.. note::
+    ``seismic all`` accepts FASTQ, SAM/BAM/CRAM, relate/mask/cluster report, and
+    table files and directories as inputs.
+
+From BAM, report, and/or table file(s)::
+
+    seismic all refs.fa out/sample/align/Ref.bam out/sample/*/*-report.json out/sample/table/*/*.csv
+
+
+.. note::
+    Only the align, relate, mask, and table steps run by default. Enable
+    clustering by specifying ``--max-clusters`` (``-k``) followed by the
+    maximum number of clusters to attempt. Enable structure prediction
+    with the flag ``--fold``.
+
+
 .. _FastQC: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 .. _Cutadapt: https://cutadapt.readthedocs.io/en/stable/
 .. _Cutadapt reference guide: https://cutadapt.readthedocs.io/en/stable/reference.html
@@ -565,3 +644,4 @@ then try the following steps (in this order):
 .. _BLAST: https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome
 .. _hard link: https://en.wikipedia.org/wiki/Hard_link
 .. _samtools faidx: https://www.htslib.org/doc/samtools-faidx.html
+.. _glob patterns: https://en.wikipedia.org/wiki/Glob_(programming)

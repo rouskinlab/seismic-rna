@@ -19,8 +19,8 @@
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Input file specification" href="../inputs.html" />
-    <link rel="prev" title="Workflow" href="../workflow/index.html" /> 
+    <link rel="next" title="FASTA file cleaner" href="fastaclean.html" />
+    <link rel="prev" title="Logging messages" href="../logging.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -48,18 +48,13 @@
 <li class="toctree-l1"><a class="reference internal" href="../../install/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tutorials</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Manuals</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../workflow/index.html">Workflow</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Utilities</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#fasta-file-cleaner">FASTA file cleaner</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#background">Background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#usage">Usage</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="../workflow.html">Workflow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../inputs.html">Input file specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../logging.html">Logging messages</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fastaclean.html">FASTA file cleaner</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../cli.html">Command Line Interface</a></li>
@@ -97,95 +92,24 @@
              
   <section id="utilities">
 <h1>Utilities<a class="headerlink" href="#utilities" title="Permalink to this headline"></a></h1>
-<section id="fasta-file-cleaner">
-<h2>FASTA file cleaner<a class="headerlink" href="#fasta-file-cleaner" title="Permalink to this headline"></a></h2>
-<p>The FASTA file cleaner modifies FASTA files so that they are compatible
-with SEISMIC-RNA.</p>
-<section id="background">
-<h3>Background<a class="headerlink" href="#background" title="Permalink to this headline"></a></h3>
-<section id="purpose-of-cleaning-fasta-files">
-<h4>Purpose of cleaning FASTA files<a class="headerlink" href="#purpose-of-cleaning-fasta-files" title="Permalink to this headline"></a></h4>
-<p>Variants of FASTA format exist that are not compatible with SEISMIC-RNA.
-FASTA files from databases such as <a class="reference external" href="https://www.ncbi.nlm.nih.gov/">NCBI</a> and <a class="reference external" href="https://www.gencodegenes.org/">Gencode</a> often encode
-metadata in their header lines, which SEISMIC-RNA cannot handle.
-Additionally, some FASTA files may contain characters besides the four
-nucleotides and <code class="docutils literal notranslate"><span class="pre">N</span></code>, such as the <a class="reference external" href="https://www.bioinformatics.org/sms/iupac.html">IUPAC extended nucleotide codes</a>.
-For details on the valid FASTA format for SEISMIC-RNA and the rationale
-behind it, see <a class="reference internal" href="../../formats/data/fasta.html"><span class="doc">FASTA: Reference sequences</span></a>.</p>
-</section>
-<section id="procedure-for-cleaning-fasta-files">
-<h4>Procedure for cleaning FASTA files<a class="headerlink" href="#procedure-for-cleaning-fasta-files" title="Permalink to this headline"></a></h4>
-<p>The FASTA file cleaner of SEISMIC-RNA follows the following procedure:</p>
-<ul class="simple">
-<li><p>If a line begins with <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, then it is assumed to be a header line;
-otherwise, a body (i.e. sequence-encoding) line.</p></li>
-<li><p>If the line is a header line, then it is trimmed from the right side
-until all characters in the line (except the initial <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> character)
-are valid path characters.</p></li>
-<li><p>If the line is a body line, then all whitespace characters are removed
-and the remaining characters are converted to uppercase.
-If the FASTA sequence type is DNA, then every <code class="docutils literal notranslate"><span class="pre">U</span></code> is replaced with
-<code class="docutils literal notranslate"><span class="pre">T</span></code>; and if RNA, then every <code class="docutils literal notranslate"><span class="pre">T</span></code> is replaced with <code class="docutils literal notranslate"><span class="pre">U</span></code>.
-All remaining illegal characters that belong to the set of standard
-<a class="reference external" href="https://www.bioinformatics.org/sms/iupac.html">IUPAC extended nucleotide codes</a> are replaced with <code class="docutils literal notranslate"><span class="pre">N</span></code>.
-If any illegal characters remain after that, then an error is raised.</p></li>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fastaclean.html">FASTA file cleaner</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fastaclean.html#background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fastaclean.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fastaclean.html#troubleshooting">Troubleshooting</a></li>
 </ul>
-</section>
-</section>
-<section id="usage">
-<h3>Usage<a class="headerlink" href="#usage" title="Permalink to this headline"></a></h3>
-<section id="command-line">
-<h4>Command line<a class="headerlink" href="#command-line" title="Permalink to this headline"></a></h4>
-<p>Clean the FASTA file <code class="docutils literal notranslate"><span class="pre">refs.fa</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">fastaclean</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span>
-</pre></div>
-</div>
-<p>This command will output a cleaned FASTA file with the same name as the
-input FASTA file, located in the output directory (default <code class="docutils literal notranslate"><span class="pre">./out</span></code>).
-In this case: <code class="docutils literal notranslate"><span class="pre">out/refs.fa</span></code>.</p>
-<p>To change the output directory, use the <code class="docutils literal notranslate"><span class="pre">--out-dir/-o</span></code> option:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">fastaclean</span> <span class="o">-</span><span class="n">o</span> <span class="n">clean</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span>
-</pre></div>
-</div>
-<p>will output the cleaned FASTA file <code class="docutils literal notranslate"><span class="pre">clean/refs.fa</span></code>.</p>
-<p>By default, this command will not overwrite existing FASTA files.
-To force overwriting, use the option <code class="docutils literal notranslate"><span class="pre">--force</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">fastaclean</span> <span class="o">--</span><span class="n">force</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span>
-</pre></div>
-</div>
-</section>
-</section>
-<section id="troubleshooting">
-<h3>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline"></a></h3>
-<section id="errors">
-<h4>Errors<a class="headerlink" href="#errors" title="Permalink to this headline"></a></h4>
-<p><em>Line contains sequence characters other than whitespace or IUPAC codes</em></p>
-<p>This error means that the sequence contains characters that cannot be
-cleaned because they do not belong in FASTA files, so it is unclear how
-they should be handled automatically.
-The only characters that can be cleaned automatically are as follows:</p>
-<ul class="simple">
-<li><p>whitespace: deleted</p></li>
-<li><p>lowercase: converted to uppercase</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">U</span></code> (for DNA): replaced with <code class="docutils literal notranslate"><span class="pre">T</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">T</span></code> (for RNA): replaced with <code class="docutils literal notranslate"><span class="pre">U</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">BDHKMRSVWY</span></code> (<a class="reference external" href="https://www.bioinformatics.org/sms/iupac.html">IUPAC extended nucleotide codes</a>): replaced with <code class="docutils literal notranslate"><span class="pre">N</span></code></p></li>
-<li><p>standard four nucleotides, plus <code class="docutils literal notranslate"><span class="pre">N</span></code>: unchanged</p></li>
+</li>
 </ul>
-<p>If the FASTA file contains any other characters, then first remove them
-manually and then rerun <code class="docutils literal notranslate"><span class="pre">fastaclean</span></code>.
-The error message will indicate which line(s) have invalid characters.</p>
-</section>
-</section>
-</section>
+</div>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../workflow/index.html" class="btn btn-neutral float-left" title="Workflow" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="../inputs.html" class="btn btn-neutral float-right" title="Input file specification" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../logging.html" class="btn btn-neutral float-left" title="Logging messages" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fastaclean.html" class="btn btn-neutral float-right" title="FASTA file cleaner" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

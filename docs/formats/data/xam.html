@@ -18,7 +18,9 @@
         <script src="../../_static/doctools.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" /> 
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Metadata Formats" href="../meta.html" />
+    <link rel="prev" title="FASTQ: Sequencing Reads" href="fastq.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -41,14 +43,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../install/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../manuals/index.html">Manuals</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../cli.html">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/seismicrna.html">seismicrna package</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../index.html">File Formats</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">File Formats</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Data Formats</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="fasta.html">FASTA: Reference sequences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fastq.html">FASTQ: Sequencing Reads</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">SAM, BAM, and CRAM: Alignment Maps</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#three-formats-of-alignment-map-files">Three formats of alignment map files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#endedness-of-reads-in-xam-files">Endedness of reads in XAM files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#quality-score-encodings-in-xam-files">Quality score encodings in XAM files</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../meta.html">Metadata Formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reports.html">Report Formats</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../../data/index.html">Data Structures</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../algos/index.html">Algorithms</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../issues.html">Bugs and Requests</a></li>
@@ -68,6 +85,8 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">File Formats</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Data Formats</a></li>
       <li class="breadcrumb-item active">SAM, BAM, and CRAM: Alignment Maps</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../_sources/formats/data/xam.rst.txt" rel="nofollow"> View page source</a>
@@ -143,7 +162,7 @@ CRAM – does not matter.</p>
 </section>
 <section id="endedness-of-reads-in-xam-files">
 <h2>Endedness of reads in XAM files<a class="headerlink" href="#endedness-of-reads-in-xam-files" title="Permalink to this headline"></a></h2>
-<p>Similar to read endedness in FASTQ files (see <a class="reference internal" href="index.html#fastq-endedness"><span class="std std-ref">Endedness: single-end and paired-end reads</span></a>),
+<p>Similar to read endedness in FASTQ files (see <a class="reference internal" href="fastq.html#fastq-endedness"><span class="std std-ref">Endedness: single-end and paired-end reads</span></a>),
 reads in XAM files are also single- or paired-end.
 SEISMIC-RNA also requires that each XAM file contain only single-end or
 only paired-end reads.
@@ -153,7 +172,7 @@ SEISMIC-RNA cannot handle XAM files with only 1st or only 2nd mates.</p>
 <section id="quality-score-encodings-in-xam-files">
 <h2>Quality score encodings in XAM files<a class="headerlink" href="#quality-score-encodings-in-xam-files" title="Permalink to this headline"></a></h2>
 <p>SAM files encode <a class="reference external" href="https://en.wikipedia.org/wiki/Phred_quality_score">Phred quality scores</a> in the same manner as FASTQ
-files (see <a class="reference internal" href="index.html#phred-encodings"><span class="std std-ref">Phred quality score encodings</span></a>).
+files (see <a class="reference internal" href="fastq.html#phred-encodings"><span class="std std-ref">Phred quality score encodings</span></a>).
 BAM and CRAM files also encode Phred scores, but in a binary format.</p>
 </section>
 </section>
@@ -161,7 +180,10 @@ BAM and CRAM files also encode Phred scores, but in a binary format.</p>
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fastq.html" class="btn btn-neutral float-left" title="FASTQ: Sequencing Reads" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../meta.html" class="btn btn-neutral float-right" title="Metadata Formats" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

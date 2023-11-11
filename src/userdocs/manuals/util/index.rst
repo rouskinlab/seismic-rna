@@ -2,4 +2,7 @@
 Utilities
 ========================================================================
 
-.. include:: fastaclean.rst
+.. toctree::
+    :maxdepth: 2
+
+    fastaclean

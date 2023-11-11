@@ -5,7 +5,6 @@ import pandas as pd
 
 from ..core import path
 from ..core.seq import DNA
-from ..relate.sim import sim_relvecs
 from ..relate.write import get_reads_per_batch, mib_to_bytes
 
 

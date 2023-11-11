@@ -3,4 +3,7 @@ Data Structures
 ************************************************************************
 
 
-.. include:: relate.rst
+.. toctree::
+    :maxdepth: 2
+
+    relate

@@ -19,7 +19,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Workflow" href="workflow/index.html" />
+    <link rel="next" title="Workflow" href="workflow.html" />
     <link rel="prev" title="Step-by-step walkthrough" href="../tutorials/amplicon.html" /> 
 </head>
 
@@ -48,10 +48,10 @@
 <li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Manuals</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="workflow/index.html">Workflow</a></li>
-<li class="toctree-l2"><a class="reference internal" href="util/index.html">Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html">Workflow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="inputs.html">Input file specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="logging.html">Logging messages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="util/index.html">Utilities</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
@@ -96,85 +96,10 @@ for commands and parameters.
 For a complete list of commands and their parameters, see <a class="reference internal" href="../cli.html"><span class="doc">Command Line Interface</span></a>.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="workflow/index.html">Workflow</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="workflow/index.html#align-the-sequencing-reads">Align the sequencing reads</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="workflow/index.html#align-input-files">Align: input files</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#input-reference-sequences">Input: reference sequences</a></li>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#input-sequencing-reads">Input: sequencing reads</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#fastq-files-of-single-end-versus-paired-end-reads">FASTQ files of single-end versus paired-end reads</a></li>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#fastq-files-of-whole-samples-versus-demultiplexed-samples">FASTQ files of whole samples versus demultiplexed samples</a></li>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#fastq-file-types">FASTQ file types</a></li>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#providing-one-fastq-file-single-end-or-interleaved-paired-end">Providing one FASTQ file (single-end or interleaved paired-end)</a></li>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#providing-one-pair-of-paired-end-fastq-files">Providing one pair of paired-end FASTQ files</a></li>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#providing-multiple-fastq-files-or-pairs-or-paired-end-fastq-files">Providing multiple FASTQ files or pairs or paired-end FASTQ files</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="workflow/index.html#align-options">Align: options</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#options-for-phred-score-encoding">Options for Phred score encoding</a></li>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#options-for-quality-assessment-with-fastqc">Options for quality assessment with FastQC</a></li>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#options-for-trimming-with-cutadapt">Options for trimming with Cutadapt</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#adapter-trimming">Adapter trimming</a></li>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#quality-trimming">Quality trimming</a></li>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#dark-cycle-trimming">Dark cycle trimming</a></li>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#additional-options-for-cutadapt">Additional options for Cutadapt</a></li>
-</ul>
-</li>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#options-for-alignment-with-bowtie-2">Options for alignment with Bowtie 2</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#bowtie-2-index-files-automatic-and-pre-built">Bowtie 2 index files: automatic and pre-built</a></li>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#alignment-modes-local-and-end-to-end">Alignment modes: local and end-to-end</a></li>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#options-for-aligning-paired-end-reads">Options for aligning paired-end reads</a></li>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#options-for-filtering-alignments">Options for filtering alignments</a></li>
-<li class="toctree-l5"><a class="reference internal" href="workflow/index.html#additional-options-for-bowtie-2">Additional options for Bowtie 2</a></li>
-</ul>
-</li>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#controlling-the-format-of-alignment-maps">Controlling the format of alignment maps</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="workflow/index.html#align-output-files">Align: output files</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#output-fastqc-reports">Output: FastQC reports</a></li>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#output-alignment-maps">Output: alignment maps</a></li>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#output-reference-sequences">Output: reference sequences</a></li>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#output-unaligned-reads">Output: unaligned reads</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="workflow/index.html#align-troubleshooting">Align: troubleshooting</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#alignment-rate-is-low">Alignment rate is low</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="workflow/index.html#relate-each-read-to-every-reference-position">Relate each read to every reference position</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="workflow/index.html#input-files-for-relate">Input files for relate</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#one-xam-file">One XAM file</a></li>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#multiple-xam-files">Multiple XAM files</a></li>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#xam-file-content-requirements">XAM file content requirements</a></li>
-<li class="toctree-l4"><a class="reference internal" href="workflow/index.html#xam-file-path-requirements">XAM file path requirements</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="workflow/index.html#all-steps-with-one-command">All steps with one command</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="util/index.html">Utilities</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="util/index.html#fasta-file-cleaner">FASTA file cleaner</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="util/index.html#background">Background</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="util/index.html#purpose-of-cleaning-fasta-files">Purpose of cleaning FASTA files</a></li>
-<li class="toctree-l4"><a class="reference internal" href="util/index.html#procedure-for-cleaning-fasta-files">Procedure for cleaning FASTA files</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="util/index.html#usage">Usage</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="util/index.html#command-line">Command line</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="util/index.html#troubleshooting">Troubleshooting</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="util/index.html#errors">Errors</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Workflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#align-the-sequencing-reads">Align the sequencing reads</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#relate-each-read-to-every-reference-position">Relate each read to every reference position</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#all-steps-with-one-command">All steps with one command</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="inputs.html">Input file specification</a><ul>
@@ -185,17 +110,12 @@ For a complete list of commands and their parameters, see <a class="reference in
 </li>
 <li class="toctree-l1"><a class="reference internal" href="logging.html">Logging messages</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="logging.html#levels-of-messages">Levels of messages</a></li>
-<li class="toctree-l2"><a class="reference internal" href="logging.html#messages-on-standard-output">Messages on standard output</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="logging.html#format-of-messages-on-standard-output">Format of messages on standard output</a></li>
-<li class="toctree-l3"><a class="reference internal" href="logging.html#controlling-which-messages-are-printed">Controlling which messages are printed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html#messages-on-standard-output">Messages on standard output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html#messages-in-log-files">Messages in log files</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="logging.html#messages-in-log-files">Messages in log files</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="logging.html#format-of-messages-in-log-files">Format of messages in log files</a></li>
-<li class="toctree-l3"><a class="reference internal" href="logging.html#controlling-the-path-to-log-files">Controlling the path to log files</a></li>
-<li class="toctree-l3"><a class="reference internal" href="logging.html#viewing-log-files-in-real-time">Viewing log files in real time</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="util/index.html">Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="util/fastaclean.html">FASTA file cleaner</a></li>
 </ul>
 </li>
 </ul>
@@ -207,7 +127,7 @@ For a complete list of commands and their parameters, see <a class="reference in
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="../tutorials/amplicon.html" class="btn btn-neutral float-left" title="Step-by-step walkthrough" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="workflow/index.html" class="btn btn-neutral float-right" title="Workflow" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="workflow.html" class="btn btn-neutral float-right" title="Workflow" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -19,7 +19,7 @@
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Metadata Formats" href="../meta.html" />
+    <link rel="next" title="FASTA: Reference sequences" href="fasta.html" />
     <link rel="prev" title="File Formats" href="../index.html" /> 
 </head>
 
@@ -52,23 +52,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../api/seismicrna.html">seismicrna package</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">File Formats</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Data Formats</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#fasta-reference-sequences">FASTA: Reference sequences</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#fasta-header-lines">FASTA header lines</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fasta-body-lines">FASTA body lines</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#fastq-sequencing-reads">FASTQ: Sequencing Reads</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#endedness-single-end-and-paired-end-reads">Endedness: single-end and paired-end reads</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fastq-file-naming-conventions">FASTQ file naming conventions</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fastq-symbols">FASTQ symbols</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#sam-bam-and-cram-alignment-maps">SAM, BAM, and CRAM: Alignment Maps</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#three-formats-of-alignment-map-files">Three formats of alignment map files</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#endedness-of-reads-in-xam-files">Endedness of reads in XAM files</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#quality-score-encodings-in-xam-files">Quality score encodings in XAM files</a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="fasta.html">FASTA: Reference sequences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fastq.html">FASTQ: Sequencing Reads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="xam.html">SAM, BAM, and CRAM: Alignment Maps</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../meta.html">Metadata Formats</a></li>
@@ -107,308 +93,27 @@
              
   <section id="data-formats">
 <h1>Data Formats<a class="headerlink" href="#data-formats" title="Permalink to this headline"></a></h1>
-<section id="fasta-reference-sequences">
-<h2>FASTA: Reference sequences<a class="headerlink" href="#fasta-reference-sequences" title="Permalink to this headline"></a></h2>
-<p>Files of reference sequences must be in <a class="reference external" href="https://en.wikipedia.org/wiki/FASTA_format">FASTA format</a>.</p>
-<p>In a FASTA file, each sequence record comprises two parts:</p>
-<ul class="simple">
-<li><p>A header that contains the name of the sequence.</p></li>
-<li><p>A body that contains the sequence.</p></li>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fasta.html">FASTA: Reference sequences</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fasta.html#fasta-header-lines">FASTA header lines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fasta.html#fasta-body-lines">FASTA body lines</a></li>
 </ul>
-<section id="fasta-header-lines">
-<h3>FASTA header lines<a class="headerlink" href="#fasta-header-lines" title="Permalink to this headline"></a></h3>
-<p>Every header line must start with the character <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>.
-The name of the sequence must follow this character, on the same line.
-Optionally, metadata may follow the name of the sequence after a break
-by non-alphanumeric characters such as whitespace or <code class="docutils literal notranslate"><span class="pre">|</span></code>.</p>
-<p>SEISMIC-RNA requires that header lines contain no metadata – i.e. that
-all characters after the initial <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> are part of the sequence name.
-This restriction exists because the name of each reference sequence is
-incorporated into file paths, and SEISMIC-RNA restricts the characters
-allowed in file paths to avoid any potential problems caused by special
-characters and whitespace in paths.
-If SEISMIC-RNA were to simply ignore characters after the first non-path
-character in the header of a FASTA, then the names would not necessarily
-match those produced by other tools such as Bowtie 2 that read the FASTA
-files directly; and these inconsistencies in names could cause errors.
-Thus, to ensure consistent names, SEISMIC-RNA will raise errors if a
-FASTA file has any illegal characters in its header lines.</p>
-</section>
-<section id="fasta-body-lines">
-<h3>FASTA body lines<a class="headerlink" href="#fasta-body-lines" title="Permalink to this headline"></a></h3>
-<p>The remaining lines in each record encode the sequence.
-SEISMIC-RNA can parse sequences that obey the following rules:</p>
-<ul class="simple">
-<li><p>Alphabet: <code class="docutils literal notranslate"><span class="pre">A</span></code>, <code class="docutils literal notranslate"><span class="pre">C</span></code>, <code class="docutils literal notranslate"><span class="pre">G</span></code>, and <code class="docutils literal notranslate"><span class="pre">N</span></code> are valid characters for DNA
-and RNA; <code class="docutils literal notranslate"><span class="pre">T</span></code> and <code class="docutils literal notranslate"><span class="pre">U</span></code> are also valid for DNA and RNA, respectively.
-Lowercase equivalents are also valid but will be cast to uppercase.
-All other characters (including whitespace) are illegal.</p></li>
-<li><p>Sequence lengths: Arbitrary lengths are supported, from zero to the
-maximum number of nucleotides that will fit in your system’s memory.</p></li>
-<li><p>Line lengths: Arbitrary lengths are supported, up to the line length
-limit imposed by your system.</p></li>
-<li><p>Blank lines: Blank lines (i.e. containing only a newline character)
-are simply ignored, but lines containing other whitespace characters
-are illegal.</p></li>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fastq.html">FASTQ: Sequencing Reads</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fastq.html#endedness-single-end-and-paired-end-reads">Endedness: single-end and paired-end reads</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fastq.html#fastq-file-naming-conventions">FASTQ file naming conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fastq.html#fastq-symbols">FASTQ symbols</a></li>
 </ul>
-</section>
-</section>
-<section id="fastq-sequencing-reads">
-<h2>FASTQ: Sequencing Reads<a class="headerlink" href="#fastq-sequencing-reads" title="Permalink to this headline"></a></h2>
-<p>Sequencing data files must be in <a class="reference external" href="https://en.wikipedia.org/wiki/FASTQ_format">FASTQ format</a>.</p>
-<section id="endedness-single-end-and-paired-end-reads">
-<span id="fastq-endedness"></span><h3>Endedness: single-end and paired-end reads<a class="headerlink" href="#endedness-single-end-and-paired-end-reads" title="Permalink to this headline"></a></h3>
-<p>Illumina sequencers can be run in two main modes: single-end mode, in
-which each molecule is read starting from one end; and paired-end mode,
-in which each molecule is read from both ends.
-For more details on endedness, see this <a class="reference external" href="https://www.illumina.com/science/technology/next-generation-sequencing/plan-experiments/paired-end-vs-single-read.html">guide from Illumina</a>.</p>
-<p>Each paired-end read comprises a pair of so-called “mates”: mate 1 and
-mate 2.
-Each mate is similar to a single-end read, the difference being that it
-is paired with and shares its name with its mate.
-There are two options for paired-end reads:</p>
-<ul class="simple">
-<li><p>A single “interleaved” file in which mates 1 and 2 alternate, each
-mate 2 coming directly after the mate 1 to which it is paired.</p></li>
-<li><p>Two separate files containing all mate 1 reads and all mate 2 reads,
-respectively, in the same order in both files.</p></li>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="xam.html">SAM, BAM, and CRAM: Alignment Maps</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="xam.html#three-formats-of-alignment-map-files">Three formats of alignment map files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xam.html#endedness-of-reads-in-xam-files">Endedness of reads in XAM files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xam.html#quality-score-encodings-in-xam-files">Quality score encodings in XAM files</a></li>
 </ul>
-<p>In SEISMIC-RNA (as well as many other pieces of software), each FASTQ
-file must contain only one type of reads:</p>
-<ul class="simple">
-<li><p>single-end reads</p></li>
-<li><p>paired-end reads, with interleaved 1st and 2nd mates</p></li>
-<li><p>paired-end reads, with 1st mates only</p></li>
-<li><p>paired-end reads, with 2nd mates only</p></li>
+</li>
 </ul>
-<p>Thus, we refer to an entire FASTQ file as “single-end” if it contains
-only single-end reads, “interleaved paired-end” if it contains only
-interleaved 1st and 2nd mates, and “separate paired-end” if it contains
-either 1st or 2nd mates of paired-end reads.</p>
-<p>The following diagrams illustrate single-end, separate paired-end, and
-interleaved paired-end FASTQ files.</p>
-<section id="paired-end-two-separate-fastq-files">
-<h4>Paired-end, two separate FASTQ files<a class="headerlink" href="#paired-end-two-separate-fastq-files" title="Permalink to this headline"></a></h4>
-<p>2 files, 4 lines per mate in each file</p>
-<p><code class="docutils literal notranslate"><span class="pre">name_R1.fq</span></code></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@Read_1_ID</span><span class="o">/</span><span class="mi">1</span>
-<span class="n">GCATGCTAGCCA</span>
-<span class="o">+</span>
-<span class="n">FFFFFFFFF</span><span class="p">:</span><span class="n">F</span><span class="p">:</span>
-<span class="nd">@Read_2_ID</span><span class="o">/</span><span class="mi">1</span>
-<span class="n">ATCGTCATGTGT</span>
-<span class="o">+</span>
-<span class="n">FFFFFFF</span><span class="p">:</span><span class="n">FFFF</span>
-</pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">name_R2.fq</span></code></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@Read_1_ID</span><span class="o">/</span><span class="mi">2</span>
-<span class="n">TACGTCGTCGTC</span>
-<span class="o">+</span>
-<span class="n">FFFFF</span><span class="p">:</span><span class="n">FF</span><span class="p">:</span><span class="n">F</span><span class="p">::</span>
-<span class="nd">@Read_2_ID</span><span class="o">/</span><span class="mi">2</span>
-<span class="n">CACGAGCGATAG</span>
-<span class="o">+</span>
-<span class="n">FFFF</span><span class="p">:</span><span class="n">FF</span><span class="p">:::</span><span class="n">F</span><span class="p">:</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For every mate 1 file given, a mate 2 file with the same sample name
-must be given, and vice versa. The mates in file 2 must be in the
-same order as those in file 1.</p>
-</div>
-</section>
-<section id="paired-end-one-interleaved-fastq-file">
-<h4>Paired-end, one interleaved FASTQ file<a class="headerlink" href="#paired-end-one-interleaved-fastq-file" title="Permalink to this headline"></a></h4>
-<p>1 file, 8 lines per paired read (4 for mate 1, then 4 for mate 2)</p>
-<p><code class="docutils literal notranslate"><span class="pre">name.fq</span></code></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@Read_1_ID</span><span class="o">/</span><span class="mi">1</span>
-<span class="n">GCATGCTAGCCA</span>
-<span class="o">+</span>
-<span class="n">FFFFFFFFF</span><span class="p">:</span><span class="n">F</span><span class="p">:</span>
-<span class="nd">@Read_1_ID</span><span class="o">/</span><span class="mi">2</span>
-<span class="n">TACGTCGTCGTC</span>
-<span class="o">+</span>
-<span class="n">FFFFF</span><span class="p">:</span><span class="n">FF</span><span class="p">:</span><span class="n">F</span><span class="p">::</span>
-<span class="nd">@Read_2_ID</span><span class="o">/</span><span class="mi">1</span>
-<span class="n">ATCGTCATGTGT</span>
-<span class="o">+</span>
-<span class="n">FFFFFFF</span><span class="p">:</span><span class="n">FFFF</span>
-<span class="nd">@Read_2_ID</span><span class="o">/</span><span class="mi">2</span>
-<span class="n">CACGAGCGATAG</span>
-<span class="o">+</span>
-<span class="n">FFFF</span><span class="p">:</span><span class="n">FF</span><span class="p">:::</span><span class="n">F</span><span class="p">:</span>
-</pre></div>
-</div>
-</section>
-<section id="single-end-fastq-file">
-<h4>Single-end FASTQ file<a class="headerlink" href="#single-end-fastq-file" title="Permalink to this headline"></a></h4>
-<p>1 file, 4 lines per read</p>
-<p><code class="docutils literal notranslate"><span class="pre">name.fq</span></code></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@Read_1_ID</span>
-<span class="n">GCATGCTAGCCA</span>
-<span class="o">+</span>
-<span class="n">FFFFFFFFF</span><span class="p">:</span><span class="n">F</span><span class="p">:</span>
-<span class="nd">@Read_2_ID</span>
-<span class="n">ATCGTCATGTGT</span>
-<span class="o">+</span>
-<span class="n">FFFFFFF</span><span class="p">:</span><span class="n">FFFF</span>
-</pre></div>
-</div>
-</section>
-</section>
-<section id="fastq-file-naming-conventions">
-<h3>FASTQ file naming conventions<a class="headerlink" href="#fastq-file-naming-conventions" title="Permalink to this headline"></a></h3>
-<section id="fastq-file-extensions">
-<h4>FASTQ file extensions<a class="headerlink" href="#fastq-file-extensions" title="Permalink to this headline"></a></h4>
-<p>The following file extensions are accepted for FASTQ files:</p>
-<ul class="simple">
-<li><p>Compressed (<a class="reference external" href="https://www.gnu.org/software/gzip/">gzip</a>): <code class="docutils literal notranslate"><span class="pre">.fastq.gz</span></code>, <code class="docutils literal notranslate"><span class="pre">.fq.gz</span></code></p></li>
-<li><p>Uncompressed: <code class="docutils literal notranslate"><span class="pre">.fastq</span></code>, <code class="docutils literal notranslate"><span class="pre">.fq</span></code></p></li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>SEISMIC-RNA accepts FASTQ files that are compressed with <a class="reference external" href="https://www.gnu.org/software/gzip/">gzip</a>.
-It is recommended to always use compressed FASTQ files unless they
-must be read by a person because FASTQ files are typically very
-large, on the order of 100 Mb to 10 Gb. The file extension will be
-preserved through the pipeline: if an input FASTQ file has the
-extension <code class="docutils literal notranslate"><span class="pre">.fq.gz</span></code>, then the trimmed FASTQ file (if any) will also
-have that extension and be compressed.</p>
-</div>
-</section>
-<section id="fastq-mate-1-and-2-labels">
-<h4>FASTQ mate 1 and 2 labels<a class="headerlink" href="#fastq-mate-1-and-2-labels" title="Permalink to this headline"></a></h4>
-<p>For paired-end reads in which mate 1s and mate 2s are in separate files,
-the file names must have one of the following labels right before the
-file extension:</p>
-<ul class="simple">
-<li><p>Mate 1: <code class="docutils literal notranslate"><span class="pre">_R1</span></code>, <code class="docutils literal notranslate"><span class="pre">_mate1</span></code>, <code class="docutils literal notranslate"><span class="pre">_1_sequence</span></code>, <code class="docutils literal notranslate"><span class="pre">_R1_001</span></code>, <code class="docutils literal notranslate"><span class="pre">_mate1_001</span></code>, <code class="docutils literal notranslate"><span class="pre">_1_sequence_001</span></code></p></li>
-<li><p>Mate 2: <code class="docutils literal notranslate"><span class="pre">_R2</span></code>, <code class="docutils literal notranslate"><span class="pre">_mate2</span></code>, <code class="docutils literal notranslate"><span class="pre">_2_sequence</span></code>, <code class="docutils literal notranslate"><span class="pre">_R2_001</span></code>, <code class="docutils literal notranslate"><span class="pre">_mate2_001</span></code>, <code class="docutils literal notranslate"><span class="pre">_2_sequence_001</span></code></p></li>
-</ul>
-<p>If you would like future versions to support additional file extensions,
-then please request so by creating an issue (see ).</p>
-</section>
-<section id="fastq-name-parsing">
-<h4>FASTQ name parsing<a class="headerlink" href="#fastq-name-parsing" title="Permalink to this headline"></a></h4>
-<p>For FASTQ files given via <code class="docutils literal notranslate"><span class="pre">--fastqx</span></code> (<code class="docutils literal notranslate"><span class="pre">-x</span></code>), <code class="docutils literal notranslate"><span class="pre">--fastqy</span></code> (<code class="docutils literal notranslate"><span class="pre">-y</span></code>),
-or <code class="docutils literal notranslate"><span class="pre">--fastqz</span></code> (<code class="docutils literal notranslate"><span class="pre">-z</span></code>), the sample name is determined by parsing the
-FASTQ file name. For demultiplexed FASTQ files given via <code class="docutils literal notranslate"><span class="pre">--dmfastqx</span></code>
-(<code class="docutils literal notranslate"><span class="pre">-X</span></code>), <code class="docutils literal notranslate"><span class="pre">--dmfastqy</span></code> (<code class="docutils literal notranslate"><span class="pre">-Y</span></code>), or <code class="docutils literal notranslate"><span class="pre">--dmfastqz</span></code> (<code class="docutils literal notranslate"><span class="pre">-Z</span></code>), the
-reference name is determined by parsing the FASTQ file name, and the
-sample name comes from the directory in which the FASTQ file is located.</p>
-<p>When parsing the name of the sample/reference from the FASTQ file name,
-the name of the file up to but not including the file extension is used
-for single-end and interleaved paired-end files. For paired-end reads
-in separate files, the mate 1 and 2 labels are removed first.</p>
-</section>
-</section>
-<section id="fastq-symbols">
-<h3>FASTQ symbols<a class="headerlink" href="#fastq-symbols" title="Permalink to this headline"></a></h3>
-<section id="fastq-dna-alphabet">
-<h4>FASTQ DNA alphabet<a class="headerlink" href="#fastq-dna-alphabet" title="Permalink to this headline"></a></h4>
-<p>Read sequences may contain any uppercase characters, but all characters
-besides A, C, G, and T are treated as any nucleotide (i.e. N).</p>
-</section>
-<section id="phred-quality-score-encodings">
-<span id="phred-encodings"></span><h4>Phred quality score encodings<a class="headerlink" href="#phred-quality-score-encodings" title="Permalink to this headline"></a></h4>
-<p><a class="reference external" href="https://en.wikipedia.org/wiki/Phred_quality_score">Phred quality scores</a> represent the confidence that a base in a FASTQ
-file was called correctly during sequencing.
-The probability <em>p</em> that a base was called incorrectly is 10 raised to
-the power of the quotient of the Phred score <em>s</em> and -10:</p>
-<p><em>p</em> = 10 <sup>-s/10</sup></p>
-<p>For example, if a base call has a Phred score of 30, the probability
-that the base call is incorrect is 10 <sup>-30/10</sup> = 0.001.</p>
-<p>In FASTQ files, each phred quality score (a non-negative integer) is
-encoded as one character of text by adding another integer <em>N</em> to the
-Phred score (<a class="reference external" href="https://en.wikipedia.org/wiki/FASTQ_format#Encoding">Phred+N</a>) and then converting the number to the character
-with the corresponding <a class="reference external" href="https://en.wikipedia.org/wiki/ASCII">ASCII code</a>.
-For example, if <em>N</em> is 33, then the Phred score 25 would be encoded by
-adding 33 to 25 (obtaining 58), then writing the character whose ASCII
-code is 58 (which is <code class="docutils literal notranslate"><span class="pre">:</span></code>).</p>
-</section>
-</section>
-</section>
-<section id="sam-bam-and-cram-alignment-maps">
-<span id="sam-format"></span><h2>SAM, BAM, and CRAM: Alignment Maps<a class="headerlink" href="#sam-bam-and-cram-alignment-maps" title="Permalink to this headline"></a></h2>
-<p>Aligned reads are stored as alignment map files.</p>
-<section id="three-formats-of-alignment-map-files">
-<h3>Three formats of alignment map files<a class="headerlink" href="#three-formats-of-alignment-map-files" title="Permalink to this headline"></a></h3>
-<p>These files come in three formats – SAM, BAM, and CRAM – documented on
-the <a class="reference external" href="https://samtools.github.io/hts-specs/">Samtools website</a>:</p>
-<table class="docutils align-default">
-<colgroup>
-<col style="width: 28%" />
-<col style="width: 11%" />
-<col style="width: 7%" />
-<col style="width: 12%" />
-<col style="width: 9%" />
-<col style="width: 11%" />
-<col style="width: 22%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Format</p></th>
-<th class="head"><p>Extension</p></th>
-<th class="head"><p>Type</p></th>
-<th class="head"><p>I/O Effort</p></th>
-<th class="head"><p>I/O Time</p></th>
-<th class="head"><p>File Size</p></th>
-<th class="head"><p>Uses in SEISMIC-RNA</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>Sequence Alignment Map</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">.sam</span></code></p></td>
-<td><p>text</p></td>
-<td><p>●</p></td>
-<td><p>●●</p></td>
-<td><p>●●●</p></td>
-<td><p>parsing and editing</p></td>
-</tr>
-<tr class="row-odd"><td><p>Binary Alignment Map</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">.bam</span></code></p></td>
-<td><p>binary</p></td>
-<td><p>●●</p></td>
-<td><p>●</p></td>
-<td><p>●●</p></td>
-<td><p>short-term storage</p></td>
-</tr>
-<tr class="row-even"><td><p>CompRessed Alignment Map</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">.cram</span></code></p></td>
-<td><p>binary</p></td>
-<td><p>●●●</p></td>
-<td><p>●●●</p></td>
-<td><p>●</p></td>
-<td><p>long-term storage</p></td>
-</tr>
-</tbody>
-</table>
-<ul class="simple">
-<li><p>“I/O Effort” ranks the difficulty of reading/writing the format.</p></li>
-<li><p>“I/O Time” ranks the amount of time needed to read/write the format.</p></li>
-<li><p>“File Size” ranks the sizes of files in the format.</p></li>
-</ul>
-<p>Throughout this documentation, we use the term “XAM format” to refer to
-all three formats collectively, when the specific format – SAM, BAM, or
-CRAM – does not matter.</p>
-</section>
-<section id="endedness-of-reads-in-xam-files">
-<h3>Endedness of reads in XAM files<a class="headerlink" href="#endedness-of-reads-in-xam-files" title="Permalink to this headline"></a></h3>
-<p>Similar to read endedness in FASTQ files (see <a class="reference internal" href="#fastq-endedness"><span class="std std-ref">Endedness: single-end and paired-end reads</span></a>),
-reads in XAM files are also single- or paired-end.
-SEISMIC-RNA also requires that each XAM file contain only single-end or
-only paired-end reads.
-Unlike with FASTQ files, paired-end XAM files must be interleaved;
-SEISMIC-RNA cannot handle XAM files with only 1st or only 2nd mates.</p>
-</section>
-<section id="quality-score-encodings-in-xam-files">
-<h3>Quality score encodings in XAM files<a class="headerlink" href="#quality-score-encodings-in-xam-files" title="Permalink to this headline"></a></h3>
-<p>SAM files encode <a class="reference external" href="https://en.wikipedia.org/wiki/Phred_quality_score">Phred quality scores</a> in the same manner as FASTQ
-files (see <a class="reference internal" href="#phred-encodings"><span class="std std-ref">Phred quality score encodings</span></a>).
-BAM and CRAM files also encode Phred scores, but in a binary format.</p>
-</section>
-</section>
 </section>
 
 
@@ -416,7 +121,7 @@ BAM and CRAM files also encode Phred scores, but in a binary format.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="../index.html" class="btn btn-neutral float-left" title="File Formats" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="../meta.html" class="btn btn-neutral float-right" title="Metadata Formats" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="fasta.html" class="btn btn-neutral float-right" title="FASTA: Reference sequences" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

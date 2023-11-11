@@ -2,7 +2,10 @@
 About
 ************************************************************************
 
-.. include:: dms.rst
-.. include:: dreem.rst
-.. include:: authors.rst
-.. include:: license.rst
+.. toctree::
+    :maxdepth: 2
+
+    dms
+    dreem
+    authors
+    license

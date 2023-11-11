@@ -20,7 +20,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Report Formats" href="reports.html" />
-    <link rel="prev" title="Data Formats" href="data/index.html" /> 
+    <link rel="prev" title="SAM, BAM, and CRAM: Alignment Maps" href="data/xam.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -53,22 +53,22 @@
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">File Formats</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="data/index.html">Data Formats</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Metadata Formats</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#sample-metadata-file">Sample Metadata File</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#about">About</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fields">Fields</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#example">Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#metadata-for-samples">Metadata for Samples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#about-metadata-for-samples">About metadata for samples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fields-of-metadata-for-samples">Fields of metadata for samples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-metadata-for-samples">Example metadata for samples</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#reference-metadata-file">Reference Metadata File</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#id1">About</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#id5">Fields</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#id7">Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#metadata-for-references">Metadata for References</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#about-metadata-for-references">About metadata for references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fields-of-metadata-for-references">Fields of metadata for references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-metadata-for-references">Example metadata for references</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#section-metadata-file">Section Metadata File</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#id10">About</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#id14">Fields</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#id16">Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#metadata-for-sections">Metadata for Sections</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#about-metadata-for-sections">About metadata for sections</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fields-of-metadata-for-sections">Fields of metadata for sections</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-metadata-for-sections">Example metadata for sections</a></li>
 </ul>
 </li>
 </ul>
@@ -110,30 +110,30 @@
 <h1>Metadata Formats<a class="headerlink" href="#metadata-formats" title="Permalink to this headline"></a></h1>
 <p>Using metadata files, information can be given about samples, reference
 sequences, and sections.</p>
-<section id="sample-metadata-file">
-<h2>Sample Metadata File<a class="headerlink" href="#sample-metadata-file" title="Permalink to this headline"></a></h2>
-<section id="about">
-<h3>About<a class="headerlink" href="#about" title="Permalink to this headline"></a></h3>
-<section id="purpose">
-<h4>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline"></a></h4>
+<section id="metadata-for-samples">
+<h2>Metadata for Samples<a class="headerlink" href="#metadata-for-samples" title="Permalink to this headline"></a></h2>
+<section id="about-metadata-for-samples">
+<h3>About metadata for samples<a class="headerlink" href="#about-metadata-for-samples" title="Permalink to this headline"></a></h3>
+<section id="purpose-of-metadata-for-samples">
+<h4>Purpose of metadata for samples<a class="headerlink" href="#purpose-of-metadata-for-samples" title="Permalink to this headline"></a></h4>
 <p>Define metadata about samples, such as the cell line or buffer in which
 the RNA was probed, the type and concentration of the chemical probe,
 and the temperature during chemical probing.</p>
 </section>
-<section id="used-by">
-<h4>Used By<a class="headerlink" href="#used-by" title="Permalink to this headline"></a></h4>
+<section id="commands-that-use-metadata-for-samples">
+<h4>Commands that use metadata for samples<a class="headerlink" href="#commands-that-use-metadata-for-samples" title="Permalink to this headline"></a></h4>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">all</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">export</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">all</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">export</span></code></p></li>
 </ul>
 </section>
-<section id="format">
-<h4>Format<a class="headerlink" href="#format" title="Permalink to this headline"></a></h4>
+<section id="file-format-of-metadata-for-samples">
+<h4>File format of metadata for samples<a class="headerlink" href="#file-format-of-metadata-for-samples" title="Permalink to this headline"></a></h4>
 <p>comma-separated values (<code class="docutils literal notranslate"><span class="pre">.csv</span></code>)</p>
 </section>
 </section>
-<section id="fields">
-<h3>Fields<a class="headerlink" href="#fields" title="Permalink to this headline"></a></h3>
+<section id="fields-of-metadata-for-samples">
+<h3>Fields of metadata for samples<a class="headerlink" href="#fields-of-metadata-for-samples" title="Permalink to this headline"></a></h3>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 14%" />
@@ -201,8 +201,8 @@ and the temperature during chemical probing.</p>
 </tr>
 </tbody>
 </table>
-<section id="notes">
-<h4>Notes<a class="headerlink" href="#notes" title="Permalink to this headline"></a></h4>
+<section id="notes-about-metadata-for-samples">
+<h4>Notes about metadata for samples<a class="headerlink" href="#notes-about-metadata-for-samples" title="Permalink to this headline"></a></h4>
 <ul class="simple">
 <li><p>Fields are case-sensitive and must be in the file’s first line.</p></li>
 <li><p>Additional fields with arbitrary names can be given. Their data types
@@ -210,10 +210,10 @@ will be inferred as either strings or floats.</p></li>
 </ul>
 </section>
 </section>
-<section id="example">
-<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline"></a></h3>
-<section id="as-pretty-table">
-<h4>As Pretty Table<a class="headerlink" href="#as-pretty-table" title="Permalink to this headline"></a></h4>
+<section id="example-metadata-for-samples">
+<h3>Example metadata for samples<a class="headerlink" href="#example-metadata-for-samples" title="Permalink to this headline"></a></h3>
+<section id="example-metadata-for-samples-as-a-pretty-table">
+<h4>Example metadata for samples as a pretty table<a class="headerlink" href="#example-metadata-for-samples-as-a-pretty-table" title="Permalink to this headline"></a></h4>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 6%" />
@@ -288,8 +288,8 @@ will be inferred as either strings or floats.</p></li>
 </tbody>
 </table>
 </section>
-<section id="as-plain-text">
-<h4>As Plain Text<a class="headerlink" href="#as-plain-text" title="Permalink to this headline"></a></h4>
+<section id="example-metadata-for-samples-as-plain-text">
+<h4>Example metadata for samples as plain text<a class="headerlink" href="#example-metadata-for-samples-as-plain-text" title="Permalink to this headline"></a></h4>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Sample</span><span class="p">,</span><span class="n">User</span><span class="p">,</span><span class="n">Date</span><span class="p">,</span><span class="n">Condition</span><span class="p">,</span><span class="n">System</span><span class="p">,</span><span class="n">Probe</span><span class="p">,</span><span class="n">Concentration</span><span class="p">,</span><span class="n">Temperature</span><span class="p">,</span><span class="n">Duration</span><span class="p">,</span><span class="n">ASO</span>
 <span class="n">noaso</span><span class="p">,</span><span class="n">Hui</span><span class="p">,</span><span class="mi">2023</span><span class="o">-</span><span class="mi">09</span><span class="o">-</span><span class="mi">19</span><span class="p">,</span><span class="ow">in</span> <span class="n">vitro</span><span class="p">,</span><span class="n">sodium</span> <span class="n">cacodylate</span> <span class="p">(</span><span class="mi">300</span> <span class="n">mM</span><span class="p">),</span><span class="n">DMS</span><span class="p">,</span><span class="mf">10.5</span><span class="p">,</span><span class="mi">310</span><span class="p">,</span><span class="mi">240</span><span class="p">,</span><span class="mi">0</span>
 <span class="n">aso1</span><span class="p">,</span><span class="n">Hui</span><span class="p">,</span><span class="mi">2023</span><span class="o">-</span><span class="mi">09</span><span class="o">-</span><span class="mi">19</span><span class="p">,</span><span class="ow">in</span> <span class="n">vitro</span><span class="p">,</span><span class="n">sodium</span> <span class="n">cacodylate</span> <span class="p">(</span><span class="mi">300</span> <span class="n">mM</span><span class="p">),</span><span class="n">DMS</span><span class="p">,</span><span class="mf">10.5</span><span class="p">,</span><span class="mi">310</span><span class="p">,</span><span class="mi">240</span><span class="p">,</span><span class="mi">1</span>
@@ -300,29 +300,29 @@ will be inferred as either strings or floats.</p></li>
 </section>
 </section>
 </section>
-<section id="reference-metadata-file">
-<h2>Reference Metadata File<a class="headerlink" href="#reference-metadata-file" title="Permalink to this headline"></a></h2>
-<section id="id1">
-<h3>About<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h3>
-<section id="id2">
-<h4>Purpose<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h4>
+<section id="metadata-for-references">
+<h2>Metadata for References<a class="headerlink" href="#metadata-for-references" title="Permalink to this headline"></a></h2>
+<section id="about-metadata-for-references">
+<h3>About metadata for references<a class="headerlink" href="#about-metadata-for-references" title="Permalink to this headline"></a></h3>
+<section id="purpose-of-metadata-for-references">
+<h4>Purpose of metadata for references<a class="headerlink" href="#purpose-of-metadata-for-references" title="Permalink to this headline"></a></h4>
 <p>Define metadata about reference sequences, such as the coordinates at
 which barcodes are located.</p>
 </section>
-<section id="id3">
-<h4>Used By<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h4>
+<section id="commands-that-use-metadata-for-references">
+<h4>Commands that use metadata for references<a class="headerlink" href="#commands-that-use-metadata-for-references" title="Permalink to this headline"></a></h4>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">all</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">export</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">all</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">export</span></code></p></li>
 </ul>
 </section>
-<section id="id4">
-<h4>Format<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h4>
+<section id="file-format-of-metadata-for-references">
+<h4>File format of metadata for references<a class="headerlink" href="#file-format-of-metadata-for-references" title="Permalink to this headline"></a></h4>
 <p>comma-separated values (<code class="docutils literal notranslate"><span class="pre">.csv</span></code>)</p>
 </section>
 </section>
-<section id="id5">
-<h3>Fields<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h3>
+<section id="fields-of-metadata-for-references">
+<h3>Fields of metadata for references<a class="headerlink" href="#fields-of-metadata-for-references" title="Permalink to this headline"></a></h3>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 12%" />
@@ -360,8 +360,8 @@ which barcodes are located.</p>
 </tr>
 </tbody>
 </table>
-<section id="id6">
-<h4>Notes<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h4>
+<section id="notes-about-metadata-for-references">
+<h4>Notes about metadata for references<a class="headerlink" href="#notes-about-metadata-for-references" title="Permalink to this headline"></a></h4>
 <ul class="simple">
 <li><p>Fields are case-sensitive and must be in the file’s first line.</p></li>
 <li><p>Additional fields with arbitrary names can be given. Their data types
@@ -369,10 +369,10 @@ will be inferred as either strings or floats.</p></li>
 </ul>
 </section>
 </section>
-<section id="id7">
-<h3>Example<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h3>
-<section id="id8">
-<h4>As Pretty Table<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h4>
+<section id="example-metadata-for-references">
+<h3>Example metadata for references<a class="headerlink" href="#example-metadata-for-references" title="Permalink to this headline"></a></h3>
+<section id="metadata-for-references-as-a-pretty-table">
+<h4>Metadata for references as a pretty table<a class="headerlink" href="#metadata-for-references-as-a-pretty-table" title="Permalink to this headline"></a></h4>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 36%" />
@@ -397,8 +397,8 @@ will be inferred as either strings or floats.</p></li>
 </tbody>
 </table>
 </section>
-<section id="id9">
-<h4>As Plain Text<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h4>
+<section id="metadata-for-references-as-plain-text">
+<h4>Metadata for references as plain text<a class="headerlink" href="#metadata-for-references-as-plain-text" title="Permalink to this headline"></a></h4>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Reference</span><span class="p">,</span><span class="n">Barcode5</span><span class="p">,</span><span class="n">Barcode3</span>
 <span class="n">MyFavRNA</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">17</span>
 <span class="n">OtherRef</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">6</span>
@@ -407,33 +407,33 @@ will be inferred as either strings or floats.</p></li>
 </section>
 </section>
 </section>
-<section id="section-metadata-file">
-<h2>Section Metadata File<a class="headerlink" href="#section-metadata-file" title="Permalink to this headline"></a></h2>
-<section id="id10">
-<h3>About<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h3>
-<section id="id11">
-<h4>Purpose<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h4>
+<section id="metadata-for-sections">
+<h2>Metadata for Sections<a class="headerlink" href="#metadata-for-sections" title="Permalink to this headline"></a></h2>
+<section id="about-metadata-for-sections">
+<h3>About metadata for sections<a class="headerlink" href="#about-metadata-for-sections" title="Permalink to this headline"></a></h3>
+<section id="purpose-of-metadata-for-sections">
+<h4>Purpose of metadata for sections<a class="headerlink" href="#purpose-of-metadata-for-sections" title="Permalink to this headline"></a></h4>
 <p>Define and name sections of a reference sequence. For references with
 many sections, it may be more convenient, reproducible, and/or trackable
 to define the sections in a file than on the command line (using the
 option <code class="docutils literal notranslate"><span class="pre">--coords</span></code> or <code class="docutils literal notranslate"><span class="pre">--primers</span></code>). The sections file additionally
 permits giving each section a name.</p>
 </section>
-<section id="id12">
-<h4>Used By<a class="headerlink" href="#id12" title="Permalink to this headline"></a></h4>
+<section id="commands-that-use-metadata-for-sections">
+<h4>Commands that use metadata for sections<a class="headerlink" href="#commands-that-use-metadata-for-sections" title="Permalink to this headline"></a></h4>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">all</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">mask</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">fold</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">all</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">mask</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">fold</span></code></p></li>
 </ul>
 </section>
-<section id="id13">
-<h4>Format<a class="headerlink" href="#id13" title="Permalink to this headline"></a></h4>
+<section id="file-format-of-metadata-for-sections">
+<h4>File format of metadata for sections<a class="headerlink" href="#file-format-of-metadata-for-sections" title="Permalink to this headline"></a></h4>
 <p>comma-separated values (<code class="docutils literal notranslate"><span class="pre">.csv</span></code>)</p>
 </section>
 </section>
-<section id="id14">
-<h3>Fields<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h3>
+<section id="fields-of-metadata-for-sections">
+<h3>Fields of metadata for sections<a class="headerlink" href="#fields-of-metadata-for-sections" title="Permalink to this headline"></a></h3>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 17%" />
@@ -481,8 +481,8 @@ permits giving each section a name.</p>
 </tr>
 </tbody>
 </table>
-<section id="id15">
-<h4>Notes<a class="headerlink" href="#id15" title="Permalink to this headline"></a></h4>
+<section id="notes-about-metadata-for-sections">
+<h4>Notes about metadata for sections<a class="headerlink" href="#notes-about-metadata-for-sections" title="Permalink to this headline"></a></h4>
 <ul class="simple">
 <li><p>Fields are case-sensitive and must be in the file’s first line.</p></li>
 <li><p>The 5’ end can be defined in the field <code class="docutils literal notranslate"><span class="pre">5'</span> <span class="pre">End</span></code>, which is a numeric
@@ -502,10 +502,10 @@ gap whose length is set via the option <code class="docutils literal notranslate
 </ul>
 </section>
 </section>
-<section id="id16">
-<h3>Example<a class="headerlink" href="#id16" title="Permalink to this headline"></a></h3>
-<section id="id17">
-<h4>As Pretty Table<a class="headerlink" href="#id17" title="Permalink to this headline"></a></h4>
+<section id="example-metadata-for-sections">
+<h3>Example metadata for sections<a class="headerlink" href="#example-metadata-for-sections" title="Permalink to this headline"></a></h3>
+<section id="metadata-for-sections-as-a-pretty-table">
+<h4>Metadata for sections as a pretty table<a class="headerlink" href="#metadata-for-sections-as-a-pretty-table" title="Permalink to this headline"></a></h4>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 13%" />
@@ -556,8 +556,8 @@ gap whose length is set via the option <code class="docutils literal notranslate
 </tbody>
 </table>
 </section>
-<section id="id18">
-<h4>As Plain Text<a class="headerlink" href="#id18" title="Permalink to this headline"></a></h4>
+<section id="metadata-for-sections-as-plain-text">
+<h4>Metadata for sections as plain text<a class="headerlink" href="#metadata-for-sections-as-plain-text" title="Permalink to this headline"></a></h4>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Section</span><span class="p">,</span><span class="n">Reference</span><span class="p">,</span><span class="mi">5</span><span class="s1">&#39; End,3&#39;</span> <span class="n">End</span><span class="p">,</span><span class="n">Forward</span> <span class="n">Primer</span><span class="p">,</span><span class="n">Reverse</span> <span class="n">Primer</span>
 <span class="mi">5</span><span class="n">utr</span><span class="p">,</span><span class="n">MyFavRNA</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">103</span><span class="p">,,</span>
 <span class="n">cds</span><span class="p">,</span><span class="n">MyFavRNA</span><span class="p">,</span><span class="mi">104</span><span class="p">,</span><span class="mi">2368</span><span class="p">,,</span>
@@ -574,7 +574,7 @@ gap whose length is set via the option <code class="docutils literal notranslate
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="data/index.html" class="btn btn-neutral float-left" title="Data Formats" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="data/xam.html" class="btn btn-neutral float-left" title="SAM, BAM, and CRAM: Alignment Maps" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="reports.html" class="btn btn-neutral float-right" title="Report Formats" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

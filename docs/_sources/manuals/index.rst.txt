@@ -13,8 +13,9 @@ For a complete list of commands and their parameters, see :doc:`../cli`.
 
 
 .. toctree::
+    :maxdepth: 2
 
-    workflow/index
-    util/index
+    workflow
     inputs
     logging
+    util/index
