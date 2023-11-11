@@ -2,8 +2,11 @@
 Align the sequencing reads
 ------------------------------------------------------------------------
 
-Input file: FASTA
+Align: input files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Input file: FASTA
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Alignment requires exactly one file of reference sequences, which must
 be in FASTA format.
@@ -13,7 +16,7 @@ alignment, if necessary.
 
 
 Input file(s): FASTQ
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Alignment requires one or more files of sequencing reads, which must be
 in FASTQ format.
@@ -21,7 +24,7 @@ See :doc:`../../formats/data/fastq` for details.
 
 
 FASTQ files of single-end versus paired-end reads
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Sequencing reads can be single-end or paired-end (for more details, see
 :ref:`fastq_endedness`).
@@ -30,19 +33,20 @@ provided that no FASTQ file contains a mixture of both types of reads.
 
 
 FASTQ files of whole samples versus demultiplexed samples
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 FASTQ files can contain reads from a whole sample (which can possibly
 come from many different reference sequences) or can be demultiplexed
 before alignment so that they contain reads from one reference sequence.
 
 
-Options for FASTQ files
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+FASTQ file types
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 When giving FASTQ files on the command line, indicate the type of reads
 (single-end, paired-end interleaved, or paired-end in separate files)
-and the type of content (whole-sample or demultiplexed) via the option.
+and the type of content (whole-sample or demultiplexed) via the name of
+the option with which you give the file.
 Each option has a "long form" (starting with ``--``) and a "short form"
 (starting with ``-`` and comprising a single character), which are both
 indicated in this table, separated by a ``/``:
@@ -65,7 +69,7 @@ single-end                 ``--fastqz/-z`` ``--dmfastqz/-Z``
 
 
 Providing one FASTQ file (single-end or interleaved paired-end)
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 For example, to align a FASTQ of single-end reads from a whole sample,
 use the option ``-z``::
@@ -87,7 +91,7 @@ reads from only one reference in the sample.
 .. _fastq_pair:
 
 Providing one pair of paired-end FASTQ files
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 If your reads are paired-end and you have one FASTQ file containing all
 1st mates and another containing all 2nd mates, then you will need to
@@ -112,7 +116,7 @@ There are two methods:
 
 
 Providing multiple FASTQ files or pairs or paired-end FASTQ files
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 There are three ways to align multiple FASTQ files (or pairs) at once:
 
@@ -164,8 +168,11 @@ There are three ways to align multiple FASTQ files (or pairs) at once:
     SEISMIC-RNA will still find and process any FASTQ files within them.
 
 
-Options for Phred score encoding
+Align: options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Options for Phred score encoding
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 SEISMIC-RNA defaults to using Phred+33 encoding for FASTQ files, which
 is standard on modern Illumina sequencers.
@@ -192,7 +199,7 @@ in the "Basic Statisics" section:
 
 
 Options for quality assessment with FastQC
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 By default, each FASTQ file is processed with `FastQC`_, both before and
 after trimming, in order to find any potential problems.
@@ -202,14 +209,14 @@ add the flag ``--qc-extract``.
 
 
 Options for trimming with Cutadapt
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 By default, each FASTQ file and pair of mated FASTQ files is trimmed for
 adapters and low-quality bases using `Cutadapt`_. To disable adapter
 trimming, add the flag ``--no-cut``.
 
 Adapter trimming
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 By default, SEISMIC-RNA uses the standard, minimal adapter sequences for
 Illumina sequencing runs for both read 1 and (if paired-end) read 2:
@@ -229,7 +236,7 @@ To use another adapter, type its sequence after the appropriate option:
 ====== ====== ==============
 
 Quality trimming
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Base calls on either end of a read that fall below a minimum Phred score
 quality are trimmed with Cutadapt.
@@ -239,7 +246,7 @@ The default minimum quality is 25, which corresponds to a probability of
 To change the quality threshold, use the option ``--min-phred``.
 
 Dark cycle trimming
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 On some Illumina sequencers (e.g. NextSeq, iSeq), the probes used to
 detect G bases emit no light. Hence, these instruments will label a base
@@ -253,7 +260,7 @@ from the 3' ends of reads (since they cannot be distinguished from any
 artefactual G bases).
 
 Additional options for Cutadapt
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 See :ref:`cli_align` for the full list of options that SEISMIC-RNA can
 use with Cutadapt, and the `Cutadapt reference guide`_ for details on
@@ -266,10 +273,10 @@ trimming.
 
 
 Options for alignment with Bowtie 2
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Bowtie 2 index files: automatic and pre-built
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 SEISMIC-RNA searches for a set of Bowtie 2 index files in the directory
 where the FASTA file is.
@@ -301,7 +308,7 @@ See the `Bowtie 2 Indexer manual`_ for more details.
     command and avoid modifying or replacing the FASTA and index files.
 
 Alignment modes: local and end-to-end
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 During alignment, Bowtie 2 can either align the entirety of each read
 (end-to-end mode) or find and align only the section of the read that
@@ -323,39 +330,8 @@ reason to do so (e.g. if it is essential to detect mutations at the ends
 of reads) and only after carefully trimming any extraneous sequences
 from the ends of the reads.
 
-Filtering alignments
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-Alignments can be filtered by `alignment score`_ and `mapping quality`_,
-which are distinct properties.
-
-`Alignment score`_ measures how well a read aligns to a given location
-in the reference.
-It is calculated from the number of matches, substitutions, and gaps
-using the score parameters.
-The minimum alignment scores for local and end-to-end modes can be set
-using ``--bt2-score-min-loc`` and ``--bt2-score-min-e2e``, respectively.
-See the `section of the Bowtie 2 manual on alignment scores`_ for advice
-on setting this parameter.
-
-`Mapping quality`_ measures how unique an alignment is: high quality if
-the read aligns with a high score to exactly one location, low quality
-if it aligns with similar scores to multiple locations in the reference.
-The default minimum quality is 25, which corresponds to a confidence of
-1 - 10 :sup:`-2.5` = 0.997 that the read has aligned correctly.
-To change the quality threshold, use the option ``--min-mapq``.
-For those searching for this option in Bowtie 2, you will not find it.
-Instead, reads with insufficient mapping quality are filtered out after
-alignment using the `view command in Samtools`_.
-
-Examining unaligned reads/pairs
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-For some reasons, including troubleshooting low alignment rates, it can
-be helpful to examine the reads that did not align. Depending on the
-
-Paired-end options
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Options for aligning paired-end reads
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Bowtie 2 considers paired-end reads to align "concordantly" when their
 relative positions match expectations and "discordantly" otherwise. See
@@ -387,8 +363,33 @@ The option ``--bt2-mixed`` enables `mixed mode`_ wherein, for pairs that
 fail to produce a valid paired-end alignment, Bowtie 2 attempts to align
 each mate individually (as if it were a single-end read).
 
+Options for filtering alignments
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Alignments can be filtered by `alignment score`_ and `mapping quality`_,
+which are distinct properties.
+
+`Alignment score`_ measures how well a read aligns to a given location
+in the reference.
+It is calculated from the number of matches, substitutions, and gaps
+using the score parameters.
+The minimum alignment scores for local and end-to-end modes can be set
+using ``--bt2-score-min-loc`` and ``--bt2-score-min-e2e``, respectively.
+See the `section of the Bowtie 2 manual on alignment scores`_ for advice
+on setting this parameter.
+
+`Mapping quality`_ measures how unique an alignment is: high quality if
+the read aligns with a high score to exactly one location, low quality
+if it aligns with similar scores to multiple locations in the reference.
+The default minimum quality is 25, which corresponds to a confidence of
+1 - 10 :sup:`-2.5` = 0.997 that the read has aligned correctly.
+To change the quality threshold, use the option ``--min-mapq``.
+For those searching for this option in Bowtie 2, you will not find it.
+Instead, reads with insufficient mapping quality are filtered out after
+alignment using the `view command in Samtools`_.
+
 Additional options for Bowtie 2
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 See :ref:`cli_align` for the full list of options that SEISMIC-RNA can
 use with Bowtie 2, and the `Bowtie 2 manual`_ for details on each of
@@ -397,6 +398,101 @@ These options should suffice for most users.
 If you require a more customized alignment workflow, you can align your
 your FASTQ files outside of SEISMIC-RNA, then pass the resulting XAM
 files into SEISMIC-RNA at the step :ref:`step_relate`.
+
+.. _bam_vs_cram:
+
+Formatting alignment maps
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+SEISMIC-RNA can output alignment map files in either BAM or CRAM format.
+For details on these file formats, see :doc:`../../formats/data/xam`.
+The default is CRAM format (option ``--cram``); BAM format is enabled
+using the option ``--bam``.
+
+Alignment maps in CRAM format are smaller than their BAM counterparts,
+and hence better suited to long-term storage.
+However, the better compression of CRAM files comes at three costs:
+
+- A CRAM file must be accompanied by a FASTA file storing the sequence
+  of every reference that appears in the header of the CRAM file.
+  A CRAM file stores only the relative path to its FASTA file, not the
+  sequence information, which enables the CRAM file to be much smaller
+  than it would be if it did need to contain its own sequences.
+  Because the FASTA file existed before and during the alignment, having
+  this FASTA file accompany the CRAM file usually incurs no extra cost.
+  However, moving or deleting the FASTA will break the CRAM file.
+  As a safeguard against this fragility, SEISMIC-RNA keeps a copy of the
+  original FASTA file in the same directory as the output CRAM file.
+  Creating an actual copy would require more storage space and defeat
+  the purpose of CRAM's smaller file size, so SEISMIC-RNA actually makes
+  a `hard link`_ -- not a copy -- which requires minimal extra space.
+  In some circumstances, making a hard link can fail, in which case
+  SEISMIC-RNA will resort to copying the FASTA file instead.
+- Reading and writing CRAM files is slower than for BAM files due to the
+  extra effort needed for compressing and decompressing CRAM files.
+- In the CIGAR strings, distinction between reference matches (``=``)
+  and substitutions (``X``) is lost upon compressing to CRAM format.
+  Thus, ``seismic relate`` must perform extra work to determine if each
+  non-gapped position is a match or substitution, which makes it run
+  more slowly than it would if the distinction had been preserved.
+
+In general, use CRAM format if minimizning the size of your alignment
+map files is a priority, especially for long-term storage.
+Use BAM format to make the ``align`` and ``relate`` steps run faster,
+and to increase the robustness of the output files (because BAM files
+are self-contained, while CRAM files will break without the FASTA file
+that accompanies them).
+
+
+Align: output files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Output files: FastQC reports
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+If FastQC is run, then it outputs files to ``{out}/{sample}/qc``, where
+``{out}`` is the output directory (``--out-dir``) and ``{sample}`` is
+the name of the sample.
+The directory ``{out}/{sample}/qc/init`` is always created and contains
+FastQC reports of the initial FASTQ files.
+If adapter/quality trimming was run, ``{out}/{sample}/qc/trim`` is also
+created for FastQC reports of the trimmed FASTQ files.
+
+In each directory (``init`` and ``trim``), FastQC writes two files for
+each FASTQ file: ``{fq_name}_fastqc.html`` and ``{fq_name}_fastqc.zip``,
+where ``{fq_name}`` is the name of the original FASTQ file up to the
+file extension.
+If the option ``--qc-extract`` is given, then FastQC will also unzip
+``{fq_name}_fastqc.zip`` to the directory ``{fq_name}_fastqc``.
+For details on these outputs, see the documentation for `FastQC`_.
+
+
+Output files: alignment maps
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The most important outputs of ``seismic align`` are alignment map files.
+SEISMIC-RNA can output alignment maps in either BAM or CRAM format.
+For a comparison of these formats, see :ref:`bam_vs_cram`.
+
+Alignment maps store the location in the reference sequence to which
+each read aligned, as well as the Phred quality scores, mapping quality,
+and mutated positions.
+SEISMIC-RNA outputs alignment maps where every read aligns to the same
+reference (although this is not a restriction outside of SEISMIC-RNA).
+Each alignment map is written to ``{out}/{sample}/align/{ref}.{xam}``,
+where ``{out}`` is the output directory (``--out-dir``), ``{sample}`` is
+the name of the sample from which the reads came, ``{ref}`` is the name
+of the reference to which the reads aligned, and ``{xam}`` is the file
+extension (``.bam`` or ``.cram``, depending on the selected format).
+
+
+
+Examining unaligned reads/pairs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+For some reasons, including troubleshooting low alignment rates, it can
+be helpful to examine the reads that did not align. Depending on the
+
 
 Troubleshooting alignment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -435,3 +531,4 @@ then try the following steps (in this order):
 .. _overlap partially or completely, or dovetail: https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mates-can-overlap-contain-or-dovetail-each-other
 .. _Bowtie 2 manual: https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml
 .. _BLAST: https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome
+.. _hard link: https://en.wikipedia.org/wiki/Hard_link

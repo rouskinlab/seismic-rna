@@ -50,12 +50,9 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Manuals</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Workflow</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#align-the-sequencing-reads">Align the sequencing reads</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#input-file-fasta">Input file: FASTA</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#input-file-s-fastq">Input file(s): FASTQ</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#options-for-phred-score-encoding">Options for Phred score encoding</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#options-for-quality-assessment-with-fastqc">Options for quality assessment with FastQC</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#options-for-trimming-with-cutadapt">Options for trimming with Cutadapt</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#options-for-alignment-with-bowtie-2">Options for alignment with Bowtie 2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#align-input-files">Align: input files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#align-options">Align: options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#align-output-files">Align: output files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#troubleshooting-alignment">Troubleshooting alignment</a></li>
 </ul>
 </li>
@@ -108,8 +105,10 @@
 <h1>Workflow<a class="headerlink" href="#workflow" title="Permalink to this headline"></a></h1>
 <section id="align-the-sequencing-reads">
 <h2>Align the sequencing reads<a class="headerlink" href="#align-the-sequencing-reads" title="Permalink to this headline"></a></h2>
+<section id="align-input-files">
+<h3>Align: input files<a class="headerlink" href="#align-input-files" title="Permalink to this headline"></a></h3>
 <section id="input-file-fasta">
-<h3>Input file: FASTA<a class="headerlink" href="#input-file-fasta" title="Permalink to this headline"></a></h3>
+<h4>Input file: FASTA<a class="headerlink" href="#input-file-fasta" title="Permalink to this headline"></a></h4>
 <p>Alignment requires exactly one file of reference sequences, which must
 be in FASTA format.
 See <a class="reference internal" href="../../formats/data/fasta.html"><span class="doc">FASTA: Reference sequences</span></a> for details.
@@ -117,28 +116,29 @@ You can use the <a class="reference internal" href="../util/fastaclean.html"><sp
 alignment, if necessary.</p>
 </section>
 <section id="input-file-s-fastq">
-<h3>Input file(s): FASTQ<a class="headerlink" href="#input-file-s-fastq" title="Permalink to this headline"></a></h3>
+<h4>Input file(s): FASTQ<a class="headerlink" href="#input-file-s-fastq" title="Permalink to this headline"></a></h4>
 <p>Alignment requires one or more files of sequencing reads, which must be
 in FASTQ format.
 See <a class="reference internal" href="../../formats/data/fastq.html"><span class="doc">FASTQ: Sequencing Reads</span></a> for details.</p>
 <section id="fastq-files-of-single-end-versus-paired-end-reads">
-<h4>FASTQ files of single-end versus paired-end reads<a class="headerlink" href="#fastq-files-of-single-end-versus-paired-end-reads" title="Permalink to this headline"></a></h4>
+<h5>FASTQ files of single-end versus paired-end reads<a class="headerlink" href="#fastq-files-of-single-end-versus-paired-end-reads" title="Permalink to this headline"></a></h5>
 <p>Sequencing reads can be single-end or paired-end (for more details, see
 <a class="reference internal" href="../../formats/data/index.html#fastq-endedness"><span class="std std-ref">Endedness: single-end and paired-end reads</span></a>).
 The SEISMIC-RNA workflow can handle both single- and paired-end reads,
 provided that no FASTQ file contains a mixture of both types of reads.</p>
 </section>
 <section id="fastq-files-of-whole-samples-versus-demultiplexed-samples">
-<h4>FASTQ files of whole samples versus demultiplexed samples<a class="headerlink" href="#fastq-files-of-whole-samples-versus-demultiplexed-samples" title="Permalink to this headline"></a></h4>
+<h5>FASTQ files of whole samples versus demultiplexed samples<a class="headerlink" href="#fastq-files-of-whole-samples-versus-demultiplexed-samples" title="Permalink to this headline"></a></h5>
 <p>FASTQ files can contain reads from a whole sample (which can possibly
 come from many different reference sequences) or can be demultiplexed
 before alignment so that they contain reads from one reference sequence.</p>
 </section>
-<section id="options-for-fastq-files">
-<h4>Options for FASTQ files<a class="headerlink" href="#options-for-fastq-files" title="Permalink to this headline"></a></h4>
+<section id="fastq-file-types">
+<h5>FASTQ file types<a class="headerlink" href="#fastq-file-types" title="Permalink to this headline"></a></h5>
 <p>When giving FASTQ files on the command line, indicate the type of reads
 (single-end, paired-end interleaved, or paired-end in separate files)
-and the type of content (whole-sample or demultiplexed) via the option.
+and the type of content (whole-sample or demultiplexed) via the name of
+the option with which you give the file.
 Each option has a “long form” (starting with <code class="docutils literal notranslate"><span class="pre">--</span></code>) and a “short form”
 (starting with <code class="docutils literal notranslate"><span class="pre">-</span></code> and comprising a single character), which are both
 indicated in this table, separated by a <code class="docutils literal notranslate"><span class="pre">/</span></code>:</p>
@@ -181,7 +181,7 @@ and 2nd mates are required. See <a class="reference internal" href="#fastq-pair"
 </div>
 </section>
 <section id="providing-one-fastq-file-single-end-or-interleaved-paired-end">
-<h4>Providing one FASTQ file (single-end or interleaved paired-end)<a class="headerlink" href="#providing-one-fastq-file-single-end-or-interleaved-paired-end" title="Permalink to this headline"></a></h4>
+<h5>Providing one FASTQ file (single-end or interleaved paired-end)<a class="headerlink" href="#providing-one-fastq-file-single-end-or-interleaved-paired-end" title="Permalink to this headline"></a></h5>
 <p>For example, to align a FASTQ of single-end reads from a whole sample,
 use the option <code class="docutils literal notranslate"><span class="pre">-z</span></code>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">align</span> <span class="p">{</span><span class="n">refs</span><span class="o">.</span><span class="n">fa</span><span class="p">}</span> <span class="o">-</span><span class="n">z</span> <span class="p">{</span><span class="n">sample</span><span class="o">.</span><span class="n">fq</span><span class="o">.</span><span class="n">gz</span><span class="p">}</span>
@@ -198,7 +198,7 @@ use the option <code class="docutils literal notranslate"><span class="pre">-Y</
 reads from only one reference in the sample.</p>
 </section>
 <section id="providing-one-pair-of-paired-end-fastq-files">
-<span id="fastq-pair"></span><h4>Providing one pair of paired-end FASTQ files<a class="headerlink" href="#providing-one-pair-of-paired-end-fastq-files" title="Permalink to this headline"></a></h4>
+<span id="fastq-pair"></span><h5>Providing one pair of paired-end FASTQ files<a class="headerlink" href="#providing-one-pair-of-paired-end-fastq-files" title="Permalink to this headline"></a></h5>
 <p>If your reads are paired-end and you have one FASTQ file containing all
 1st mates and another containing all 2nd mates, then you will need to
 provide both FASTQ files.
@@ -223,7 +223,7 @@ provide the path to that directory with <code class="docutils literal notranslat
 </ol>
 </section>
 <section id="providing-multiple-fastq-files-or-pairs-or-paired-end-fastq-files">
-<h4>Providing multiple FASTQ files or pairs or paired-end FASTQ files<a class="headerlink" href="#providing-multiple-fastq-files-or-pairs-or-paired-end-fastq-files" title="Permalink to this headline"></a></h4>
+<h5>Providing multiple FASTQ files or pairs or paired-end FASTQ files<a class="headerlink" href="#providing-multiple-fastq-files-or-pairs-or-paired-end-fastq-files" title="Permalink to this headline"></a></h5>
 <p>There are three ways to align multiple FASTQ files (or pairs) at once:</p>
 <ol class="arabic">
 <li><p>Use options more than once.
@@ -277,8 +277,11 @@ SEISMIC-RNA will still find and process any FASTQ files within them.</p>
 </div>
 </section>
 </section>
+</section>
+<section id="align-options">
+<h3>Align: options<a class="headerlink" href="#align-options" title="Permalink to this headline"></a></h3>
 <section id="options-for-phred-score-encoding">
-<h3>Options for Phred score encoding<a class="headerlink" href="#options-for-phred-score-encoding" title="Permalink to this headline"></a></h3>
+<h4>Options for Phred score encoding<a class="headerlink" href="#options-for-phred-score-encoding" title="Permalink to this headline"></a></h4>
 <p>SEISMIC-RNA defaults to using Phred+33 encoding for FASTQ files, which
 is standard on modern Illumina sequencers.
 To change the Phred score encoding, use the option <code class="docutils literal notranslate"><span class="pre">--phred-enc</span></code>.
@@ -304,7 +307,7 @@ to determine the Phred score offset.</p></li>
 </ul>
 </section>
 <section id="options-for-quality-assessment-with-fastqc">
-<h3>Options for quality assessment with FastQC<a class="headerlink" href="#options-for-quality-assessment-with-fastqc" title="Permalink to this headline"></a></h3>
+<h4>Options for quality assessment with FastQC<a class="headerlink" href="#options-for-quality-assessment-with-fastqc" title="Permalink to this headline"></a></h4>
 <p>By default, each FASTQ file is processed with <a class="reference external" href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">FastQC</a>, both before and
 after trimming, in order to find any potential problems.
 FastQC can be disabled with the flag <code class="docutils literal notranslate"><span class="pre">--no-fastqc</span></code>.
@@ -312,12 +315,12 @@ To enable automatic extraction of the zipped output files from FastQC,
 add the flag <code class="docutils literal notranslate"><span class="pre">--qc-extract</span></code>.</p>
 </section>
 <section id="options-for-trimming-with-cutadapt">
-<h3>Options for trimming with Cutadapt<a class="headerlink" href="#options-for-trimming-with-cutadapt" title="Permalink to this headline"></a></h3>
+<h4>Options for trimming with Cutadapt<a class="headerlink" href="#options-for-trimming-with-cutadapt" title="Permalink to this headline"></a></h4>
 <p>By default, each FASTQ file and pair of mated FASTQ files is trimmed for
 adapters and low-quality bases using <a class="reference external" href="https://cutadapt.readthedocs.io/en/stable/">Cutadapt</a>. To disable adapter
 trimming, add the flag <code class="docutils literal notranslate"><span class="pre">--no-cut</span></code>.</p>
 <section id="adapter-trimming">
-<h4>Adapter trimming<a class="headerlink" href="#adapter-trimming" title="Permalink to this headline"></a></h4>
+<h5>Adapter trimming<a class="headerlink" href="#adapter-trimming" title="Permalink to this headline"></a></h5>
 <p>By default, SEISMIC-RNA uses the standard, minimal adapter sequences for
 Illumina sequencing runs for both read 1 and (if paired-end) read 2:</p>
 <ul class="simple">
@@ -358,7 +361,7 @@ Illumina sequencing runs for both read 1 and (if paired-end) read 2:</p>
 </table>
 </section>
 <section id="quality-trimming">
-<h4>Quality trimming<a class="headerlink" href="#quality-trimming" title="Permalink to this headline"></a></h4>
+<h5>Quality trimming<a class="headerlink" href="#quality-trimming" title="Permalink to this headline"></a></h5>
 <p>Base calls on either end of a read that fall below a minimum Phred score
 quality are trimmed with Cutadapt.
 The default minimum quality is 25, which corresponds to a probability of
@@ -367,7 +370,7 @@ The default minimum quality is 25, which corresponds to a probability of
 To change the quality threshold, use the option <code class="docutils literal notranslate"><span class="pre">--min-phred</span></code>.</p>
 </section>
 <section id="dark-cycle-trimming">
-<h4>Dark cycle trimming<a class="headerlink" href="#dark-cycle-trimming" title="Permalink to this headline"></a></h4>
+<h5>Dark cycle trimming<a class="headerlink" href="#dark-cycle-trimming" title="Permalink to this headline"></a></h5>
 <p>On some Illumina sequencers (e.g. NextSeq, iSeq), the probes used to
 detect G bases emit no light. Hence, these instruments will label a base
 call as a G if it appears dark. If sequencing reaches the end of a read,
@@ -380,7 +383,7 @@ from the 3’ ends of reads (since they cannot be distinguished from any
 artefactual G bases).</p>
 </section>
 <section id="additional-options-for-cutadapt">
-<h4>Additional options for Cutadapt<a class="headerlink" href="#additional-options-for-cutadapt" title="Permalink to this headline"></a></h4>
+<h5>Additional options for Cutadapt<a class="headerlink" href="#additional-options-for-cutadapt" title="Permalink to this headline"></a></h5>
 <p>See <a class="reference internal" href="../../cli.html#cli-align"><span class="std std-ref">seismic align</span></a> for the full list of options that SEISMIC-RNA can
 use with Cutadapt, and the <a class="reference external" href="https://cutadapt.readthedocs.io/en/stable/reference.html">Cutadapt reference guide</a> for details on
 each of these options.
@@ -392,9 +395,9 @@ trimming.</p>
 </section>
 </section>
 <section id="options-for-alignment-with-bowtie-2">
-<h3>Options for alignment with Bowtie 2<a class="headerlink" href="#options-for-alignment-with-bowtie-2" title="Permalink to this headline"></a></h3>
+<h4>Options for alignment with Bowtie 2<a class="headerlink" href="#options-for-alignment-with-bowtie-2" title="Permalink to this headline"></a></h4>
 <section id="bowtie-2-index-files-automatic-and-pre-built">
-<h4>Bowtie 2 index files: automatic and pre-built<a class="headerlink" href="#bowtie-2-index-files-automatic-and-pre-built" title="Permalink to this headline"></a></h4>
+<h5>Bowtie 2 index files: automatic and pre-built<a class="headerlink" href="#bowtie-2-index-files-automatic-and-pre-built" title="Permalink to this headline"></a></h5>
 <p>SEISMIC-RNA searches for a set of Bowtie 2 index files in the directory
 where the FASTA file is.
 A valid Bowtie 2 index comprises six files, all with the same name as
@@ -426,7 +429,7 @@ command and avoid modifying or replacing the FASTA and index files.</p>
 </div>
 </section>
 <section id="alignment-modes-local-and-end-to-end">
-<h4>Alignment modes: local and end-to-end<a class="headerlink" href="#alignment-modes-local-and-end-to-end" title="Permalink to this headline"></a></h4>
+<h5>Alignment modes: local and end-to-end<a class="headerlink" href="#alignment-modes-local-and-end-to-end" title="Permalink to this headline"></a></h5>
 <p>During alignment, Bowtie 2 can either align the entirety of each read
 (end-to-end mode) or find and align only the section of the read that
 yields the best alignment score (local mode).
@@ -445,35 +448,8 @@ reason to do so (e.g. if it is essential to detect mutations at the ends
 of reads) and only after carefully trimming any extraneous sequences
 from the ends of the reads.</p>
 </section>
-<section id="filtering-alignments">
-<h4>Filtering alignments<a class="headerlink" href="#filtering-alignments" title="Permalink to this headline"></a></h4>
-<p>Alignments can be filtered by <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#scores-higher-more-similar">alignment score</a> and <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mapping-quality-higher-more-unique">mapping quality</a>,
-which are distinct properties.</p>
-<p><a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#scores-higher-more-similar">Alignment score</a> measures how well a read aligns to a given location
-in the reference.
-It is calculated from the number of matches, substitutions, and gaps
-using the score parameters.
-The minimum alignment scores for local and end-to-end modes can be set
-using <code class="docutils literal notranslate"><span class="pre">--bt2-score-min-loc</span></code> and <code class="docutils literal notranslate"><span class="pre">--bt2-score-min-e2e</span></code>, respectively.
-See the <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#valid-alignments-meet-or-exceed-the-minimum-score-threshold">section of the Bowtie 2 manual on alignment scores</a> for advice
-on setting this parameter.</p>
-<p><a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mapping-quality-higher-more-unique">Mapping quality</a> measures how unique an alignment is: high quality if
-the read aligns with a high score to exactly one location, low quality
-if it aligns with similar scores to multiple locations in the reference.
-The default minimum quality is 25, which corresponds to a confidence of
-1 - 10 <sup>-2.5</sup> = 0.997 that the read has aligned correctly.
-To change the quality threshold, use the option <code class="docutils literal notranslate"><span class="pre">--min-mapq</span></code>.
-For those searching for this option in Bowtie 2, you will not find it.
-Instead, reads with insufficient mapping quality are filtered out after
-alignment using the <a class="reference external" href="https://www.htslib.org/doc/samtools-view.html">view command in Samtools</a>.</p>
-</section>
-<section id="examining-unaligned-reads-pairs">
-<h4>Examining unaligned reads/pairs<a class="headerlink" href="#examining-unaligned-reads-pairs" title="Permalink to this headline"></a></h4>
-<p>For some reasons, including troubleshooting low alignment rates, it can
-be helpful to examine the reads that did not align. Depending on the</p>
-</section>
-<section id="paired-end-options">
-<h4>Paired-end options<a class="headerlink" href="#paired-end-options" title="Permalink to this headline"></a></h4>
+<section id="options-for-aligning-paired-end-reads">
+<h5>Options for aligning paired-end reads<a class="headerlink" href="#options-for-aligning-paired-end-reads" title="Permalink to this headline"></a></h5>
 <p>Bowtie 2 considers paired-end reads to align “concordantly” when their
 relative positions match expectations and “discordantly” otherwise. See
 the <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#concordant-pairs-match-pair-expectations-discordant-pairs-dont">Bowtie 2 manual for details on concordant/discordant alignments</a>.
@@ -503,8 +479,30 @@ valid alignments (yes) or invalid (no).</p>
 fail to produce a valid paired-end alignment, Bowtie 2 attempts to align
 each mate individually (as if it were a single-end read).</p>
 </section>
+<section id="options-for-filtering-alignments">
+<h5>Options for filtering alignments<a class="headerlink" href="#options-for-filtering-alignments" title="Permalink to this headline"></a></h5>
+<p>Alignments can be filtered by <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#scores-higher-more-similar">alignment score</a> and <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mapping-quality-higher-more-unique">mapping quality</a>,
+which are distinct properties.</p>
+<p><a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#scores-higher-more-similar">Alignment score</a> measures how well a read aligns to a given location
+in the reference.
+It is calculated from the number of matches, substitutions, and gaps
+using the score parameters.
+The minimum alignment scores for local and end-to-end modes can be set
+using <code class="docutils literal notranslate"><span class="pre">--bt2-score-min-loc</span></code> and <code class="docutils literal notranslate"><span class="pre">--bt2-score-min-e2e</span></code>, respectively.
+See the <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#valid-alignments-meet-or-exceed-the-minimum-score-threshold">section of the Bowtie 2 manual on alignment scores</a> for advice
+on setting this parameter.</p>
+<p><a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mapping-quality-higher-more-unique">Mapping quality</a> measures how unique an alignment is: high quality if
+the read aligns with a high score to exactly one location, low quality
+if it aligns with similar scores to multiple locations in the reference.
+The default minimum quality is 25, which corresponds to a confidence of
+1 - 10 <sup>-2.5</sup> = 0.997 that the read has aligned correctly.
+To change the quality threshold, use the option <code class="docutils literal notranslate"><span class="pre">--min-mapq</span></code>.
+For those searching for this option in Bowtie 2, you will not find it.
+Instead, reads with insufficient mapping quality are filtered out after
+alignment using the <a class="reference external" href="https://www.htslib.org/doc/samtools-view.html">view command in Samtools</a>.</p>
+</section>
 <section id="additional-options-for-bowtie-2">
-<h4>Additional options for Bowtie 2<a class="headerlink" href="#additional-options-for-bowtie-2" title="Permalink to this headline"></a></h4>
+<h5>Additional options for Bowtie 2<a class="headerlink" href="#additional-options-for-bowtie-2" title="Permalink to this headline"></a></h5>
 <p>See <a class="reference internal" href="../../cli.html#cli-align"><span class="std std-ref">seismic align</span></a> for the full list of options that SEISMIC-RNA can
 use with Bowtie 2, and the <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml">Bowtie 2 manual</a> for details on each of
 these options.
@@ -512,6 +510,88 @@ These options should suffice for most users.
 If you require a more customized alignment workflow, you can align your
 your FASTQ files outside of SEISMIC-RNA, then pass the resulting XAM
 files into SEISMIC-RNA at the step <a class="reference internal" href="relate.html#step-relate"><span class="std std-ref">Relate each read to every reference position</span></a>.</p>
+</section>
+</section>
+<section id="formatting-alignment-maps">
+<span id="bam-vs-cram"></span><h4>Formatting alignment maps<a class="headerlink" href="#formatting-alignment-maps" title="Permalink to this headline"></a></h4>
+<p>SEISMIC-RNA can output alignment map files in either BAM or CRAM format.
+For details on these file formats, see <a class="reference internal" href="../../formats/data/xam.html"><span class="doc">SAM, BAM, and CRAM: Alignment Maps</span></a>.
+The default is CRAM format (option <code class="docutils literal notranslate"><span class="pre">--cram</span></code>); BAM format is enabled
+using the option <code class="docutils literal notranslate"><span class="pre">--bam</span></code>.</p>
+<p>Alignment maps in CRAM format are smaller than their BAM counterparts,
+and hence better suited to long-term storage.
+However, the better compression of CRAM files comes at three costs:</p>
+<ul class="simple">
+<li><p>A CRAM file must be accompanied by a FASTA file storing the sequence
+of every reference that appears in the header of the CRAM file.
+A CRAM file stores only the relative path to its FASTA file, not the
+sequence information, which enables the CRAM file to be much smaller
+than it would be if it did need to contain its own sequences.
+Because the FASTA file existed before and during the alignment, having
+this FASTA file accompany the CRAM file usually incurs no extra cost.
+However, moving or deleting the FASTA will break the CRAM file.
+As a safeguard against this fragility, SEISMIC-RNA keeps a copy of the
+original FASTA file in the same directory as the output CRAM file.
+Creating an actual copy would require more storage space and defeat
+the purpose of CRAM’s smaller file size, so SEISMIC-RNA actually makes
+a <a class="reference external" href="https://en.wikipedia.org/wiki/Hard_link">hard link</a> – not a copy – which requires minimal extra space.
+In some circumstances, making a hard link can fail, in which case
+SEISMIC-RNA will resort to copying the FASTA file instead.</p></li>
+<li><p>Reading and writing CRAM files is slower than for BAM files due to the
+extra effort needed for compressing and decompressing CRAM files.</p></li>
+<li><p>In the CIGAR strings, distinction between reference matches (<code class="docutils literal notranslate"><span class="pre">=</span></code>)
+and substitutions (<code class="docutils literal notranslate"><span class="pre">X</span></code>) is lost upon compressing to CRAM format.
+Thus, <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">relate</span></code> must perform extra work to determine if each
+non-gapped position is a match or substitution, which makes it run
+more slowly than it would if the distinction had been preserved.</p></li>
+</ul>
+<p>In general, use CRAM format if minimizning the size of your alignment
+map files is a priority, especially for long-term storage.
+Use BAM format to make the <code class="docutils literal notranslate"><span class="pre">align</span></code> and <code class="docutils literal notranslate"><span class="pre">relate</span></code> steps run faster,
+and to increase the robustness of the output files (because BAM files
+are self-contained, while CRAM files will break without the FASTA file
+that accompanies them).</p>
+</section>
+</section>
+<section id="align-output-files">
+<h3>Align: output files<a class="headerlink" href="#align-output-files" title="Permalink to this headline"></a></h3>
+<section id="output-files-fastqc-reports">
+<h4>Output files: FastQC reports<a class="headerlink" href="#output-files-fastqc-reports" title="Permalink to this headline"></a></h4>
+<p>If FastQC is run, then it outputs files to <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/qc</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory (<code class="docutils literal notranslate"><span class="pre">--out-dir</span></code>) and <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is
+the name of the sample.
+The directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/qc/init</span></code> is always created and contains
+FastQC reports of the initial FASTQ files.
+If adapter/quality trimming was run, <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/qc/trim</span></code> is also
+created for FastQC reports of the trimmed FASTQ files.</p>
+<p>In each directory (<code class="docutils literal notranslate"><span class="pre">init</span></code> and <code class="docutils literal notranslate"><span class="pre">trim</span></code>), FastQC writes two files for
+each FASTQ file: <code class="docutils literal notranslate"><span class="pre">{fq_name}_fastqc.html</span></code> and <code class="docutils literal notranslate"><span class="pre">{fq_name}_fastqc.zip</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">{fq_name}</span></code> is the name of the original FASTQ file up to the
+file extension.
+If the option <code class="docutils literal notranslate"><span class="pre">--qc-extract</span></code> is given, then FastQC will also unzip
+<code class="docutils literal notranslate"><span class="pre">{fq_name}_fastqc.zip</span></code> to the directory <code class="docutils literal notranslate"><span class="pre">{fq_name}_fastqc</span></code>.
+For details on these outputs, see the documentation for <a class="reference external" href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">FastQC</a>.</p>
+</section>
+<section id="output-files-alignment-maps">
+<h4>Output files: alignment maps<a class="headerlink" href="#output-files-alignment-maps" title="Permalink to this headline"></a></h4>
+<p>The most important outputs of <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code> are alignment map files.
+SEISMIC-RNA can output alignment maps in either BAM or CRAM format.
+For a comparison of these formats, see <a class="reference internal" href="#bam-vs-cram"><span class="std std-ref">Formatting alignment maps</span></a>.</p>
+<p>Alignment maps store the location in the reference sequence to which
+each read aligned, as well as the Phred quality scores, mapping quality,
+and mutated positions.
+SEISMIC-RNA outputs alignment maps where every read aligns to the same
+reference (although this is not a restriction outside of SEISMIC-RNA).
+Each alignment map is written to <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/align/{ref}.{xam}</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory (<code class="docutils literal notranslate"><span class="pre">--out-dir</span></code>), <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is
+the name of the sample from which the reads came, <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is the name
+of the reference to which the reads aligned, and <code class="docutils literal notranslate"><span class="pre">{xam}</span></code> is the file
+extension (<code class="docutils literal notranslate"><span class="pre">.bam</span></code> or <code class="docutils literal notranslate"><span class="pre">.cram</span></code>, depending on the selected format).</p>
+</section>
+<section id="examining-unaligned-reads-pairs">
+<h4>Examining unaligned reads/pairs<a class="headerlink" href="#examining-unaligned-reads-pairs" title="Permalink to this headline"></a></h4>
+<p>For some reasons, including troubleshooting low alignment rates, it can
+be helpful to examine the reads that did not align. Depending on the</p>
 </section>
 </section>
 <section id="troubleshooting-alignment">
