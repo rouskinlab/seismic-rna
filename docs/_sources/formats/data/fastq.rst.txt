@@ -143,8 +143,8 @@ file extension:
 - Mate 1: ``_R1``, ``_mate1``, ``_1_sequence``, ``_R1_001``, ``_mate1_001``, ``_1_sequence_001``
 - Mate 2: ``_R2``, ``_mate2``, ``_2_sequence``, ``_R2_001``, ``_mate2_001``, ``_2_sequence_001``
 
-If you would like future versions of DREEM to support additional file
-extensions, please create a new issue on GitHub. [REF]
+If you would like future versions to support additional file extensions,
+then please request so by creating an issue (see ).
 
 FASTQ name parsing
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -175,18 +175,23 @@ besides A, C, G, and T are treated as any nucleotide (i.e. N).
 Phred quality score encodings
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The `Phred quality scores`_ are encoded by adding an integer *N* to the
+`Phred quality scores`_ represent the confidence that a base in a FASTQ
+file was called correctly during sequencing.
+The probability *p* that a base was called incorrectly is 10 raised to
+the power of the quotient of the Phred score *s* and -10:
+
+*p* = 10 :sup:`-s/10`
+
+For example, if a base call has a Phred score of 30, the probability
+that the base call is incorrect is 10 :sup:`-30/10` = 0.001.
+
+In FASTQ files, each phred quality score (a non-negative integer) is
+encoded as one character of text by adding another integer *N* to the
 Phred score (`Phred+N`_) and then converting the number to the character
 with the corresponding `ASCII code`_.
 For example, if *N* is 33, then the Phred score 25 would be encoded by
 adding 33 to 25 (obtaining 58), then writing the character whose ASCII
 code is 58 (which is ``:``).
-Most modern Illumina instruments output FASTQ files in Phred+33 encoding
-(which is the default in SEISMIC-RNA), but Phred+64 is also common.
-The quality score encoding can be changed (in this example, to Phred+64)
-with the option ``--phred-enc`` in the ``align`` step::
-
-    seismic align --phred-enc 64
 
 
 .. _FASTQ format: https://en.wikipedia.org/wiki/FASTQ_format

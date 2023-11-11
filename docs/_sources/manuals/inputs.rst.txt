@@ -1,5 +1,5 @@
 
-Input file patterns
+Input file specification
 ========================================================================
 
 For commands that take a list of input files as positional arguments,

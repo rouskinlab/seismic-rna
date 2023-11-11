@@ -51,6 +51,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../index.html">File Formats</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../data/index.html">Data Structures</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../algos/index.html">Algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../issues.html">Bugs and Requests</a></li>
 </ul>
 
         </div>
@@ -211,8 +212,8 @@ file extension:</p>
 <li><p>Mate 1: <code class="docutils literal notranslate"><span class="pre">_R1</span></code>, <code class="docutils literal notranslate"><span class="pre">_mate1</span></code>, <code class="docutils literal notranslate"><span class="pre">_1_sequence</span></code>, <code class="docutils literal notranslate"><span class="pre">_R1_001</span></code>, <code class="docutils literal notranslate"><span class="pre">_mate1_001</span></code>, <code class="docutils literal notranslate"><span class="pre">_1_sequence_001</span></code></p></li>
 <li><p>Mate 2: <code class="docutils literal notranslate"><span class="pre">_R2</span></code>, <code class="docutils literal notranslate"><span class="pre">_mate2</span></code>, <code class="docutils literal notranslate"><span class="pre">_2_sequence</span></code>, <code class="docutils literal notranslate"><span class="pre">_R2_001</span></code>, <code class="docutils literal notranslate"><span class="pre">_mate2_001</span></code>, <code class="docutils literal notranslate"><span class="pre">_2_sequence_001</span></code></p></li>
 </ul>
-<p>If you would like future versions of DREEM to support additional file
-extensions, please create a new issue on GitHub. [REF]</p>
+<p>If you would like future versions to support additional file extensions,
+then please request so by creating an issue (see ).</p>
 </section>
 <section id="fastq-name-parsing">
 <h3>FASTQ name parsing<a class="headerlink" href="#fastq-name-parsing" title="Permalink to this headline"></a></h3>
@@ -237,19 +238,20 @@ besides A, C, G, and T are treated as any nucleotide (i.e. N).</p>
 </section>
 <section id="phred-quality-score-encodings">
 <span id="phred-encodings"></span><h3>Phred quality score encodings<a class="headerlink" href="#phred-quality-score-encodings" title="Permalink to this headline"></a></h3>
-<p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Phred_quality_score">Phred quality scores</a> are encoded by adding an integer <em>N</em> to the
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Phred_quality_score">Phred quality scores</a> represent the confidence that a base in a FASTQ
+file was called correctly during sequencing.
+The probability <em>p</em> that a base was called incorrectly is 10 raised to
+the power of the quotient of the Phred score <em>s</em> and -10:</p>
+<p><em>p</em> = 10 <sup>-s/10</sup></p>
+<p>For example, if a base call has a Phred score of 30, the probability
+that the base call is incorrect is 10 <sup>-30/10</sup> = 0.001.</p>
+<p>In FASTQ files, each phred quality score (a non-negative integer) is
+encoded as one character of text by adding another integer <em>N</em> to the
 Phred score (<a class="reference external" href="https://en.wikipedia.org/wiki/FASTQ_format#Encoding">Phred+N</a>) and then converting the number to the character
 with the corresponding <a class="reference external" href="https://en.wikipedia.org/wiki/ASCII">ASCII code</a>.
 For example, if <em>N</em> is 33, then the Phred score 25 would be encoded by
 adding 33 to 25 (obtaining 58), then writing the character whose ASCII
-code is 58 (which is <code class="docutils literal notranslate"><span class="pre">:</span></code>).
-Most modern Illumina instruments output FASTQ files in Phred+33 encoding
-(which is the default in SEISMIC-RNA), but Phred+64 is also common.
-The quality score encoding can be changed (in this example, to Phred+64)
-with the option <code class="docutils literal notranslate"><span class="pre">--phred-enc</span></code> in the <code class="docutils literal notranslate"><span class="pre">align</span></code> step:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">align</span> <span class="o">--</span><span class="n">phred</span><span class="o">-</span><span class="n">enc</span> <span class="mi">64</span>
-</pre></div>
-</div>
+code is 58 (which is <code class="docutils literal notranslate"><span class="pre">:</span></code>).</p>
 </section>
 </section>
 </section>

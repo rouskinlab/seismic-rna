@@ -1,5 +1,5 @@
 
-Steps of the workflow
+Workflow
 ========================================================================
 
 .. include:: align.rst

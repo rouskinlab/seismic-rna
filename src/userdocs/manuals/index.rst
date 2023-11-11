@@ -1,23 +1,20 @@
-.. _manuals:
-
 ************************************************************************
 Manuals
 ************************************************************************
 
-Target audience: novice and intermediate users.
-
 These manuals explain how to use each component of SEISMIC-RNA.
-They are references meant to be browsed freely, not tutorials to be
-followed from start to finish.
 
-- For step-by-step tutorials, see :ref:`tutorials`
-  (target audience: novice users).
-- For a complete list of commands and arguments/options, see :ref:`cli`
-  (target audience: intermediate and experienced users).
+They are meant to be browsed freely, not followed from start to finish.
+For step-by-step tutorials, see :doc:`../tutorials/index`.
+
+As they describe each component in detail, they are not quick references
+for commands and parameters.
+For a complete list of commands and their parameters, see :doc:`../cli`.
 
 
 .. toctree::
 
-    steps/index
+    workflow/index
+    util/index
     inputs
     logging

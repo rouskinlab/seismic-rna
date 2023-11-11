@@ -10,15 +10,19 @@ Three formats of alignment map files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These files come in three formats -- SAM, BAM, and CRAM -- documented on
-the `Samtools website <https://samtools.github.io/hts-specs/>`_:
+the `Samtools website`_:
 
-======================== ========= ====== =========== ========= ========= ===================
-Format                   Extension Type   Readability I/O Speed File Size Uses in SEISMIC-RNA
-======================== ========= ====== =========== ========= ========= ===================
-Sequence Alignment Map   ``.sam``  text   \+\+\+      \+\+      \-\-\-    parsing and editing
-Binary Alignment Map     ``.bam``  binary \+\+        \+\+\+    \-\-      short-term storage
-CompRessed Alignment Map ``.cram`` binary \+          \+        \-        long-term storage
-======================== ========= ====== =========== ========= ========= ===================
+======================== ========= ====== ========== ======== ========= ===================
+Format                   Extension Type   I/O Effort I/O Time File Size Uses in SEISMIC-RNA
+======================== ========= ====== ========== ======== ========= ===================
+Sequence Alignment Map   ``.sam``  text   ●          ●●       ●●●       parsing and editing
+Binary Alignment Map     ``.bam``  binary ●●         ●        ●●        short-term storage
+CompRessed Alignment Map ``.cram`` binary ●●●        ●●●      ●         long-term storage
+======================== ========= ====== ========== ======== ========= ===================
+
+- "I/O Effort" ranks the difficulty of reading/writing the format.
+- "I/O Time" ranks the amount of time needed to read/write the format.
+- "File Size" ranks the sizes of files in the format.
 
 Throughout this documentation, we use the term "XAM format" to refer to
 all three formats collectively, when the specific format -- SAM, BAM, or
@@ -39,11 +43,8 @@ Quality score encodings in XAM files
 
 SAM files encode `Phred quality scores`_ in the same manner as FASTQ
 files (see :ref:`phred_encodings`).
-(BAM and CRAM files also encode quality scores, but in a binary format.)
-The quality score encoding can be changed (in this example, to Phred+64)
-with the option ``--phred-enc`` in the ``relate`` step::
-
-    seismic relate --phred-enc 64
+BAM and CRAM files also encode Phred scores, but in a binary format.
 
 
+.. _Samtools website: https://samtools.github.io/hts-specs/
 .. _Phred quality scores: https://en.wikipedia.org/wiki/Phred_quality_score

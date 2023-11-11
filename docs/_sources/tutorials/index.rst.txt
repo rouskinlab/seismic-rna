@@ -1,18 +1,16 @@
-.. _tutorials:
-
 ************************************************************************
 Tutorials
 ************************************************************************
 
-Target audience: novice users.
+These tutorials provide step-by-step walkthroughs for processing example
+datasets with SEISMIC-RNA.
 
-These tutorials provide step-by-step tutorials for processing example
-datasets with SEISMIC-RNA. They are not general-purpose how-to guides.
+They are meant to acquaint you with SEISMIC-RNA, not to provide advice
+about processing your own data.
+For guides on processsing your own data, see :doc:`../manuals/index`.
 
-- For guides on using each component of SEISMIC-RNA, see :ref:`manuals`
-  (target audience: novice and intermediate users).
-- For a complete list of commands and arguments/options, see :ref:`cli`
-  (target audience: intermediate and experienced users).
+These tutorials do not cover every parameter of every command.
+For a complete list of commands and their parameters, see :doc:`../cli`.
 
 
 .. toctree::

@@ -1,19 +1,16 @@
-.. _cli:
-
 ************************************************************************
 Command Line Interface
 ************************************************************************
 
-Target audience: intermediate and experienced users.
+These documents list all commands and their parameters.
 
-These documents detail the arguments and options of each command.
-They are references to assist with running SEISMIC-RNA on the command
-line, not guides for using each feature of SEISMIC-RNA.
+They are meant to be complete yet concise references for the commands
+and their parameters, but not to provide advice on using them.
+For guides on processing your own data, see :doc:`../manuals/index`.
 
-- For guides on using each component of SEISMIC-RNA, see :ref:`manuals`
-  (target audience: novice and intermediate users).
-- For step-by-step tutorials, see :ref:`tutorials`
-  (target audience: novice users).
+They are meant to be browsed freely, not followed from start to finish.
+For step-by-step tutorials, see :doc:`../tutorials/index`.
+
 
 .. note::
 
