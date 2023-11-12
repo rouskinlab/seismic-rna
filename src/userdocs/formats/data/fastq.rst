@@ -126,12 +126,12 @@ The following file extensions are accepted for FASTQ files:
 
 .. note::
     SEISMIC-RNA accepts FASTQ files that are compressed with `gzip`_.
-    It is recommended to always use compressed FASTQ files unless they
-    must be read by a person because FASTQ files are typically very
-    large, on the order of 100 Mb to 10 Gb. The file extension will be
-    preserved through the pipeline: if an input FASTQ file has the
-    extension ``.fq.gz``, then the trimmed FASTQ file (if any) will also
-    have that extension and be compressed.
+    It is recommended to always use compressed FASTQ files because FASTQ
+    files are typically very large without compression, on the order of
+    100 Mb to 10 Gb.
+    The file extension will be preserved through the workflow, i.e. if
+    an input FASTQ file has the extension ``.fq.gz``, then the trimmed
+    FASTQ file (if any) will also have that extension and be compressed.
 
 FASTQ mate 1 and 2 labels
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

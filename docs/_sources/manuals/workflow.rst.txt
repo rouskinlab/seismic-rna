@@ -1,14 +1,29 @@
 
-Workflow
+Run the SEISMIC-RNA workflow
 ========================================================================
 
-Align the sequencing reads
+There are two points at which you can begin the workflow:
+
+- If you are starting from files of raw sequencing reads (FASTQ format),
+  then begin at the step :ref:`wf_align`.
+- If you are starting from files of aligned sequencing reads (SAM, BAM,
+  or CRAM format), then begin at the step :ref:`wf_relate`.
+
+.. note::
+    You can pass either (or both) types of input files into the command
+    ``seismic all``, which runs the entire workflow.
+    See :ref:`wf_all` for more details.
+
+
+.. _wf_align:
+
+Align sequencing reads to reference sequences
 ------------------------------------------------------------------------
 
-Align: input files
+Align: Input files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Input: reference sequences
+Align input file: Reference sequences
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Alignment requires exactly one file of reference sequences, which must
@@ -18,7 +33,7 @@ if necessary.
 See :doc:`../formats/data/fasta` for details.
 
 
-Input: sequencing reads
+Align input file: Sequencing reads
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Alignment requires one or more files of sequencing reads, which must be
@@ -26,7 +41,7 @@ DNA sequences (only A, C, G, T, and N) in FASTQ format.
 See :doc:`../formats/data/fastq` for details.
 
 
-FASTQ files of single-end versus paired-end reads
+Sequencing reads can be single-end or paired-end
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Sequencing reads can be single-end or paired-end (for more details, see
@@ -35,7 +50,7 @@ The SEISMIC-RNA workflow can handle both single- and paired-end reads,
 provided that no FASTQ file contains a mixture of both types of reads.
 
 
-FASTQ files of whole samples versus demultiplexed samples
+Sequencing reads can come from whole or demultiplexed samples
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 FASTQ files can contain reads from a whole sample (which can possibly
@@ -43,13 +58,12 @@ come from many different reference sequences) or can be demultiplexed
 before alignment so that they contain reads from one reference sequence.
 
 
-FASTQ file types
+How to specify the endedness and source of sequencing reads
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-When giving FASTQ files on the command line, indicate the type of reads
-(single-end, paired-end interleaved, or paired-end in separate files)
-and the type of content (whole-sample or demultiplexed) via the name of
-the option with which you give the file.
+Specify the endedness (single-end, paired-end interleaved, or paired-end
+separated) and source of the reads (whole or demultiplexed sample) in a
+FASTQ file by giving the file name using the appropriate option below.
 Each option has a "long form" (starting with ``--``) and a "short form"
 (starting with ``-`` and comprising a single character), which are both
 indicated in this table, separated by a ``/``:
@@ -71,11 +85,10 @@ single-end                 ``--fastqz/-z`` ``--dmfastqz/-Z``
     and 2nd mates are required. See :ref:`fastq_pair` for instructions.
 
 
-Providing one FASTQ file (single-end or interleaved paired-end)
+How to input one FASTQ file (single-end or interleaved paired-end reads)
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-For example, to align a FASTQ of single-end reads from a whole sample,
-use the option ``-z``::
+To align a FASTQ of single-end reads from a whole sample, use ``-z``::
 
     seismic align {refs.fa} -z {sample.fq.gz}
 
@@ -83,7 +96,7 @@ where ``{refs.fa}`` is the path to the FASTA file of reference sequences
 and ``{sample.fq.gz}`` is the path to the FASTQ file of the sample.
 
 For a FASTQ of paired-end, interleaved reads that were demultiplexed,
-use the option ``-Y`` instead::
+use ``-Y`` instead::
 
     seismic align {refs.fa} -Y {sample/ref.fq.gz}
 
@@ -93,7 +106,7 @@ reads from only one reference in the sample.
 
 .. _fastq_pair:
 
-Providing one pair of paired-end FASTQ files
+How to input a pair of FASTQ files (paired-end reads in separate files)
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 If your reads are paired-end and you have one FASTQ file containing all
@@ -118,7 +131,7 @@ There are two methods:
     where ``{sample}`` is the new directory for both FASTQ files.
 
 
-Providing multiple FASTQ files or pairs or paired-end FASTQ files
+How to input multiple FASTQ files or pairs of paired-end FASTQ files
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 There are three ways to align multiple FASTQ files (or pairs) at once:
@@ -171,10 +184,10 @@ There are three ways to align multiple FASTQ files (or pairs) at once:
     SEISMIC-RNA will still find and process any FASTQ files within them.
 
 
-Align: options
+Align: Options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Options for Phred score encoding
+Align option: Phred score encoding
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 SEISMIC-RNA defaults to using Phred+33 encoding for FASTQ files, which
@@ -201,7 +214,7 @@ in the "Basic Statisics" section:
   to determine the Phred score offset.
 
 
-Options for quality assessment with FastQC
+Align option: Quality assessment with FastQC
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 By default, each FASTQ file is processed with `FastQC`_, both before and
@@ -211,14 +224,14 @@ To enable automatic extraction of the zipped output files from FastQC,
 add the flag ``--qc-extract``.
 
 
-Options for trimming with Cutadapt
+Align option: Trimming reads with Cutadapt
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 By default, each FASTQ file and pair of mated FASTQ files is trimmed for
-adapters and low-quality bases using `Cutadapt`_. To disable adapter
-trimming, add the flag ``--no-cut``.
+adapters and low-quality bases using `Cutadapt`_. To disable trimming,
+add the flag ``--no-cut``.
 
-Adapter trimming
+How to trim adapter sequences
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 By default, SEISMIC-RNA uses the standard, minimal adapter sequences for
@@ -238,7 +251,7 @@ To use another adapter, type its sequence after the appropriate option:
  3'     2      ``--cut-a2``
 ====== ====== ==============
 
-Quality trimming
+How to trim low-quality base calls
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Base calls on either end of a read that fall below a minimum Phred score
@@ -248,7 +261,7 @@ The default minimum quality is 25, which corresponds to a probability of
 (See :ref:`phred_encodings` for more details).
 To change the quality threshold, use the option ``--min-phred``.
 
-Dark cycle trimming
+How to use Cutadapt to trim dark cycles (for Illumina NextSeq or iSeq)
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 On some Illumina sequencers (e.g. NextSeq, iSeq), the probes used to
@@ -262,7 +275,7 @@ alignment (especially in end-to-end mode) but also removes real G bases
 from the 3' ends of reads (since they cannot be distinguished from any
 artefactual G bases).
 
-Additional options for Cutadapt
+How to further customize read trimming
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 See :ref:`cli_align` for the full list of options that SEISMIC-RNA can
@@ -271,46 +284,45 @@ each of these options.
 These options should suffice for most users.
 If you require a more customized adapter trimming workflow, you can trim
 your FASTQ files outside of SEISMIC-RNA, then perform alignment within
-SEISMIC-RNA using the option ``--no-cut`` to disable additional adapter
+SEISMIC-RNA, using the option ``--no-cut`` to disable additional adapter
 trimming.
 
 
-Options for alignment with Bowtie 2
+Align option: Mapping reads with Bowtie 2
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Bowtie 2 index files: automatic and pre-built
+How to pre-build a Bowtie 2 index (optional)
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-SEISMIC-RNA searches for a set of Bowtie 2 index files in the directory
-where the FASTA file is.
-A valid Bowtie 2 index comprises six files, all with the same name as
-the FASTA file, with the extensions ``.1.bt2``, ``.2.bt2``, ``.3.bt2``,
-``.4.bt2``, ``.rev.1.bt2``, and ``.rev.2.bt2``.
-If this set of files exists, then SEISMIC-RNA uses it as the index.
-Otherwise, it calls ``bowtie2-build`` to build an index in a temporary
-directory, which is deleted after alignment finishes.
-Indexing a small FASTA file takes several seconds; thus, it is generally
-more convenient to build a temporary .
-However, indexing a very large FASTA (e.g. a whole transcriptome) can
-take hours, so it is advantageous to pre-build your index in the same
-directory as the FASTA file, to save time in case you need to align more
-than once.
-You can pre-build an index with this command::
+Bowtie 2 requires the FASTA file of reference sequences to be indexed.
+A Bowtie 2 index comprises six files, all in the same directory as and
+with the same name as the FASTA file, with the extensions ``.1.bt2``,
+``.2.bt2``, ``.3.bt2``, ``.4.bt2``, ``.rev.1.bt2``, and ``.rev.2.bt2``.
 
-    bowtie2-build refs.fa {refs}
+If the index is missing, then SEISMIC-RNA will create a temporary index
+automatically using ``bowtie2-build`` each time you run alignment.
+Automatic indexing is efficient when the FASTA file is small: several
+hundred reference sequences or fewer.
+For larger FASTA files (e.g. a whole eukaryotic transcriptome), building
+a temporary index each time alignment is run becomes costly.
+In this case, it is more efficient to pre-build the index, which you can
+do with this command::
 
-replacing ``{refs}`` with the path to and name of your FASTA file.
+    bowtie2-build {refs}.fa {refs}
+
+where ``{refs}`` is the path to and name of your FASTA file.
 See the `Bowtie 2 Indexer manual`_ for more details.
 
 .. note::
-    If SEISMIC-RNA finds a pre-built Bowtie 2 index, then it does *not*
+    If you use a pre-built Bowtie 2 index, then SEISMIC-RNA does *not*
     verify that the index was actually built from the FASTA file of the
     same name.
-    You must verify this yourself if using a pre-built index.
     You can assume the index is correct if you build it using the above
     command and avoid modifying or replacing the FASTA and index files.
+    Discrepancies between the FASTA file and the index files can crash
+    the ``align`` and ``relate`` steps or produce erroneous results.
 
-Alignment modes: local and end-to-end
+How to choose between local and end-to-end alignment
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 During alignment, Bowtie 2 can either align the entirety of each read
@@ -333,7 +345,7 @@ reason to do so (e.g. if it is essential to detect mutations at the ends
 of reads) and only after carefully trimming any extraneous sequences
 from the ends of the reads.
 
-Options for aligning paired-end reads
+How to align paired-end reads
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Bowtie 2 considers paired-end reads to align "concordantly" when their
@@ -366,7 +378,7 @@ The option ``--bt2-mixed`` enables `mixed mode`_ wherein, for pairs that
 fail to produce a valid paired-end alignment, Bowtie 2 attempts to align
 each mate individually (as if it were a single-end read).
 
-Options for filtering alignments
+How to filter aligned reads
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Alignments can be filtered by `alignment score`_ and `mapping quality`_,
@@ -391,7 +403,7 @@ For those searching for this option in Bowtie 2, you will not find it.
 Instead, reads with insufficient mapping quality are filtered out after
 alignment using the `view command in Samtools`_.
 
-Additional options for Bowtie 2
+How to further customize alignment
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 See :ref:`cli_align` for the full list of options that SEISMIC-RNA can
@@ -402,9 +414,10 @@ If you require a more customized alignment workflow, you can align your
 your FASTQ files outside of SEISMIC-RNA, then pass the resulting XAM
 files into SEISMIC-RNA at the step :ref:`wf_relate`.
 
+
 .. _bam_vs_cram:
 
-Controlling the format of alignment maps
+Align option: Format of alignment maps
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 SEISMIC-RNA can output alignment map files in either BAM or CRAM format.
@@ -450,7 +463,7 @@ that accompanies them).
 Align: output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Output: FastQC reports
+Align output file: FastQC reports
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 If FastQC is run, then it outputs files to ``{out}/{sample}/qc``, where
@@ -470,7 +483,7 @@ If the option ``--qc-extract`` is given, then FastQC will also unzip
 For details on these outputs, see the documentation for `FastQC`_.
 
 
-Output: alignment maps
+Align output file: Alignment maps
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The most important outputs of ``seismic align`` are alignment map files.
@@ -488,7 +501,7 @@ SEISMIC-RNA can output alignment maps in either BAM or CRAM format.
 For a comparison of these formats, see :ref:`bam_vs_cram`.
 
 
-Output: reference sequences
+Align output file: Reference sequences
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 If the alignment maps are output in CRAM format, then FASTA file(s) of
@@ -505,8 +518,30 @@ to speed up reading the CRAM files.
 If the alignment maps are output in BAM format, then FASTA files are not
 output alongside them.
 
+.. _wf_unaligned:
 
-Output: unaligned reads
+Align output file: Unaligned reads
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In addition to the alignment maps, SEISMIC-RNA outputs FASTQ file(s) of
+reads that Bowtie 2 could not align to ``{out}/{sample}/align``:
+
+- Each whole-sample FASTQ file of single-end (``-z``) or interleaved
+  (``-y``) reads yields one file: ``unaligned.fq.gz``
+- Each pair of whole-sample FASTQ files of 1st and 2nd mates (``-x``)
+  yields two files: ``unaligned.fq.1.gz`` and ``unaligned.fq.2.gz``
+- Each demultiplexed FASTQ file of single-end (``-Z``) or interleaved
+  (``-Y``) reads yields one file: ``{ref}__unaligned.fq.gz``
+- Each pair of demultiplexed FASTQ files of 1st and 2nd mates (``-X``)
+  yields two files:
+  ``{ref}__unaligned.fq.1.gz`` and ``{ref}__unaligned.fq.2.gz``
+
+where ``{ref}`` is the reference for demultiplexed FASTQ files.
+
+Outputting these files of unaligned reads can be disabled using the
+option ``--bt2-no-un``.
+
+Align output file: Align report
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 In addition to the alignment maps, SEISMIC-RNA outputs FASTQ file(s) of
@@ -528,26 +563,29 @@ Outputting these files of unaligned reads can be disabled using the
 option ``--bt2-no-un``.
 
 
-Align: troubleshooting
+Align: Troubleshooting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Alignment rate is low
+Troubleshooting a lower-than-expected alignment rate
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 If the percent of reads aligning to the reference is less than expected,
 then try the following steps (in this order):
 
 1.  Ensure you are using Bowtie version 2.5.1 or later (version 2.5.0
-    has a bug that affects alignment rate). You can check the version by
-    running ``bowtie2 --version | head -n 1``.
+    has a bug that affects alignment rate).
+    You can check the version with ``bowtie2 --version | head -n 1``.
 2.  Double check that the FASTA has the correct reference sequence(s)
     and that, if the Bowtie 2 index was pre-built before the align step,
     that the correct FASTA file was used.
-3.  Reads that failed to align with Bowtie2 are written to the file
-    ``{out}/{sample}/align/unaligned.fq.gz`` (or ``unaligned.fq.1.gz``
-    and ``unaligned.fq.2.gz`` if the FASTQ files were ) Open this file,
-    process several unaligned reads randomly, and use `BLAST`_ to discern
-    their origins, which can help in deducing what went wrong.
+3.  Examine the reads that failed to align (see :ref:`wf_unaligned`).
+    Choose several reads randomly and check if they could come from any
+    known sources by querying `BLAST`_ (or similar tools) for short
+    (20 - 40 nt) segments of each read.
+    Identifying the sources of unaligned reads can help determine the
+    cause of the problem (e.g. contamination with ribosomal or foreign
+    RNA such as from *Mycoplasma*, incorrect indexes used during FASTQ
+    generation) and whether the reads that did align are still usable.
 
 
 .. _wf_relate:
@@ -555,7 +593,7 @@ then try the following steps (in this order):
 Relate each read to every reference position
 ------------------------------------------------------------------------
 
-Input files for relate
+Relate: Input files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Relate requires exactly one FASTA file containing one or more reference
@@ -609,7 +647,9 @@ from which the reads came. If the BAM files were created using ``seismic
 align``, then they will already follow this convention.
 
 
-All steps with one command
+.. _wf_all:
+
+Run the entire workflow with one command
 ------------------------------------------------------------------------
 
 .. note::

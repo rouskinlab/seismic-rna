@@ -51,6 +51,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../cli.html">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/seismicrna.html">seismicrna package</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">File Formats</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../report/index.html">Report Formats</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="index.html">Data Formats</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="fasta.html">FASTA: Reference sequences</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">FASTQ: Sequencing Reads</a><ul>
@@ -62,8 +63,7 @@
 <li class="toctree-l3"><a class="reference internal" href="xam.html">SAM, BAM, and CRAM: Alignment Maps</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../meta.html">Metadata Formats</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../reports.html">Report Formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../meta/index.html">Metadata Formats</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../data/index.html">Data Structures</a></li>
@@ -214,12 +214,12 @@ same order as those in file 1.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>SEISMIC-RNA accepts FASTQ files that are compressed with <a class="reference external" href="https://www.gnu.org/software/gzip/">gzip</a>.
-It is recommended to always use compressed FASTQ files unless they
-must be read by a person because FASTQ files are typically very
-large, on the order of 100 Mb to 10 Gb. The file extension will be
-preserved through the pipeline: if an input FASTQ file has the
-extension <code class="docutils literal notranslate"><span class="pre">.fq.gz</span></code>, then the trimmed FASTQ file (if any) will also
-have that extension and be compressed.</p>
+It is recommended to always use compressed FASTQ files because FASTQ
+files are typically very large without compression, on the order of
+100 Mb to 10 Gb.
+The file extension will be preserved through the workflow, i.e. if
+an input FASTQ file has the extension <code class="docutils literal notranslate"><span class="pre">.fq.gz</span></code>, then the trimmed
+FASTQ file (if any) will also have that extension and be compressed.</p>
 </div>
 </section>
 <section id="fastq-mate-1-and-2-labels">
