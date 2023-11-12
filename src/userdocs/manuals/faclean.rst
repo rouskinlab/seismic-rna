@@ -1,5 +1,5 @@
 
-FASTA file cleaner
+Cleaning FASTA Files
 ------------------------------------------------------------------------
 
 The FASTA file cleaner modifies FASTA files so that they are compatible

@@ -54,8 +54,9 @@
 <li class="toctree-l2"><a class="reference internal" href="../report/index.html">Report Formats</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="index.html">Data Formats</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">FASTA: Reference sequences</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#fasta-header-lines">FASTA header lines</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#fasta-body-lines">FASTA body lines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fasta-file-content-format">FASTA file: Content format</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fasta-file-path-format">FASTA file: Path format</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fasta-file-uses">FASTA file: Uses</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="fastq.html">FASTQ: Sequencing Reads</a></li>
@@ -68,6 +69,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../data/index.html">Data Structures</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../algos/index.html">Algorithms</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../issues.html">Bugs and Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../writeme.html">How to Write this Manual</a></li>
 </ul>
 
         </div>
@@ -98,14 +100,16 @@
              
   <section id="fasta-reference-sequences">
 <h1>FASTA: Reference sequences<a class="headerlink" href="#fasta-reference-sequences" title="Permalink to this headline"></a></h1>
-<p>Files of reference sequences must be in <a class="reference external" href="https://en.wikipedia.org/wiki/FASTA_format">FASTA format</a>.</p>
+<section id="fasta-file-content-format">
+<h2>FASTA file: Content format<a class="headerlink" href="#fasta-file-content-format" title="Permalink to this headline"></a></h2>
 <p>In a FASTA file, each sequence record comprises two parts:</p>
 <ul class="simple">
 <li><p>A header that contains the name of the sequence.</p></li>
 <li><p>A body that contains the sequence.</p></li>
 </ul>
+<p>See <a class="reference external" href="https://en.wikipedia.org/wiki/FASTA_format">FASTA format</a> for more information.</p>
 <section id="fasta-header-lines">
-<h2>FASTA header lines<a class="headerlink" href="#fasta-header-lines" title="Permalink to this headline"></a></h2>
+<h3>FASTA header lines<a class="headerlink" href="#fasta-header-lines" title="Permalink to this headline"></a></h3>
 <p>Every header line must start with the character <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>.
 The name of the sequence must follow this character, on the same line.
 Optionally, metadata may follow the name of the sequence after a break
@@ -124,7 +128,7 @@ Thus, to ensure consistent names, SEISMIC-RNA will raise errors if a
 FASTA file has any illegal characters in its header lines.</p>
 </section>
 <section id="fasta-body-lines">
-<h2>FASTA body lines<a class="headerlink" href="#fasta-body-lines" title="Permalink to this headline"></a></h2>
+<h3>FASTA body lines<a class="headerlink" href="#fasta-body-lines" title="Permalink to this headline"></a></h3>
 <p>The remaining lines in each record encode the sequence.
 SEISMIC-RNA can parse sequences that obey the following rules:</p>
 <ul class="simple">
@@ -140,6 +144,59 @@ limit imposed by your system.</p></li>
 are simply ignored, but lines containing other whitespace characters
 are illegal.</p></li>
 </ul>
+</section>
+</section>
+<section id="fasta-file-path-format">
+<h2>FASTA file: Path format<a class="headerlink" href="#fasta-file-path-format" title="Permalink to this headline"></a></h2>
+<section id="fasta-file-extensions">
+<h3>FASTA file extensions<a class="headerlink" href="#fasta-file-extensions" title="Permalink to this headline"></a></h3>
+<p>SEISMIC-RNA accepts the following extensions for FASTA files:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">.fa</span></code> (default)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.fna</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.fasta</span></code></p></li>
+</ul>
+</section>
+<section id="fasta-path-parsing">
+<h3>FASTA path parsing<a class="headerlink" href="#fasta-path-parsing" title="Permalink to this headline"></a></h3>
+<p>The name of an input FASTA file of all reference sequences is used for
+the following purposes:</p>
+<ul class="simple">
+<li><p>Determining if a Bowtie 2 index exists for the FASTA file.</p></li>
+<li><p>Building a Bowtie 2 index for the FASTA file.</p></li>
+<li><p>Linking a CRAM file to its reference sequence.</p></li>
+</ul>
+</section>
+</section>
+<section id="fasta-file-uses">
+<h2>FASTA file: Uses<a class="headerlink" href="#fasta-file-uses" title="Permalink to this headline"></a></h2>
+<section id="fasta-as-input-file">
+<h3>FASTA as input file<a class="headerlink" href="#fasta-as-input-file" title="Permalink to this headline"></a></h3>
+<p>Reference sequences for these commands must be input as FASTA files:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">all</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">align</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">relate</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fold</span></code></p></li>
+</ul>
+</section>
+<section id="fasta-as-output-file">
+<h3>FASTA as output file<a class="headerlink" href="#fasta-as-output-file" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">align</span></code> command outputs a file in FASTA format alongside each
+file in CRAM format (with option <code class="docutils literal notranslate"><span class="pre">--cram</span></code>).</p></li>
+</ul>
+</section>
+<section id="fasta-as-temporary-file">
+<h3>FASTA as temporary file<a class="headerlink" href="#fasta-as-temporary-file" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">align</span></code> command writes a temporary FASTA file with a single
+reference sequence for each demultiplexed FASTQ file, which is used to
+build an index for Bowtie 2.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">fold</span></code> command writes a temporary FASTA file, which is used by
+the program <code class="docutils literal notranslate"><span class="pre">Fold</span></code>.</p></li>
+</ul>
+</section>
 </section>
 </section>
 

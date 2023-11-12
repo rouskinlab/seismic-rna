@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Run the SEISMIC-RNA workflow &mdash; seismic-rna  documentation</title>
+  <title>Main Workflow &mdash; seismic-rna  documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="../_static/favicon-32x32.ico"/>
@@ -19,7 +19,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Input file specification" href="inputs.html" />
+    <link rel="next" title="Cleaning FASTA Files" href="faclean.html" />
     <link rel="prev" title="Manuals" href="index.html" /> 
 </head>
 
@@ -48,7 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Manuals</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Run the SEISMIC-RNA workflow</a><ul>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Main Workflow</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#align-sequencing-reads-to-reference-sequences">Align sequencing reads to reference sequences</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#align-input-files">Align: Input files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#align-options">Align: Options</a></li>
@@ -63,9 +63,9 @@
 <li class="toctree-l3"><a class="reference internal" href="#run-the-entire-workflow-with-one-command">Run the entire workflow with one command</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="inputs.html">Input file specification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="logging.html">Logging messages</a></li>
-<li class="toctree-l2"><a class="reference internal" href="util/index.html">Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faclean.html">Cleaning FASTA Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inputs.html">Listing Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html">Logging Messages</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
@@ -74,6 +74,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../data/index.html">Data Structures</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../algos/index.html">Algorithms</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../issues.html">Bugs and Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../writeme.html">How to Write this Manual</a></li>
 </ul>
 
         </div>
@@ -91,7 +92,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="index.html">Manuals</a></li>
-      <li class="breadcrumb-item active">Run the SEISMIC-RNA workflow</li>
+      <li class="breadcrumb-item active">Main Workflow</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/manuals/workflow.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -101,9 +102,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="run-the-seismic-rna-workflow">
-<h1>Run the SEISMIC-RNA workflow<a class="headerlink" href="#run-the-seismic-rna-workflow" title="Permalink to this headline"></a></h1>
-<p>There are two points at which you can begin the workflow:</p>
+  <section id="main-workflow">
+<h1>Main Workflow<a class="headerlink" href="#main-workflow" title="Permalink to this headline"></a></h1>
+<p>There are two points from which you can begin the main workflow:</p>
 <ul class="simple">
 <li><p>If you are starting from files of raw sequencing reads (FASTQ format),
 then begin at the step <a class="reference internal" href="#wf-align"><span class="std std-ref">Align sequencing reads to reference sequences</span></a>.</p></li>
@@ -124,8 +125,7 @@ See <a class="reference internal" href="#wf-all"><span class="std std-ref">Run t
 <h4>Align input file: Reference sequences<a class="headerlink" href="#align-input-file-reference-sequences" title="Permalink to this headline"></a></h4>
 <p>Alignment requires exactly one file of reference sequences, which must
 be DNA sequences (only A, C, G, T, and N) in FASTA format.
-You may clean the FASTA file with the <a class="reference internal" href="util/fastaclean.html"><span class="doc">FASTA file cleaner</span></a> utility,
-if necessary.
+If needed, you may clean the FASTA file with the <a class="reference internal" href="faclean.html"><span class="doc">Cleaning FASTA Files</span></a> tool.
 See <a class="reference internal" href="../formats/data/fasta.html"><span class="doc">FASTA: Reference sequences</span></a> for details.</p>
 </section>
 <section id="align-input-file-sequencing-reads">
@@ -136,7 +136,7 @@ See <a class="reference internal" href="../formats/data/fastq.html"><span class=
 <section id="sequencing-reads-can-be-single-end-or-paired-end">
 <h5>Sequencing reads can be single-end or paired-end<a class="headerlink" href="#sequencing-reads-can-be-single-end-or-paired-end" title="Permalink to this headline"></a></h5>
 <p>Sequencing reads can be single-end or paired-end (for more details, see
-<a class="reference internal" href="../formats/data/fastq.html#fastq-endedness"><span class="std std-ref">Endedness: single-end and paired-end reads</span></a>).
+<a class="reference internal" href="../formats/data/fastq.html#fastq-endedness"><span class="std std-ref">FASTQ character sets</span></a>).
 The SEISMIC-RNA workflow can handle both single- and paired-end reads,
 provided that no FASTQ file contains a mixture of both types of reads.</p>
 </section>
@@ -189,11 +189,11 @@ For brevity, the rest of this manual uses only the short forms.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If using paired-end reads in separate FASTQ files, both files of 1st
-and 2nd mates are required. See <a class="reference internal" href="#fastq-pair"><span class="std std-ref">How to input a pair of FASTQ files (paired-end reads in separate files)</span></a> for instructions.</p>
+and 2nd mates are required. See <a class="reference internal" href="#fastq-pair"><span class="std std-ref">How to align a pair of FASTQ files (paired-end reads in separate files)</span></a> for instructions.</p>
 </div>
 </section>
-<section id="how-to-input-one-fastq-file-single-end-or-interleaved-paired-end-reads">
-<h5>How to input one FASTQ file (single-end or interleaved paired-end reads)<a class="headerlink" href="#how-to-input-one-fastq-file-single-end-or-interleaved-paired-end-reads" title="Permalink to this headline"></a></h5>
+<section id="how-to-align-one-fastq-file-single-end-or-interleaved-paired-end-reads">
+<h5>How to align one FASTQ file (single-end or interleaved paired-end reads)<a class="headerlink" href="#how-to-align-one-fastq-file-single-end-or-interleaved-paired-end-reads" title="Permalink to this headline"></a></h5>
 <p>To align a FASTQ of single-end reads from a whole sample, use <code class="docutils literal notranslate"><span class="pre">-z</span></code>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">align</span> <span class="p">{</span><span class="n">refs</span><span class="o">.</span><span class="n">fa</span><span class="p">}</span> <span class="o">-</span><span class="n">z</span> <span class="p">{</span><span class="n">sample</span><span class="o">.</span><span class="n">fq</span><span class="o">.</span><span class="n">gz</span><span class="p">}</span>
 </pre></div>
@@ -208,8 +208,8 @@ use <code class="docutils literal notranslate"><span class="pre">-Y</span></code
 <p>where <code class="docutils literal notranslate"><span class="pre">{sample/ref.fq.gz}</span></code> is the path to the FASTQ file containing
 reads from only one reference in the sample.</p>
 </section>
-<section id="how-to-input-a-pair-of-fastq-files-paired-end-reads-in-separate-files">
-<span id="fastq-pair"></span><h5>How to input a pair of FASTQ files (paired-end reads in separate files)<a class="headerlink" href="#how-to-input-a-pair-of-fastq-files-paired-end-reads-in-separate-files" title="Permalink to this headline"></a></h5>
+<section id="how-to-align-a-pair-of-fastq-files-paired-end-reads-in-separate-files">
+<span id="fastq-pair"></span><h5>How to align a pair of FASTQ files (paired-end reads in separate files)<a class="headerlink" href="#how-to-align-a-pair-of-fastq-files-paired-end-reads-in-separate-files" title="Permalink to this headline"></a></h5>
 <p>If your reads are paired-end and you have one FASTQ file containing all
 1st mates and another containing all 2nd mates, then you will need to
 provide both FASTQ files.
@@ -233,9 +233,9 @@ provide the path to that directory with <code class="docutils literal notranslat
 </li>
 </ol>
 </section>
-<section id="how-to-input-multiple-fastq-files-or-pairs-of-paired-end-fastq-files">
-<h5>How to input multiple FASTQ files or pairs of paired-end FASTQ files<a class="headerlink" href="#how-to-input-multiple-fastq-files-or-pairs-of-paired-end-fastq-files" title="Permalink to this headline"></a></h5>
-<p>There are three ways to align multiple FASTQ files (or pairs) at once:</p>
+<section id="how-to-align-multiple-fastq-files-or-pairs-of-paired-end-fastq-files">
+<h5>How to align multiple FASTQ files or pairs of paired-end FASTQ files<a class="headerlink" href="#how-to-align-multiple-fastq-files-or-pairs-of-paired-end-fastq-files" title="Permalink to this headline"></a></h5>
+<p>There are three ways to align multiple FASTQ files (or pairs thereof):</p>
 <ol class="arabic">
 <li><p>Use options more than once.
 The options for FASTQ files can all be given multiple times, and can
@@ -548,13 +548,13 @@ In some circumstances, making a hard link can fail, in which case
 SEISMIC-RNA will resort to copying the FASTA file instead.</p></li>
 <li><p>Reading and writing CRAM files is slower than for BAM files due to the
 extra effort needed for compressing and decompressing CRAM files.</p></li>
-<li><p>In the CIGAR strings, distinction between reference matches (<code class="docutils literal notranslate"><span class="pre">=</span></code>)
+<li><p>In the <a class="reference external" href="https://samtools.github.io/hts-specs/">CIGAR strings</a>, distinction between reference matches (<code class="docutils literal notranslate"><span class="pre">=</span></code>)
 and substitutions (<code class="docutils literal notranslate"><span class="pre">X</span></code>) is lost upon compressing to CRAM format.
 Thus, <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">relate</span></code> must perform extra work to determine if each
 non-gapped position is a match or substitution, which makes it run
 more slowly than it would if the distinction had been preserved.</p></li>
 </ul>
-<p>In general, use CRAM format if minimizning the size of your alignment
+<p>In general, use CRAM format if minimizing the size of your alignment
 map files is a priority, especially for long-term storage.
 Use BAM format to make the <code class="docutils literal notranslate"><span class="pre">align</span></code> and <code class="docutils literal notranslate"><span class="pre">relate</span></code> steps run faster,
 and to increase the robustness of the output files (because BAM files
@@ -681,51 +681,43 @@ generation) and whether the reads that did align are still usable.</p></li>
 <span id="wf-relate"></span><h2>Relate each read to every reference position<a class="headerlink" href="#relate-each-read-to-every-reference-position" title="Permalink to this headline"></a></h2>
 <section id="relate-input-files">
 <h3>Relate: Input files<a class="headerlink" href="#relate-input-files" title="Permalink to this headline"></a></h3>
-<p>Relate requires exactly one FASTA file containing one or more reference
-sequences and any number of alignment map files in SAM/BAM/CRAM format
-(referred to collectively as “XAM” format).</p>
+<section id="relate-input-file-reference-sequences">
+<h4>Relate input file: Reference sequences<a class="headerlink" href="#relate-input-file-reference-sequences" title="Permalink to this headline"></a></h4>
+<p>Relate requires exactly one file of reference sequences, which must be
+DNA sequences (only A, C, G, T, and N) in FASTA format.
+If needed, you may clean the FASTA file with the <a class="reference internal" href="faclean.html"><span class="doc">Cleaning FASTA Files</span></a> tool.
+See <a class="reference internal" href="../formats/data/fasta.html"><span class="doc">FASTA: Reference sequences</span></a> for details.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The references in the FASTA file must match those to which the reads
-were aligned to produce the XAM file(s); the names and the sequences
-must be identical. If the names differ, then the XAM files using the
-old names will be ignored; while if the sequences differ, then reads
-can yield erroneous relation vectors or fail to yield any output.</p>
-</div>
-<section id="one-xam-file">
-<h4>One XAM file<a class="headerlink" href="#one-xam-file" title="Permalink to this headline"></a></h4>
-<p>A single XAM file (<code class="docutils literal notranslate"><span class="pre">sample_1/align/ref_1.bam</span></code>) can be run as follows:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">relate</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span> <span class="n">sample_1</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref_1</span><span class="o">.</span><span class="n">bam</span>
-</pre></div>
+were aligned to produce the XAM file(s).
+A XAM file whose reference is absent from the FASTA will be skipped.
+A XAM file whose reference sequence in the FASTA differs from the
+sequence to which the XAM file was actually aligned can can yield
+erroneous relation vectors or fail to yield any output.</p>
 </div>
 </section>
-<section id="multiple-xam-files">
-<h4>Multiple XAM files<a class="headerlink" href="#multiple-xam-files" title="Permalink to this headline"></a></h4>
-<p>Multiple XAM files can be run in parallel by giving multiple paths:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">relate</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span> <span class="n">sample_1</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref_1</span><span class="o">.</span><span class="n">bam</span>
+<section id="relate-input-file-alignment-maps">
+<h4>Relate input file: Alignment maps<a class="headerlink" href="#relate-input-file-alignment-maps" title="Permalink to this headline"></a></h4>
+<p>Relate requires one or more alignment map files, each of which must be
+in SAM, BAM, or CRAM format (collectively, “XAM” format).
+See <a class="reference internal" href="../formats/data/xam.html"><span class="doc">SAM, BAM, and CRAM: Alignment Maps</span></a> for details.</p>
+<section id="alignment-map-file-requirements">
+<h5>Alignment map file requirements<a class="headerlink" href="#alignment-map-file-requirements" title="Permalink to this headline"></a></h5>
+<p>Refer to</p>
+</section>
+<section id="how-to-relate-one-or-more-alignment-maps">
+<h5>How to relate one or more alignment maps<a class="headerlink" href="#how-to-relate-one-or-more-alignment-maps" title="Permalink to this headline"></a></h5>
+<p>List every alignment map file after the FASTA file.
+Refer to <a class="reference internal" href="inputs.html"><span class="doc">Listing Input Files</span></a> for details on how to list multiple files.
+For example, to compute relation vectors for reads from <code class="docutils literal notranslate"><span class="pre">sample-1</span></code>
+aligned to references <code class="docutils literal notranslate"><span class="pre">ref-1</span></code> and <code class="docutils literal notranslate"><span class="pre">ref-2</span></code>, and from <code class="docutils literal notranslate"><span class="pre">sample-2</span></code>
+aligned to reference <code class="docutils literal notranslate"><span class="pre">ref-1</span></code>, use the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">relate</span> <span class="p">{</span><span class="n">refs</span><span class="o">.</span><span class="n">fa</span><span class="p">}</span> <span class="n">sample</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mf">1.</span><span class="n">cram</span> <span class="n">sample</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mf">2.</span><span class="n">cram</span> <span class="n">sample</span><span class="o">-</span><span class="mi">2</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mf">1.</span><span class="n">cram</span>
 </pre></div>
 </div>
-<p>and/or by using <a class="reference external" href="https://en.wikipedia.org/wiki/Glob_(programming)">glob patterns</a>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">relate</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span> <span class="n">sample_</span><span class="o">*/</span><span class="n">align</span><span class="o">/</span><span class="n">ref_1</span><span class="o">.</span><span class="n">bam</span> <span class="n">sample_</span><span class="o">*/</span><span class="n">align</span><span class="o">/</span><span class="n">ref_2</span><span class="o">.</span><span class="n">bam</span>
-</pre></div>
-</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">{refs.fa}</span></code> is the path to the file of reference sequences.</p>
 </section>
-<section id="xam-file-content-requirements">
-<h4>XAM file content requirements<a class="headerlink" href="#xam-file-content-requirements" title="Permalink to this headline"></a></h4>
-<p>Generally, a XAM file can contain reads that have aligned to any number
-of reference, as well as unaligned reads. However, SEISMIC-RNA requires
-that each XAM file contain reads aligned to exactly one reference. This
-restriction enables the relate step to process XAM files in parallel,
-which increases the speed. If the XAM files were created using <code class="docutils literal notranslate"><span class="pre">seismic</span>
-<span class="pre">align</span></code>, then they are guaranteed follow this convention.</p>
-</section>
-<section id="xam-file-path-requirements">
-<h4>XAM file path requirements<a class="headerlink" href="#xam-file-path-requirements" title="Permalink to this headline"></a></h4>
-<p>The name of the XAM file (minus the file extension) must be the name of
-the reference to which it was aligned. It must be inside a directory
-named <code class="docutils literal notranslate"><span class="pre">align</span></code>, which must be inside a directory named after the sample
-from which the reads came. If the BAM files were created using <code class="docutils literal notranslate"><span class="pre">seismic</span>
-<span class="pre">align</span></code>, then they will already follow this convention.</p>
 </section>
 </section>
 </section>
@@ -755,7 +747,7 @@ with the flag <code class="docutils literal notranslate"><span class="pre">--fol
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="index.html" class="btn btn-neutral float-left" title="Manuals" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="inputs.html" class="btn btn-neutral float-right" title="Input file specification" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="faclean.html" class="btn btn-neutral float-right" title="Cleaning FASTA Files" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

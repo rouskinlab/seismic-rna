@@ -1,8 +1,8 @@
 
-Run the SEISMIC-RNA workflow
+Main Workflow
 ========================================================================
 
-There are two points at which you can begin the workflow:
+There are two points from which you can begin the main workflow:
 
 - If you are starting from files of raw sequencing reads (FASTQ format),
   then begin at the step :ref:`wf_align`.
@@ -28,10 +28,8 @@ Align input file: Reference sequences
 
 Alignment requires exactly one file of reference sequences, which must
 be DNA sequences (only A, C, G, T, and N) in FASTA format.
-You may clean the FASTA file with the :doc:`./util/fastaclean` utility,
-if necessary.
+If needed, you may clean the FASTA file with the :doc:`./faclean` tool.
 See :doc:`../formats/data/fasta` for details.
-
 
 Align input file: Sequencing reads
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -39,7 +37,6 @@ Align input file: Sequencing reads
 Alignment requires one or more files of sequencing reads, which must be
 DNA sequences (only A, C, G, T, and N) in FASTQ format.
 See :doc:`../formats/data/fastq` for details.
-
 
 Sequencing reads can be single-end or paired-end
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -49,14 +46,12 @@ Sequencing reads can be single-end or paired-end (for more details, see
 The SEISMIC-RNA workflow can handle both single- and paired-end reads,
 provided that no FASTQ file contains a mixture of both types of reads.
 
-
 Sequencing reads can come from whole or demultiplexed samples
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 FASTQ files can contain reads from a whole sample (which can possibly
 come from many different reference sequences) or can be demultiplexed
 before alignment so that they contain reads from one reference sequence.
-
 
 How to specify the endedness and source of sequencing reads
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -84,8 +79,7 @@ single-end                 ``--fastqz/-z`` ``--dmfastqz/-Z``
     If using paired-end reads in separate FASTQ files, both files of 1st
     and 2nd mates are required. See :ref:`fastq_pair` for instructions.
 
-
-How to input one FASTQ file (single-end or interleaved paired-end reads)
+How to align one FASTQ file (single-end or interleaved paired-end reads)
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 To align a FASTQ of single-end reads from a whole sample, use ``-z``::
@@ -103,10 +97,9 @@ use ``-Y`` instead::
 where ``{sample/ref.fq.gz}`` is the path to the FASTQ file containing
 reads from only one reference in the sample.
 
-
 .. _fastq_pair:
 
-How to input a pair of FASTQ files (paired-end reads in separate files)
+How to align a pair of FASTQ files (paired-end reads in separate files)
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 If your reads are paired-end and you have one FASTQ file containing all
@@ -130,11 +123,10 @@ There are two methods:
 
     where ``{sample}`` is the new directory for both FASTQ files.
 
-
-How to input multiple FASTQ files or pairs of paired-end FASTQ files
+How to align multiple FASTQ files or pairs of paired-end FASTQ files
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-There are three ways to align multiple FASTQ files (or pairs) at once:
+There are three ways to align multiple FASTQ files (or pairs thereof):
 
 1.  Use options more than once.
     The options for FASTQ files can all be given multiple times, and can
@@ -183,7 +175,6 @@ There are three ways to align multiple FASTQ files (or pairs) at once:
     Thus, the given directory can have deeply nested subdirectories, and
     SEISMIC-RNA will still find and process any FASTQ files within them.
 
-
 Align: Options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -213,7 +204,6 @@ in the "Basic Statisics" section:
 - Otherwise, you will need to search elsewhere for your encoding scheme
   to determine the Phred score offset.
 
-
 Align option: Quality assessment with FastQC
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -222,7 +212,6 @@ after trimming, in order to find any potential problems.
 FastQC can be disabled with the flag ``--no-fastqc``.
 To enable automatic extraction of the zipped output files from FastQC,
 add the flag ``--qc-extract``.
-
 
 Align option: Trimming reads with Cutadapt
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -286,7 +275,6 @@ If you require a more customized adapter trimming workflow, you can trim
 your FASTQ files outside of SEISMIC-RNA, then perform alignment within
 SEISMIC-RNA, using the option ``--no-cut`` to disable additional adapter
 trimming.
-
 
 Align option: Mapping reads with Bowtie 2
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -446,19 +434,18 @@ However, the better compression of CRAM files comes at three costs:
   SEISMIC-RNA will resort to copying the FASTA file instead.
 - Reading and writing CRAM files is slower than for BAM files due to the
   extra effort needed for compressing and decompressing CRAM files.
-- In the CIGAR strings, distinction between reference matches (``=``)
+- In the `CIGAR strings`_, distinction between reference matches (``=``)
   and substitutions (``X``) is lost upon compressing to CRAM format.
   Thus, ``seismic relate`` must perform extra work to determine if each
   non-gapped position is a match or substitution, which makes it run
   more slowly than it would if the distinction had been preserved.
 
-In general, use CRAM format if minimizning the size of your alignment
+In general, use CRAM format if minimizing the size of your alignment
 map files is a priority, especially for long-term storage.
 Use BAM format to make the ``align`` and ``relate`` steps run faster,
 and to increase the robustness of the output files (because BAM files
 are self-contained, while CRAM files will break without the FASTA file
 that accompanies them).
-
 
 Align: output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -482,7 +469,6 @@ If the option ``--qc-extract`` is given, then FastQC will also unzip
 ``{fq_name}_fastqc.zip`` to the directory ``{fq_name}_fastqc``.
 For details on these outputs, see the documentation for `FastQC`_.
 
-
 Align output file: Alignment maps
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -499,7 +485,6 @@ of the reference to which the reads aligned, and ``{xam}`` is the file
 extension (depending on the selected format).
 SEISMIC-RNA can output alignment maps in either BAM or CRAM format.
 For a comparison of these formats, see :ref:`bam_vs_cram`.
-
 
 Align output file: Reference sequences
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -562,7 +547,6 @@ where ``{ref}`` is the reference for demultiplexed FASTQ files.
 Outputting these files of unaligned reads can be disabled using the
 option ``--bt2-no-un``.
 
-
 Align: Troubleshooting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -587,7 +571,6 @@ then try the following steps (in this order):
     RNA such as from *Mycoplasma*, incorrect indexes used during FASTQ
     generation) and whether the reads that did align are still usable.
 
-
 .. _wf_relate:
 
 Relate each read to every reference position
@@ -596,56 +579,46 @@ Relate each read to every reference position
 Relate: Input files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Relate requires exactly one FASTA file containing one or more reference
-sequences and any number of alignment map files in SAM/BAM/CRAM format
-(referred to collectively as "XAM" format).
+Relate input file: Reference sequences
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Relate requires exactly one file of reference sequences, which must be
+DNA sequences (only A, C, G, T, and N) in FASTA format.
+If needed, you may clean the FASTA file with the :doc:`./faclean` tool.
+See :doc:`../formats/data/fasta` for details.
 
 .. note::
     The references in the FASTA file must match those to which the reads
-    were aligned to produce the XAM file(s); the names and the sequences
-    must be identical. If the names differ, then the XAM files using the
-    old names will be ignored; while if the sequences differ, then reads
-    can yield erroneous relation vectors or fail to yield any output.
+    were aligned to produce the XAM file(s).
+    A XAM file whose reference is absent from the FASTA will be skipped.
+    A XAM file whose reference sequence in the FASTA differs from the
+    sequence to which the XAM file was actually aligned can can yield
+    erroneous relation vectors or fail to yield any output.
 
-One XAM file
+Relate input file: Alignment maps
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-A single XAM file (``sample_1/align/ref_1.bam``) can be run as follows::
+Relate requires one or more alignment map files, each of which must be
+in SAM, BAM, or CRAM format (collectively, "XAM" format).
+See :doc:`../formats/data/xam` for details.
 
-    seismic relate refs.fa sample_1/align/ref_1.bam
+Alignment map file requirements
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+Refer to
 
-Multiple XAM files
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+How to relate one or more alignment maps
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-Multiple XAM files can be run in parallel by giving multiple paths::
+List every alignment map file after the FASTA file.
+Refer to :doc:`./inputs` for details on how to list multiple files.
+For example, to compute relation vectors for reads from ``sample-1``
+aligned to references ``ref-1`` and ``ref-2``, and from ``sample-2``
+aligned to reference ``ref-1``, use the following command::
 
-    seismic relate refs.fa sample_1/align/ref_1.bam
+    seismic relate {refs.fa} sample-1/align/ref-1.cram sample-1/align/ref-2.cram sample-2/align/ref-1.cram
 
-and/or by using `glob patterns`_::
-
-    seismic relate refs.fa sample_*/align/ref_1.bam sample_*/align/ref_2.bam
-
-
-XAM file content requirements
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-Generally, a XAM file can contain reads that have aligned to any number
-of reference, as well as unaligned reads. However, SEISMIC-RNA requires
-that each XAM file contain reads aligned to exactly one reference. This
-restriction enables the relate step to process XAM files in parallel,
-which increases the speed. If the XAM files were created using ``seismic
-align``, then they are guaranteed follow this convention.
-
-XAM file path requirements
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-The name of the XAM file (minus the file extension) must be the name of
-the reference to which it was aligned. It must be inside a directory
-named ``align``, which must be inside a directory named after the sample
-from which the reads came. If the BAM files were created using ``seismic
-align``, then they will already follow this convention.
-
+where ``{refs.fa}`` is the path to the file of reference sequences.
 
 .. _wf_all:
 
@@ -667,7 +640,6 @@ From BAM, report, and/or table file(s)::
     maximum number of clusters to attempt. Enable structure prediction
     with the flag ``--fold``.
 
-
 .. _FastQC: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 .. _Cutadapt: https://cutadapt.readthedocs.io/en/stable/
 .. _Cutadapt reference guide: https://cutadapt.readthedocs.io/en/stable/reference.html
@@ -676,6 +648,7 @@ From BAM, report, and/or table file(s)::
 .. _alignment score: https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#scores-higher-more-similar
 .. _section of the Bowtie 2 manual on alignment scores: https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#valid-alignments-meet-or-exceed-the-minimum-score-threshold
 .. _mapping quality: https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mapping-quality-higher-more-unique
+.. _CIGAR strings: https://samtools.github.io/hts-specs/
 .. _view command in Samtools: https://www.htslib.org/doc/samtools-view.html
 .. _Bowtie 2 manual for details on concordant/discordant alignments: https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#concordant-pairs-match-pair-expectations-discordant-pairs-dont
 .. _mixed mode: https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mixed-mode-paired-where-possible-unpaired-otherwise

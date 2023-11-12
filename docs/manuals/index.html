@@ -19,7 +19,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Run the SEISMIC-RNA workflow" href="workflow.html" />
+    <link rel="next" title="Main Workflow" href="workflow.html" />
     <link rel="prev" title="Step-by-step walkthrough" href="../tutorials/amplicon.html" /> 
 </head>
 
@@ -48,10 +48,10 @@
 <li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Manuals</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="workflow.html">Run the SEISMIC-RNA workflow</a></li>
-<li class="toctree-l2"><a class="reference internal" href="inputs.html">Input file specification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="logging.html">Logging messages</a></li>
-<li class="toctree-l2"><a class="reference internal" href="util/index.html">Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html">Main Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faclean.html">Cleaning FASTA Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inputs.html">Listing Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html">Logging Messages</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
@@ -60,6 +60,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../data/index.html">Data Structures</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../algos/index.html">Algorithms</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../issues.html">Bugs and Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../writeme.html">How to Write this Manual</a></li>
 </ul>
 
         </div>
@@ -96,26 +97,26 @@ for commands and parameters.
 For a complete list of commands and their parameters, see <a class="reference internal" href="../cli.html"><span class="doc">Command Line Interface</span></a>.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="workflow.html">Run the SEISMIC-RNA workflow</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Main Workflow</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="workflow.html#align-sequencing-reads-to-reference-sequences">Align sequencing reads to reference sequences</a></li>
 <li class="toctree-l2"><a class="reference internal" href="workflow.html#relate-each-read-to-every-reference-position">Relate each read to every reference position</a></li>
 <li class="toctree-l2"><a class="reference internal" href="workflow.html#run-the-entire-workflow-with-one-command">Run the entire workflow with one command</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="inputs.html">Input file specification</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="inputs.html#example-output-directory">Example output directory</a></li>
-<li class="toctree-l2"><a class="reference internal" href="inputs.html#list-of-files">List of files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="inputs.html#glob-patterns">Glob patterns</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faclean.html">Cleaning FASTA Files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="faclean.html#background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faclean.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faclean.html#troubleshooting">Troubleshooting</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging messages</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="logging.html#levels-of-messages">Levels of messages</a></li>
-<li class="toctree-l2"><a class="reference internal" href="logging.html#messages-on-standard-output">Messages on standard output</a></li>
-<li class="toctree-l2"><a class="reference internal" href="logging.html#messages-in-log-files">Messages in log files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inputs.html">Listing Input Files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="inputs.html#general-methods-to-list-input-files-as-positional-arguments">General methods to list input files as positional arguments</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="util/index.html">Utilities</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="util/fastaclean.html">FASTA file cleaner</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging Messages</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="logging.html#logged-messages-come-in-five-levels">Logged messages come in five levels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html#logging-messages-on-standard-output">Logging messages on standard output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html#logging-messages-to-files">Logging messages to files</a></li>
 </ul>
 </li>
 </ul>
@@ -127,7 +128,7 @@ For a complete list of commands and their parameters, see <a class="reference in
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="../tutorials/amplicon.html" class="btn btn-neutral float-left" title="Step-by-step walkthrough" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="workflow.html" class="btn btn-neutral float-right" title="Run the SEISMIC-RNA workflow" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="workflow.html" class="btn btn-neutral float-right" title="Main Workflow" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -16,3 +16,4 @@ SEISMIC-RNA User Guide
     data/index
     algos/index
     issues
+    writeme

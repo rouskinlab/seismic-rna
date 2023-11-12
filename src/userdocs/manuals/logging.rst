@@ -1,5 +1,5 @@
 
-Logging messages
+Logging Messages
 ========================================================================
 
 As SEISMIC-RNA runs, it outputs messages about its normal activities and
@@ -8,7 +8,7 @@ to provide a record of what happened during the run. The most salient
 messages are also printed to `standard output`_. This section shows how
 to control which messages are printed and where log files are written.
 
-Levels of messages
+Logged messages come in five levels
 ------------------------------------------------------------------------
 
 Messages range from critical errors that halt the program to meticulous
@@ -25,10 +25,10 @@ each message one of five levels from `Python's built-in logging tools`_:
  5       CRITICAL   Severe problem forcing the entire program to stop
 ======= ========== =====================================================
 
-Messages on standard output
+Logging messages on standard output
 ------------------------------------------------------------------------
 
-Format of messages on standard output
+Format of logged messages on standard output
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Each message on standard output consists of the message level, in all
@@ -39,7 +39,7 @@ capital letters, a tab character, and the message itself, for example::
 Each level is also output in a different color to make it easier to spot
 more important messages.
 
-Controlling which messages are printed
+How to control which messages are logged to standard output
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 By default, the only messages that are printed to standard output are of
@@ -70,7 +70,7 @@ framework that has its own, separate system for controlling verbosity::
 
     seismic test -vv
 
-Messages in log files
+Logging messages to files
 ------------------------------------------------------------------------
 
 All messages are written to the log file.
@@ -86,7 +86,7 @@ next line(s) is the message itself, after which comes one blank line::
     LOGMSG> 2024-04-08 15:20:09,277 seismicrna.core.shell   WARNING
     It appears that something has blotted out the sun in Rochester, NY.
 
-Controlling the path to log files
+How to control the path to log files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The default path of the log file is ::
@@ -101,7 +101,7 @@ between ``seismic`` and the sub-command::
 
     seismic --log log/final-2_use-this-one.log cluster -k 3 out/sars2-fse
 
-Viewing log files in real time
+How to view log files in real time
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Regardless of the verbosity or quietness specified by the ``-v``/``-q``
