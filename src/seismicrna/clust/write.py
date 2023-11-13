@@ -179,7 +179,7 @@ def cluster(mask_report_file: Path,
                                            checksums=checksums,
                                            began=began,
                                            ended=ended)
-        report.save(top=dataset.top, overwrite=True)
+        report.save(top=dataset.top, force=True)
     return cluster_report_file
 
 ########################################################################

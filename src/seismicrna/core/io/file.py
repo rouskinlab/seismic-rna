@@ -89,6 +89,9 @@ class FileIO(ABC):
     def save(self, top: Path, **kwargs):
         """ Save the object to a file. """
 
+    def __str__(self):
+        return f"{type(self).__name__}: {self.path_fields()}"
+
 
 class RefIO(FileIO, ABC):
     """ Saved file with a sample, command, and reference. """

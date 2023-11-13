@@ -96,8 +96,8 @@ def generate_batch(batch: int, *,
                                 batch)
     logger.info(f"Ended computing relation vectors for batch {batch} "
                 f"of {xam_view}")
-    _, relv_check = relvecs.save(out_dir, brotli_level, overwrite=True)
-    _, name_check = names.save(out_dir, brotli_level, overwrite=True)
+    _, relv_check = relvecs.save(out_dir, brotli_level, force=True)
+    _, name_check = names.save(out_dir, brotli_level, force=True)
     return relvecs.num_reads, relv_check, name_check
 
 
@@ -123,7 +123,7 @@ class RelationWriter(object):
         report = RelateReport(sample=self.sample,
                               ref=self.ref,
                               **kwargs)
-        return report.save(out_dir, overwrite=True)
+        return report.save(out_dir, force=True)
 
     def _write_refseq(self, out_dir: Path, brotli_level: int):
         """ Write the reference sequence to a file. """

@@ -10,8 +10,8 @@ There are two points from which you can begin the main workflow:
   or CRAM format), then begin at the step :ref:`wf_relate`.
 
 .. note::
-    You can pass either (or both) types of input files into the command
-    ``seismic all``, which runs the entire workflow.
+    The command ``seismic all`` accepts both types of inputs and runs
+    the entire workflow.
     See :ref:`wf_all` for more details.
 
 
@@ -391,6 +391,20 @@ For those searching for this option in Bowtie 2, you will not find it.
 Instead, reads with insufficient mapping quality are filtered out after
 alignment using the `view command in Samtools`_.
 
+How to filter by number of aligned reads
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+In general, alignment maps containing very few reads are not useful for
+mutational profiling, due to their inherently low coverage per position.
+Worse, if aligning to a very large number of references (e.g. an entire
+transcriptome), most of the references would likely receive insufficient
+reads, so most of the (many) output XAM files would be useless clutter.
+
+To remedy this inconvenience, after alignment has finished, XAM files
+with fewer than a minimum number of reads are automatically deleted.
+The default is 1000, which can be set using the option ``--min-reads``.
+Setting ``--min-reads`` to 0 disables automatically deleting XAM files.
+
 How to further customize alignment
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
@@ -526,26 +540,12 @@ where ``{ref}`` is the reference for demultiplexed FASTQ files.
 Outputting these files of unaligned reads can be disabled using the
 option ``--bt2-no-un``.
 
-Align output file: Align report
+Align output file: Report
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-In addition to the alignment maps, SEISMIC-RNA outputs FASTQ file(s) of
-reads that Bowtie 2 could not align to ``{out}/{sample}/align``:
-
-- Each whole-sample FASTQ file of single-end (``-z``) or interleaved
-  (``-y``) reads yields one file: ``unaligned.fq.gz``
-- Each pair of whole-sample FASTQ files of 1st and 2nd mates (``-x``)
-  yields two files: ``unaligned.fq.1.gz`` and ``unaligned.fq.2.gz``
-- Each demultiplexed FASTQ file of single-end (``-Z``) or interleaved
-  (``-Y``) reads yields one file: ``{ref}__unaligned.fq.gz``
-- Each pair of demultiplexed FASTQ files of 1st and 2nd mates (``-X``)
-  yields two files:
-  ``{ref}__unaligned.fq.1.gz`` and ``{ref}__unaligned.fq.2.gz``
-
-where ``{ref}`` is the reference for demultiplexed FASTQ files.
-
-Outputting these files of unaligned reads can be disabled using the
-option ``--bt2-no-un``.
+A report file is written that records the settings used to run alignment
+and summarizes the results of alignment.
+See :doc:`../formats/report/align` for more information.
 
 Align: Troubleshooting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -587,14 +587,6 @@ DNA sequences (only A, C, G, T, and N) in FASTA format.
 If needed, you may clean the FASTA file with the :doc:`./faclean` tool.
 See :doc:`../formats/data/fasta` for details.
 
-.. note::
-    The references in the FASTA file must match those to which the reads
-    were aligned to produce the XAM file(s).
-    A XAM file whose reference is absent from the FASTA will be skipped.
-    A XAM file whose reference sequence in the FASTA differs from the
-    sequence to which the XAM file was actually aligned can can yield
-    erroneous relation vectors or fail to yield any output.
-
 Relate input file: Alignment maps
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -602,13 +594,14 @@ Relate requires one or more alignment map files, each of which must be
 in SAM, BAM, or CRAM format (collectively, "XAM" format).
 See :doc:`../formats/data/xam` for details.
 
-Alignment map file requirements
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-Refer to
-
-How to relate one or more alignment maps
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+.. note::
+    The references in the FASTA file must match those to which the reads
+    in the alignment map were aligned.
+    Discrepancies can cause the ``relate`` command to fail or produce
+    erroneous relation vectors.
+    This problem will not occur if you use the same (unaltered) FASTA
+    file for both the ``align`` and ``relate`` commands, or run both
+    at once using the command ``seismic all``.
 
 List every alignment map file after the FASTA file.
 Refer to :doc:`./inputs` for details on how to list multiple files.
@@ -619,6 +612,84 @@ aligned to reference ``ref-1``, use the following command::
     seismic relate {refs.fa} sample-1/align/ref-1.cram sample-1/align/ref-2.cram sample-2/align/ref-1.cram
 
 where ``{refs.fa}`` is the path to the file of reference sequences.
+
+Relate: Options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Relate options shared with alignment
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Because this workflow can be started from the ``align`` or ``relate``
+commands, the latter duplicates some of the options of the former:
+``--phred-enc``, ``--min-mapq``, ``--min-reads``, and ``--out-dir`` have
+the same functions in ``relate`` and ``align``.
+
+Relate option: Minimum Phred score
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Like ``align``, ``relate`` also has the option ``--min-phred``, but its
+meaning is different than that during the ``align`` step.
+In ``relate``, base calls with Phred scores below ``--min-phred`` are
+considered ambiguous matches or substitutions, as if they were ``N``s.
+For example, if the minimum Phred score is 25 (the default) and a base
+``T`` is called as a match with a Phred score of 20, then it would be
+marked as possibly a match and possibly a subsitution to A, C, or G.
+See :doc:`../data/relate` for more information.
+
+Relate option: Ambiguous insertions and deletions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The most tricky problem in computing relation vectors is that insertions
+and deletions ("indels") in repetitive regions cause ambiguities.
+SEISMIC-RNA introduces a new algorithm for identifying ambiguous indels
+(see :doc:`../algos/ambrel` for more information).
+This algorithm is enabled by default.
+If it is not necessary to identify ambiguous indels, then the algorithm
+can be disabled with ``--no-ambrel``, which will speed up ``relate`` at
+the cost of reducing its accuracy on indels.
+
+Relate option: Batch size
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+For an explanation of batching and how to use it, see :ref:`batches`.
+
+The dataset is partitioned into batches by the ``relate`` command.
+The option ``--batch-size`` sets a target amount of data for each batch,
+in millions of base calls (megabases).
+This calculation considers the total number of relationships per read,
+which equals the length of the reference sequence.
+Thus, the number of base calls *B* is the product of the number of reads
+*N* and the length of the reference sequence *L*:
+
+*B* = *NL*
+
+Since *L* is known and ``--batch-size`` specifies a target size for *B*,
+*N* can be solved for:
+
+*N* = *B*/*L*
+
+SEISMIC-RNA will aim to put exactly *N* reads in each batch but the last
+(the last batch can be smaller because it has just the leftover reads).
+If the reads are single-ended or if alignment was not run in mixed mode,
+then every batch but the last will contain exactly *N* reads.
+If mixed mode was used, then batches may contain more than *N* reads, up
+to a maximum of 2 *N* in the extreme case that every read in the batch
+belonged to a pair in which the other mate did not align.
+
+Relate: Output files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Relate output file: Batch of relation vectors
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+
+Relate output file: Report
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A report file is written that records the settings used to generate
+relation vectors summarizes the results.
+See :doc:`../formats/report/relate` for more information.
 
 .. _wf_all:
 

@@ -133,13 +133,13 @@ def bowtie2_cmd(fq_inp: FastqUnit,
             "--threads", n_procs,
             # Alignment setup
             "--local" if bt2_local else "--end-to-end",
+            "--non-deterministic",
             "--gbar", bt2_gbar,
             "--dpad", bt2_dpad,
             "-L", bt2_l,
             "-i", bt2_s,
             "-D", bt2_d,
             "-R", bt2_r,
-            "--non-deterministic",
             # Scoring
             fq_inp.phred_arg,
             "--ignore-quals",
@@ -158,9 +158,8 @@ def bowtie2_cmd(fq_inp: FastqUnit,
         logger.warning(f"Invalid mate orientation for Bowtie2: '{bt2_orient}'. "
                        f"Setting to '{BOWTIE2_ORIENT[0]}'")
         bt2_orient = BOWTIE2_ORIENT[0]
+    # Options for paired-end reads
     args.append(f"--{bt2_orient}")
-    # Selecting reads to output
-    args.append("--no-unal")
     if not bt2_discordant:
         args.append("--no-discordant")
     if not bt2_contain:
@@ -169,6 +168,8 @@ def bowtie2_cmd(fq_inp: FastqUnit,
         args.append("--dovetail")
     if not bt2_mixed:
         args.append("--no-mixed")
+    # Filtering
+    args.append("--no-unal")
     # Formatting
     args.append("--xeq")
     # Input and output files

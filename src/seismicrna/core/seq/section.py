@@ -346,12 +346,6 @@ class Section(object):
         return self.range_int[self.unmasked_bool]
 
     @property
-    def unmasked_zero(self):
-        """ Unmasked 0-indexed positions as integers. """
-        # Do not cache this method since self.unmasked_int can change.
-        return self.unmasked_int - self.end5
-
-    @property
     def unmasked(self):
         """ Index of unmasked positions in the section. """
         # Do not cache this method since self.unmasked_int can change.

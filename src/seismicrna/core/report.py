@@ -51,6 +51,7 @@ from .arg import (opt_phred_enc,
 from .io import FileIO, ReadBatchIO, RefIO
 from .rel import HalfRelPattern
 from .version import __version__, check_compatibility
+from .write import write_mode
 
 logger = getLogger(__name__)
 
@@ -125,7 +126,7 @@ class Field(object):
                 raise ValueError(f"{self} got invalid value: {value}")
 
     def __str__(self):
-        return f"Report Field '{self.title}' ({self.key})"
+        return f"{type(self).__name__} {repr(self.title)} ({self.key})"
 
 
 # Field calculation functions
@@ -843,11 +844,11 @@ class Report(FileIO, ABC):
             odata[field.title] = value
         return odata
 
-    def save(self, top: Path, overwrite: bool = False):
+    def save(self, top: Path, force: bool = False):
         """ Save the report to a JSON file. """
         text = json.dumps(self.to_dict(), indent=4)
         save_path = self.get_path(top)
-        with open(save_path, 'w' if overwrite else 'x') as f:
+        with open(save_path, write_mode(force)) as f:
             f.write(text)
         logger.info(f"Wrote {self} to {save_path}")
         return save_path
@@ -859,12 +860,6 @@ class Report(FileIO, ABC):
                 f"Invalid field for {type(self).__name__}: {repr(key)}")
         lookup_key(key).validate(self, value)
         super().__setattr__(key, value)
-
-    def __str__(self):
-        descript = ", ".join(f"{key} = {repr(val)}"
-                             for key, val in self.to_dict().items()
-                             if isinstance(val, str))
-        return f"{type(self).__name__}: {descript}"
 
     def __eq__(self, other):
         if not isinstance(other, type(self)):

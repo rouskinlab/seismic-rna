@@ -111,15 +111,14 @@ class EmClustering(object):
             raise ValueError(f"conv_thresh must be ≥ 0, but got {conv_thresh}")
         self.conv_thresh = conv_thresh
         # Number of reads observed in each cluster, not adjusted
-        self.nreads = np.empty(self.order, dtype=float)
+        self.nreads_obs = np.empty(self.order, dtype=float)
         # Log of the fraction observed for each cluster
         self.log_f_obs = np.empty(self.order, dtype=float)
         # Mutation rates of used positions (row) in each cluster (col),
         # adjusted for observer bias
         self.mus = np.empty((self.uniq_reads.num_pos, self.order), dtype=float)
         # Positions of the section that will be used for clustering
-        # (0-indexed from the beginning of the section)
-        self.sparse_pos = self.uniq_reads.section.unmasked_zero
+        self.unmasked = self.uniq_reads.section.unmasked_bool
         # Likelihood of each vector (col) coming from each cluster (row)
         self.resps = np.empty((self.order, self.uniq_reads.num_uniq),
                               dtype=float)
@@ -148,7 +147,7 @@ class EmClustering(object):
                               dtype=float)
         # Copy the rows of self.mus that correspond to used positions.
         # The rows for unused positions remain zero (hence "sparse").
-        sparse_mus[self.sparse_pos] = self.mus
+        sparse_mus[self.unmasked] = self.mus
         return sparse_mus
 
     @cached_property
@@ -160,7 +159,7 @@ class EmClustering(object):
     def prop_obs(self):
         """ Observed proportion of each cluster, without adjusting for
         observer bias. """
-        return self.nreads / np.sum(self.nreads)
+        return self.nreads_obs / np.sum(self.nreads_obs)
 
     @property
     def prop_adj(self):
@@ -211,7 +210,7 @@ class EmClustering(object):
         # Calculate the number of reads in each cluster by summing the
         # count-weighted likelihood that each bit vector came from the
         # cluster.
-        self.nreads = self.resps @ self.uniq_reads.counts_per_uniq
+        self.nreads_obs = self.resps @ self.uniq_reads.counts_per_uniq
         # If this iteration is not the first, then use mutation rates
         # from the previous iteration as the initial guess for this one.
         mus_guess = self.sparse_mus if self.iter > FIRST_ITER else None
@@ -227,12 +226,12 @@ class EmClustering(object):
             # reads in the cluster to find the observed mutation rate.
             self.mus[j] = ((self.resps[:, muts_j]
                             @ self.uniq_reads.counts_per_uniq[muts_j])
-                           / self.nreads)
+                           / self.nreads_obs)
         # Solve for the real mutation rates that are expected to yield
         # the observed mutation rates after considering read drop-out.
         self.mus = calc_mu_adj_numpy(self.sparse_mus,
                                      self.uniq_reads.min_mut_gap,
-                                     mus_guess)[self.sparse_pos]
+                                     mus_guess)[self.unmasked]
 
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
@@ -380,7 +379,7 @@ class EmClustering(object):
     def get_mus(self):
         """ Log mutation rate at each position for each cluster. """
         return pd.DataFrame(self.mus,
-                            index=self.uniq_reads.section.unmasked,
+                            index=self.uniq_reads.section.unmasked_int,
                             columns=self.clusters)
 
     def get_resps(self, batch_num: int):
@@ -488,7 +487,7 @@ class EmClustering(object):
     '''
 
     def __str__(self):
-        return f"Clustering {self.uniq_reads} to order {self.order}"
+        return f"{type(self).__name__} {self.uniq_reads} to order {self.order}"
 
 ########################################################################
 #                                                                      #

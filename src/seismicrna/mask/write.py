@@ -361,7 +361,7 @@ def mask_section(dataset: RelateLoader,
         masker.mask()
         ended = datetime.now()
         report = masker.create_report(began, ended)
-        report.save(dataset.top, overwrite=True)
+        report.save(dataset.top, force=True)
     return report_file
 
 ########################################################################

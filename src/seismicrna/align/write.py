@@ -368,7 +368,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                          reads_refs=reads_refs,
                          began=began,
                          ended=ended)
-    report.save(out_dir, overwrite=True)
+    report.save(out_dir, force=True)
     # Return a list of name-sorted XAM files, each of which contains a
     # set of reads that all align to the same reference.
     return xams_out

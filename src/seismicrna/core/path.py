@@ -192,16 +192,18 @@ def sanitize(path: str | pl.Path):
 
 def validate_str(txt: str):
     if not isinstance(txt, str):
-        raise PathTypeError(f"Expected 'str', got '{type(txt).__name__}'")
+        raise PathTypeError(
+            f"Expected {str.__name__}, but got {type(txt).__name__}")
     if not txt:
-        raise PathValueError(f"Text is empty")
+        raise PathValueError(f"Empty string: {repr(txt)}")
     if illegal := "".join(sorted(set(txt) - STR_CHARS_SET)):
-        raise PathValueError(f"Text '{txt}' has illegal characters: {illegal}")
+        raise PathValueError(f"{repr(txt)} has illegal characters: {illegal}")
 
 
 def validate_top(top: pl.Path):
     if not isinstance(top, pl.Path):
-        raise PathTypeError(f"Expected 'Path', got '{type(top).__name__}'")
+        raise PathTypeError(
+            f"Expected {Path.__name__}, but got {type(top).__name__}")
     if not top.parent.is_dir():
         raise PathValueError(f"Not a directory: {top.parent}")
     if top.is_file():
@@ -209,8 +211,8 @@ def validate_top(top: pl.Path):
 
 
 def validate_int(num: int):
-    if num < 0:
-        raise PathValueError(f"Expected integer ≥ 0, got {num}")
+    if not isinstance(num, int) or num < 0:
+        raise PathValueError(f"Expected an integer ≥ 0, but got {num}")
 
 
 VALIDATE = {int: validate_int,
@@ -233,14 +235,14 @@ class Field(object):
         if self.is_ext:
             if self.dtype is not str:
                 raise PathTypeError("Extension field must be type 'str', "
-                                    f"but got type '{self.dtype.__name__}'")
+                                    f"but got type {repr(self.dtype.__name__)}")
             if not self.options:
                 raise PathValueError("Extension field must have options")
 
     def validate(self, val: Any):
         if not isinstance(val, self.dtype):
-            raise PathTypeError(f"Expected a '{self.dtype.__name__}', but got "
-                                f"{repr(val)} of type '{type(val).__name__}'")
+            raise PathTypeError(f"Expected {repr(self.dtype.__name__)}, but "
+                                f"got {repr(val)} ({repr(type(val).__name__)})")
         if self.options and val not in self.options:
             raise PathValueError(
                 f"Invalid option {repr(val)}; expected one of {self.options}")
@@ -256,13 +258,13 @@ class Field(object):
         try:
             val = self.dtype(text)
         except Exception as error:
-            raise PathValueError(f"Failed to interpret '{text}' as type "
-                                 f"'{self.dtype.__name__}': {error}")
+            raise PathValueError(f"Failed to interpret {repr(text)} as type "
+                                 f"{repr(self.dtype.__name__)}: {error}")
         self.validate(val)
         return val
 
     def __str__(self):
-        return f"Path Field '{self.dtype.__name__}'"
+        return f"{type(self).__name__} {repr(self.dtype.__name__)}"
 
 
 # Fields
