@@ -1,5 +1,5 @@
 
-Main Workflow
+Running the Workflow
 ========================================================================
 
 There are two points from which you can begin the main workflow:

@@ -15,8 +15,6 @@ In a FASTQ file, each sequencing read record comprises four lines:
 
 See `FASTQ format`_ for more information.
 
-.. _fastq_endedness:
-
 FASTQ character sets
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -47,6 +45,8 @@ with the corresponding `ASCII code`_.
 For example, if *N* is 33, then the Phred score 25 would be encoded by
 adding 33 to 25 (obtaining 58), then writing the character whose ASCII
 code is 58 (which is ``:``).
+
+.. _fastq_endedness:
 
 Endedness: single-end and paired-end reads
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

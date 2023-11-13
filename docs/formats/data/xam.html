@@ -19,7 +19,7 @@
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Metadata Formats" href="../meta/index.html" />
+    <link rel="next" title="Brickle: Compressed Python Objects" href="brickle.html" />
     <link rel="prev" title="FASTQ: Sequencing Reads" href="fastq.html" /> 
 </head>
 
@@ -56,11 +56,12 @@
 <li class="toctree-l3"><a class="reference internal" href="fasta.html">FASTA: Reference sequences</a></li>
 <li class="toctree-l3"><a class="reference internal" href="fastq.html">FASTQ: Sequencing Reads</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">SAM, BAM, and CRAM: Alignment Maps</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#three-formats-of-alignment-map-files">Three formats of alignment map files</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#endedness-of-reads-in-xam-files">Endedness of reads in XAM files</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#quality-score-encodings-in-xam-files">Quality score encodings in XAM files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xam-file-content-format">XAM file: Content format</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xam-file-path-format">XAM file: Path format</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xam-file-uses">XAM file: Uses</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="brickle.html">Brickle: Compressed Python Objects</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../meta/index.html">Metadata Formats</a></li>
@@ -99,25 +100,27 @@
            <div itemprop="articleBody">
              
   <section id="sam-bam-and-cram-alignment-maps">
-<span id="sam-format"></span><h1>SAM, BAM, and CRAM: Alignment Maps<a class="headerlink" href="#sam-bam-and-cram-alignment-maps" title="Permalink to this headline"></a></h1>
-<p>Aligned reads are stored as alignment map files.</p>
-<section id="three-formats-of-alignment-map-files">
-<h2>Three formats of alignment map files<a class="headerlink" href="#three-formats-of-alignment-map-files" title="Permalink to this headline"></a></h2>
-<p>These files come in three formats – SAM, BAM, and CRAM – documented on
-the <a class="reference external" href="https://samtools.github.io/hts-specs/">Samtools website</a>:</p>
+<h1>SAM, BAM, and CRAM: Alignment Maps<a class="headerlink" href="#sam-bam-and-cram-alignment-maps" title="Permalink to this headline"></a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These three file formats are closely related and collectively called
+“XAM” format whenever the specific format is irrelevant.</p>
+</div>
+<section id="xam-file-content-format">
+<h2>XAM file: Content format<a class="headerlink" href="#xam-file-content-format" title="Permalink to this headline"></a></h2>
+<section id="comparison-of-sam-bam-and-cram-formats">
+<h3>Comparison of SAM, BAM, and CRAM formats<a class="headerlink" href="#comparison-of-sam-bam-and-cram-formats" title="Permalink to this headline"></a></h3>
 <table class="docutils align-default">
 <colgroup>
-<col style="width: 28%" />
+<col style="width: 32%" />
+<col style="width: 8%" />
+<col style="width: 13%" />
 <col style="width: 11%" />
-<col style="width: 7%" />
 <col style="width: 12%" />
-<col style="width: 9%" />
-<col style="width: 11%" />
-<col style="width: 22%" />
+<col style="width: 25%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Format</p></th>
-<th class="head"><p>Extension</p></th>
 <th class="head"><p>Type</p></th>
 <th class="head"><p>I/O Effort</p></th>
 <th class="head"><p>I/O Time</p></th>
@@ -127,7 +130,6 @@ the <a class="reference external" href="https://samtools.github.io/hts-specs/">S
 </thead>
 <tbody>
 <tr class="row-even"><td><p>Sequence Alignment Map</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">.sam</span></code></p></td>
 <td><p>text</p></td>
 <td><p>●</p></td>
 <td><p>●●</p></td>
@@ -135,7 +137,6 @@ the <a class="reference external" href="https://samtools.github.io/hts-specs/">S
 <td><p>parsing and editing</p></td>
 </tr>
 <tr class="row-odd"><td><p>Binary Alignment Map</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">.bam</span></code></p></td>
 <td><p>binary</p></td>
 <td><p>●●</p></td>
 <td><p>●</p></td>
@@ -143,7 +144,6 @@ the <a class="reference external" href="https://samtools.github.io/hts-specs/">S
 <td><p>short-term storage</p></td>
 </tr>
 <tr class="row-even"><td><p>CompRessed Alignment Map</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">.cram</span></code></p></td>
 <td><p>binary</p></td>
 <td><p>●●●</p></td>
 <td><p>●●●</p></td>
@@ -157,24 +157,67 @@ the <a class="reference external" href="https://samtools.github.io/hts-specs/">S
 <li><p>“I/O Time” ranks the amount of time needed to read/write the format.</p></li>
 <li><p>“File Size” ranks the sizes of files in the format.</p></li>
 </ul>
-<p>Throughout this documentation, we use the term “XAM format” to refer to
-all three formats collectively, when the specific format – SAM, BAM, or
-CRAM – does not matter.</p>
+<p>See the <a class="reference external" href="https://samtools.github.io/hts-specs/">Samtools website</a> for more information on SAM, BAM, and CRAM.</p>
 </section>
-<section id="endedness-of-reads-in-xam-files">
-<h2>Endedness of reads in XAM files<a class="headerlink" href="#endedness-of-reads-in-xam-files" title="Permalink to this headline"></a></h2>
-<p>Similar to read endedness in FASTQ files (see <a class="reference internal" href="fastq.html#fastq-endedness"><span class="std std-ref">FASTQ character sets</span></a>),
+<section id="xam-file-endedness">
+<h3>XAM file: Endedness<a class="headerlink" href="#xam-file-endedness" title="Permalink to this headline"></a></h3>
+<p>Similar to read endedness in FASTQ files (see <a class="reference internal" href="fastq.html#fastq-endedness"><span class="std std-ref">Endedness: single-end and paired-end reads</span></a>),
 reads in XAM files are also single- or paired-end.
 SEISMIC-RNA also requires that each XAM file contain only single-end or
 only paired-end reads.
 Unlike with FASTQ files, paired-end XAM files must be interleaved;
-SEISMIC-RNA cannot handle XAM files with only 1st or only 2nd mates.</p>
+SEISMIC-RNA cannot accept XAM files with only 1st or only 2nd mates.</p>
 </section>
-<section id="quality-score-encodings-in-xam-files">
-<h2>Quality score encodings in XAM files<a class="headerlink" href="#quality-score-encodings-in-xam-files" title="Permalink to this headline"></a></h2>
+<section id="xam-file-quality-score-encodings">
+<h3>XAM file: Quality score encodings<a class="headerlink" href="#xam-file-quality-score-encodings" title="Permalink to this headline"></a></h3>
 <p>SAM files encode <a class="reference external" href="https://en.wikipedia.org/wiki/Phred_quality_score">Phred quality scores</a> in the same manner as FASTQ
 files (see <a class="reference internal" href="fastq.html#phred-encodings"><span class="std std-ref">Phred quality score encodings</span></a>).
 BAM and CRAM files also encode Phred scores, but in a binary format.</p>
+</section>
+</section>
+<section id="xam-file-path-format">
+<h2>XAM file: Path format<a class="headerlink" href="#xam-file-path-format" title="Permalink to this headline"></a></h2>
+<section id="xam-file-extensions">
+<h3>XAM file extensions<a class="headerlink" href="#xam-file-extensions" title="Permalink to this headline"></a></h3>
+<p>SEISMIC-RNA accepts the following extensions for XAM files:</p>
+<ul class="simple">
+<li><p>SAM: <code class="docutils literal notranslate"><span class="pre">.sam</span></code></p></li>
+<li><p>BAM: <code class="docutils literal notranslate"><span class="pre">.bam</span></code></p></li>
+<li><p>CRAM: <code class="docutils literal notranslate"><span class="pre">.cram</span></code></p></li>
+</ul>
+</section>
+<section id="xam-path-parsing">
+<h3>XAM path parsing<a class="headerlink" href="#xam-path-parsing" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>The file name is the reference.</p></li>
+<li><p>The file must be in a directory named <code class="docutils literal notranslate"><span class="pre">align</span></code>.</p></li>
+<li><p>The directory containing <code class="docutils literal notranslate"><span class="pre">align</span></code> is the sample.</p></li>
+</ul>
+<p>For example, the path <code class="docutils literal notranslate"><span class="pre">project/out/umber/align/chartreuse.cram</span></code> would
+be parsed to the sample <code class="docutils literal notranslate"><span class="pre">umber</span></code> and reference <code class="docutils literal notranslate"><span class="pre">chartreuse</span></code>.</p>
+</section>
+</section>
+<section id="xam-file-uses">
+<h2>XAM file: Uses<a class="headerlink" href="#xam-file-uses" title="Permalink to this headline"></a></h2>
+<section id="xam-as-input-file">
+<h3>XAM as input file<a class="headerlink" href="#xam-as-input-file" title="Permalink to this headline"></a></h3>
+<p>Alignment maps for the <code class="docutils literal notranslate"><span class="pre">relate</span></code> command must be input as XAM files.</p>
+</section>
+<section id="xam-as-output-file">
+<h3>XAM as output file<a class="headerlink" href="#xam-as-output-file" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">align</span></code> command outputs a file in CRAM (with option <code class="docutils literal notranslate"><span class="pre">--cram</span></code>)
+or BAM (with option <code class="docutils literal notranslate"><span class="pre">--bam</span></code>) format for each reference to which each
+sample was aligned.</p></li>
+</ul>
+</section>
+<section id="xam-as-temporary-file">
+<h3>XAM as temporary file<a class="headerlink" href="#xam-as-temporary-file" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">align</span></code> command writes a temporary BAM file for each input FASTQ
+before splitting that file into one BAM/CRAM file for each reference.</p></li>
+</ul>
+</section>
 </section>
 </section>
 
@@ -183,7 +226,7 @@ BAM and CRAM files also encode Phred scores, but in a binary format.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="fastq.html" class="btn btn-neutral float-left" title="FASTQ: Sequencing Reads" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="../meta/index.html" class="btn btn-neutral float-right" title="Metadata Formats" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="brickle.html" class="btn btn-neutral float-right" title="Brickle: Compressed Python Objects" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

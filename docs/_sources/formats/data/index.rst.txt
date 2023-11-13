@@ -8,3 +8,4 @@ Data Formats
     fasta
     fastq
     xam
+    brickle
