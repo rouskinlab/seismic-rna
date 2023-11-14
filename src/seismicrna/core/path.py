@@ -264,7 +264,7 @@ class Field(object):
         return val
 
     def __str__(self):
-        return f"{type(self).__name__} {repr(self.dtype.__name__)}"
+        return f"{type(self).__name__}: {repr(self.dtype.__name__)}"
 
 
 # Fields
@@ -411,7 +411,7 @@ class Segment(object):
         return fields
 
     def __str__(self):
-        return f"Path Segment '{self.name}'"
+        return f"{type(self).__name__}: {repr(self.name)}"
 
 
 # Field names
@@ -604,6 +604,9 @@ class Path(object):
             fields.update(seg_type.parse(tail))
         return fields
 
+    def __str__(self):
+        return f"{type(self).__name__}: {list(map(str, self.seg_types))}"
+
 
 # Path creation routines
 
@@ -674,11 +677,12 @@ def find_files(path: pl.Path, segments: Sequence[Segment]):
             pass
         else:
             # If so, yield it.
-            logger.debug(f"File {path} matches {segments}")
+            logger.debug(f"File {path} matches {list(map(str, segments))}")
             yield path
     elif path.is_dir():
         # Search the directory for files matching the segments.
-        logger.debug(f"Searching {path} for files matching {segments}")
+        logger.debug(
+            f"Searching {path} for files matching {list(map(str, segments))}")
         yield from chain(*map(partial(find_files, segments=segments),
                               path.iterdir()))
     else:

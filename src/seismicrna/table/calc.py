@@ -310,7 +310,6 @@ def adjust_counts(counts_obs: pd.DataFrame,
     # Adjust every subtype of mutation by this factor.
     for mut in SUBMUTS:
         counts_adj.loc[:, mut] = (counts_obs.loc[:, mut] * adj_factor).values
-    logger.debug(f"Adjusted counts\n\nfrom\n{counts_obs}\n\nto\n{counts_adj}")
     return counts_adj, f_obs
 
 
