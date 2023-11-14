@@ -17,7 +17,8 @@ from ..unbias import (MAX_MU,
                       calc_f_obs_numpy,
                       clip,
                       logger as unbias_logger)
-from ...rand import rng
+
+rng = np.random.default_rng()
 
 
 def has_close_muts(bitvec: np.ndarray, min_gap: int):

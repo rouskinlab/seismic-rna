@@ -42,6 +42,11 @@ class UniqReads(object):
         self.batch_to_uniq = batch_to_uniq
         self.counts_per_uniq = counts_per_uniq
 
+    @property
+    def ref(self):
+        """ Reference name. """
+        return self.section.ref
+
     @cached_property
     def pos_nums(self):
         return self.section.unmasked_int

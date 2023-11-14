@@ -7,7 +7,8 @@ from ..norm import (get_quantile,
                     normalize,
                     winsorize,
                     logger as unbias_logger)
-from ...rand import rng
+
+rng = np.random.default_rng()
 
 
 class TestGetQuantile(ut.TestCase):
@@ -105,7 +106,7 @@ class TestGetQuantile(ut.TestCase):
         """ Test that invalid quantiles raise errors. """
         n = 11
         mus = rng.random(n)
-        errmsg = "Quantiles must be in the range [\[0, 1\]]"
+        errmsg = r"Quantiles must be in the range [\[0, 1\]]"
         # Test that negative quantiles are invalid.
         for quantile in np.linspace(0., -1., n)[1:]:
             self.assertRaisesRegex(ValueError, errmsg,

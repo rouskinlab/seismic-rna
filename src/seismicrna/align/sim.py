@@ -26,7 +26,6 @@ from ..core.ngs import (HI_QUAL,
                         SAM_SEQLEN,
                         SAM_SEQLINE,
                         SAM_SEQNAME)
-from ..core.rand import rng
 from ..core.rel import NOCOV
 from ..core.seq import DNA, index_to_seq
 from ..relate.aux.infer import infer_read
@@ -144,7 +143,7 @@ def _relvec_to_sam_pair(read: str,
     # Find the 5' and 3' coordinates of the relation vector.
     end5, end3 = find_relvec_ends(relvec)
     # Determine whether the first read is reversed.
-    rev1 = bool(rng.integers(2))
+    rev1 = bool(np.random.default_rng().integers(2))
     # Set the flags of the first and second reads accordingly.
     flag1 = FLAG_PAIRED + FLAG_PROPER + FLAG_FIRST
     flag2 = FLAG_PAIRED + FLAG_PROPER + FLAG_SECOND

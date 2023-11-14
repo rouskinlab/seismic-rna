@@ -3,6 +3,7 @@ from logging import getLogger
 from math import inf
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from .compare import RunOrderResults, find_best_order, sort_replicate_runs
@@ -12,10 +13,13 @@ from .io import ClustBatchIO
 from .report import ClustReport
 from .uniq import UniqReads
 from ..core.parallel import dispatch
+from ..core.types import get_max_uint
 from ..core.write import need_write
 from ..mask.data import MaskMerger
 
 logger = getLogger(__name__)
+
+SEED_DTYPE = np.uint32
 
 
 def write_batches(dataset: MaskMerger,
@@ -57,10 +61,15 @@ def run_order(uniq_reads: UniqReads,
                                max_iter=max_iter)
                   for _ in range(n_runs)]
     # Run independent replicates of the clustering algorithm.
+    rng = np.random.default_rng()
+    seeds = list(map(tuple, list(rng.integers(get_max_uint(SEED_DTYPE),
+                                              size=(n_runs, 2),
+                                              dtype=SEED_DTYPE))))
     replicates = dispatch([rep.run for rep in replicates],
                           n_procs,
                           parallel=True,
-                          pass_n_procs=False)
+                          pass_n_procs=False,
+                          args=seeds)
     logger.info(f"Ended {n_runs} run(s) of EM with {order} cluster(s)")
     return sort_replicate_runs(replicates)
 

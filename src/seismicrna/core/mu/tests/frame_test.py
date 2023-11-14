@@ -6,7 +6,8 @@ import pandas as pd
 from ..frame import calc_f_obs_frame, calc_mu_adj_frame, calc_prop_adj_frame
 from ..unbias import calc_f_obs_numpy, calc_mu_adj_numpy
 from ...seq import DNA, Section, seq_pos_to_index
-from ...rand import rng
+
+rng = np.random.default_rng()
 
 
 class TestCalcDataFrame(ut.TestCase):

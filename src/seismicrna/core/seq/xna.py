@@ -20,7 +20,6 @@ from typing import Any
 
 import numpy as np
 
-from ..rand import rng
 from ..types import BITS_PER_BYTE, get_uint_type
 
 # Nucleic acid sequence alphabets.
@@ -170,7 +169,9 @@ class XNA(ABC):
         if not 0. <= n <= 1.:
             raise ValueError(f"Sum of A, C, G, and {cls.t_or_u()} proportions "
                              f"must be in [0, 1], but got {1. - n}")
-        return cls("".join(rng.choice(cls.alph(), size=nt, p=(a, c, n, g, t))))
+        return cls("".join(np.random.default_rng().choice(cls.alph(),
+                                                          size=nt,
+                                                          p=(a, c, n, g, t))))
 
     def __init__(self, seq: Any):
         self._seq = str(seq)
