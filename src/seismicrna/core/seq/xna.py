@@ -24,12 +24,12 @@ from ..rand import rng
 from ..types import BITS_PER_BYTE, get_uint_type
 
 # Nucleic acid sequence alphabets.
-BASEA = 'A'
-BASEC = 'C'
-BASEG = 'G'
-BASET = 'T'
-BASEU = 'U'
-BASEN = 'N'
+BASEA = "A"
+BASEC = "C"
+BASEG = "G"
+BASET = "T"
+BASEU = "U"
+BASEN = "N"
 
 # IUPAC extended nucleic acid alphabet.
 IUPAC_AC = "M"
@@ -67,11 +67,11 @@ BLOCK_SIZE = BITS_PER_BYTE // BITS_PER_BASE
 BLOCK_FORMAT = ":".join(["{}", f"{BASEN}<{BLOCK_SIZE}"])
 
 # Nucleic acid pictogram characters.
-PICTA = '▲'
-PICTC = '⌠'
-PICTN = '○'
-PICTG = '⌡'
-PICTT = PICTU = '▼'
+PICTA = "▲"
+PICTC = "⌠"
+PICTN = "○"
+PICTG = "⌡"
+PICTT = PICTU = "▼"
 
 
 class XNA(ABC):

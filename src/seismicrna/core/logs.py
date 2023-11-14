@@ -8,6 +8,7 @@ Central manager of logging.
 
 import logging
 from functools import cache
+from itertools import chain
 
 MAX_VERBOSE = 2
 MAX_QUIET = 2
@@ -49,7 +50,8 @@ class AnsiCode(object):
     @classmethod
     def wrap(cls, text: str, *codes: int, end: bool = True):
         """ Wrap text with ANSI color code(s). """
-        return f"{''.join(map(cls.fmt, codes))}{text}{cls.end() if end else ''}"
+        return "".join(chain(map(cls.fmt, codes),
+                             [text, cls.end() if end else ""]))
 
 
 class ColorFormatter(logging.Formatter):
@@ -74,8 +76,8 @@ class ColorFormatter(logging.Formatter):
 def get_top_logger():
     """ Return the top-level logger. """
     if __name__ != (expect_name := "seismicrna.core.logs"):
-        raise ValueError(
-            f"{__file__} is named '{__name__}' (expected '{expect_name}')")
+        raise ValueError(f"Expected {__file__} named {repr(expect_name)}, "
+                         f"but got {repr(__name__)}")
     top_logger_name = __name__.split(".")[0]
     return logging.getLogger(top_logger_name)
 

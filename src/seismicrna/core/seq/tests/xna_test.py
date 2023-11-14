@@ -18,30 +18,30 @@ class TestDNA(ut.TestCase):
     """ Test class `DNA`. """
 
     def test_alph(self):
-        self.assertEqual(DNA.alph(), ('A', 'C', 'N', 'G', 'T'))
+        self.assertEqual(DNA.alph(), ("A", "C", "N", "G", "T"))
 
     def test_get_comp(self):
-        self.assertEqual(DNA.get_comp(), ('T', 'G', 'N', 'C', 'A'))
+        self.assertEqual(DNA.get_comp(), ("T", "G", "N", "C", "A"))
 
     def test_get_comptrans(self):
         self.assertEqual(DNA.get_comptrans(),
-                         {65: 'T', 67: 'G', 71: 'C', 78: 'N', 84: 'A'})
+                         {65: "T", 67: "G", 71: "C", 78: "N", 84: "A"})
 
     def test_get_alphaset(self):
-        self.assertEqual(DNA.get_alphaset(), {'A', 'C', 'G', 'T', 'N'})
+        self.assertEqual(DNA.get_alphaset(), {"A", "C", "G", "T", "N"})
 
     def test_get_nonalphaset(self):
         self.assertEqual(DNA.get_nonalphaset(),
-                         {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                          'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
-                          'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
-                          'u', 'v', 'w', 'x', 'y', 'z', 'B', 'D', 'E', 'F',
-                          'H', 'I', 'J', 'K', 'L', 'M', 'O', 'P', 'Q', 'R',
-                          'S', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '"', '#',
-                          '$', '%', '&', "'", '(', ')', '*', '+', ',', '-',
-                          '.', '/', ':', ';', '<', '=', '>', '?', '@', '[',
-                          '\\', ']', '^', '_', '`', '{', '|', '}', '~', ' ',
-                          '\t', '\n', '\r', '\x0b', '\x0c'})
+                         {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+                          "a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
+                          "k", "l", "m", "n", "o", "p", "q", "r", "s", "t",
+                          "u", "v", "w", "x", "y", "z", "B", "D", "E", "F",
+                          "H", "I", "J", "K", "L", "M", "O", "P", "Q", "R",
+                          "S", "U", "V", "W", "X", "Y", "Z", "!", "\"", "#",
+                          "$", "%", "&", "'", "(", ")", "*", "+", ",", "-",
+                          ".", "/", ":", ";", "<", "=", ">", "?", "@", "[",
+                          "\\", "]", "^", "_", "`", "{", "|", "}", "~", " ",
+                          "\t", "\n", "\r", "\x0b", "\x0c"})
 
     def test_valid(self):
         """ Test whether valid DNA sequences can be created. """
@@ -62,7 +62,7 @@ class TestDNA(ut.TestCase):
         """ Test generating NumPy arrays from DNA sequences. """
         array = DNA("CTANG").array
         self.assertEqual(array.dtype, np.dtype("<U1"))
-        self.assertTrue(np.all(array == np.array(['C', 'T', 'A', 'N', 'G'])))
+        self.assertTrue(np.all(array == np.array(["C", "T", "A", "N", "G"])))
 
     def test_slice(self):
         """ Test slicing DNA sequences. """
@@ -124,30 +124,30 @@ class TestRNA(ut.TestCase):
     """ Test class `RNA`. """
 
     def test_alph(self):
-        self.assertEqual(RNA.alph(), ('A', 'C', 'N', 'G', 'U'))
+        self.assertEqual(RNA.alph(), ("A", "C", "N", "G", "U"))
 
     def test_get_comp(self):
-        self.assertEqual(RNA.get_comp(), ('U', 'G', 'N', 'C', 'A'))
+        self.assertEqual(RNA.get_comp(), ("U", "G", "N", "C", "A"))
 
     def test_get_comptrans(self):
         self.assertEqual(RNA.get_comptrans(),
-                         {65: 'U', 67: 'G', 71: 'C', 78: 'N', 85: 'A'})
+                         {65: "U", 67: "G", 71: "C", 78: "N", 85: "A"})
 
     def test_get_alphaset(self):
-        self.assertEqual(RNA.get_alphaset(), {'A', 'C', 'G', 'U', 'N'})
+        self.assertEqual(RNA.get_alphaset(), {"A", "C", "G", "U", "N"})
 
     def test_get_nonalphaset(self):
         self.assertEqual(RNA.get_nonalphaset(),
-                         {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                          'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
-                          'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
-                          'u', 'v', 'w', 'x', 'y', 'z', 'B', 'D', 'E', 'F',
-                          'H', 'I', 'J', 'K', 'L', 'M', 'O', 'P', 'Q', 'R',
-                          'S', 'T', 'V', 'W', 'X', 'Y', 'Z', '!', '"', '#',
-                          '$', '%', '&', "'", '(', ')', '*', '+', ',', '-',
-                          '.', '/', ':', ';', '<', '=', '>', '?', '@', '[',
-                          '\\', ']', '^', '_', '`', '{', '|', '}', '~', ' ',
-                          '\t', '\n', '\r', '\x0b', '\x0c'})
+                         {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+                          "a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
+                          "k", "l", "m", "n", "o", "p", "q", "r", "s", "t",
+                          "u", "v", "w", "x", "y", "z", "B", "D", "E", "F",
+                          "H", "I", "J", "K", "L", "M", "O", "P", "Q", "R",
+                          "S", "T", "V", "W", "X", "Y", "Z", "!", "\"", "#",
+                          "$", "%", "&", "'", "(", ")", "*", "+", ",", "-",
+                          ".", "/", ":", ";", "<", "=", ">", "?", "@", "[",
+                          "\\", "]", "^", "_", "`", "{", "|", "}", "~", " ",
+                          "\t", "\n", "\r", "\x0b", "\x0c"})
 
     def test_valid(self):
         """ Test whether valid RNA sequences can be created. """
@@ -168,7 +168,7 @@ class TestRNA(ut.TestCase):
         """ Test generating NumPy arrays from RNA sequences. """
         array = RNA("NGAUC").array
         self.assertEqual(array.dtype, np.dtype("<U1"))
-        self.assertTrue(np.all(array == np.array(['N', 'G', 'A', 'U', 'C'])))
+        self.assertTrue(np.all(array == np.array(["N", "G", "A", "U", "C"])))
 
     def test_slice(self):
         """ Test slicing RNA sequences. """

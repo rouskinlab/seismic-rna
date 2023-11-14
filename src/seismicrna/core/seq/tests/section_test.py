@@ -823,7 +823,7 @@ class TestIntersection(ut.TestCase):
         section1 = Section("myref", seq, end5=6, end3=17)
         section2 = Section("myref", seq, end5=19, end3=35)
         inter = intersection(section1, section2)
-        self.assertEqual(inter.seq, DNA(''))
+        self.assertEqual(inter.seq, DNA(""))
         self.assertEqual(inter.end5, 19)
         self.assertEqual(inter.end3, 18)
         self.assertEqual(inter.name, f"19-18")

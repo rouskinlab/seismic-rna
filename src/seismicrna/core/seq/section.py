@@ -465,18 +465,16 @@ class Section(object):
 
     def __eq__(self, other):
         if self is other:
-            # If self and other are the same object, they must be equal.
             return True
         if not isinstance(other, Section):
-            # Cannot compare to an object that is not a Section.
             return NotImplemented
         # Compare the sections' sequences, positions, and names.
-        if not (self.ref == other.ref
-                and self.seq == other.seq
-                and self.full == other.full
-                and self.end5 == other.end5
-                and self.end3 == other.end3
-                and self.name == other.name):
+        if any([self.ref != other.ref,
+                self.seq != other.seq,
+                self.full != other.full,
+                self.end5 != other.end5,
+                self.end3 != other.end3,
+                self.name != other.name]):
             return False
         # If that comparison passed, then compare their mask names.
         if sorted(self.mask_names) != sorted(other.mask_names):
@@ -487,6 +485,9 @@ class Section(object):
                 return False
         # All checks for equality passed.
         return True
+
+    def __ne__(self, other):
+        return not self == other
 
 
 def intersection(*sections: Section, name: str | None = None):
@@ -511,7 +512,7 @@ def intersection(*sections: Section, name: str | None = None):
         seq = seqs[0]
     else:
         # The intersection among the given sections is empty.
-        seq = DNA('')
+        seq = DNA("")
         end3 = end5 - 1
     if all(section.full for section in sections):
         # If all sections are full-length, then make the intersection
@@ -737,6 +738,9 @@ class RefSections(object):
     def count(self):
         """ Total number of sections. """
         return sum(map(len, self._sections.values()))
+
+    def __str__(self):
+        return f"{type(self).__name__} ({self.count}): {list(self._sections)}"
 
 ########################################################################
 #                                                                      #
