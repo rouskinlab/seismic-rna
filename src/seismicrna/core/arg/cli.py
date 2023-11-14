@@ -683,6 +683,29 @@ opt_min_nmut_read = Option(
     help="Minimum number of mutations in a read to use it for clustering"
 )
 
+# Table options
+
+opt_table_pos = Option(
+    ("--table-pos/--no-table-pos",),
+    type=bool,
+    default=True,
+    help="Tabulate per position"
+)
+
+opt_table_read = Option(
+    ("--table-read/--no-table-read",),
+    type=bool,
+    default=True,
+    help="Tabulate per read"
+)
+
+opt_table_clust = Option(
+    ("--table-clust/--no-table-clust",),
+    type=bool,
+    default=True,
+    help="Tabulate per cluster"
+)
+
 # RNA structure prediction
 
 opt_fold = Option(

@@ -140,12 +140,26 @@ def get_tabulator_writer_types(tabulator: Tabulator):
     raise TypeError(f"Invalid tabulator type: {type(tabulator).__name__}")
 
 
-def get_tabulator_writers(tabulator: AvgTabulator | ClustTabulator):
+def get_tabulator_writers(tabulator: AvgTabulator | ClustTabulator, *,
+                          table_pos: bool = True,
+                          table_read: bool = True,
+                          table_clust: bool = True):
+    types_write = {PosTableWriter: table_pos,
+                   ReadTableWriter: table_read,
+                   ClustFreqTableWriter: table_clust}
     for writer_type in get_tabulator_writer_types(tabulator):
-        yield writer_type(tabulator)
+        for table_type, type_write in types_write.items():
+            if issubclass(writer_type, table_type):
+                if type_write:
+                    yield writer_type(tabulator)
+                else:
+                    logger.debug(f"Skipped {writer_type} for {tabulator}")
+                break
+        else:
+            raise TypeError(f"Invalid writer type: {writer_type.__name__}")
 
 
-def write(report_file: Path, force: bool):
+def write(report_file: Path, *, force: bool, **kwargs):
     """ Helper function to write a table from a report file. """
     # Determine the needed type of report loader.
     report_loader_type = infer_report_loader_type(report_file)
@@ -155,7 +169,8 @@ def write(report_file: Path, force: bool):
     tabulator = tabulate_loader(report_loader)
     # For each table associated with this tabulator, create the table,
     # write it, and return the path to the table output file.
-    return [table.write(force) for table in get_tabulator_writers(tabulator)]
+    return [table.write(force)
+            for table in get_tabulator_writers(tabulator, **kwargs)]
 
 ########################################################################
 #                                                                      #

@@ -135,11 +135,15 @@ def run(*,
         min_em_iter: int,
         max_em_iter: int,
         em_thresh: float,
+        # Table options
+        table_pos: bool,
+        table_read: bool,
+        table_clust: bool,
         # Fold options
         fold: bool,
         quantile: float):
     """ Run entire pipeline. """
-    # Demultiplexing
+    # Demultiplex
     if demult_on:
         for dms, dmi, dmm in demultiplex_mod.run(
                 fasta=fasta,
@@ -163,7 +167,7 @@ def run(*,
         fastqx = tuple()
         fastqy = tuple()
         fastqz = tuple()
-    # Alignment
+    # Align
     input_path += tuple(map(str, align_mod.run(
         out_dir=out_dir,
         temp_dir=temp_dir,
@@ -216,7 +220,7 @@ def run(*,
         min_reads=min_reads,
         cram=cram,
     )))
-    # Relating
+    # Relate
     input_path += tuple(map(str, relate_mod.run(
         fasta=fasta,
         input_path=input_path,
@@ -234,7 +238,7 @@ def run(*,
         force=force,
         keep_temp=keep_temp,
     )))
-    # Masking
+    # Mask
     input_path += tuple(map(str, mask_mod.run(
         input_path=input_path,
         coords=coords,
@@ -257,7 +261,7 @@ def run(*,
         parallel=parallel,
         force=force,
     )))
-    # Clustering
+    # Cluster
     input_path += tuple(map(str, cluster_mod.run(
         input_path=input_path,
         max_clusters=max_clusters,
@@ -274,6 +278,9 @@ def run(*,
     # Table
     input_path += tuple(map(str, table_mod.run(
         input_path=input_path,
+        table_pos=table_pos,
+        table_read=table_read,
+        table_clust=table_clust,
         max_procs=max_procs,
         parallel=parallel,
         force=force,

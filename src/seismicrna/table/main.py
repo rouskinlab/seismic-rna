@@ -11,6 +11,9 @@ from ..core import path
 from ..core.arg import (CMD_TABLE,
                         docdef,
                         arg_input_path,
+                        opt_table_pos,
+                        opt_table_read,
+                        opt_table_clust,
                         opt_max_procs,
                         opt_parallel,
                         opt_force)
@@ -18,7 +21,13 @@ from ..core.parallel import as_list_of_tuples, dispatch
 
 logger = getLogger(__name__)
 
-params = [arg_input_path, opt_max_procs, opt_parallel, opt_force]
+params = [arg_input_path,
+          opt_table_pos,
+          opt_table_read,
+          opt_table_clust,
+opt_force,
+          opt_max_procs,
+          opt_parallel]
 
 
 @command(CMD_TABLE, params=params)
@@ -29,7 +38,13 @@ def cli(*args, **kwargs):
 
 
 @docdef.auto()
-def run(input_path: tuple[str, ...], max_procs: int, parallel: bool, **kwargs):
+def run(input_path: tuple[str, ...], *,
+        table_pos: bool,
+        table_read: bool,
+        table_clust: bool,
+        force: bool,
+        max_procs: int,
+        parallel: bool):
     """
     Run the table module.
     """
@@ -50,7 +65,10 @@ def run(input_path: tuple[str, ...], max_procs: int, parallel: bool, **kwargs):
                                 max_procs,
                                 parallel,
                                 args=tasks,
-                                kwargs=kwargs,
+                                kwargs=dict(table_pos=table_pos,
+                                            table_read=table_read,
+                                            table_clust=table_clust,
+                                            force=force),
                                 pass_n_procs=False)))
 
 
