@@ -234,9 +234,6 @@ class EmClustering(object):
 
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
-        # Import scipy here instead of at the top of this module because
-        # its import is slow enough to impact global startup time.
-        from scipy.special import logsumexp
         # Update the log fraction observed of each cluster.
         self.log_f_obs = np.log(calc_f_obs_numpy(self.sparse_mus,
                                                  self.uniq_reads.min_mut_gap))
@@ -293,7 +290,7 @@ class EmClustering(object):
         # which cluster it came from) is the sum over all clusters of
         # the joint probability of coming from the cluster and having
         # the specific series of bits.
-        self.log_marginals = logsumexp(self.resps, axis=0)
+        self.log_marginals = np.logaddexp.reduce(self.resps, axis=0)
         # Calculate the posterior probability that each bit vector came
         # from each cluster by dividing the joint probability (observing
         # the bit vector and coming from the cluster) by the marginal
