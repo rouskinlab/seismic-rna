@@ -7,7 +7,7 @@ from typing import Any
 
 logger = getLogger(__name__)
 
-__version__ = "0.9.3"
+__version__ = "0.9.4"
 
 VERSION_DELIM = '.'
 
