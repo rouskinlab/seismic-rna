@@ -175,10 +175,10 @@ There are three ways to align multiple FASTQ files (or pairs thereof):
     Thus, the given directory can have deeply nested subdirectories, and
     SEISMIC-RNA will still find and process any FASTQ files within them.
 
-Align: Options
+Align: Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Align option: Phred score encoding
+Align setting: Phred score encoding
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 SEISMIC-RNA defaults to using Phred+33 encoding for FASTQ files, which
@@ -204,7 +204,7 @@ in the "Basic Statisics" section:
 - Otherwise, you will need to search elsewhere for your encoding scheme
   to determine the Phred score offset.
 
-Align option: Quality assessment with FastQC
+Align setting: Quality assessment with FastQC
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 By default, each FASTQ file is processed with `FastQC`_, both before and
@@ -213,7 +213,7 @@ FastQC can be disabled with the flag ``--no-fastqc``.
 To enable automatic extraction of the zipped output files from FastQC,
 add the flag ``--qc-extract``.
 
-Align option: Trimming reads with Cutadapt
+Align setting: Trimming reads with Cutadapt
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 By default, each FASTQ file and pair of mated FASTQ files is trimmed for
@@ -276,7 +276,7 @@ your FASTQ files outside of SEISMIC-RNA, then perform alignment within
 SEISMIC-RNA, using the option ``--no-cut`` to disable additional adapter
 trimming.
 
-Align option: Mapping reads with Bowtie 2
+Align setting: Mapping reads with Bowtie 2
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 How to pre-build a Bowtie 2 index (optional)
@@ -418,7 +418,7 @@ files into SEISMIC-RNA at the step :ref:`wf_relate`.
 
 .. _bam_vs_cram:
 
-Align option: Format of alignment maps
+Align setting: Format of alignment maps
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 SEISMIC-RNA can output alignment map files in either BAM or CRAM format.
@@ -614,7 +614,7 @@ aligned to reference ``ref-1``, use the following command::
 
 where ``{refs.fa}`` is the path to the file of reference sequences.
 
-Relate: Options
+Relate: Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Relate options shared with alignment
@@ -625,17 +625,17 @@ commands, the latter duplicates some of the options of the former:
 ``--phred-enc``, ``--min-mapq``, ``--min-reads``, and ``--out-dir`` have
 the same functions in ``relate`` and ``align``.
 
-Relate option: Minimum Phred score
+Relate setting: Minimum Phred score
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Base calls with Phred scores below ``--min-phred`` are labeled ambiguous
-matches or substitutions, as if they were ``N``s.
+matches or substitutions, as if they were ``N``\s.
 For example, if the minimum Phred score is 25 (the default) and a base
 ``T`` is called as a match with a Phred score of 20, then it would be
 marked as possibly a match and possibly a subsitution to A, C, or G.
 See :doc:`../data/relate/codes` for more information.
 
-Relate option: Ambiguous insertions and deletions
+Relate setting: Ambiguous insertions and deletions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The most tricky problem in computing relation vectors is that insertions
@@ -647,7 +647,7 @@ If it is not necessary to identify ambiguous indels, then the algorithm
 can be disabled with ``--no-ambrel``, which will speed up ``relate`` at
 the cost of reducing its accuracy on indels.
 
-Relate option: Batch size
+Relate setting: Batch size
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 For an explanation of batching and how to use it, see :ref:`batches`.

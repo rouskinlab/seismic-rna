@@ -7,3 +7,5 @@ Relate Data Structures
 
     codes
     relate
+    qnames
+    refseq

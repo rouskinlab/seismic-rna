@@ -51,14 +51,14 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Running the Workflow</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#align-sequencing-reads-to-reference-sequences">Align sequencing reads to reference sequences</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#align-input-files">Align: Input files</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#align-options">Align: Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#align-settings">Align: Settings</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#align-output-files">Align: output files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#align-troubleshooting">Align: Troubleshooting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#relate-each-read-to-every-reference-position">Relate each read to every reference position</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#relate-input-files">Relate: Input files</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#relate-options">Relate: Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#relate-settings">Relate: Settings</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#relate-output-files">Relate: Output files</a></li>
 </ul>
 </li>
@@ -292,10 +292,10 @@ SEISMIC-RNA will still find and process any FASTQ files within them.</p>
 </section>
 </section>
 </section>
-<section id="align-options">
-<h3>Align: Options<a class="headerlink" href="#align-options" title="Permalink to this headline"></a></h3>
-<section id="align-option-phred-score-encoding">
-<h4>Align option: Phred score encoding<a class="headerlink" href="#align-option-phred-score-encoding" title="Permalink to this headline"></a></h4>
+<section id="align-settings">
+<h3>Align: Settings<a class="headerlink" href="#align-settings" title="Permalink to this headline"></a></h3>
+<section id="align-setting-phred-score-encoding">
+<h4>Align setting: Phred score encoding<a class="headerlink" href="#align-setting-phred-score-encoding" title="Permalink to this headline"></a></h4>
 <p>SEISMIC-RNA defaults to using Phred+33 encoding for FASTQ files, which
 is standard on modern Illumina sequencers.
 To change the Phred score encoding, use the option <code class="docutils literal notranslate"><span class="pre">--phred-enc</span></code>.
@@ -320,16 +320,16 @@ FASTQ files use Phred+33 encoding (<code class="docutils literal notranslate"><s
 to determine the Phred score offset.</p></li>
 </ul>
 </section>
-<section id="align-option-quality-assessment-with-fastqc">
-<h4>Align option: Quality assessment with FastQC<a class="headerlink" href="#align-option-quality-assessment-with-fastqc" title="Permalink to this headline"></a></h4>
+<section id="align-setting-quality-assessment-with-fastqc">
+<h4>Align setting: Quality assessment with FastQC<a class="headerlink" href="#align-setting-quality-assessment-with-fastqc" title="Permalink to this headline"></a></h4>
 <p>By default, each FASTQ file is processed with <a class="reference external" href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">FastQC</a>, both before and
 after trimming, in order to find any potential problems.
 FastQC can be disabled with the flag <code class="docutils literal notranslate"><span class="pre">--no-fastqc</span></code>.
 To enable automatic extraction of the zipped output files from FastQC,
 add the flag <code class="docutils literal notranslate"><span class="pre">--qc-extract</span></code>.</p>
 </section>
-<section id="align-option-trimming-reads-with-cutadapt">
-<h4>Align option: Trimming reads with Cutadapt<a class="headerlink" href="#align-option-trimming-reads-with-cutadapt" title="Permalink to this headline"></a></h4>
+<section id="align-setting-trimming-reads-with-cutadapt">
+<h4>Align setting: Trimming reads with Cutadapt<a class="headerlink" href="#align-setting-trimming-reads-with-cutadapt" title="Permalink to this headline"></a></h4>
 <p>By default, each FASTQ file and pair of mated FASTQ files is trimmed for
 adapters and low-quality bases using <a class="reference external" href="https://cutadapt.readthedocs.io/en/stable/">Cutadapt</a>. To disable trimming,
 add the flag <code class="docutils literal notranslate"><span class="pre">--no-cut</span></code>.</p>
@@ -408,8 +408,8 @@ SEISMIC-RNA, using the option <code class="docutils literal notranslate"><span c
 trimming.</p>
 </section>
 </section>
-<section id="align-option-mapping-reads-with-bowtie-2">
-<h4>Align option: Mapping reads with Bowtie 2<a class="headerlink" href="#align-option-mapping-reads-with-bowtie-2" title="Permalink to this headline"></a></h4>
+<section id="align-setting-mapping-reads-with-bowtie-2">
+<h4>Align setting: Mapping reads with Bowtie 2<a class="headerlink" href="#align-setting-mapping-reads-with-bowtie-2" title="Permalink to this headline"></a></h4>
 <section id="how-to-pre-build-a-bowtie-2-index-optional">
 <h5>How to pre-build a Bowtie 2 index (optional)<a class="headerlink" href="#how-to-pre-build-a-bowtie-2-index-optional" title="Permalink to this headline"></a></h5>
 <p>Bowtie 2 requires the FASTA file of reference sequences to be indexed.
@@ -536,8 +536,8 @@ your FASTQ files outside of SEISMIC-RNA, then pass the resulting XAM
 files into SEISMIC-RNA at the step <a class="reference internal" href="#wf-relate"><span class="std std-ref">Relate each read to every reference position</span></a>.</p>
 </section>
 </section>
-<section id="align-option-format-of-alignment-maps">
-<span id="bam-vs-cram"></span><h4>Align option: Format of alignment maps<a class="headerlink" href="#align-option-format-of-alignment-maps" title="Permalink to this headline"></a></h4>
+<section id="align-setting-format-of-alignment-maps">
+<span id="bam-vs-cram"></span><h4>Align setting: Format of alignment maps<a class="headerlink" href="#align-setting-format-of-alignment-maps" title="Permalink to this headline"></a></h4>
 <p>SEISMIC-RNA can output alignment map files in either BAM or CRAM format.
 For details on these file formats, see <a class="reference internal" href="../formats/data/xam.html"><span class="doc">SAM, BAM, and CRAM: Alignment Maps</span></a>.
 The default is CRAM format (option <code class="docutils literal notranslate"><span class="pre">--cram</span></code>); BAM format is enabled
@@ -611,7 +611,7 @@ Each alignment map is written to <code class="docutils literal notranslate"><spa
 name of the reference to which the reads aligned, and <code class="docutils literal notranslate"><span class="pre">{xam}</span></code> is the
 file extension (depending on the selected format).
 SEISMIC-RNA can output alignment maps in either BAM or CRAM format.
-For a comparison of these formats, see <a class="reference internal" href="#bam-vs-cram"><span class="std std-ref">Align option: Format of alignment maps</span></a>.</p>
+For a comparison of these formats, see <a class="reference internal" href="#bam-vs-cram"><span class="std std-ref">Align setting: Format of alignment maps</span></a>.</p>
 </section>
 <section id="align-output-file-reference-sequences">
 <h4>Align output file: Reference sequences<a class="headerlink" href="#align-output-file-reference-sequences" title="Permalink to this headline"></a></h4>
@@ -717,8 +717,8 @@ aligned to reference <code class="docutils literal notranslate"><span class="pre
 <p>where <code class="docutils literal notranslate"><span class="pre">{refs.fa}</span></code> is the path to the file of reference sequences.</p>
 </section>
 </section>
-<section id="relate-options">
-<h3>Relate: Options<a class="headerlink" href="#relate-options" title="Permalink to this headline"></a></h3>
+<section id="relate-settings">
+<h3>Relate: Settings<a class="headerlink" href="#relate-settings" title="Permalink to this headline"></a></h3>
 <section id="relate-options-shared-with-alignment">
 <h4>Relate options shared with alignment<a class="headerlink" href="#relate-options-shared-with-alignment" title="Permalink to this headline"></a></h4>
 <p>Because this workflow can be started from the <code class="docutils literal notranslate"><span class="pre">align</span></code> or <code class="docutils literal notranslate"><span class="pre">relate</span></code>
@@ -726,17 +726,17 @@ commands, the latter duplicates some of the options of the former:
 <code class="docutils literal notranslate"><span class="pre">--phred-enc</span></code>, <code class="docutils literal notranslate"><span class="pre">--min-mapq</span></code>, <code class="docutils literal notranslate"><span class="pre">--min-reads</span></code>, and <code class="docutils literal notranslate"><span class="pre">--out-dir</span></code> have
 the same functions in <code class="docutils literal notranslate"><span class="pre">relate</span></code> and <code class="docutils literal notranslate"><span class="pre">align</span></code>.</p>
 </section>
-<section id="relate-option-minimum-phred-score">
-<h4>Relate option: Minimum Phred score<a class="headerlink" href="#relate-option-minimum-phred-score" title="Permalink to this headline"></a></h4>
+<section id="relate-setting-minimum-phred-score">
+<h4>Relate setting: Minimum Phred score<a class="headerlink" href="#relate-setting-minimum-phred-score" title="Permalink to this headline"></a></h4>
 <p>Base calls with Phred scores below <code class="docutils literal notranslate"><span class="pre">--min-phred</span></code> are labeled ambiguous
-matches or substitutions, as if they were <code class="docutils literal notranslate"><span class="pre">N``s.</span>
-<span class="pre">For</span> <span class="pre">example,</span> <span class="pre">if</span> <span class="pre">the</span> <span class="pre">minimum</span> <span class="pre">Phred</span> <span class="pre">score</span> <span class="pre">is</span> <span class="pre">25</span> <span class="pre">(the</span> <span class="pre">default)</span> <span class="pre">and</span> <span class="pre">a</span> <span class="pre">base</span>
-<span class="pre">``T</span></code> is called as a match with a Phred score of 20, then it would be
+matches or substitutions, as if they were <code class="docutils literal notranslate"><span class="pre">N</span></code>s.
+For example, if the minimum Phred score is 25 (the default) and a base
+<code class="docutils literal notranslate"><span class="pre">T</span></code> is called as a match with a Phred score of 20, then it would be
 marked as possibly a match and possibly a subsitution to A, C, or G.
 See <a class="reference internal" href="../data/relate/codes.html"><span class="doc">Relation Vectors</span></a> for more information.</p>
 </section>
-<section id="relate-option-ambiguous-insertions-and-deletions">
-<h4>Relate option: Ambiguous insertions and deletions<a class="headerlink" href="#relate-option-ambiguous-insertions-and-deletions" title="Permalink to this headline"></a></h4>
+<section id="relate-setting-ambiguous-insertions-and-deletions">
+<h4>Relate setting: Ambiguous insertions and deletions<a class="headerlink" href="#relate-setting-ambiguous-insertions-and-deletions" title="Permalink to this headline"></a></h4>
 <p>The most tricky problem in computing relation vectors is that insertions
 and deletions (“indels”) in repetitive regions cause ambiguities.
 SEISMIC-RNA introduces a new algorithm for identifying ambiguous indels
@@ -746,8 +746,8 @@ If it is not necessary to identify ambiguous indels, then the algorithm
 can be disabled with <code class="docutils literal notranslate"><span class="pre">--no-ambrel</span></code>, which will speed up <code class="docutils literal notranslate"><span class="pre">relate</span></code> at
 the cost of reducing its accuracy on indels.</p>
 </section>
-<section id="relate-option-batch-size">
-<h4>Relate option: Batch size<a class="headerlink" href="#relate-option-batch-size" title="Permalink to this headline"></a></h4>
+<section id="relate-setting-batch-size">
+<h4>Relate setting: Batch size<a class="headerlink" href="#relate-setting-batch-size" title="Permalink to this headline"></a></h4>
 <p>For an explanation of batching and how to use it, see <a class="reference internal" href="parallel.html#batches"><span class="std std-ref">Batches and Benefits</span></a>.</p>
 <p>The dataset is partitioned into batches by the <code class="docutils literal notranslate"><span class="pre">relate</span></code> command.
 The option <code class="docutils literal notranslate"><span class="pre">--batch-size</span></code> sets a target amount of data for each batch,
@@ -788,14 +788,14 @@ See <a class="reference internal" href="../formats/data/brickle.html"><span clas
 to each read and writes a file mapping the indexes to the read names.
 Each batch contains a <code class="docutils literal notranslate"><span class="pre">QnamesBatchIO</span></code> object and is saved to the file
 <code class="docutils literal notranslate"><span class="pre">qnames-batch-{num}.brickle</span></code>, where <code class="docutils literal notranslate"><span class="pre">{num}</span></code> is the batch number.
-See <span class="xref std std-doc">../data/relate/qnames</span> for details on the data structure.
+See <a class="reference internal" href="../data/relate/qnames.html"><span class="doc">Read Names Batch</span></a> for details on the data structure.
 See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for details on brickle files.</p>
 </section>
 <section id="relate-output-file-reference-sequence">
 <h4>Relate output file: Reference sequence<a class="headerlink" href="#relate-output-file-reference-sequence" title="Permalink to this headline"></a></h4>
 <p>The relate step writes the reference sequence as a <code class="docutils literal notranslate"><span class="pre">CompressedSeq</span></code>
 object to the file <code class="docutils literal notranslate"><span class="pre">refseq.brickle</span></code>.
-See <span class="xref std std-doc">../data/relate/refseq</span> for details on the data structure.
+See <a class="reference internal" href="../data/relate/refseq.html"><span class="doc">Reference Sequence</span></a> for details on the data structure.
 See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for details on brickle files.</p>
 </section>
 <section id="relate-output-file-report">
