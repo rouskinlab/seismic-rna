@@ -124,9 +124,9 @@ quality of each base in the read using <a class="reference internal" href="#phre
 file was called correctly during sequencing.
 The probability <em>p</em> that a base was called incorrectly is 10 raised to
 the power of the quotient of the Phred score <em>s</em> and -10:</p>
-<p><em>p</em> = 10 <sup>-s/10</sup></p>
+<p><em>p</em> = 10<sup>-s/10</sup></p>
 <p>For example, if a base call has a Phred score of 30, the probability
-that the base call is incorrect is 10 <sup>-30/10</sup> = 0.001.</p>
+that the base call is incorrect is 10<sup>-30/10</sup> = 0.001.</p>
 <p>In FASTQ files, each phred quality score (a non-negative integer) is
 encoded as one character of text by adding another integer <em>N</em> to the
 Phred score (<a class="reference external" href="https://en.wikipedia.org/wiki/FASTQ_format#Encoding">Phred+N</a>) and then converting the number to the character

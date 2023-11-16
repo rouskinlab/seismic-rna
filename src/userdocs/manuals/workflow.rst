@@ -246,7 +246,7 @@ How to trim low-quality base calls
 Base calls on either end of a read that fall below a minimum Phred score
 quality are trimmed with Cutadapt.
 The default minimum quality is 25, which corresponds to a probability of
-1 - 10 :sup:`-2.5` = 0.997 that the base call is correct.
+1 - 10\ :sup:`-2.5` = 0.997 that the base call is correct.
 (See :ref:`phred_encodings` for more details).
 To change the quality threshold, use the option ``--min-phred``.
 
@@ -385,7 +385,7 @@ on setting this parameter.
 the read aligns with a high score to exactly one location, low quality
 if it aligns with similar scores to multiple locations in the reference.
 The default minimum quality is 25, which corresponds to a confidence of
-1 - 10 :sup:`-2.5` = 0.997 that the read has aligned correctly.
+1 - 10\ :sup:`-2.5` = 0.997 that the read has aligned correctly.
 To change the quality threshold, use the option ``--min-mapq``.
 For those searching for this option in Bowtie 2, you will not find it.
 Instead, reads with insufficient mapping quality are filtered out after
@@ -415,7 +415,6 @@ These options should suffice for most users.
 If you require a more customized alignment workflow, you can align your
 your FASTQ files outside of SEISMIC-RNA, then pass the resulting XAM
 files into SEISMIC-RNA at the step :ref:`wf_relate`.
-
 
 .. _bam_vs_cram:
 
@@ -464,6 +463,10 @@ that accompanies them).
 Align: output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+All output files, except FastQC reports, are written into the directory
+``{out}/{sample}/align``, where ``{out}`` is the output directory and
+``{sample}`` is the name of the sample.
+
 Align output file: FastQC reports
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -492,11 +495,9 @@ each read aligned, as well as the Phred quality scores, mapping quality,
 and mutated positions.
 SEISMIC-RNA outputs alignment maps where every read aligns to the same
 reference (although this is not a restriction outside of SEISMIC-RNA).
-Each alignment map is written to ``{out}/{sample}/align/{ref}.{xam}``,
-where ``{out}`` is the output directory (``--out-dir``), ``{sample}`` is
-the name of the sample from which the reads came, ``{ref}`` is the name
-of the reference to which the reads aligned, and ``{xam}`` is the file
-extension (depending on the selected format).
+Each alignment map is written to ``{ref}.{xam}``, where ``{ref}`` is the
+name of the reference to which the reads aligned, and ``{xam}`` is the
+file extension (depending on the selected format).
 SEISMIC-RNA can output alignment maps in either BAM or CRAM format.
 For a comparison of these formats, see :ref:`bam_vs_cram`.
 
@@ -523,7 +524,7 @@ Align output file: Unaligned reads
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 In addition to the alignment maps, SEISMIC-RNA outputs FASTQ file(s) of
-reads that Bowtie 2 could not align to ``{out}/{sample}/align``:
+reads that Bowtie 2 could not align:
 
 - Each whole-sample FASTQ file of single-end (``-z``) or interleaved
   (``-y``) reads yields one file: ``unaligned.fq.gz``
@@ -543,8 +544,8 @@ option ``--bt2-no-un``.
 Align output file: Report
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-A report file is written that records the settings used to run alignment
-and summarizes the results of alignment.
+A report file, ``align-report.json``, is also written that records the
+settings used to run alignment and summarizes the results of alignment.
 See :doc:`../formats/report/align` for more information.
 
 Align: Troubleshooting
@@ -627,14 +628,12 @@ the same functions in ``relate`` and ``align``.
 Relate option: Minimum Phred score
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Like ``align``, ``relate`` also has the option ``--min-phred``, but its
-meaning is different than that during the ``align`` step.
-In ``relate``, base calls with Phred scores below ``--min-phred`` are
-considered ambiguous matches or substitutions, as if they were ``N``s.
+Base calls with Phred scores below ``--min-phred`` are labeled ambiguous
+matches or substitutions, as if they were ``N``s.
 For example, if the minimum Phred score is 25 (the default) and a base
 ``T`` is called as a match with a Phred score of 20, then it would be
 marked as possibly a match and possibly a subsitution to A, C, or G.
-See :doc:`../data/relate` for more information.
+See :doc:`../data/relate/codes` for more information.
 
 Relate option: Ambiguous insertions and deletions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -673,16 +672,42 @@ SEISMIC-RNA will aim to put exactly *N* reads in each batch but the last
 If the reads are single-ended or if alignment was not run in mixed mode,
 then every batch but the last will contain exactly *N* reads.
 If mixed mode was used, then batches may contain more than *N* reads, up
-to a maximum of 2 *N* in the extreme case that every read in the batch
+to a maximum of 2\ *N* in the extreme case that every read in the batch
 belonged to a pair in which the other mate did not align.
 
 Relate: Output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+All output files go into the directory ``{out}/{sample}/relate/{ref}``,
+where ``{out}`` is the output directory, ``{sample}`` is the sample, and
+``{ref}`` is the name of the reference.
+
 Relate output file: Batch of relation vectors
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+The data of relationships is written in batches.
+Each batch contains a ``RelateBatchIO`` object and is saved to the file
+``relate-batch-{num}.brickle``, where ``{num}`` is the batch number.
+See :doc:`../data/relate/relate` for details on the data structure.
+See :doc:`../formats/data/brickle` for details on brickle files.
 
+Relate output file: Batch of read names
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+For each batch, the relate step assigns an index (a nonnegative integer)
+to each read and writes a file mapping the indexes to the read names.
+Each batch contains a ``QnamesBatchIO`` object and is saved to the file
+``qnames-batch-{num}.brickle``, where ``{num}`` is the batch number.
+See :doc:`../data/relate/qnames` for details on the data structure.
+See :doc:`../formats/data/brickle` for details on brickle files.
+
+Relate output file: Reference sequence
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The relate step writes the reference sequence as a ``CompressedSeq``
+object to the file ``refseq.brickle``.
+See :doc:`../data/relate/refseq` for details on the data structure.
+See :doc:`../formats/data/brickle` for details on brickle files.
 
 Relate output file: Report
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

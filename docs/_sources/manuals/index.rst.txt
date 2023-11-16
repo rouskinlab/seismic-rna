@@ -18,4 +18,5 @@ For a complete list of commands and their parameters, see :doc:`../cli`.
     workflow
     faclean
     inputs
+    parallel
     logging

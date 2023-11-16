@@ -853,8 +853,6 @@
         <li><a href="cli.html#cmdoption-seismic-demult-index-tolerance">seismic-demult command line option</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     --keep-temp
 
@@ -877,6 +875,8 @@
         <li><a href="cli.html#cmdoption-seismic-cluster-k">seismic-cluster command line option</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     --max-em-iter
 
@@ -1119,6 +1119,33 @@
 </li>
       </ul></li>
       <li>
+    --no-table-clust
+
+      <ul>
+        <li><a href="cli.html#cmdoption-seismic-all-table-clust">seismic-all command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-table-table-clust">seismic-table command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --no-table-pos
+
+      <ul>
+        <li><a href="cli.html#cmdoption-seismic-all-table-pos">seismic-all command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-table-table-pos">seismic-table command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --no-table-read
+
+      <ul>
+        <li><a href="cli.html#cmdoption-seismic-all-table-read">seismic-all command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-table-table-read">seismic-table command line option</a>
+</li>
+      </ul></li>
+      <li>
     --out-dir
 
       <ul>
@@ -1299,6 +1326,33 @@
         <li><a href="cli.html#cmdoption-seismic-relate-parallel">seismic-relate command line option</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-table-parallel">seismic-table command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --table-clust
+
+      <ul>
+        <li><a href="cli.html#cmdoption-seismic-all-table-clust">seismic-all command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-table-table-clust">seismic-table command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --table-pos
+
+      <ul>
+        <li><a href="cli.html#cmdoption-seismic-all-table-pos">seismic-all command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-table-table-pos">seismic-table command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --table-read
+
+      <ul>
+        <li><a href="cli.html#cmdoption-seismic-all-table-read">seismic-all command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-table-table-read">seismic-table command line option</a>
 </li>
       </ul></li>
       <li>
@@ -4029,9 +4083,11 @@
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.logs.AnsiCode.RED">RED (seismicrna.core.logs.AnsiCode attribute)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.ref">ref (seismicrna.core.data.Dataset property)</a>
+      <li><a href="api/seismicrna.clust.html#seismicrna.clust.uniq.UniqReads.ref">ref (seismicrna.clust.uniq.UniqReads property)</a>
 
       <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.ref">(seismicrna.core.data.Dataset property)</a>
+</li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.ref">(seismicrna.core.data.LoadedDataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.MergedDataset.ref">(seismicrna.core.data.MergedDataset property)</a>
@@ -4119,10 +4175,10 @@
 </li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.error.RelateNotImplementedError">RelateNotImplementedError</a>
 </li>
-      <li><a href="api/seismicrna.relate.html#seismicrna.relate.batch.RelateReflenBatch">RelateReflenBatch (class in seismicrna.relate.batch)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/seismicrna.relate.html#seismicrna.relate.batch.RelateReflenBatch">RelateReflenBatch (class in seismicrna.relate.batch)</a>
+</li>
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.batch.RelateRefseqBatch">RelateRefseqBatch (class in seismicrna.relate.batch)</a>
 </li>
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.report.RelateReport">RelateReport (class in seismicrna.relate.report)</a>
@@ -4760,6 +4816,12 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-all-force">--no-force</a>
 </li>
+        <li><a href="cli.html#cmdoption-seismic-all-table-clust">--no-table-clust</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-all-table-pos">--no-table-pos</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-all-table-read">--no-table-read</a>
+</li>
         <li><a href="cli.html#cmdoption-seismic-all-o">--out-dir</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-all-parallel">--parallel</a>
@@ -4781,6 +4843,12 @@
         <li><a href="cli.html#cmdoption-seismic-all-s">--sections-file</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-all-parallel">--serial</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-all-table-clust">--table-clust</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-all-table-pos">--table-pos</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-all-table-read">--table-read</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-all-t">--temp-dir</a>
 </li>
@@ -5239,9 +5307,21 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-table-force">--no-force</a>
 </li>
+        <li><a href="cli.html#cmdoption-seismic-table-table-clust">--no-table-clust</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-table-table-pos">--no-table-pos</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-table-table-read">--no-table-read</a>
+</li>
         <li><a href="cli.html#cmdoption-seismic-table-parallel">--parallel</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-table-parallel">--serial</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-table-table-clust">--table-clust</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-table-table-pos">--table-pos</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-table-table-read">--table-read</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-table-arg-INPUT_PATH">INPUT_PATH</a>
 </li>
@@ -7157,10 +7237,10 @@
       </ul></li>
       <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.section_test.TestConstants.test_pos_index">test_pos_index() (seismicrna.core.seq.tests.section_test.TestConstants method)</a>
 </li>
-      <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.section_test.TestConstants.test_pos_name">test_pos_name() (seismicrna.core.seq.tests.section_test.TestConstants method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.section_test.TestConstants.test_pos_name">test_pos_name() (seismicrna.core.seq.tests.section_test.TestConstants method)</a>
+</li>
       <li><a href="api/seismicrna.core.tests.html#seismicrna.core.tests.header_test.TestFormatClustName.test_positive">test_positive() (seismicrna.core.tests.header_test.TestFormatClustName method)</a>
 
       <ul>
@@ -7410,8 +7490,6 @@
       <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.section_test.TestSectionUnmasked.test_unmasked_bool">test_unmasked_bool() (seismicrna.core.seq.tests.section_test.TestSectionUnmasked method)</a>
 </li>
       <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.section_test.TestSectionUnmasked.test_unmasked_int">test_unmasked_int() (seismicrna.core.seq.tests.section_test.TestSectionUnmasked method)</a>
-</li>
-      <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.section_test.TestSectionUnmasked.test_unmasked_zero">test_unmasked_zero() (seismicrna.core.seq.tests.section_test.TestSectionUnmasked method)</a>
 </li>
       <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.fasta_test.TestValidFastaSeqname.test_valid">test_valid() (seismicrna.core.seq.tests.fasta_test.TestValidFastaSeqname method)</a>
 
@@ -7795,8 +7873,6 @@
         <li><a href="api/seismicrna.table.html#seismicrna.table.base.PosTable.unmasked_int">(seismicrna.table.base.PosTable property)</a>
 </li>
       </ul></li>
-      <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.Section.unmasked_zero">unmasked_zero (seismicrna.core.seq.section.Section property)</a>
-</li>
   </ul></td>
 </tr></table>
 

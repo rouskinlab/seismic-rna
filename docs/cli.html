@@ -626,6 +626,24 @@ for the command <code class="docutils literal notranslate"><span class="pre">sei
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-all-table-pos">
+<span id="cmdoption-seismic-all-no-table-pos"></span><span class="sig-name descname"><span class="pre">--table-pos</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-table-pos</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-all-table-pos" title="Permalink to this definition"></a></dt>
+<dd><p>Tabulate per position</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-all-table-read">
+<span id="cmdoption-seismic-all-no-table-read"></span><span class="sig-name descname"><span class="pre">--table-read</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-table-read</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-all-table-read" title="Permalink to this definition"></a></dt>
+<dd><p>Tabulate per read</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-all-table-clust">
+<span id="cmdoption-seismic-all-no-table-clust"></span><span class="sig-name descname"><span class="pre">--table-clust</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-table-clust</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-all-table-clust" title="Permalink to this definition"></a></dt>
+<dd><p>Tabulate per cluster</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-all-fold">
 <span id="cmdoption-seismic-all-no-fold"></span><span class="sig-name descname"><span class="pre">--fold</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-fold</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-all-fold" title="Permalink to this definition"></a></dt>
 <dd><p>Predict the secondary structure using the RNAstructure Fold program</p>
@@ -1362,6 +1380,30 @@ alternative structures in the RNA ensemble.</p>
 </div>
 <p class="rubric">Options</p>
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-table-table-pos">
+<span id="cmdoption-seismic-table-no-table-pos"></span><span class="sig-name descname"><span class="pre">--table-pos</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-table-pos</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-table-table-pos" title="Permalink to this definition"></a></dt>
+<dd><p>Tabulate per position</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-table-table-read">
+<span id="cmdoption-seismic-table-no-table-read"></span><span class="sig-name descname"><span class="pre">--table-read</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-table-read</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-table-table-read" title="Permalink to this definition"></a></dt>
+<dd><p>Tabulate per read</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-table-table-clust">
+<span id="cmdoption-seismic-table-no-table-clust"></span><span class="sig-name descname"><span class="pre">--table-clust</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-table-clust</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-table-table-clust" title="Permalink to this definition"></a></dt>
+<dd><p>Tabulate per cluster</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-table-force">
+<span id="cmdoption-seismic-table-no-force"></span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-table-force" title="Permalink to this definition"></a></dt>
+<dd><p>Force all tasks to run, even those whose output files already exist</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-table-max-procs">
 <span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-table-max-procs" title="Permalink to this definition"></a></dt>
 <dd><p>Maximum number of simultaneous processes</p>
@@ -1371,12 +1413,6 @@ alternative structures in the RNA ensemble.</p>
 <dt class="sig sig-object std" id="cmdoption-seismic-table-parallel">
 <span id="cmdoption-seismic-table-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-table-parallel" title="Permalink to this definition"></a></dt>
 <dd><p>Run tasks in parallel</p>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-table-force">
-<span id="cmdoption-seismic-table-no-force"></span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-table-force" title="Permalink to this definition"></a></dt>
-<dd><p>Force all tasks to run, even those whose output files already exist</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>
