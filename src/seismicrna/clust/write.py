@@ -39,7 +39,7 @@ def write_batches(dataset: MaskMerger,
                              resps=resps)
         _, checksum = batch.save(top=dataset.top,
                                  brotli_level=brotli_level,
-                                 overwrite=True)
+                                 force=True)
         checksums.append(checksum)
     return checksums
 

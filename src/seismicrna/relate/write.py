@@ -130,7 +130,7 @@ class RelationWriter(object):
         refseq_file = RefseqIO(sample=self.sample,
                                ref=self.ref,
                                refseq=self.seq)
-        _, checksum = refseq_file.save(out_dir, brotli_level, overwrite=True)
+        _, checksum = refseq_file.save(out_dir, brotli_level, force=True)
         return checksum
 
     def _generate_batches(self, *,

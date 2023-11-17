@@ -262,7 +262,7 @@ class RelMasker(object):
                                  read_nums=batch.read_nums)
         _, checksum = batch_file.save(self.top,
                                       brotli_level=self.brotli_level,
-                                      overwrite=True)
+                                      force=True)
         self.checksums.append(checksum)
         return batch
 

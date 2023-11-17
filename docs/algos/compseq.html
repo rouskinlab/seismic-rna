@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Algorithm for Sequence Compression/Decompression &mdash; seismic-rna  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/favicon-32x32.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Bugs and Requests" href="../issues.html" />
+    <link rel="prev" title="Algorithms" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            seismic-rna
+              <img src="../_static/logo-200.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../manuals/index.html">Manuals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/seismicrna.html">seismicrna package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../formats/index.html">File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/index.html">Data Structures</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Algorithms</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Algorithm for Sequence Compression/Decompression</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#background-on-sequence-compression-decompression">Background on Sequence Compression/Decompression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#algorithm-for-sequence-compression">Algorithm for Sequence Compression</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#algorithm-for-sequence-compression-procedure">Algorithm for Sequence Compression: Procedure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#algorithm-for-sequence-compression-example">Algorithm for Sequence Compression: Example</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#algorithm-for-sequence-decompression">Algorithm for Sequence Decompression</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#algorithm-for-sequence-decompression-procedure">Algorithm for Sequence Decompression: Procedure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#algorithm-for-sequence-decompression-example">Algorithm for Sequence Decompression: Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../issues.html">Bugs and Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../writeme.html">How to Write this Manual</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">seismic-rna</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Algorithms</a></li>
+      <li class="breadcrumb-item active">Algorithm for Sequence Compression/Decompression</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/algos/compseq.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="algorithm-for-sequence-compression-decompression">
+<h1>Algorithm for Sequence Compression/Decompression<a class="headerlink" href="#algorithm-for-sequence-compression-decompression" title="Permalink to this headline"></a></h1>
+<section id="background-on-sequence-compression-decompression">
+<h2>Background on Sequence Compression/Decompression<a class="headerlink" href="#background-on-sequence-compression-decompression" title="Permalink to this headline"></a></h2>
+<p>In a nucleic acid sequence, each base is represented by one character in
+<a class="reference external" href="https://en.wikipedia.org/wiki/ASCII">ASCII code</a> and hence occupies 1 byte (8 bits).
+But because each base has only 4 possibilities, each base requires only
+log<sub>2</sub>(4) = 2 bits, shown in the following table:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 81%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Base</p></th>
+<th class="head"><p>2-Bit Binary Code</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>A</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">00</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>C</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">01</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>G</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>T/U</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">11</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>For efficient storage of (long) nucleic acid sequences, the following
+algorithm compresses 4 bases (= 8 bits/byte ÷ 2 bits/nt) in each byte,
+and then restores the original sequence when needed.</p>
+</section>
+<section id="algorithm-for-sequence-compression">
+<h2>Algorithm for Sequence Compression<a class="headerlink" href="#algorithm-for-sequence-compression" title="Permalink to this headline"></a></h2>
+<section id="algorithm-for-sequence-compression-procedure">
+<h3>Algorithm for Sequence Compression: Procedure<a class="headerlink" href="#algorithm-for-sequence-compression-procedure" title="Permalink to this headline"></a></h3>
+<p>First, attributes of the nucleic acid sequence are recorded:</p>
+<ul class="simple">
+<li><p>rna (<code class="docutils literal notranslate"><span class="pre">bool</span></code>): whether the sequence is RNA</p></li>
+<li><p>length (<code class="docutils literal notranslate"><span class="pre">int</span></code>): number of bases in the sequence</p></li>
+<li><p>ns (<code class="docutils literal notranslate"><span class="pre">tuple[int,</span> <span class="pre">...]</span></code>): positions of <code class="docutils literal notranslate"><span class="pre">N</span></code> bases, if any</p></li>
+</ul>
+<p>The type and the length are scalar values with constant sizes regardless
+of the length of the sequence.
+The 0-indexed positions of ambiguous bases is an array that at worst (if
+all bases are <code class="docutils literal notranslate"><span class="pre">N</span></code>) scales linearly with the length of the sequence and
+at best (if no bases are <code class="docutils literal notranslate"><span class="pre">N</span></code>) is a constant (small) size.
+Because most reference sequences contain no or very few bases that are
+<code class="docutils literal notranslate"><span class="pre">N</span></code>, recording the <code class="docutils literal notranslate"><span class="pre">N</span></code> positions generally requires little space.</p>
+<p>Then, each non-overlapping segment of four bases is encoded as one byte
+by concatenating the 2-bit codes (above) of the bases in the segment, in
+reverse order.
+Ambiguous (<code class="docutils literal notranslate"><span class="pre">N</span></code>) bases are arbitrarily encoded as <code class="docutils literal notranslate"><span class="pre">00</span></code>.
+Because this step requires the length of the sequence to be a multiple
+of 4, the sequence is padded on its 3’ side with <code class="docutils literal notranslate"><span class="pre">A</span></code> (an arbitrary
+choice) until its length is a multiple of 4.</p>
+</section>
+<section id="algorithm-for-sequence-compression-example">
+<h3>Algorithm for Sequence Compression: Example<a class="headerlink" href="#algorithm-for-sequence-compression-example" title="Permalink to this headline"></a></h3>
+<p>Given the DNA sequence <code class="docutils literal notranslate"><span class="pre">CAGNTTCGAN</span></code>, the attributes are extracted:</p>
+<ul class="simple">
+<li><p>rna: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p>length: <code class="docutils literal notranslate"><span class="pre">10</span></code></p></li>
+<li><p>ns: <code class="docutils literal notranslate"><span class="pre">(3,</span> <span class="pre">9)</span></code> (note: these positions are 0-indexed)</p></li>
+</ul>
+<p>The sequence is then padded with <code class="docutils literal notranslate"><span class="pre">A</span></code> at the 3’ end until its length
+becomes a multiple of 4 (in this case, length 12):</p>
+<p><code class="docutils literal notranslate"><span class="pre">CAGNTTCGANAA</span></code></p>
+<p>Then, each 4-base segment is transformed into one byte by encoding each
+base and concatenating the codes in order from code 4 to code 1:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 11%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 11%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Number</p></th>
+<th class="head"><p>Sequence</p></th>
+<th class="head"><p>Base 1</p></th>
+<th class="head"><p>Base 2</p></th>
+<th class="head"><p>Base 3</p></th>
+<th class="head"><p>Base 4</p></th>
+<th class="head"><p>Code 4</p></th>
+<th class="head"><p>Code 3</p></th>
+<th class="head"><p>Code 2</p></th>
+<th class="head"><p>Code 1</p></th>
+<th class="head"><p>Byte</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>CAGN</p></td>
+<td><p>C</p></td>
+<td><p>A</p></td>
+<td><p>G</p></td>
+<td><p>N</p></td>
+<td><p>00</p></td>
+<td><p>10</p></td>
+<td><p>00</p></td>
+<td><p>01</p></td>
+<td><p>00100001</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>TTCG</p></td>
+<td><p>T</p></td>
+<td><p>T</p></td>
+<td><p>C</p></td>
+<td><p>G</p></td>
+<td><p>10</p></td>
+<td><p>01</p></td>
+<td><p>11</p></td>
+<td><p>11</p></td>
+<td><p>10011111</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>ANAA</p></td>
+<td><p>A</p></td>
+<td><p>N</p></td>
+<td><p>A</p></td>
+<td><p>A</p></td>
+<td><p>00</p></td>
+<td><p>00</p></td>
+<td><p>00</p></td>
+<td><p>00</p></td>
+<td><p>00000000</p></td>
+</tr>
+</tbody>
+</table>
+<p>Thus, the compressed byte string is <code class="docutils literal notranslate"><span class="pre">[00100001,</span> <span class="pre">10011111,</span> <span class="pre">00000000]</span></code>.
+Note that this string is only 3 bytes, compared to 10 for the original.
+As a <code class="docutils literal notranslate"><span class="pre">bytes</span></code> object, the representation is <code class="docutils literal notranslate"><span class="pre">b'!\x9f\x00'</span></code>.</p>
+</section>
+</section>
+<section id="algorithm-for-sequence-decompression">
+<h2>Algorithm for Sequence Decompression<a class="headerlink" href="#algorithm-for-sequence-decompression" title="Permalink to this headline"></a></h2>
+<section id="algorithm-for-sequence-decompression-procedure">
+<h3>Algorithm for Sequence Decompression: Procedure<a class="headerlink" href="#algorithm-for-sequence-decompression-procedure" title="Permalink to this headline"></a></h3>
+<p>Beginning with a compressed sequence of bytes, each byte is transformed
+into four bases by decoding each 2-bit chunk to a base using the above
+table, then reversing the order of the four bases.
+The code <code class="docutils literal notranslate"><span class="pre">11</span></code> is decoded to <code class="docutils literal notranslate"><span class="pre">U</span></code> if the <cite>rna</cite> attribute is <code class="docutils literal notranslate"><span class="pre">True</span></code>
+and to <code class="docutils literal notranslate"><span class="pre">T</span></code> if <code class="docutils literal notranslate"><span class="pre">False</span></code>.
+The sequence at this point must have a number of bases divisible by 4.
+It is cut to the correct number of bases using the <cite>length</cite> attribute.
+Finally, every position in the attribute <cite>ns</cite> is masked to <code class="docutils literal notranslate"><span class="pre">N</span></code>.</p>
+</section>
+<section id="algorithm-for-sequence-decompression-example">
+<h3>Algorithm for Sequence Decompression: Example<a class="headerlink" href="#algorithm-for-sequence-decompression-example" title="Permalink to this headline"></a></h3>
+<p>Suppose that a compressed sequence has the following attributes:</p>
+<ul class="simple">
+<li><p>compressed byte string: <code class="docutils literal notranslate"><span class="pre">[00100001,</span> <span class="pre">10011111,</span> <span class="pre">00000000]</span></code></p></li>
+<li><p>rna: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p>length: <code class="docutils literal notranslate"><span class="pre">10</span></code></p></li>
+<li><p>ns: <code class="docutils literal notranslate"><span class="pre">(3,</span> <span class="pre">9)</span></code></p></li>
+</ul>
+<p>To decompress the sequence, each byte is split into four 2-bit segments,
+decoded, reversed, and reassembled:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 11%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 11%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Number</p></th>
+<th class="head"><p>Byte</p></th>
+<th class="head"><p>Code 1</p></th>
+<th class="head"><p>Code 2</p></th>
+<th class="head"><p>Code 3</p></th>
+<th class="head"><p>Code 4</p></th>
+<th class="head"><p>Base 4</p></th>
+<th class="head"><p>Base 3</p></th>
+<th class="head"><p>Base 2</p></th>
+<th class="head"><p>Base 1</p></th>
+<th class="head"><p>Sequence</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>00100001</p></td>
+<td><p>00</p></td>
+<td><p>10</p></td>
+<td><p>00</p></td>
+<td><p>01</p></td>
+<td><p>C</p></td>
+<td><p>A</p></td>
+<td><p>G</p></td>
+<td><p>A</p></td>
+<td><p>CAGA</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>10011111</p></td>
+<td><p>10</p></td>
+<td><p>01</p></td>
+<td><p>11</p></td>
+<td><p>11</p></td>
+<td><p>T</p></td>
+<td><p>T</p></td>
+<td><p>C</p></td>
+<td><p>G</p></td>
+<td><p>TTCG</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>00000000</p></td>
+<td><p>00</p></td>
+<td><p>00</p></td>
+<td><p>00</p></td>
+<td><p>00</p></td>
+<td><p>A</p></td>
+<td><p>A</p></td>
+<td><p>A</p></td>
+<td><p>A</p></td>
+<td><p>AAAA</p></td>
+</tr>
+</tbody>
+</table>
+<p>The resulting sequence, <code class="docutils literal notranslate"><span class="pre">CAGATTCGAAAA</span></code>, is trimmed to 10 nt: <code class="docutils literal notranslate"><span class="pre">CAGATTCGAA</span></code>.
+Finally, (0-indexed) positions 3 and 9 are replaced with <code class="docutils literal notranslate"><span class="pre">N</span></code>: <code class="docutils literal notranslate"><span class="pre">CAGNTTCGAN</span></code>.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Algorithms" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../issues.html" class="btn btn-neutral float-right" title="Bugs and Requests" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, the Rouskin Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

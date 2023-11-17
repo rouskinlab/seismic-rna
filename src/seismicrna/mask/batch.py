@@ -27,6 +27,10 @@ class MaskMutsBatch(MaskReadBatch, RefseqMutsBatch, PartialMutsBatch, ABC):
 def apply_mask(batch: RefseqMutsBatch,
                reads: Iterable[int] | None = None,
                positions: Iterable[int] | None = None):
+    # Determine masked read numbers.
+    masked_reads = (np.setdiff1d(batch.read_nums, reads)
+                    if reads is not None
+                    else None)
     # Clean and validate the selection.
     if positions is not None:
         positions = sanitize_pos(positions, batch.max_pos)
@@ -34,10 +38,10 @@ def apply_mask(batch: RefseqMutsBatch,
     muts = dict()
     for pos in positions if positions is not None else batch.pos_nums:
         muts[pos] = dict()
-        # Select reads with each type of mutation at this position.
+        # Remove masked reads with each type of mutation at this position.
         for mut, pos_mut_reads in batch.muts.get(pos, dict()).items():
-            muts[pos][mut] = (np.intersect1d(pos_mut_reads,
-                                             reads,
+            muts[pos][mut] = (np.setdiff1d(pos_mut_reads,
+                                             masked_reads,
                                              assume_unique=True)
                               if reads is not None
                               else pos_mut_reads)

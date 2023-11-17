@@ -129,7 +129,7 @@ def uniq_reads_to_mutations(uniq_reads: Iterable[tuple],
     for uniq_read_num, read_muts_pos in enumerate(uniq_reads):
         for pos in read_muts_pos:
             mutations[pos].append(uniq_read_num)
-    return [np.array(mutations[pos]) for pos in pos_nums]
+    return [np.array(mutations[pos], dtype=int) for pos in pos_nums]
 
 
 def count_uniq_reads(uniq_read_nums: Iterable[list]):

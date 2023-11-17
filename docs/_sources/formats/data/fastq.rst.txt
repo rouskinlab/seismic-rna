@@ -33,10 +33,10 @@ file was called correctly during sequencing.
 The probability *p* that a base was called incorrectly is 10 raised to
 the power of the quotient of the Phred score *s* and -10:
 
-*p* = 10 :sup:`-s/10`
+*p* = 10\ :sup:`-s/10`
 
 For example, if a base call has a Phred score of 30, the probability
-that the base call is incorrect is 10 :sup:`-30/10` = 0.001.
+that the base call is incorrect is 10\ :sup:`-30/10` = 0.001.
 
 In FASTQ files, each phred quality score (a non-negative integer) is
 encoded as one character of text by adding another integer *N* to the

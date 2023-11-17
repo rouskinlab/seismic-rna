@@ -241,7 +241,7 @@ class TestWriteFasta(ut.TestCase):
         text = ">Seq1\nGTACGTGNTCATC\n>Seq2\nAGCTGTGNNTATCG\n"
         with NTFile('w', suffix=path.FASTA_EXTS[0], delete=False) as f:
             filepath = Path(f.file.name)
-        write_fasta(filepath, seqs, overwrite=True)
+        write_fasta(filepath, seqs, force=True)
         with open(filepath) as f:
             self.assertEqual(f.read(), text)
         remove(filepath)

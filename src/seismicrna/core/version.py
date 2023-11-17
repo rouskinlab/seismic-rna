@@ -7,9 +7,9 @@ from typing import Any
 
 logger = getLogger(__name__)
 
-__version__ = "0.9.4"
+__version__ = "0.9.5"
 
-VERSION_DELIM = '.'
+VERSION_DELIM = "."
 
 COMPATIBLE = {
     (0, 9): {},

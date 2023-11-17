@@ -5,22 +5,22 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Relation Vectors &mdash; seismic-rna  documentation</title>
-      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-    <link rel="shortcut icon" href="../_static/favicon-32x32.ico"/>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../../_static/favicon-32x32.ico"/>
   <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
+    <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
-    <script src="../_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Algorithms" href="../algos/index.html" />
-    <link rel="prev" title="Data Structures" href="index.html" /> 
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Relate Batch" href="relate.html" />
+    <link rel="prev" title="Relate Data Structures" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -31,12 +31,12 @@
 
           
           
-          <a href="../index.html" class="icon icon-home">
+          <a href="../../index.html" class="icon icon-home">
             seismic-rna
-              <img src="../_static/logo-200.png" class="logo" alt="Logo"/>
+              <img src="../../_static/logo-200.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -44,35 +44,33 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../manuals/index.html">Manuals</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../api/seismicrna.html">seismicrna package</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../formats/index.html">File Formats</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="index.html">Data Structures</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Relation Vectors</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#relationships-between-reads-and-references">Relationships between reads and references</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#encoding-primary-relationships">Encoding primary relationships</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#encoding-ambiguous-relationships">Encoding ambiguous relationships</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#low-quality-base-calls">Low-quality base calls</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#ambiguous-insertions-and-deletions">Ambiguous insertions and deletions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/index.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../manuals/index.html">Manuals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/seismicrna.html">seismicrna package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../formats/index.html">File Formats</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Data Structures</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Relate Data Structures</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Relation Vectors</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#relationships-between-reads-and-references">Relationships between reads and references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#encoding-primary-relationships">Encoding primary relationships</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#encoding-ambiguous-relationships">Encoding ambiguous relationships</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#encoding-positions-not-covered-by-the-read">Encoding positions not covered by the read</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#encoding-paired-end-reads">Encoding paired-end reads</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#encoding-positions-not-covered-by-the-read">Encoding positions not covered by the read</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#encoding-paired-end-reads">Encoding paired-end reads</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#consensus-relationships">Consensus relationships</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#irreconcilable-relationships">Irreconcilable relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="relate.html">Relate Batch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="qnames.html">Read Names Batch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="refseq.html">Reference Sequence</a></li>
 </ul>
 </li>
 </ul>
 </li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../algos/index.html">Algorithms</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../issues.html">Bugs and Requests</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../writeme.html">How to Write this Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../algos/index.html">Algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../issues.html">Bugs and Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../writeme.html">How to Write this Manual</a></li>
 </ul>
 
         </div>
@@ -81,18 +79,19 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../index.html">seismic-rna</a>
+          <a href="../../index.html">seismic-rna</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="index.html">Data Structures</a></li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Data Structures</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Relate Data Structures</a></li>
       <li class="breadcrumb-item active">Relation Vectors</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/data/relate.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../../_sources/data/relate/codes.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -120,7 +119,7 @@ SEISMIC-RNA defines eight primary relationships:</p>
 <p>This figure illustrates six of these primary relationships, as well the
 “blank” relationship for positions in the reference that lie outside the
 span of the read.</p>
-<img alt="../_images/relationships.png" src="../_images/relationships.png" />
+<img alt="../../_images/relationships.png" src="../../_images/relationships.png" />
 </section>
 <section id="encoding-primary-relationships">
 <h2>Encoding primary relationships<a class="headerlink" href="#encoding-primary-relationships" title="Permalink to this headline"></a></h2>
@@ -200,8 +199,8 @@ for some bases to define the relationship:</p>
 <li><p>low-quality base calls</p></li>
 <li><p>ambiguous insertions and deletions</p></li>
 </ul>
-<section id="low-quality-base-calls">
-<h3>Low-quality base calls<a class="headerlink" href="#low-quality-base-calls" title="Permalink to this headline"></a></h3>
+<section id="encoding-low-quality-base-calls">
+<span id="relate-low-qual"></span><h3>Encoding low-quality base calls<a class="headerlink" href="#encoding-low-quality-base-calls" title="Permalink to this headline"></a></h3>
 <p>A low-quality base call is defined as having a <a class="reference external" href="https://en.wikipedia.org/wiki/Phred_quality_score">Phred quality score</a>
 below the user-specified threshold (default: 25). Low-quality base calls
 are processed as if they could be any of the four nucleotides. The type
@@ -343,8 +342,8 @@ than once towards the total number of matches or mutations. To learn
 how mutations in relation vectors are counted, see [REF].</p>
 </div>
 </section>
-<section id="ambiguous-insertions-and-deletions">
-<h3>Ambiguous insertions and deletions<a class="headerlink" href="#ambiguous-insertions-and-deletions" title="Permalink to this headline"></a></h3>
+<section id="encoding-ambiguous-insertions-and-deletions">
+<h3>Encoding ambiguous insertions and deletions<a class="headerlink" href="#encoding-ambiguous-insertions-and-deletions" title="Permalink to this headline"></a></h3>
 <p>Insertions and deletions (collectively, “indels”) in the read can cause
 ambiguities that even the highest quality sequencing reads could not
 prevent. When one or more bases are inserted or deleted in a repetitive
@@ -435,8 +434,8 @@ identical relationships. However, they often differ because a position
 is covered in one mate but not in the other, one mate’s Phred score is
 above the threshold and the other’s is below, or (more rarely) the base
 calls themselves differ.</p>
-<section id="consensus-relationships">
-<h3>Consensus relationships<a class="headerlink" href="#consensus-relationships" title="Permalink to this headline"></a></h3>
+<section id="encoding-consensus-relationships">
+<h3>Encoding consensus relationships<a class="headerlink" href="#encoding-consensus-relationships" title="Permalink to this headline"></a></h3>
 <p>When finding the consensus of two mates, information in one mate should
 compensate for a lack thereof in the other. Recall that a relationship
 byte indicates all possible relationships at its position. The more bits
@@ -504,8 +503,8 @@ position 4 is a match, but it is low quality at position 5, so even the
 consensus byte is ambiguous. Neither mate covers position 6, so the
 consensus byte is blank.</p>
 </section>
-<section id="irreconcilable-relationships">
-<h3>Irreconcilable relationships<a class="headerlink" href="#irreconcilable-relationships" title="Permalink to this headline"></a></h3>
+<section id="encoding-irreconcilable-relationships">
+<h3>Encoding irreconcilable relationships<a class="headerlink" href="#encoding-irreconcilable-relationships" title="Permalink to this headline"></a></h3>
 <p>It is possible, although rare, for mates 1 and 2 to share no bits. For
 example, if mate 1 were a high-quality match (<code class="docutils literal notranslate"><span class="pre">00000001</span></code>) and mate 2
 were a high-quality substitution to T (<code class="docutils literal notranslate"><span class="pre">10000000</span></code>), then the bitwise
@@ -519,8 +518,8 @@ at this position.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="Data Structures" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="../algos/index.html" class="btn btn-neutral float-right" title="Algorithms" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Relate Data Structures" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="relate.html" class="btn btn-neutral float-right" title="Relate Batch" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

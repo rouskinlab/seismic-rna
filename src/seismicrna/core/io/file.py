@@ -126,17 +126,12 @@ class BrickleIO(FileIO, ABC):
     @classmethod
     def load(cls, file: Path, checksum: str = ""):
         """ Load from a compressed pickle file. """
-        return load_brickle(file, check_type=cls, checksum=checksum)
+        return load_brickle(file, checksum=checksum, check_type=cls)
 
-    def save(self,
-             top: Path,
-             brotli_level: int = DEFAULT_BROTLI_LEVEL,
-             overwrite: bool = False):
+    def save(self, top: Path, *args, **kwargs):
         """ Save to a pickle file compressed with Brotli. """
-        checksum = save_brickle(self,
-                                save_path := self.get_path(top),
-                                brotli_level=brotli_level,
-                                overwrite=overwrite)
+        save_path = self.get_path(top)
+        checksum = save_brickle(self, save_path, *args, **kwargs)
         return save_path, checksum
 
     def __getstate__(self):

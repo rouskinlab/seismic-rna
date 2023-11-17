@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relate Batch &mdash; seismic-rna  documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../../_static/favicon-32x32.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Read Names Batch" href="qnames.html" />
+    <link rel="prev" title="Relation Vectors" href="codes.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            seismic-rna
+              <img src="../../_static/logo-200.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/index.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../manuals/index.html">Manuals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/seismicrna.html">seismicrna package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../formats/index.html">File Formats</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Data Structures</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Relate Data Structures</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="codes.html">Relation Vectors</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Relate Batch</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#relate-batch-structure">Relate batch: Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#relate-batch-example">Relate batch: Example</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="qnames.html">Read Names Batch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="refseq.html">Reference Sequence</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../algos/index.html">Algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../issues.html">Bugs and Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../writeme.html">How to Write this Manual</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">seismic-rna</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Data Structures</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Relate Data Structures</a></li>
+      <li class="breadcrumb-item active">Relate Batch</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/data/relate/relate.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="relate-batch">
+<h1>Relate Batch<a class="headerlink" href="#relate-batch" title="Permalink to this headline"></a></h1>
+<p>Each batch of relation vectors is a <code class="docutils literal notranslate"><span class="pre">RelateBatchIO</span></code> object.</p>
+<section id="relate-batch-structure">
+<h2>Relate batch: Structure<a class="headerlink" href="#relate-batch-structure" title="Permalink to this headline"></a></h2>
+<p>The following attributes encode the relationships between each read and
+each position in the reference sequence:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 36%" />
+<col style="width: 56%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Attribute</p></th>
+<th class="head"><p>Data Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">end5s</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">numpy.ndarray[int]</span></code></p></td>
+<td><p>array of the first position of the most upstream mate in each read</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mid5s</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">numpy.ndarray[int]</span></code></p></td>
+<td><p>array of the first position of the most downstream mate in each read</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mid3s</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">numpy.ndarray[int]</span></code></p></td>
+<td><p>array of the last position of the most upstream mate in each read</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">end3s</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">numpy.ndarray[int]</span></code></p></td>
+<td><p>array of the last position of the most downstream mate in each read</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">muts</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dict[int,</span> <span class="pre">dict[int,</span> <span class="pre">numpy.ndarray[int]]]</span></code></p></td>
+<td><p>array of the reads with each type of mutation at each position</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The positions of the first and last bases in the reference sequence
+are defined to be 1 and the length of the sequence, respectively.</p>
+</div>
+<section id="relate-batch-structure-of-read-numbers">
+<span id="relate-read-nums"></span><h3>Relate batch: Structure of read numbers<a class="headerlink" href="#relate-batch-structure-of-read-numbers" title="Permalink to this headline"></a></h3>
+<p>Each read, or pair of paired-end reads, is labeled with a non-negative
+integer: 0 for the first read in each batch, and incrementing by 1 for
+each subsequent read.
+Within one batch, all read numbers are unique.
+However, two different batches can have reads that share numbers.</p>
+</section>
+<section id="relate-batch-structure-of-5-and-3-end-positions">
+<h3>Relate batch: Structure of 5’ and 3’ end positions<a class="headerlink" href="#relate-batch-structure-of-5-and-3-end-positions" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">end5s</span></code>, <code class="docutils literal notranslate"><span class="pre">mid5s</span></code>, <code class="docutils literal notranslate"><span class="pre">mid3s</span></code>, and <code class="docutils literal notranslate"><span class="pre">end3s</span></code> are all 1-dimensional
+<code class="docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> objects.</p></li>
+<li><p>For any relate batch, <code class="docutils literal notranslate"><span class="pre">end5s</span></code>, <code class="docutils literal notranslate"><span class="pre">mid5s</span></code>, <code class="docutils literal notranslate"><span class="pre">mid3s</span></code>, and <code class="docutils literal notranslate"><span class="pre">end3s</span></code>
+all have the same length (which may be any integer ≥ 0).</p></li>
+<li><p>A read with index <code class="docutils literal notranslate"><span class="pre">i</span></code> corresponds to the <code class="docutils literal notranslate"><span class="pre">i</span></code>th values of
+<code class="docutils literal notranslate"><span class="pre">end5s</span></code>, <code class="docutils literal notranslate"><span class="pre">mid5s</span></code>, <code class="docutils literal notranslate"><span class="pre">mid3s</span></code>, and <code class="docutils literal notranslate"><span class="pre">end3s</span></code>; denoted (respectively)
+<code class="docutils literal notranslate"><span class="pre">end5s[i]</span></code>, <code class="docutils literal notranslate"><span class="pre">mid5s[i]</span></code>, <code class="docutils literal notranslate"><span class="pre">mid3s[i]</span></code>, and <code class="docutils literal notranslate"><span class="pre">end3s[i]</span></code>.</p></li>
+<li><p>For every read <code class="docutils literal notranslate"><span class="pre">i</span></code>:</p>
+<ul>
+<li><p>1 ≤ <code class="docutils literal notranslate"><span class="pre">end5s[i]</span></code> ≤ <code class="docutils literal notranslate"><span class="pre">end3s[i]</span></code> ≤ length of reference sequence</p></li>
+<li><p>If paired-end and there is a gap of ≥ 1 nt between mates 1 and 2:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">end5s[i]</span></code> ≤ <code class="docutils literal notranslate"><span class="pre">mid3s[i]</span></code> &lt; <code class="docutils literal notranslate"><span class="pre">mid5s[i]</span></code> ≤ <code class="docutils literal notranslate"><span class="pre">end3s[i]</span></code></p></li>
+</ul>
+</li>
+<li><p>Otherwise:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">end5s[i]</span></code> = <code class="docutils literal notranslate"><span class="pre">mid5s[i]</span></code> ≤ <code class="docutils literal notranslate"><span class="pre">mid3s[i]</span></code> = <code class="docutils literal notranslate"><span class="pre">end3s[i]</span></code></p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="relate-batch-structure-of-mutations">
+<h3>Relate batch: Structure of mutations<a class="headerlink" href="#relate-batch-structure-of-mutations" title="Permalink to this headline"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">muts</span></code> is a <code class="docutils literal notranslate"><span class="pre">dict</span></code> wherein</p>
+<ul class="simple">
+<li><p>each key is a position in the reference sequence (<code class="docutils literal notranslate"><span class="pre">int</span></code>)</p></li>
+<li><p>each value is a <code class="docutils literal notranslate"><span class="pre">dict</span></code> wherein</p>
+<ul>
+<li><p>each key is a type of mutation (<code class="docutils literal notranslate"><span class="pre">int</span></code>, see <a class="reference internal" href="codes.html"><span class="doc">Relation Vectors</span></a> for more
+information)</p></li>
+<li><p>each value is an array of the numbers of the reads that have the
+given type of mutation at the given position (<code class="docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>)</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="relate-batch-example">
+<h2>Relate batch: Example<a class="headerlink" href="#relate-batch-example" title="Permalink to this headline"></a></h2>
+<p>For example, suppose that the reference sequence is <code class="docutils literal notranslate"><span class="pre">TCAGAACC</span></code> and a
+batch contains five paired-end reads, numbered 0 to 4:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 60%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Read</p></th>
+<th class="head"><p>Mate</p></th>
+<th class="head"><p>Alignment</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_CAG____</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>0</p></td>
+<td><p>2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_____AGC</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">___GTA__</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TCT_____</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">____AAC_</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_CA_____</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TAAGT___</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">______CC</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">__AGA___</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>4</p></td>
+<td><p>2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">___GA-C_</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Ref</p></td>
+<td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TCAGAACC</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>The positions, reads, and relationships can be shown explicitly as a
+matrix (see <a class="reference internal" href="codes.html"><span class="doc">Relation Vectors</span></a> for information on the relationship codes):</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Read</p></th>
+<th class="head"><p>1</p></th>
+<th class="head"><p>2</p></th>
+<th class="head"><p>3</p></th>
+<th class="head"><p>4</p></th>
+<th class="head"><p>5</p></th>
+<th class="head"><p>6</p></th>
+<th class="head"><p>7</p></th>
+<th class="head"><p>8</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>255</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>255</p></td>
+<td><p>1</p></td>
+<td><p>64</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>128</p></td>
+<td><p>1</p></td>
+<td><p>128</p></td>
+<td><p>1</p></td>
+<td><p>255</p></td>
+<td><p>255</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>255</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>255</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>255</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>1</p></td>
+<td><p>16</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>128</p></td>
+<td><p>255</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>255</p></td>
+<td><p>255</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>3</p></td>
+<td><p>3</p></td>
+<td><p>1</p></td>
+<td><p>255</p></td>
+</tr>
+</tbody>
+</table>
+<p>In a relate batch, they would be encoded as follows:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">end5s</span></code>: <code class="docutils literal notranslate"><span class="pre">[2,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">1,</span> <span class="pre">3]</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mid5s</span></code>: <code class="docutils literal notranslate"><span class="pre">[4,</span> <span class="pre">1,</span> <span class="pre">3,</span> <span class="pre">5,</span> <span class="pre">3]</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mid3s</span></code>: <code class="docutils literal notranslate"><span class="pre">[6,</span> <span class="pre">6,</span> <span class="pre">5,</span> <span class="pre">7,</span> <span class="pre">7]</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">end3s</span></code>: <code class="docutils literal notranslate"><span class="pre">[8,</span> <span class="pre">6,</span> <span class="pre">7,</span> <span class="pre">8,</span> <span class="pre">7]</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">muts</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="p">{},</span>
+ <span class="mi">2</span><span class="p">:</span> <span class="p">{</span><span class="mi">16</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">]},</span>
+ <span class="mi">3</span><span class="p">:</span> <span class="p">{</span><span class="mi">128</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]},</span>
+ <span class="mi">4</span><span class="p">:</span> <span class="p">{},</span>
+ <span class="mi">5</span><span class="p">:</span> <span class="p">{</span><span class="mi">3</span><span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mi">128</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">]},</span>
+ <span class="mi">6</span><span class="p">:</span> <span class="p">{</span><span class="mi">3</span><span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">]},</span>
+ <span class="mi">7</span><span class="p">:</span> <span class="p">{</span><span class="mi">64</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]},</span>
+ <span class="mi">8</span><span class="p">:</span> <span class="p">{}}</span>
+</pre></div>
+</div>
+<p>Note that the numbers are shown here for visual simplicity as <code class="docutils literal notranslate"><span class="pre">list</span></code>
+objects, but would really be <code class="docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> objects.</p>
+</li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="codes.html" class="btn btn-neutral float-left" title="Relation Vectors" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="qnames.html" class="btn btn-neutral float-right" title="Read Names Batch" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, the Rouskin Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

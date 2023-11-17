@@ -61,7 +61,9 @@ for some bases to define the relationship:
 - low-quality base calls
 - ambiguous insertions and deletions
 
-Low-quality base calls
+.. _relate_low_qual:
+
+Encoding low-quality base calls
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 A low-quality base call is defined as having a `Phred quality score`_
@@ -115,7 +117,7 @@ four columns "Read: A/C/G/T?".
     than once towards the total number of matches or mutations. To learn
     how mutations in relation vectors are counted, see [REF].
 
-Ambiguous insertions and deletions
+Encoding ambiguous insertions and deletions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Insertions and deletions (collectively, "indels") in the read can cause
@@ -183,7 +185,7 @@ is covered in one mate but not in the other, one mate's Phred score is
 above the threshold and the other's is below, or (more rarely) the base
 calls themselves differ.
 
-Consensus relationships
+Encoding consensus relationships
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 When finding the consensus of two mates, information in one mate should
@@ -219,7 +221,7 @@ position 4 is a match, but it is low quality at position 5, so even the
 consensus byte is ambiguous. Neither mate covers position 6, so the
 consensus byte is blank.
 
-Irreconcilable relationships
+Encoding irreconcilable relationships
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 It is possible, although rare, for mates 1 and 2 to share no bits. For
