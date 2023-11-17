@@ -14,7 +14,7 @@ from .. import (demult as demultiplex_mod,
                 clust as cluster_mod,
                 table as table_mod,
                 fold as fold_mod,
-                fastaclean as fastc_mod)
+                faclean as fastc_mod)
 from ..core.arg import (CMD_WHOLE,
                         docdef,
                         merge_params,
