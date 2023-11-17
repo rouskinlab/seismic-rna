@@ -28,7 +28,7 @@ For step-by-step tutorials, see :doc:`../tutorials/index`.
 
 .. _cli_all:
 
-.. click:: seismicrna.workflow:cli
+.. click:: seismicrna.wf:cli
     :prog: seismic all
 
 .. _cli_demult:
@@ -83,7 +83,7 @@ seismic graph
 .. click:: seismicrna.graph.scatter:cli
     :prog: seismic graph scatter
 
-.. _cli_fastaclean:
+.. _cli_faclean:
 
 .. click:: seismicrna.faclean:cli
     :prog: seismic faclean
