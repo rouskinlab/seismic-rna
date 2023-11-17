@@ -1,7 +1,7 @@
-seismicrna.fastaclean package
-=============================
+seismicrna.faclean package
+==========================
 
-.. automodule:: seismicrna.fastaclean
+.. automodule:: seismicrna.faclean
    :members:
    :undoc-members:
    :show-inheritance:
@@ -10,13 +10,13 @@ Submodules
 ----------
 
 
-.. automodule:: seismicrna.fastaclean.fastaclean
+.. automodule:: seismicrna.faclean.faclean
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.fastaclean.main
+.. automodule:: seismicrna.faclean.main
    :members:
    :undoc-members:
    :show-inheritance:

@@ -85,5 +85,5 @@ seismic graph
 
 .. _cli_fastaclean:
 
-.. click:: seismicrna.fastaclean:cli
-    :prog: seismic fastaclean
+.. click:: seismicrna.faclean:cli
+    :prog: seismic faclean
