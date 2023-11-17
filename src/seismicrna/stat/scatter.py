@@ -1,22 +1,57 @@
-"""
+import os
+from itertools import product
+from logging import getLogger
 
-SEISMIC-RNA
-========================================================================
+from click import command
+from plotly import graph_objects as go
 
-Expose the sub-packages ``demult``, ``align``, ``relate``, ``cluster``,
-and ``table``, plus the ``__version__`` attribute, at the top level so
-that they can be imported from external modules and scripts::
+from .seqpair import SeqPairGraphRunner, SeqPairTwoAxisGraph, SeqPairGraphWriter
+from .traces import iter_seq_base_scatter_traces
 
-    >>> import seismicrna
-    >>> seismicrna.__version__
-    'x.y.z'
-    >>> from seismicrna import __version__
-    'x.y.z'
+logger = getLogger(__name__)
 
-"""
+COMMAND = __name__.split(os.path.extsep)[-1]
 
-from . import demult, align, relate, clust, table, faclean
-from .core.version import __version__
+
+class SeqScatterGraphRunner(SeqPairGraphRunner):
+
+    @classmethod
+    def writer_type(cls):
+        return SeqScatterGraphWriter
+
+
+@command(COMMAND, params=SeqScatterGraphRunner.params)
+def cli(*args, **kwargs):
+    """ Create scatter plots between pairs of samples at each position
+    in a sequence. """
+    return SeqScatterGraphRunner.run(*args, **kwargs)
+
+
+class SeqScatterGraph(SeqPairTwoAxisGraph):
+
+    @classmethod
+    def graph_type(cls):
+        return COMMAND
+
+    def get_traces(self):
+        for (col, (_, vals1)), (row, (_, vals2)) in product(
+                enumerate(self.data1.items(), start=1),
+                enumerate(self.data2.items(), start=1)
+        ):
+            for trace in iter_seq_base_scatter_traces(vals1, vals2, self.cmap):
+                yield (row, col), trace
+
+    def _figure_layout(self, fig: go.Figure):
+        super()._figure_layout(fig)
+        fig.update_xaxes(gridcolor="#d0d0d0")
+        fig.update_yaxes(gridcolor="#d0d0d0")
+
+
+class SeqScatterGraphWriter(SeqPairGraphWriter):
+
+    @property
+    def graph_type(self):
+        return SeqScatterGraph
 
 ########################################################################
 #                                                                      #

@@ -24,7 +24,7 @@ CMD_GRAPH = "graph"
 CMD_EXPORT = "export"
 CMD_SIM = "sim"
 CMD_TEST = "test"
-CMD_FASTACLEAN = "fastaclean"
+CMD_FACLEAN = "faclean"
 
 ########################################################################
 #                                                                      #
