@@ -50,7 +50,7 @@ from .arg import (opt_phred_enc,
                   opt_min_mapq)
 from .io import FileIO, ReadBatchIO, RefIO
 from .rel import HalfRelPattern
-from .version import __version__, check_compatibility
+from .version import __version__
 from .write import write_mode
 
 logger = getLogger(__name__)
@@ -806,8 +806,6 @@ class Report(FileIO, ABC):
     def __init__(self, **kwargs: Any | Callable[[Report], Any]):
         # Add any missing arguments if they have default values.
         kwargs = self.autofill_report_fields(**kwargs)
-        # Ensure the report is compatible with this version of SEISMIC.
-        check_compatibility(kwargs[VersionF.key], self)
         for name in self.field_names():
             value = kwargs.pop(name)
             if callable(value):
