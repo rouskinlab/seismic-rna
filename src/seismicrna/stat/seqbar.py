@@ -32,7 +32,7 @@ from ..table.load import (PosTableLoader,
                           RelPosTableLoader,
                           MaskPosTableLoader,
                           ClustPosTableLoader,
-                          find_table_files)
+                          find_tables)
 
 logger = getLogger(__name__)
 
@@ -273,7 +273,7 @@ def run(input_path: tuple[str, ...],
         force: bool,
         max_procs: int) -> list[Path]:
     """ Run the graph seqbar module. """
-    writers = list(map(SeqBarGraphWriter, find_table_files(input_path)))
+    writers = list(map(SeqBarGraphWriter, find_tables(input_path)))
     return list(chain(*dispatch([writer.write for writer in writers],
                                 max_procs,
                                 parallel=True,

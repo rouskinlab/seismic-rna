@@ -32,7 +32,7 @@ from ..table.load import (PosTableLoader,
                           RelPosTableLoader,
                           MaskPosTableLoader,
                           ClustPosTableLoader,
-                          find_table_files)
+                          find_tables)
 
 logger = getLogger(__name__)
 
@@ -317,7 +317,7 @@ class SeqPairGraphRunner(object):
             max_procs: int,
             parallel: bool) -> list[Path]:
         """ Run the graph seqpair module. """
-        tables = list(find_table_files(input_path))
+        tables = list(find_tables(input_path))
         if len(tables) % 2 != 0:
             raise ValueError(f"Number of files must be even, but got {tables}")
         writers = [cls.writer_type()(table1_file=t1, table2_file=t2)
