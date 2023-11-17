@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>seismicrna.fastaclean package &mdash; seismic-rna  documentation</title>
+  <title>seismicrna.faclean package &mdash; seismic-rna  documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="../_static/favicon-32x32.ico"/>
@@ -57,8 +57,8 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">seismicrna.fastaclean package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#module-seismicrna.fastaclean.fastaclean">Submodules</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">seismicrna.faclean package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#module-seismicrna.faclean.faclean">Submodules</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
@@ -66,9 +66,10 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html">seismicrna.relate package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.html">seismicrna.sim package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.stat.html">seismicrna.stat package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.table.html">seismicrna.table package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.test.html">seismicrna.test package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.workflow.html">seismicrna.workflow package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.wf.html">seismicrna.wf package</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.html#module-seismicrna.main">Submodules</a></li>
@@ -96,9 +97,9 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="seismicrna.html">seismicrna package</a></li>
-      <li class="breadcrumb-item active">seismicrna.fastaclean package</li>
+      <li class="breadcrumb-item active">seismicrna.faclean package</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/api/seismicrna.fastaclean.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/api/seismicrna.faclean.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -106,32 +107,32 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-seismicrna.fastaclean">
-<span id="seismicrna-fastaclean-package"></span><h1>seismicrna.fastaclean package<a class="headerlink" href="#module-seismicrna.fastaclean" title="Permalink to this headline"></a></h1>
-<section id="module-seismicrna.fastaclean.fastaclean">
-<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.fastaclean.fastaclean" title="Permalink to this headline"></a></h2>
+  <section id="module-seismicrna.faclean">
+<span id="seismicrna-faclean-package"></span><h1>seismicrna.faclean package<a class="headerlink" href="#module-seismicrna.faclean" title="Permalink to this headline"></a></h1>
+<section id="module-seismicrna.faclean.faclean">
+<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.faclean.faclean" title="Permalink to this headline"></a></h2>
 <p>FASTA Cleaner Module</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.fastaclean.fastaclean.FastaCleaner">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.fastaclean.fastaclean.</span></span><span class="sig-name descname"><span class="pre">FastaCleaner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.XNA" title="seismicrna.core.seq.xna.XNA"><span class="pre">seismicrna.core.seq.xna.XNA</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.fastaclean.fastaclean.FastaCleaner" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.faclean.faclean.FastaCleaner">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.faclean.faclean.</span></span><span class="sig-name descname"><span class="pre">FastaCleaner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.XNA" title="seismicrna.core.seq.xna.XNA"><span class="pre">seismicrna.core.seq.xna.XNA</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.faclean.faclean.FastaCleaner" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.fastaclean.fastaclean.FastaCleaner.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ifasta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ofasta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.fastaclean.fastaclean.FastaCleaner.run" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.faclean.faclean.FastaCleaner.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ifasta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ofasta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.faclean.faclean.FastaCleaner.run" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.fastaclean.fastaclean.get_non_seq_regex">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.fastaclean.fastaclean.</span></span><span class="sig-name descname"><span class="pre">get_non_seq_regex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.XNA" title="seismicrna.core.seq.xna.XNA"><span class="pre">seismicrna.core.seq.xna.XNA</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.fastaclean.fastaclean.get_non_seq_regex" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.faclean.faclean.get_non_seq_regex">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.faclean.faclean.</span></span><span class="sig-name descname"><span class="pre">get_non_seq_regex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.XNA" title="seismicrna.core.seq.xna.XNA"><span class="pre">seismicrna.core.seq.xna.XNA</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.faclean.faclean.get_non_seq_regex" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
-<span class="target" id="module-seismicrna.fastaclean.main"></span><section id="fasta-cleaning-module">
+<span class="target" id="module-seismicrna.faclean.main"></span><section id="fasta-cleaning-module">
 <h3>FASTA Cleaning Module<a class="headerlink" href="#fasta-cleaning-module" title="Permalink to this headline"></a></h3>
 <dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.fastaclean.main.run">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.fastaclean.main.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fasta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'./out'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.fastaclean.main.run" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.faclean.main.run">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.faclean.main.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fasta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'./out'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.faclean.main.run" title="Permalink to this definition"></a></dt>
 <dd><p>Clean a FASTA file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

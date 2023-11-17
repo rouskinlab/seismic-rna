@@ -144,20 +144,20 @@ If any illegal characters remain after that, then an error is raised.</p></li>
 <section id="command-line">
 <h3>Command line<a class="headerlink" href="#command-line" title="Permalink to this headline"></a></h3>
 <p>Clean the FASTA file <code class="docutils literal notranslate"><span class="pre">refs.fa</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">fastaclean</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">faclean</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span>
 </pre></div>
 </div>
 <p>This command will output a cleaned FASTA file with the same name as the
 input FASTA file, located in the output directory (default <code class="docutils literal notranslate"><span class="pre">./out</span></code>).
 In this case: <code class="docutils literal notranslate"><span class="pre">out/refs.fa</span></code>.</p>
 <p>To change the output directory, use the <code class="docutils literal notranslate"><span class="pre">--out-dir/-o</span></code> option:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">fastaclean</span> <span class="o">-</span><span class="n">o</span> <span class="n">clean</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">faclean</span> <span class="o">-</span><span class="n">o</span> <span class="n">clean</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span>
 </pre></div>
 </div>
 <p>will output the cleaned FASTA file <code class="docutils literal notranslate"><span class="pre">clean/refs.fa</span></code>.</p>
 <p>By default, this command will not overwrite existing FASTA files.
 To force overwriting, use the option <code class="docutils literal notranslate"><span class="pre">--force</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">fastaclean</span> <span class="o">--</span><span class="n">force</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">faclean</span> <span class="o">--</span><span class="n">force</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span>
 </pre></div>
 </div>
 </section>
@@ -180,7 +180,7 @@ The only characters that can be cleaned automatically are as follows:</p>
 <li><p>standard four nucleotides, plus <code class="docutils literal notranslate"><span class="pre">N</span></code>: unchanged</p></li>
 </ul>
 <p>If the FASTA file contains any other characters, then first remove them
-manually and then rerun <code class="docutils literal notranslate"><span class="pre">fastaclean</span></code>.
+manually and then rerun <code class="docutils literal notranslate"><span class="pre">faclean</span></code>.
 The error message will indicate which line(s) have invalid characters.</p>
 </section>
 </section>
