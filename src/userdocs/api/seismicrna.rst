@@ -17,15 +17,16 @@ Subpackages
    seismicrna.core
    seismicrna.demult
    seismicrna.export
-   seismicrna.fastaclean
+   seismicrna.faclean
    seismicrna.fold
    seismicrna.graph
    seismicrna.mask
    seismicrna.relate
    seismicrna.sim
+   seismicrna.stat
    seismicrna.table
    seismicrna.test
-   seismicrna.workflow
+   seismicrna.wf
 
 Submodules
 ----------
