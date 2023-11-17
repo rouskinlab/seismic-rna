@@ -47,7 +47,7 @@ Command line
 
 Clean the FASTA file ``refs.fa``::
 
-    seismic fastaclean refs.fa
+    seismic faclean refs.fa
 
 This command will output a cleaned FASTA file with the same name as the
 input FASTA file, located in the output directory (default ``./out``).
@@ -55,14 +55,14 @@ In this case: ``out/refs.fa``.
 
 To change the output directory, use the ``--out-dir/-o`` option::
 
-    seismic fastaclean -o clean refs.fa
+    seismic faclean -o clean refs.fa
 
 will output the cleaned FASTA file ``clean/refs.fa``.
 
 By default, this command will not overwrite existing FASTA files.
 To force overwriting, use the option ``--force``::
 
-    seismic fastaclean --force refs.fa
+    seismic faclean --force refs.fa
 
 
 Troubleshooting
@@ -86,7 +86,7 @@ The only characters that can be cleaned automatically are as follows:
 - standard four nucleotides, plus ``N``: unchanged
 
 If the FASTA file contains any other characters, then first remove them
-manually and then rerun ``fastaclean``.
+manually and then rerun ``faclean``.
 The error message will indicate which line(s) have invalid characters.
 
 
