@@ -103,39 +103,8 @@
 <h2>Reference sequence: Structure<a class="headerlink" href="#reference-sequence-structure" title="Permalink to this headline"></a></h2>
 <p>A <code class="docutils literal notranslate"><span class="pre">RefseqIO</span></code> object stores a reference sequence as a space-efficient
 <code class="docutils literal notranslate"><span class="pre">CompressedSeq</span></code> object in the private attribute <code class="docutils literal notranslate"><span class="pre">_s</span></code>.
-The original sequence is available via the cached property <code class="docutils literal notranslate"><span class="pre">refseq</span></code>.</p>
-<p>In a standard sequence, each base is represented by one character, and
-hence occupies 1 byte (8 bits).
-But because each base has only 4 possibilities, each base requires only
-log<sub>2</sub>(4) = 2 bits, shown in the following table:</p>
-<table class="docutils align-default">
-<colgroup>
-<col style="width: 27%" />
-<col style="width: 73%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Base</p></th>
-<th class="head"><p>Binary Code</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>A</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">00</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p>C</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">01</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p>G</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p>T</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">11</span></code></p></td>
-</tr>
-</tbody>
-</table>
-<p>A <code class="docutils literal notranslate"><span class="pre">CompressedSeq</span></code> object uses this code to compress 4 bases
-(= 8 bits/byte ÷ 2 bits/nt) into each byte.
-Each has the following attributes:</p>
+(The original sequence is available via the cached property <code class="docutils literal notranslate"><span class="pre">refseq</span></code>.)
+A <code class="docutils literal notranslate"><span class="pre">CompressedSeq</span></code> object has the following attributes:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">b</span></code> (<code class="docutils literal notranslate"><span class="pre">bytes</span></code>): sequence of bytes, each byte encoding 4 nucleotides</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">s</span></code> (<code class="docutils literal notranslate"><span class="pre">int</span></code>): length of the sequence (number of nucleotides)</p></li>
@@ -153,7 +122,7 @@ This sequence would be compressed into</p>
 <span class="n">r</span> <span class="o">=</span> <span class="kc">False</span>
 </pre></div>
 </div>
-<p>For details on the algorithm, see <span class="xref std std-doc">../../algos/compseq</span>.</p>
+<p>For details on the algorithm, see <a class="reference internal" href="../../algos/compseq.html"><span class="doc">Algorithm for Sequence Compression/Decompression</span></a>.</p>
 </section>
 </section>
 
