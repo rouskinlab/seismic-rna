@@ -6,6 +6,8 @@ from typing import Any
 
 import brotli
 
+from ..write import write_mode
+
 logger = getLogger(__name__)
 
 DEFAULT_BROTLI_LEVEL = 10
@@ -20,13 +22,13 @@ def digest_data(data: bytes):
 def save_brickle(item: Any,
                  file: Path,
                  brotli_level: int = DEFAULT_BROTLI_LEVEL,
-                 overwrite: bool = False):
+                 force: bool = False):
     """ Pickle an object, compress with Brotli, and save to a file. """
     data = brotli.compress(pickle.dumps(item, protocol=PICKLE_PROTOCOL),
                            quality=brotli_level)
-    with open(file, 'wb' if overwrite else 'xb') as f:
+    with open(file, write_mode(force, binary=True)) as f:
         f.write(data)
-    logger.debug(f"Wrote {item} to {file} (Brotli level: {brotli_level})")
+    logger.debug(f"Wrote {item} (brotli level {brotli_level}) to {file}")
     checksum = digest_data(data)
     logger.debug(f"Computed MD5 checksum of {file}: {checksum}")
     return checksum
@@ -36,7 +38,7 @@ def load_brickle(file: Path,
                  checksum: str,
                  check_type: None | type | tuple[type, ...] = None):
     """ Unpickle and return an object from a Brotli-compressed file. """
-    with open(file, 'rb') as f:
+    with open(file, "rb") as f:
         data = f.read()
     if checksum != (digest := digest_data(data)):
         raise ValueError(

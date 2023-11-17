@@ -12,6 +12,7 @@ def fastqc_cmd(fq_unit: FastqUnit,
                extract: bool,
                n_procs: int):
     args = [FASTQC_CMD,
+            "--quiet",
             "--threads", n_procs,
             "--extract" if extract else "--noextract",
             "--outdir", out_prefix.parent]

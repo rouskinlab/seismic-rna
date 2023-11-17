@@ -4,8 +4,9 @@ from os import linesep
 from pathlib import Path
 from typing import Iterable
 
-from ..path import STR_CHARS
 from .xna import XNA
+from ..path import STR_CHARS
+from ..write import write_mode
 
 logger = getLogger(__name__)
 
@@ -126,13 +127,13 @@ def get_fasta_seq(fasta: Path, seq_type: type[XNA], name: str):
 def write_fasta(fasta: Path,
                 refs: Iterable[tuple[str, XNA]],
                 wrap: int = 0,
-                overwrite: bool = False):
+                force: bool = False):
     """ Write an iterable of reference names and DNA sequences to a
     FASTA file. """
     logger.info(f"Began writing FASTA file: {fasta}")
     # Record the names of all the references.
     names = set()
-    with open(fasta, 'w' if overwrite else 'x') as f:
+    with open(fasta, write_mode(force)) as f:
         for name, seq in refs:
             try:
                 # Confirm that the name is not blank.
