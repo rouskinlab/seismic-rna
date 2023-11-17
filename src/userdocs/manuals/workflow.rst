@@ -633,7 +633,7 @@ matches or substitutions, as if they were ``N``\s.
 For example, if the minimum Phred score is 25 (the default) and a base
 ``T`` is called as a match with a Phred score of 20, then it would be
 marked as possibly a match and possibly a subsitution to A, C, or G.
-See :doc:`../data/relate/codes` for more information.
+See :ref:`relate_low_qual` for more information.
 
 Relate setting: Ambiguous insertions and deletions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -704,8 +704,8 @@ See :doc:`../formats/data/brickle` for details on brickle files.
 Relate output file: Reference sequence
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The relate step writes the reference sequence as a ``CompressedSeq``
-object to the file ``refseq.brickle``.
+The relate step writes the reference sequence as a ``RefseqIO`` object
+to the file ``refseq.brickle``.
 See :doc:`../data/relate/refseq` for details on the data structure.
 See :doc:`../formats/data/brickle` for details on brickle files.
 

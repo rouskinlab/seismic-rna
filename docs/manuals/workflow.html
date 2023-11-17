@@ -733,7 +733,7 @@ matches or substitutions, as if they were <code class="docutils literal notransl
 For example, if the minimum Phred score is 25 (the default) and a base
 <code class="docutils literal notranslate"><span class="pre">T</span></code> is called as a match with a Phred score of 20, then it would be
 marked as possibly a match and possibly a subsitution to A, C, or G.
-See <a class="reference internal" href="../data/relate/codes.html"><span class="doc">Relation Vectors</span></a> for more information.</p>
+See <a class="reference internal" href="../data/relate/codes.html#relate-low-qual"><span class="std std-ref">Encoding low-quality base calls</span></a> for more information.</p>
 </section>
 <section id="relate-setting-ambiguous-insertions-and-deletions">
 <h4>Relate setting: Ambiguous insertions and deletions<a class="headerlink" href="#relate-setting-ambiguous-insertions-and-deletions" title="Permalink to this headline"></a></h4>
@@ -793,8 +793,8 @@ See <a class="reference internal" href="../formats/data/brickle.html"><span clas
 </section>
 <section id="relate-output-file-reference-sequence">
 <h4>Relate output file: Reference sequence<a class="headerlink" href="#relate-output-file-reference-sequence" title="Permalink to this headline"></a></h4>
-<p>The relate step writes the reference sequence as a <code class="docutils literal notranslate"><span class="pre">CompressedSeq</span></code>
-object to the file <code class="docutils literal notranslate"><span class="pre">refseq.brickle</span></code>.
+<p>The relate step writes the reference sequence as a <code class="docutils literal notranslate"><span class="pre">RefseqIO</span></code> object
+to the file <code class="docutils literal notranslate"><span class="pre">refseq.brickle</span></code>.
 See <a class="reference internal" href="../data/relate/refseq.html"><span class="doc">Reference Sequence</span></a> for details on the data structure.
 See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for details on brickle files.</p>
 </section>
