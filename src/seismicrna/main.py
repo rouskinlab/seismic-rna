@@ -16,7 +16,7 @@ import os
 
 from click import Context, group, pass_context, version_option
 
-from . import (workflow,
+from . import (wf,
                demult,
                align,
                relate,
@@ -27,7 +27,7 @@ from . import (workflow,
                graph,
                export,
                test,
-               fastaclean,
+               faclean,
                __version__)
 from .core import logs
 from .core.arg import (opt_log,
@@ -80,11 +80,11 @@ def cli(ctx: Context,
                             sort="time")
         else:
             # Run without profiling.
-            workflow.run(**kwargs)
+            wf.run(**kwargs)
 
 
 # Add all commands to the main CLI command group.
-for module in (workflow,
+for module in (wf,
                demult,
                align,
                relate,
@@ -95,7 +95,7 @@ for module in (workflow,
                graph,
                export,
                test,
-               fastaclean):
+               faclean):
     cli.add_command(module.cli)
 
 ########################################################################

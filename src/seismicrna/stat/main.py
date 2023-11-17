@@ -1,22 +1,20 @@
-"""
+from click import group
 
-SEISMIC-RNA
-========================================================================
+from . import seqbar, seqcorr, seqdiff, scatter
+from ..core.arg import CMD_GRAPH
 
-Expose the sub-packages ``demult``, ``align``, ``relate``, ``cluster``,
-and ``table``, plus the ``__version__`` attribute, at the top level so
-that they can be imported from external modules and scripts::
 
-    >>> import seismicrna
-    >>> seismicrna.__version__
-    'x.y.z'
-    >>> from seismicrna import __version__
-    'x.y.z'
+# Group for all graph commands
+@group(CMD_GRAPH)
+def cli():
+    """ Graphing command line interface """
 
-"""
 
-from . import demult, align, relate, clust, table, faclean
-from .core.version import __version__
+# Add graph commands to the CLI.
+cli.add_command(seqbar.cli)
+cli.add_command(seqcorr.cli)
+cli.add_command(seqdiff.cli)
+cli.add_command(scatter.cli)
 
 ########################################################################
 #                                                                      #
