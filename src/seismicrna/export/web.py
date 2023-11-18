@@ -16,6 +16,7 @@ from ..core.arg import (docdef,
                         arg_input_path,
                         opt_samples_file,
                         opt_refs_file,
+                        opt_all_pos,
                         opt_force,
                         opt_max_procs,
                         opt_parallel)
@@ -54,6 +55,7 @@ params = [
     arg_input_path,
     opt_samples_file,
     opt_refs_file,
+    opt_all_pos,
     opt_force,
     opt_max_procs,
     opt_parallel,
@@ -117,14 +119,17 @@ def get_ref_metadata(top: Path,
 def get_sect_metadata(top: Path,
                       sample: str,
                       ref: str,
-                      sect: str):
+                      sect: str,
+                      all_pos: bool):
     dataset = MaskMerger.load(MaskReport.build_path(top=top,
                                                     sample=sample,
                                                     ref=ref,
                                                     sect=sect))
+    positions = (dataset.section.range_int if all_pos
+                 else dataset.section.unmasked_int)
     sect_metadata = {SECT_END5: dataset.end5,
                      SECT_END3: dataset.end3,
-                     SECT_POS: dataset.section.unmasked_int.tolist()}
+                     SECT_POS: positions.tolist()}
     return format_metadata(sect_metadata)
 
 
@@ -140,8 +145,11 @@ def conform_series(series: pd.Series | pd.DataFrame):
 
 
 def format_series(series: pd.Series | pd.DataFrame,
+                  index: pd.Index | None = None,
                   precision: int | None = None):
     series = conform_series(series)
+    if index is not None:
+        series = series.reindex(index)
     if precision is not None:
         series = series.round(precision)
     return series.to_list()
@@ -187,19 +195,25 @@ def iter_pos_table_struct(table: PosTable, order: int, clust: int):
         yield FREE_ENERGY, energies[key]
 
 
-def iter_pos_table_series(table: PosTable, order: int, clust: int):
+def iter_pos_table_series(table: PosTable,
+                          order: int,
+                          clust: int,
+                          all_pos: bool):
+    index = table.section.range if all_pos else None
     for key, rel in POS_DATA.items():
         yield key, format_series(table.fetch_count(rel=rel,
                                                    order=order,
-                                                   clust=clust))
+                                                   clust=clust),
+                                 index=index)
     yield SUBST_RATE, format_series(table.fetch_ratio(rel=SUBST_REL,
                                                       order=order,
                                                       clust=clust,
-                                                      precision=PRECISION))
+                                                      precision=PRECISION),
+                                    index=index)
 
 
-def iter_pos_table_data(table: PosTable, order: int, clust: int):
-    yield from iter_pos_table_series(table, order, clust)
+def iter_pos_table_data(table: PosTable, order: int, clust: int, all_pos: bool):
+    yield from iter_pos_table_series(table, order, clust, all_pos)
     yield from iter_pos_table_struct(table, order, clust)
 
 
@@ -224,9 +238,9 @@ def iter_clust_table_data(table: ClustFreqTable, order: int, clust: int):
     yield CLUST_PROP, proportion
 
 
-def iter_table_data(table: Table, order: int, clust: int):
+def iter_table_data(table: Table, order: int, clust: int, all_pos: bool):
     if isinstance(table, PosTable):
-        yield from iter_pos_table_data(table, order, clust)
+        yield from iter_pos_table_data(table, order, clust, all_pos)
     elif isinstance(table, ReadTable):
         yield from iter_read_table_data(table, order, clust)
     elif isinstance(table, ClustFreqTable):
@@ -235,11 +249,11 @@ def iter_table_data(table: Table, order: int, clust: int):
         raise TypeError(f"Invalid table type: {type(table).__name__}")
 
 
-def get_table_data(table: Table):
+def get_table_data(table: Table, all_pos: bool):
     data = dict()
     for order, clust in table.header.clusts:
         name = format_clust_name(order, clust, allow_zero=True)
-        data[name] = dict(iter_table_data(table, order, clust))
+        data[name] = dict(iter_table_data(table, order, clust, all_pos))
     return data
 
 
@@ -247,7 +261,8 @@ def get_sample_data(top: Path,
                     sample: str,
                     tables: list[Table], *,
                     samples_metadata: dict[str, dict],
-                    refs_metadata: dict[str, dict]):
+                    refs_metadata: dict[str, dict],
+                    all_pos: bool):
     # Cache results from the metadata functions to improve speed.
     ref_metadata = cache(partial(get_ref_metadata,
                                  refs_metadata=refs_metadata))
@@ -267,8 +282,8 @@ def get_sample_data(top: Path,
         if ref not in data:
             data[ref] = ref_metadata(top, sample, ref)
         if sect not in data[ref]:
-            data[ref][sect] = sect_metadata(top, sample, ref, sect)
-        for clust, clust_data in get_table_data(table).items():
+            data[ref][sect] = sect_metadata(top, sample, ref, sect, all_pos)
+        for clust, clust_data in get_table_data(table, all_pos).items():
             if clust not in data[ref][sect]:
                 data[ref][sect][clust] = dict()
             data[ref][sect][clust].update(clust_data)
@@ -291,6 +306,7 @@ def export_sample(top_sample: tuple[Path, str], *args, force: bool, **kwargs):
 def run(input_path: tuple[str, ...], *,
         samples_file: str,
         refs_file: str,
+        all_pos: bool,
         force: bool,
         max_procs: int,
         parallel: bool) -> list[Path]:
@@ -312,6 +328,7 @@ def run(input_path: tuple[str, ...], *,
                          args=list(tables.items()),
                          kwargs=dict(samples_metadata=samples_metadata,
                                      refs_metadata=refs_metadata,
+                                     all_pos=all_pos,
                                      force=force)))
 
 
