@@ -798,6 +798,13 @@ opt_refs_file = Option(
     help="CSV file of metadata for each reference"
 )
 
+opt_all_pos = Option(
+    ("--all-pos/--unmasked-pos",),
+    type=bool,
+    default=False,
+    help="Export all positions (not just unmasked positions)"
+)
+
 # Logging options
 opt_verbose = Option(
     ("--verbose", "-v"),
