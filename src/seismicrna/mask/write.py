@@ -143,7 +143,7 @@ class RelMasker(object):
         """ Positions masked for having a G or U base. """
         return (self.section.get_mask(self.section.MASK_GU)
                 if self.exclude_gu
-                else np.ndarray([], dtype=int))
+                else np.array([], dtype=int))
 
     @property
     def pos_polya(self):
