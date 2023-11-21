@@ -3,11 +3,10 @@ Version information for SEISMIC-RNA
 """
 
 from logging import getLogger
-from typing import Any
 
 logger = getLogger(__name__)
 
-__version__ = "0.9.8"
+__version__ = "0.10.0"
 
 VERSION_DELIM = "."
 
@@ -29,26 +28,6 @@ MAJOR, MINOR, PATCH = parse_version()
 
 def format_version(major: int = MAJOR, minor: int = MINOR, patch: int = PATCH):
     return VERSION_DELIM.join(map(str, (major, minor, patch)))
-
-
-def compatible_versions(version1: str, version2: str = __version__):
-    v1 = parse_version(version1)[:2]
-    v2 = parse_version(version2)[:2]
-    return v1 == v2 or v1 in COMPATIBLE.get(v2, set())
-
-
-def check_compatibility(version: str,
-                        what: Any = "An item",
-                        error: bool = True,
-                        warn: bool = True):
-    if not compatible_versions(version):
-        state = "is not" if error else "may not be"
-        msg = (f"{what} is labeled with version {version} of SEISMIC-RNA, "
-               f"which {state} compatible with your version ({__version__})")
-        if error:
-            raise RuntimeError(msg)
-        if warn:
-            logger.warning(msg)
 
 ########################################################################
 #                                                                      #
