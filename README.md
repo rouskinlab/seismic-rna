@@ -40,3 +40,4 @@ of [Silvi Rouskin](https://rouskinlab.com) at Harvard Medical School:
 - [Yves Martin](https://github.com/yvesmartindestaillades)
 - [Scott Grote](https://github.com/heWhosShouldersBlockTheSun)
 - [Albéric de Lajarte](https://github.com/AlbericDeLajarte)
+- [Justin Aruda](https://github.com/justinaruda)

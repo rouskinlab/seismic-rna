@@ -9,6 +9,7 @@ authors = [
     {name="Yves Martin"},
     {name="Scott Grote"},
     {name="Alberic de Lajarte"},
+    {name="Justin Aruda"},
 ]
 description = "RNA Structure Ensemble Inference via Sequencing, Mutation Identification, and Clustering"
 readme = "README.md"
