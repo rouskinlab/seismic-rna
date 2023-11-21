@@ -10,10 +10,6 @@ __version__ = "0.10.0"
 
 VERSION_DELIM = "."
 
-COMPATIBLE = {
-    (0, 9): {},
-}
-
 
 def parse_version(version: str = __version__):
     try:
