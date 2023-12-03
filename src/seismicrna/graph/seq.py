@@ -1,15 +1,15 @@
 from .base import OneSeqGraph
 from ..core.arg import CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
-from ..table.load import PosTableLoader, ClustPosTableLoader
+from ..table.base import PosTable, ClustPosTable
 
 
-def get_table_params(table: PosTableLoader | ClustPosTableLoader,
+def get_table_params(table: PosTable | ClustPosTable,
                      arrange: str,
                      es_type: type[OneSeqGraph] | None = None,
                      cs_type: type[OneSeqGraph] | None = None,
                      em_type: type[OneSeqGraph] | None = None,
                      cm_type: type[OneSeqGraph] | None = None):
-    if isinstance(table, ClustPosTableLoader):
+    if isinstance(table, ClustPosTable):
         single_type = cs_type
         multi_type = cm_type
         if arrange == CLUST_INDIV:
@@ -25,7 +25,7 @@ def get_table_params(table: PosTableLoader | ClustPosTableLoader,
             clusters_params = [dict()]
         else:
             raise ValueError(f"Invalid value for arrange: {repr(arrange)}")
-    elif isinstance(table, PosTableLoader):
+    elif isinstance(table, PosTable):
         single_type = es_type
         multi_type = em_type
         clusters_params = [dict()]

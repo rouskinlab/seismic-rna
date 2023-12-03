@@ -21,7 +21,7 @@ def get_seq_base_scatter_trace(xdata: pd.Series,
                          f"but got {xdata.index} and {ydata.index}")
     # Validate the base.
     if base not in DNA.alph():
-        raise ValueError(f"Invalid DNA base: '{base}'")
+        raise ValueError(f"Invalid DNA base: {repr(base)}")
     # Find the position of every base of that type.
     seq_mask = xdata.index.get_level_values(BASE_NAME) == base
     # Get the values at those positions, excluding NaN values.
@@ -29,8 +29,8 @@ def get_seq_base_scatter_trace(xdata: pd.Series,
     yvals = ydata.loc[seq_mask].dropna()
     # Join the x and y values into one DataFrame with only the positions
     # that are not missing in both series.
-    xvals.name = 'x'
-    yvals.name = 'y'
+    xvals.name = "x"
+    yvals.name = "y"
     vals = pd.concat([xvals, yvals], axis=1, join="inner")
     # Set the index of the values to the numerical positions.
     vals.index = vals.index.get_level_values(POS_NAME)

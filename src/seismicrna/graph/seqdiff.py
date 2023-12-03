@@ -7,24 +7,11 @@ from plotly import graph_objects as go
 
 from .seqpair import SeqPairGraphRunner, SeqPairGraphWriter, SeqPairOneAxisGraph
 from .traces import iter_seq_base_bar_traces
+from ..core.arg import opt_rels, opt_y_ratio, opt_quantile, opt_arrange
 
 logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
-
-
-class SeqDiffGraphRunner(SeqPairGraphRunner):
-
-    @classmethod
-    def writer_type(cls):
-        return SeqDiffGraphWriter
-
-
-@command(COMMAND, params=SeqPairGraphRunner.params)
-def cli(*args, **kwargs):
-    """ Create bar graphs of differences between pairs of samples at
-    each position in a sequence. """
-    return SeqDiffGraphRunner.run(*args, **kwargs)
 
 
 class SeqDiffGraph(SeqPairOneAxisGraph):
@@ -57,9 +44,27 @@ class SeqDiffGraph(SeqPairOneAxisGraph):
 
 class SeqDiffGraphWriter(SeqPairGraphWriter):
 
-    @property
-    def graph_type(self):
+    @classmethod
+    def graph_type(cls):
         return SeqDiffGraph
+
+
+class SeqDiffGraphRunner(SeqPairGraphRunner):
+
+    @classmethod
+    def writer_type(cls):
+        return SeqDiffGraphWriter
+
+    @classmethod
+    def var_params(cls):
+        return [opt_rels, opt_y_ratio, opt_quantile, opt_arrange]
+
+
+@command(COMMAND, params=SeqPairGraphRunner.params())
+def cli(*args, **kwargs):
+    """ Create bar graphs of differences between pairs of samples at
+    each position in a sequence. """
+    return SeqDiffGraphRunner.run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #
