@@ -60,7 +60,7 @@ class SeqDiffGraphRunner(SeqPairGraphRunner):
         return [opt_rels, opt_y_ratio, opt_quantile, opt_arrange]
 
 
-@command(COMMAND, params=SeqDiffGraphRunner.params())
+@command(COMMAND, params=SeqPairGraphRunner.params())
 def cli(*args, **kwargs):
     """ Create bar graphs of differences between pairs of samples at
     each position in a sequence. """

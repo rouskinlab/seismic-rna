@@ -36,10 +36,10 @@ CLUST_ORDER = "order"
 CLUST_UNITE = "unite"
 CLUST_ARRANGE_OPTIONS = CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
 
-METHOD_PEARSON = "r"
-METHOD_SPEARMAN = "rho"
-METHOD_DETERM = "R2"
-CORREL_OPTIONS = [METHOD_PEARSON, METHOD_SPEARMAN, METHOD_DETERM]
+CORREL_PEARSON = "r"
+CORREL_SPEARMAN = "rho"
+CORREL_DETERM = "R2"
+CORREL_OPTIONS = [CORREL_PEARSON, CORREL_SPEARMAN, CORREL_DETERM]
 
 # Configuration options
 
@@ -220,8 +220,8 @@ opt_barcode_start = Option(
     default=0,
     help="index of start of barcode")
 
-opt_barcode_end = Option(
-    ("--barcode-end",),
+opt_barcode_length = Option(
+    ("--barcode-length",),
     type=int,
     default=0,
     help="length of barcode")
@@ -776,11 +776,11 @@ opt_winmin = Option(
 opt_correl = Option(
     ("--correl",),
     type=Choice(CORREL_OPTIONS),
-    default=METHOD_PEARSON,
+    default=CORREL_PEARSON,
     help=(f"Correlation coefficient: "
-          f"{repr(METHOD_PEARSON)} = Pearson (r), "
-          f"{repr(METHOD_SPEARMAN)} = Spearman (ρ), "
-          f"{repr(METHOD_DETERM)} = Determination (R^2)")
+          f"{repr(CORREL_PEARSON)} = Pearson (r), "
+          f"{repr(CORREL_SPEARMAN)} = Spearman (ρ), "
+          f"{repr(CORREL_DETERM)} = Determination (R^2)")
 )
 
 opt_hist_bins = Option(
