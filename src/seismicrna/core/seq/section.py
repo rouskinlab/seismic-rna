@@ -171,11 +171,16 @@ def seq_pos_to_index(seq: DNA, positions: Sequence[int], start: int):
     return index
 
 
-def index_to_pos(index: pd.MultiIndex):
-    """ Get the positions from a MultiIndex of (pos, base) pairs. """
+def verify_index_names(index: pd.MultiIndex):
+    """ Verify that the names of the index are correct. """
     if tuple(index.names) != SEQ_INDEX_NAMES:
         raise ValueError(f"Expected index with names {SEQ_INDEX_NAMES}, "
                          f"but got {index.names}")
+
+
+def index_to_pos(index: pd.MultiIndex):
+    """ Get the positions from a MultiIndex of (pos, base) pairs. """
+    verify_index_names(index)
     positions = index.get_level_values(POS_NAME)
     if positions.has_duplicates:
         raise ValueError(f"Index has duplicate positions:\n{positions}")
@@ -200,7 +205,117 @@ def index_to_seq(index: pd.MultiIndex, allow_gaps: bool = False):
     return DNA("".join(index.get_level_values(BASE_NAME)))
 
 
+def get_shared_index(indexes: Iterable[pd.MultiIndex], empty_ok: bool = False):
+    """ Get the shared index among all those given, as follows:
+
+    - If indexes contains no elements and empty_ok is True, then return
+      an empty MultiIndex with levels named 'Positions' and 'Base'.
+    - If indexes contains one element or multiple identical elements,
+      and each has two levels named 'Positions' and 'Base', then return
+      the first element.
+    - Otherwise, raise an error.
+
+    Parameters
+    ----------
+    indexes: Iterable[pandas.MultiIndex]
+        Indexes to compare.
+    empty_ok: bool = False
+        If given no indexes, then default to an empty index (if True)
+        or raise a ValueError (if False).
+
+    Returns
+    -------
+    pandas.MultiIndex
+        The shared index.
+    """
+    # Ensure indexes is a list-like object.
+    indexes = list(indexes)
+    try:
+        # Get the first index.
+        index = indexes[0]
+    except IndexError:
+        if empty_ok:
+            # Return an empty MultiIndex.
+            return pd.MultiIndex.from_arrays([np.array([], dtype=int),
+                                              np.array([], dtype=str)],
+                                             names=SEQ_INDEX_NAMES)
+        raise ValueError("No indexes were given")
+    # Ensure the first index is a MultiIndex with levels 'Positions' and
+    # 'Base'.
+    if tuple(index.names) != SEQ_INDEX_NAMES:
+        raise ValueError(
+            f"Expected levels named {SEQ_INDEX_NAMES}, but got {index.names}")
+    # Ensure all indexes are identical.
+    for i, other in enumerate(indexes[1:], start=1):
+        if not index.equals(other):
+            raise ValueError(f"Indexes 0 and {i} differ: {index} ≠ {other}")
+    return index
+
+
+def window_to_margins(window: int):
+    """ Compute the 5' and 3' margins from the size of the window. """
+    if not isinstance(window, int):
+        raise TypeError(f"window must be int, but got {type(window).__name__}")
+    if window <= 0:
+        raise ValueError(f"window must be ≥ 1, but got {window}")
+    margin3 = window // 2
+    margin5 = window - margin3 - 1
+    return margin5, margin3
+
+
+def get_windows(*series: pd.Series,
+                size: int,
+                min_count: int = 1,
+                include_nan: bool = False):
+    # Determine the index; the index of all series must match.
+    index = get_shared_index((s.index for s in series), empty_ok=True)
+    # Calculate the 5' and 3' margins.
+    margin5, margin3 = window_to_margins(size)
+    if min_count > size:
+        logger.warning(f"min_count ({min_count}) is > window size ({size}), "
+                       "so no positions will have enough data")
+    # Yield each window from each series.
+    for center in index_to_pos(index):
+        # Determine the 5' and 3' ends of the window.
+        end5 = center - margin5
+        end3 = center + margin3
+        # Slice the window from each series.
+        windows = tuple(s.loc[end5: end3] for s in series)
+        if include_nan:
+            if min_count > 0 and windows[0].size < min_count:
+                # If there are insufficient positions in this window,
+                # then skip it.
+                continue
+        else:
+            # Determine which positions have no NaN value in any series.
+            no_nan = np.logical_not(reduce(np.logical_or,
+                                           map(np.isnan, windows)))
+            if min_count > 0 and np.count_nonzero(no_nan) < min_count:
+                # If there are insufficient positions where no series
+                # has a NaN value, then skip this window.
+                continue
+            if not np.all(no_nan):
+                # Keep only positions with no NaN value in any series.
+                windows = tuple(w[no_nan] for w in windows)
+        # Yield the window from each series.
+        yield center, windows
+
+
 def hyphenate_ends(end5: int, end3: int):
+    """ Return the 5' and 3' ends as a hyphenated string.
+
+    Parameters
+    ----------
+    end5: int
+        5' end (1-indexed)
+    end3: int
+        3' end (1-indexed)
+
+    Returns
+    -------
+    str
+        Hyphenated 5' and 3' ends
+    """
     return f"{end5}-{end3}"
 
 

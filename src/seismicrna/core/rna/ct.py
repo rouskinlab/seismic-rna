@@ -2,7 +2,8 @@ from logging import getLogger
 from pathlib import Path
 from typing import TextIO
 
-from ..seq import RNA
+from .. import path
+from ..seq import RNA, Section
 
 logger = getLogger(__name__)
 
@@ -15,8 +16,8 @@ def _parse_int(text: str, name: str, zero: bool = False) -> int:
     try:
         value = int(text)
     except ValueError:
-        value = None
-    if value is None or value < 0 or (value == 0 and not zero):
+        value = -1
+    if value < 0 or (value == 0 and not zero):
         s = "non-negative" if zero else "positive"
         raise ValueError(f"{name} must be a {s} integer, but got {repr(text)}")
     return value
@@ -163,21 +164,40 @@ def _parse_ct_structure(ct_file: TextIO,
     return seq, pairs_list
 
 
-def parse_ct(ct_path: Path, start: int | None = None):
-    """ Yield the sequence and list of base pairs for each structure
-    from a connectivity table (CT) file. """
+def parse_ct(ct_path: Path, seq5: int | None = None):
+    """ Yield the title, section, and base pairs for each structure in a
+    connectivity table (CT) file.
+
+    Parameters
+    ----------
+    ct_path: Path
+        Path to the connectivity table file.
+    seq5: int | None = None
+        Positional number to assign the 5' end of the given part of the
+        reference sequence. Must be ≥ 1.
+
+    Returns
+    -------
+    Generator[tuple[str, Section, list[tuple[int, int]]], Any, None]
+    """
+    # Determine the reference and section names from the path.
+    fields = path.parse(ct_path, *path.CT_FILE_SEGS)
+    ref = fields[path.REF]
+    sect = fields[path.SECT]
     # If a starting position was given, then offset the index by that
     # position minus 1 (because CT files are 1-indexed).
-    offset = start if start is None else start - 1
+    offset = seq5 if seq5 is None else seq5 - 1
     # Parse each structure in the CT file.
     with open(ct_path) as file:
         while header_line := file.readline():
             # Get the title and length of the current structure.
-            curr_title, curr_length = _parse_ct_header_line(header_line)
+            title, length = _parse_ct_header_line(header_line)
             # Determine the sequence and base pairs.
-            curr_seq, curr_pairs = _parse_ct_structure(file, curr_length, offset)
-            # Yield the title, sequence, and base pairs.
-            yield curr_title, curr_seq, curr_pairs
+            seq, pairs = _parse_ct_structure(file, length, offset)
+            # Make a section from the sequence.
+            section = Section(ref, seq.rt(), seq5=seq5, name=sect)
+            # Yield the title, section, and base pairs.
+            yield title, section, pairs
 
 ########################################################################
 #                                                                      #

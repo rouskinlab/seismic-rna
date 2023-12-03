@@ -135,13 +135,21 @@ class Rna2dStructure(RnaSection):
         return f"{self.header}\n{data.to_string(index=False, header=False)}\n"
 
 
-def from_ct(ct_file: Path, section: Section):
-    section_rna_seq = section.seq.tr()
-    for title, seq, pairs in parse_ct(ct_file, section.end5):
-        if seq == section_rna_seq:
-            yield Rna2dStructure(title=title, section=section, pairs=pairs)
+def from_ct(ct_path: Path, section: Section | None = None):
+    titles: set[str] = set()
+    for (title,
+         section_,
+         pairs) in parse_ct(ct_path,
+                            section.end5 if section is not None else None):
+        if section is not None and section_ != section:
+            logger.error(f"Expected {section}, but got {section}")
         else:
-            logger.error(f"Expected {section_rna_seq}, but got {seq}")
+            if title in titles:
+                logger.warning(f"Title {repr(title)} is repeated in {ct_path}")
+            else:
+                titles.add(title)
+            yield Rna2dStructure(title=title, section=section_, pairs=pairs)
+
 
 ########################################################################
 #                                                                      #

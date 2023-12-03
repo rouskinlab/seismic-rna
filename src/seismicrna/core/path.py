@@ -515,6 +515,8 @@ WebAppFileSeg = Segment("webapp",
                         frmt="{sample}__webapp{ext}")
 
 # Path segment patterns
+REF_DIR_SEGS = SampSeg, CmdSeg, RefSeg
+SECT_DIR_SEGS = (*REF_DIR_SEGS, SectSeg)
 FASTA_STEP_SEGS = StepSeg, FastaSeg
 FASTA_INDEX_DIR_STEP_SEGS = StepSeg, RefSeg
 FASTQ_SEGS = FastqSeg,
@@ -527,10 +529,12 @@ FASTQC_SEGS = CmdSeg, StepSeg, SampSeg
 FASTQC_DEMULT_SEGS = CmdSeg, StepSeg, SampSeg, RefSeg
 XAM_SEGS = SampSeg, CmdSeg, XamSeg
 XAM_STEP_SEGS = SampSeg, CmdSeg, StepSeg, XamSeg
-CLUST_TAB_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, ClustTabSeg
-CLUST_COUNT_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, ClustCountSeg
-TABLE_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, TableSeg
-FOLD_SECT_DIR_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, FoldSectSeg
+CLUST_TAB_SEGS = (*SECT_DIR_SEGS, ClustTabSeg)
+CLUST_COUNT_SEGS = (*SECT_DIR_SEGS, ClustCountSeg)
+TABLE_SEGS = (*SECT_DIR_SEGS, TableSeg)
+FOLD_SECT_DIR_SEGS = (*SECT_DIR_SEGS, FoldSectSeg)
+CT_FILE_SEGS = (*FOLD_SECT_DIR_SEGS, ConnectTableSeg)
+DB_FILE_SEGS = (*FOLD_SECT_DIR_SEGS, DotBracketSeg)
 
 
 # Paths ################################################################
