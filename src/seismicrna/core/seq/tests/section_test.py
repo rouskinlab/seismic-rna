@@ -3,16 +3,21 @@ import unittest as ut
 import numpy as np
 import pandas as pd
 
-from ..section import (BASE_NAME,
-                       FULL_NAME,
-                       POS_INDEX,
-                       POS_NAME,
-                       Section,
-                       index_to_pos,
-                       index_to_seq,
-                       intersection,
-                       seq_pos_to_index)
-from ..xna import DNA
+from seismicrna.core.seq.section import (BASE_NAME,
+                                         FULL_NAME,
+                                         POS_INDEX,
+                                         POS_NAME,
+                                         SEQ_INDEX_NAMES,
+                                         Section,
+                                         get_shared_index,
+                                         get_windows,
+                                         hyphenate_ends,
+                                         index_to_pos,
+                                         index_to_seq,
+                                         intersection,
+                                         seq_pos_to_index,
+                                         window_to_margins)
+from seismicrna.core.seq.xna import DNA
 
 
 class TestConstants(ut.TestCase):
@@ -29,6 +34,16 @@ class TestConstants(ut.TestCase):
 
     def test_base_name(self):
         self.assertEqual(BASE_NAME, "Base")
+
+    def test_seq_index_names(self):
+        self.assertEqual(SEQ_INDEX_NAMES, (POS_NAME, BASE_NAME))
+
+
+class TestHyphenateEnds(ut.TestCase):
+    """ Test function `hyphenate_ends`. """
+
+    def test_hyphenate(self):
+        self.assertEqual(hyphenate_ends(8, 91), "8-91")
 
 
 class TestSectionInit(ut.TestCase):
@@ -1067,6 +1082,385 @@ class TestSeqPosToIndex(ut.TestCase):
                                "Unsorted positions: .*",
                                seq_pos_to_index,
                                seq, pos, start)
+
+
+class TestGetSharedIndex(ut.TestCase):
+    """ Test function `get_shared_index`. """
+
+    def test_zero_valid(self):
+        index = get_shared_index([], empty_ok=True)
+        self.assertIsInstance(index, pd.MultiIndex)
+        self.assertEqual(tuple(index.names), SEQ_INDEX_NAMES)
+
+    def test_zero_invalid(self):
+        self.assertRaisesRegex(ValueError,
+                               "No indexes were given",
+                               get_shared_index,
+                               [])
+
+    def test_one_valid(self):
+        index = pd.MultiIndex.from_arrays([[4, 6, 10, 11, 12],
+                                           ["A", "C", "G", "T", "N"]],
+                                          names=SEQ_INDEX_NAMES)
+        self.assertIs(get_shared_index([index]), index)
+
+    def test_one_invalid(self):
+        index = pd.MultiIndex.from_arrays([[4, 6, 10, 11, 12],
+                                           ["A", "C", "G", "T", "N"]],
+                                          names=[BASE_NAME, POS_NAME])
+        self.assertRaisesRegex(ValueError,
+                               "Expected levels named",
+                               get_shared_index,
+                               [index])
+
+    def test_two_valid(self):
+        index0 = pd.MultiIndex.from_arrays([[4, 6, 10, 11, 12],
+                                            ["A", "C", "G", "T", "N"]],
+                                           names=SEQ_INDEX_NAMES)
+        index1 = pd.MultiIndex.from_arrays([[4, 6, 10, 11, 12],
+                                            ["A", "C", "G", "T", "N"]],
+                                           names=SEQ_INDEX_NAMES)
+        self.assertIs(get_shared_index([index0, index1]), index0)
+
+    def test_two_invalid(self):
+        index0 = pd.MultiIndex.from_arrays([[4, 6, 10, 11, 12],
+                                            ["A", "C", "G", "T", "N"]],
+                                           names=SEQ_INDEX_NAMES)
+        index1 = pd.MultiIndex.from_arrays([[4, 6, 10, 11, 12],
+                                            ["A", "C", "G", "T", "A"]],
+                                           names=SEQ_INDEX_NAMES)
+        self.assertRaisesRegex(ValueError,
+                               "Indexes 0 and 1 differ",
+                               get_shared_index,
+                               [index0, index1])
+
+
+class TestWindowToMargins(ut.TestCase):
+    """ Test function `window_to_margins`. """
+
+    def test_window_margins(self):
+        expected = {1: (0, 0),
+                    2: (0, 1),
+                    3: (1, 1),
+                    4: (1, 2),
+                    5: (2, 2)}
+        for window, margins in expected.items():
+            self.assertEqual(window_to_margins(window), margins)
+
+    def test_window_length(self):
+        for window in range(1, 101):
+            self.assertEqual(sum(window_to_margins(window)) + 1, window)
+
+    def test_window_0(self):
+        self.assertRaisesRegex(ValueError,
+                               "window must be ≥ 1, but got 0",
+                               window_to_margins,
+                               0)
+
+    def test_window_float(self):
+        self.assertRaisesRegex(TypeError,
+                               "window must be int, but got float",
+                               window_to_margins,
+                               1.)
+
+
+class TestGetWindows(ut.TestCase):
+    """ Test function `get_windows`. """
+
+    def compare(self, expected: list, *series: pd.Series, **kwargs):
+        windows = list(get_windows(*series, **kwargs))
+        for (wcenter, wseries), (ecenter, eseries) in zip(windows,
+                                                          expected,
+                                                          strict=True):
+            if wcenter != ecenter:
+                print("----------")
+                print(wcenter)
+                print(wseries)
+                print(ecenter)
+                print(eseries)
+                print("==========")
+            self.assertEqual(wcenter, ecenter)
+            for window, expect in zip(wseries, eseries, strict=True):
+                self.assertTrue(np.allclose(window, expect, equal_nan=True))
+
+    def test_empty(self):
+        self.assertEqual(list(get_windows(size=1)), [])
+
+    def test_1_series_size_1_min_1_excl_nan(self):
+        series = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.],
+                           seq_pos_to_index(DNA("ACGTNGATC"),
+                                            [1, 2, 4, 5, 6, 7, 8, 9],
+                                            start=1))
+        expected = [(1, ([3.],)),
+                    (2, ([1.],)),
+                    (4, ([6.],)),
+                    (6, ([8.],)),
+                    (8, ([4.],)),
+                    (9, ([5.],))]
+        self.compare(expected, series, size=1)
+
+    def test_1_series_size_1_min_1_incl_nan(self):
+        series = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.],
+                           seq_pos_to_index(DNA("ACGTNGATC"),
+                                            [1, 2, 4, 5, 6, 7, 8, 9],
+                                            start=1))
+        expected = [(1, ([3.],)),
+                    (2, ([1.],)),
+                    (4, ([6.],)),
+                    (5, ([np.nan],)),
+                    (6, ([8.],)),
+                    (7, ([np.nan],)),
+                    (8, ([4.],)),
+                    (9, ([5.],))]
+        self.compare(expected, series, size=1, include_nan=True)
+
+    def test_1_series_size_1_min_0_excl_nan(self):
+        series = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.],
+                           seq_pos_to_index(DNA("ACGTNGATC"),
+                                            [1, 2, 4, 5, 6, 7, 8, 9],
+                                            start=1))
+        expected = [(1, ([3.],)),
+                    (2, ([1.],)),
+                    (4, ([6.],)),
+                    (5, ([],)),
+                    (6, ([8.],)),
+                    (7, ([],)),
+                    (8, ([4.],)),
+                    (9, ([5.],))]
+        self.compare(expected, series, size=1, min_count=0)
+
+    def test_1_series_size_1_min_0_incl_nan(self):
+        series = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.],
+                           seq_pos_to_index(DNA("ACGTNGATC"),
+                                            [1, 2, 4, 5, 6, 7, 8, 9],
+                                            start=1))
+        expected = [(1, ([3.],)),
+                    (2, ([1.],)),
+                    (4, ([6.],)),
+                    (5, ([np.nan],)),
+                    (6, ([8.],)),
+                    (7, ([np.nan],)),
+                    (8, ([4.],)),
+                    (9, ([5.],))]
+        self.compare(expected, series, size=1, min_count=0, include_nan=True)
+
+    def test_1_series_size_2_min_1_excl_nan(self):
+        series = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.],
+                           seq_pos_to_index(DNA("ACGTNGATC"),
+                                            [1, 2, 4, 5, 6, 7, 8, 9],
+                                            start=1))
+        expected = [(1, ([3., 1.],)),
+                    (2, ([1.],)),
+                    (4, ([6.],)),
+                    (5, ([8.],)),
+                    (6, ([8.],)),
+                    (7, ([4.],)),
+                    (8, ([4., 5.],)),
+                    (9, ([5.],))]
+        self.compare(expected, series, size=2)
+
+    def test_1_series_size_2_min_1_incl_nan(self):
+        series = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.],
+                           seq_pos_to_index(DNA("ACGTNGATC"),
+                                            [1, 2, 4, 5, 6, 7, 8, 9],
+                                            start=1))
+        expected = [(1, ([3., 1.],)),
+                    (2, ([1.],)),
+                    (4, ([6., np.nan],)),
+                    (5, ([np.nan, 8.],)),
+                    (6, ([8., np.nan],)),
+                    (7, ([np.nan, 4.],)),
+                    (8, ([4., 5.],)),
+                    (9, ([5.],))]
+        self.compare(expected, series, size=2, include_nan=True)
+
+    def test_1_series_size_2_min_2_excl_nan(self):
+        series = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.],
+                           seq_pos_to_index(DNA("ACGTNGATC"),
+                                            [1, 2, 4, 5, 6, 7, 8, 9],
+                                            start=1))
+        expected = [(1, ([3., 1.],)),
+                    (8, ([4., 5.],))]
+        self.compare(expected, series, size=2, min_count=2)
+
+    def test_1_series_size_2_min_2_incl_nan(self):
+        series = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.],
+                           seq_pos_to_index(DNA("ACGTNGATC"),
+                                            [1, 2, 4, 5, 6, 7, 8, 9],
+                                            start=1))
+        expected = [(1, ([3., 1.],)),
+                    (4, ([6., np.nan],)),
+                    (5, ([np.nan, 8.],)),
+                    (6, ([8., np.nan],)),
+                    (7, ([np.nan, 4.],)),
+                    (8, ([4., 5.],))]
+        self.compare(expected, series, size=2, min_count=2, include_nan=True)
+
+    def test_2_series_size_1_min_1_excl_nan(self):
+        index = seq_pos_to_index(DNA("ACGTNGATC"),
+                                 [1, 2, 4, 5, 6, 7, 8, 9],
+                                 start=1)
+        series1 = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.], index)
+        series2 = pd.Series([2., 7., 0., np.nan, 5., 9., np.nan, 6.], index)
+        expected = [(1, ([3.], [2.])),
+                    (2, ([1.], [7.])),
+                    (4, ([6.], [0.])),
+                    (6, ([8.], [5.])),
+                    (9, ([5.], [6.]))]
+        self.compare(expected, series1, series2, size=1)
+
+    def test_2_series_size_1_min_1_incl_nan(self):
+        index = seq_pos_to_index(DNA("ACGTNGATC"),
+                                 [1, 2, 4, 5, 6, 7, 8, 9],
+                                 start=1)
+        series1 = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.], index)
+        series2 = pd.Series([2., 7., 0., np.nan, 5., 9., np.nan, 6.], index)
+        expected = [(1, ([3.], [2.])),
+                    (2, ([1.], [7.])),
+                    (4, ([6.], [0.])),
+                    (5, ([np.nan], [np.nan])),
+                    (6, ([8.], [5.])),
+                    (7, ([np.nan], [9.])),
+                    (8, ([4.], [np.nan])),
+                    (9, ([5.], [6.]))]
+        self.compare(expected, series1, series2, size=1, include_nan=True)
+
+    def test_2_series_size_1_min_0_excl_nan(self):
+        index = seq_pos_to_index(DNA("ACGTNGATC"),
+                                 [1, 2, 4, 5, 6, 7, 8, 9],
+                                 start=1)
+        series1 = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.], index)
+        series2 = pd.Series([2., 7., 0., np.nan, 5., 9., np.nan, 6.], index)
+        expected = [(1, ([3.], [2.])),
+                    (2, ([1.], [7.])),
+                    (4, ([6.], [0.])),
+                    (5, ([], [])),
+                    (6, ([8.], [5.])),
+                    (7, ([], [])),
+                    (8, ([], [])),
+                    (9, ([5.], [6.]))]
+        self.compare(expected, series1, series2, size=1, min_count=0)
+
+    def test_2_series_size_1_min_0_incl_nan(self):
+        index = seq_pos_to_index(DNA("ACGTNGATC"),
+                                 [1, 2, 4, 5, 6, 7, 8, 9],
+                                 start=1)
+        series1 = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.], index)
+        series2 = pd.Series([2., 7., 0., np.nan, 5., 9., np.nan, 6.], index)
+        expected = [(1, ([3.], [2.])),
+                    (2, ([1.], [7.])),
+                    (4, ([6.], [0.])),
+                    (5, ([np.nan], [np.nan])),
+                    (6, ([8.], [5.])),
+                    (7, ([np.nan], [9.])),
+                    (8, ([4.], [np.nan])),
+                    (9, ([5.], [6.]))]
+        self.compare(expected,
+                     series1,
+                     series2,
+                     size=1,
+                     min_count=0,
+                     include_nan=True)
+
+    def test_2_series_size_2_min_1_excl_nan(self):
+        index = seq_pos_to_index(DNA("ACGTNGATC"),
+                                 [1, 2, 4, 5, 6, 7, 8, 9],
+                                 start=1)
+        series1 = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.], index)
+        series2 = pd.Series([2., 7., 0., np.nan, 5., 9., np.nan, 6.], index)
+        expected = [(1, ([3., 1.], [2., 7.])),
+                    (2, ([1.], [7.])),
+                    (4, ([6.], [0.])),
+                    (5, ([8.], [5.])),
+                    (6, ([8.], [5.])),
+                    (8, ([5.], [6.])),
+                    (9, ([5.], [6.]))]
+        self.compare(expected, series1, series2, size=2)
+
+    def test_2_series_size_2_min_1_incl_nan(self):
+        index = seq_pos_to_index(DNA("ACGTNGATC"),
+                                 [1, 2, 4, 5, 6, 7, 8, 9],
+                                 start=1)
+        series1 = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.], index)
+        series2 = pd.Series([2., 7., 0., np.nan, 5., 9., np.nan, 6.], index)
+        expected = [(1, ([3., 1.], [2., 7.])),
+                    (2, ([1.], [7.])),
+                    (4, ([6., np.nan], [0., np.nan])),
+                    (5, ([np.nan, 8.], [np.nan, 5.])),
+                    (6, ([8., np.nan], [5., 9.])),
+                    (7, ([np.nan, 4.], [9., np.nan])),
+                    (8, ([4., 5.], [np.nan, 6.])),
+                    (9, ([5.], [6.]))]
+        self.compare(expected, series1, series2, size=2, include_nan=True)
+
+    def test_2_series_size_2_min_2_excl_nan(self):
+        index = seq_pos_to_index(DNA("ACGTNGATC"),
+                                 [1, 2, 4, 5, 6, 7, 8, 9],
+                                 start=1)
+        series1 = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.], index)
+        series2 = pd.Series([2., 7., 0., np.nan, 5., 9., np.nan, 6.], index)
+        expected = [(1, ([3., 1.], [2., 7.]))]
+        self.compare(expected, series1, series2, size=2, min_count=2)
+
+    def test_2_series_size_2_min_2_incl_nan(self):
+        index = seq_pos_to_index(DNA("ACGTNGATC"),
+                                 [1, 2, 4, 5, 6, 7, 8, 9],
+                                 start=1)
+        series1 = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.], index)
+        series2 = pd.Series([2., 7., 0., np.nan, 5., 9., np.nan, 6.], index)
+        expected = [(1, ([3., 1.], [2., 7.])),
+                    (4, ([6., np.nan], [0., np.nan])),
+                    (5, ([np.nan, 8.], [np.nan, 5.])),
+                    (6, ([8., np.nan], [5., 9.])),
+                    (7, ([np.nan, 4.], [9., np.nan])),
+                    (8, ([4., 5.], [np.nan, 6.]))]
+        self.compare(expected,
+                     series1,
+                     series2,
+                     size=2,
+                     min_count=2,
+                     include_nan=True)
+
+    def test_2_series_size_2_min_0_excl_nan(self):
+        index = seq_pos_to_index(DNA("ACGTNGATC"),
+                                 [1, 2, 4, 5, 6, 7, 8, 9],
+                                 start=1)
+        series1 = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.], index)
+        series2 = pd.Series([2., 7., 0., np.nan, 5., 9., np.nan, 6.], index)
+        expected = [(1, ([3., 1.], [2., 7.])),
+                    (2, ([1.], [7.])),
+                    (4, ([6.], [0.])),
+                    (5, ([8.], [5.])),
+                    (6, ([8.], [5.])),
+                    (7, ([], [])),
+                    (8, ([5.], [6.])),
+                    (9, ([5.], [6.]))]
+        self.compare(expected, series1, series2, size=2, min_count=0)
+
+    def test_2_series_size_2_min_0_incl_nan(self):
+        index = seq_pos_to_index(DNA("ACGTNGATC"),
+                                 [1, 2, 4, 5, 6, 7, 8, 9],
+                                 start=1)
+        series1 = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.], index)
+        series2 = pd.Series([2., 7., 0., np.nan, 5., 9., np.nan, 6.], index)
+        expected = [(1, ([3., 1.], [2., 7.])),
+                    (2, ([1.], [7.])),
+                    (4, ([6., np.nan], [0., np.nan])),
+                    (5, ([np.nan, 8.], [np.nan, 5.])),
+                    (6, ([8., np.nan], [5., 9.])),
+                    (7, ([np.nan, 4.], [9., np.nan])),
+                    (8, ([4., 5.], [np.nan, 6.])),
+                    (9, ([5.], [6.]))]
+        self.compare(expected,
+                     series1,
+                     series2,
+                     size=2,
+                     min_count=0,
+                     include_nan=True)
+
+
+if __name__ == "__main__":
+    ut.main()
 
 ########################################################################
 #                                                                      #

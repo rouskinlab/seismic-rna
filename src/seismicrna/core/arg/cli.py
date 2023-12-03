@@ -36,6 +36,11 @@ CLUST_ORDER = "order"
 CLUST_UNITE = "unite"
 CLUST_ARRANGE_OPTIONS = CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
 
+CORREL_PEARSON = "r"
+CORREL_SPEARMAN = "rho"
+CORREL_DETERM = "R2"
+CORREL_OPTIONS = [CORREL_PEARSON, CORREL_SPEARMAN, CORREL_DETERM]
+
 # Configuration options
 
 opt_config = Option(
@@ -742,16 +747,40 @@ opt_rels = Option(
 
 opt_x_ratio = Option(
     ("--x-ratio/--x-count",),
-    default=False,
     type=bool,
+    default=False,
     help="Graph counts or ratios on the x-axis"
 )
 
 opt_y_ratio = Option(
     ("--y-ratio/--y-count",),
-    default=True,
     type=bool,
+    default=True,
     help="Graph counts or ratios on the y-axis"
+)
+
+opt_window = Option(
+    ("--window",),
+    type=int,
+    default=30,
+    help="Size of the sliding window, in nucleotides"
+)
+
+opt_winmin = Option(
+    ("--winmin",),
+    type=int,
+    default=10,
+    help="Minimum number of data in the sliding window"
+)
+
+opt_correl = Option(
+    ("--correl",),
+    type=Choice(CORREL_OPTIONS),
+    default=CORREL_PEARSON,
+    help=(f"Correlation coefficient: "
+          f"{repr(CORREL_PEARSON)} = Pearson (r), "
+          f"{repr(CORREL_SPEARMAN)} = Spearman (ρ), "
+          f"{repr(CORREL_DETERM)} = Determination (R^2)")
 )
 
 opt_hist_bins = Option(

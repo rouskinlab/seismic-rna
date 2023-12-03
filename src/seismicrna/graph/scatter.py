@@ -7,24 +7,11 @@ from plotly import graph_objects as go
 
 from .seqpair import SeqPairGraphRunner, SeqPairTwoAxisGraph, SeqPairGraphWriter
 from .traces import iter_seq_base_scatter_traces
+from ..core.arg import opt_rels, opt_y_ratio, opt_arrange, opt_quantile
 
 logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
-
-
-class SeqScatterGraphRunner(SeqPairGraphRunner):
-
-    @classmethod
-    def writer_type(cls):
-        return SeqScatterGraphWriter
-
-
-@command(COMMAND, params=SeqScatterGraphRunner.params)
-def cli(*args, **kwargs):
-    """ Create scatter plots between pairs of samples at each position
-    in a sequence. """
-    return SeqScatterGraphRunner.run(*args, **kwargs)
 
 
 class SeqScatterGraph(SeqPairTwoAxisGraph):
@@ -49,9 +36,27 @@ class SeqScatterGraph(SeqPairTwoAxisGraph):
 
 class SeqScatterGraphWriter(SeqPairGraphWriter):
 
-    @property
-    def graph_type(self):
+    @classmethod
+    def graph_type(cls):
         return SeqScatterGraph
+
+
+class SeqScatterGraphRunner(SeqPairGraphRunner):
+
+    @classmethod
+    def var_params(cls):
+        return [opt_rels, opt_y_ratio, opt_arrange, opt_quantile]
+
+    @classmethod
+    def writer_type(cls):
+        return SeqScatterGraphWriter
+
+
+@command(COMMAND, params=SeqScatterGraphRunner.params())
+def cli(*args, **kwargs):
+    """ Create scatter plots between pairs of samples at each position
+    in a sequence. """
+    return SeqScatterGraphRunner.run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

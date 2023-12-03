@@ -32,7 +32,7 @@ from ..table.load import (PosTableLoader,
                           RelPosTableLoader,
                           MaskPosTableLoader,
                           ClustPosTableLoader,
-                          find_tables)
+                          find_table_files)
 
 logger = getLogger(__name__)
 
@@ -68,10 +68,6 @@ class SeqBarGraphWriter(OneTableGraphWriter):
 
 class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
     """ Bar graph wherein each bar represents one sequence position. """
-
-    @classmethod
-    def get_cmap_type(cls):
-        return SeqColorMap
 
     def __init__(self, *, rels: str, y_ratio: bool, quantile: float, **kwargs):
         super().__init__(**kwargs)
@@ -204,6 +200,10 @@ class ClusterSeqBarGraph(SeqBarGraph, ABC):
 class SingleRelSeqBarGraph(SeqBarGraph, ABC):
     """ Bar graph where each bar shows one relationship of the base. """
 
+    @classmethod
+    def get_cmap_type(cls):
+        return SeqColorMap
+
 
 class MultiRelSeqBarGraph(SeqBarGraph, ABC):
     """ Stacked bar graph wherein each stacked bar represents multiple
@@ -273,7 +273,7 @@ def run(input_path: tuple[str, ...],
         force: bool,
         max_procs: int) -> list[Path]:
     """ Run the graph seqbar module. """
-    writers = list(map(SeqBarGraphWriter, find_tables(input_path)))
+    writers = list(map(SeqBarGraphWriter, find_table_files(input_path)))
     return list(chain(*dispatch([writer.write for writer in writers],
                                 max_procs,
                                 parallel=True,

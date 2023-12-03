@@ -1,6 +1,7 @@
 from abc import ABC
 from logging import getLogger
 from pathlib import Path
+from typing import Iterable
 
 import pandas as pd
 
@@ -135,14 +136,14 @@ def load(table_file: Path):
     raise ValueError(f"Failed to open table: {table_file}")
 
 
-def find_tables(tables: tuple[str, ...]):
+def find_table_files(tables: Iterable[str | Path]):
     """ Yield a file for each given file/directory of a table. """
     yield from path.find_files_chain(map(Path, tables), [path.TableSeg])
 
 
-def load_tables(tables: tuple[str, ...]):
+def load_tables(tables: Iterable[str | Path]):
     """ Yield a table for each given file/directory of a table. """
-    for file in find_tables(tables):
+    for file in find_table_files(tables):
         try:
             yield load(file)
         except Exception as error:

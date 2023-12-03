@@ -1,23 +1,21 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from itertools import chain, product
+from itertools import chain, combinations, product
 from logging import getLogger
 from pathlib import Path
 from typing import Callable
 
 import numpy as np
 import pandas as pd
+from click import Argument, Option
 
 from .base import PRECISION, CartesianGraph, TwoTableSeqGraph, make_subject
 from .color import SeqColorMap
 from .seq import get_table_params
 from .write import TwoTableGraphWriter
-from ..core.arg import (docdef,
-                        arg_input_path,
-                        opt_rels,
-                        opt_y_ratio,
-                        opt_quantile,
-                        opt_arrange,
+from ..core.arg import (arg_input_path,
+                        opt_correl,
+                        opt_window,
                         opt_csv,
                         opt_html,
                         opt_pdf,
@@ -32,7 +30,7 @@ from ..table.load import (PosTableLoader,
                           RelPosTableLoader,
                           MaskPosTableLoader,
                           ClustPosTableLoader,
-                          find_tables)
+                          find_table_files)
 
 logger = getLogger(__name__)
 
@@ -257,45 +255,32 @@ class SeqPairTwoAxisGraph(SeqPairGraph, ABC):
 
 class SeqPairGraphWriter(TwoTableGraphWriter, ABC):
 
-    @property
+    @classmethod
     @abstractmethod
-    def graph_type(self) -> type[SeqPairGraph]:
+    def graph_type(cls) -> type[SeqPairGraph]:
         """ Type of the graph to iterate. """
 
-    def iter(self, rels_sets: tuple[str, ...],
+    def iter(self, rels: tuple[str, ...],
              arrange: str, y_ratio: bool, quantile: float):
         _, _, csparams1 = get_table_params(self.table1, arrange)
         _, _, csparams2 = get_table_params(self.table2, arrange)
         for cparams1, cparams2 in product(csparams1, csparams2):
-            for rels in rels_sets:
-                yield self.graph_type(table1=self.table1,
-                                      table2=self.table2,
-                                      rel=rels,
-                                      y_ratio=y_ratio,
-                                      quantile=quantile,
-                                      order1=cparams1.get("order"),
-                                      clust1=cparams1.get("clust"),
-                                      order2=cparams2.get("order"),
-                                      clust2=cparams2.get("clust"))
+            for rel in rels:
+                yield self.graph_type()(table1=self.table1,
+                                        table2=self.table2,
+                                        rel=rel,
+                                        y_ratio=y_ratio,
+                                        quantile=quantile,
+                                        order1=cparams1.get("order"),
+                                        clust1=cparams1.get("clust"),
+                                        order2=cparams2.get("order"),
+                                        clust2=cparams2.get("clust"))
 
 
 # Helper functions #####################################################
 
 
-class SeqPairGraphRunner(object):
-    params = [
-        arg_input_path,
-        opt_rels,
-        opt_y_ratio,
-        opt_quantile,
-        opt_arrange,
-        opt_csv,
-        opt_html,
-        opt_pdf,
-        opt_force,
-        opt_max_procs,
-        opt_parallel,
-    ]
+class SeqPairGraphRunner(ABC):
 
     @classmethod
     @abstractmethod
@@ -303,37 +288,43 @@ class SeqPairGraphRunner(object):
         """ Type of SeqPairGraphWriter. """
 
     @classmethod
-    @docdef.auto()
+    @abstractmethod
+    def var_params(cls) -> list[Argument | Option]:
+        """ Variable parameters for the command line. """
+        return [opt_correl, opt_window]
+
+    @classmethod
+    def params(cls) -> list[Argument | Option]:
+        """ Parameters for the command line. """
+        return [arg_input_path] + cls.var_params() + [opt_csv,
+                                                      opt_html,
+                                                      opt_pdf,
+                                                      opt_force,
+                                                      opt_max_procs,
+                                                      opt_parallel]
+
+    @classmethod
     def run(cls,
-            input_path: tuple[str, ...],
-            rels: tuple[str, ...], *,
-            y_ratio: bool,
-            quantile: float,
-            arrange: str,
+            input_path: tuple[str, ...], *,
             csv: bool,
             html: bool,
             pdf: bool,
             force: bool,
             max_procs: int,
-            parallel: bool) -> list[Path]:
+            parallel: bool,
+            **kwargs) -> list[Path]:
         """ Run the graph seqpair module. """
-        tables = list(find_tables(input_path))
-        if len(tables) % 2 != 0:
-            raise ValueError(f"Number of files must be even, but got {tables}")
         writers = [cls.writer_type()(table1_file=t1, table2_file=t2)
-                   for t1, t2 in zip(tables[0::2], tables[1::2], strict=True)]
+                   for t1, t2 in combinations(find_table_files(input_path), 2)]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,
                                     parallel,
                                     pass_n_procs=False,
-                                    kwargs=dict(rels_sets=rels,
-                                                y_ratio=y_ratio,
-                                                quantile=quantile,
-                                                arrange=arrange,
-                                                csv=csv,
+                                    kwargs=dict(csv=csv,
                                                 html=html,
                                                 pdf=pdf,
-                                                force=force))))
+                                                force=force,
+                                                **kwargs))))
 
 ########################################################################
 #                                                                      #

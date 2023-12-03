@@ -13,7 +13,7 @@ from ..core import path
 from ..core.header import format_clust_names
 from ..core.seq import DNA
 from ..core.write import need_write
-from ..table.base import Table, PosTable
+from ..table.base import Table, PosTable, RelTable, MaskTable, ClustTable
 
 logger = getLogger(__name__)
 
@@ -56,9 +56,6 @@ class GraphBase(ABC):
         """ Separator between column and row title. """
         return " "
 
-    def __init__(self, *, cmap: str | None = None):
-        self._cmap_name = cmap
-
     @cached_property
     @abstractmethod
     def data(self) -> Any:
@@ -68,16 +65,6 @@ class GraphBase(ABC):
     @abstractmethod
     def title(self) -> str:
         """ Title of the graph. """
-
-    @classmethod
-    @abstractmethod
-    def get_cmap_type(cls) -> type[ColorMap]:
-        """ Type of the color map. """
-
-    @property
-    def cmap(self) -> ColorMap:
-        """ Color map of the graph. """
-        return get_cmap(self.get_cmap_type(), self._cmap_name)
 
     @abstractmethod
     def get_traces(self) -> Iterable[tuple[tuple[int, int], go.Trace]]:
@@ -195,6 +182,24 @@ class GraphBase(ABC):
         return files
 
 
+class ColorMapGraph(GraphBase, ABC):
+    """ Graph with an explicit color map. """
+
+    @classmethod
+    @abstractmethod
+    def get_cmap_type(cls) -> type[ColorMap]:
+        """ Type of the color map. """
+
+    def __init__(self, *, cmap: str | None = None, **kwargs):
+        super().__init__(**kwargs)
+        self._cmap_name = cmap
+
+    @property
+    def cmap(self) -> ColorMap:
+        """ Color map of the graph. """
+        return get_cmap(self.get_cmap_type(), self._cmap_name)
+
+
 class SampleGraph(GraphBase, ABC):
     """ Graph of one or more samples. """
 
@@ -258,7 +263,7 @@ class OneRefGraph(GraphBase, ABC):
                                             path.SECT: self.sect}
 
 
-class OneSeqGraph(OneRefGraph, ABC):
+class OneSeqGraph(OneRefGraph, ColorMapGraph, ABC):
     """ Graph of one reference with an explicit sequence. """
 
     @property
@@ -268,7 +273,12 @@ class OneSeqGraph(OneRefGraph, ABC):
 
 
 class OneTableGraph(OneSampleGraph, OneRefGraph, ABC):
-    """ Graph of data from one TableLoader. """
+    """ Graph of data from one Table. """
+
+    @classmethod
+    @abstractmethod
+    def get_table_type(cls) -> type[Table | PosTable]:
+        """ Type of Table for this graph. """
 
     def __init__(self, *, table: Table | PosTable, **kwargs):
         super().__init__(**kwargs)
@@ -278,15 +288,15 @@ class OneTableGraph(OneSampleGraph, OneRefGraph, ABC):
                             f"but got type '{type(table).__name__}'")
         self._table = table
 
-    @classmethod
-    @abstractmethod
-    def get_table_type(cls) -> type[Table | PosTable]:
-        """ Type of TableLoader for this graph. """
-
     @property
     def table(self):
         """ Table of data. """
         return self._table
+
+    @property
+    def source(self):
+        """ Source of the data. """
+        return get_source_name(self.table)
 
     @property
     def top(self):
@@ -436,6 +446,16 @@ class CartesianGraph(GraphBase, ABC):
                                                y_title=self.y_title,
                                                shared_xaxes="all",
                                                shared_yaxes="all")
+
+
+def get_source_name(table: Table):
+    if isinstance(table, RelTable):
+        return "Related"
+    if isinstance(table, MaskTable):
+        return "Masked"
+    if isinstance(table, ClustTable):
+        return "Clustered"
+    raise TypeError(f"Invalid table type: {type(table).__name__}")
 
 ########################################################################
 #                                                                      #
