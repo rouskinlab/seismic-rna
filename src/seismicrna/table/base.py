@@ -165,15 +165,10 @@ class Table(ABC):
     def sect(self) -> str:
         """ Name of the table's section. """
 
-    @property
-    @abstractmethod
-    def _data(self) -> pd.DataFrame:
-        """ Table's raw data frame. """
-
     @cached_property
-    def data(self):
+    @abstractmethod
+    def data(self) -> pd.DataFrame:
         """ Table's data frame. """
-        return self._data
 
     @cached_property
     def header(self):
@@ -211,9 +206,19 @@ class RelTypeTable(Table, ABC):
     def transposed(cls):
         return False
 
+    @classmethod
+    @abstractmethod
+    def _get_select_kwargs(cls, **kwargs) -> dict[str, Any]:
+        """ Get the keyword arguments for header.select. """
+
+    @abstractmethod
+    def _fetch_data(self, columns: pd.Index, **kwargs) -> pd.DataFrame:
+        """ Fetch data from the table. """
+
     def fetch_count(self, **kwargs) -> pd.Series | pd.DataFrame:
         """ Fetch counts of one or more columns. """
-        return self.data.loc[:, self.header.select(**kwargs)]
+        select_kwargs = self._get_select_kwargs(**kwargs)
+        return self._fetch_data(self.header.select(**select_kwargs), **kwargs)
 
     def fetch_ratio(self, *,
                     quantile: float = 0.,
@@ -223,7 +228,7 @@ class RelTypeTable(Table, ABC):
         # Fetch the data for the numerator.
         numer = self.fetch_count(**kwargs)
         # Fetch the data for the denominator.
-        denom = self.data.loc[:, _get_denom_cols(numer.columns)]
+        denom = self._fetch_data(_get_denom_cols(numer.columns), **kwargs)
         # Compute the ratio of the numerator and the denominator.
         ratio = winsorize(numer / denom.values, quantile)
         # Round the ratio to the desired precision.
@@ -271,9 +276,13 @@ class PosTable(RelTypeTable, ABC):
     def index_depth(cls):
         return len(SEQ_INDEX_NAMES)
 
+    @classmethod
+    def _get_select_kwargs(cls, *, exclude_masked: bool = False, **kwargs):
+        return kwargs
+
     @cached_property
     def range(self):
-        return self._data.index
+        return self.data.index
 
     @cached_property
     def range_int(self):
@@ -293,7 +302,7 @@ class PosTable(RelTypeTable, ABC):
 
     @cached_property
     def masked_bool(self):
-        return self._data.isna().all(axis=1)
+        return self.data.isna().all(axis=1)
 
     @cached_property
     def unmasked_bool(self):
@@ -301,7 +310,7 @@ class PosTable(RelTypeTable, ABC):
 
     @cached_property
     def unmasked(self):
-        return self._data.index[self.unmasked_bool]
+        return self.data.index[self.unmasked_bool]
 
     @cached_property
     def unmasked_int(self):
@@ -319,9 +328,12 @@ class PosTable(RelTypeTable, ABC):
         section.add_mask(self.MASK, self.unmasked_int, invert=True)
         return section
 
-    @cached_property
-    def data(self):
-        return self._data.loc[self.unmasked]
+    def _fetch_data(self,
+                    columns: pd.Index, *,
+                    exclude_masked: bool = False,
+                    **kwargs):
+        return (self.data.loc[self.unmasked, columns] if exclude_masked
+                else self.data.loc[:, columns])
 
     @abstractmethod
     def _iter_profiles(self,
@@ -355,9 +367,16 @@ class ReadTable(RelTypeTable, ABC):
     def index_depth(cls):
         return len(RB_INDEX_NAMES)
 
+    @classmethod
+    def _get_select_kwargs(cls, **kwargs):
+        return kwargs
+
     @property
     def reads(self):
-        return self._data.index.values
+        return self.data.index.values
+
+    def _fetch_data(self, columns: pd.Index, **kwargs):
+        return self.data.loc[:, columns]
 
 
 # Table by Source and Index ############################################

@@ -1,4 +1,5 @@
 from abc import ABC
+from functools import cached_property
 from logging import getLogger
 from pathlib import Path
 
@@ -60,10 +61,7 @@ class TableWriter(Table, ABC):
     def write(self, force: bool):
         """ Write the table's rounded data to the table's CSV file. """
         if need_write(self.path, force):
-            # Write self._data instead of self.data because the former
-            # includes any positions that were masked out, while these
-            # positions are not present in the latter.
-            data = self._data.T if self.transposed() else self._data
+            data = self.data.T if self.transposed() else self.data
             data.round(decimals=PRECISION).to_csv(self.path)
         return self.path
 
@@ -72,15 +70,15 @@ class TableWriter(Table, ABC):
 
 class PosTableWriter(TableWriter, PosTable, ABC):
 
-    @property
-    def _data(self):
+    @cached_property
+    def data(self):
         return self.tabulator.table_per_pos
 
 
 class ReadTableWriter(TableWriter, ReadTable, ABC):
 
-    @property
-    def _data(self):
+    @cached_property
+    def data(self):
         return self.tabulator.table_per_read
 
 
@@ -112,8 +110,8 @@ class ClustReadTableWriter(ReadTableWriter, ClustReadTable):
 
 class ClustFreqTableWriter(TableWriter, ClustFreqTable):
 
-    @property
-    def _data(self):
+    @cached_property
+    def data(self):
         return self.tabulator.table_per_clust
 
 
