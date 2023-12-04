@@ -1,4 +1,5 @@
 from abc import ABC
+from functools import cached_property
 from logging import getLogger
 from pathlib import Path
 from typing import Iterable
@@ -53,8 +54,8 @@ class TableLoader(Table, ABC):
     def sect(self) -> str:
         return self._sect
 
-    @property
-    def _data(self):
+    @cached_property
+    def data(self):
         data = (pd.read_csv(self.path,
                             index_col=self.header_rows(),
                             header=self.index_cols()).T
