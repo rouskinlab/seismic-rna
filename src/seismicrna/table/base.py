@@ -86,6 +86,12 @@ def _get_denom_cols(numer_cols: pd.Index):
                     name=numer_cols.name)
 
 
+def _get_select_kwargs(**kwargs):
+    """ Get the keyword arguments for selecting from the header. """
+    keys = RelClustHeader.level_keys()
+    return {key: arg for key, arg in kwargs.items() if key in keys}
+
+
 # Table Base Classes ###################################################
 
 class Table(ABC):
@@ -206,18 +212,23 @@ class RelTypeTable(Table, ABC):
     def transposed(cls):
         return False
 
-    @classmethod
     @abstractmethod
-    def _get_select_kwargs(cls, **kwargs) -> dict[str, Any]:
-        """ Get the keyword arguments for header.select. """
+    def _loc_data(self, columns: pd.Index, **kwargs) -> pd.DataFrame:
+        """ Locate data in the table. """
 
-    @abstractmethod
-    def _fetch_data(self, columns: pd.Index, **kwargs) -> pd.DataFrame:
+    def _fetch_data(self, *args, squeeze: bool = False, **kwargs):
         """ Fetch data from the table. """
+        data = self._loc_data(*args, **kwargs)
+        if squeeze:
+            if data.columns.size != 1:
+                raise ValueError("Fetching data with squeeze=True requires "
+                                 f"exactly 1 column, but got {data.columns}")
+            return data[data.columns[0]]
+        return data
 
     def fetch_count(self, **kwargs) -> pd.Series | pd.DataFrame:
         """ Fetch counts of one or more columns. """
-        select_kwargs = self._get_select_kwargs(**kwargs)
+        select_kwargs = _get_select_kwargs(**kwargs)
         return self._fetch_data(self.header.select(**select_kwargs), **kwargs)
 
     def fetch_ratio(self, *,
@@ -227,8 +238,23 @@ class RelTypeTable(Table, ABC):
         """ Fetch ratios of one or more columns. """
         # Fetch the data for the numerator.
         numer = self.fetch_count(**kwargs)
+        # Determine the columns of the numerator.
+        if isinstance(numer, pd.Series):
+            # If squeeze is True, then numer is a Series.
+            if isinstance(numer.name, tuple):
+                # The series came from a MultiIndex with multiple names.
+                columns = pd.MultiIndex.from_tuples(
+                    [numer.name],
+                    names=RelClustHeader.level_names()
+                )
+            else:
+                # The series came from an Index with one name.
+                columns = pd.Index([numer.name], name=REL_NAME)
+        else:
+            # Otherwise, numer is a DataFrame with defined columns.
+            columns = numer.columns
         # Fetch the data for the denominator.
-        denom = self._fetch_data(_get_denom_cols(numer.columns), **kwargs)
+        denom = self._fetch_data(_get_denom_cols(columns), **kwargs)
         # Compute the ratio of the numerator and the denominator.
         ratio = winsorize(numer / denom.values, quantile)
         # Round the ratio to the desired precision.
@@ -275,10 +301,6 @@ class PosTable(RelTypeTable, ABC):
     @classmethod
     def index_depth(cls):
         return len(SEQ_INDEX_NAMES)
-
-    @classmethod
-    def _get_select_kwargs(cls, *, exclude_masked: bool = False, **kwargs):
-        return kwargs
 
     @cached_property
     def range(self):
@@ -328,10 +350,10 @@ class PosTable(RelTypeTable, ABC):
         section.add_mask(self.MASK, self.unmasked_int, invert=True)
         return section
 
-    def _fetch_data(self,
-                    columns: pd.Index, *,
-                    exclude_masked: bool = False,
-                    **kwargs):
+    def _loc_data(self,
+                  columns: pd.Index, *,
+                  exclude_masked: bool = False,
+                  **kwargs):
         return (self.data.loc[self.unmasked, columns] if exclude_masked
                 else self.data.loc[:, columns])
 
@@ -355,6 +377,22 @@ class PosTable(RelTypeTable, ABC):
                                        order,
                                        clust)
 
+    def resample(self, fraction: float = 1., **kwargs):
+        """ Resample the reads and return a new DataFrame.
+
+        Parameters
+        ----------
+        fraction: float = 1.
+            Number of reads to resample, expressed as a fraction of the
+            original number of reads. Must be ≥ 0; may be > 1.
+        **kwargs: Any
+            Keyword arguments passed to `self.fetch_count`
+        """
+        # Compute the total coverage at each position.
+        cover = fraction * self.fetch_count(rels=COVER_REL,
+                                            exclude_masked=True)
+        original = self.fetch_count(**kwargs)
+
 
 class ReadTable(RelTypeTable, ABC):
     """ Table indexed by read. """
@@ -367,15 +405,11 @@ class ReadTable(RelTypeTable, ABC):
     def index_depth(cls):
         return len(RB_INDEX_NAMES)
 
-    @classmethod
-    def _get_select_kwargs(cls, **kwargs):
-        return kwargs
-
     @property
     def reads(self):
         return self.data.index.values
 
-    def _fetch_data(self, columns: pd.Index, **kwargs):
+    def _loc_data(self, columns: pd.Index, **kwargs):
         return self.data.loc[:, columns]
 
 
@@ -407,7 +441,8 @@ class ProfilePosTable(PosTable, ABC):
         """ Yield RNA mutational profiles from a table. """
         for section in sections if sections is not None else [self.section]:
             for ho, hc in self.header.clusts:
-                if (not order or order == ho) and (not clust or clust == hc):
+                if ((order is None or order == ho)
+                        and (clust is None or clust == hc)):
                     name = format_clust_name(ho, hc, allow_zero=True)
                     yield RnaProfile(title=path.fill_whitespace(name),
                                      section=section,
@@ -416,7 +451,8 @@ class ProfilePosTable(PosTable, ABC):
                                      data=self.fetch_ratio(quantile=quantile,
                                                            rel=MUTAT_REL,
                                                            order=ho,
-                                                           clust=hc))
+                                                           clust=hc,
+                                                           squeeze=True))
 
 
 class MaskPosTable(MaskTable, ProfilePosTable, ABC):
