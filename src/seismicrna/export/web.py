@@ -144,17 +144,6 @@ def conform_series(series: pd.Series | pd.DataFrame):
     return series
 
 
-def format_series(series: pd.Series | pd.DataFrame,
-                  index: pd.Index | None = None,
-                  precision: int | None = None):
-    series = conform_series(series)
-    if index is not None:
-        series = series.reindex(index)
-    if precision is not None:
-        series = series.round(precision)
-    return series.to_list()
-
-
 def get_db_structs(table: PosTable,
                    order: int | None = None,
                    clust: int | None = None):
@@ -199,17 +188,21 @@ def iter_pos_table_series(table: PosTable,
                           order: int,
                           clust: int,
                           all_pos: bool):
-    index = table.section.range if all_pos else None
+    exclude_masked = not all_pos
     for key, rel in POS_DATA.items():
-        yield key, format_series(table.fetch_count(rel=rel,
-                                                   order=order,
-                                                   clust=clust),
-                                 index=index)
-    yield SUBST_RATE, format_series(table.fetch_ratio(rel=SUBST_REL,
-                                                      order=order,
-                                                      clust=clust,
-                                                      precision=PRECISION),
-                                    index=index)
+        yield key, conform_series(
+            table.fetch_count(rel=rel,
+                              order=order,
+                              clust=clust,
+                              exclude_masked=exclude_masked)
+        ).to_list()
+    yield SUBST_RATE, conform_series(
+        table.fetch_ratio(rel=SUBST_REL,
+                          order=order,
+                          clust=clust,
+                          exclude_masked=exclude_masked,
+                          precision=PRECISION)
+    ).to_list()
 
 
 def iter_pos_table_data(table: PosTable, order: int, clust: int, all_pos: bool):
