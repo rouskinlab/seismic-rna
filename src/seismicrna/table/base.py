@@ -3,6 +3,7 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any, Generator, Iterable
 
+import numpy as np
 import pandas as pd
 
 from ..core import path
@@ -84,12 +85,6 @@ def _get_denom_cols(numer_cols: pd.Index):
                          f"but got {repr(numer_cols.name)}")
     return pd.Index(list(map(_get_denom_rel, numer_cols)),
                     name=numer_cols.name)
-
-
-def _get_select_kwargs(**kwargs):
-    """ Get the keyword arguments for selecting from the header. """
-    keys = RelClustHeader.level_keys()
-    return {key: arg for key, arg in kwargs.items() if key in keys}
 
 
 # Table Base Classes ###################################################
@@ -212,53 +207,55 @@ class RelTypeTable(Table, ABC):
     def transposed(cls):
         return False
 
-    @abstractmethod
-    def _loc_data(self, columns: pd.Index, **kwargs) -> pd.DataFrame:
-        """ Locate data in the table. """
-
-    def _fetch_data(self, *args, squeeze: bool = False, **kwargs):
-        """ Fetch data from the table. """
-        data = self._loc_data(*args, **kwargs)
+    @classmethod
+    def _format_data(cls,
+                     data: pd.DataFrame, *,
+                     precision: int | None,
+                     squeeze: bool):
+        """ Perform final formatting on fetched data. """
+        if precision is not None:
+            # Round the data to the desired number of decimal places.
+            data = data.round(precision)
         if squeeze:
+            # If the DataFrame has exactly one column, then return that
+            # column as a Series; otherwise, raise an error.
             if data.columns.size != 1:
-                raise ValueError("Fetching data with squeeze=True requires "
-                                 f"exactly 1 column, but got {data.columns}")
-            return data[data.columns[0]]
+                raise ValueError("Only data with exactly 1 column can be "
+                                 f"squeezed, but got {data.columns}")
+            data = data[data.columns[0]]
         return data
 
-    def fetch_count(self, **kwargs) -> pd.Series | pd.DataFrame:
+    @abstractmethod
+    def _fetch_data(self,
+                    columns: pd.Index,
+                    exclude_masked: bool = False) -> pd.DataFrame:
+        """ Fetch data from the table. """
+
+    def fetch_count(self, *,
+                    exclude_masked: bool = False,
+                    squeeze: bool = False,
+                    **kwargs) -> pd.Series | pd.DataFrame:
         """ Fetch counts of one or more columns. """
-        select_kwargs = _get_select_kwargs(**kwargs)
-        return self._fetch_data(self.header.select(**select_kwargs), **kwargs)
+        return self._format_data(self._fetch_data(self.header.select(**kwargs),
+                                                  exclude_masked),
+                                 precision=None,
+                                 squeeze=squeeze)
 
     def fetch_ratio(self, *,
-                    quantile: float = 0.,
+                    exclude_masked: bool = False,
+                    squeeze: bool = False,
                     precision: int | None = None,
+                    quantile: float = 0.,
                     **kwargs) -> pd.Series | pd.DataFrame:
         """ Fetch ratios of one or more columns. """
         # Fetch the data for the numerator.
-        numer = self.fetch_count(**kwargs)
-        # Determine the columns of the numerator.
-        if isinstance(numer, pd.Series):
-            # If squeeze is True, then numer is a Series.
-            if isinstance(numer.name, tuple):
-                # The series came from a MultiIndex with multiple names.
-                columns = pd.MultiIndex.from_tuples(
-                    [numer.name],
-                    names=RelClustHeader.level_names()
-                )
-            else:
-                # The series came from an Index with one name.
-                columns = pd.Index([numer.name], name=REL_NAME)
-        else:
-            # Otherwise, numer is a DataFrame with defined columns.
-            columns = numer.columns
+        numer = self._fetch_data(self.header.select(**kwargs), exclude_masked)
         # Fetch the data for the denominator.
-        denom = self._fetch_data(_get_denom_cols(columns), **kwargs)
+        denom = self._fetch_data(_get_denom_cols(numer.columns), exclude_masked)
         # Compute the ratio of the numerator and the denominator.
-        ratio = winsorize(numer / denom.values, quantile)
-        # Round the ratio to the desired precision.
-        return ratio.round(precision) if precision is not None else ratio
+        return self._format_data(winsorize(numer / denom.values, quantile),
+                                 precision=precision,
+                                 squeeze=squeeze)
 
 
 # Table by Source (relate/mask/cluster) ################################
@@ -350,10 +347,9 @@ class PosTable(RelTypeTable, ABC):
         section.add_mask(self.MASK, self.unmasked_int, invert=True)
         return section
 
-    def _loc_data(self,
-                  columns: pd.Index, *,
-                  exclude_masked: bool = False,
-                  **kwargs):
+    def _fetch_data(self,
+                    columns: pd.Index,
+                    exclude_masked: bool = False):
         return (self.data.loc[self.unmasked, columns] if exclude_masked
                 else self.data.loc[:, columns])
 
@@ -377,7 +373,120 @@ class PosTable(RelTypeTable, ABC):
                                        order,
                                        clust)
 
-    def resample(self, fraction: float = 1., **kwargs):
+    def _resample_clust(self,
+                        order: int,
+                        clust: int,
+                        n_cov: np.ndarray, *,
+                        seed: int | None = None,
+                        tol: float = 1.e-3):
+        """ Resample mutations for one cluster.
+
+        Parameters
+        ----------
+        order: int
+            Order of the cluster.
+        clust: int
+            Number of the cluster.
+        n_cov: numpy.ndarray
+            Number of reads covering each position (1-D array).
+        seed: int | None = None
+            Seed for the random number generator.
+        tol: float = 1.e-3
+            Tolerance for floating-point rounding error.
+        """
+        fetch_kwargs = dict(order=order, clust=clust, exclude_masked=True)
+        rng = np.random.default_rng(seed)
+        if n_cov.ndim != 1:
+            raise ValueError("n_cov must have exactly 1 dimension, "
+                             f"but got {n_cov.ndim}")
+        resampled = {COVER_REL: n_cov}
+        # Resample informative reads.
+        p_inf = self.fetch_ratio(rel=INFOR_REL,
+                                 squeeze=True,
+                                 **fetch_kwargs).values
+        n_inf = rng.binomial(n_cov, p_inf)
+        resampled[INFOR_REL] = n_inf
+        # Resample mutations and matches.
+        p_mut = self.fetch_ratio(rel=MUTAT_REL,
+                                 squeeze=True,
+                                 **fetch_kwargs).values
+        n_mut = rng.binomial(n_inf, p_mut)
+        resampled[MUTAT_REL] = n_mut
+        resampled[MATCH_REL] = n_inf - n_mut
+
+        def resample_multi(n_any_rel: np.ndarray,
+                           p_any_rel: np.ndarray,
+                           rel_kinds: list[str],
+                           tolerance: float):
+            """ Resample multiple kinds of relationships at once using a
+            multinomial distribution.
+
+            Parameters
+            ----------
+            n_any_rel: numpy.ndarray
+                Number of mutations of any kind at each position.
+            p_any_rel: numpy.ndarray
+                Probability that each position has any kind of mutation.
+            rel_kinds: list[str]
+                Kinds of relationships to resample.
+            tolerance: float
+                Tolerance for floating-point rounding error.
+            """
+            if n_any_rel.ndim != 1:
+                raise ValueError("n_any_rel must have exactly 1 dimension, "
+                                 f"but got {n_any_rel.ndim}")
+            if p_any_rel.ndim != 1:
+                raise ValueError("p_any_rel must have exactly 1 dimension, "
+                                 f"but got {p_any_rel.ndim}")
+            if tolerance < 0.:
+                raise ValueError(f"tolerance must be ≥ 0, but got {tolerance}")
+            # Fetch the probability of each given kind of relationship.
+            p_given_rel = self.fetch_ratio(rel=rel_kinds, **fetch_kwargs).values
+            # Make each probability conditional on a relationship of any
+            # kind by dividing by the probability of any relationship.
+            with np.errstate(divide="ignore"):
+                p_given_rel = np.nan_to_num(p_given_rel
+                                            / p_any_rel.reshape(-1, 1))
+            # Compute the probability of another type of relationship.
+            p_other_rel = 1. - p_given_rel.sum(axis=1)
+            # Due to rounding errors in floating-point arithmetic, these
+            # probabilities may have small negative values: zero them.
+            p_other_rel[np.logical_and(p_other_rel < 0.,
+                                       p_other_rel >= -tolerance)] = 0.
+            # Join all probabilities into one array.
+            p_every_rel = np.hstack([p_given_rel, p_other_rel.reshape(-1, 1)])
+            # To compensate, re-normalize the sum of each row to 1.
+            p_every_rel /= p_every_rel.sum(axis=1).reshape(-1, 1)
+            # Resample each kind of relationship.
+            n_every_rel = rng.multinomial(n_any_rel, p_every_rel)
+            # Extract the number of each kind of relationship.
+            n_each_rel = pd.DataFrame(n_every_rel[:, :len(rel_kinds)],
+                                      index=self.unmasked,
+                                      columns=rel_kinds)
+            return n_each_rel
+
+        # Resample each kind of mutation.
+        mut_kinds = [SUBST_REL, DELET_REL, INSRT_REL]
+        n_mut_kinds = resample_multi(n_mut, p_mut, mut_kinds, tol)
+        for kind, n_kind in n_mut_kinds.items():
+            resampled[kind] = n_kind.values
+        # Resample each kind of substitution.
+        sub_kinds = [SUB_A_REL, SUB_C_REL, SUB_G_REL, SUB_T_REL]
+        n_sub = n_mut_kinds[SUBST_REL].values
+        p_sub = self.fetch_ratio(rel=SUBST_REL,
+                                 squeeze=True,
+                                 **fetch_kwargs).values
+        n_sub_kinds = resample_multi(n_sub, p_sub, sub_kinds, tol)
+        for kind, n_kind in n_sub_kinds.items():
+            resampled[kind] = n_kind.values
+        # Return the resampled counts.
+        return resampled
+
+    def resample(self,
+                 fraction: float = 1., *,
+                 exclude_masked: bool = False,
+                 seed: int | None = None,
+                 max_seed: int = 4294967296):
         """ Resample the reads and return a new DataFrame.
 
         Parameters
@@ -385,13 +494,38 @@ class PosTable(RelTypeTable, ABC):
         fraction: float = 1.
             Number of reads to resample, expressed as a fraction of the
             original number of reads. Must be ≥ 0; may be > 1.
-        **kwargs: Any
-            Keyword arguments passed to `self.fetch_count`
+        exclude_masked: bool = False
+            Exclude positions that have been masked.
+        seed: int | None = None
+            Seed for the random number generator.
+        max_seed: int = 4294967296
+            Maximum seed to pass to the next random number generator.
         """
-        # Compute the total coverage at each position.
-        cover = fraction * self.fetch_count(rels=COVER_REL,
-                                            exclude_masked=True)
-        original = self.fetch_count(**kwargs)
+        rng = np.random.default_rng(seed)
+        # Initialize the resampled data.
+        resampled = pd.DataFrame(np.nan,
+                                 index=(self.unmasked if exclude_masked
+                                        else self.data.index),
+                                 columns=self.data.columns)
+        for order, clust in self.header.clusts:
+            # Get the read coverage for the cluster.
+            n_cov = np.asarray(np.round(
+                fraction * self.fetch_count(rel=COVER_REL,
+                                            order=order,
+                                            clust=clust,
+                                            squeeze=True,
+                                            exclude_masked=True).values
+            ), dtype=int)
+            # Resample the other relationships for the cluster.
+            resampled_clust = self._resample_clust(order,
+                                                   clust,
+                                                   n_cov,
+                                                   seed=rng.integers(max_seed))
+            # Record the resampled data for the cluster.
+            for rel, n_rel in resampled_clust.items():
+                key = (rel, order, clust) if order > 0 else rel
+                resampled.loc[self.unmasked, key] = n_rel
+        return resampled
 
 
 class ReadTable(RelTypeTable, ABC):
@@ -409,7 +543,9 @@ class ReadTable(RelTypeTable, ABC):
     def reads(self):
         return self.data.index.values
 
-    def _loc_data(self, columns: pd.Index, **kwargs):
+    def _fetch_data(self,
+                    columns: pd.Index,
+                    exclude_masked: bool = False):
         return self.data.loc[:, columns]
 
 
