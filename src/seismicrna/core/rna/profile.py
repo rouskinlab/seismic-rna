@@ -108,7 +108,7 @@ class RnaProfile(RnaSection):
         varna_color = self.data.fillna(-1.)
         # Write the values to the VARNA color file.
         varna_color_file = self.varna_color_file(top)
-        varna_color.to_csv(varna_color_file, header=False, index=False)
+        varna_color.to_csv(varna_color_file, float_format="%f", header=False, index=False)
         return varna_color_file
 
 ########################################################################
