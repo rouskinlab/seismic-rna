@@ -56,6 +56,48 @@ REL_CODES = {
 TABLE_RELS = list(REL_CODES.values())
 
 
+def get_dirichlet_params(mean: np.ndarray, variance: np.ndarray):
+    """ Get the concentration parameters of a Dirichlet distribution
+    with the given mean and variance.
+
+    Parameters
+    ----------
+    mean: np.ndarray
+        Mean of each dimension of the distribution.
+    variance: np.ndarray
+        Variance of each dimension of the distribution.
+
+    Returns
+    -------
+    np.ndarray
+        Concentration parameters of the Dirichlet distribution.
+    """
+    return mean * (mean * (1. - mean) / variance - 1.)
+
+
+def get_beta_params(mean: np.ndarray, variance: np.ndarray):
+    """ Get the concentration parameters of a beta distribution with the
+    given mean and variance.
+
+    Parameters
+    ----------
+    mean: np.ndarray
+        Mean of each dimension of the distribution.
+    variance: np.ndarray
+        Variance of each dimension of the distribution.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray]
+        Concentration parameters of the beta distribution.
+    """
+    mean2 = 1. - mean
+    param0 = mean * mean2 / variance - 1.
+    param1 = param0 * mean
+    param2 = param0 * mean2
+    return param1, param2
+
+
 def get_rel_name(rel_code: str):
     """ Get the name of a relationship from its code. """
     try:
@@ -372,6 +414,88 @@ class PosTable(RelTypeTable, ABC):
                                        quantile,
                                        order,
                                        clust)
+
+    def _compute_ci(self,
+                    confidence: float,
+                    use_ratio: bool, *,
+                    exclude_masked: bool = False,
+                    **kwargs):
+        """ Calculate the confidence intervals of counts or ratios.
+
+        Parameters
+        ----------
+        confidence: float
+            Level of confidence. Must be in (0, 1).
+        use_ratio: bool
+            Compute confidence intervals of the ratio, not the count.
+        exclude_masked: bool = False
+            Exclude masked positions from the output.
+        **kwargs
+            Keyword arguments for fetch methods.
+
+        Returns
+        -------
+        tuple[pandas.DataFrame, pandas.DataFrame]
+            Lower and upper bounds of the confidence interval.
+        """
+        from scipy.stats import binom
+        # Fetch the probability of each relationship.
+        p = self.fetch_ratio(exclude_masked=True, **kwargs)
+        # Fetch the number of reads for each relationship.
+        n = np.asarray(np.round(self._fetch_data(_get_denom_cols(p.columns),
+                                                 exclude_masked=True).values),
+                       dtype=int)
+        # Model the counts using binomial distributions.
+        lo, up = binom.interval(confidence, n, p.values)
+        # Copy the confidence interval bounds into two DataFrames.
+        index = self.unmasked if exclude_masked else self.data.index
+        lower = pd.DataFrame(np.nan, index=index, columns=p.columns)
+        upper = pd.DataFrame(np.nan, index=index, columns=p.columns)
+        lower.loc[self.unmasked] = lo / n if use_ratio else lo
+        upper.loc[self.unmasked] = up / n if use_ratio else up
+        return lower, upper
+
+    def ci_count(self, confidence: float, **kwargs):
+        """ Confidence intervals of counts, under these simplifications:
+
+        - Counts are independent of each other.
+        - Counts follow beta-binomial distributions.
+        - Coverage counts are constant.
+
+        Parameters
+        ----------
+        confidence: float
+            Level of confidence. Must be in (0, 1).
+        **kwargs
+            Keyword arguments for fetch methods.
+
+        Returns
+        -------
+        tuple[pandas.DataFrame, pandas.DataFrame]
+            Lower and upper bounds of the confidence interval.
+        """
+        return self._compute_ci(confidence, False, **kwargs)
+
+    def ci_ratio(self, confidence: float, **kwargs):
+        """ Confidence intervals of ratios, under these simplifications:
+
+        - Ratios are independent of each other.
+        - Ratios follow beta-binomial distributions.
+        - Coverage counts are constant.
+
+        Parameters
+        ----------
+        confidence: float
+            Level of confidence. Must be in (0, 1).
+        **kwargs
+            Keyword arguments for fetch methods.
+
+        Returns
+        -------
+        tuple[pandas.DataFrame, pandas.DataFrame]
+            Lower and upper bounds of the confidence interval.
+        """
+        return self._compute_ci(confidence, True, **kwargs)
 
     def _resample_clust(self,
                         order: int,
