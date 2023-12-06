@@ -36,10 +36,10 @@ CLUST_ORDER = "order"
 CLUST_UNITE = "unite"
 CLUST_ARRANGE_OPTIONS = CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
 
-CORREL_PEARSON = "r"
-CORREL_SPEARMAN = "rho"
-CORREL_DETERM = "R2"
-CORREL_OPTIONS = [CORREL_PEARSON, CORREL_SPEARMAN, CORREL_DETERM]
+METHOD_PEARSON = "r"
+METHOD_SPEARMAN = "rho"
+METHOD_DETERM = "R2"
+CORREL_OPTIONS = [METHOD_PEARSON, METHOD_SPEARMAN, METHOD_DETERM]
 
 # Configuration options
 
@@ -776,11 +776,11 @@ opt_winmin = Option(
 opt_correl = Option(
     ("--correl",),
     type=Choice(CORREL_OPTIONS),
-    default=CORREL_PEARSON,
+    default=METHOD_PEARSON,
     help=(f"Correlation coefficient: "
-          f"{repr(CORREL_PEARSON)} = Pearson (r), "
-          f"{repr(CORREL_SPEARMAN)} = Spearman (ρ), "
-          f"{repr(CORREL_DETERM)} = Determination (R^2)")
+          f"{repr(METHOD_PEARSON)} = Pearson (r), "
+          f"{repr(METHOD_SPEARMAN)} = Spearman (ρ), "
+          f"{repr(METHOD_DETERM)} = Determination (R^2)")
 )
 
 opt_hist_bins = Option(
