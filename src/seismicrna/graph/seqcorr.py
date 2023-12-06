@@ -8,7 +8,12 @@ from plotly import graph_objects as go
 
 from .seqpair import SeqPairGraphRunner, SeqPairGraphWriter, SeqPairOneAxisGraph
 from .traces import iter_seq_line_traces
-from ..core.arg import CORREL_DETERM, CORREL_PEARSON, CORREL_SPEARMAN
+from ..core.arg import (CORREL_DETERM,
+                        CORREL_PEARSON,
+                        CORREL_SPEARMAN,
+                        opt_correl,
+                        opt_window,
+                        opt_winmin)
 from ..core.seq import get_shared_index, get_windows
 
 logger = getLogger(__name__)
@@ -89,14 +94,14 @@ class SeqCorrGraphRunner(SeqPairGraphRunner):
 
     @classmethod
     def var_params(cls):
-        return []
+        return [opt_correl, opt_window, opt_winmin]
 
     @classmethod
     def writer_type(cls):
         return SeqCorrGraphWriter
 
 
-@command(COMMAND, params=SeqPairGraphRunner.params())
+@command(COMMAND, params=SeqCorrGraphRunner.params())
 def cli(*args, **kwargs):
     """ Create line graphs of rolling correlations between datasets. """
     return SeqCorrGraphRunner.run(*args, **kwargs)

@@ -14,8 +14,6 @@ from .color import SeqColorMap
 from .seq import get_table_params
 from .write import TwoTableGraphWriter
 from ..core.arg import (arg_input_path,
-                        opt_correl,
-                        opt_window,
                         opt_csv,
                         opt_html,
                         opt_pdf,
@@ -291,7 +289,6 @@ class SeqPairGraphRunner(ABC):
     @abstractmethod
     def var_params(cls) -> list[Argument | Option]:
         """ Variable parameters for the command line. """
-        return [opt_correl, opt_window]
 
     @classmethod
     def params(cls) -> list[Argument | Option]:
