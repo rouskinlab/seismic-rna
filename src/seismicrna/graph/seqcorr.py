@@ -1,5 +1,6 @@
 import os
 from logging import getLogger
+from typing import Callable
 
 import numpy as np
 import pandas as pd
@@ -8,9 +9,9 @@ from plotly import graph_objects as go
 
 from .seqpair import SeqPairGraphRunner, SeqPairGraphWriter, SeqPairOneAxisGraph
 from .traces import iter_seq_line_traces
-from ..core.arg import (CORREL_DETERM,
-                        CORREL_PEARSON,
-                        CORREL_SPEARMAN,
+from ..core.arg import (METHOD_DETERM,
+                        METHOD_PEARSON,
+                        METHOD_SPEARMAN,
                         opt_correl,
                         opt_window,
                         opt_winmin)
@@ -21,26 +22,46 @@ logger = getLogger(__name__)
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
+def _get_correl(func: Callable, square: bool = False):
+    """ Correlation method for comparing datasets. """
+
+    def correl(data1: pd.Series, data2: pd.Series):
+        # Compute the correlation between the two series over the
+        # window, ignoring missing data.
+        statistic = func(data1, data2, nan_policy="omit").statistic
+        return statistic * statistic if square else statistic
+
+    return correl
+
+
+def _get_method(method: str):
+    """ Method for comparing datasets. """
+    if method == METHOD_SOMETHING:
+        pass
+    if method == METHOD_DETERM:
+        # Use the coefficient of determination.
+        from scipy.stats import pearsonr
+        return _get_correl(pearsonr, square=True)
+    if method == METHOD_PEARSON:
+        # Use Pearson's correlation coefficient.
+        from scipy.stats import pearsonr
+        return _get_correl(pearsonr)
+    if method == METHOD_SPEARMAN:
+        # Use Spearman's correlation coefficient.
+        from scipy.stats import spearmanr
+        return _get_correl(spearmanr)
+    raise ValueError(f"Invalid comparison method: {repr(method)}")
+
+
 class SeqCorrGraph(SeqPairOneAxisGraph):
 
-    def __init__(self, *, window: int, winmin: int, correl: str, **kwargs):
+    def __init__(self, *, window: int, winmin: int, method: str, **kwargs):
         # Import scipy here instead of at the top of this module because
         # its import is slow enough to impact global startup time.
-        from scipy.stats import pearsonr, spearmanr
         super().__init__(**kwargs)
         self._window = window
         self._winmin = winmin
-        if correl == CORREL_DETERM:
-            self._correl = pearsonr
-            self._square = True
-        elif correl == CORREL_PEARSON:
-            self._correl = pearsonr
-            self._square = False
-        elif correl == CORREL_SPEARMAN:
-            self._correl = spearmanr
-            self._square = False
-        else:
-            raise ValueError(f"Invalid correlation coefficient: {repr(correl)}")
+        self._method = _get_method(method)
 
     @classmethod
     def graph_type(cls):
@@ -56,27 +77,20 @@ class SeqCorrGraph(SeqPairOneAxisGraph):
 
     @property
     def _merge_data(self):
-
-        def get_rolling_corr(vals1: pd.Series, vals2: pd.Series):
-            """ Compute the rolling correlation between the Series. """
-            # Initialize an empty Series for the rolling correlation.
-            roll_corr = pd.Series(np.nan, index=get_shared_index([vals1.index,
-                                                                  vals2.index]))
-            # Compute the correlation for each rolling window.
+        def get_rolling(vals1: pd.Series, vals2: pd.Series):
+            """ Compute the rolling comparison between the Series. """
+            # Initialize an empty Series for the rolling comparison.
+            rolling = pd.Series(np.nan, index=get_shared_index([vals1.index,
+                                                                vals2.index]))
+            # Compare each window.
             for center, (win1, win2) in get_windows(vals1,
                                                     vals2,
                                                     size=self._window,
                                                     min_count=self._winmin):
-                # Compute the correlation between the two series over
-                # the window, ignoring missing data.
-                corr = self._correl(win1, win2, nan_policy="omit").statistic
-                if self._square:
-                    # Square the correlation.
-                    corr = corr * corr
-                roll_corr.loc[center] = corr
-            return roll_corr
+                rolling.loc[center] = self._method(win1, win2)
+            return rolling
 
-        return get_rolling_corr
+        return get_rolling
 
     def _figure_layout(self, fig: go.Figure):
         super()._figure_layout(fig)
