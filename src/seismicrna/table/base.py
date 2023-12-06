@@ -425,7 +425,7 @@ class PosTable(RelTypeTable, ABC):
         Parameters
         ----------
         confidence: float
-            Level of confidence. Must be in (0, 1).
+            Confidence level; must be in [0, 1).
         use_ratio: bool
             Compute confidence intervals of the ratio, not the count.
         exclude_masked: bool = False
@@ -439,6 +439,9 @@ class PosTable(RelTypeTable, ABC):
             Lower and upper bounds of the confidence interval.
         """
         from scipy.stats import binom
+        if not 0. <= confidence < 1.:
+            raise ValueError(
+                f"confidence level must be in [0, 1), but got {confidence}")
         # Fetch the probability of each relationship.
         p = self.fetch_ratio(exclude_masked=True, **kwargs)
         # Fetch the number of reads for each relationship.
@@ -459,13 +462,13 @@ class PosTable(RelTypeTable, ABC):
         """ Confidence intervals of counts, under these simplifications:
 
         - Counts are independent of each other.
-        - Counts follow beta-binomial distributions.
+        - Counts follow binomial distributions.
         - Coverage counts are constant.
 
         Parameters
         ----------
         confidence: float
-            Level of confidence. Must be in (0, 1).
+            Confidence level; must be in [0, 1).
         **kwargs
             Keyword arguments for fetch methods.
 
@@ -480,13 +483,13 @@ class PosTable(RelTypeTable, ABC):
         """ Confidence intervals of ratios, under these simplifications:
 
         - Ratios are independent of each other.
-        - Ratios follow beta-binomial distributions.
+        - Ratios follow beta distributions.
         - Coverage counts are constant.
 
         Parameters
         ----------
         confidence: float
-            Level of confidence. Must be in (0, 1).
+            Confidence level; must be in [0, 1).
         **kwargs
             Keyword arguments for fetch methods.
 
