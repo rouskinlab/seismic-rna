@@ -13,7 +13,8 @@ def get_quantile(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     Parameters
     ----------
     mus: numpy.ndarray | pandas.Series | pandas.DataFrame
-        Mutation rates.
+        Mutation rates. Multiple sets of mutation rates can be given as
+        columns of a multidimensional array or DataFrame.
     quantile: float
         Quantile to return from the mutation rates; must be in [0, 1].
 
@@ -46,7 +47,8 @@ def normalize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     Parameters
     ----------
     mus: numpy.ndarray | pandas.Series | pandas.DataFrame
-        Mutation rates.
+        Mutation rates. Multiple sets of mutation rates can be given as
+        columns of a multidimensional array or DataFrame.
     quantile: float
         Quantile for normalizing the mutation rates; must be in [0, 1].
 
@@ -67,7 +69,8 @@ def winsorize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     Parameters
     ----------
     mus: numpy.ndarray | pandas.Series | pandas.DataFrame
-        Mutation rates.
+        Mutation rates. Multiple sets of mutation rates can be given as
+        columns of a multidimensional array or DataFrame.
     quantile: float
         Quantile for normalizing the mutation rates; must be in [0, 1].
 
@@ -88,6 +91,27 @@ def winsorize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
                          index=mus.index,
                          copy=False)
     return winsorized
+
+
+def standardize(mus: np.ndarray | pd.Series | pd.DataFrame):
+    """ Standardize mutation rates so that the root-mean-square mutation
+    rate equals 1.
+
+    Parameters
+    ----------
+    mus: np.ndarray | pd.Series | pd.DataFrame
+        Mutation rates. Multiple sets of mutation rates can be given as
+        columns of a multidimensional array or DataFrame.
+
+    Returns
+    -------
+    np.ndarray | pd.Series | pd.DataFrame
+        Standardized mutation rates.
+    """
+    # Compute the root-mean-square mutation rate.
+    rms = np.sqrt(np.mean(mus * mus, axis=0))
+    # Scale the mutation rates by the root-mean-square mutation rate.
+    return mus / rms
 
 ########################################################################
 #                                                                      #
