@@ -25,5 +25,7 @@ def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
     """
     # Compute the difference between the standardized mutation rates.
     diff = standardize(mus2) - standardize(mus1)
-    # Return the root-mean-square difference, ignoring NaN values.
-    return np.sqrt(np.nanmean(diff * diff, axis=0))
+    # Return the root-mean-square distance from the line of best fit
+    # (which equals the difference divided by the square root of 2),
+    # ignoring NaN values.
+    return np.sqrt(np.nanmean(diff * diff, axis=0) / 2.)
