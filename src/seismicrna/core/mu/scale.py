@@ -8,7 +8,20 @@ logger = getLogger(__name__)
 
 
 def get_quantile(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
-    """ Compute the mutation rate at a quantile. """
+    """ Compute the mutation rate at a quantile.
+
+    Parameters
+    ----------
+    mus: numpy.ndarray | pandas.Series | pandas.DataFrame
+        Mutation rates.
+    quantile: float
+        Quantile to return from the mutation rates; must be in [0, 1].
+
+    Returns
+    -------
+    float | numpy.ndarray | pandas.Series
+        Value of the quantile from the mutation rates.
+    """
     if mus.size == 0:
         # If there are no values, then return NaN instead of raising an
         # error, as np.nanquantile would.
@@ -28,7 +41,20 @@ def get_quantile(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
 
 
 def normalize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
-    """ Normalize the mutation rates to a quantile. """
+    """ Normalize the mutation rates to a quantile.
+
+    Parameters
+    ----------
+    mus: numpy.ndarray | pandas.Series | pandas.DataFrame
+        Mutation rates.
+    quantile: float
+        Quantile for normalizing the mutation rates; must be in [0, 1].
+
+    Returns
+    -------
+    numpy.ndarray | pandas.Series | pandas.DataFrame
+        Normalized mutation rates.
+    """
     if quantile == 0.:
         # Do not normalize the mutation rates if quantile == 0.
         return mus.copy()
@@ -36,7 +62,20 @@ def normalize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
 
 
 def winsorize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
-    """ Normalize and winsorize the mutation rates to a quantile. """
+    """ Normalize and winsorize the mutation rates to a quantile.
+
+    Parameters
+    ----------
+    mus: numpy.ndarray | pandas.Series | pandas.DataFrame
+        Mutation rates.
+    quantile: float
+        Quantile for normalizing the mutation rates; must be in [0, 1].
+
+    Returns
+    -------
+    numpy.ndarray | pandas.Series | pandas.DataFrame
+        Normalized and winsorized mutation rates.
+    """
     winsorized = np.clip(normalize(mus, quantile), 0., 1.)
     # Return the same data type as was given for mus.
     if isinstance(mus, pd.DataFrame):
