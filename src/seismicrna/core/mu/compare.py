@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from .scale import standardize
+from .scale import calc_rms
 
 
 def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
@@ -23,9 +23,16 @@ def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
     np.ndarray | pd.Series | pd.DataFrame
         Standardized mutation rates.
     """
-    # Compute the difference between the standardized mutation rates.
-    diff = standardize(mus2) - standardize(mus1)
-    # Return the root-mean-square distance from the line of best fit
-    # (which equals the difference divided by the square root of 2),
-    # ignoring NaN values.
-    return np.sqrt(np.nanmean(diff * diff, axis=0) / 2.)
+    # Normalize the mutation rates so the maximum of each group is 1.
+    norm1 = mus1 / np.max(mus1, axis=0)
+    norm2 = mus2 / np.max(mus2, axis=0)
+    # Compute the root-mean-square mutation rate for each group.
+    rms1 = calc_rms(norm1)
+    rms2 = calc_rms(norm2)
+    # Standardize the mutation rates so that the root-mean-square of
+    # each group is 1, and then compute the difference.
+    diff = norm1 / rms1 - norm2 / rms2
+    # Compute the root-mean-square difference and restore the original
+    # scale by dividing by the geometric mean of the standardization
+    # coefficients.
+    return np.sqrt(np.nanmean(diff * diff, axis=0) * (rms1 * rms2))
