@@ -1,5 +1,5 @@
 from .frame import *
-from .norm import *
+from .scale import *
 from .unbias import *
 
 ########################################################################
