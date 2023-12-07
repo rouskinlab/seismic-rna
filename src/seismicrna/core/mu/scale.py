@@ -108,8 +108,8 @@ def standardize(mus: np.ndarray | pd.Series | pd.DataFrame):
     np.ndarray | pd.Series | pd.DataFrame
         Standardized mutation rates.
     """
-    # Compute the root-mean-square mutation rate.
-    rms = np.sqrt(np.mean(mus * mus, axis=0))
+    # Compute the root-mean-square mutation rate, ignoring NaN values.
+    rms = np.sqrt(np.nanmean(mus * mus, axis=0))
     # Scale the mutation rates by the root-mean-square mutation rate.
     return mus / rms
 
