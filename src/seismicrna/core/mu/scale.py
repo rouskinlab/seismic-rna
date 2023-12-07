@@ -93,6 +93,23 @@ def winsorize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     return winsorized
 
 
+def calc_rms(mus: np.ndarray | pd.Series | pd.DataFrame):
+    """ Calculate the root-mean-square mutation rate.
+
+    Parameters
+    ----------
+    mus: np.ndarray | pd.Series | pd.DataFrame
+        Mutation rates. Multiple sets of mutation rates can be given as
+        columns of a multidimensional array or DataFrame.
+
+    Returns
+    -------
+    float | numpy.ndarray | pandas.Series
+        Root-mean-square mutation rate.
+    """
+    return np.sqrt(np.nanmean(mus * mus, axis=0))
+
+
 def standardize(mus: np.ndarray | pd.Series | pd.DataFrame):
     """ Standardize mutation rates so that the root-mean-square mutation
     rate equals 1.
@@ -108,10 +125,7 @@ def standardize(mus: np.ndarray | pd.Series | pd.DataFrame):
     np.ndarray | pd.Series | pd.DataFrame
         Standardized mutation rates.
     """
-    # Compute the root-mean-square mutation rate, ignoring NaN values.
-    rms = np.sqrt(np.nanmean(mus * mus, axis=0))
-    # Scale the mutation rates by the root-mean-square mutation rate.
-    return mus / rms
+    return mus / calc_rms(mus)
 
 ########################################################################
 #                                                                      #
