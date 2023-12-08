@@ -1,5 +1,6 @@
 from .frame import *
-from .scale import *
+from .paired import *
+from .single import *
 from .unbias import *
 
 ########################################################################
