@@ -1,6 +1,5 @@
 import os
 from logging import getLogger
-from typing import Callable
 
 import numpy as np
 import pandas as pd
@@ -9,12 +8,7 @@ from plotly import graph_objects as go
 
 from .seqpair import SeqPairGraphRunner, SeqPairGraphWriter, SeqPairOneAxisGraph
 from .traces import iter_seq_line_traces
-from ..core.arg import (METHOD_DETERM,
-                        METHOD_PEARSON,
-                        METHOD_SPEARMAN,
-                        opt_correl,
-                        opt_window,
-                        opt_winmin)
+from ..core.arg import opt_mucomp, opt_window, opt_winmin
 from ..core.seq import get_shared_index, get_windows
 
 logger = getLogger(__name__)
@@ -22,42 +16,9 @@ logger = getLogger(__name__)
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-def _get_correl(func: Callable, square: bool = False):
-    """ Correlation method for comparing datasets. """
-
-    def correl(data1: pd.Series, data2: pd.Series):
-        # Compute the correlation between the two series over the
-        # window, ignoring missing data.
-        statistic = func(data1, data2, nan_policy="omit").statistic
-        return statistic * statistic if square else statistic
-
-    return correl
-
-
-def _get_method(method: str):
-    """ Method for comparing datasets. """
-    if method == METHOD_SOMETHING:
-        pass
-    if method == METHOD_DETERM:
-        # Use the coefficient of determination.
-        from scipy.stats import pearsonr
-        return _get_correl(pearsonr, square=True)
-    if method == METHOD_PEARSON:
-        # Use Pearson's correlation coefficient.
-        from scipy.stats import pearsonr
-        return _get_correl(pearsonr)
-    if method == METHOD_SPEARMAN:
-        # Use Spearman's correlation coefficient.
-        from scipy.stats import spearmanr
-        return _get_correl(spearmanr)
-    raise ValueError(f"Invalid comparison method: {repr(method)}")
-
-
 class SeqCorrGraph(SeqPairOneAxisGraph):
 
-    def __init__(self, *, window: int, winmin: int, method: str, **kwargs):
-        # Import scipy here instead of at the top of this module because
-        # its import is slow enough to impact global startup time.
+    def __init__(self, *, mucomp: str, window: int, winmin: int, **kwargs):
         super().__init__(**kwargs)
         self._window = window
         self._winmin = winmin
@@ -108,7 +69,7 @@ class SeqCorrGraphRunner(SeqPairGraphRunner):
 
     @classmethod
     def var_params(cls):
-        return [opt_correl, opt_window, opt_winmin]
+        return [opt_mucomp, opt_window, opt_winmin]
 
     @classmethod
     def writer_type(cls):

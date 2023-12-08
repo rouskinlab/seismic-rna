@@ -3,10 +3,10 @@ from logging import Filter, LogRecord
 
 import numpy as np
 
-from ..scale import (get_quantile,
-                     normalize,
-                     winsorize,
-                     logger as unbias_logger)
+from ..single import (get_quantile,
+                      normalize,
+                      winsorize,
+                      logger as unbias_logger)
 
 rng = np.random.default_rng()
 

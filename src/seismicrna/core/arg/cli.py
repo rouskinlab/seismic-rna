@@ -36,10 +36,14 @@ CLUST_ORDER = "order"
 CLUST_UNITE = "unite"
 CLUST_ARRANGE_OPTIONS = CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
 
-METHOD_PEARSON = "r"
-METHOD_SPEARMAN = "rho"
-METHOD_DETERM = "R2"
-CORREL_OPTIONS = [METHOD_PEARSON, METHOD_SPEARMAN, METHOD_DETERM]
+MUCOMP_RMSD = "rmsd"
+MUCOMP_PEARSON = "r"
+MUCOMP_SPEARMAN = "rho"
+MUCOMP_DETERM = "r2"
+COMPARE_OPTIONS = [MUCOMP_RMSD,
+                   MUCOMP_PEARSON,
+                   MUCOMP_SPEARMAN,
+                   MUCOMP_DETERM]
 
 # Configuration options
 
@@ -773,14 +777,15 @@ opt_winmin = Option(
     help="Minimum number of data in the sliding window"
 )
 
-opt_correl = Option(
-    ("--correl",),
-    type=Choice(CORREL_OPTIONS),
-    default=METHOD_PEARSON,
-    help=(f"Correlation coefficient: "
-          f"{repr(METHOD_PEARSON)} = Pearson (r), "
-          f"{repr(METHOD_SPEARMAN)} = Spearman (ρ), "
-          f"{repr(METHOD_DETERM)} = Determination (R^2)")
+opt_mucomp = Option(
+    ("--mucomp",),
+    type=Choice(COMPARE_OPTIONS),
+    default=MUCOMP_RMSD,
+    help=(f"Method to compare mutation rates: "
+          f"{repr(MUCOMP_RMSD)} = root-mean-square deviation (RMSD), "
+          f"{repr(MUCOMP_PEARSON)} = Pearson correlation coefficient (r), "
+          f"{repr(MUCOMP_SPEARMAN)} = Spearman correlation coefficient (ρ), "
+          f"{repr(MUCOMP_DETERM)} = coefficient of determination (R^2)")
 )
 
 opt_hist_bins = Option(
