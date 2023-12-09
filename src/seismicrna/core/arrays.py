@@ -117,6 +117,30 @@ def get_shared_indexes(arrays: Iterable[np.ndarray | pd.Series | pd.DataFrame]):
     raise TypeError(f"Invalid type for array: {type(array_type).__name__}")
 
 
+def get_shared_shape(arrays: Iterable[np.ndarray | pd.Series | pd.DataFrame]):
+    """ Verify that all given arrays have the same shape, and return it.
+
+    Parameters
+    ----------
+    arrays: Iterable[numpy.ndarray | pandas.Series | pandas.DataFrame]
+        Arrays to compare.
+
+    Returns
+    -------
+    tuple[int, ...]
+        The shared shape.
+    """
+    # Determine the shape of each array.
+    shapes = [tuple(array.shape) for array in arrays]
+    # Determine the number of unique shapes.
+    nuniq = len(set(shapes))
+    if nuniq == 0:
+        raise ValueError("Cannot determine shape of zero arrays")
+    if nuniq > 1:
+        raise ValueError(f"Got more than one shape for arrays: {shapes}")
+    return shapes[0]
+
+
 def promote_arrays(*arrays: np.ndarray | pd.Series | pd.DataFrame):
     """ Promote all given arrays to the highest priority.
 
@@ -130,17 +154,28 @@ def promote_arrays(*arrays: np.ndarray | pd.Series | pd.DataFrame):
     tuple[numpy.ndarray | pandas.Series | pandas.DataFrame, ...]
         Promoted arrays.
     """
+    # Verify that all arrays have the same shape.
+    _ = get_shared_shape(arrays)
     # Determine the type to which to promote the arrays.
     return_type = get_priority(arrays)
     # Determine the indexes of the arrays of the highest type.
     indexes = get_shared_indexes(filter(lambda a: isinstance(a, return_type),
                                         arrays))
     # Promote the arrays.
-    return tuple(return_type(array, *indexes) for array in arrays)
+    if return_type is np.ndarray:
+        # NumPy arrays cannot be created by giving data to np.ndarray(),
+        # but rather to np.array() or np.asarray().
+        constructor = np.asarray
+    else:
+        # Other types (Series, DataFrame) can be created by calling the
+        # type itself.
+        constructor = return_type
+    return tuple(constructor(array, **indexes) for array in arrays)
 
 
 def rearray(values: np.ndarray | pd.Series | pd.DataFrame,
-            astype: np.ndarray | pd.Series | pd.DataFrame):
+            astype: np.ndarray | pd.Series | pd.DataFrame,
+            broadcast: bool = False):
     """ Return the given values in a container of the given type and,
     if applicable, with the given indexes and columns.
 
@@ -151,12 +186,19 @@ def rearray(values: np.ndarray | pd.Series | pd.DataFrame,
     astype: numpy.ndarray | pandas.Series | pandas.DataFrame
         Type of the container to return; indexes and columns will be
         returned in the output as well.
+    broadcast: bool = False
+        Broadcast values to the shape of astype.
 
     Returns
     -------
     numpy.ndarray | pandas.Series | pandas.DataFrame
         Values in the new container.
     """
+    # Ensure that values is a NumPy array.
+    values = np.asarray(values)
+    if broadcast:
+        # Broadcast values to the shape of astype.
+        values = np.array(np.broadcast_to(values, astype.shape))
     if isinstance(astype, pd.DataFrame):
         if values.ndim == 2:
             # If the given values are 2D, then return a DataFrame.
@@ -167,36 +209,54 @@ def rearray(values: np.ndarray | pd.Series | pd.DataFrame,
             return pd.Series(values, astype.columns)
         if values.ndim == 0:
             # If the given values are 0D, then return a scalar array.
-            return np.asarray(values)
+            return values
         raise ValueError(f"Cannot return a {values.ndim}-dimensional array "
-                         f"using type {type(astype).__name__}")
+                         f"as type {type(astype).__name__}")
     if isinstance(astype, pd.Series):
         if values.ndim == 1:
             # If the given values are 1D, then return a Series.
             return pd.Series(values, astype.index)
         if values.ndim == 0:
             # If the given values are 0D, then return a scalar array.
-            return np.asarray(values)
+            return values
         raise ValueError(f"Cannot return a {values.ndim}-dimensional array "
-                         f"using type {type(astype).__name__}")
+                         f"as type {type(astype).__name__}")
     if isinstance(astype, np.ndarray):
         # Return the values as a NumPy array.
-        return np.asarray(values)
+        return values
     raise TypeError(f"Invalid type for array: {type(astype).__name__}")
+
+
+def _np_internal(func: Callable, broadcast: bool):
+    """ Decorate a function that accepts one NumPy or Pandas array-like
+    argument so that it processes the values (NumPy array) and rearrays
+    them to the original type, optionally after broadcasting. """
+
+    @wraps(func)
+    def wrapper(array: np.ndarray | pd.Series | pd.DataFrame, *args, **kwargs):
+        # Call the function with a NumPy array argument, then rearray
+        # the output to the original type.
+        return rearray(func(np.asarray(array), *args, **kwargs),
+                       array,
+                       broadcast=broadcast)
+
+    return wrapper
 
 
 def np_internal(func: Callable):
     """ Decorate a function that accepts one NumPy or Pandas array-like
-    argument so that it processes the values (a NumPy array) and returns
-    an object with the same type as the input argument. """
+    argument so that it processes the values (NumPy array) and rearrays
+    them to the original type. """
 
-    @wraps(func)
-    def wrapper(array: np.ndarray | pd.Series | pd.DataFrame, *args, **kwargs):
-        # Call the function with a NumPy array argument, then convert
-        # the output to the original type.
-        return rearray(func(np.asarray(array), *args, **kwargs), array)
+    return _np_internal(func, False)
 
-    return wrapper
+
+def np_internal_broadcast(func: Callable):
+    """ Decorate a function that accepts one NumPy or Pandas array-like
+    argument so that it processes the values (NumPy array) and rearrays
+    them to the original type, after broadcasting. """
+
+    return _np_internal(func, True)
 
 
 def np2_internal(func: Callable):
