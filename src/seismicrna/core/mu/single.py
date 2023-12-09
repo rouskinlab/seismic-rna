@@ -8,7 +8,7 @@ from logging import getLogger
 import numpy as np
 import pandas as pd
 
-from ..util.arrays import np_internal
+from ..arrays import np_internal
 
 logger = getLogger(__name__)
 
