@@ -45,6 +45,10 @@ def get_ranks(mus: np.ndarray | pd.Series | pd.DataFrame):
                                        axis=tuple(range(1, mus.ndim))),
                         ranks.shape)
     )
+    # Confirm all ranks were filled.
+    if np.any(ranks < 0):
+        # This error should be impossible, but checking just in case.
+        raise ValueError(f"Ranks cannot be negative, but got {ranks}")
     return ranks
 
 
