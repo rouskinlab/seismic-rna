@@ -1,6 +1,6 @@
 from .frame import *
-from .paired import *
-from .single import *
+from .two import *
+from .one import *
 from .unbias import *
 
 ########################################################################
