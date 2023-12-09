@@ -17,7 +17,7 @@ from os.path import dirname
 
 from click import command
 
-from ..core.arg import CMD_TEST, docdef, opt_verbose
+from seismicrna.core.arg import CMD_TEST, docdef, opt_verbose
 
 # Parameters for command line interface
 params = [opt_verbose]
@@ -45,6 +45,10 @@ def run(verbose: int):
     # Run all unit tests.
     runner = ut.TextTestRunner(verbosity=verbose)
     runner.run(suite)
+
+
+if __name__ == "__main__":
+    run(verbose=0)
 
 ########################################################################
 #                                                                      #

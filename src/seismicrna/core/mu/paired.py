@@ -10,6 +10,7 @@ import pandas as pd
 from .single import calc_rms, normalize
 from ..arg import MUCOMP_DETERM, MUCOMP_PEARSON, MUCOMP_RMSD, MUCOMP_SPEARMAN
 from ..seq import get_shared_index, get_windows
+from ..util.arrays import np_internal
 
 
 def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
@@ -46,6 +47,7 @@ def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
     return np.sqrt(np.nanmean(diff * diff, axis=0) * (rms1 * rms2))
 
 
+@np_internal
 def calc_pearsonr(mus1: np.ndarray | pd.Series | pd.DataFrame,
                   mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the Pearson correlation coefficient between two groups
