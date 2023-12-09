@@ -4,11 +4,11 @@ from logging import Filter, LogRecord
 import numpy as np
 import pandas as pd
 
-from seismicrna.core.mu.single import (get_quantile,
-                                       get_ranks,
-                                       normalize,
-                                       winsorize,
-                                       logger as single_logger)
+from seismicrna.core.mu.one import (get_quantile,
+                                    get_ranks,
+                                    normalize,
+                                    winsorize,
+                                    logger as single_logger)
 
 rng = np.random.default_rng()
 
