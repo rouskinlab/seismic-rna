@@ -8,11 +8,12 @@ from logging import getLogger
 import numpy as np
 import pandas as pd
 
-from ..arrays import recontainerize
+from ..util.arrays import np_internal
 
 logger = getLogger(__name__)
 
 
+@np_internal
 def get_ranks(mus: np.ndarray | pd.Series | pd.DataFrame):
     """ Compute the ranks of the mutation rates.
 
@@ -44,7 +45,7 @@ def get_ranks(mus: np.ndarray | pd.Series | pd.DataFrame):
                                        axis=tuple(range(1, mus.ndim))),
                         ranks.shape)
     )
-    return recontainerize(ranks, mus)
+    return ranks
 
 
 def get_quantile(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
