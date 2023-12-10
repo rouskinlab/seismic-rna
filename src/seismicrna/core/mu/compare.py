@@ -7,17 +7,20 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 
-from .nan import without_nans
+from .nan import auto_without_nans
 from .rank import get_ranks
 from .scale import calc_rms, normalize
 from ..arg import MUCOMP_DETERM, MUCOMP_PEARSON, MUCOMP_RMSD, MUCOMP_SPEARMAN
 from ..seq import get_shared_index, get_windows
 
 
+@auto_without_nans
 def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
               mus2: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the root-mean-square deviation between two groups of
-    mutation rates.
+    """ Calculate the root-mean-square deviation (RMSD) between two
+    groups of mutation rates.
+
+    The RMSD is officially defined as
 
     Parameters
     ----------
@@ -33,8 +36,6 @@ def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
     np.ndarray | pd.Series | pd.DataFrame
         Standardized mutation rates.
     """
-    # Remove positions where any mutation rate is NaN.
-    mus1, mus2 = without_nans(mus1, mus2)
     # Normalize the mutation rates so the maximum of each group is 1.
     mus1 = normalize(mus1, 1.)
     mus2 = normalize(mus2, 1.)
@@ -47,9 +48,10 @@ def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
     # Compute the root-mean-square difference and restore the original
     # scale by dividing by the geometric mean of the standardization
     # coefficients.
-    return np.sqrt(np.mean(diff * diff, axis=0) * (rms1 * rms2))
+    return np.sqrt(np.mean(np.square(diff), axis=0) * (rms1 * rms2))
 
 
+@auto_without_nans
 def calc_pearson(mus1: np.ndarray | pd.Series | pd.DataFrame,
                  mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the Pearson correlation coefficient between two groups
@@ -69,8 +71,6 @@ def calc_pearson(mus1: np.ndarray | pd.Series | pd.DataFrame,
     float | np.ndarray | pd.Series
         Pearson correlation coefficient.
     """
-    # Remove positions where any mutation rate is NaN.
-    mus1, mus2 = without_nans(mus1, mus2)
     # Calculate the mean of each input over the first axis.
     mean1 = np.mean(mus1, axis=0)
     mean2 = np.mean(mus2, axis=0)
@@ -109,6 +109,7 @@ def calc_coeff_determ(mus1: np.ndarray | pd.Series | pd.DataFrame,
     return np.square(calc_pearson(mus1, mus2))
 
 
+@auto_without_nans
 def calc_spearman(mus1: np.ndarray | pd.Series | pd.DataFrame,
                   mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the Spearman rank correlation coefficient between two
@@ -128,8 +129,6 @@ def calc_spearman(mus1: np.ndarray | pd.Series | pd.DataFrame,
     float | np.ndarray | pd.Series
         Spearman rank correlation coefficient.
     """
-    # Remove positions where any mutation rate is NaN.
-    mus1, mus2 = without_nans(mus1, mus2)
     # Calculate the Pearson correlation of the ranks.
     return calc_pearson(get_ranks(mus1), get_ranks(mus2))
 
@@ -142,7 +141,7 @@ def get_mucomp(name: str):
     if name == MUCOMP_DETERM:
         return calc_coeff_determ
     if name == MUCOMP_SPEARMAN:
-        return
+        return calc_spearman
     raise ValueError(f"Invalid comparison method: {repr(name)}")
 
 

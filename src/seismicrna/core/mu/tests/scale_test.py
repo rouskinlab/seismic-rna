@@ -1,28 +1,16 @@
 import unittest as ut
-from logging import Filter, LogRecord
 
 import numpy as np
-import pandas as pd
 
 from seismicrna.core.mu.scale import (get_quantile,
                                       normalize,
-                                      winsorize,
-                                      logger as single_logger)
+                                      winsorize)
 
 rng = np.random.default_rng()
 
 
 class TestGetQuantile(ut.TestCase):
     """ Test the function `get_quantile`. """
-
-    class NanFilter(Filter):
-        """ Suppress warnings about NaN quantiles. """
-
-        def filter(self, rec: LogRecord):
-            """ Suppress warnings about NaN quantiles. """
-            return not rec.msg.startswith("Got NaN quantile")
-
-    nan_filter = NanFilter()
 
     def test_no_nan(self):
         """ Test with no NaN values. """
@@ -75,14 +63,8 @@ class TestGetQuantile(ut.TestCase):
             quantiles = np.linspace(0., 1., n)
             # Make mus an all-NaN array.
             mus = np.full(n, np.nan)
-            # Temporarily suppress warnings about NaN values.
-            single_logger.addFilter(self.nan_filter)
-            try:
-                values = np.array([get_quantile(mus, quantile)
-                                   for quantile in quantiles])
-            finally:
-                # Re-enable warnings about NaN values.
-                single_logger.removeFilter(self.nan_filter)
+            values = np.array([get_quantile(mus, quantile)
+                               for quantile in quantiles])
             # Test that all quantile values are NaN.
             self.assertTrue(np.all(np.isnan(values)))
 
@@ -92,14 +74,8 @@ class TestGetQuantile(ut.TestCase):
         mus = np.array([], dtype=float)
         for n in [5, 11, 19]:
             quantiles = np.linspace(0., 1., n)
-            # Temporarily suppress warnings about NaN values.
-            single_logger.addFilter(self.nan_filter)
-            try:
-                values = np.array([get_quantile(mus, quantile)
-                                   for quantile in quantiles])
-            finally:
-                # Re-enable warnings about NaN values.
-                single_logger.removeFilter(self.nan_filter)
+            values = np.array([get_quantile(mus, quantile)
+                               for quantile in quantiles])
             # Test that all quantile values are NaN.
             self.assertTrue(np.all(np.isnan(values)))
 
