@@ -1,6 +1,6 @@
 from .frame import *
-from .two import *
-from .one import *
+from .compare import *
+from .scale import *
 from .unbias import *
 
 ########################################################################

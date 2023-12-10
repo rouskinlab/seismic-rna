@@ -5,7 +5,7 @@ Comparisons of arbitrary numbers of mutation rates.
 import numpy as np
 import pandas as pd
 
-from .dim import get_common_npos
+from .dim import get_common_num_pos
 
 
 def any_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
@@ -66,7 +66,7 @@ def without_nans(*mus: np.ndarray | pd.Series | pd.DataFrame):
         Mutation rates without NaN values.
     """
     # Generate an array of the positions.
-    positions = np.arange(get_common_npos(*mus))
+    positions = np.arange(get_common_num_pos(*mus))
     # Find positions with no NaN values in any group of mutation rates.
     pos_no_nan = positions[np.logical_and.reduce(list(map(no_nan, mus)))]
     # Return only those positions from each group.
