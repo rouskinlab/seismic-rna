@@ -5,18 +5,73 @@ import numpy as np
 import pandas as pd
 
 
+def get_first_index(array: np.ndarray | pd.Series | pd.DataFrame):
+    """ Get the first index (i.e. the labels of axis 0) from the array.
+
+    Parameters
+    ----------
+    array: numpy.ndarray | pandas.Series | pandas.DataFrame
+        Array from which to get the first index.
+
+    Returns
+    -------
+    numpy.ndarray | pandas.Index
+        First index of the array.
+    """
+    if isinstance(array, (pd.Series, pd.DataFrame)):
+        # Series and DataFrame objects already have pre-defined indexes.
+        return array.index
+    if isinstance(array, np.ndarray):
+        # Arrays in NumPy do not have pre-defined indexes, so return an
+        # array of the integer index of each position in the first axis.
+        try:
+            return np.arange(array.shape[0])
+        except IndexError:
+            raise ValueError(f"Cannot get first index of 0-D array {array}")
+    raise TypeError(f"Invalid array type: {type(array).__name__}")
+
+
+def get_last_index(array: np.ndarray | pd.Series | pd.DataFrame):
+    """ Get the last index (i.e. the labels of axis -1) from the array.
+
+    Parameters
+    ----------
+    array: numpy.ndarray | pandas.Series | pandas.DataFrame
+        Array from which to get the last index.
+
+    Returns
+    -------
+    numpy.ndarray | pandas.Index
+        Last index of the array.
+    """
+    if isinstance(array, pd.Series):
+        # A Series object has only one index.
+        return array.index
+    if isinstance(array, pd.DataFrame):
+        # The last index of a DataFrame is its columns.
+        return array.columns
+    if isinstance(array, np.ndarray):
+        # Arrays in NumPy do not have pre-defined indexes, so return an
+        # array of the integer index of each position in the last axis.
+        try:
+            return np.arange(array.shape[-1])
+        except IndexError:
+            raise ValueError(f"Cannot get last index of 0-D array {array}")
+    raise TypeError(f"Invalid array type: {type(array).__name__}")
+
+
 def get_priority(arrays: Iterable[np.ndarray | pd.Series | pd.DataFrame]):
     """ Determine the highest-priority type among the given arrays:
     pandas.DataFrame > pandas.Series > np.ndarray
 
     Parameters
     ----------
-    *arrays: np.ndarray | pd.Series | pd.DataFrame
+    *arrays: numpy.ndarray | pandas.Series | pandas.DataFrame
         Arrays among which to find the highest priority.
 
     Returns
     -------
-    type[np.ndarray | pd.Series | pd.DataFrame]
+    type[numpy.ndarray | pandas.Series | pandas.DataFrame]
         Highest-priority type.
     """
     # Ensure arrays is a list-like object.
@@ -247,7 +302,6 @@ def np_internal(func: Callable):
     """ Decorate a function that accepts one NumPy or Pandas array-like
     argument so that it processes the values (NumPy array) and rearrays
     them to the original type. """
-
     return _np_internal(func, False)
 
 
@@ -255,7 +309,6 @@ def np_internal_broadcast(func: Callable):
     """ Decorate a function that accepts one NumPy or Pandas array-like
     argument so that it processes the values (NumPy array) and rearrays
     them to the original type, after broadcasting. """
-
     return _np_internal(func, True)
 
 
