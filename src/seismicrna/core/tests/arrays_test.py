@@ -4,7 +4,9 @@ from itertools import combinations, permutations
 import numpy as np
 import pandas as pd
 
-from seismicrna.core.arrays import (get_priority,
+from seismicrna.core.arrays import (get_first_index,
+                                    get_last_index,
+                                    get_priority,
                                     get_shared_index,
                                     get_shared_indexes,
                                     get_shared_shape,
@@ -13,6 +15,80 @@ from seismicrna.core.arrays import (get_priority,
                                     np2_internal,
                                     promote_arrays,
                                     rearray)
+
+rng = np.random.default_rng()
+
+
+class TestGetFirstIndex(ut.TestCase):
+
+    def test_array0d(self):
+        self.assertRaisesRegex(ValueError,
+                               "Cannot get first index of 0-D array",
+                               get_first_index,
+                               np.array(1))
+
+    def test_array1d(self):
+        for n in range(10):
+            a = rng.random(n)
+            self.assertTrue(np.array_equal(get_first_index(a),
+                                           np.arange(n)))
+
+    def test_array2d(self):
+        for m in range(10):
+            for n in range(5):
+                a = rng.random((m, n))
+                self.assertTrue(np.array_equal(get_first_index(a),
+                                               np.arange(m)))
+
+    def test_series(self):
+        for n in range(10):
+            a = pd.Series(rng.random(n))
+            i = get_first_index(a)
+            self.assertIsInstance(i, pd.Index)
+            self.assertTrue(i.equals(pd.RangeIndex(n)))
+
+    def test_dataframe(self):
+        for m in range(10):
+            for n in range(5):
+                a = pd.DataFrame(rng.random((m, n)))
+                i = get_first_index(a)
+                self.assertTrue(i.equals(pd.RangeIndex(m)))
+
+
+class TestGetLastIndex(ut.TestCase):
+
+    def test_array0d(self):
+        self.assertRaisesRegex(ValueError,
+                               "Cannot get last index of 0-D array",
+                               get_last_index,
+                               np.array(1))
+
+    def test_array1d(self):
+        for n in range(10):
+            a = rng.random(n)
+            self.assertTrue(np.array_equal(get_last_index(a),
+                                           np.arange(n)))
+
+    def test_array2d(self):
+        for m in range(10):
+            for n in range(5):
+                a = rng.random((m, n))
+                self.assertTrue(np.array_equal(get_last_index(a),
+                                               np.arange(n)))
+
+    def test_series(self):
+        for n in range(10):
+            a = pd.Series(rng.random(n))
+            i = get_last_index(a)
+            self.assertIsInstance(i, pd.Index)
+            self.assertTrue(i.equals(pd.RangeIndex(n)))
+
+    def test_dataframe(self):
+        for m in range(10):
+            for n in range(5):
+                a = pd.DataFrame(rng.random((m, n)))
+                i = get_last_index(a)
+                self.assertTrue(i.equals(pd.RangeIndex(n)))
 
 
 class TestGetPriority(ut.TestCase):

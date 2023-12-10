@@ -14,18 +14,18 @@ logger = getLogger(__name__)
 
 
 @np_internal
-def get_ranks(mus: np.ndarray | pd.Series | pd.DataFrame):
+def get_ranks(mus: np.ndarray):
     """ Compute the ranks of the mutation rates.
 
     Parameters
     ----------
-    mus: numpy.ndarray | pandas.Series | pandas.DataFrame
+    mus: numpy.ndarray
         Mutation rates. Multiple sets of mutation rates can be given as
         columns of a multidimensional array or DataFrame.
 
     Returns
     -------
-    numpy.ndarray | pandas.Series | pandas.DataFrame
+    numpy.ndarray
         Ranks of the mutation rates.
     """
     if mus.ndim == 0:

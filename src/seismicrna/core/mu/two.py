@@ -9,7 +9,6 @@ import pandas as pd
 
 from .one import calc_rms, normalize
 from ..arg import MUCOMP_DETERM, MUCOMP_PEARSON, MUCOMP_RMSD, MUCOMP_SPEARMAN
-from ..arrays import np_internal
 from ..seq import get_shared_index, get_windows
 
 
@@ -47,9 +46,8 @@ def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
     return np.sqrt(np.nanmean(diff * diff, axis=0) * (rms1 * rms2))
 
 
-@np_internal
-def calc_pearsonr(mus1: np.ndarray | pd.Series | pd.DataFrame,
-                  mus2: np.ndarray | pd.Series | pd.DataFrame):
+def calc_pearson(mus1: np.ndarray | pd.Series | pd.DataFrame,
+                 mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the Pearson correlation coefficient between two groups
     of mutation rates.
 
@@ -102,7 +100,7 @@ def calc_coeff_determination(mus1: np.ndarray | pd.Series | pd.DataFrame,
         Coefficient of determination.
     """
     # The coefficient of determination equals the Pearson r, squared.
-    r = calc_pearsonr(mus1, mus2)
+    r = calc_pearson(mus1, mus2)
     return r * r
 
 
@@ -110,7 +108,7 @@ def get_mucomp(name: str):
     if name == MUCOMP_RMSD:
         return calc_rmsd
     if name == MUCOMP_PEARSON:
-        return calc_pearsonr
+        return calc_pearson
     if name == MUCOMP_DETERM:
         return calc_coeff_determination
     if name == MUCOMP_SPEARMAN:
