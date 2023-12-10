@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 
-def get_common_npos(*mus: np.ndarray | pd.Series | pd.DataFrame):
+def get_common_num_pos(*mus: np.ndarray | pd.Series | pd.DataFrame):
     """ Determine the number of positions for the mutation rates.
 
     Parameters
