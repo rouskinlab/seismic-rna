@@ -1,4 +1,5 @@
 import unittest as ut
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -12,6 +13,49 @@ from seismicrna.core.mu.compare import (calc_coeff_determ,
 rng = np.random.default_rng()
 
 
+class TestCalcRMSD(ut.TestCase):
+
+    def test_array0d(self):
+        self.assertRaisesRegex(ValueError,
+                               "Cannot count positions in 0-D arrays",
+                               calc_rmsd,
+                               np.array(0.),
+                               np.array(0.))
+
+    def test_array1d_allzero(self):
+        for n in range(10):
+            x = np.zeros(n, dtype=float)
+            y = np.zeros(n, dtype=float)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=RuntimeWarning)
+                rmsd = calc_rmsd(x, y)
+            self.assertIsInstance(rmsd, float)
+            self.assertTrue(np.isnan(rmsd))
+
+    def test_array1d_extremes(self):
+        for fx in [0.0001, 0.01, 1.0]:
+            for fy in [0.0001, 0.01, 1.0]:
+                x = fx * np.array([0., 1.])
+                y = fy * np.array([0., 1.])
+                self.assertTrue(np.isclose(calc_rmsd(x, y), 0.))
+                x = fx * np.array([0., 1.])
+                y = fy * np.array([1., 0.])
+                self.assertTrue(np.isclose(calc_rmsd(x, y), 1.))
+                self.assertTrue(np.isclose(calc_rmsd(y, x), 1.))
+
+    def test_array1d_examples(self):
+        for fx in [0.0001, 0.01, 1.0]:
+            for fy in [0.0001, 0.01, 1.0]:
+                x = fx * np.array([1., 0., 0., 0.])
+                y = fy * np.array([0., 0., 1., 0.])
+                self.assertTrue(np.isclose(calc_rmsd(x, y), np.sqrt(1 / 2)))
+                self.assertTrue(np.isclose(calc_rmsd(y, x), np.sqrt(1 / 2)))
+                x = fx * np.array([0.4, 0.1, 0.8])
+                y = fy * np.array([0.3, 0.2, 0.6])
+                self.assertTrue(np.isclose(calc_rmsd(x, y), np.sqrt(1 / 72)))
+                self.assertTrue(np.isclose(calc_rmsd(y, x), np.sqrt(1 / 72)))
+
+
 class TestCalcPearson(ut.TestCase):
 
     @classmethod
@@ -19,7 +63,7 @@ class TestCalcPearson(ut.TestCase):
         """ Calculate the "true" coefficient using a trusted method. """
         return pearsonr(x, y).statistic
 
-    def test_numpy_1d(self):
+    def test_array1d(self):
         # Vary number of rows.
         for nr in range(2, 10):
             x = rng.random(nr)
@@ -28,7 +72,7 @@ class TestCalcPearson(ut.TestCase):
             self.assertIsInstance(s, float)
             self.assertTrue(np.isclose(s, self.calc_true(x, y)))
 
-    def test_numpy_2d(self):
+    def test_array2d(self):
         # Vary number of columns.
         for nc in range(1, 3):
             # Vary number of rows.
@@ -100,7 +144,7 @@ class TestCalcSpearman(ut.TestCase):
         """ Calculate the "true" coefficient using a trusted method. """
         return spearmanr(x, y).statistic
 
-    def test_numpy_1d(self):
+    def test_array1d(self):
         # Vary number of rows.
         for nr in range(2, 10):
             x = rng.random(nr)
@@ -109,7 +153,7 @@ class TestCalcSpearman(ut.TestCase):
             self.assertIsInstance(s, float)
             self.assertTrue(np.isclose(s, self.calc_true(x, y)))
 
-    def test_numpy_2d(self):
+    def test_array2d(self):
         # Vary number of columns.
         for nc in range(1, 3):
             # Vary number of rows.

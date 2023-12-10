@@ -1,18 +1,15 @@
 """
-Calculations on single series of mutation rates.
+Scale mutation rates.
 """
-
-import warnings
-from logging import getLogger
 
 import numpy as np
 import pandas as pd
 
-logger = getLogger(__name__)
+from .nan import without_nans
 
 
 def get_quantile(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
-    """ Compute the mutation rate at a quantile.
+    """ Compute the mutation rate at a quantile, ignoring NaN values.
 
     Parameters
     ----------
@@ -27,22 +24,13 @@ def get_quantile(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     float | numpy.ndarray | pandas.Series
         Value of the quantile from the mutation rates.
     """
+    # Remove positions with NaN mutation rates.
+    mus, = without_nans(mus)
     if mus.size == 0:
         # If there are no values, then return NaN instead of raising an
-        # error, as np.nanquantile would.
-        value = np.nan
-    else:
-        with warnings.catch_warnings():
-            # Temporarily ignore warnings about all-NaN arrays.
-            warnings.simplefilter("ignore")
-            # Determine the quantile or, if the array is all NaN, then
-            # set value to NaN.
-            value = np.nanquantile(mus, quantile, axis=0)
-    if np.any(np.isnan(np.atleast_1d(value))):
-        # If a NaN value was returned for either of the above reasons,
-        # then issue a warning.
-        logger.warning(f"Got NaN quantile {quantile} of {mus}")
-    return value
+        # error, as np.quantile would.
+        return np.nan
+    return np.quantile(mus, quantile, axis=0)
 
 
 def normalize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
@@ -111,7 +99,7 @@ def calc_rms(mus: np.ndarray | pd.Series | pd.DataFrame):
     float | numpy.ndarray | pandas.Series
         Root-mean-square mutation rate.
     """
-    return np.sqrt(np.nanmean(mus * mus, axis=0))
+    return np.sqrt(np.mean(np.square(mus), axis=0))
 
 
 def standardize(mus: np.ndarray | pd.Series | pd.DataFrame):

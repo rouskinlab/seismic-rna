@@ -2,6 +2,9 @@
 Comparisons of arbitrary numbers of mutation rates.
 """
 
+from functools import wraps
+from typing import Callable
+
 import numpy as np
 import pandas as pd
 
@@ -71,3 +74,14 @@ def without_nans(*mus: np.ndarray | pd.Series | pd.DataFrame):
     pos_no_nan = positions[np.logical_and.reduce(list(map(no_nan, mus)))]
     # Return only those positions from each group.
     return tuple(np.take(mu, pos_no_nan, axis=0) for mu in mus)
+
+
+def auto_without_nans(func: Callable):
+    """ Decorate a function that accepts arguments of mutation rates
+    so that it automatically drops positions with NaN values. """
+
+    @wraps(func)
+    def wrapper(*mus, **kwargs):
+        return func(*without_nans(*mus), **kwargs)
+
+    return wrapper
