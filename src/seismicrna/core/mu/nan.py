@@ -8,7 +8,7 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 
-from .dim import get_common_num_pos
+from .dim import count_pos, counts_pos_consensus
 
 
 def any_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
@@ -54,8 +54,30 @@ def no_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
     return np.logical_not(any_nan(mus))
 
 
-def without_nans(*mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Remove positions from axis 0 at which any mutation rate is NaN.
+def remove_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
+    """ Remove positions at which any mutation rate is NaN.
+
+    Parameters
+    ----------
+    mus: numpy.ndarray | pandas.Series | pandas.DataFrame
+        Mutation rates. Multiple sets of mutation rates can be given as
+        columns of a multidimensional array or DataFrame.
+
+    Returns
+    -------
+    tuple[numpy.ndarray | pandas.Series | pandas.DataFrame, ...]
+        Mutation rates without NaN values.
+    """
+    # List the 0-indexed positions.
+    positions = np.arange(count_pos(mus))
+    # Find the positions with no NaN values.
+    pos_no_nan = positions[no_nan(mus)]
+    # Return only those positions.
+    return np.take(mus, pos_no_nan, axis=0)
+
+
+def removes_nan(*mus: np.ndarray | pd.Series | pd.DataFrame):
+    """ Remove positions at which any mutation rate in any group is NaN.
 
     Parameters
     ----------
@@ -68,20 +90,31 @@ def without_nans(*mus: np.ndarray | pd.Series | pd.DataFrame):
     tuple[numpy.ndarray | pandas.Series | pandas.DataFrame, ...]
         Mutation rates without NaN values.
     """
-    # Generate an array of the positions.
-    positions = np.arange(get_common_num_pos(*mus))
+    # List the 0-indexed positions.
+    positions = np.arange(counts_pos_consensus(*mus))
     # Find positions with no NaN values in any group of mutation rates.
     pos_no_nan = positions[np.logical_and.reduce(list(map(no_nan, mus)))]
     # Return only those positions from each group.
     return tuple(np.take(mu, pos_no_nan, axis=0) for mu in mus)
 
 
-def auto_without_nans(func: Callable):
-    """ Decorate a function that accepts arguments of mutation rates
-    so that it automatically drops positions with NaN values. """
+def auto_remove_nan(func: Callable):
+    """ Decorate a function with one positional argument of mutation
+    rates so that it automatically removes positions with NaNs. """
+
+    @wraps(func)
+    def wrapper(mus, *args, **kwargs):
+        return func(remove_nan(mus), *args, **kwargs)
+
+    return wrapper
+
+
+def auto_removes_nan(func: Callable):
+    """ Decorate a function with positional argument(s) of mutation
+    rates so that it automatically removes positions with NaNs. """
 
     @wraps(func)
     def wrapper(*mus, **kwargs):
-        return func(*without_nans(*mus), **kwargs)
+        return func(*removes_nan(*mus), **kwargs)
 
     return wrapper

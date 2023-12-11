@@ -3,7 +3,7 @@ import unittest as ut
 import numpy as np
 import pandas as pd
 
-from seismicrna.core.mu.nan import any_nan, no_nan, without_nans
+from seismicrna.core.mu.nan import any_nan, no_nan, removes_nan
 
 rng = np.random.default_rng()
 
@@ -123,7 +123,7 @@ class TestWithoutNaNs(ut.TestCase):
     def test_array1d(self):
         mus = np.array([0.0, 0.1, np.nan, 0.3, 0.4])
         expect = np.array([0.0, 0.1, 0.3, 0.4])
-        a, = without_nans(mus)
+        a, = removes_nan(mus)
         self.assertIsInstance(a, np.ndarray)
         self.assertTrue(np.array_equal(a, expect))
 
@@ -135,7 +135,7 @@ class TestWithoutNaNs(ut.TestCase):
                         [np.nan, 0.9]])
         expect = np.array([[0.0, 0.5],
                            [0.3, 0.8]])
-        a, = without_nans(mus)
+        a, = removes_nan(mus)
         self.assertIsInstance(a, np.ndarray)
         self.assertTrue(np.array_equal(a, expect))
 
@@ -144,7 +144,7 @@ class TestWithoutNaNs(ut.TestCase):
                         index=[1, 2, 6, 7, 8])
         expect = pd.Series([0.0, 0.1, 0.3, 0.4],
                            index=[1, 2, 7, 8])
-        a, = without_nans(mus)
+        a, = removes_nan(mus)
         self.assertIsInstance(a, pd.Series)
         self.assertTrue(a.equals(expect))
 
@@ -160,7 +160,7 @@ class TestWithoutNaNs(ut.TestCase):
                                [0.3, 0.8]],
                               index=[1, 7],
                               columns=["x", "y"])
-        a, = without_nans(mus)
+        a, = removes_nan(mus)
         self.assertIsInstance(a, pd.DataFrame)
         self.assertTrue(a.equals(expect))
 
@@ -175,7 +175,7 @@ class TestWithoutNaNs(ut.TestCase):
                           [0.4, 0.9]],
                          index=[5, 6, 7, 8, 9],
                          columns=["x", "y"])
-        na, sa, fa = without_nans(n, s, f)
+        na, sa, fa = removes_nan(n, s, f)
         self.assertIsInstance(na, np.ndarray)
         self.assertTrue(np.array_equal(na, np.array([0.0, 0.4])))
         self.assertIsInstance(sa, pd.Series)

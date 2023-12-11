@@ -5,11 +5,12 @@ Scale mutation rates.
 import numpy as np
 import pandas as pd
 
-from .nan import without_nans
+from .nan import auto_remove_nan
 
 
+@auto_remove_nan
 def get_quantile(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
-    """ Compute the mutation rate at a quantile, ignoring NaN values.
+    """ Compute the mutation rate at a quantile, ignoring NaNs.
 
     Parameters
     ----------
@@ -24,8 +25,6 @@ def get_quantile(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     float | numpy.ndarray | pandas.Series
         Value of the quantile from the mutation rates.
     """
-    # Remove positions with NaN mutation rates.
-    mus, = without_nans(mus)
     if mus.size == 0:
         # If there are no values, then return NaN instead of raising an
         # error, as np.quantile would.
@@ -51,7 +50,7 @@ def normalize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     """
     if quantile == 0.:
         # Do not normalize the mutation rates if quantile == 0.
-        return mus.copy()
+        return mus
     return mus / get_quantile(mus, quantile)
 
 
@@ -85,8 +84,9 @@ def winsorize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     return winsorized
 
 
+@auto_remove_nan
 def calc_rms(mus: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the root-mean-square mutation rate.
+    """ Calculate the root-mean-square mutation rate, ignoring NaNs.
 
     Parameters
     ----------

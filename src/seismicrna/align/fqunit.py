@@ -323,7 +323,9 @@ class FastqUnit(object):
                                    fqs=fastq_args.get(cls.KEY_DMATED, ()))
 
     def __str__(self):
-        return "".join([self.kind, " and ".join(map(str, self.paths.values()))])
+        return " ".join(
+            [self.kind, " and ".join(map(str, self.paths.values()))]
+        )
 
 ########################################################################
 #                                                                      #
