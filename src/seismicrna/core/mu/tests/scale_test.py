@@ -10,10 +10,8 @@ rng = np.random.default_rng()
 
 
 class TestGetQuantile(ut.TestCase):
-    """ Test the function `get_quantile`. """
 
     def test_no_nan(self):
-        """ Test with no NaN values. """
         for n in [5, 11, 19]:
             # Create a random order so that the NaN values are mixed in
             # with the finite values.
@@ -34,7 +32,6 @@ class TestGetQuantile(ut.TestCase):
                 self.assertTrue(np.allclose(values, quantiles * mu_max))
 
     def test_some_nan(self):
-        """ Test with some (but not all) NaN values. """
         for n in [5, 11, 19]:
             for n_nan in [1, 3, 5]:
                 # Create a random order so that the NaN values are mixed
@@ -58,7 +55,6 @@ class TestGetQuantile(ut.TestCase):
                     self.assertTrue(np.allclose(values, quantiles * mu_max))
 
     def test_all_nan(self):
-        """ Test that an all-NaN array returns NaN values. """
         for n in [5, 11, 19]:
             quantiles = np.linspace(0., 1., n)
             # Make mus an all-NaN array.
@@ -69,7 +65,6 @@ class TestGetQuantile(ut.TestCase):
             self.assertTrue(np.all(np.isnan(values)))
 
     def test_empty(self):
-        """ Test that an empty array always returns NaN values. """
         # Make mus an empty array.
         mus = np.array([], dtype=float)
         for n in [5, 11, 19]:
@@ -80,7 +75,6 @@ class TestGetQuantile(ut.TestCase):
             self.assertTrue(np.all(np.isnan(values)))
 
     def test_invalid_quantiles(self):
-        """ Test that invalid quantiles raise errors. """
         n = 11
         mus = rng.random(n)
         errmsg = r"Quantiles must be in the range [\[0, 1\]]"
@@ -98,45 +92,37 @@ class TestGetQuantile(ut.TestCase):
 
 
 class TestNormalize(ut.TestCase):
-    """ Test the function `mu.normalize`. """
 
     def test_normalize_p0(self):
-        """ Do not normalize. """
         for n in [5, 12, 19]:
             mus = np.linspace(0.0, 0.1, n)
             self.assertTrue(np.allclose(normalize(mus, 0.0), mus))
 
     def test_normalize_p50(self):
-        """ Normalize to the median. """
         for n in [5, 12, 19]:
             mus = np.linspace(0.0, 0.1, n)
             self.assertTrue(np.allclose(normalize(mus, 0.5), mus * 20.))
 
     def test_normalize_p100(self):
-        """ Normalize to the maximum. """
         for n in [5, 12, 19]:
             mus = np.linspace(0.0, 0.1, n)
             self.assertTrue(np.allclose(normalize(mus, 1.0), mus * 10.))
 
 
 class TestWinsorize(ut.TestCase):
-    """ Test the function `mu.winsorize`. """
 
     def test_winsorize_p0(self):
-        """ Do not winsorize. """
         for n in [5, 12, 19]:
             mus = np.linspace(0.0, 0.1, n)
             self.assertTrue(np.allclose(winsorize(mus, 0.0), mus))
 
     def test_winsorize_p50(self):
-        """ Winsorize to the median. """
         for n in [5, 12, 19]:
             mus = np.linspace(0.0, 0.1, n)
             self.assertTrue(np.allclose(winsorize(mus, 0.5),
                                         np.where(mus < 0.05, mus * 20., 1.)))
 
     def test_winsorize_p100(self):
-        """ Winsorize to the maximum. """
         for n in [5, 12, 19]:
             mus = np.linspace(0.0, 0.1, n)
             self.assertTrue(np.allclose(winsorize(mus, 1.0), mus * 10.))

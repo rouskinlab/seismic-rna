@@ -7,14 +7,14 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 
-from .nan import auto_without_nans
+from .nan import auto_removes_nan
 from .rank import get_ranks
 from .scale import calc_rms, normalize
 from ..arg import MUCOMP_DETERM, MUCOMP_PEARSON, MUCOMP_RMSD, MUCOMP_SPEARMAN
 from ..seq import get_shared_index, get_windows
 
 
-@auto_without_nans
+@auto_removes_nan
 def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
               mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the root-mean-square deviation (RMSD) between two
@@ -51,7 +51,7 @@ def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
     return np.sqrt(np.mean(np.square(diff), axis=0) * (rms1 * rms2))
 
 
-@auto_without_nans
+@auto_removes_nan
 def calc_pearson(mus1: np.ndarray | pd.Series | pd.DataFrame,
                  mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the Pearson correlation coefficient between two groups
@@ -109,7 +109,7 @@ def calc_coeff_determ(mus1: np.ndarray | pd.Series | pd.DataFrame,
     return np.square(calc_pearson(mus1, mus2))
 
 
-@auto_without_nans
+@auto_removes_nan
 def calc_spearman(mus1: np.ndarray | pd.Series | pd.DataFrame,
                   mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the Spearman rank correlation coefficient between two
