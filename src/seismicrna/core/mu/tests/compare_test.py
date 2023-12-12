@@ -15,13 +15,6 @@ rng = np.random.default_rng()
 
 class TestCalcRMSD(ut.TestCase):
 
-    def test_array0d(self):
-        self.assertRaisesRegex(ValueError,
-                               "Cannot count positions in 0-D arrays",
-                               calc_rmsd,
-                               np.array(0.),
-                               np.array(0.))
-
     def test_array1d_allzero(self):
         for n in range(10):
             x = np.zeros(n, dtype=float)

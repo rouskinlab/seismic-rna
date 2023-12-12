@@ -27,12 +27,14 @@ def reframe(values: Number | np.ndarray | pd.Series | pd.DataFrame,
           - If an array-like, then assign the axis a Pandas Index from
             the values in the element.
 
-          If all items are integers, then return a NumPy array in which
-          the given values are broadcast to the shape specified by axes.
-          If at least one element is array-like, then return a Pandas
-          object (a Series if axes has one item, a DataFrame if two).
-          If integers and array-like items are mixed, then replace
-          each integer with a Pandas RangeIndex.
+          Then, the array and index types are determined as follows:
+
+          - If all elements are integers, then return a NumPy array in
+            which the values are broadcast to the shape given by axes.
+          - If at least one element is array-like, then return a Pandas
+            object (a Series if axes has one item, a DataFrame if two).
+          - If integers and array-like items are mixed, then replace
+            each integer with a Pandas RangeIndex.
 
     Returns
     -------
@@ -42,42 +44,45 @@ def reframe(values: Number | np.ndarray | pd.Series | pd.DataFrame,
     if axes is None:
         # No axes specified: return just the values as a NumPy array.
         return np.asarray(values)
-    # Determine whether to interpret all axes as lengths or arrays.
+    # Determine whether to interpret all axes as dimensions or indexes.
     lengths = list()
     indexes = list()
     for axis in axes:
         if isinstance(axis, int):
-            # The current axis has only its length specified.
+            # For the current axis, only the dimension is specified.
             if indexes:
-                # If any previous axes had values specified, then all
-                # axes must have values, so promote to a RangeIndex.
+                # If any previous axes were indexes, then all axes must
+                # be indexes, so promote this axis to a RangeIndex.
                 indexes.append(pd.RangeIndex(axis))
             else:
                 # Otherwise, just specify the length of the axis.
                 lengths.append(axis)
         elif isinstance(axis, (np.ndarray, pd.Index)):
-            # The current axis has explicit index values specified.
+            # For the current axis, an index is explicitly specified.
             if lengths and not indexes:
-                # If this is the first array-like axis, but any previous
-                # axes were integers, then those previous axes must be
-                # promoted to indexes before adding the current axis.
+                # If this is the first axis with an index, but at least
+                # one axis was already given (by its dimension only),
+                # then promote all previously given axes to indexes.
                 indexes.extend(map(pd.RangeIndex, lengths))
             indexes.append(axis)
         else:
             raise TypeError("Expected each axis to be int, ndarray, or Index, "
                             f"but got {type(axis).__name__}")
-    if indexes:
-        # If at least one index was given, then return a Pandas object
-        # with all indexes.
-        if len(indexes) == 1:
-            return pd.Series(values, index=indexes[0])
-        if len(indexes) == 2:
-            return pd.DataFrame(values, index=indexes[0], columns=indexes[1])
-        raise ValueError("A Pandas object must have 1 or 2 axes, "
-                         f"but got {len(indexes)}")
-    # No indexes were given, so the lengths of the axes merely specify
-    # the shape of an array: broadcast the values to that shape.
-    return np.array(np.broadcast_to(values, tuple(lengths)))
+    # Determine the shape of the output array and broadcast the values.
+    shape = tuple(idx.size for idx in indexes) if indexes else tuple(lengths)
+    broadcast = np.broadcast_to(values, shape)
+    num_indexes = len(indexes)
+    if num_indexes == 0:
+        # No indexes were specified, so just return the broadcast array.
+        return np.array(broadcast)
+    if num_indexes == 1:
+        # Exactly one index was specified, so return a Series.
+        return pd.Series(broadcast, index=indexes[0])
+    if num_indexes == 2:
+        # Exactly two indexes were specified, so return a DataFrame.
+        return pd.DataFrame(broadcast, index=indexes[0], columns=indexes[1])
+    raise ValueError("A Pandas object must have 1 or 2 axes, "
+                     f"but got {num_indexes}")
 
 
 def reframe_like(values: Number | np.ndarray | pd.Series | pd.DataFrame,
