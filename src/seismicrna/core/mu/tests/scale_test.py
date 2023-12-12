@@ -12,7 +12,7 @@ rng = np.random.default_rng()
 class TestGetQuantile(ut.TestCase):
 
     def test_no_nan(self):
-        for n in [5, 11, 19]:
+        for n in range(1, 5):
             # Create a random order so that the NaN values are mixed in
             # with the finite values.
             order = np.arange(n)
@@ -32,8 +32,8 @@ class TestGetQuantile(ut.TestCase):
                 self.assertTrue(np.allclose(values, quantiles * mu_max))
 
     def test_some_nan(self):
-        for n in [5, 11, 19]:
-            for n_nan in [1, 3, 5]:
+        for n in range(1, 5):
+            for n_nan in range(1, n - 1):
                 # Create a random order so that the NaN values are mixed
                 # in with the finite values.
                 order = np.arange(n + n_nan)
@@ -55,7 +55,7 @@ class TestGetQuantile(ut.TestCase):
                     self.assertTrue(np.allclose(values, quantiles * mu_max))
 
     def test_all_nan(self):
-        for n in [5, 11, 19]:
+        for n in range(1, 5):
             quantiles = np.linspace(0., 1., n)
             # Make mus an all-NaN array.
             mus = np.full(n, np.nan)
@@ -67,7 +67,7 @@ class TestGetQuantile(ut.TestCase):
     def test_empty(self):
         # Make mus an empty array.
         mus = np.array([], dtype=float)
-        for n in [5, 11, 19]:
+        for n in range(1, 5):
             quantiles = np.linspace(0., 1., n)
             values = np.array([get_quantile(mus, quantile)
                                for quantile in quantiles])

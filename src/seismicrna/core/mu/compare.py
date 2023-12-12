@@ -18,9 +18,9 @@ from ..seq import get_shared_index, get_windows
 def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
               mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the root-mean-square deviation (RMSD) between two
-    groups of mutation rates.
+    groups of mutation rates, ignoring NaNs.
 
-    The RMSD is officially defined as
+    The RMSD is defined as
 
     Parameters
     ----------
@@ -55,7 +55,7 @@ def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
 def calc_pearson(mus1: np.ndarray | pd.Series | pd.DataFrame,
                  mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the Pearson correlation coefficient between two groups
-    of mutation rates.
+    of mutation rates, ignoring NaNs.
 
     Parameters
     ----------
@@ -89,7 +89,7 @@ def calc_pearson(mus1: np.ndarray | pd.Series | pd.DataFrame,
 def calc_coeff_determ(mus1: np.ndarray | pd.Series | pd.DataFrame,
                       mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the coefficient of determination (a.k.a. R-squared)
-    between two groups of mutation rates.
+    between two groups of mutation rates, ignoring NaNs.
 
     Parameters
     ----------
@@ -113,7 +113,7 @@ def calc_coeff_determ(mus1: np.ndarray | pd.Series | pd.DataFrame,
 def calc_spearman(mus1: np.ndarray | pd.Series | pd.DataFrame,
                   mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the Spearman rank correlation coefficient between two
-    groups of mutation rates.
+    groups of mutation rates, ignoring NaNs.
 
     Parameters
     ----------
@@ -129,7 +129,7 @@ def calc_spearman(mus1: np.ndarray | pd.Series | pd.DataFrame,
     float | np.ndarray | pd.Series
         Spearman rank correlation coefficient.
     """
-    # Calculate the Pearson correlation of the ranks.
+    # The Spearman correlation is the Pearson correlation of the ranks.
     return calc_pearson(get_ranks(mus1), get_ranks(mus2))
 
 

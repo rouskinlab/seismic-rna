@@ -1,3 +1,80 @@
+"""
+
+Mutation Rate Core Module
+
+========================================================================
+
+The functions in this module serve two main purposes:
+ 1. Adjust mutation rates to correct for observer bias.
+ 2. Normalize and winsorize mutation rates
+
+------------------------------------------------------------------------
+
+Adjust mutation rates to correct for observer bias
+
+Our lab has found that pairs of mutations in DMS-MaPseq data rarely have
+fewer than three non-mutated bases separating them. We suspect that the
+reverse transcriptase is prone to falling off or stalling at locations
+in the RNA where DMS has methylated bases that are too close.
+
+Regardless of the reason, mutations on nearby bases are not independent,
+which violates a core assumption of the Bernoulli mixture model that we
+use in the expectation-maximization clustering algorithm. Namely, that
+mutations occur independently of each other, such that the likelihood of
+observing a bit vector is the product of the mutation rate of each base
+that is mutated and one minus the mutation rate ("non-mutation rate") of
+each base that is not mutated.
+
+In order to use the Bernoulli mixture model for expectation-maximization
+clustering, we modify it such that bases separated by zero, one, or two
+other bases are no longer assumed to mutate independently. Specifically,
+since pairs of close mutations are rare, we add the assumption that no
+mutations separated by fewer than three non-mutated bases may occur, and
+exclude the few bit vectors that have such close mutations.
+
+When these bit vectors are assumed to exist in the original population
+of RNA molecules but not appear in the observed data, the mutation rates
+that are observed will differ from the real, underlying mutation rates,
+which would include the unobserved bit vectors. The real mutation rates
+must therefore be estimated from the observed mutation rates.
+
+It is relatively easy to estimate the observed mutation rates given the
+real mutation rates, but there is no closed-form solution that we know
+of to estimate the real mutation rates from the observed mutation rates.
+Thus, we use an iterative approach, based on Newton's method for finding
+the roots of functions. We initially guess the real mutation rates. Each
+iteration, we estimate the mutation rates that would have been observed
+given our current guess of the real mutation rates, and then subtract
+the mutation rates that were actually observed. This difference would be
+zero if we had accurately guessed the real mutation rates. Thus, we use
+Newton's method to solve for the real mutation rates that minimize this
+difference. The details are described in the comments of this module and
+in Tomezsko et al. (2020) (https://doi.org/10.1038/s41586-020-2253-5).
+
+------------------------------------------------------------------------
+
+Normalize and winsorize mutation rates
+
+The mutation rates of an RNA may vary among different samples because of
+variations in the chemical probing and mutational profiling procedure.
+Thus, it is often helpful to compute "normalized" mutation rates that
+can be compared directly across different samples and used to predict
+secondary structures.
+
+This module currently provides a simple method for normalizing mutation
+rates. First, a specific quantile of the dataset is chosen, such as 0.95
+(i.e. the 95th percentile). The mutation rate with this quantile is set
+to 1.0, and all other mutation rates are scaled linearly.
+
+If the chosen quantile is less than 1.0, then any mutation rates above
+the quantile will be scaled to values greater than 1.0. Since these high
+mutation rates may be exceptionally reactive bases, it is often helpful
+to cap the normalized mutation rates to a maximum of 1.0. The winsorize
+function in this module performs normalization and then sets any value
+greater than 1.0 to 1.0.
+
+"""
+
 from logging import getLogger
 
 import numpy as np
@@ -236,13 +313,13 @@ def calc_mu_adj_numpy(mus_obs: np.ndarray, min_gap: int,
         Initial guess of the real mutation rates. If given, must be the
         same shape as mus_obs. If omitted, defaults to mus_obs, which is
         usually close to the optimal value.
-    f_tol: float = 1e-4
+    f_tol: float = 5e-1
         Absolute tolerance in residual.
-    f_rtol: float = 1e-0
+    f_rtol: float = 5e-1
         Relative tolerance in residual.
     x_tol: float = 1e-4
         Absolute tolerance in step.
-    x_rtol: float = 1e-0
+    x_rtol: float = 5e-1
         Relative tolerance in step.
 
     Returns
@@ -288,8 +365,10 @@ def calc_mu_adj_numpy(mus_obs: np.ndarray, min_gap: int,
                                                              mus_obs,
                                                              min_gap),
                               mus_guess,
-                              f_tol=f_tol, f_rtol=f_rtol,
-                              x_tol=x_tol, x_rtol=x_rtol))
+                              f_tol=f_tol,
+                              f_rtol=f_rtol,
+                              x_tol=x_tol,
+                              x_rtol=x_rtol))
 
 
 def calc_prop_adj_numpy(prop_obs: np.ndarray, f_obs: np.ndarray):

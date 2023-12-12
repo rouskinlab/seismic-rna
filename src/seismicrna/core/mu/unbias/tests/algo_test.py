@@ -11,12 +11,12 @@ from logging import Filter, LogRecord
 
 import numpy as np
 
-from ..unbias import (MAX_MU,
-                      _calc_mu_obs,
-                      calc_mu_adj_numpy,
-                      calc_f_obs_numpy,
-                      clip,
-                      logger as unbias_logger)
+from seismicrna.core.mu.unbias.algo import (MAX_MU,
+                                            _calc_mu_obs,
+                                            calc_mu_adj_numpy,
+                                            calc_f_obs_numpy,
+                                            clip,
+                                            logger as algo_logger)
 
 rng = np.random.default_rng()
 
@@ -145,13 +145,13 @@ class TestClip(ut.TestCase):
             # Suppress the warnings that mu.clip() issues for mutation
             # rates being outside the bounds, since in this case they
             # are out of bounds deliberately.
-            unbias_logger.addFilter(clip_filter := ClipFilter())
+            algo_logger.addFilter(clip_filter := ClipFilter())
             try:
                 # Clip the mutation rates to the bounds.
                 clipped = clip(mus)
             finally:
                 # Re-enable the warnings for mu.clip().
-                unbias_logger.removeFilter(clip_filter)
+                algo_logger.removeFilter(clip_filter)
             # Test that all clipped mutation rates are in [0, MAX_MU].
             self.assertTrue(np.all(clipped >= 0.) and np.all(clipped <= MAX_MU))
             # Test that NaN values in mus become 0 values in clipped.
@@ -401,6 +401,10 @@ class TestCalcMuAdjNumpy(ut.TestCase):
                     mus_adj = calc_mu_adj_numpy(mus_obs, g)
                     # Test if adjusted and initial mutation rates match.
                     self.assertTrue(np.allclose(mus_adj, mus))
+
+
+if __name__ == "__main__":
+    ut.main()
 
 ########################################################################
 #                                                                      #

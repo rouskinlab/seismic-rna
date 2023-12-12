@@ -1,120 +1,373 @@
 import unittest as ut
+from itertools import product
 
 import numpy as np
 import pandas as pd
 
-from ..frame import calc_f_obs_frame, calc_mu_adj_frame, calc_prop_adj_frame
-from ..unbias import calc_f_obs_numpy, calc_mu_adj_numpy
-from ...seq import DNA, Section, seq_pos_to_index
+from seismicrna.core.mu import reframe, reframe_like
 
 rng = np.random.default_rng()
 
 
-class TestCalcDataFrame(ut.TestCase):
-    """ Test functions `mu.calc_mu_adj_df` and mu.calc_f_obs_df. """
+def broadcastable(vshape: tuple[int, ...], tshape: tuple[int, ...]):
+    """ Check whether values in the shape of `vshape` can be broadcast
+    to the target shape of `tshape`.
 
-    def test_equals_numpy(self):
-        """ Check if the output of `calc_mu_adj_df` equals that of
-        `calc_mu_adj_numpy` """
-        max_mu = 0.1
-        start = 1
-        gaps = [0, 3]
-        for length in range(1, 10):
-            # Generate a random reference sequence.
-            refseq = DNA.random(length)
-            # Make a section for the sequence.
-            section = Section("myref", refseq)
-            for n_pos in range(length):
-                # Choose a random set of positions, and sort them.
-                pos = np.sort(rng.choice(length, n_pos, replace=False))
-                # Make an index from those positions.
-                index = seq_pos_to_index(refseq, pos + start, start)
-                for n_clust in range(5):
-                    clusters = pd.Index([f"Cluster-{i}"
-                                         for i in range(1, n_clust + 1)])
-                    # Generate random mutation rates.
-                    mus_obs_values = max_mu * rng.random((n_pos, n_clust))
-                    mus_obs_df = pd.DataFrame(mus_obs_values,
-                                              index=index,
-                                              columns=clusters)
-                    # To run calc_mu_adj_numpy, create an array of the
-                    # mutation rates where values in missing positions
-                    # are set to 0.
-                    mus_obs_np = np.zeros((length, n_clust))
-                    for i_value, i_numpy in enumerate(pos):
-                        mus_obs_np[i_numpy] = mus_obs_values[i_value]
-                    for gap in gaps:
-                        # Run calc_mu_adj_df.
-                        mus_adj_df = calc_mu_adj_frame(mus_obs_df, section, gap)
-                        # Run calc_mu_adj_numpy.
-                        mus_adj_np = calc_mu_adj_numpy(mus_obs_np, gap)
-                        # Compare the results.
-                        self.assertIsInstance(mus_adj_df, pd.DataFrame)
-                        self.assertTrue(np.allclose(mus_adj_df.values,
-                                                    mus_adj_np[pos]))
-                        self.assertTrue(index.equals(mus_adj_df.index))
-                        self.assertTrue(clusters.equals(mus_adj_df.columns))
-                        # Run calc_f_obs_df.
-                        f_obs_df = calc_f_obs_frame(mus_adj_df, section, gap)
-                        # Run calc_f_obs_numpy.
-                        f_obs_np = calc_f_obs_numpy(mus_adj_np, gap)
-                        # Compare the results.
-                        self.assertIsInstance(f_obs_df, pd.Series)
-                        self.assertTrue(np.allclose(f_obs_df.values,
-                                                    f_obs_np))
-                        self.assertTrue(clusters.equals(f_obs_df.index))
+    Parameters
+    ----------
+    vshape: tuple[int, ...]
+        Shape of the values to broadcast.
+    tshape: tuple[int, ...]
+        Shape of the target to which the values should be broadcast.
+
+    Returns
+    -------
+    bool
+        Whether the value shape can be broadcast to the target shape.
+    """
+    if len(tshape) < len(vshape):
+        # An array cannot be broadcast to a shape with fewer dimensions.
+        return False
+    if len(tshape) > len(vshape):
+        # If the target shape has more dimensions than the array, then
+        # prepend extra dimensions (each of length 1) to the array.
+        return broadcastable((len(tshape) - len(vshape)) * (1,) + vshape,
+                             tshape)
+    # The array is broadcastable to the target shape if and only if, for
+    # every dimension, the length of the original axis is 1 or equals
+    # the length of the target axis.
+    for vlen, tlen in zip(vshape, tshape, strict=True):
+        if vlen != 1 and vlen != tlen:
+            return False
+    return True
 
 
-class TestCalcSeries(ut.TestCase):
-    """ Test `mu.calc_mu_adj_series` and mu.calc_f_obs_series. """
+class TestReframe(ut.TestCase):
 
-    def test_equals_numpy(self):
-        """ Check if the output of `calc_mu_adj_df` equals that of
-        `calc_mu_adj_numpy` """
-        max_mu = 0.1
-        start = 1
-        gaps = [0, 3]
-        for length in range(1, 10):
-            # Generate a random reference sequence.
-            refseq = DNA.random(length)
-            # Make a section for the sequence.
-            section = Section("myref", refseq)
-            for n_pos in range(length):
-                # Choose a random set of positions, and sort them.
-                pos = np.sort(rng.choice(length, n_pos, replace=False))
-                # Make an index from those positions.
-                index = seq_pos_to_index(refseq, pos + start, start)
-                # Generate random mutation rates.
-                mus_obs_values = max_mu * rng.random(n_pos)
-                mus_obs_series = pd.Series(mus_obs_values, index=index)
-                # To run calc_mu_adj_numpy, create an array of the
-                # mutation rates where values in missing positions
-                # are set to 0.
-                mus_obs_np = np.zeros(length)
-                for i_value, i_numpy in enumerate(pos):
-                    mus_obs_np[i_numpy] = mus_obs_values[i_value]
-                for gap in gaps:
-                    # Run calc_mu_adj_series.
-                    mus_adj_series = calc_mu_adj_frame(mus_obs_series,
-                                                       section,
-                                                       gap)
-                    # Run calc_mu_adj_numpy.
-                    mus_adj_np = calc_mu_adj_numpy(mus_obs_np, gap)
-                    # Compare the results.
-                    self.assertIsInstance(mus_adj_series, pd.Series)
-                    self.assertTrue(np.array_equal(mus_adj_series.values,
-                                                   mus_adj_np[pos]))
-                    self.assertTrue(index.equals(mus_adj_series.index))
-                    # Run calc_f_obs_series.
-                    f_obs_series = calc_f_obs_frame(mus_adj_series,
-                                                    section,
-                                                    gap)
-                    # Run calc_f_obs_numpy.
-                    f_obs_np = calc_f_obs_numpy(mus_adj_np, gap)
-                    # Compare the results.
-                    self.assertIsInstance(f_obs_series, float)
-                    self.assertIsInstance(f_obs_np, float)
-                    self.assertEqual(f_obs_series, f_obs_np)
+    def test_float_none(self):
+        for value in np.linspace(0., 1., 3):
+            frame = reframe(value)
+            self.assertIsInstance(frame, np.ndarray)
+            self.assertEqual(frame.ndim, 0)
+            self.assertTrue(np.array_equal(frame, np.array(value)))
+
+    def test_float_ints(self):
+        for ndim in range(4):
+            for shape in product(range(4), repeat=ndim):
+                self.assertIsInstance(shape, tuple)
+                self.assertEqual(len(shape), ndim)
+                for value in np.linspace(0., 1., 3):
+                    frame = reframe(value, shape)
+                    self.assertIsInstance(frame, np.ndarray)
+                    self.assertEqual(frame.shape, shape)
+                    self.assertTrue(np.allclose(frame, value))
+
+    def test_float_index(self):
+        for length in range(5):
+            index = rng.integers(10, size=length)
+            self.assertEqual(index.shape, (length,))
+            for value in np.linspace(0., 1., 3):
+                frame = reframe(value, (index,))
+                self.assertIsInstance(frame, pd.Series)
+                self.assertEqual(frame.shape, (length,))
+                self.assertTrue(np.allclose(frame, value))
+                self.assertIsInstance(frame.index, pd.Index)
+                self.assertTrue(np.all(frame.index == index))
+
+    def test_float_index_int(self):
+        for nrow in range(5):
+            rows = rng.integers(10, size=nrow)
+            self.assertEqual(rows.shape, (nrow,))
+            for ncol in range(3):
+                for value in np.linspace(0., 1., 3):
+                    frame = reframe(value, (rows, ncol))
+                    self.assertIsInstance(frame, pd.DataFrame)
+                    self.assertEqual(frame.shape, (nrow, ncol))
+                    self.assertTrue(np.allclose(frame, value))
+                    self.assertIsInstance(frame.index, pd.Index)
+                    self.assertTrue(np.all(frame.index == rows))
+                    self.assertIsInstance(frame.columns, pd.RangeIndex)
+                    self.assertTrue(np.all(frame.columns == np.arange(ncol)))
+
+    def test_float_int_index(self):
+        for nrow in range(5):
+            for ncol in range(3):
+                cols = rng.integers(10, size=ncol)
+                self.assertEqual(cols.shape, (ncol,))
+                for value in np.linspace(0., 1., 3):
+                    frame = reframe(value, (nrow, cols))
+                    self.assertIsInstance(frame, pd.DataFrame)
+                    self.assertEqual(frame.shape, (nrow, ncol))
+                    self.assertTrue(np.allclose(frame, value))
+                    self.assertIsInstance(frame.index, pd.RangeIndex)
+                    self.assertTrue(np.all(frame.index == np.arange(nrow)))
+                    self.assertIsInstance(frame.columns, pd.Index)
+                    self.assertTrue(np.all(frame.columns == cols))
+
+    def test_float_index_index(self):
+        for nrow in range(5):
+            rows = rng.integers(10, size=nrow)
+            self.assertEqual(rows.shape, (nrow,))
+            for ncol in range(3):
+                cols = rng.integers(10, size=ncol)
+                self.assertEqual(cols.shape, (ncol,))
+                for value in np.linspace(0., 1., 3):
+                    frame = reframe(value, (rows, cols))
+                    self.assertIsInstance(frame, pd.DataFrame)
+                    self.assertEqual(frame.shape, (nrow, ncol))
+                    self.assertTrue(np.allclose(frame, value))
+                    self.assertIsInstance(frame.index, pd.Index)
+                    self.assertTrue(np.all(frame.index == rows))
+                    self.assertIsInstance(frame.columns, pd.Index)
+                    self.assertTrue(np.all(frame.columns == cols))
+
+    def test_float_index_index_int(self):
+        for nrow in range(5):
+            rows = rng.integers(10, size=nrow)
+            self.assertEqual(rows.shape, (nrow,))
+            for ncol in range(3):
+                cols = rng.integers(10, size=ncol)
+                self.assertEqual(cols.shape, (ncol,))
+                for nlev in range(2):
+                    for value in np.linspace(0., 1., 3):
+                        self.assertRaisesRegex(ValueError,
+                                               "A Pandas object must have 1 "
+                                               "or 2 axes, but got 3",
+                                               reframe,
+                                               value,
+                                               (rows, cols, nlev))
+
+    def test_float_index_index_index(self):
+        for nrow in range(5):
+            rows = rng.integers(10, size=nrow)
+            self.assertEqual(rows.shape, (nrow,))
+            for ncol in range(3):
+                cols = rng.integers(10, size=ncol)
+                self.assertEqual(cols.shape, (ncol,))
+                for nlev in range(2):
+                    levs = rng.integers(10, size=nlev)
+                    self.assertEqual(levs.shape, (nlev,))
+                    for value in np.linspace(0., 1., 3):
+                        self.assertRaisesRegex(ValueError,
+                                               "A Pandas object must have 1 "
+                                               "or 2 axes, but got 3",
+                                               reframe,
+                                               value,
+                                               (rows, cols, levs))
+
+    def test_array_none(self):
+        for ndim in range(4):
+            for shape in product(range(4), repeat=ndim):
+                self.assertIsInstance(shape, tuple)
+                self.assertEqual(len(shape), ndim)
+                value = rng.random(shape)
+                self.assertIsInstance(value, np.ndarray)
+                self.assertEqual(value.shape, shape)
+                frame = reframe(value, shape)
+                self.assertIsInstance(frame, np.ndarray)
+                self.assertEqual(frame.shape, shape)
+                self.assertTrue(np.allclose(frame, value))
+
+    def test_array_ints(self):
+        for vdim in range(4):
+            for vshape in product(range(4), repeat=vdim):
+                self.assertIsInstance(vshape, tuple)
+                self.assertEqual(len(vshape), vdim)
+                value = rng.random(vshape)
+                self.assertIsInstance(value, np.ndarray)
+                self.assertEqual(value.shape, vshape)
+                for tdim in range(4):
+                    for tshape in product(range(4), repeat=tdim):
+                        self.assertIsInstance(tshape, tuple)
+                        self.assertEqual(len(tshape), tdim)
+                        if broadcastable(vshape, tshape):
+                            fshape = np.broadcast_shapes(vshape, tshape)
+                            frame = reframe(value, tshape)
+                            self.assertIsInstance(frame, np.ndarray)
+                            self.assertEqual(frame.shape, fshape)
+                            self.assertTrue(np.allclose(frame, value))
+                        else:
+                            if tdim == 0:
+                                err = ("cannot broadcast a non-scalar to a "
+                                       "scalar array")
+                            elif vdim > tdim:
+                                err = ("input operand has more dimensions "
+                                       "than allowed by the axis remapping")
+                            else:
+                                err = "could not be broadcast together"
+                            self.assertRaisesRegex(ValueError,
+                                                   err,
+                                                   reframe,
+                                                   value,
+                                                   tshape)
+
+    def test_array_index(self):
+        for ndim in range(4):
+            for shape in product(range(4), repeat=ndim):
+                self.assertIsInstance(shape, tuple)
+                self.assertEqual(len(shape), ndim)
+                value = rng.random(shape)
+                self.assertIsInstance(value, np.ndarray)
+                self.assertEqual(value.shape, shape)
+                for length in range(5):
+                    index = rng.integers(10, size=length)
+                    self.assertEqual(index.shape, (length,))
+                    if ndim == 0 or length == shape[0]:
+                        if ndim <= 1:
+                            frame = reframe(value, (index,))
+                            self.assertIsInstance(frame, pd.Series)
+                            self.assertEqual(frame.shape, (length,))
+                            self.assertTrue(np.allclose(frame, value))
+                            self.assertIsInstance(frame.index, pd.Index)
+                            self.assertTrue(np.all(frame.index == index))
+                        else:
+                            self.assertRaisesRegex(ValueError,
+                                                   "Data must be 1-dimensional",
+                                                   reframe,
+                                                   value,
+                                                   (index,))
+                    else:
+                        self.assertRaisesRegex(ValueError,
+                                               "does not match length of index",
+                                               reframe,
+                                               value,
+                                               (index,))
+
+    def test_array_index_int(self):
+        for ndim in range(4):
+            for shape in product(range(4), repeat=ndim):
+                self.assertIsInstance(shape, tuple)
+                self.assertEqual(len(shape), ndim)
+                value = rng.random(shape)
+                self.assertIsInstance(value, np.ndarray)
+                self.assertEqual(value.shape, shape)
+                for nrow in range(5):
+                    rows = rng.integers(10, size=nrow)
+                    self.assertEqual(rows.shape, (nrow,))
+                    for ncol in range(3):
+                        if 1 <= ndim <= 2:
+                            if ((ndim, nrow, ncol) == (1, shape[0], 1)
+                                    or (nrow, ncol) == shape):
+                                frame = reframe(value, (rows, ncol))
+                                self.assertIsInstance(frame, pd.DataFrame)
+                                self.assertEqual(frame.shape, (nrow, ncol))
+                                if ndim == 1:
+                                    self.assertTrue(np.allclose(frame.T, value))
+                                else:
+                                    self.assertTrue(np.allclose(frame, value))
+                                self.assertIsInstance(frame.index, pd.Index)
+                                self.assertTrue(np.all(frame.index == rows))
+                                self.assertIsInstance(frame.columns,
+                                                      pd.RangeIndex)
+                                self.assertTrue(np.all(frame.columns
+                                                       == np.arange(ncol)))
+                            else:
+                                err = ("Empty data passed with indices"
+                                       if shape[0] == 0 and nrow > 0
+                                       else "Shape of passed values")
+                                self.assertRaisesRegex(ValueError,
+                                                       err,
+                                                       reframe,
+                                                       value,
+                                                       (rows, ncol))
+                        else:
+                            self.assertRaisesRegex(ValueError,
+                                                   "Must pass 2-d input",
+                                                   reframe,
+                                                   value,
+                                                   (rows, ncol))
+
+    def test_array_int_index(self):
+        for ndim in range(4):
+            for shape in product(range(4), repeat=ndim):
+                self.assertIsInstance(shape, tuple)
+                self.assertEqual(len(shape), ndim)
+                value = rng.random(shape)
+                self.assertIsInstance(value, np.ndarray)
+                self.assertEqual(value.shape, shape)
+                for nrow in range(5):
+                    for ncol in range(3):
+                        cols = rng.integers(10, size=ncol)
+                        self.assertEqual(cols.shape, (ncol,))
+                        if 1 <= ndim <= 2:
+                            if ((ndim, nrow, ncol) == (1, shape[0], 1)
+                                    or (nrow, ncol) == shape):
+                                frame = reframe(value, (nrow, cols))
+                                self.assertIsInstance(frame, pd.DataFrame)
+                                self.assertEqual(frame.shape, (nrow, ncol))
+                                if ndim == 1:
+                                    self.assertTrue(np.allclose(frame.T, value))
+                                else:
+                                    self.assertTrue(np.allclose(frame, value))
+                                self.assertIsInstance(frame.index,
+                                                      pd.RangeIndex)
+                                self.assertTrue(np.all(frame.index
+                                                       == np.arange(nrow)))
+                                self.assertIsInstance(frame.columns, pd.Index)
+                                self.assertTrue(np.all(frame.columns == cols))
+                            else:
+                                err = ("Empty data passed with indices"
+                                       if shape[0] == 0 and nrow > 0
+                                       else "Shape of passed values")
+                                self.assertRaisesRegex(ValueError,
+                                                       err,
+                                                       reframe,
+                                                       value,
+                                                       (nrow, cols))
+                        else:
+                            self.assertRaisesRegex(ValueError,
+                                                   "Must pass 2-d input",
+                                                   reframe,
+                                                   value,
+                                                   (nrow, cols))
+
+    def test_array_index_index(self):
+        for ndim in range(4):
+            for shape in product(range(4), repeat=ndim):
+                self.assertIsInstance(shape, tuple)
+                self.assertEqual(len(shape), ndim)
+                value = rng.random(shape)
+                self.assertIsInstance(value, np.ndarray)
+                self.assertEqual(value.shape, shape)
+                for nrow in range(5):
+                    rows = rng.integers(10, size=nrow)
+                    self.assertEqual(rows.shape, (nrow,))
+                    for ncol in range(3):
+                        cols = rng.integers(10, size=ncol)
+                        self.assertEqual(cols.shape, (ncol,))
+                        if 1 <= ndim <= 2:
+                            if ((ndim, nrow, ncol) == (1, shape[0], 1)
+                                    or (nrow, ncol) == shape):
+                                frame = reframe(value, (rows, cols))
+                                self.assertIsInstance(frame, pd.DataFrame)
+                                self.assertEqual(frame.shape, (nrow, ncol))
+                                if ndim == 1:
+                                    self.assertTrue(np.allclose(frame.T, value))
+                                else:
+                                    self.assertTrue(np.allclose(frame, value))
+                                self.assertIsInstance(frame.index, pd.Index)
+                                self.assertTrue(np.all(frame.index == rows))
+                                self.assertIsInstance(frame.columns, pd.Index)
+                                self.assertTrue(np.all(frame.columns == cols))
+                            else:
+                                err = ("Empty data passed with indices"
+                                       if shape[0] == 0 and nrow > 0
+                                       else "Shape of passed values")
+                                self.assertRaisesRegex(ValueError,
+                                                       err,
+                                                       reframe,
+                                                       value,
+                                                       (rows, cols))
+                        else:
+                            self.assertRaisesRegex(ValueError,
+                                                   "Must pass 2-d input",
+                                                   reframe,
+                                                   value,
+                                                   (rows, cols))
+
+
+if __name__ == "__main__":
+    ut.main()
 
 ########################################################################
 #                                                                      #
