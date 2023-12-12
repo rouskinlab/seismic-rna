@@ -25,6 +25,12 @@ def get_quantile(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     float | numpy.ndarray | pandas.Series
         Value of the quantile from the mutation rates.
     """
+    if not isinstance(quantile, float):
+        # Although numpy.quantile supports array-like values for the
+        # quantile argument, get_quantile does not because the result
+        # would need an extra dimension
+        raise TypeError("Expected quantile to be a float, "
+                        f"but got {type(quantile).__name__}")
     if mus.size == 0:
         # If there are no values, then return NaN instead of raising an
         # error, as np.quantile would.
