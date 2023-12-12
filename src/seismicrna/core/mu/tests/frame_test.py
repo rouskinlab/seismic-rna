@@ -4,7 +4,7 @@ from itertools import product
 import numpy as np
 import pandas as pd
 
-from seismicrna.core.mu import reframe, reframe_like
+from seismicrna.core.mu import reframe, reframe_like, auto_reframe
 
 rng = np.random.default_rng()
 
@@ -290,7 +290,7 @@ class TestReframe(ut.TestCase):
                             self.assertIsInstance(frame, np.ndarray)
                             self.assertEqual(frame.shape, vshape)
                             self.assertTrue(np.allclose(frame, value))
-                        elif all(isinstance(axis, int) for axis in axes):
+                        elif np.array_equal(axes, tshape):
                             self.assertIsInstance(frame, np.ndarray)
                             self.assertEqual(frame.shape, tshape)
                             self.assertTrue(np.allclose(frame, value))
@@ -328,7 +328,7 @@ class TestReframe(ut.TestCase):
                                 self.assertIsInstance(frame, np.ndarray)
                                 self.assertEqual(frame.shape, vshape)
                                 self.assertTrue(np.allclose(frame, value))
-                            elif all(isinstance(axis, int) for axis in axes):
+                            elif np.array_equal(axes, (nrow, ncol)):
                                 self.assertIsInstance(frame, np.ndarray)
                                 self.assertEqual(frame.shape, tshape)
                                 self.assertTrue(np.allclose(frame, value))
@@ -363,6 +363,135 @@ class TestReframe(ut.TestCase):
                                                    reframe,
                                                    value,
                                                    axes)
+
+
+class TestReframeLike(ut.TestCase):
+
+    def test_float_float(self):
+        values = rng.random()
+        target = rng.random()
+        self.assertRaisesRegex(TypeError,
+                               "Expected target to be ndarray, Series, "
+                               "or Dataframe, but got float",
+                               reframe_like,
+                               values,
+                               target)
+
+    def test_float_array(self):
+        for ndim in range(4):
+            for shape in product(range(5), repeat=ndim):
+                values = rng.random()
+                target = rng.random(shape)
+                result = reframe_like(values, target)
+                self.assertIsInstance(result, np.ndarray)
+                self.assertEqual(result.shape, shape)
+                self.assertTrue(np.allclose(result, values))
+
+    def test_float_series(self):
+        for length in range(5):
+            values = rng.random()
+            target = pd.Series(rng.random(length),
+                               index=rng.integers(10, size=length))
+            result = reframe_like(values, target)
+            self.assertIsInstance(result, pd.Series)
+            self.assertEqual(result.shape, (length,))
+            self.assertTrue(np.allclose(result, values))
+            self.assertTrue(result.index.equals(target.index))
+
+    def test_float_dataframe(self):
+        for (nrow, ncol) in product(range(5), repeat=2):
+            values = rng.random()
+            target = pd.DataFrame(rng.random((nrow, ncol)),
+                                  index=rng.integers(10, size=nrow),
+                                  columns=rng.integers(10, size=ncol))
+            result = reframe_like(values, target)
+            self.assertIsInstance(result, pd.DataFrame)
+            self.assertEqual(result.shape, (nrow, ncol))
+            self.assertTrue(np.allclose(result, values))
+            self.assertTrue(result.index.equals(target.index))
+            self.assertTrue(result.columns.equals(target.columns))
+
+    def test_array_array(self):
+        for ndim in range(4):
+            for shape in product(range(5), repeat=ndim):
+                values = rng.random(shape)
+                target = rng.random(shape)
+                result = reframe_like(values, target)
+                self.assertIsInstance(result, np.ndarray)
+                self.assertEqual(result.shape, shape)
+                self.assertTrue(np.allclose(result, values))
+
+    def test_array_series(self):
+        for length in range(5):
+            values = rng.random(length)
+            target = pd.Series(rng.random(length),
+                               index=rng.integers(10, size=length))
+            result = reframe_like(values, target)
+            self.assertIsInstance(result, pd.Series)
+            self.assertEqual(result.shape, (length,))
+            self.assertTrue(np.allclose(result, values))
+            self.assertTrue(result.index.equals(target.index))
+
+    def test_array_dataframe(self):
+        for (nrow, ncol) in product(range(5), repeat=2):
+            values = rng.random((nrow, ncol))
+            target = pd.DataFrame(rng.random((nrow, ncol)),
+                                  index=rng.integers(10, size=nrow),
+                                  columns=rng.integers(10, size=ncol))
+            result = reframe_like(values, target)
+            self.assertIsInstance(result, pd.DataFrame)
+            self.assertEqual(result.shape, (nrow, ncol))
+            self.assertTrue(np.allclose(result, values))
+            self.assertTrue(result.index.equals(target.index))
+            self.assertTrue(result.columns.equals(target.columns))
+
+    def test_series_array(self):
+        for length in range(5):
+            values = pd.Series(rng.random(length),
+                               index=rng.integers(10, size=length))
+            target = rng.random(length)
+            result = reframe_like(values, target)
+            self.assertIsInstance(result, np.ndarray)
+            self.assertEqual(result.shape, (length,))
+            self.assertTrue(np.allclose(result, values))
+
+    def test_series_series(self):
+        for length in range(5):
+            values = pd.Series(rng.random(length),
+                               index=rng.integers(10, size=length))
+            target = pd.Series(rng.random(length),
+                               index=rng.integers(10, size=length))
+            result = reframe_like(values, target)
+            self.assertIsInstance(result, pd.Series)
+            self.assertEqual(result.shape, (length,))
+            self.assertTrue(np.allclose(result, values))
+            self.assertTrue(result.index.equals(target.index))
+
+    def test_dataframe_array(self):
+        for (nrow, ncol) in product(range(5), repeat=2):
+            values = pd.DataFrame(rng.random((nrow, ncol)),
+                                  index=rng.integers(10, size=nrow),
+                                  columns=rng.integers(10, size=ncol))
+            target = rng.random((nrow, ncol))
+            result = reframe_like(values, target)
+            self.assertIsInstance(result, np.ndarray)
+            self.assertEqual(result.shape, (nrow, ncol))
+            self.assertTrue(np.allclose(result, values))
+
+    def test_dataframe_dataframe(self):
+        for (nrow, ncol) in product(range(5), repeat=2):
+            values = pd.DataFrame(rng.random((nrow, ncol)),
+                                  index=rng.integers(10, size=nrow),
+                                  columns=rng.integers(10, size=ncol))
+            target = pd.DataFrame(rng.random((nrow, ncol)),
+                                  index=rng.integers(10, size=nrow),
+                                  columns=rng.integers(10, size=ncol))
+            result = reframe_like(values, target)
+            self.assertIsInstance(result, pd.DataFrame)
+            self.assertEqual(result.shape, (nrow, ncol))
+            self.assertTrue(np.allclose(result, values))
+            self.assertTrue(result.index.equals(target.index))
+            self.assertTrue(result.columns.equals(target.columns))
 
 
 if __name__ == "__main__":
