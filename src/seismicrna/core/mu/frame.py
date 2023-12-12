@@ -2,7 +2,9 @@
 
 """
 
+from functools import wraps
 from numbers import Number
+from typing import Callable
 
 import numpy as np
 import pandas as pd
@@ -113,6 +115,24 @@ def reframe_like(values: Number | np.ndarray | pd.Series | pd.DataFrame,
         raise TypeError("Expected target to be ndarray, Series, or Dataframe, "
                         f"but got {type(target).__name__}")
     return reframe(values, axes)
+
+
+def auto_reframe(func: Callable):
+    """ Decorate a function with one positional argument of mutation
+    rates so that it automatically reframes the return value to the
+    input value. """
+
+    @wraps(func)
+    def wrapper(mus: np.ndarray | pd.Series | pd.DataFrame, *args, **kwargs):
+        # First, compute the result of the function as a NumPy array.
+        result = np.asarray(func(mus, *args, **kwargs))
+        # Then, determine how to reframe the result.
+        if result.ndim == mus.ndim:
+            # If the result has the same number of dimensions as the
+            # input argument, then reframe based on the input argument.
+            return reframe_like(result, mus)
+
+
 
 ########################################################################
 #                                                                      #

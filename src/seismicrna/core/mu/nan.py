@@ -103,7 +103,7 @@ def auto_remove_nan(func: Callable):
     rates so that it automatically removes positions with NaNs. """
 
     @wraps(func)
-    def wrapper(mus, *args, **kwargs):
+    def wrapper(mus: np.ndarray | pd.Series | pd.DataFrame, *args, **kwargs):
         return func(remove_nan(mus), *args, **kwargs)
 
     return wrapper
@@ -114,7 +114,7 @@ def auto_removes_nan(func: Callable):
     rates so that it automatically removes positions with NaNs. """
 
     @wraps(func)
-    def wrapper(*mus, **kwargs):
+    def wrapper(*mus: np.ndarray | pd.Series | pd.DataFrame, **kwargs):
         return func(*removes_nan(*mus), **kwargs)
 
     return wrapper
