@@ -28,7 +28,7 @@ For step-by-step tutorials, see :doc:`../tutorials/index`.
 
 .. _cli_all:
 
-.. click:: seismicrna.wf:cli
+.. click:: seismicrna.workflow:cli
     :prog: seismic all
 
 .. _cli_demult:

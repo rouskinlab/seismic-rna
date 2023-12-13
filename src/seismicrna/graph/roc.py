@@ -153,8 +153,8 @@ def run(input_path: tuple[str, ...],
         max_procs: int) -> list[Path]:
     """ Run the graph seqbar module. """
     table_paths = find_table_files(input_path)
-    ct_paths =
-    writers = list(map(SeqBarGraphWriter, ))
+    ct_paths = None
+    writers = list(map(SeqBarGraphWriter))
     return list(chain(*dispatch([writer.write for writer in writers],
                                 max_procs,
                                 parallel=True,

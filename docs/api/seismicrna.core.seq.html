@@ -70,7 +70,7 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.stat.html">seismicrna.stat package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.table.html">seismicrna.table package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.test.html">seismicrna.test package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.wf.html">seismicrna.wf package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.workflow.html">seismicrna.workflow package</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.html#module-seismicrna.main">Submodules</a></li>
@@ -438,9 +438,58 @@ Otherwise, the section name will be an empty string.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.seq.section.get_shared_index">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.section.</span></span><span class="sig-name descname"><span class="pre">get_shared_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indexes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><span class="pre">pandas.core.indexes.multi.MultiIndex</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">empty_ok</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.section.get_shared_index" title="Permalink to this definition"></a></dt>
+<dd><p>Get the shared index among all those given, as follows:</p>
+<ul class="simple">
+<li><p>If indexes contains no elements and empty_ok is True, then return
+an empty MultiIndex with levels named ‘Positions’ and ‘Base’.</p></li>
+<li><p>If indexes contains one element or multiple identical elements,
+and each has two levels named ‘Positions’ and ‘Base’, then return
+the first element.</p></li>
+<li><p>Otherwise, raise an error.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>indexes</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable[pandas.MultiIndex]</span></code>) – Indexes to compare.</p></li>
+<li><p><strong>empty_ok</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></code>) – If given no indexes, then default to an empty index (if True)
+or raise a ValueError (if False).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The shared index.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.MultiIndex</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.seq.section.get_windows">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.section.</span></span><span class="sig-name descname"><span class="pre">get_windows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_nan</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.section.get_windows" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.seq.section.hyphenate_ends">
 <span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.section.</span></span><span class="sig-name descname"><span class="pre">hyphenate_ends</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">end5</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">end3</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.section.hyphenate_ends" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Return the 5’ and 3’ ends as a hyphenated string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>end5</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – 5’ end (1-indexed)</p></li>
+<li><p><strong>end3</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – 3’ end (1-indexed)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Hyphenated 5’ and 3’ ends</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.seq.section.index_to_pos">
@@ -483,6 +532,18 @@ tuple of (position, base).</p>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">pd.MultiIndex</span></code></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.seq.section.verify_index_names">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.section.</span></span><span class="sig-name descname"><span class="pre">verify_index_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.indexes.multi.MultiIndex</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.section.verify_index_names" title="Permalink to this definition"></a></dt>
+<dd><p>Verify that the names of the index are correct.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.seq.section.window_to_margins">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.section.</span></span><span class="sig-name descname"><span class="pre">window_to_margins</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.section.window_to_margins" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the 5’ and 3’ margins from the size of the window.</p>
 </dd></dl>
 
 <span class="target" id="module-seismicrna.core.seq.xna"></span><p>Sequence Core Module.</p>
