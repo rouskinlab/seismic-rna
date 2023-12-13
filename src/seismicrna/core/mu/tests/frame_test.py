@@ -1,5 +1,7 @@
 import unittest as ut
+from functools import partial
 from itertools import product
+from typing import Callable
 
 import numpy as np
 import pandas as pd
@@ -492,6 +494,60 @@ class TestReframeLike(ut.TestCase):
             self.assertTrue(np.allclose(result, values))
             self.assertTrue(result.index.equals(target.index))
             self.assertTrue(result.columns.equals(target.columns))
+
+
+class TestAutoReframe(ut.TestCase):
+
+    @staticmethod
+    def _sim_values(dmin: int, dmax: int):
+        for ndim in range(dmin, dmax):
+            for shape in product(range(4), repeat=ndim):
+                values = rng.random(shape)
+                yield values
+                if ndim == 1:
+                    yield pd.Series(values)
+                if ndim == 2:
+                    yield pd.DataFrame(values)
+
+    def test_reduce_none(self):
+        func = np.asarray
+        for values in self._sim_values(0, 4):
+            wrap = auto_reframe(func)
+            func_result = np.asarray(func(values))
+            wrap_result = wrap(values)
+            self.assertIsInstance(func_result, np.ndarray)
+            self.assertIsInstance(wrap_result, type(values))
+            self.assertEqual(func_result.shape, wrap_result.shape)
+            self.assertTrue(np.allclose(func_result, wrap_result))
+
+    def test_reduce_0(self):
+        func = partial(np.sum, axis=0)
+        for values in self._sim_values(1, 4):
+            wrap = auto_reframe(func)
+            func_result = np.asarray(func(values))
+            wrap_result = wrap(values)
+            if isinstance(values, pd.DataFrame):
+                self.assertIsInstance(wrap_result, pd.Series)
+            else:
+                self.assertIsInstance(wrap_result, np.ndarray)
+            self.assertEqual(func_result.shape, wrap_result.shape)
+            self.assertTrue(np.allclose(func_result, wrap_result))
+
+    def test_reduce_01(self):
+
+        def func(x):
+            if isinstance(x, pd.DataFrame):
+                return x.sum().sum()
+            else:
+                return x.sum()
+
+        for values in self._sim_values(2, 4):
+            wrap = auto_reframe(func)
+            func_result = np.asarray(func(values))
+            wrap_result = wrap(values)
+            self.assertIsInstance(wrap_result, np.ndarray)
+            self.assertEqual(func_result.shape, wrap_result.shape)
+            self.assertTrue(np.allclose(func_result, wrap_result))
 
 
 if __name__ == "__main__":
