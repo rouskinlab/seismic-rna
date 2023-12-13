@@ -119,20 +119,50 @@ def reframe_like(values: Number | np.ndarray | pd.Series | pd.DataFrame,
 
 def auto_reframe(func: Callable):
     """ Decorate a function with one positional argument of mutation
-    rates so that it automatically reframes the return value to the
-    input value. """
+    rates so that it automatically reframes the return value using the
+    argument value as the target. """
 
     @wraps(func)
     def wrapper(mus: np.ndarray | pd.Series | pd.DataFrame, *args, **kwargs):
-        # First, compute the result of the function as a NumPy array.
+        # Compute the result of the function as a NumPy array.
         result = np.asarray(func(mus, *args, **kwargs))
-        # Then, determine how to reframe the result.
-        if result.ndim == mus.ndim:
-            # If the result has the same number of dimensions as the
-            # input argument, then reframe based on the input argument.
-            return reframe_like(result, mus)
+        # Determine which (if any) axes in the argument were eliminated
+        # by a reducing operation (e.g. summation) to obtain the result.
+        # Reducing operations on mutation rates always operate over the
+        # axes in ascending order, so the axes that were reduced is the
+        # range of integers from 0 to the difference in dimensionality.
+        reduced = tuple(range(mus.ndim - result.ndim))
+        if reduced:
+            # If the result has fewer dimensions than the argument, then
+            # remove from the argument the axes absent from the result.
+            # Only the target dimensions/indices are used, but not the
+            # values, so the specific reduction operation is irrelevant.
+            # Use sum because it handles empty arrays and NaN values
+            # without complaint.
+            if isinstance(mus, pd.DataFrame):
+                if reduced == (0,):
+                    target = mus.sum(axis=0)
+                elif reduced == (0, 1):
+                    target = mus.sum(axis=0).sum(axis=0)
+                else:
+                    raise ValueError(f"Invalid axes for DataFrame: {reduced}")
+            elif isinstance(mus, pd.Series):
+                if reduced == (0,):
+                    target = mus.sum(axis=0)
+                else:
+                    raise ValueError(f"Invalid axes for Series: {reduced}")
+            else:
+                target = np.sum(mus, axis=reduced)
+            if np.isscalar(target):
+                # If all dimensions were reduced, then the target must
+                # be converted into a 0-dimensional array.
+                target = np.asarray(target)
+        else:
+            # Otherwise, use the argument as the target for reframe.
+            target = mus
+        return reframe_like(result, target)
 
-
+    return wrapper
 
 ########################################################################
 #                                                                      #
