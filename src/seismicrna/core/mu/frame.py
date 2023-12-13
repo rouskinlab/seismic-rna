@@ -88,7 +88,8 @@ def reframe(values: Number | np.ndarray | pd.Series | pd.DataFrame,
 
 
 def reframe_like(values: Number | np.ndarray | pd.Series | pd.DataFrame,
-                 target: np.ndarray | pd.Series | pd.DataFrame):
+                 target: np.ndarray | pd.Series | pd.DataFrame,
+                 drop: int = 0):
     """ Place the values in an array object with the same type and axes
     as target.
 
@@ -99,12 +100,16 @@ def reframe_like(values: Number | np.ndarray | pd.Series | pd.DataFrame,
     target: numpy.ndarray | pandas.Series | pandas.DataFrame
         Array object whose type and axes are to be used for constructing
         the returned array.
+    drop: int = 0
+        Reduce the dimensionality of the target by dropping this number
+        of axes, starting from axis 0 and continuing upwards.
 
     Returns
     -------
     numpy.ndarray | pandas.Series | pandas.DataFrame
         Value(s) in their new array-like object.
     """
+    # Determine the axes to pass to reframe based on the type of target.
     if isinstance(target, np.ndarray):
         axes = target.shape
     elif isinstance(target, pd.Series):
@@ -114,53 +119,27 @@ def reframe_like(values: Number | np.ndarray | pd.Series | pd.DataFrame,
     else:
         raise TypeError("Expected target to be ndarray, Series, or Dataframe, "
                         f"but got {type(target).__name__}")
-    return reframe(values, axes)
+    # Optionally, drop axes, starting from axis 0.
+    if drop < 0:
+        raise ValueError(f"Cannot drop a negative number ({drop}) of axes")
+    if drop > len(axes):
+        raise ValueError(f"Cannot drop {drop} axes from a {len(axes)}-D array")
+    # Reframe the values using the axes from the target.
+    return reframe(values, axes[drop:])
 
 
 def auto_reframe(func: Callable):
-    """ Decorate a function with one positional argument of mutation
-    rates so that it automatically reframes the return value using the
-    argument value as the target. """
+    """ Decorate a function with one positional argument of data so that
+    it automatically reframes the return value using the argument value
+    as the target. """
 
     @wraps(func)
-    def wrapper(mus: np.ndarray | pd.Series | pd.DataFrame, *args, **kwargs):
+    def wrapper(data: np.ndarray | pd.Series | pd.DataFrame, *args, **kwargs):
         # Compute the result of the function as a NumPy array.
-        result = np.asarray(func(mus, *args, **kwargs))
-        # Determine which (if any) axes in the argument were eliminated
-        # by a reducing operation (e.g. summation) to obtain the result.
-        # Reducing operations on mutation rates always operate over the
-        # axes in ascending order, so the axes that were reduced is the
-        # range of integers from 0 to the difference in dimensionality.
-        reduced = tuple(range(mus.ndim - result.ndim))
-        if reduced:
-            # If the result has fewer dimensions than the argument, then
-            # remove from the argument the axes absent from the result.
-            # Only the target dimensions/indices are used, but not the
-            # values, so the specific reduction operation is irrelevant.
-            # Use sum because it handles empty arrays and NaN values
-            # without complaint.
-            if isinstance(mus, pd.DataFrame):
-                if reduced == (0,):
-                    target = mus.sum(axis=0)
-                elif reduced == (0, 1):
-                    target = mus.sum(axis=0).sum(axis=0)
-                else:
-                    raise ValueError(f"Invalid axes for DataFrame: {reduced}")
-            elif isinstance(mus, pd.Series):
-                if reduced == (0,):
-                    target = mus.sum(axis=0)
-                else:
-                    raise ValueError(f"Invalid axes for Series: {reduced}")
-            else:
-                target = np.sum(mus, axis=reduced)
-            if np.isscalar(target):
-                # If all dimensions were reduced, then the target must
-                # be converted into a 0-dimensional array.
-                target = np.asarray(target)
-        else:
-            # Otherwise, use the argument as the target for reframe.
-            target = mus
-        return reframe_like(result, target)
+        result = np.asarray(func(data, *args, **kwargs))
+        # Reframe the result like the input argument, dropping any axes
+        # that were eliminated by a reducing operation (e.g. summation).
+        return reframe_like(result, data, data.ndim - result.ndim)
 
     return wrapper
 
