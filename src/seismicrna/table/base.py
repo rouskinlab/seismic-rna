@@ -697,7 +697,7 @@ class RelPosTable(RelTable, PosTable, ABC):
 class ProfilePosTable(PosTable, ABC):
 
     def _iter_profiles(self,
-                       sections: Iterable[Section],
+                       sections: Iterable[Section] | None,
                        quantile: float,
                        order: int | None,
                        clust: int | None):

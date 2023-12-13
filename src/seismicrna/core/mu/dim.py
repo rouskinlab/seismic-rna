@@ -17,7 +17,7 @@ def count_pos(mus: np.ndarray | pd.Series | pd.DataFrame):
         Number of positions in the array of mutation rates.
     """
     if mus.ndim == 0:
-        raise ValueError("A 0-D array has no positions")
+        raise ValueError("A 0-D array has no positional axis")
     return mus.shape[0]
 
 

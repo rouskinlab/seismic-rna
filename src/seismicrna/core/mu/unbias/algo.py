@@ -296,11 +296,10 @@ def calc_mu_adj_numpy(mus_obs: np.ndarray, min_gap: int,
                       f_rtol: float = 5e-1,
                       x_tol: float = 1e-4,
                       x_rtol: float = 5e-1):
-    """
-    Given observed mutation rates `mus_obs` (which do not include
+    """ Given observed mutation rates `mus_obs` (which do not include
     any reads that dropped out because they had mutations closer than
-    `min_gap` nt apart), estimate the real mutation rates that
-    include these unobserved reads.
+    `min_gap` nt apart), estimate the real mutation rates that include
+    these unobserved reads.
 
     Parameters
     ----------

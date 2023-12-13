@@ -8,8 +8,7 @@ import numpy as np
 import pandas as pd
 
 from .nan import auto_removes_nan
-from .rank import get_ranks
-from .scale import calc_rms, normalize
+from .scale import calc_rms, calc_ranks, normalize
 from ..arg import MUCOMP_DETERM, MUCOMP_PEARSON, MUCOMP_RMSD, MUCOMP_SPEARMAN
 from ..seq import get_shared_index, get_windows
 
@@ -19,8 +18,6 @@ def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
               mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the root-mean-square deviation (RMSD) between two
     groups of mutation rates, ignoring NaNs.
-
-    The RMSD is defined as
 
     Parameters
     ----------
@@ -130,7 +127,7 @@ def calc_spearman(mus1: np.ndarray | pd.Series | pd.DataFrame,
         Spearman rank correlation coefficient.
     """
     # The Spearman correlation is the Pearson correlation of the ranks.
-    return calc_pearson(get_ranks(mus1), get_ranks(mus2))
+    return calc_pearson(calc_ranks(mus1), calc_ranks(mus2))
 
 
 def get_mucomp(name: str):

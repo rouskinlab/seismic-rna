@@ -130,13 +130,13 @@ def reframe_like(values: Number | np.ndarray | pd.Series | pd.DataFrame,
 
 def auto_reframe(func: Callable):
     """ Decorate a function with one positional argument of data so that
-    it automatically reframes the return value using the argument value
-    as the target. """
+    it converts the input data to a NumPy array, runs, and then reframes
+    the return value using the original argument as the target. """
 
     @wraps(func)
     def wrapper(data: np.ndarray | pd.Series | pd.DataFrame, *args, **kwargs):
         # Compute the result of the function as a NumPy array.
-        result = np.asarray(func(data, *args, **kwargs))
+        result = np.asarray(func(np.asarray(data), *args, **kwargs))
         # Reframe the result like the input argument, dropping any axes
         # that were eliminated by a reducing operation (e.g. summation).
         return reframe_like(result, data, data.ndim - result.ndim)

@@ -32,7 +32,7 @@ def any_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
         # If there are 1 or fewer axes, then no non-positional axes
         # exist to reduce with np.any(). Compute isnan without reducing.
         return np.isnan(mus)
-    # Otherwise, reduce the non-positional axes with np.any().
+    # Otherwise, reduce over the non-positional axes with np.any().
     return np.any(np.isnan(mus),
                   axis=(1 if mus.ndim == 2 else tuple(range(1, mus.ndim))))
 
@@ -72,7 +72,7 @@ def remove_nan(mus: np.ndarray | pd.Series | pd.DataFrame):
     positions = np.arange(count_pos(mus))
     # Find the positions with no NaN values.
     pos_no_nan = positions[no_nan(mus)]
-    # Return only those positions.
+    # Return only those positions (taking from the positional axis, 0).
     return np.take(mus, pos_no_nan, axis=0)
 
 
@@ -94,13 +94,14 @@ def removes_nan(*mus: np.ndarray | pd.Series | pd.DataFrame):
     positions = np.arange(counts_pos_consensus(*mus))
     # Find positions with no NaN values in any group of mutation rates.
     pos_no_nan = positions[np.logical_and.reduce(list(map(no_nan, mus)))]
-    # Return only those positions from each group.
+    # Return only those positions (along axis 0) from each group.
     return tuple(np.take(mu, pos_no_nan, axis=0) for mu in mus)
 
 
 def auto_remove_nan(func: Callable):
     """ Decorate a function with one positional argument of mutation
-    rates so that it automatically removes positions with NaNs. """
+    rates so that it automatically removes positions with NaNs from the
+    input argument (but not from the return value). """
 
     @wraps(func)
     def wrapper(mus: np.ndarray | pd.Series | pd.DataFrame, *args, **kwargs):
@@ -111,7 +112,8 @@ def auto_remove_nan(func: Callable):
 
 def auto_removes_nan(func: Callable):
     """ Decorate a function with positional argument(s) of mutation
-    rates so that it automatically removes positions with NaNs. """
+    rates so that it automatically removes positions with NaNs from the
+    input argument (but not from the return value). """
 
     @wraps(func)
     def wrapper(*mus: np.ndarray | pd.Series | pd.DataFrame, **kwargs):
