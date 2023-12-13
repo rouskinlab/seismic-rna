@@ -70,7 +70,7 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.stat.html">seismicrna.stat package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.table.html">seismicrna.table package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.test.html">seismicrna.test package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.wf.html">seismicrna.wf package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.workflow.html">seismicrna.workflow package</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.html#module-seismicrna.main">Submodules</a></li>
@@ -115,9 +115,21 @@
 <span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.core.rna.ct" title="Permalink to this headline"></a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.rna.ct.parse_ct">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.rna.ct.</span></span><span class="sig-name descname"><span class="pre">parse_ct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ct_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rna.ct.parse_ct" title="Permalink to this definition"></a></dt>
-<dd><p>Yield the sequence and list of base pairs for each structure
-from a connectivity table (CT) file.</p>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.rna.ct.</span></span><span class="sig-name descname"><span class="pre">parse_ct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ct_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq5</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rna.ct.parse_ct" title="Permalink to this definition"></a></dt>
+<dd><p>Yield the title, section, and base pairs for each structure in a
+connectivity table (CT) file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ct_path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>) – Path to the connectivity table file.</p></li>
+<li><p><strong>seq5</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></code>) – Positional number to assign the 5’ end of the given part of the
+reference sequence. Must be ≥ 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator[tuple[str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Section</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list[tuple[int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int]]]</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Any</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">None]</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <span class="target" id="module-seismicrna.core.rna.db"></span><dl class="py function">
@@ -404,7 +416,7 @@ compute how well chemical reactivities agree with a structure.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.rna.struct.from_ct">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.rna.struct.</span></span><span class="sig-name descname"><span class="pre">from_ct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ct_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.section.Section" title="seismicrna.core.seq.section.Section"><span class="pre">seismicrna.core.seq.section.Section</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rna.struct.from_ct" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.rna.struct.</span></span><span class="sig-name descname"><span class="pre">from_ct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ct_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.section.Section" title="seismicrna.core.seq.section.Section"><span class="pre">seismicrna.core.seq.section.Section</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rna.struct.from_ct" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </section>

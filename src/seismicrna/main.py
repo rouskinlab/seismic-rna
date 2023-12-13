@@ -16,7 +16,7 @@ import os
 
 from click import Context, group, pass_context, version_option
 
-from . import (wf,
+from . import (workflow,
                demult,
                align,
                relate,
@@ -80,11 +80,11 @@ def cli(ctx: Context,
                             sort="time")
         else:
             # Run without profiling.
-            wf.run(**kwargs)
+            workflow.run(**kwargs)
 
 
 # Add all commands to the main CLI command group.
-for module in (wf,
+for module in (workflow,
                demult,
                align,
                relate,

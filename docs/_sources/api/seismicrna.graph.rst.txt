@@ -28,6 +28,12 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.graph.roc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.graph.scatter
    :members:
    :undoc-members:

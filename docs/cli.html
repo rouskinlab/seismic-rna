@@ -1670,32 +1670,26 @@ each position in a sequence.</p>
 </div>
 <p class="rubric">Options</p>
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-r">
-<span id="cmdoption-seismic-graph-seqcorr-rels"></span><span class="sig-name descname"><span class="pre">-r</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--rels</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;rels&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-r" title="Permalink to this definition"></a></dt>
-<dd><p>Relationships to graph</p>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-y-ratio">
-<span id="cmdoption-seismic-graph-seqcorr-y-count"></span><span class="sig-name descname"><span class="pre">--y-ratio</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--y-count</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-y-ratio" title="Permalink to this definition"></a></dt>
-<dd><p>Graph counts or ratios on the y-axis</p>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-q">
-<span id="cmdoption-seismic-graph-seqcorr-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-q" title="Permalink to this definition"></a></dt>
-<dd><p>Quantile of mutation rates for normalization; must be in [0, 1]</p>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-arrange">
-<span class="sig-name descname"><span class="pre">--arrange</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;arrange&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-arrange" title="Permalink to this definition"></a></dt>
-<dd><p>Graph each INDIVidual cluster in its own file, each ORDER in its own file, or UNITE all clusters in one file containing all orders</p>
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-mucomp">
+<span class="sig-name descname"><span class="pre">--mucomp</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;mucomp&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-mucomp" title="Permalink to this definition"></a></dt>
+<dd><p>Method to compare mutation rates: ‘rmsd’ = root-mean-square deviation (RMSD), ‘r’ = Pearson correlation coefficient (r), ‘rho’ = Spearman correlation coefficient (ρ), ‘r2’ = coefficient of determination (R^2)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Options</dt>
-<dd class="field-odd"><p>indiv | order | unite</p>
+<dd class="field-odd"><p>rmsd | r | rho | r2</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-window">
+<span class="sig-name descname"><span class="pre">--window</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;window&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-window" title="Permalink to this definition"></a></dt>
+<dd><p>Size of the sliding window, in nucleotides</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-seqcorr-winmin">
+<span class="sig-name descname"><span class="pre">--winmin</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;winmin&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-seqcorr-winmin" title="Permalink to this definition"></a></dt>
+<dd><p>Minimum number of data in the sliding window</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1763,12 +1757,6 @@ in a sequence.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-q">
-<span id="cmdoption-seismic-graph-scatter-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-q" title="Permalink to this definition"></a></dt>
-<dd><p>Quantile of mutation rates for normalization; must be in [0, 1]</p>
-</dd></dl>
-
-<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-arrange">
 <span class="sig-name descname"><span class="pre">--arrange</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;arrange&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-arrange" title="Permalink to this definition"></a></dt>
 <dd><p>Graph each INDIVidual cluster in its own file, each ORDER in its own file, or UNITE all clusters in one file containing all orders</p>
@@ -1777,6 +1765,12 @@ in a sequence.</p>
 <dd class="field-odd"><p>indiv | order | unite</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-q">
+<span id="cmdoption-seismic-graph-scatter-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-q" title="Permalink to this definition"></a></dt>
+<dd><p>Quantile of mutation rates for normalization; must be in [0, 1]</p>
 </dd></dl>
 
 <dl class="std option">

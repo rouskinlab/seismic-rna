@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>seismicrna.core.mu.unbias.tests package &mdash; seismic-rna  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/favicon-32x32.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="seismicrna.core.ngs package" href="seismicrna.core.ngs.html" />
+    <link rel="prev" title="seismicrna.core.mu.unbias package" href="seismicrna.core.mu.unbias.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            seismic-rna
+              <img src="../_static/logo-200.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../manuals/index.html">Manuals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="seismicrna.html">seismicrna package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.html#seismic-rna">SEISMIC-RNA</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="seismicrna.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.clust.html">seismicrna.clust package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="seismicrna.core.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.data">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.faclean.html">seismicrna.faclean package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html">seismicrna.relate package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.html">seismicrna.sim package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.stat.html">seismicrna.stat package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.table.html">seismicrna.table package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.test.html">seismicrna.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.workflow.html">seismicrna.workflow package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.html#module-seismicrna.main">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../formats/index.html">File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/index.html">Data Structures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algos/index.html">Algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../issues.html">Bugs and Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../writeme.html">How to Write this Manual</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">seismic-rna</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="seismicrna.html">seismicrna package</a></li>
+          <li class="breadcrumb-item"><a href="seismicrna.core.html">seismicrna.core package</a></li>
+          <li class="breadcrumb-item"><a href="seismicrna.core.mu.html">seismicrna.core.mu package</a></li>
+          <li class="breadcrumb-item"><a href="seismicrna.core.mu.unbias.html">seismicrna.core.mu.unbias package</a></li>
+      <li class="breadcrumb-item active">seismicrna.core.mu.unbias.tests package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/seismicrna.core.mu.unbias.tests.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-seismicrna.core.mu.unbias.tests">
+<span id="seismicrna-core-mu-unbias-tests-package"></span><h1>seismicrna.core.mu.unbias.tests package<a class="headerlink" href="#module-seismicrna.core.mu.unbias.tests" title="Permalink to this headline"></a></h1>
+<section id="module-seismicrna.core.mu.unbias.tests.algo_test">
+<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.core.mu.unbias.tests.algo_test" title="Permalink to this headline"></a></h2>
+<p>Tests for Mutation Rate Core Module</p>
+<hr class="docutils" />
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestCalcFObsNumpy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.unbias.tests.algo_test.</span></span><span class="sig-name descname"><span class="pre">TestCalcFObsNumpy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestCalcFObsNumpy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test function <cite>mu.calc_f_obs_numpy</cite>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestCalcFObsNumpy.test_1_dim">
+<span class="sig-name descname"><span class="pre">test_1_dim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestCalcFObsNumpy.test_1_dim" title="Permalink to this definition"></a></dt>
+<dd><p>Test that giving a 1D array returns a float.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestCalcFObsNumpy.test_2_dim">
+<span class="sig-name descname"><span class="pre">test_2_dim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestCalcFObsNumpy.test_2_dim" title="Permalink to this definition"></a></dt>
+<dd><p>Test that giving a 2D array returns a 1D array with a value
+for each cluster.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestCalcFObsNumpy.test_f_multiplex">
+<span class="sig-name descname"><span class="pre">test_f_multiplex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestCalcFObsNumpy.test_f_multiplex" title="Permalink to this definition"></a></dt>
+<dd><p>Test that running 1 - 5 clusters simultaneously produces the
+same results as running each cluster separately.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestCalcFObsNumpy.test_invalid_dim">
+<span class="sig-name descname"><span class="pre">test_invalid_dim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestCalcFObsNumpy.test_invalid_dim" title="Permalink to this definition"></a></dt>
+<dd><p>Test that other dimensionalities raise an error.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestCalcFObsNumpy.test_obs_empirical">
+<span class="sig-name descname"><span class="pre">test_obs_empirical</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestCalcFObsNumpy.test_obs_empirical" title="Permalink to this definition"></a></dt>
+<dd><p>Test that this function accurately predicts the fraction of
+bit vectors without mutations that are too close.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuAdjNumpy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.unbias.tests.algo_test.</span></span><span class="sig-name descname"><span class="pre">TestCalcMuAdjNumpy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuAdjNumpy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test function <cite>mu.calc_mu_adj_numpy</cite>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuAdjNumpy.test_inv_calc_mu_obs">
+<span class="sig-name descname"><span class="pre">test_inv_calc_mu_obs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuAdjNumpy.test_inv_calc_mu_obs" title="Permalink to this definition"></a></dt>
+<dd><p>Test that this function inverts <cite>mu._calc_mu_obs</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuAdjNumpy.test_mu_multiplex">
+<span class="sig-name descname"><span class="pre">test_mu_multiplex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuAdjNumpy.test_mu_multiplex" title="Permalink to this definition"></a></dt>
+<dd><p>Test that running 1 - 5 clusters simultaneously produces the
+same results as running each cluster separately.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuObs">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.unbias.tests.algo_test.</span></span><span class="sig-name descname"><span class="pre">TestCalcMuObs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuObs" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test function <cite>mu._calc_mu_obs</cite>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuObs.test_inv_calc_mu_adj">
+<span class="sig-name descname"><span class="pre">test_inv_calc_mu_adj</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuObs.test_inv_calc_mu_adj" title="Permalink to this definition"></a></dt>
+<dd><p>Test that this function inverts <cite>mu.calc_mu_adj</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuObs.test_mu_multiplex">
+<span class="sig-name descname"><span class="pre">test_mu_multiplex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuObs.test_mu_multiplex" title="Permalink to this definition"></a></dt>
+<dd><p>Test that running 1 - 5 clusters simultaneously produces the
+same results as running each cluster separately.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuObs.test_obs_empirical">
+<span class="sig-name descname"><span class="pre">test_obs_empirical</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestCalcMuObs.test_obs_empirical" title="Permalink to this definition"></a></dt>
+<dd><p>Test that this function accurately predicts the mutation
+rates that are actually observed when simulated bit vectors are
+filtered to remove mutations that are too close.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestClip">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.unbias.tests.algo_test.</span></span><span class="sig-name descname"><span class="pre">TestClip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestClip" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test function <cite>mu.clip</cite>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestClip.test_with_clip">
+<span class="sig-name descname"><span class="pre">test_with_clip</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestClip.test_with_clip" title="Permalink to this definition"></a></dt>
+<dd><p>Test that values outside [0, MAX_MU] are clipped.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestClip.test_without_clip">
+<span class="sig-name descname"><span class="pre">test_without_clip</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestClip.test_without_clip" title="Permalink to this definition"></a></dt>
+<dd><p>Test that values inside [0, MAX_MU] are not clipped.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestHasCloseMuts">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.unbias.tests.algo_test.</span></span><span class="sig-name descname"><span class="pre">TestHasCloseMuts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestHasCloseMuts" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test function <cite>has_close_muts</cite>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestHasCloseMuts.test_more_muts">
+<span class="sig-name descname"><span class="pre">test_more_muts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestHasCloseMuts.test_more_muts" title="Permalink to this definition"></a></dt>
+<dd><p>Test every bit vector with 2 - 5 mutations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestHasCloseMuts.test_no_muts">
+<span class="sig-name descname"><span class="pre">test_no_muts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestHasCloseMuts.test_no_muts" title="Permalink to this definition"></a></dt>
+<dd><p>Test that a bit vector with no mutations returns False.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.TestHasCloseMuts.test_one_mut">
+<span class="sig-name descname"><span class="pre">test_one_mut</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.TestHasCloseMuts.test_one_mut" title="Permalink to this definition"></a></dt>
+<dd><p>Test that a bit vector with one mutation returns False.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.drop_close_muts">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.unbias.tests.algo_test.</span></span><span class="sig-name descname"><span class="pre">drop_close_muts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bitvecs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.drop_close_muts" title="Permalink to this definition"></a></dt>
+<dd><p>Return a new array without every row in <cite>bitvecs</cite> that has two
+mutations that are too close.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.has_close_muts">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.unbias.tests.algo_test.</span></span><span class="sig-name descname"><span class="pre">has_close_muts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bitvec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.has_close_muts" title="Permalink to this definition"></a></dt>
+<dd><p>Return True if the bit vector has two mutations separated by
+fewer than <cite>min_gap</cite> non-mutated bits, otherwise False.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.algo_test.label_close_muts">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.unbias.tests.algo_test.</span></span><span class="sig-name descname"><span class="pre">label_close_muts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bitvecs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.algo_test.label_close_muts" title="Permalink to this definition"></a></dt>
+<dd><p>Return a 1D vector that is True for every row in <cite>bitvecs</cite> that
+has two mutations that are too close, and otherwise False.</p>
+</dd></dl>
+
+<span class="target" id="module-seismicrna.core.mu.unbias.tests.frame_test"></span><dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.frame_test.TestCalcDataFrame">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.unbias.tests.frame_test.</span></span><span class="sig-name descname"><span class="pre">TestCalcDataFrame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.frame_test.TestCalcDataFrame" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test functions <cite>mu.calc_mu_adj_df</cite> and mu.calc_f_obs_df.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.frame_test.TestCalcDataFrame.test_equals_numpy">
+<span class="sig-name descname"><span class="pre">test_equals_numpy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.frame_test.TestCalcDataFrame.test_equals_numpy" title="Permalink to this definition"></a></dt>
+<dd><p>Check if the output of <cite>calc_mu_adj_df</cite> equals that of
+<cite>calc_mu_adj_numpy</cite></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.frame_test.TestCalcSeries">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.unbias.tests.frame_test.</span></span><span class="sig-name descname"><span class="pre">TestCalcSeries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.frame_test.TestCalcSeries" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test <cite>mu.calc_mu_adj_series</cite> and mu.calc_f_obs_series.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.unbias.tests.frame_test.TestCalcSeries.test_equals_numpy">
+<span class="sig-name descname"><span class="pre">test_equals_numpy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.tests.frame_test.TestCalcSeries.test_equals_numpy" title="Permalink to this definition"></a></dt>
+<dd><p>Check if the output of <cite>calc_mu_adj_df</cite> equals that of
+<cite>calc_mu_adj_numpy</cite></p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="seismicrna.core.mu.unbias.html" class="btn btn-neutral float-left" title="seismicrna.core.mu.unbias package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="seismicrna.core.ngs.html" class="btn btn-neutral float-right" title="seismicrna.core.ngs package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, the Rouskin Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

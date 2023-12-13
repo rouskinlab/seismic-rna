@@ -10,6 +10,12 @@ Submodules
 ----------
 
 
+.. automodule:: seismicrna.fold.load
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.fold.main
    :members:
    :undoc-members:

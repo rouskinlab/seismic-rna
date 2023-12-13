@@ -26,7 +26,7 @@ Subpackages
    seismicrna.stat
    seismicrna.table
    seismicrna.test
-   seismicrna.wf
+   seismicrna.workflow
 
 Submodules
 ----------
