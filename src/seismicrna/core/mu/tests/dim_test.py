@@ -15,7 +15,7 @@ class TestCountPos(ut.TestCase):
 
     def test_array0d(self):
         self.assertRaisesRegex(ValueError,
-                               "A 0-D array has no positions",
+                               "A 0-D array has no positional axis",
                                count_pos,
                                np.array(0.))
 
