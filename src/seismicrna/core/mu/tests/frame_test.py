@@ -1,7 +1,6 @@
 import unittest as ut
 from functools import partial
 from itertools import product
-from typing import Callable
 
 import numpy as np
 import pandas as pd
@@ -495,11 +494,90 @@ class TestReframeLike(ut.TestCase):
             self.assertTrue(result.index.equals(target.index))
             self.assertTrue(result.columns.equals(target.columns))
 
+    def test_drop_array(self):
+        for ndim in range(4):
+            for shape in product(range(5), repeat=ndim):
+                target = rng.random(shape)
+                for drop in range(4):
+                    dropped = shape[drop:]
+                    values = rng.random(dropped)
+                    if drop <= ndim:
+                        result = reframe_like(values, target, drop)
+                        self.assertIsInstance(result, np.ndarray)
+                        self.assertEqual(result.shape, dropped)
+                        self.assertTrue(np.allclose(result, values))
+                    else:
+                        self.assertRaisesRegex(ValueError,
+                                               f"Cannot drop {drop} axes "
+                                               f"from a {ndim}-D array",
+                                               reframe_like,
+                                               values,
+                                               target,
+                                               drop)
+
+    def test_drop_series(self):
+        for length in range(5):
+            shape = length,
+            target = pd.Series(rng.random(length),
+                               index=rng.integers(10, size=length))
+            for drop in range(4):
+                dropped = shape[drop:]
+                values = rng.random(dropped)
+                if drop <= 1:
+                    result = reframe_like(values, target, drop)
+                    if drop == 0:
+                        self.assertIsInstance(result, pd.Series)
+                        self.assertTrue(result.index.equals(target.index))
+                    else:
+                        self.assertIsInstance(result, np.ndarray)
+                    self.assertEqual(result.shape, dropped)
+                    self.assertTrue(np.allclose(result, values))
+                else:
+                    self.assertRaisesRegex(ValueError,
+                                           f"Cannot drop {drop} axes "
+                                           "from a 1-D array",
+                                           reframe_like,
+                                           values,
+                                           target,
+                                           drop)
+
+    def test_drop_dataframe(self):
+        for shape in product(range(5), repeat=2):
+            nrow, ncol = shape
+            target = pd.DataFrame(rng.random(shape),
+                                  index=rng.integers(10, size=nrow),
+                                  columns=rng.integers(10, size=ncol))
+            for drop in range(4):
+                dropped = shape[drop:]
+                values = rng.random(dropped)
+                if drop <= 2:
+                    result = reframe_like(values, target, drop)
+                    if drop == 0:
+                        self.assertIsInstance(result, pd.DataFrame)
+                        self.assertTrue(result.index.equals(target.index))
+                        self.assertTrue(result.columns.equals(target.columns))
+                    elif drop == 1:
+                        self.assertIsInstance(result, pd.Series)
+                        self.assertTrue(result.index.equals(target.columns))
+                    else:
+                        self.assertIsInstance(result, np.ndarray)
+                    self.assertEqual(result.shape, dropped)
+                    self.assertTrue(np.allclose(result, values))
+
+                else:
+                    self.assertRaisesRegex(ValueError,
+                                           f"Cannot drop {drop} axes "
+                                           "from a 2-D array",
+                                           reframe_like,
+                                           values,
+                                           target,
+                                           drop)
+
 
 class TestAutoReframe(ut.TestCase):
 
     @staticmethod
-    def _sim_values(dmin: int, dmax: int):
+    def _sim_data(dmin: int, dmax: int):
         for ndim in range(dmin, dmax):
             for shape in product(range(4), repeat=ndim):
                 values = rng.random(shape)
@@ -511,40 +589,41 @@ class TestAutoReframe(ut.TestCase):
 
     def test_reduce_none(self):
         func = np.asarray
-        for values in self._sim_values(0, 4):
+        for data in self._sim_data(0, 4):
             wrap = auto_reframe(func)
-            func_result = np.asarray(func(values))
-            wrap_result = wrap(values)
+            func_result = np.asarray(func(data))
+            wrap_result = wrap(data)
             self.assertIsInstance(func_result, np.ndarray)
-            self.assertIsInstance(wrap_result, type(values))
+            self.assertIsInstance(wrap_result, type(data))
             self.assertEqual(func_result.shape, wrap_result.shape)
             self.assertTrue(np.allclose(func_result, wrap_result))
 
     def test_reduce_0(self):
         func = partial(np.sum, axis=0)
-        for values in self._sim_values(1, 4):
+        for data in self._sim_data(1, 4):
             wrap = auto_reframe(func)
-            func_result = np.asarray(func(values))
-            wrap_result = wrap(values)
-            if isinstance(values, pd.DataFrame):
+            func_result = np.asarray(func(data))
+            wrap_result = wrap(data)
+            if isinstance(data, pd.DataFrame):
                 self.assertIsInstance(wrap_result, pd.Series)
             else:
                 self.assertIsInstance(wrap_result, np.ndarray)
             self.assertEqual(func_result.shape, wrap_result.shape)
             self.assertTrue(np.allclose(func_result, wrap_result))
 
-    def test_reduce_01(self):
+    def test_reduce_0_and_1(self):
 
         def func(x):
+            if isinstance(x, np.ndarray):
+                return x.sum(axis=(0, 1))
             if isinstance(x, pd.DataFrame):
                 return x.sum().sum()
-            else:
-                return x.sum()
+            raise TypeError(f"Cannot reduce {type(x).__name__}")
 
-        for values in self._sim_values(2, 4):
+        for data in self._sim_data(2, 4):
             wrap = auto_reframe(func)
-            func_result = np.asarray(func(values))
-            wrap_result = wrap(values)
+            func_result = np.asarray(func(data))
+            wrap_result = wrap(data)
             self.assertIsInstance(wrap_result, np.ndarray)
             self.assertEqual(func_result.shape, wrap_result.shape)
             self.assertTrue(np.allclose(func_result, wrap_result))
