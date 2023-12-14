@@ -14,6 +14,12 @@ from .color import SeqColorMap
 from .seq import get_table_params
 from .write import TwoTableGraphWriter
 from ..core.arg import (arg_input_path,
+                        opt_comppair,
+                        opt_compself,
+                        opt_rels,
+                        opt_y_ratio,
+                        opt_quantile,
+                        opt_arrange,
                         opt_csv,
                         opt_html,
                         opt_pdf,
@@ -66,7 +72,6 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
                 ClustPosTableLoader: "Clustered"}
 
     def __init__(self,
-                 *args,
                  rel: str,
                  y_ratio: bool,
                  quantile: float,
@@ -75,7 +80,7 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
                  order2: int | None = None,
                  clust2: int | None = None,
                  **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.rel_code = rel
         self.y_ratio = y_ratio
         self.quantile = quantile
@@ -258,8 +263,12 @@ class SeqPairGraphWriter(TwoTableGraphWriter, ABC):
     def graph_type(cls) -> type[SeqPairGraph]:
         """ Type of the graph to iterate. """
 
-    def iter(self, rels: tuple[str, ...],
-             arrange: str, y_ratio: bool, quantile: float):
+    def iter(self,
+             rels: tuple[str, ...],
+             arrange: str,
+             y_ratio: bool,
+             quantile: float,
+             **kwargs):
         _, _, csparams1 = get_table_params(self.table1, arrange)
         _, _, csparams2 = get_table_params(self.table2, arrange)
         for cparams1, cparams2 in product(csparams1, csparams2):
@@ -272,7 +281,8 @@ class SeqPairGraphWriter(TwoTableGraphWriter, ABC):
                                         order1=cparams1.get("order"),
                                         clust1=cparams1.get("clust"),
                                         order2=cparams2.get("order"),
-                                        clust2=cparams2.get("clust"))
+                                        clust2=cparams2.get("clust"),
+                                        **kwargs)
 
 
 # Helper functions #####################################################
@@ -293,16 +303,28 @@ class SeqPairGraphRunner(ABC):
     @classmethod
     def params(cls) -> list[Argument | Option]:
         """ Parameters for the command line. """
-        return [arg_input_path] + cls.var_params() + [opt_csv,
-                                                      opt_html,
-                                                      opt_pdf,
-                                                      opt_force,
-                                                      opt_max_procs,
-                                                      opt_parallel]
+        return [
+            arg_input_path,
+            opt_comppair,
+            opt_compself,
+            opt_rels,
+            opt_quantile,
+            opt_y_ratio,
+            opt_arrange
+        ] + cls.var_params() + [
+            opt_csv,
+            opt_html,
+            opt_pdf,
+            opt_force,
+            opt_max_procs,
+            opt_parallel
+        ]
 
     @classmethod
     def run(cls,
-            input_path: tuple[str, ...], *,
+            input_path: tuple[str, ...],
+            comppair: bool,
+            compself: bool, *,
             csv: bool,
             html: bool,
             pdf: bool,
@@ -311,8 +333,19 @@ class SeqPairGraphRunner(ABC):
             parallel: bool,
             **kwargs) -> list[Path]:
         """ Run the graph seqpair module. """
+        # List all table files.
+        table_files = list(find_table_files(input_path))
+        # Determine all pairs of tables to compare.
+        table_pairs = list()
+        if compself:
+            # Compare every table with itself.
+            table_pairs.extend((file, file) for file in table_files)
+        if comppair:
+            # Compare every pair of tables.
+            table_pairs.extend(combinations(table_files, 2))
+        # Generate a table writer for each pair of tables.
         writers = [cls.writer_type()(table1_file=t1, table2_file=t2)
-                   for t1, t2 in combinations(find_table_files(input_path), 2)]
+                   for t1, t2 in table_pairs]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,
                                     parallel,

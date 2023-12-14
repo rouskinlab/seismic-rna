@@ -613,7 +613,7 @@ class PosTable(RelTypeTable, ABC):
                  fraction: float = 1., *,
                  exclude_masked: bool = False,
                  seed: int | None = None,
-                 max_seed: int = 4294967296):
+                 max_seed: int = 2 ** 32):
         """ Resample the reads and return a new DataFrame.
 
         Parameters
@@ -625,7 +625,7 @@ class PosTable(RelTypeTable, ABC):
             Exclude positions that have been masked.
         seed: int | None = None
             Seed for the random number generator.
-        max_seed: int = 4294967296
+        max_seed: int = 2 ** 32
             Maximum seed to pass to the next random number generator.
         """
         rng = np.random.default_rng(seed)
