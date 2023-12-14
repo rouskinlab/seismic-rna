@@ -5,18 +5,21 @@ from click import command
 from .demultiplex import demultiplex_run
 from ..align.fqops import FastqUnit
 from ..core.arg import (CMD_DEMULT,
-                        opt_barcode_length,
+                        opt_barcode_end,
                         opt_barcode_start,
+
                         opt_parallel_demultiplexing,
                         opt_clipped_demultiplexing,
                         opt_mismatch_tolerence,
                         opt_index_tolerence,
                         opt_demulti_overwrite,
                         arg_fasta,
-                        opt_sections_file,
                         opt_fastqx,
                         opt_out_dir,
-                        opt_phred_enc)
+                        opt_phred_enc,
+                        opt_refs_file,
+                        opt_temp_dir,
+                        opt_keep_temp,)
 from ..core.parallel import lock_temp_dir
 
 params = [
@@ -24,16 +27,18 @@ params = [
     arg_fasta,
     opt_fastqx,
     opt_phred_enc,
-    opt_sections_file,
     opt_barcode_start,
-    opt_barcode_length,
+    opt_barcode_end,
     opt_out_dir,
+    opt_refs_file,
     # options
     opt_parallel_demultiplexing,
     opt_clipped_demultiplexing,
     opt_mismatch_tolerence,
     opt_index_tolerence,
-    opt_demulti_overwrite
+    opt_demulti_overwrite,
+    opt_temp_dir,
+    opt_keep_temp,
 
 ]
 
@@ -47,33 +52,36 @@ def cli(*args, **kwargs):
 
 
 @lock_temp_dir
-def run(sections_file: str,
+def run(refs_file: str,
         out_dir: str,
         temp_dir: str,
         fastqx: tuple[str, ...],
         phred_enc: int,
         fasta: str,
         barcode_start=0,
-        barcode_length=0,
+        barcode_end=0,
         clipped: int = 0,
         index_tolerance: int = 0,
         parallel_demultiplexing: bool = False,
         mismatch_tolerence: int = 0,
-        demulti_overwrite: bool = False):
+        demulti_overwrite: bool = False,
+        keep_temp: bool =True,
+        ):
     fq_units = list(FastqUnit.from_paths(fastqx=list(map(Path, fastqx)),
                                          phred_enc=phred_enc))
-    return [demultiplex_run(sections_file_csv=sections_file,
+    return [demultiplex_run(refs_file_csv=refs_file,
                             overwrite=demulti_overwrite,
                             demulti_workspace=temp_dir,
                             report_folder=out_dir,
                             fq_unit=fq_unit,
                             barcode_start=barcode_start,
-                            barcode_length=barcode_length,
+                            barcode_end=barcode_end,
                             clipped=clipped,
                             index_tolerance=index_tolerance,
                             parallel=parallel_demultiplexing,
                             fasta=fasta,
-                            mismatch_tolerence=mismatch_tolerence)
+                            mismatch_tolerence=mismatch_tolerence,
+                            keep_temp=keep_temp)
             for fq_unit in fq_units]
 
 

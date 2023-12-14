@@ -60,6 +60,7 @@ def run(*,
         fastqx: tuple[str, ...],
         phred_enc: int,
         # Demultiplexing options
+        refs_file,
         demulti_overwrite: bool,
         demult_on: bool,
         parallel_demultiplexing: bool,
@@ -67,7 +68,7 @@ def run(*,
         mismatch_tolerence: int,
         index_tolerance: int,
         barcode_start: int,
-        barcode_length: int,
+        barcode_end: int,
         # Align options
         dmfastqz: tuple[str, ...],
         dmfastqy: tuple[str, ...],
@@ -147,7 +148,7 @@ def run(*,
     if demult_on:
         for dms, dmi, dmm in demultiplex_mod.run(
                 fasta=fasta,
-                sections_file=sections_file,
+                refs_file=refs_file,
                 out_dir=out_dir,
                 temp_dir=temp_dir,
                 demulti_overwrite=demulti_overwrite,
@@ -157,7 +158,7 @@ def run(*,
                 mismatch_tolerence=mismatch_tolerence,
                 parallel_demultiplexing=parallel_demultiplexing,
                 barcode_start=barcode_start,
-                barcode_length=barcode_length,
+                barcode_length=barcode_end,
                 phred_enc=phred_enc):
             dmfastqz = dmfastqz + dms
             dmfastqy = dmfastqy + dmi

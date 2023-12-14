@@ -8,7 +8,7 @@ import fastqsplitter
 import pandas as pd
 
 from ..align.fqops import FastqUnit
-from ..core.arg import (opt_barcode_length,
+from ..core.arg import (opt_barcode_end,
                         opt_barcode_start,
                         opt_parallel_demultiplexing,
                         opt_clipped_demultiplexing,
@@ -17,7 +17,10 @@ from ..core.arg import (opt_barcode_length,
                         opt_demulti_overwrite,
                         arg_fasta,
                         opt_sections_file,
-                        opt_fastqx)
+                        opt_fastqx,
+                        opt_refs_file,
+                        opt_temp_dir,
+                        opt_keep_temp,)
 
 # from scipy import signal
 
@@ -28,14 +31,17 @@ params = [
     opt_fastqx,
     opt_sections_file,
     opt_barcode_start,
-    opt_barcode_length,
+    opt_barcode_end,
 
     # options
     opt_parallel_demultiplexing,
     opt_clipped_demultiplexing,
     opt_mismatch_tolerence,
     opt_index_tolerence,
-    opt_demulti_overwrite
+    opt_demulti_overwrite,
+    opt_refs_file,
+    opt_temp_dir,
+    opt_keep_temp,
 
 ]
 
@@ -466,7 +472,7 @@ this whole method could be replaced with a dataframe that organizes all of these
 """
 
 
-def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_length, fasta, fastq1_path, fastq2_path, paired,
+def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_end, fasta, fastq1_path, fastq2_path, paired,
                                    workspace) -> dict:
     sequence_object_dict = {}
     fasta_dict = make_dict_from_fasta(fasta)
@@ -475,7 +481,7 @@ def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_length, fas
         for name in fasta_dict.keys():
             seq = fasta_dict[name]
             rev_seq = reverse_compliment(seq)
-            bc = seq[barcode_start:barcode_start + barcode_length]
+            bc = seq[barcode_start:barcode_end]
 
             rev_barcode = reverse_compliment(bc)
             rev_bc_start = rev_seq.index(rev_barcode)
@@ -488,7 +494,7 @@ def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_length, fas
                 name=name,
                 paired=paired,
                 barcode_start=barcode_start,
-                barcode_end=barcode_start + barcode_length,
+                barcode_end=barcode_end,
                 barcode=bc,
                 rev_barcode=rev_barcode,
                 rev_barcode_start=rev_bc_start,
@@ -510,28 +516,28 @@ def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_length, fas
         # sequence_object_dict={}
         cols = set(df.columns)
 
-        if (barcode_start == barcode_length) and ("barcode_start" not in cols):
+        if ("Barcode5" not in cols):
             raise Exception("no barcode info given")
 
         for x in df.index:
 
-            name = df.at[x, "reference"]
+            name = df.at[x, "Reference"]
             seq = fasta_dict[name]
             rev_seq = reverse_compliment(seq)
 
-            if (barcode_start == barcode_length):
-                barcode_start = df.at[x, "barcode_start"]
-                barcode_length = df.at[x, "barcode_length"]
-                bc = seq[barcode_start:barcode_start + barcode_length]
+            if (barcode_start == barcode_end):
+                barcode_start = df.at[x, "Barcode5"]
+                barcode_end = df.at[x, "Barcode3"]
+                bc = seq[barcode_start:barcode_end]
             else:
-                bc = seq[barcode_start:barcode_start + barcode_length]
+                bc = seq[barcode_start:barcode_end]
             rev_barcode = reverse_compliment(bc)
             rev_bc_start = rev_seq.index(rev_barcode)
             rev_bc_end = rev_bc_start + len(rev_barcode)
 
-            if ("secondary_signature_start" in cols):
-                secondary_sign_start = df.at[x, "secondary_signature_start"]
-                secondary_sign_end = secondary_sign_start + df.at[x, "secondary_signature_length"]
+            if ("Secondary_Signature_Start" in cols):
+                secondary_sign_start = df.at[x, "Secondary_Signature_Start"]
+                secondary_sign_end = secondary_sign_start + df.at[x, "Secondary_Signature_Length"]
                 secondary_sign = fasta_dict[name][secondary_sign_start:secondary_sign_end]
 
                 rev_sec_sign = reverse_compliment(secondary_sign)
@@ -555,7 +561,7 @@ def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_length, fas
                 name=name,
                 paired=paired,
                 barcode_start=barcode_start,
-                barcode_end=barcode_start + len(bc),
+                barcode_end=barcode_end,
                 barcode=bc,
                 rev_barcode=rev_barcode,
                 rev_barcode_start=rev_bc_start,
@@ -1037,9 +1043,9 @@ sections_file csv
 
 """
 
-def demultiplex_run(sections_file_csv, demulti_workspace, report_folder, fq_unit: FastqUnit, fasta, barcode_start=0,
-                    barcode_length=0, split: int = 10, clipped: int = 0, rev_clipped: int = 0, index_tolerance: int = 0,
-                    parallel: bool = False, mismatch_tolerence: int = 0, overwrite: bool = False):
+def demultiplex_run(refs_file_csv, demulti_workspace, report_folder, fq_unit: FastqUnit, fasta, barcode_start=0,
+                    barcode_end=0, split: int = 10, clipped: int = 0, rev_clipped: int = 0, index_tolerance: int = 0,
+                    parallel: bool = False, mismatch_tolerence: int = 0, overwrite: bool = False, keep_temp:bool=True):
     sample_name = fq_unit.sample
     mixed_fastq1, mixed_fastq2 = (fq_unit.paths.values())  # only works if the FASTQ has paired-end reads in two separate files
     mixed_fastq1=str(mixed_fastq1)
@@ -1064,9 +1070,9 @@ def demultiplex_run(sections_file_csv, demulti_workspace, report_folder, fq_unit
 
     os.makedirs(seq_data_folder, exist_ok=True)
     sequence_objects = make_sequence_objects_from_csv(
-        input_csv=sections_file_csv,
+        input_csv=refs_file_csv,
         barcode_start=barcode_start,
-        barcode_length=barcode_length,
+        barcode_end=barcode_end,
         fasta=fasta,
         fastq1_path=mixed_fastq1,
         fastq2_path=mixed_fastq2,
