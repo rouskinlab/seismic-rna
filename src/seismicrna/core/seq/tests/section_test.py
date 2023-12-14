@@ -1172,13 +1172,6 @@ class TestGetWindows(ut.TestCase):
         for (wcenter, wseries), (ecenter, eseries) in zip(windows,
                                                           expected,
                                                           strict=True):
-            if wcenter != ecenter:
-                print("----------")
-                print(wcenter)
-                print(wseries)
-                print(ecenter)
-                print(eseries)
-                print("==========")
             self.assertEqual(wcenter, ecenter)
             for window, expect in zip(wseries, eseries, strict=True):
                 self.assertTrue(np.allclose(window, expect, equal_nan=True))
