@@ -224,6 +224,12 @@ opt_barcode_start = Option(
     default=0,
     help="index of start of barcode")
 
+opt_barcode_end = Option(
+    ("--barcode-end",),
+    type=int,
+    default=0,
+    help="length of barcode")
+
 opt_barcode_length = Option(
     ("--barcode-length",),
     type=int,
