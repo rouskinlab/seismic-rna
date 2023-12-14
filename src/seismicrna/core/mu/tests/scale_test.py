@@ -1,4 +1,5 @@
 import unittest as ut
+from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -272,39 +273,155 @@ class TestCalcQuantile(ut.TestCase):
 
 class TestNormalize(ut.TestCase):
 
-    def test_normalize_p0(self):
-        for n in [5, 12, 19]:
-            mus = np.linspace(0.0, 0.1, n)
-            self.assertTrue(np.allclose(normalize(mus, 0.0), mus))
+    def test_array0d(self):
+        mus = rng.random(())
+        for quantile in np.linspace(0., 1., 5):
+            if quantile == 0.:
+                self.assertIs(normalize(mus, quantile), mus)
+            else:
+                self.assertRaisesRegex(ValueError,
+                                       "A 0-D array has no positional axis",
+                                       normalize,
+                                       mus,
+                                       quantile)
 
-    def test_normalize_p50(self):
-        for n in [5, 12, 19]:
-            mus = np.linspace(0.0, 0.1, n)
-            self.assertTrue(np.allclose(normalize(mus, 0.5), mus * 20.))
+    def test_array1d(self):
+        for length in range(5):
+            for mu_max in np.exp(np.linspace(-10., 0., 6)):
+                mus = np.linspace(mu_max, 0., length)
+                for quantile in np.linspace(0., 1., 5):
+                    if quantile == 0.:
+                        self.assertIs(normalize(mus, quantile), mus)
+                    else:
+                        norm = normalize(mus, quantile)
+                        self.assertIsInstance(norm, np.ndarray)
+                        self.assertEqual(norm.shape, (length,))
+                        if length > 1:
+                            # Because mus was created with np.linspace,
+                            # the value of the quantile is the product
+                            # of the quantile and the maximum of mus.
+                            expect = mus / (mu_max * quantile)
+                        else:
+                            # If there is only one mutation rate, then
+                            # it must be set to 1.
+                            expect = mus / mus
+                        self.assertTrue(np.allclose(norm, expect))
 
-    def test_normalize_p100(self):
-        for n in [5, 12, 19]:
-            mus = np.linspace(0.0, 0.1, n)
-            self.assertTrue(np.allclose(normalize(mus, 1.0), mus * 10.))
+    def test_array2d(self):
+        for nrow in range(4):
+            for ncol in range(4):
+                for mu_max in np.exp(np.linspace(-10., 0., 6)):
+                    # Generate mutation rates using np.linspace for each
+                    # column.
+                    mus = np.broadcast_to(
+                        np.linspace(mu_max, 0., nrow)[:, np.newaxis],
+                        (nrow, ncol)
+                    )
+                    for quantile in np.linspace(0., 1., 5):
+                        if quantile == 0.:
+                            self.assertIs(normalize(mus, quantile), mus)
+                        else:
+                            norm = normalize(mus, quantile)
+                            self.assertIsInstance(norm, np.ndarray)
+                            self.assertEqual(norm.shape, (nrow, ncol))
+                            if nrow > 1:
+                                # Because mus was created with np.linspace,
+                                # the value of the quantile is the product
+                                # of the quantile and the maximum of mus.
+                                expect = mus / (mu_max * quantile)
+                            else:
+                                # If there is only one mutation rate, then
+                                # it must be set to 1.
+                                expect = mus / mus
+                            self.assertTrue(np.allclose(norm, expect))
+
+    def test_series(self):
+        for length in range(5):
+            for mu_max in np.exp(np.linspace(-10., 0., 6)):
+                mus = pd.Series(np.linspace(mu_max, 0., length))
+                for quantile in np.linspace(0., 1., 5):
+                    if quantile == 0.:
+                        self.assertIs(normalize(mus, quantile), mus)
+                    else:
+                        norm = normalize(mus, quantile)
+                        self.assertIsInstance(norm, pd.Series)
+                        self.assertEqual(norm.shape, (length,))
+                        if length > 1:
+                            # Because mus was created with np.linspace,
+                            # the value of the quantile is the product
+                            # of the quantile and the maximum of mus.
+                            expect = mus / (mu_max * quantile)
+                        else:
+                            # If there is only one mutation rate, then
+                            # it must be set to 1.
+                            expect = mus / mus
+                        self.assertTrue(np.allclose(norm, expect))
+
+    def test_dataframe(self):
+        for nrow in range(4):
+            for ncol in range(4):
+                for mu_max in np.exp(np.linspace(-10., 0., 6)):
+                    # Generate mutation rates using np.linspace for each
+                    # column.
+                    mus = pd.DataFrame(np.broadcast_to(
+                        np.linspace(mu_max, 0., nrow)[:, np.newaxis],
+                        (nrow, ncol)
+                    ))
+                    for quantile in np.linspace(0., 1., 5):
+                        if quantile == 0.:
+                            self.assertIs(normalize(mus, quantile), mus)
+                        else:
+                            norm = normalize(mus, quantile)
+                            self.assertIsInstance(norm, pd.DataFrame)
+                            self.assertEqual(norm.shape, (nrow, ncol))
+                            if nrow > 1:
+                                # Because mus was created with np.linspace,
+                                # the value of the quantile is the product
+                                # of the quantile and the maximum of mus.
+                                expect = mus / (mu_max * quantile)
+                            else:
+                                # If there is only one mutation rate, then
+                                # it must be set to 1.
+                                expect = mus / mus
+                            self.assertTrue(np.allclose(norm, expect))
 
 
 class TestWinsorize(ut.TestCase):
 
-    def test_winsorize_p0(self):
-        for n in [5, 12, 19]:
-            mus = np.linspace(0.0, 0.1, n)
-            self.assertTrue(np.allclose(winsorize(mus, 0.0), mus))
+    def test_arrays(self):
+        for ndim in range(1, 4):
+            for shape in product(range(4), repeat=ndim):
+                mus = rng.random(shape)
+                for quantile in np.linspace(0., 1., 5):
+                    wins = winsorize(mus, quantile)
+                    norm = normalize(mus, quantile)
+                    expect = np.where(norm <= 1., norm, 1.)
+                    self.assertIsInstance(wins, np.ndarray)
+                    self.assertEqual(wins.shape, shape)
+                    self.assertTrue(np.allclose(wins, expect))
 
-    def test_winsorize_p50(self):
-        for n in [5, 12, 19]:
-            mus = np.linspace(0.0, 0.1, n)
-            self.assertTrue(np.allclose(winsorize(mus, 0.5),
-                                        np.where(mus < 0.05, mus * 20., 1.)))
+    def test_series(self):
+        for length in range(4):
+            mus = pd.Series(rng.random(length))
+            for quantile in np.linspace(0., 1., 5):
+                wins = winsorize(mus, quantile)
+                norm = normalize(mus, quantile)
+                expect = np.where(norm <= 1., norm, 1.)
+                self.assertIsInstance(wins, pd.Series)
+                self.assertEqual(wins.shape, (length,))
+                self.assertTrue(np.allclose(wins, expect))
 
-    def test_winsorize_p100(self):
-        for n in [5, 12, 19]:
-            mus = np.linspace(0.0, 0.1, n)
-            self.assertTrue(np.allclose(winsorize(mus, 1.0), mus * 10.))
+    def test_dataframe(self):
+        for nrow in range(4):
+            for ncol in range(4):
+                mus = pd.DataFrame(rng.random((nrow, ncol)))
+                for quantile in np.linspace(0., 1., 5):
+                    wins = winsorize(mus, quantile)
+                    norm = normalize(mus, quantile)
+                    expect = np.where(norm <= 1., norm, 1.)
+                    self.assertIsInstance(wins, pd.DataFrame)
+                    self.assertEqual(wins.shape, (nrow, ncol))
+                    self.assertTrue(np.allclose(wins, expect))
 
 
 class TestCalcRanks(ut.TestCase):
