@@ -202,19 +202,23 @@ def get_comp_abbr(key: str):
     raise ValueError(f"Invalid method of comparison: {repr(key)}")
 
 
-def compare_sliding(mus1: pd.Series,
+def compare_windows(mus1: pd.Series,
                     mus2: pd.Series,
-                    mucomp: Callable,
-                    window: int,
-                    winmin: int):
+                    method: str | Callable,
+                    size: int,
+                    min_count: int = 2):
     """ Compare two Series via sliding windows.
     """
+    if isinstance(method, str):
+        # If the comparison method is given a string, then fetch the
+        # function itself.
+        method = get_comp_func(method)
     # Initialize an empty Series for the sliding comparison.
     values = pd.Series(np.nan, index=get_shared_index([mus1.index, mus2.index]))
     # Calculate the value of the comparison for each window.
     for center, (win1, win2) in get_windows(mus1,
                                             mus2,
-                                            size=window,
-                                            min_count=winmin):
-        values.loc[center] = mucomp(win1, win2)
+                                            size=size,
+                                            min_count=min_count):
+        values.loc[center] = method(win1, win2)
     return values

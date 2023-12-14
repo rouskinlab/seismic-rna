@@ -5,13 +5,15 @@ import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 
-from seismicrna.core.mu.compare import (calc_coeff_determ,
-                                        calc_pearson,
-                                        calc_rmsd,
-                                        calc_spearman,
-                                        get_comp_abbr,
-                                        get_comp_func,
-                                        get_comp_name)
+from seismicrna.core.mu import (calc_coeff_determ,
+                                calc_pearson,
+                                calc_rmsd,
+                                calc_spearman,
+                                compare_windows,
+                                get_comp_abbr,
+                                get_comp_func,
+                                get_comp_name)
+from seismicrna.core.seq import DNA, seq_pos_to_index
 
 rng = np.random.default_rng()
 
@@ -334,6 +336,26 @@ class TestGetComp(ut.TestCase):
         self.assertEqual(get_comp_abbr("rho"), "SCC")
         self.assertEqual(get_comp_name("rho"),
                          "Spearman Correlation Coefficient")
+        for get_comp in [get_comp_func, get_comp_name, get_comp_abbr]:
+            self.assertRaisesRegex(ValueError,
+                                   "Invalid method of comparison: 'other'",
+                                   get_comp,
+                                   "other")
+
+
+class TestCompareWindows(ut.TestCase):
+
+    def test_contiguous(self):
+        for seqlen in [0, 10, 20]:
+            seq = DNA.random(seqlen)
+            index = seq_pos_to_index(seq, np.arange(1, seqlen + 1), start=1)
+            mus1 = pd.Series(rng.random(seqlen), index)
+            mus2 = pd.Series(rng.random(seqlen), index)
+            for winlen in range(2, 6):
+                for mucomp in [calc_rmsd, calc_pearson, calc_spearman]:
+                    values = compare_windows(mus1, mus2, mucomp, winlen)
+                    self.assertIsInstance(values, pd.Series)
+                    self.assertTrue(values.index.equals(index))
 
 
 if __name__ == "__main__":
