@@ -130,7 +130,20 @@ def calc_spearman(mus1: np.ndarray | pd.Series | pd.DataFrame,
     return calc_pearson(calc_ranks(mus1), calc_ranks(mus2))
 
 
-def get_comp_func(key: str):
+def _get_comp_method(key: str):
+    """ Get a comparison method based on its key. """
+    if key == MUCOMP_RMSD:
+        return calc_rmsd, "Root-Mean-Square Deviation", "RMSD"
+    if key == MUCOMP_PEARSON:
+        return calc_pearson, "Pearson Correlation Coefficient", "PCC"
+    if key == MUCOMP_DETERM:
+        return calc_coeff_determ, "Coefficient of Determination", "R-Squared"
+    if key == MUCOMP_SPEARMAN:
+        return calc_spearman, "Spearman Correlation Coefficient", "SCC"
+    raise ValueError(f"Invalid method of comparison: {repr(key)}")
+
+
+def get_comp_func(key: str) -> Callable:
     """ Get the function of a comparison method based on its key.
 
     Parameters
@@ -143,18 +156,11 @@ def get_comp_func(key: str):
     Callable
         Function to compare mutation rates.
     """
-    if key == MUCOMP_RMSD:
-        return calc_rmsd
-    if key == MUCOMP_PEARSON:
-        return calc_pearson
-    if key == MUCOMP_DETERM:
-        return calc_coeff_determ
-    if key == MUCOMP_SPEARMAN:
-        return calc_spearman
-    raise ValueError(f"Invalid method of comparison: {repr(key)}")
+    func, _, __ = _get_comp_method(key)
+    return func
 
 
-def get_comp_name(key: str):
+def get_comp_name(key: str) -> str:
     """ Get the name of a comparison method based on its key.
 
     Parameters
@@ -167,18 +173,11 @@ def get_comp_name(key: str):
     str
         Name of the comparison method.
     """
-    if key == MUCOMP_RMSD:
-        return "Root-Mean-Square Deviation"
-    if key == MUCOMP_PEARSON:
-        return "Pearson Correlation Coefficient"
-    if key == MUCOMP_DETERM:
-        return "Coefficient of Determination"
-    if key == MUCOMP_SPEARMAN:
-        return "Spearman Correlation Coefficient"
-    raise ValueError(f"Invalid method of comparison: {repr(key)}")
+    _, name, __ = _get_comp_method(key)
+    return name
 
 
-def get_comp_abbr(key: str):
+def get_comp_abbr(key: str) -> str:
     """ Get the abbreviation of a comparison method based on its key.
 
     Parameters
@@ -191,15 +190,8 @@ def get_comp_abbr(key: str):
     str
         Abbreviation of the comparison method.
     """
-    if key == MUCOMP_RMSD:
-        return "RMSD"
-    if key == MUCOMP_PEARSON:
-        return "PCC"
-    if key == MUCOMP_DETERM:
-        return "R-Squared"
-    if key == MUCOMP_SPEARMAN:
-        return "SCC"
-    raise ValueError(f"Invalid method of comparison: {repr(key)}")
+    _, __, abbr = _get_comp_method(key)
+    return abbr
 
 
 def compare_windows(mus1: pd.Series,

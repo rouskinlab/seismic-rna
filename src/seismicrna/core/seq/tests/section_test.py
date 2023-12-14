@@ -1143,7 +1143,9 @@ class TestWindowToMargins(ut.TestCase):
                     2: (0, 1),
                     3: (1, 1),
                     4: (1, 2),
-                    5: (2, 2)}
+                    5: (2, 2),
+                    6: (2, 3),
+                    7: (3, 3)}
         for window, margins in expected.items():
             self.assertEqual(window_to_margins(window), margins)
 
