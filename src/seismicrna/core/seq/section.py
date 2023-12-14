@@ -259,7 +259,7 @@ def window_to_margins(window: int):
     if window <= 0:
         raise ValueError(f"window must be ≥ 1, but got {window}")
     margin3 = window // 2
-    margin5 = window - margin3 - 1
+    margin5 = window - (margin3 + 1)
     return margin5, margin3
 
 

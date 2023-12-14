@@ -349,13 +349,23 @@ class TestCompareWindows(ut.TestCase):
         for seqlen in [0, 10, 20]:
             seq = DNA.random(seqlen)
             index = seq_pos_to_index(seq, np.arange(1, seqlen + 1), start=1)
-            mus1 = pd.Series(rng.random(seqlen), index)
-            mus2 = pd.Series(rng.random(seqlen), index)
-            for winlen in range(2, 6):
-                for mucomp in [calc_rmsd, calc_pearson, calc_spearman]:
-                    values = compare_windows(mus1, mus2, mucomp, winlen)
-                    self.assertIsInstance(values, pd.Series)
-                    self.assertTrue(values.index.equals(index))
+            mus = pd.Series(rng.random(seqlen), index)
+            for size in range(2, 6):
+                for mc in range(2, size + 1):
+                    nan5 = min(seqlen, max(0, mc - (1 + size // 2)))
+                    nan3 = min(seqlen, max(0, mc - (1 + size) // 2))
+                    nval = seqlen - (nan5 + nan3)
+                    for method in ["rmsd", "r", "r2", "rho"]:
+                        result = compare_windows(mus, mus, method, size, mc)
+                        self.assertIsInstance(result, pd.Series)
+                        self.assertTrue(result.index.equals(index))
+                        fill = 0. if method == "rmsd" else 1.
+                        expect = np.hstack([np.full(nan5, np.nan),
+                                            np.full(nval, fill),
+                                            np.full(nan3, np.nan)])
+                        self.assertTrue(np.allclose(result,
+                                                    expect,
+                                                    equal_nan=True))
 
 
 if __name__ == "__main__":
