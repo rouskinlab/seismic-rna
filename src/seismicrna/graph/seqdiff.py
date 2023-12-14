@@ -20,13 +20,13 @@ class SeqDiffGraph(SeqPairOneAxisGraph):
     def graph_type(cls):
         return COMMAND
 
-    @property
-    def y_title(self):
-        return f"{self.quantity}-2 minus {self.quantity}-1"
-
     @classmethod
     def _trace_function(cls):
         return iter_seq_base_bar_traces
+
+    @property
+    def y_title(self):
+        return f"{self.quantity}-2 minus {self.quantity}-1"
 
     @property
     def _merge_data(self):

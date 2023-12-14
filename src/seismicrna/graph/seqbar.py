@@ -69,6 +69,11 @@ class SeqBarGraphWriter(OneTableGraphWriter):
 class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
     """ Bar graph wherein each bar represents one sequence position. """
 
+    @classmethod
+    @abstractmethod
+    def sources(cls) -> dict[type[PosTableLoader], str]:
+        """ Names of the sources of data. """
+
     def __init__(self, *, rels: str, y_ratio: bool, quantile: float, **kwargs):
         super().__init__(**kwargs)
         self.rel_codes = rels
@@ -96,11 +101,6 @@ class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
     @cached_property
     def data(self):
         return self._fetch_data()
-
-    @classmethod
-    @abstractmethod
-    def sources(cls) -> dict[type[PosTableLoader], str]:
-        """ Names of the sources of data. """
 
     @property
     def source(self):
@@ -148,13 +148,13 @@ class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
 
 class AverageSeqBarGraph(SeqBarGraph, ABC):
 
-    @property
-    def row_index(self):
-        return None
-
     @classmethod
     def sources(cls):
         return {RelPosTableLoader: "Related", MaskPosTableLoader: "Masked"}
+
+    @property
+    def row_index(self):
+        return None
 
     @property
     def subject(self):
@@ -162,6 +162,10 @@ class AverageSeqBarGraph(SeqBarGraph, ABC):
 
 
 class ClusterSeqBarGraph(SeqBarGraph, ABC):
+
+    @classmethod
+    def sources(cls):
+        return {ClustPosTableLoader: "Clustered"}
 
     def __init__(self, *,
                  order: int | None = None,
@@ -185,10 +189,6 @@ class ClusterSeqBarGraph(SeqBarGraph, ABC):
     def _fetch_kwargs(self):
         return super()._fetch_kwargs | dict(order=self._order,
                                             clust=self._clust)
-
-    @classmethod
-    def sources(cls):
-        return {ClustPosTableLoader: "Clustered"}
 
     @property
     def subject(self):

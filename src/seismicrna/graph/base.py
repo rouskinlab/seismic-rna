@@ -203,16 +203,16 @@ class ColorMapGraph(GraphBase, ABC):
 class SampleGraph(GraphBase, ABC):
     """ Graph of one or more samples. """
 
+    @classmethod
+    def get_path_segs(cls):
+        """ Path segments. """
+        return super().get_path_segs() + (path.SampSeg,)
+
     @property
     @abstractmethod
     def sample(self):
         """ Name of the sample. """
         return ""
-
-    @classmethod
-    def get_path_segs(cls):
-        """ Path segments. """
-        return super().get_path_segs() + (path.SampSeg,)
 
     def get_path_fields(self):
         return super().get_path_fields() | {path.SAMP: self.sample}
@@ -243,6 +243,11 @@ class TwoSampleGraph(SampleGraph, ABC):
 class OneRefGraph(GraphBase, ABC):
     """ Graph of one reference.  """
 
+    @classmethod
+    def get_path_segs(cls):
+        """ Path segments. """
+        return super().get_path_segs() + (path.RefSeg, path.SectSeg)
+
     @property
     @abstractmethod
     def ref(self) -> str:
@@ -252,11 +257,6 @@ class OneRefGraph(GraphBase, ABC):
     @abstractmethod
     def sect(self) -> str:
         """ Name of the section of the reference sequence. """
-
-    @classmethod
-    def get_path_segs(cls):
-        """ Path segments. """
-        return super().get_path_segs() + (path.RefSeg, path.SectSeg)
 
     def get_path_fields(self):
         return super().get_path_fields() | {path.REF: self.ref,
@@ -321,6 +321,16 @@ class OneTableGraph(OneSampleGraph, OneRefGraph, ABC):
 
 class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
 
+    @classmethod
+    @abstractmethod
+    def get_table1_type(cls) -> type[Table | PosTable]:
+        """ Type of the first TableLoader for this graph. """
+
+    @classmethod
+    @abstractmethod
+    def get_table2_type(cls) -> type[Table | PosTable]:
+        """ Type of the second TableLoader for this graph. """
+
     def __init__(self, *,
                  table1: Table | PosTable,
                  table2: Table | PosTable,
@@ -336,16 +346,6 @@ class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
                                 f"but got type '{type(table).__name__}'")
         self._table1 = table1
         self._table2 = table2
-
-    @classmethod
-    @abstractmethod
-    def get_table1_type(cls) -> type[Table | PosTable]:
-        """ Type of the first TableLoader for this graph. """
-
-    @classmethod
-    @abstractmethod
-    def get_table2_type(cls) -> type[Table | PosTable]:
-        """ Type of the second TableLoader for this graph. """
 
     @property
     def table1(self):

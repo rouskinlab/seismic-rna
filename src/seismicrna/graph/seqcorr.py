@@ -17,23 +17,23 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 class SeqCorrGraph(SeqPairOneAxisGraph):
 
+    @classmethod
+    def graph_type(cls):
+        return COMMAND
+
+    @classmethod
+    def _trace_function(cls):
+        return iter_seq_line_traces
+
     def __init__(self, *, mucomp: str, window: int, winmin: int, **kwargs):
         super().__init__(**kwargs)
         self._method = mucomp
         self._size = window
         self._min_count = winmin
 
-    @classmethod
-    def graph_type(cls):
-        return COMMAND
-
     @property
     def y_title(self):
         return f"{get_comp_abbr(self._method)} of {self.quantity}s"
-
-    @classmethod
-    def _trace_function(cls):
-        return iter_seq_line_traces
 
     @property
     def _merge_data(self):

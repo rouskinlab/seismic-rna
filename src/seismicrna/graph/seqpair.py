@@ -71,6 +71,11 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
                 MaskPosTableLoader: "Masked",
                 ClustPosTableLoader: "Clustered"}
 
+    @classmethod
+    @abstractmethod
+    def graph_type(cls):
+        """ Type of the graph. """
+
     def __init__(self,
                  rel: str,
                  y_ratio: bool,
@@ -142,11 +147,6 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
     def predicate(self):
         return f"{self.rel_code}-{self.quantity}"
 
-    @classmethod
-    @abstractmethod
-    def graph_type(cls):
-        """ Type of the graph. """
-
     @property
     def graph_filename(self):
         return f"{self.subject}_{self.predicate}_{self.graph_type()}".lower()
@@ -191,14 +191,14 @@ class SeqPairOneAxisGraph(SeqPairGraph, ABC):
     data series are merged in some fashion into another series, and the
     original data are not graphed directly. """
 
-    @property
-    def x_title(self) -> str:
-        return POS_NAME
-
     @classmethod
     @abstractmethod
     def _trace_function(cls) -> Callable:
         """ Function to generate the graph's traces. """
+
+    @property
+    def x_title(self) -> str:
+        return POS_NAME
 
     @property
     @abstractmethod
