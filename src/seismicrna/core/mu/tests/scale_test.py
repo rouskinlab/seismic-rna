@@ -474,13 +474,13 @@ class TestCalcRMS(ut.TestCase):
         mus = np.array([0.2, 0.3, 0.6])
         rms = calc_rms(mus)
         self.assertIsInstance(rms, float)
-        self.assertTrue(np.isclose(rms, 0.7 / 3.0 ** 0.5))
+        self.assertTrue(np.isclose(rms, 0.7 * 3.0 ** -0.5))
 
     def test_array1d_nan(self):
         mus = np.array([0.2, 0.3, np.nan, 0.6])
         rms = calc_rms(mus)
         self.assertIsInstance(rms, float)
-        self.assertTrue(np.isclose(rms, 0.7 / 3.0 ** 0.5))
+        self.assertTrue(np.isclose(rms, 0.7 * 3.0 ** -0.5))
 
     def test_array2d(self):
         mus = np.array([[0.2, 0.4],
@@ -489,14 +489,14 @@ class TestCalcRMS(ut.TestCase):
         rms = calc_rms(mus)
         self.assertIsInstance(rms, np.ndarray)
         self.assertEqual(rms.shape, (2,))
-        self.assertTrue(np.allclose(rms, [0.3 / 3.0 ** 0.5,
-                                          0.9 / 3.0 ** 0.5]))
+        self.assertTrue(np.allclose(rms, [0.3 * 3.0 ** -0.5,
+                                          0.9 * 3.0 ** -0.5]))
 
     def test_series(self):
         mus = pd.Series([0.4, 0.8, 0.1])
         rms = calc_rms(mus)
         self.assertIsInstance(rms, float)
-        self.assertTrue(np.isclose(rms, 0.9 / 3.0 ** 0.5))
+        self.assertTrue(np.isclose(rms, 0.9 * 3.0 ** -0.5))
 
     def test_dataframe(self):
         mus = pd.DataFrame([[0.2, 0.8],
@@ -507,8 +507,8 @@ class TestCalcRMS(ut.TestCase):
         rms = calc_rms(mus)
         self.assertIsInstance(rms, pd.Series)
         self.assertEqual(rms.shape, (2,))
-        self.assertTrue(np.allclose(rms, [0.7 / 3.0 ** 0.5,
-                                          0.9 / 3.0 ** 0.5]))
+        self.assertTrue(np.allclose(rms, [0.7 * 3.0 ** -0.5,
+                                          0.9 * 3.0 ** -0.5]))
         self.assertTrue(rms.index.equals(mus.columns))
 
 
