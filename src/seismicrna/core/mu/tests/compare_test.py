@@ -1,5 +1,6 @@
 import unittest as ut
 import warnings
+import time
 
 import numpy as np
 import pandas as pd
