@@ -1,15 +1,14 @@
 import os
+from functools import partial
 from logging import getLogger
 
-import numpy as np
-import pandas as pd
 from click import command
 from plotly import graph_objects as go
 
 from .seqpair import SeqPairGraphRunner, SeqPairGraphWriter, SeqPairOneAxisGraph
 from .traces import iter_seq_line_traces
 from ..core.arg import opt_mucomp, opt_window, opt_winmin
-from ..core.seq import get_shared_index, get_windows
+from ..core.mu import compare_windows, get_comp_abbr
 
 logger = getLogger(__name__)
 
@@ -20,9 +19,9 @@ class SeqCorrGraph(SeqPairOneAxisGraph):
 
     def __init__(self, *, mucomp: str, window: int, winmin: int, **kwargs):
         super().__init__(**kwargs)
-        self._window = window
-        self._winmin = winmin
-        self._method = _get_method(method)
+        self._method = mucomp
+        self._size = window
+        self._min_count = winmin
 
     @classmethod
     def graph_type(cls):
@@ -30,7 +29,7 @@ class SeqCorrGraph(SeqPairOneAxisGraph):
 
     @property
     def y_title(self):
-        return f"Correlation of {self.quantity}-1 and {self.quantity}-2"
+        return f"{get_comp_abbr(self._method)} of {self.quantity}s"
 
     @classmethod
     def _trace_function(cls):
@@ -38,20 +37,10 @@ class SeqCorrGraph(SeqPairOneAxisGraph):
 
     @property
     def _merge_data(self):
-        def get_rolling(vals1: pd.Series, vals2: pd.Series):
-            """ Compute the rolling comparison between the Series. """
-            # Initialize an empty Series for the rolling comparison.
-            rolling = pd.Series(np.nan, index=get_shared_index([vals1.index,
-                                                                vals2.index]))
-            # Compare each window.
-            for center, (win1, win2) in get_windows(vals1,
-                                                    vals2,
-                                                    size=self._window,
-                                                    min_count=self._winmin):
-                rolling.loc[center] = self._method(win1, win2)
-            return rolling
-
-        return get_rolling
+        return partial(compare_windows,
+                       method=self._method,
+                       size=self._size,
+                       min_count=self._min_count)
 
     def _figure_layout(self, fig: go.Figure):
         super()._figure_layout(fig)

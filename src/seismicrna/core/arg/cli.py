@@ -733,6 +733,20 @@ opt_quantile = Option(
 
 # Graphing
 
+opt_comppair = Option(
+    ("--comppair/--no-comppair",),
+    type=bool,
+    default=True,
+    help="Compare every pair of input files"
+)
+
+opt_compself = Option(
+    ("--compself/--no-compself",),
+    type=bool,
+    default=False,
+    help="Compare every input file with itself"
+)
+
 opt_arrange = Option(
     ("--arrange",),
     type=Choice(CLUST_ARRANGE_OPTIONS),
@@ -766,7 +780,7 @@ opt_y_ratio = Option(
 opt_window = Option(
     ("--window",),
     type=int,
-    default=30,
+    default=25,
     help="Size of the sliding window, in nucleotides"
 )
 
