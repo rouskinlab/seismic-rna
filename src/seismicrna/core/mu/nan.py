@@ -101,7 +101,17 @@ def removes_nan(*mus: np.ndarray | pd.Series | pd.DataFrame):
 def auto_remove_nan(func: Callable):
     """ Decorate a function with one positional argument of mutation
     rates so that it automatically removes positions with NaNs from the
-    input argument (but not from the return value). """
+    input argument (but, if while using the NaN-less input, the function
+    produces any new NaNs, then those NaNs will be returned).
+
+    Note that if @auto_reframe and @auto_remove_nan are used to decorate
+    the same function, then auto_reframe should be the inner decorator.
+    If auto_remove_nan is the inner decorator and removes any NaNs, then
+    auto_reframe will attempt to broadcast the NaN-less axis 0 over the
+    original (longer) axis 0. This operation would raise a ValueError
+    or, worse, if the NaN-less axis 0 happened to have length 1, would
+    still broadcast to the original axis, causing a silent bug.
+    """
 
     @wraps(func)
     def wrapper(mus: np.ndarray | pd.Series | pd.DataFrame, *args, **kwargs):
@@ -113,7 +123,8 @@ def auto_remove_nan(func: Callable):
 def auto_removes_nan(func: Callable):
     """ Decorate a function with positional argument(s) of mutation
     rates so that it automatically removes positions with NaNs from the
-    input argument (but not from the return value). """
+    input argument (but, if while using the NaN-less input, the function
+    produces any new NaNs, then those NaNs will be returned). """
 
     @wraps(func)
     def wrapper(*mus: np.ndarray | pd.Series | pd.DataFrame, **kwargs):

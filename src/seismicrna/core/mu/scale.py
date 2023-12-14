@@ -123,6 +123,7 @@ def standardize(mus: np.ndarray | pd.Series | pd.DataFrame):
     return mus / calc_rms(mus)
 
 
+@auto_remove_nan
 @auto_reframe
 def calc_ranks(mus: np.ndarray | pd.Series | pd.DataFrame):
     """ Rank the mutation rates.
@@ -138,10 +139,6 @@ def calc_ranks(mus: np.ndarray | pd.Series | pd.DataFrame):
     numpy.ndarray | pandas.Series | pandas.DataFrame
         Ranks of the mutation rates.
     """
-    if mus.ndim == 0:
-        raise ValueError(f"Cannot rank mutation rates in a 0-D array: {mus}")
-    if np.any(np.isnan(mus)):
-        raise ValueError(f"Cannot rank mutation rates with NaN values: {mus}")
     # Initialize all ranks to -1.
     ranks = np.full_like(mus, -1, dtype=int)
     # Make coordinate arrays to index every element of ranks in order.

@@ -1,4 +1,5 @@
 import unittest as ut
+import warnings
 from itertools import product
 
 import numpy as np
@@ -6,7 +7,9 @@ import pandas as pd
 
 from seismicrna.core.mu import (calc_quantile,
                                 calc_ranks,
+                                calc_rms,
                                 normalize,
+                                standardize,
                                 winsorize)
 
 rng = np.random.default_rng()
@@ -307,6 +310,40 @@ class TestNormalize(ut.TestCase):
                             expect = mus / mus
                         self.assertTrue(np.allclose(norm, expect))
 
+    def test_array1d_nan(self):
+        for length in range(5):
+            for mu_max in np.exp(np.linspace(-10., 0., 6)):
+                for num_nan in range(length + 1):
+                    # Set the first num_nan elements of mus to NaN.
+                    mus = np.linspace(mu_max, 0., length)
+                    mus[:num_nan] = np.nan
+                    # Maximum value of mus after masking NaN elements.
+                    mu_nanmax = mus[num_nan] if num_nan < length else np.nan
+                    for quantile in np.linspace(0., 1., 5):
+                        if quantile == 0.:
+                            self.assertIs(normalize(mus, quantile), mus)
+                        else:
+                            with np.errstate(invalid="ignore", divide="ignore"):
+                                norm = normalize(mus, quantile)
+                            self.assertIsInstance(norm, np.ndarray)
+                            self.assertEqual(norm.shape, (length,))
+                            if length > 1:
+                                if mu_nanmax > 0.:
+                                    # As in test_array1d, but use the
+                                    # maximum value without NaNs.
+                                    expect = mus / (mu_nanmax * quantile)
+                                else:
+                                    # All normalized values must be NaN
+                                    # if the only non-NaN value is 0.
+                                    expect = np.nan * mus
+                            else:
+                                # If there is only one mutation rate,
+                                # then it must be set to 1.
+                                expect = mus / mus
+                            self.assertTrue(np.allclose(norm,
+                                                        expect,
+                                                        equal_nan=True))
+
     def test_array2d(self):
         for nrow in range(4):
             for ncol in range(4):
@@ -424,12 +461,127 @@ class TestWinsorize(ut.TestCase):
                     self.assertTrue(np.allclose(wins, expect))
 
 
+class TestCalcRMS(ut.TestCase):
+
+    def test_array0d(self):
+        mus = np.array(0.94)
+        self.assertRaisesRegex(ValueError,
+                               "A 0-D array has no positional axis",
+                               calc_rms,
+                               mus)
+
+    def test_array1d(self):
+        mus = np.array([0.2, 0.3, 0.6])
+        rms = calc_rms(mus)
+        self.assertIsInstance(rms, float)
+        self.assertTrue(np.isclose(rms, 0.7 / 3.0 ** 0.5))
+
+    def test_array1d_nan(self):
+        mus = np.array([0.2, 0.3, np.nan, 0.6])
+        rms = calc_rms(mus)
+        self.assertIsInstance(rms, float)
+        self.assertTrue(np.isclose(rms, 0.7 / 3.0 ** 0.5))
+
+    def test_array2d(self):
+        mus = np.array([[0.2, 0.4],
+                        [0.2, 0.7],
+                        [0.1, 0.4]])
+        rms = calc_rms(mus)
+        self.assertIsInstance(rms, np.ndarray)
+        self.assertEqual(rms.shape, (2,))
+        self.assertTrue(np.allclose(rms, [0.3 / 3.0 ** 0.5,
+                                          0.9 / 3.0 ** 0.5]))
+
+    def test_series(self):
+        mus = pd.Series([0.4, 0.8, 0.1])
+        rms = calc_rms(mus)
+        self.assertIsInstance(rms, float)
+        self.assertTrue(np.isclose(rms, 0.9 / 3.0 ** 0.5))
+
+    def test_dataframe(self):
+        mus = pd.DataFrame([[0.2, 0.8],
+                            [0.6, 0.4],
+                            [0.3, 0.1]],
+                           index=[3, 7, 9],
+                           columns=["a", "b"])
+        rms = calc_rms(mus)
+        self.assertIsInstance(rms, pd.Series)
+        self.assertEqual(rms.shape, (2,))
+        self.assertTrue(np.allclose(rms, [0.7 / 3.0 ** 0.5,
+                                          0.9 / 3.0 ** 0.5]))
+        self.assertTrue(rms.index.equals(mus.columns))
+
+
+class TestStandardize(ut.TestCase):
+
+    def test_array0d(self):
+        mus = np.array(0.81)
+        self.assertRaisesRegex(ValueError,
+                               "A 0-D array has no positional axis",
+                               standardize,
+                               mus)
+
+    def test_array1d(self):
+        for length in range(5):
+            mus = rng.random(length)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore",
+                                        "Mean of empty slice",
+                                        RuntimeWarning)
+                with np.errstate(invalid="ignore"):
+                    std = standardize(mus)
+                    self.assertIsInstance(std, np.ndarray)
+                    self.assertEqual(std.shape, (length,))
+                    self.assertTrue(np.allclose(std, mus / calc_rms(mus)))
+
+    def test_array2d(self):
+        for nrow in range(4):
+            for ncol in range(3):
+                mus = rng.random((nrow, ncol))
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore",
+                                            "Mean of empty slice",
+                                            RuntimeWarning)
+                    with np.errstate(invalid="ignore"):
+                        std = standardize(mus)
+                        self.assertIsInstance(std, np.ndarray)
+                        self.assertEqual(std.shape, (nrow, ncol))
+                        self.assertTrue(np.allclose(std, mus / calc_rms(mus)))
+
+    def test_series(self):
+        for length in range(5):
+            mus = pd.Series(rng.random(length))
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore",
+                                        "Mean of empty slice",
+                                        RuntimeWarning)
+                with np.errstate(invalid="ignore"):
+                    std = standardize(mus)
+                    self.assertIsInstance(std, pd.Series)
+                    self.assertEqual(std.shape, (length,))
+                    self.assertTrue(np.allclose(std, mus / calc_rms(mus)))
+
+    def test_dataframe(self):
+        for nrow in range(4):
+            for ncol in range(3):
+                mus = pd.DataFrame(rng.random((nrow, ncol)))
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore",
+                                            "Mean of empty slice",
+                                            RuntimeWarning)
+                    with np.errstate(invalid="ignore"):
+                        std = standardize(mus)
+                        self.assertIsInstance(std, pd.DataFrame)
+                        self.assertEqual(std.shape, (nrow, ncol))
+                        self.assertTrue(np.allclose(std, mus / calc_rms(mus)))
+
+
 class TestCalcRanks(ut.TestCase):
 
     def test_array0d(self):
         mus = np.array(0.52)
         self.assertRaisesRegex(ValueError,
-                               "Cannot rank mutation rates in a 0-D array",
+                               "A 0-D array has no positional axis",
                                calc_ranks,
                                mus)
 
@@ -515,10 +667,10 @@ class TestCalcRanks(ut.TestCase):
 
     def test_nan(self):
         mus = np.array([0.49, 0.17, 0.24, 0.90, np.nan, 0.50, 0.22, 0.14, 0.18])
-        self.assertRaisesRegex(ValueError,
-                               "Cannot rank mutation rates with NaN values",
-                               calc_ranks,
-                               mus)
+        expect = np.array([5, 1, 4, 7, 6, 3, 0, 2])
+        ranks = calc_ranks(mus)
+        self.assertIsInstance(ranks, np.ndarray)
+        self.assertTrue(np.array_equal(ranks, expect))
 
 
 if __name__ == "__main__":
