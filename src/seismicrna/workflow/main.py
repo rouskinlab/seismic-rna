@@ -158,8 +158,9 @@ def run(*,
                 mismatch_tolerence=mismatch_tolerence,
                 parallel_demultiplexing=parallel_demultiplexing,
                 barcode_start=barcode_start,
-                barcode_length=barcode_end,
-                phred_enc=phred_enc):
+                barcode_end=barcode_end,
+                phred_enc=phred_enc,
+                keep_temp=keep_temp):
             dmfastqz = dmfastqz + dms
             dmfastqy = dmfastqy + dmi
             dmfastqx = dmfastqx + dmm
