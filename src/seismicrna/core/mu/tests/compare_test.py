@@ -1,6 +1,5 @@
 import unittest as ut
 import warnings
-import time
 
 import numpy as np
 import pandas as pd
@@ -9,7 +8,10 @@ from scipy.stats import pearsonr, spearmanr
 from seismicrna.core.mu.compare import (calc_coeff_determ,
                                         calc_pearson,
                                         calc_rmsd,
-                                        calc_spearman)
+                                        calc_spearman,
+                                        get_comp_abbr,
+                                        get_comp_func,
+                                        get_comp_name)
 
 rng = np.random.default_rng()
 
@@ -311,6 +313,27 @@ class TestCalcSpearman(ut.TestCase):
                     self.assertTrue(np.isclose(
                         rhoc, self.calc_true(x.iloc[:, ic], y.iloc[:, ic])
                     ))
+
+
+class TestGetComp(ut.TestCase):
+
+    def test_comps(self):
+        self.assertIs(get_comp_func("rmsd"), calc_rmsd)
+        self.assertEqual(get_comp_abbr("rmsd"), "RMSD")
+        self.assertEqual(get_comp_name("rmsd"),
+                         "Root-Mean-Square Deviation")
+        self.assertIs(get_comp_func("r"), calc_pearson)
+        self.assertEqual(get_comp_abbr("r"), "PCC")
+        self.assertEqual(get_comp_name("r"),
+                         "Pearson Correlation Coefficient")
+        self.assertIs(get_comp_func("r2"), calc_coeff_determ)
+        self.assertEqual(get_comp_abbr("r2"), "R-Squared")
+        self.assertEqual(get_comp_name("r2"),
+                         "Coefficient of Determination")
+        self.assertIs(get_comp_func("rho"), calc_spearman)
+        self.assertEqual(get_comp_abbr("rho"), "SCC")
+        self.assertEqual(get_comp_name("rho"),
+                         "Spearman Correlation Coefficient")
 
 
 if __name__ == "__main__":
