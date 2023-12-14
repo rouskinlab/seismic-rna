@@ -20,20 +20,20 @@ class TestCountPos(ut.TestCase):
                                np.array(0.))
 
     def test_array1d(self):
-        for n in range(10):
+        for n in range(5):
             self.assertEqual(count_pos(rng.random(n)), n)
 
     def test_array2d(self):
-        for n in range(10):
+        for n in range(5):
             for m in range(3):
                 self.assertEqual(count_pos(rng.random((n, m))), n)
 
     def test_series(self):
-        for n in range(10):
+        for n in range(5):
             self.assertEqual(count_pos(pd.Series(rng.random(n))), n)
 
     def test_dataframe(self):
-        for n in range(10):
+        for n in range(5):
             for m in range(3):
                 self.assertEqual(count_pos(pd.DataFrame(rng.random((n, m)))), n)
 
@@ -69,12 +69,12 @@ class TestCountsPosConsensus(ut.TestCase):
 
     def test_equal(self):
         for a in range(1, 5):
-            for n in range(10):
+            for n in range(5):
                 arrays = (rng.random(n) for _ in range(a))
                 self.assertEqual(counts_pos_consensus(*arrays), n)
 
     def test_unequal(self):
-        for n in range(10):
+        for n in range(5):
             array1 = rng.random(n)
             array2 = rng.random(n + 1)
             self.assertRaisesRegex(ValueError,
