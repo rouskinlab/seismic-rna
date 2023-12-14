@@ -131,7 +131,16 @@ def reframe_like(values: Number | np.ndarray | pd.Series | pd.DataFrame,
 def auto_reframe(func: Callable):
     """ Decorate a function with one positional argument of data so that
     it converts the input data to a NumPy array, runs, and then reframes
-    the return value using the original argument as the target. """
+    the return value using the original argument as the target.
+
+    Note that if @auto_reframe and @auto_remove_nan are used to decorate
+    the same function, then auto_reframe should be the inner decorator.
+    If auto_remove_nan is the inner decorator and removes any NaNs, then
+    auto_reframe will attempt to broadcast the NaN-less axis 0 over the
+    original (longer) axis 0. This operation would raise a ValueError
+    or, worse, if the NaN-less axis 0 happened to have length 1, would
+    still broadcast to the original axis, causing a silent bug.
+    """
 
     @wraps(func)
     def wrapper(data: np.ndarray | pd.Series | pd.DataFrame, *args, **kwargs):
