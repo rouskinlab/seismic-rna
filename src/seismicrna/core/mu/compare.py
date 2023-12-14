@@ -43,8 +43,8 @@ def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
     # each group is 1, and then compute the difference.
     diff = mus1 / rms1 - mus2 / rms2
     # Compute the root-mean-square difference and restore the original
-    # scale by dividing by the geometric mean of the standardization
-    # coefficients.
+    # scale by multiplying by the geometric mean of the root-mean-square
+    # mutation rates.
     return np.sqrt(np.mean(np.square(diff), axis=0) * (rms1 * rms2))
 
 
@@ -139,7 +139,7 @@ def get_mucomp(name: str):
         return calc_coeff_determ
     if name == MUCOMP_SPEARMAN:
         return calc_spearman
-    raise ValueError(f"Invalid comparison method: {repr(name)}")
+    raise ValueError(f"Invalid method of comparison: {repr(name)}")
 
 
 def compare_sliding(mus1: pd.Series,
