@@ -130,16 +130,76 @@ def calc_spearman(mus1: np.ndarray | pd.Series | pd.DataFrame,
     return calc_pearson(calc_ranks(mus1), calc_ranks(mus2))
 
 
-def get_mucomp(name: str):
-    if name == MUCOMP_RMSD:
+def get_comp_func(key: str):
+    """ Get the function of a comparison method based on its key.
+
+    Parameters
+    ----------
+    key: str
+        Key with which to retrieve the comparison function.
+
+    Returns
+    -------
+    Callable
+        Function to compare mutation rates.
+    """
+    if key == MUCOMP_RMSD:
         return calc_rmsd
-    if name == MUCOMP_PEARSON:
+    if key == MUCOMP_PEARSON:
         return calc_pearson
-    if name == MUCOMP_DETERM:
+    if key == MUCOMP_DETERM:
         return calc_coeff_determ
-    if name == MUCOMP_SPEARMAN:
+    if key == MUCOMP_SPEARMAN:
         return calc_spearman
-    raise ValueError(f"Invalid method of comparison: {repr(name)}")
+    raise ValueError(f"Invalid method of comparison: {repr(key)}")
+
+
+def get_comp_name(key: str):
+    """ Get the name of a comparison method based on its key.
+
+    Parameters
+    ----------
+    key: str
+        Key with which to retrieve the comparison method name.
+
+    Returns
+    -------
+    str
+        Name of the comparison method.
+    """
+    if key == MUCOMP_RMSD:
+        return "Root-Mean-Square Deviation"
+    if key == MUCOMP_PEARSON:
+        return "Pearson Correlation Coefficient"
+    if key == MUCOMP_DETERM:
+        return "Coefficient of Determination"
+    if key == MUCOMP_SPEARMAN:
+        return "Spearman Correlation Coefficient"
+    raise ValueError(f"Invalid method of comparison: {repr(key)}")
+
+
+def get_comp_abbr(key: str):
+    """ Get the abbreviation of a comparison method based on its key.
+
+    Parameters
+    ----------
+    key: str
+        Key with which to retrieve the comparison method abbreviation.
+
+    Returns
+    -------
+    str
+        Abbreviation of the comparison method.
+    """
+    if key == MUCOMP_RMSD:
+        return "RMSD"
+    if key == MUCOMP_PEARSON:
+        return "PCC"
+    if key == MUCOMP_DETERM:
+        return "R-Squared"
+    if key == MUCOMP_SPEARMAN:
+        return "SCC"
+    raise ValueError(f"Invalid method of comparison: {repr(key)}")
 
 
 def compare_sliding(mus1: pd.Series,
