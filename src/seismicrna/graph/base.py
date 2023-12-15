@@ -10,7 +10,6 @@ from click import Argument, Option
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
-from .color import ColorMap, get_cmap
 from ..core import path
 from ..core.arg import (arg_input_path,
                         opt_rels,
@@ -366,24 +365,6 @@ class GraphBase(ABC):
                 [f"({self.details})"] if self.details else []
             )
         )
-
-
-class ColorMapGraph(GraphBase, ABC):
-    """ Graph with an explicit color map. """
-
-    @classmethod
-    @abstractmethod
-    def get_cmap_type(cls) -> type[ColorMap]:
-        """ Type of the color map. """
-
-    def __init__(self, *, cmap: str | None = None, **kwargs):
-        super().__init__(**kwargs)
-        self._cmap_name = cmap
-
-    @property
-    def cmap(self) -> ColorMap:
-        """ Color map of the graph. """
-        return get_cmap(self.get_cmap_type(), self._cmap_name)
 
 
 class GraphWriter(ABC):

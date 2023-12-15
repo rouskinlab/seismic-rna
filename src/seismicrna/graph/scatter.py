@@ -8,16 +8,16 @@ import pandas as pd
 from click import command
 from plotly import graph_objects as go
 
-from .twotable import SAMPLE_NAME, TwoTableGraph, TwoTableRunner, TwoTableWriter
+from .color import ColorMapGraph, SeqColorMap
 from .traces import iter_seq_base_scatter_traces
-from ..core.arg import opt_rels, opt_use_ratio, opt_arrange, opt_quantile
+from .twotable import SAMPLE_NAME, TwoTableGraph, TwoTableRunner, TwoTableWriter
 
 logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-class ScatterPlot(TwoTableGraph):
+class ScatterPlotGraph(TwoTableGraph, ColorMapGraph):
 
     @classmethod
     def graph_kind(cls):
@@ -26,6 +26,14 @@ class ScatterPlot(TwoTableGraph):
     @classmethod
     def what(cls):
         return "Scatter plot"
+
+    @classmethod
+    def get_cmap_type(cls):
+        return SeqColorMap
+
+    @property
+    def details(self):
+        return ""
 
     @property
     def x_title(self):
@@ -65,29 +73,25 @@ class ScatterPlot(TwoTableGraph):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class SeqScatterGraphWriter(TwoTableWriter):
+class ScatterPlotWriter(TwoTableWriter):
 
     @classmethod
     def graph_type(cls):
-        return ScatterPlot
+        return ScatterPlotGraph
 
 
-class SeqScatterGraphRunner(TwoTableRunner):
-
-    @classmethod
-    def var_params(cls):
-        return [opt_rels, opt_use_ratio, opt_arrange, opt_quantile]
+class ScatterPlotRunner(TwoTableRunner):
 
     @classmethod
     def writer_type(cls):
-        return SeqScatterGraphWriter
+        return ScatterPlotWriter
 
 
-@command(COMMAND, params=SeqScatterGraphRunner.params())
+@command(COMMAND, params=ScatterPlotRunner.params())
 def cli(*args, **kwargs):
     """ Create scatter plots between pairs of samples at each position
     in a sequence. """
-    return SeqScatterGraphRunner.run(*args, **kwargs)
+    return ScatterPlotRunner.run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

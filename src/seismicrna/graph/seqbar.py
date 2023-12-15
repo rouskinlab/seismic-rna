@@ -8,8 +8,8 @@ from pathlib import Path
 from click import command
 from plotly import graph_objects as go
 
-from .base import PRECISION, ColorMapGraph, make_subject
-from .color import RelColorMap, SeqColorMap
+from .base import PRECISION, make_subject
+from .color import ColorMapGraph, RelColorMap, SeqColorMap
 from .onetable import OneTableGraph, OneTableWriter
 from .seq import get_table_params
 from .traces import iter_seq_base_bar_traces, iter_seqbar_stack_traces
