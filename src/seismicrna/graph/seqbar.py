@@ -8,15 +8,15 @@ from pathlib import Path
 from click import command
 from plotly import graph_objects as go
 
-from .base import PRECISION, CartesianGraph, OneTableSeqGraph, make_subject
+from .base import PRECISION, ColorMapGraph, make_subject
 from .color import RelColorMap, SeqColorMap
+from .onetable import OneTableGraph, OneTableWriter
 from .seq import get_table_params
 from .traces import iter_seq_base_bar_traces, iter_seqbar_stack_traces
-from .write import OneTableGraphWriter
 from ..core.arg import (docdef,
                         arg_input_path,
                         opt_rels,
-                        opt_y_ratio,
+                        opt_use_ratio,
                         opt_quantile,
                         opt_arrange,
                         opt_csv,
@@ -41,11 +41,11 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 # Sequence Bar Graph Writer ############################################
 
-class SeqBarGraphWriter(OneTableGraphWriter):
+class SeqBarGraphWriter(OneTableWriter):
 
     def iter(self,
              rels_sets: tuple[str, ...],
-             y_ratio: bool,
+             use_ratio: bool,
              quantile: float,
              arrange: str):
         stype, mtype, csparams = get_table_params(self.table,
@@ -59,43 +59,42 @@ class SeqBarGraphWriter(OneTableGraphWriter):
                 graph_type = stype if len(rels) == 1 else mtype
                 yield graph_type(table=self.table,
                                  rels=rels,
-                                 y_ratio=y_ratio,
+                                 use_ratio=use_ratio,
                                  quantile=quantile,
                                  **cparams)
 
 
 # Base Sequence Bar Graph ##############################################
 
-class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
+class SeqBarGraph(OneTableGraph, ColorMapGraph, ABC):
     """ Bar graph wherein each bar represents one sequence position. """
 
     @classmethod
     @abstractmethod
-    def sources(cls) -> dict[type[PosTableLoader], str]:
+    def sample_source(cls) -> dict[type[PosTableLoader], str]:
         """ Names of the sources of data. """
 
-    def __init__(self, *, rels: str, y_ratio: bool, quantile: float, **kwargs):
-        super().__init__(**kwargs)
-        self.rel_codes = rels
-        self.y_ratio = y_ratio
-        self.quantile = quantile
-
     @property
-    def rels(self):
+    def rel_names(self):
         """ List of relationships to graph. """
         return list(map(get_rel_name, self.rel_codes))
 
     @property
+    def rels_commas(self):
+        """ Relationships to graph as a comma-separated string. """
+        return ", ".join(self.rel_names)
+
+    @property
     def _fetch_kwargs(self):
         """ Keyword arguments for `self.table.fetch()`. """
-        return dict(rel=self.rels)
+        return dict(rel=self.rel_names)
 
     def _fetch_data(self, **kwargs):
         all_kwargs = self._fetch_kwargs | kwargs
         return (self.table.fetch_ratio(quantile=self.quantile,
                                        precision=PRECISION,
                                        **all_kwargs)
-                if self.y_ratio
+                if self.use_ratio
                 else self.table.fetch_count(**all_kwargs))
 
     @cached_property
@@ -107,7 +106,7 @@ class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
         """ Source of the data. """
         table_type = type(self.table)
         try:
-            return self.sources()[table_type]
+            return self.source()[table_type]
         except KeyError:
             raise TypeError(f"Invalid table for {self}: {table_type.__name__}")
 
@@ -117,13 +116,7 @@ class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
 
     @property
     def y_title(self):
-        return "Ratio" if self.y_ratio else "Count"
-
-    @property
-    def title(self):
-        rels = ", ".join(self.rels)
-        return (f"{self.y_title} of {rels} bases in {self.source} reads "
-                f"from {self.sample} per position in {self.ref}:{self.sect}")
+        return "Ratio" if self.use_ratio else "Count"
 
     @property
     @abstractmethod
@@ -133,11 +126,11 @@ class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
     @property
     def predicate(self):
         """ Predicate of the data. """
-        return f"{self.rel_codes}-{self.y_title}"
+        return "-".join([self.rel_codes, self.y_title])
 
     @property
     def graph_filename(self):
-        return f"{self.subject}_{self.predicate}_{COMMAND}".lower()
+        return "_".join([COMMAND, self.subject, self.predicate]).lower()
 
     def _figure_layout(self, figure: go.Figure):
         super()._figure_layout(figure)
@@ -149,7 +142,7 @@ class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
 class AverageSeqBarGraph(SeqBarGraph, ABC):
 
     @classmethod
-    def sources(cls):
+    def sample_source(cls):
         return {RelPosTableLoader: "Related", MaskPosTableLoader: "Masked"}
 
     @property
@@ -158,13 +151,13 @@ class AverageSeqBarGraph(SeqBarGraph, ABC):
 
     @property
     def subject(self):
-        return self.source
+        return self.sample_source
 
 
 class ClusterSeqBarGraph(SeqBarGraph, ABC):
 
     @classmethod
-    def sources(cls):
+    def sample_source(cls):
         return {ClustPosTableLoader: "Clustered"}
 
     def __init__(self, *,
@@ -192,7 +185,7 @@ class ClusterSeqBarGraph(SeqBarGraph, ABC):
 
     @property
     def subject(self):
-        return make_subject(self.source, self._order, self._clust)
+        return make_subject(self.sample_source, self._order, self._clust)
 
 
 # Sequence Graphs by Series Type #######################################
@@ -264,7 +257,7 @@ class ClusterMultiRelSeqBarGraph(ClusterSeqBarGraph, MultiRelSeqBarGraph):
 @docdef.auto()
 def run(input_path: tuple[str, ...],
         rels: tuple[str, ...], *,
-        y_ratio: bool,
+        use_ratio: bool,
         quantile: float,
         arrange: str,
         csv: bool,
@@ -279,7 +272,7 @@ def run(input_path: tuple[str, ...],
                                 parallel=True,
                                 pass_n_procs=False,
                                 kwargs=dict(rels_sets=rels,
-                                            y_ratio=y_ratio,
+                                            use_ratio=use_ratio,
                                             quantile=quantile,
                                             arrange=arrange,
                                             csv=csv,
@@ -291,7 +284,7 @@ def run(input_path: tuple[str, ...],
 params = [
     arg_input_path,
     opt_rels,
-    opt_y_ratio,
+    opt_use_ratio,
     opt_quantile,
     opt_arrange,
     opt_csv,

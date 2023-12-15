@@ -16,7 +16,7 @@ from .write import OneTableGraphWriter
 from ..core.arg import (docdef,
                         arg_input_path,
                         opt_rels,
-                        opt_y_ratio,
+                        opt_use_ratio,
                         opt_quantile,
                         opt_arrange,
                         opt_csv,
@@ -45,7 +45,7 @@ class SeqBarGraphWriter(OneTableGraphWriter):
 
     def iter(self,
              rels_sets: tuple[str, ...],
-             y_ratio: bool,
+             use_ratio: bool,
              quantile: float,
              arrange: str):
         stype, mtype, csparams = get_table_params(self.table,
@@ -59,7 +59,7 @@ class SeqBarGraphWriter(OneTableGraphWriter):
                 graph_type = stype if len(rels) == 1 else mtype
                 yield graph_type(table=self.table,
                                  rels=rels,
-                                 y_ratio=y_ratio,
+                                 use_ratio=use_ratio,
                                  quantile=quantile,
                                  **cparams)
 
@@ -73,10 +73,10 @@ class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
     def get_cmap_type(cls):
         return SeqColorMap
 
-    def __init__(self, *, rels: str, y_ratio: bool, quantile: float, **kwargs):
+    def __init__(self, *, rels: str, use_ratio: bool, quantile: float, **kwargs):
         super().__init__(**kwargs)
         self.rel_codes = rels
-        self.y_ratio = y_ratio
+        self.use_ratio = use_ratio
         self.quantile = quantile
 
     @property
@@ -94,7 +94,7 @@ class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
         return (self.table.fetch_ratio(quantile=self.quantile,
                                        precision=PRECISION,
                                        **all_kwargs)
-                if self.y_ratio
+                if self.use_ratio
                 else self.table.fetch_count(**all_kwargs))
 
     @cached_property
@@ -121,7 +121,7 @@ class SeqBarGraph(CartesianGraph, OneTableSeqGraph, ABC):
 
     @property
     def y_title(self):
-        return "Ratio" if self.y_ratio else "Count"
+        return "Ratio" if self.use_ratio else "Count"
 
     @property
     def title(self):
@@ -264,7 +264,7 @@ class ClusterMultiRelSeqBarGraph(ClusterSeqBarGraph, MultiRelSeqBarGraph):
 @docdef.auto()
 def run(input_path: tuple[str, ...],
         rels: tuple[str, ...], *,
-        y_ratio: bool,
+        use_ratio: bool,
         quantile: float,
         arrange: str,
         csv: bool,
@@ -279,7 +279,7 @@ def run(input_path: tuple[str, ...],
                                 parallel=True,
                                 pass_n_procs=False,
                                 kwargs=dict(rels_sets=rels,
-                                            y_ratio=y_ratio,
+                                            use_ratio=use_ratio,
                                             quantile=quantile,
                                             arrange=arrange,
                                             csv=csv,
@@ -291,7 +291,7 @@ def run(input_path: tuple[str, ...],
 params = [
     arg_input_path,
     opt_rels,
-    opt_y_ratio,
+    opt_use_ratio,
     opt_quantile,
     opt_arrange,
     opt_csv,

@@ -5,16 +5,16 @@ import pandas as pd
 from click import command
 from plotly import graph_objects as go
 
-from .seqpair import SeqPairGraphRunner, SeqPairGraphWriter, SeqPairOneAxisGraph
+from .twotable import TwoTableRunner, TwoTableWriter, TwoTableMergedGraph
 from .traces import iter_seq_base_bar_traces
-from ..core.arg import opt_rels, opt_y_ratio, opt_quantile, opt_arrange
+from ..core.arg import opt_rels, opt_use_ratio, opt_quantile, opt_arrange
 
 logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-class SeqDiffGraph(SeqPairOneAxisGraph):
+class SeqDiffGraph(TwoTableMergedGraph):
 
     @classmethod
     def graph_type(cls):
@@ -25,8 +25,12 @@ class SeqDiffGraph(SeqPairOneAxisGraph):
         return iter_seq_base_bar_traces
 
     @property
+    def predicate(self):
+        return super().predicate
+
+    @property
     def y_title(self):
-        return f"{self.quantity}-2 minus {self.quantity}-1"
+        return f"{self.what}-2 minus {self.what}-1"
 
     @property
     def _merge_data(self):
@@ -42,14 +46,14 @@ class SeqDiffGraph(SeqPairOneAxisGraph):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class SeqDiffGraphWriter(SeqPairGraphWriter):
+class SeqDiffGraphWriter(TwoTableWriter):
 
     @classmethod
     def graph_type(cls):
         return SeqDiffGraph
 
 
-class SeqDiffGraphRunner(SeqPairGraphRunner):
+class SeqDiffGraphRunner(TwoTableRunner):
 
     @classmethod
     def writer_type(cls):
@@ -57,7 +61,7 @@ class SeqDiffGraphRunner(SeqPairGraphRunner):
 
     @classmethod
     def var_params(cls):
-        return [opt_rels, opt_y_ratio, opt_quantile, opt_arrange]
+        return [opt_rels, opt_use_ratio, opt_quantile, opt_arrange]
 
 
 @command(COMMAND, params=SeqDiffGraphRunner.params())

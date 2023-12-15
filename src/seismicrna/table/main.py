@@ -25,7 +25,7 @@ params = [arg_input_path,
           opt_table_pos,
           opt_table_read,
           opt_table_clust,
-opt_force,
+          opt_force,
           opt_max_procs,
           opt_parallel]
 

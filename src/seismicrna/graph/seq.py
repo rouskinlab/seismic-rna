@@ -1,14 +1,14 @@
-from .base import OneSeqGraph
+from .base import GraphBase
 from ..core.arg import CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
 from ..table.base import PosTable, ClustPosTable
 
 
 def get_table_params(table: PosTable | ClustPosTable,
                      arrange: str,
-                     es_type: type[OneSeqGraph] | None = None,
-                     cs_type: type[OneSeqGraph] | None = None,
-                     em_type: type[OneSeqGraph] | None = None,
-                     cm_type: type[OneSeqGraph] | None = None):
+                     es_type: type[GraphBase] | None = None,
+                     cs_type: type[GraphBase] | None = None,
+                     em_type: type[GraphBase] | None = None,
+                     cm_type: type[GraphBase] | None = None):
     if isinstance(table, ClustPosTable):
         single_type = cs_type
         multi_type = cm_type

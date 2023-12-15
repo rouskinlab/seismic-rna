@@ -36,14 +36,14 @@ CLUST_ORDER = "order"
 CLUST_UNITE = "unite"
 CLUST_ARRANGE_OPTIONS = CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
 
-MUCOMP_RMSD = "rmsd"
-MUCOMP_PEARSON = "r"
-MUCOMP_SPEARMAN = "rho"
-MUCOMP_DETERM = "r2"
-COMPARE_OPTIONS = [MUCOMP_RMSD,
-                   MUCOMP_PEARSON,
-                   MUCOMP_SPEARMAN,
-                   MUCOMP_DETERM]
+KEY_NRMSD = "nrmsd"
+KEY_PEARSON = "pcc"
+KEY_SPEARMAN = "scc"
+KEY_DETERM = "r2"
+METRIC_KEYS = [KEY_NRMSD,
+               KEY_PEARSON,
+               KEY_SPEARMAN,
+               KEY_DETERM]
 
 # Configuration options
 
@@ -776,36 +776,36 @@ opt_x_ratio = Option(
     help="Graph counts or ratios on the x-axis"
 )
 
-opt_y_ratio = Option(
-    ("--y-ratio/--y-count",),
+opt_use_ratio = Option(
+    ("--use-ratio/--use-count",),
     type=bool,
     default=True,
-    help="Graph counts or ratios on the y-axis"
+    help="Use ratios or counts when graphing"
 )
 
 opt_window = Option(
     ("--window",),
     type=int,
-    default=25,
+    default=31,
     help="Size of the sliding window, in nucleotides"
 )
 
 opt_winmin = Option(
     ("--winmin",),
     type=int,
-    default=10,
+    default=9,
     help="Minimum number of data in the sliding window"
 )
 
 opt_mucomp = Option(
     ("--mucomp",),
-    type=Choice(COMPARE_OPTIONS),
-    default=MUCOMP_RMSD,
+    type=Choice(METRIC_KEYS, case_sensitive=False),
+    default=KEY_NRMSD,
     help=(f"Method to compare mutation rates: "
-          f"{repr(MUCOMP_RMSD)} = root-mean-square deviation (RMSD), "
-          f"{repr(MUCOMP_PEARSON)} = Pearson correlation coefficient (r), "
-          f"{repr(MUCOMP_SPEARMAN)} = Spearman correlation coefficient (ρ), "
-          f"{repr(MUCOMP_DETERM)} = coefficient of determination (R^2)")
+          f"{repr(KEY_NRMSD)} = normalized root-mean-square deviation (NRMSD), "
+          f"{repr(KEY_PEARSON)} = Pearson correlation coefficient (r), "
+          f"{repr(KEY_SPEARMAN)} = Spearman correlation coefficient (ρ), "
+          f"{repr(KEY_DETERM)} = coefficient of determination (R²)")
 )
 
 opt_hist_bins = Option(

@@ -7,10 +7,9 @@ from scipy.stats import pearsonr, spearmanr
 
 from seismicrna.core.mu import (calc_coeff_determ,
                                 calc_pearson,
-                                calc_rmsd,
+                                calc_nrmsd,
                                 calc_spearman,
                                 compare_windows,
-                                get_comp_abbr,
                                 get_comp_func,
                                 get_comp_name)
 from seismicrna.core.seq import DNA, seq_pos_to_index
@@ -18,12 +17,12 @@ from seismicrna.core.seq import DNA, seq_pos_to_index
 rng = np.random.default_rng()
 
 
-class TestCalcRMSD(ut.TestCase):
+class TestCalcNRMSD(ut.TestCase):
 
     def test_array0d(self):
         self.assertRaisesRegex(ValueError,
                                "A 0-D array has no positional axis",
-                               calc_rmsd,
+                               calc_nrmsd,
                                rng.random(()),
                                rng.random(()))
 
@@ -33,36 +32,36 @@ class TestCalcRMSD(ut.TestCase):
             y = np.zeros(n, dtype=float)
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", category=RuntimeWarning)
-                rmsd = calc_rmsd(x, y)
-            self.assertIsInstance(rmsd, float)
-            self.assertTrue(np.isnan(rmsd))
+                nrmsd = calc_nrmsd(x, y)
+            self.assertIsInstance(nrmsd, float)
+            self.assertTrue(np.isnan(nrmsd))
 
     def test_array1d_extremes(self):
         for fx in [0.0001, 0.01, 1.0]:
             for fy in [0.0001, 0.01, 1.0]:
                 x = fx * np.array([0., 1.])
                 y = fy * np.array([0., 1.])
-                self.assertTrue(np.isclose(calc_rmsd(x, y), 0.))
+                self.assertTrue(np.isclose(calc_nrmsd(x, y), 0.))
                 x = fx * np.array([0., 1.])
                 y = fy * np.array([1., 0.])
-                self.assertTrue(np.isclose(calc_rmsd(x, y), 1.))
-                self.assertTrue(np.isclose(calc_rmsd(y, x), 1.))
+                self.assertTrue(np.isclose(calc_nrmsd(x, y), 1.))
+                self.assertTrue(np.isclose(calc_nrmsd(y, x), 1.))
 
     def test_array1d_examples(self):
         for fx in [0.0001, 0.01, 1.0]:
             for fy in [0.0001, 0.01, 1.0]:
                 x = fx * np.array([1., 0., 0., 0.])
                 y = fy * np.array([0., 0., 1., 0.])
-                self.assertTrue(np.isclose(calc_rmsd(x, y), 2. ** -0.5))
-                self.assertTrue(np.isclose(calc_rmsd(y, x), 2. ** -0.5))
+                self.assertTrue(np.isclose(calc_nrmsd(x, y), 2. ** -0.5))
+                self.assertTrue(np.isclose(calc_nrmsd(y, x), 2. ** -0.5))
                 x = fx * np.array([0.4, 0.1, 0.8])
                 y = fy * np.array([0.3, 0.2, 0.6])
-                self.assertTrue(np.isclose(calc_rmsd(x, y), 72. ** -0.5))
-                self.assertTrue(np.isclose(calc_rmsd(y, x), 72. ** -0.5))
+                self.assertTrue(np.isclose(calc_nrmsd(x, y), 72. ** -0.5))
+                self.assertTrue(np.isclose(calc_nrmsd(y, x), 72. ** -0.5))
                 x = fx * np.array([np.nan, 0.4, 0.1, 0.3, 0.8])
                 y = fy * np.array([0.5, 0.3, 0.2, np.nan, 0.6])
-                self.assertTrue(np.isclose(calc_rmsd(x, y), 72. ** -0.5))
-                self.assertTrue(np.isclose(calc_rmsd(y, x), 72. ** -0.5))
+                self.assertTrue(np.isclose(calc_nrmsd(x, y), 72. ** -0.5))
+                self.assertTrue(np.isclose(calc_nrmsd(y, x), 72. ** -0.5))
 
     def test_array2d(self):
         x = np.array([[0.8, 0.0],
@@ -75,17 +74,17 @@ class TestCalcRMSD(ut.TestCase):
                       [0.3, 0.0],
                       [np.nan, 0.3],
                       [0.2, 0.0]])
-        rmsd = calc_rmsd(x, y)
-        self.assertIsInstance(rmsd, np.ndarray)
-        self.assertEqual(rmsd.shape, (2,))
-        self.assertTrue(np.allclose(rmsd, [72. ** -0.5,
+        nrmsd = calc_nrmsd(x, y)
+        self.assertIsInstance(nrmsd, np.ndarray)
+        self.assertEqual(nrmsd.shape, (2,))
+        self.assertTrue(np.allclose(nrmsd, [72. ** -0.5,
                                            (2. / 3.) ** 0.5]))
 
     def test_series(self):
         x = pd.Series([np.nan, 0.4, 0.1, 0.3, 0.8])
         y = pd.Series([0.5, 0.3, 0.2, np.nan, 0.6])
-        self.assertTrue(np.isclose(calc_rmsd(x, y), 72. ** -0.5))
-        self.assertTrue(np.isclose(calc_rmsd(y, x), 72. ** -0.5))
+        self.assertTrue(np.isclose(calc_nrmsd(x, y), 72. ** -0.5))
+        self.assertTrue(np.isclose(calc_nrmsd(y, x), 72. ** -0.5))
 
     def test_dataframe(self):
         index = pd.Index([2, 4, 5, 7, 9])
@@ -103,12 +102,12 @@ class TestCalcRMSD(ut.TestCase):
                           [0.0, 0.2]],
                          index=index,
                          columns=["j", "i"])
-        rmsd = calc_rmsd(x, y)
-        self.assertIsInstance(rmsd, pd.Series)
-        self.assertEqual(rmsd.shape, (2,))
-        self.assertTrue(np.allclose(rmsd, [72. ** -0.5,
+        nrmsd = calc_nrmsd(x, y)
+        self.assertIsInstance(nrmsd, pd.Series)
+        self.assertEqual(nrmsd.shape, (2,))
+        self.assertTrue(np.allclose(nrmsd, [72. ** -0.5,
                                            (2. / 3.) ** 0.5]))
-        self.assertTrue(rmsd.index.equals(x.columns))
+        self.assertTrue(nrmsd.index.equals(x.columns))
 
 
 class TestCalcPearson(ut.TestCase):
@@ -320,23 +319,23 @@ class TestCalcSpearman(ut.TestCase):
 class TestGetComp(ut.TestCase):
 
     def test_comps(self):
-        self.assertIs(get_comp_func("rmsd"), calc_rmsd)
-        self.assertEqual(get_comp_abbr("rmsd"), "RMSD")
-        self.assertEqual(get_comp_name("rmsd"),
-                         "Root-Mean-Square Deviation")
-        self.assertIs(get_comp_func("r"), calc_pearson)
-        self.assertEqual(get_comp_abbr("r"), "PCC")
-        self.assertEqual(get_comp_name("r"),
-                         "Pearson Correlation Coefficient")
-        self.assertIs(get_comp_func("r2"), calc_coeff_determ)
-        self.assertEqual(get_comp_abbr("r2"), "R-Squared")
-        self.assertEqual(get_comp_name("r2"),
-                         "Coefficient of Determination")
-        self.assertIs(get_comp_func("rho"), calc_spearman)
-        self.assertEqual(get_comp_abbr("rho"), "SCC")
-        self.assertEqual(get_comp_name("rho"),
-                         "Spearman Correlation Coefficient")
-        for get_comp in [get_comp_func, get_comp_name, get_comp_abbr]:
+        for key in ["NRMSD", "nrmsd"]:
+            self.assertIs(get_comp_func(key), calc_nrmsd)
+            self.assertEqual(get_comp_name(key),
+                             "Normalized Root-Mean-Square Deviation")
+        for key in ["PCC", "pcc"]:
+            self.assertIs(get_comp_func(key), calc_pearson)
+            self.assertEqual(get_comp_name(key),
+                             "Pearson Correlation Coefficient")
+        for key in ["SCC", "scc"]:
+            self.assertIs(get_comp_func(key), calc_spearman)
+            self.assertEqual(get_comp_name(key),
+                             "Spearman Correlation Coefficient")
+        for key in ["R2", "r2"]:
+            self.assertIs(get_comp_func(key), calc_coeff_determ)
+            self.assertEqual(get_comp_name(key),
+                             "Coefficient of Determination")
+        for get_comp in [get_comp_func, get_comp_name]:
             self.assertRaisesRegex(ValueError,
                                    "Invalid method of comparison: 'other'",
                                    get_comp,
@@ -355,11 +354,11 @@ class TestCompareWindows(ut.TestCase):
                     nan5 = min(seqlen, max(0, mc - (1 + size // 2)))
                     nan3 = min(seqlen, max(0, mc - (1 + size) // 2))
                     nval = seqlen - (nan5 + nan3)
-                    for method in ["rmsd", "r", "r2", "rho"]:
+                    for method in ["NRMSD", "PCC", "SCC", "R2"]:
                         result = compare_windows(mus, mus, method, size, mc)
                         self.assertIsInstance(result, pd.Series)
                         self.assertTrue(result.index.equals(index))
-                        fill = 0. if method == "rmsd" else 1.
+                        fill = 0. if method.upper() == "NRMSD" else 1.
                         expect = np.hstack([np.full(nan5, np.nan),
                                             np.full(nval, fill),
                                             np.full(nan3, np.nan)])

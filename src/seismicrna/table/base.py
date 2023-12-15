@@ -56,48 +56,6 @@ REL_CODES = {
 TABLE_RELS = list(REL_CODES.values())
 
 
-def get_dirichlet_params(mean: np.ndarray, variance: np.ndarray):
-    """ Get the concentration parameters of a Dirichlet distribution
-    with the given mean and variance.
-
-    Parameters
-    ----------
-    mean: np.ndarray
-        Mean of each dimension of the distribution.
-    variance: np.ndarray
-        Variance of each dimension of the distribution.
-
-    Returns
-    -------
-    np.ndarray
-        Concentration parameters of the Dirichlet distribution.
-    """
-    return mean * (mean * (1. - mean) / variance - 1.)
-
-
-def get_beta_params(mean: np.ndarray, variance: np.ndarray):
-    """ Get the concentration parameters of a beta distribution with the
-    given mean and variance.
-
-    Parameters
-    ----------
-    mean: np.ndarray
-        Mean of each dimension of the distribution.
-    variance: np.ndarray
-        Variance of each dimension of the distribution.
-
-    Returns
-    -------
-    tuple[numpy.ndarray, numpy.ndarray]
-        Concentration parameters of the beta distribution.
-    """
-    mean2 = 1. - mean
-    param0 = mean * mean2 / variance - 1.
-    param1 = param0 * mean
-    param2 = param0 * mean2
-    return param1, param2
-
-
 def get_rel_name(rel_code: str):
     """ Get the name of a relationship from its code. """
     try:

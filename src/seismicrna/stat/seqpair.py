@@ -15,7 +15,7 @@ from .write import TwoTableGraphWriter
 from ..core.arg import (docdef,
                         arg_input_path,
                         opt_rels,
-                        opt_y_ratio,
+                        opt_use_ratio,
                         opt_quantile,
                         opt_arrange,
                         opt_csv,
@@ -72,7 +72,7 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
     def __init__(self,
                  *args,
                  rel: str,
-                 y_ratio: bool,
+                 use_ratio: bool,
                  quantile: float,
                  order1: int | None = None,
                  clust1: int | None = None,
@@ -81,7 +81,7 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.rel_code = rel
-        self.y_ratio = y_ratio
+        self.use_ratio = use_ratio
         self.quantile = quantile
         self._order1 = order1
         self._clust1 = clust1
@@ -135,7 +135,7 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
 
     @property
     def quantity(self):
-        return "Ratio" if self.y_ratio else "Count"
+        return "Ratio" if self.use_ratio else "Count"
 
     @property
     def predicate(self):
@@ -159,7 +159,7 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
         return (table.fetch_ratio(quantile=self.quantile,
                                   precision=PRECISION,
                                   **all_kwargs)
-                if self.y_ratio
+                if self.use_ratio
                 else table.fetch_count(**all_kwargs))
 
     @cached_property
@@ -263,7 +263,7 @@ class SeqPairGraphWriter(TwoTableGraphWriter, ABC):
         """ Type of the graph to iterate. """
 
     def iter(self, rels_sets: tuple[str, ...],
-             arrange: str, y_ratio: bool, quantile: float):
+             arrange: str, use_ratio: bool, quantile: float):
         _, _, csparams1 = get_table_params(self.table1, arrange)
         _, _, csparams2 = get_table_params(self.table2, arrange)
         for cparams1, cparams2 in product(csparams1, csparams2):
@@ -271,7 +271,7 @@ class SeqPairGraphWriter(TwoTableGraphWriter, ABC):
                 yield self.graph_type(table1=self.table1,
                                       table2=self.table2,
                                       rel=rels,
-                                      y_ratio=y_ratio,
+                                      use_ratio=use_ratio,
                                       quantile=quantile,
                                       order1=cparams1.get("order"),
                                       clust1=cparams1.get("clust"),
@@ -286,7 +286,7 @@ class SeqPairGraphRunner(object):
     params = [
         arg_input_path,
         opt_rels,
-        opt_y_ratio,
+        opt_use_ratio,
         opt_quantile,
         opt_arrange,
         opt_csv,
@@ -307,7 +307,7 @@ class SeqPairGraphRunner(object):
     def run(cls,
             input_path: tuple[str, ...],
             rels: tuple[str, ...], *,
-            y_ratio: bool,
+            use_ratio: bool,
             quantile: float,
             arrange: str,
             csv: bool,
@@ -327,7 +327,7 @@ class SeqPairGraphRunner(object):
                                     parallel,
                                     pass_n_procs=False,
                                     kwargs=dict(rels_sets=rels,
-                                                y_ratio=y_ratio,
+                                                use_ratio=use_ratio,
                                                 quantile=quantile,
                                                 arrange=arrange,
                                                 csv=csv,

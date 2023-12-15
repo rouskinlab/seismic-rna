@@ -1,24 +1,55 @@
 import os
+from functools import cached_property
 from itertools import product
 from logging import getLogger
 
+import numpy as np
+import pandas as pd
 from click import command
 from plotly import graph_objects as go
 
-from .seqpair import SeqPairGraphRunner, SeqPairTwoAxisGraph, SeqPairGraphWriter
+from .twotable import SAMPLE_NAME, TwoTableGraph, TwoTableRunner, TwoTableWriter
 from .traces import iter_seq_base_scatter_traces
-from ..core.arg import opt_rels, opt_y_ratio, opt_arrange, opt_quantile
+from ..core.arg import opt_rels, opt_use_ratio, opt_arrange, opt_quantile
 
 logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-class SeqScatterGraph(SeqPairTwoAxisGraph):
+class ScatterPlot(TwoTableGraph):
 
     @classmethod
-    def graph_type(cls):
+    def graph_kind(cls):
         return COMMAND
+
+    @classmethod
+    def what(cls):
+        return "Scatter plot"
+
+    @property
+    def x_title(self):
+        return self.sample1
+
+    @property
+    def y_title(self):
+        return self.sample2
+
+    @cached_property
+    def data(self):
+        # Join data tables 1 and 2 horizontally.
+        data = pd.concat([self.data1, self.data2], axis=1, join="inner")
+        # Add the sample names as the first level of the columns.
+        samples = np.hstack([np.repeat(self.sample1, self.data1.columns.size),
+                             np.repeat(self.sample2, self.data2.columns.size)])
+        names = [SAMPLE_NAME] + list(data.columns.names)
+        data.columns = pd.MultiIndex.from_arrays(
+            [(samples if name == SAMPLE_NAME
+              else data.columns.get_level_values(name).values)
+             for name in names],
+            names=names
+        )
+        return data
 
     def get_traces(self):
         for (col, (_, vals1)), (row, (_, vals2)) in product(
@@ -34,18 +65,18 @@ class SeqScatterGraph(SeqPairTwoAxisGraph):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class SeqScatterGraphWriter(SeqPairGraphWriter):
+class SeqScatterGraphWriter(TwoTableWriter):
 
     @classmethod
     def graph_type(cls):
-        return SeqScatterGraph
+        return ScatterPlot
 
 
-class SeqScatterGraphRunner(SeqPairGraphRunner):
+class SeqScatterGraphRunner(TwoTableRunner):
 
     @classmethod
     def var_params(cls):
-        return [opt_rels, opt_y_ratio, opt_arrange, opt_quantile]
+        return [opt_rels, opt_use_ratio, opt_arrange, opt_quantile]
 
     @classmethod
     def writer_type(cls):

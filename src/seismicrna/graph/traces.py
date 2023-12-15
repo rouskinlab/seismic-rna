@@ -105,8 +105,7 @@ def iter_seqbar_stack_traces(data: pd.DataFrame, cmap: ColorMap):
 
 
 def get_seq_line_trace(data: pd.Series):
-    return go.Scatter(name="correlation",
-                      x=data.index.get_level_values(POS_NAME),
+    return go.Scatter(x=data.index.get_level_values(POS_NAME),
                       y=data)
 
 
