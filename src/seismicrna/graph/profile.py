@@ -31,7 +31,7 @@ class ProfileGraph(OneTableGraph, ColorMapGraph, ABC):
         return self.data_kind.capitalize()
 
 
-class SingleProfileGraph(ProfileGraph):
+class WholeProfileGraph(ProfileGraph):
     """ Bar graph where each bar shows one relationship of the base. """
 
     @classmethod
@@ -48,13 +48,13 @@ class SingleProfileGraph(ProfileGraph):
                 yield (row, 1), trace
 
 
-class StackedProfileGraph(ProfileGraph):
+class TypedProfileGraph(ProfileGraph):
     """ Stacked bar graph wherein each stacked bar represents multiple
     relationships for a base in a sequence. """
 
     @classmethod
     def what(cls):
-        return "Stacked mutational profile"
+        return "Typed mutational profile"
 
     @classmethod
     def get_cmap_type(cls):
@@ -66,7 +66,9 @@ class StackedProfileGraph(ProfileGraph):
         figure.update_layout(barmode="stack")
 
     def get_traces(self):
-        for row, index in enumerate(self.row_index, start=1):
+        for row, index in zip(range(1, self.nrows + 1),
+                              self.data_header.iter_clust_indexes(),
+                              strict=True):
             for trace in iter_seqbar_stack_traces(self.data.loc[:, index],
                                                   self.cmap):
                 yield (row, 1), trace
@@ -76,7 +78,7 @@ class ProfileWriter(OneTableWriter):
 
     @classmethod
     def get_graph_type(cls, rel: str):
-        return SingleProfileGraph if len(rel) == 1 else StackedProfileGraph
+        return WholeProfileGraph if len(rel) == 1 else TypedProfileGraph
 
 
 class ProfileRunner(OneTableRunner):

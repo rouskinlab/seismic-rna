@@ -11,6 +11,7 @@ from .base import (GraphBase,
                    make_index,
                    make_source_sample,
                    make_subject)
+from ..core.header import parse_header
 from ..core.parallel import dispatch
 from ..table.base import Table, PosTable, get_rel_name
 from ..table.load import find_table_files, load
@@ -59,7 +60,7 @@ class OneTableGraph(GraphBase, ABC):
 
     @cached_property
     def row_index(self):
-        return make_index(self.table, order=self.order, clust=self.clust)
+        return make_index(self.table.header, self.order, self.clust)
 
     @property
     def col_index(self):
@@ -74,6 +75,11 @@ class OneTableGraph(GraphBase, ABC):
         return self._fetch_data(self.table,
                                 order=self.order,
                                 clust=self.clust)
+
+    @cached_property
+    def data_header(self):
+        """ Header of the selected data (not of the entire table). """
+        return parse_header(self.data.columns)
 
 
 class OneTableWriter(GraphWriter, ABC):

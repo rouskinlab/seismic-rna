@@ -155,11 +155,11 @@ class TwoTableGraph(GraphBase, ABC):
 
     @cached_property
     def row_index(self):
-        return make_index(self.table2, order=self.order2, clust=self.clust2)
+        return make_index(self.table2.header, self.order2, self.clust2)
 
     @cached_property
     def col_index(self):
-        return make_index(self.table1, order=self.order1, clust=self.clust1)
+        return make_index(self.table1.header, self.order1, self.clust1)
 
 
 class TwoTableMergedGraph(TwoTableGraph, ABC):

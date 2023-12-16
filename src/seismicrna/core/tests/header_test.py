@@ -431,9 +431,17 @@ class TestRelHeader(ut.TestCase):
         self.assertEqual(list(index.names), [REL_NAME])
         self.assertEqual(index.to_list(), list("qwerty"))
 
+    def test_iter_clust_indexes(self):
+        header = RelHeader(rels=list("qwerty"))
+        clust_indexes = list(header.iter_clust_indexes())
+        self.assertEqual(len(clust_indexes), 1)
+        self.assertEqual(len(clust_indexes), header.clusts.size)
+        self.assertIsInstance(clust_indexes[0], pd.Index)
+        self.assertTrue(clust_indexes[0].equals(header.index))
+
     def test_size(self):
         header = RelHeader(rels=list("qwerty"))
-        self.assertEqual(header.size, 6)
+        self.assertEqual(header.size, len("qwerty"))
 
     def test_select_none(self):
         header = RelHeader(rels=list("qwerty"))
@@ -605,6 +613,18 @@ class TestClustHeader(ut.TestCase):
                 self.assertEqual(list(index.names), [ORDER_NAME, CLUST_NAME])
                 self.assertTrue(index.equals(header.clusts))
 
+    def test_iter_clust_indexes(self):
+        for max_order in range(1, 6):
+            for min_order in range(1, max_order + 1):
+                header = ClustHeader(max_order=max_order, min_order=min_order)
+                clust_indexes = list(header.iter_clust_indexes())
+                self.assertEqual(len(clust_indexes), header.clusts.size)
+                for index, clust in zip(clust_indexes,
+                                        header.clusts,
+                                        strict=True):
+                    self.assertIsInstance(index, pd.MultiIndex)
+                    self.assertEqual(index.to_list(), [clust])
+
     def test_select_none(self):
         header = ClustHeader(max_order=4)
         selection = header.select()
@@ -774,6 +794,22 @@ class TestRelClustHeader(ut.TestCase):
                                        [2, 2, 3, 3, 3, 2, 2, 3, 3, 3]))
         self.assertTrue(np.array_equal(index.get_level_values(CLUST_NAME),
                                        [1, 2, 1, 2, 3, 1, 2, 1, 2, 3]))
+
+    def test_iter_clust_indexes(self):
+        for max_order in range(1, 6):
+            for min_order in range(1, max_order + 1):
+                header = RelClustHeader(rels=list("qwerty"),
+                                        max_order=max_order,
+                                        min_order=min_order)
+                clust_indexes = list(header.iter_clust_indexes())
+                self.assertEqual(len(clust_indexes), header.clusts.size)
+                for index, clust in zip(clust_indexes,
+                                        header.clusts,
+                                        strict=True):
+                    self.assertIsInstance(index, pd.MultiIndex)
+                    self.assertEqual(index.size, len("qwerty"))
+                    self.assertEqual(index.to_list(),
+                                     [(rel, *clust) for rel in "qwerty"])
 
     def test_select_none(self):
         header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)

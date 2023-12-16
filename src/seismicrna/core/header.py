@@ -334,12 +334,24 @@ class Header(ABC):
     def index(self) -> pd.Index:
         """ Index of the header. """
 
+    def iter_clust_indexes(self):
+        """ For each cluster in the header, yield an Index or MultiIndex
+        of every column in the header that is part of the cluster. """
+        if self.max_order == 0:
+            # There are no clusters, so just yield all relationships.
+            yield self.index
+        else:
+            # For each cluster in the header, select the corresponding
+            # order and cluster in the index.
+            for order, clust in self.clusts:
+                yield self.select(order=order, clust=clust)
+
     @property
     def size(self):
         """ Number of items in the Header. """
         return self.index.size
 
-    def select(self, **kwargs):
+    def select(self, **kwargs) -> pd.Index:
         """ Select and return items from the header as an Index. """
         index = self.index
         selected = np.ones(index.size, dtype=bool)
@@ -352,6 +364,8 @@ class Header(ABC):
                     raise ValueError(f"Expected {key} to be one of {expect}, "
                                      f"but got {repr(value)}")
                 selected &= equal_values
+        # Check if any extra keyword arguments were given; allow extra
+        # arguments only if their values are falsy (e.g. None, 0).
         if extras := {k: v for k, v in kwargs.items() if v}:
             raise TypeError("Unexpected keyword arguments for "
                             f"{type(self).__name__}: {extras}")

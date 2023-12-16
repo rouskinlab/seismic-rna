@@ -26,7 +26,7 @@ from ..core.arg import (CLUST_INDIV,
                         opt_force,
                         opt_max_procs,
                         opt_parallel)
-from ..core.header import format_clust_names
+from ..core.header import Header, format_clust_names
 from ..core.seq import DNA
 from ..core.write import need_write
 from ..table.base import (Table,
@@ -55,16 +55,16 @@ def _write_graph(writer: Callable[[Path], Any],
     return file
 
 
-def make_index(table: Table, **kwargs):
+def make_index(header: Header, order: int | None, clust: int | None):
     """ Make an index for the rows or columns of a graph. """
-    if table.header.max_order == 0:
-        # If there are no clusters, then the index does not need to be
-        # labeled, so make the index None.
-        return None
-    # If there are any relationship names in the index, then drop them.
-    clusts_header = table.header.modified(rels=())
-    # Select the order(s) and cluster(s) for the index.
-    return clusts_header.select(**kwargs)
+    if header.max_order == 0:
+        # If there are no clusters, then no clusters must be selected.
+        if order or clust:
+            raise ValueError(f"Cannot select orders or clusters from {header}")
+        return header.clusts
+    # If there are any relationship names in the index, then drop them
+    # and then select the order(s) and cluster(s) for the index.
+    return header.modified(rels=()).select(order=order, clust=clust)
 
 
 def _index_size(index: pd.Index | None):
@@ -72,7 +72,9 @@ def _index_size(index: pd.Index | None):
 
 
 def _index_titles(index: pd.Index | None):
-    return format_clust_names(index) if index is not None else None
+    return (format_clust_names(index, allow_zero=True, allow_duplicates=False)
+            if index is not None
+            else None)
 
 
 def get_source_name(table: Table):
