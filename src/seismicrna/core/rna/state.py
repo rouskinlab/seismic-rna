@@ -2,10 +2,10 @@ from functools import cached_property
 
 from .profile import RnaProfile
 from .roc import compute_auc_roc, compute_roc_curve
-from .struct import Rna2dStructure
+from .struct import RNAStructure
 
 
-class RnaState(Rna2dStructure, RnaProfile):
+class RnaState(RNAStructure, RnaProfile):
     """ RNA secondary structure with mutation rates. """
 
     @cached_property

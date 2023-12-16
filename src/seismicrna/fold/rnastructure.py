@@ -34,16 +34,19 @@ def fold(rna: RnaProfile, *,
         cmd.extend(["--DMS", dms_file := rna.to_dms(temp_dir)])
         # Write a temporary FASTA file for the RNA.
         cmd.append(fasta := rna.to_fasta(temp_dir))
+        # Determine the path of the temporary CT file.
+        cmd.append(ct_temp := rna.ct_file(temp_dir))
         try:
-            # Get the path of the output CT file.
-            cmd.append(ct_file)
             # Run the command.
             run_cmd(args_to_cmd(cmd))
+            # Renumber the CT file.
+
         finally:
             if not keep_temp:
                 # Delete the temporary files.
                 fasta.unlink(missing_ok=True)
                 dms_file.unlink(missing_ok=True)
+                ct_temp.unlink(missing_ok=True)
     return ct_file
 
 

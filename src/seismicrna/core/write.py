@@ -24,7 +24,7 @@ def need_write(file: Path, force: bool = False, warn: bool = True):
     if force or not file.is_file():
         return True
     if warn:
-        logger.warning(f"File exists: {file}")
+        logger.warning(f"File exists (to overwrite, use --force): {file}")
     return False
 
 

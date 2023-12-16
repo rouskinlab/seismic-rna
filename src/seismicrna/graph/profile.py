@@ -36,7 +36,7 @@ class WholeProfileGraph(ProfileGraph):
 
     @classmethod
     def what(cls):
-        return "Mutational profile"
+        return "Profile"
 
     @classmethod
     def get_cmap_type(cls):
@@ -54,7 +54,7 @@ class TypedProfileGraph(ProfileGraph):
 
     @classmethod
     def what(cls):
-        return "Typed mutational profile"
+        return "Typed profile"
 
     @classmethod
     def get_cmap_type(cls):

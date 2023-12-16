@@ -11,14 +11,14 @@ logger = getLogger(__name__)
 NUM_FIELDS = 6
 
 
-def _parse_int(text: str, name: str, zero: bool = False) -> int:
+def _parse_int(text: str, name: str, allow_zero: bool = False) -> int:
     """ Try to parse the text into an integer/positive integer. """
     try:
         value = int(text)
     except ValueError:
         value = -1
-    if value < 0 or (value == 0 and not zero):
-        s = "non-negative" if zero else "positive"
+    if value < 0 or (value == 0 and not allow_zero):
+        s = "non-negative" if allow_zero else "positive"
         raise ValueError(f"{name} must be a {s} integer, but got {repr(text)}")
     return value
 
@@ -49,7 +49,7 @@ def _parse_ct_body_line(line: str, first: bool, last: bool):
         raise ValueError(f"CT body line needs {NUM_FIELDS} fields,"
                          f"but got {len(fields)}: '{content}'")
     curr_idx = _parse_int(fields[0], "current index")
-    prev_idx = _parse_int(fields[2], "previous index", zero=first)
+    prev_idx = _parse_int(fields[2], "previous index", allow_zero=first)
     if first:
         if prev_idx != 0:
             raise ValueError(f"Expected previous index of first line "
@@ -57,7 +57,7 @@ def _parse_ct_body_line(line: str, first: bool, last: bool):
     elif prev_idx != curr_idx - 1:
         raise ValueError(f"Previous index ({prev_idx}) does not precede "
                          f"current index ({curr_idx})")
-    next_idx = _parse_int(fields[3], "next index", zero=last)
+    next_idx = _parse_int(fields[3], "next index", allow_zero=last)
     if last:
         if next_idx != 0:
             raise ValueError(f"Expected next index of last line to be 0, "
@@ -65,7 +65,7 @@ def _parse_ct_body_line(line: str, first: bool, last: bool):
     elif next_idx != curr_idx + 1:
         raise ValueError(f"Next index ({next_idx}) does not succeed "
                          f"current index ({curr_idx})")
-    partner = _parse_int(fields[4], "partner index", zero=True)
+    partner = _parse_int(fields[4], "partner index", allow_zero=True)
     position = _parse_int(fields[5], "natural position")
     base = fields[1]
     return curr_idx, base, partner, position
@@ -171,10 +171,11 @@ def parse_ct(ct_path: Path, seq5: int | None = None):
     Parameters
     ----------
     ct_path: Path
-        Path to the connectivity table file.
+        Path of the CT file.
     seq5: int | None = None
         Positional number to assign the 5' end of the given part of the
-        reference sequence. Must be ≥ 1.
+        reference sequence. Must be ≥ 1. If omitted, then the numbering
+        is taken from the last column of the CT file.
 
     Returns
     -------
@@ -186,7 +187,7 @@ def parse_ct(ct_path: Path, seq5: int | None = None):
     sect = fields[path.SECT]
     # If a starting position was given, then offset the index by that
     # position minus 1 (because CT files are 1-indexed).
-    offset = seq5 if seq5 is None else seq5 - 1
+    offset = seq5 - 1 if seq5 is not None else None
     # Parse each structure in the CT file.
     with open(ct_path) as file:
         while header_line := file.readline():

@@ -1,12 +1,9 @@
 from functools import cached_property
-from logging import getLogger
-from pathlib import Path
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
-from .ct import parse_ct
 from .pair import find_root_pairs, pairs_to_dict, pairs_to_table, table_to_pairs
 from .section import (BASE_FIELD,
                       IDX_FIELD,
@@ -14,9 +11,7 @@ from .section import (BASE_FIELD,
                       PAIR_FIELD,
                       PREV_FIELD,
                       RnaSection)
-from ..seq import intersection, POS_NAME, Section
-
-logger = getLogger(__name__)
+from ..seq import POS_NAME, intersection
 
 
 class Rna2dPart(object):
@@ -71,7 +66,7 @@ class Rna2dStemLoop(RnaJunction):
         return section
 
 
-class Rna2dStructure(RnaSection):
+class RNAStructure(RnaSection):
     """ RNA secondary structure. """
 
     def __init__(self, *, pairs: Iterable[tuple[int, int]], **kwargs):
@@ -118,7 +113,7 @@ class Rna2dStructure(RnaSection):
         pairs[pairs > 0] -= self.section.end5 - 1
         # Generate the data for the connectivity table.
         data = {
-            BASE_FIELD: self.seq.to_str_array(),
+            BASE_FIELD: self.seq.array,
             PREV_FIELD: index.values - 1,
             NEXT_FIELD: index.values + 1,
             PAIR_FIELD: pairs,
@@ -133,23 +128,6 @@ class Rna2dStructure(RnaSection):
         """ Return the connectivity table as text. """
         data = self.ct_data.reset_index()
         return f"{self.header}\n{data.to_string(index=False, header=False)}\n"
-
-
-def from_ct(ct_path: Path, section: Section | None = None):
-    titles: set[str] = set()
-    for (title,
-         section_,
-         pairs) in parse_ct(ct_path,
-                            section.end5 if section is not None else None):
-        if section is not None and section_ != section:
-            logger.error(f"Expected {section}, but got {section}")
-        else:
-            if title in titles:
-                logger.warning(f"Title {repr(title)} is repeated in {ct_path}")
-            else:
-                titles.add(title)
-            yield Rna2dStructure(title=title, section=section_, pairs=pairs)
-
 
 ########################################################################
 #                                                                      #
