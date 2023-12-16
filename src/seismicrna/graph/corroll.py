@@ -29,10 +29,6 @@ class RollingCorrelationGraph(TwoTableMergedGraph):
     def _trace_function(cls):
         return iter_seq_line_traces
 
-    @property
-    def _trace_kwargs(self):
-        return dict()
-
     def __init__(self, *, mucomp: str, window: int, winmin: int, **kwargs):
         super().__init__(**kwargs)
         self._method = mucomp
@@ -48,8 +44,9 @@ class RollingCorrelationGraph(TwoTableMergedGraph):
 
     @cached_property
     def details(self):
-        return (f"{self._method.upper()} using {self._size} nt windows "
-                f"of ≥ {self._min_count} data")
+        return super().details + [f"metric = {self._method.upper()}",
+                                  f"window = {self._size} nt",
+                                  f"min = {self._min_count} nt"]
 
     @cached_property
     def y_title(self):

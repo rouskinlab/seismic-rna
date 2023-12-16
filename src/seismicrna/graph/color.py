@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from functools import cache
+from functools import cache, cached_property
 from inspect import getmembers
 from sys import modules
 from typing import Any, Hashable
@@ -181,7 +181,7 @@ class ColorMapGraph(GraphBase, ABC):
         super().__init__(**kwargs)
         self._cmap_name = cmap
 
-    @property
+    @cached_property
     def cmap(self) -> ColorMap:
         """ Color map of the graph. """
         return get_cmap(self.get_cmap_type(), self._cmap_name)

@@ -118,18 +118,18 @@ class TwoTableGraph(GraphBase, ABC):
     @cached_property
     def sample_source1(self):
         """ Sample and source of dataset 1. """
-        return f"{self.source1} reads from {self.sample1}"
+        return f"{self.source1} reads from sample {repr(self.sample1)}"
 
     @cached_property
     def sample_source2(self):
         """ Sample and source of dataset 2. """
-        return f"{self.source2} reads from {self.sample2}"
+        return f"{self.source2} reads from sample {repr(self.sample2)}"
 
     @cached_property
     def sample_source(self):
-        if self.sample_source1 == self.sample_source2:
-            return self.sample_source1
-        return " versus ".join([self.sample_source1, self.sample_source2])
+        return (self.sample_source1
+                if self.sample_source1 == self.sample_source2
+                else " vs. ".join([self.sample_source1, self.sample_source2]))
 
     @cached_property
     def subject1(self):
@@ -147,11 +147,8 @@ class TwoTableGraph(GraphBase, ABC):
 
     @cached_property
     def subject(self):
-        return LINKER.join([self.subject1, self.subject2])
-
-    @cached_property
-    def predicate(self):
-        return "-".join([self.rel_code, self.data_kind])
+        return (self.subject1 if self.subject1 == self.subject2
+                else LINKER.join([self.subject1, self.subject2]))
 
     @cached_property
     def data1(self):
@@ -193,9 +190,9 @@ class TwoTableMergedGraph(TwoTableGraph, ABC):
         """ Function to generate the graph's traces. """
 
     @property
-    @abstractmethod
     def _trace_kwargs(self) -> dict[str, Any]:
         """ Keyword arguments for self._trace_function. """
+        return dict()
 
     @property
     def x_title(self) -> str:

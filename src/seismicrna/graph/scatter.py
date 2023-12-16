@@ -32,10 +32,6 @@ class ScatterPlotGraph(TwoTableGraph, ColorMapGraph):
         return SeqColorMap
 
     @property
-    def details(self):
-        return ""
-
-    @property
     def x_title(self):
         return self.sample1
 

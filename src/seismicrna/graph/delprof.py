@@ -1,74 +1,74 @@
 import os
 from logging import getLogger
 
-import pandas as pd
+import numpy as np
 from click import command
 from plotly import graph_objects as go
 
-from .twotable import TwoTableRunner, TwoTableWriter, TwoTableMergedGraph
+from .color import ColorMapGraph, SeqColorMap
 from .traces import iter_seq_base_bar_traces
-from ..core.arg import opt_rels, opt_use_ratio, opt_quantile, opt_arrange
+from .twotable import TwoTableRunner, TwoTableWriter, TwoTableMergedGraph
 
 logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-class SeqDiffGraph(TwoTableMergedGraph):
+class DeltaProfileGraph(TwoTableMergedGraph, ColorMapGraph):
 
     @classmethod
-    def graph_type(cls):
+    def graph_kind(cls):
         return COMMAND
+
+    @classmethod
+    def what(cls):
+        return "Delta profile graph"
+
+    @classmethod
+    def get_cmap_type(cls):
+        return SeqColorMap
 
     @classmethod
     def _trace_function(cls):
         return iter_seq_base_bar_traces
 
     @property
-    def predicate(self):
-        return super().predicate
+    def _trace_kwargs(self):
+        return super()._trace_kwargs | dict(cmap=self.cmap)
 
     @property
     def y_title(self):
-        return f"{self.what}-2 minus {self.what}-1"
+        return f"Difference between {self.data_kind}s 1 and 2"
 
     @property
     def _merge_data(self):
-
-        def diff(vals1: pd.Series, vals2: pd.Series):
-            """ Compute the difference between the Series. """
-            return vals2 - vals1
-
-        return diff
+        """ Compute the difference between the profiles. """
+        return np.subtract
 
     def _figure_layout(self, fig: go.Figure):
         super()._figure_layout(fig)
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class SeqDiffGraphWriter(TwoTableWriter):
+class DeltaProfileWriter(TwoTableWriter):
 
     @classmethod
     def graph_type(cls):
-        return SeqDiffGraph
+        return DeltaProfileGraph
 
 
-class SeqDiffGraphRunner(TwoTableRunner):
+class DeltaProfileRunner(TwoTableRunner):
 
     @classmethod
     def writer_type(cls):
-        return SeqDiffGraphWriter
-
-    @classmethod
-    def var_params(cls):
-        return [opt_rels, opt_use_ratio, opt_quantile, opt_arrange]
+        return DeltaProfileWriter
 
 
-@command(COMMAND, params=SeqDiffGraphRunner.params())
+@command(COMMAND, params=DeltaProfileRunner.params())
 def cli(*args, **kwargs):
     """ Create bar graphs of differences between pairs of samples at
     each position in a sequence. """
-    return SeqDiffGraphRunner.run(*args, **kwargs)
+    return DeltaProfileRunner.run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

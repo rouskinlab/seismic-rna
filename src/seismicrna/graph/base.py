@@ -67,11 +67,11 @@ def make_subject(source: str, order: int | None, clust: int | None):
 
 def get_source_name(table: Table):
     if isinstance(table, RelTable):
-        return "Related"
+        return "related"
     if isinstance(table, MaskTable):
-        return "Masked"
+        return "masked"
     if isinstance(table, ClustTable):
-        return "Clustered"
+        return "clustered"
     raise TypeError(f"Invalid table type: {type(table).__name__}")
 
 
@@ -146,8 +146,8 @@ class GraphBase(ABC):
 
     @property
     def data_kind(self):
-        """ Kind of data being used: either "Ratio" or "Count". """
-        return "Ratio" if self.use_ratio else "Count"
+        """ Kind of data being used: either "ratio" or "count". """
+        return "ratio" if self.use_ratio else "count"
 
     @property
     @abstractmethod
@@ -174,10 +174,11 @@ class GraphBase(ABC):
     def seq(self) -> DNA:
         """ Sequence of the section from which the data come. """
 
-    @property
-    @abstractmethod
-    def details(self) -> str:
+    @cached_property
+    def details(self) -> list[str]:
         """ Additional details about the graph. """
+        return ([f"quantile = {round(self.quantile, 3)}"] if self.use_ratio
+                else list())
 
     @property
     @abstractmethod
@@ -185,16 +186,17 @@ class GraphBase(ABC):
         """ Subject of the graph. """
 
     @property
-    @abstractmethod
     def predicate(self):
         """ Predicate of the graph. """
+        fields = [self.rel_codes, self.data_kind]
+        if self.use_ratio:
+            fields.append(f"q{round(self.quantile * 100.)}")
+        return "-".join(fields)
 
-    @property
+    @cached_property
     def graph_filename(self):
         """ Name of the graph's output file, without its extension. """
-        return "_".join([self.graph_kind(),
-                         self.subject,
-                         self.predicate]).lower()
+        return "_".join([self.graph_kind(), self.subject, self.predicate])
 
     def get_path_fields(self):
         """ Path fields. """
@@ -306,7 +308,7 @@ class GraphBase(ABC):
 
     def _figure_layout(self, figure: go.Figure):
         """ Update the figure's layout. """
-        figure.update_layout(title=self.description,
+        figure.update_layout(title=self.title,
                              plot_bgcolor="#ffffff",
                              paper_bgcolor="#ffffff")
         figure.update_xaxes(linewidth=1,
@@ -354,16 +356,13 @@ class GraphBase(ABC):
         return files
 
     @cached_property
-    def description(self):
-        """ Description of the graph. """
+    def title(self):
+        """ Title of the graph. """
         return " ".join(
-            [
-                f"{self.what()} of {self.data_kind}s",
-                f"of {self.relationships} bases in {self.sample_source}",
-                f"over reference {self.ref}, section {self.sect}"
-            ] + (
-                [f"({self.details})"] if self.details else []
-            )
+            [f"{self.what()} of {self.data_kind}s "
+             f"of {self.relationships.lower()} bases in {self.sample_source} "
+             f"over reference {repr(self.ref)} section {repr(self.sect)}"]
+            + ([f"({'; '.join(self.details)})"] if self.details else [])
         )
 
 
