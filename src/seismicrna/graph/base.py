@@ -33,15 +33,14 @@ from ..table.base import (Table,
                           PosTable,
                           RelTable,
                           MaskTable,
-                          ClustTable,
-                          get_rel_name)
+                          ClustTable)
 
 logger = getLogger(__name__)
 
 # Define sources.
-RELATED = "Related"
-MASKED = "Masked"
-CLUSTERED = "Clustered"
+RELATED = "related"
+MASKED = "masked"
+CLUSTERED = "clustered"
 
 # String to join sample names.
 LINKER = "__and__"
@@ -57,7 +56,15 @@ def _write_graph(writer: Callable[[Path], Any],
 
 
 def make_index(table: Table, **kwargs):
-    return table.header.select(**kwargs)
+    """ Make an index for the rows or columns of a graph. """
+    if table.header.max_order == 0:
+        # If there are no clusters, then the index does not need to be
+        # labeled, so make the index None.
+        return None
+    # If there are any relationship names in the index, then drop them.
+    clusts_header = table.header.modified(rels=())
+    # Select the order(s) and cluster(s) for the index.
+    return clusts_header.select(**kwargs)
 
 
 def _index_size(index: pd.Index | None):
@@ -65,7 +72,6 @@ def _index_size(index: pd.Index | None):
 
 
 def _index_titles(index: pd.Index | None):
-    print("Formatting cluster names", index)
     return format_clust_names(index) if index is not None else None
 
 
@@ -85,12 +91,12 @@ def make_source_sample(source: str, sample: str):
 
 def make_subject(source: str, order: int | None, clust: int | None):
     if source == RELATED or source == MASKED:
-        if order is not None or clust is not None:
-            raise ValueError(f"For {source.lower()} data, order and clust "
-                             f"must both be None, but got {order} and {clust}")
-        return source.lower()
+        if order or clust:
+            raise ValueError(f"For {source} data, order and clust must both "
+                             f"be 0 or None, but got {order} and {clust}")
+        return source
     if source == CLUSTERED:
-        return "-".join(map(str, [source.lower(),
+        return "-".join(map(str, [source,
                                   order if order is not None else "x",
                                   clust if clust is not None else "x"]))
     raise ValueError(f"Invalid data source: {repr(source)}")
@@ -248,14 +254,14 @@ class GraphBase(ABC):
                              **self.get_path_fields(),
                              ext=ext)
 
-    @cached_property
+    @property
+    @abstractmethod
     def rel_names(self):
-        """ Name(s) of the relationship(s) to graph. """
-        return list(map(get_rel_name, self.rel_codes))
+        """ Names of the relationships to graph. """
 
     @cached_property
     def relationships(self) -> str:
-        """ Relationships being used as a nicely formatted string. """
+        """ Relationships being graphed as a slash-separated string. """
         return "/".join(self.rel_names)
 
     @cached_property
@@ -404,7 +410,7 @@ class GraphWriter(ABC):
 
     @classmethod
     @abstractmethod
-    def graph_type(cls) -> type[GraphBase]:
+    def get_graph_type(cls, *args, **kwargs) -> type[GraphBase]:
         """ Type of the graph to write. """
 
     def __init__(self, *table_files: Path):

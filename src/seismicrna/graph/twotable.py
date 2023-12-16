@@ -13,12 +13,13 @@ from .base import (LINKER,
                    GraphWriter,
                    arrange_table,
                    get_source_name,
+                   make_index,
                    make_source_sample,
                    make_subject)
 from ..core.arg import opt_comppair, opt_compself
 from ..core.parallel import dispatch
 from ..core.seq import POS_NAME
-from ..table.base import ClustTable, PosTable, Table
+from ..table.base import ClustTable, PosTable, Table, get_rel_name
 from ..table.load import find_table_files, load
 
 logger = getLogger(__name__)
@@ -29,27 +30,22 @@ ROW_NAME = "Row"
 COL_NAME = "Column"
 
 
-# Base Sequence Pair Graph #############################################
-
 class TwoTableGraph(GraphBase, ABC):
     """ Graph of two Tables. """
 
     def __init__(self, *,
                  table1: Table | PosTable,
-                 table2: Table | PosTable,
                  order1: int | None,
                  clust1: int | None,
+                 table2: Table | PosTable,
                  order2: int | None,
                  clust2: int | None,
                  **kwargs):
         super().__init__(**kwargs)
-        if len(self.rel_codes) != 1:
-            raise ValueError(f"{type(self).__name__} expected exactly one "
-                             f"relationship, but got {list(self.rel_codes)}")
         self.table1 = table1
-        self.table2 = table2
         self.order1 = order1
         self.clust1 = clust1
+        self.table2 = table2
         self.order2 = order2
         self.clust2 = clust2
 
@@ -61,6 +57,15 @@ class TwoTableGraph(GraphBase, ABC):
             raise ValueError(f"Attribute {repr(name)} differs between "
                              f"tables 1 ({repr(attr1)}) and 2 ({repr(attr2)})")
         return attr1
+
+    @cached_property
+    def rel_name(self):
+        """ Name of the relationship to graph. """
+        return get_rel_name(self.rel_codes)
+
+    @cached_property
+    def rel_names(self):
+        return [self.rel_name]
 
     @property
     def sample1(self):
@@ -150,11 +155,11 @@ class TwoTableGraph(GraphBase, ABC):
 
     @cached_property
     def row_index(self):
-        return self.table2.header.select(order=self.order2, clust=self.clust2)
+        return make_index(self.table2, order=self.order2, clust=self.clust2)
 
     @cached_property
     def col_index(self):
-        return self.table1.header.select(order=self.order1, clust=self.clust1)
+        return make_index(self.table1, order=self.order1, clust=self.clust1)
 
 
 class TwoTableMergedGraph(TwoTableGraph, ABC):
@@ -206,7 +211,7 @@ class TwoTableWriter(GraphWriter, ABC):
 
     @classmethod
     @abstractmethod
-    def graph_type(cls) -> type[TwoTableGraph]:
+    def get_graph_type(cls, *args, **kwargs) -> type[TwoTableGraph]:
         """ Type of the graph to write. """
 
     def __init__(self, table1_file: Path, table2_file: Path):
@@ -229,14 +234,15 @@ class TwoTableWriter(GraphWriter, ABC):
         for cparams1, cparams2 in product(arrange_table(self.table1, arrange),
                                           arrange_table(self.table2, arrange)):
             for rel in rels:
-                yield self.graph_type()(rels=rel,
-                                        table1=self.table1,
-                                        table2=self.table2,
-                                        order1=cparams1.get("order"),
-                                        clust1=cparams1.get("clust"),
-                                        order2=cparams2.get("order"),
-                                        clust2=cparams2.get("clust"),
-                                        **kwargs)
+                graph_type = self.get_graph_type()
+                yield graph_type(rels=rel,
+                                 table1=self.table1,
+                                 order1=cparams1.get("order"),
+                                 clust1=cparams1.get("clust"),
+                                 table2=self.table2,
+                                 order2=cparams2.get("order"),
+                                 clust2=cparams2.get("clust"),
+                                 **kwargs)
 
 
 class TwoTableRunner(GraphRunner, ABC):

@@ -53,7 +53,7 @@ class DeltaProfileGraph(TwoTableMergedGraph, ColorMapGraph):
 class DeltaProfileWriter(TwoTableWriter):
 
     @classmethod
-    def graph_type(cls):
+    def get_graph_type(cls):
         return DeltaProfileGraph
 
 
@@ -64,7 +64,8 @@ class DeltaProfileRunner(TwoTableRunner):
         return DeltaProfileWriter
 
 
-@command(COMMAND, params=DeltaProfileRunner.params())
+@command(DeltaProfileGraph.graph_kind(),
+         params=DeltaProfileRunner.params())
 def cli(*args, **kwargs):
     """ Create bar graphs of differences between pairs of samples at
     each position in a sequence. """

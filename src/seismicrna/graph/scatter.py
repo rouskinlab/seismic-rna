@@ -72,7 +72,7 @@ class ScatterPlotGraph(TwoTableGraph, ColorMapGraph):
 class ScatterPlotWriter(TwoTableWriter):
 
     @classmethod
-    def graph_type(cls):
+    def get_graph_type(cls):
         return ScatterPlotGraph
 
 
@@ -83,7 +83,8 @@ class ScatterPlotRunner(TwoTableRunner):
         return ScatterPlotWriter
 
 
-@command(COMMAND, params=ScatterPlotRunner.params())
+@command(ScatterPlotGraph.graph_kind(),
+         params=ScatterPlotRunner.params())
 def cli(*args, **kwargs):
     """ Create scatter plots between pairs of samples at each position
     in a sequence. """

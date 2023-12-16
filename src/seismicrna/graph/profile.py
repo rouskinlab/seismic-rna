@@ -5,7 +5,6 @@ from logging import getLogger
 from click import command
 from plotly import graph_objects as go
 
-from .base import arrange_table
 from .color import ColorMapGraph, RelColorMap, SeqColorMap
 from .onetable import OneTableGraph, OneTableRunner, OneTableWriter
 from .traces import iter_seq_base_bar_traces, iter_seqbar_stack_traces
@@ -19,6 +18,10 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 class ProfileGraph(OneTableGraph, ColorMapGraph, ABC):
     """ Graph of a mutational profile. """
 
+    @classmethod
+    def graph_kind(cls):
+        return COMMAND
+
     @property
     def x_title(self):
         return POS_NAME
@@ -28,8 +31,12 @@ class ProfileGraph(OneTableGraph, ColorMapGraph, ABC):
         return self.data_kind.capitalize()
 
 
-class SingleRelProfileGraph(ProfileGraph, ABC):
+class SingleProfileGraph(ProfileGraph):
     """ Bar graph where each bar shows one relationship of the base. """
+
+    @classmethod
+    def what(cls):
+        return "Mutational profile"
 
     @classmethod
     def get_cmap_type(cls):
@@ -41,9 +48,13 @@ class SingleRelProfileGraph(ProfileGraph, ABC):
                 yield (row, 1), trace
 
 
-class MultiRelProfileGraph(ProfileGraph, ABC):
+class StackedProfileGraph(ProfileGraph):
     """ Stacked bar graph wherein each stacked bar represents multiple
     relationships for a base in a sequence. """
+
+    @classmethod
+    def what(cls):
+        return "Stacked mutational profile"
 
     @classmethod
     def get_cmap_type(cls):
@@ -64,24 +75,8 @@ class MultiRelProfileGraph(ProfileGraph, ABC):
 class ProfileWriter(OneTableWriter):
 
     @classmethod
-    def graph_type(cls):
-        return ProfileGraph
-
-    def iter(self,
-             rels_sets: tuple[str, ...],
-             use_ratio: bool,
-             quantile: float,
-             arrange: str):
-        for cparams in arrange_table(self.table, arrange):
-            for rels in rels_sets:
-                graph_type = (SingleRelProfileGraph
-                              if len(rels) == 1
-                              else MultiRelProfileGraph)
-                yield graph_type(table=self.table,
-                                 rels=rels,
-                                 use_ratio=use_ratio,
-                                 quantile=quantile,
-                                 **cparams)
+    def get_graph_type(cls, rel: str):
+        return SingleProfileGraph if len(rel) == 1 else StackedProfileGraph
 
 
 class ProfileRunner(OneTableRunner):
@@ -91,7 +86,8 @@ class ProfileRunner(OneTableRunner):
         return ProfileWriter
 
 
-@command(COMMAND, params=ProfileRunner.params())
+@command(ProfileGraph.graph_kind(),
+         params=ProfileRunner.params())
 def cli(*args, **kwargs):
     """ Create bar graphs of positions in a sequence. """
     return ProfileRunner.run(*args, **kwargs)

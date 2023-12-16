@@ -6,11 +6,13 @@ from pathlib import Path
 from .base import (GraphBase,
                    GraphRunner,
                    GraphWriter,
+                   arrange_table,
                    get_source_name,
+                   make_index,
                    make_source_sample,
                    make_subject)
 from ..core.parallel import dispatch
-from ..table.base import Table, PosTable
+from ..table.base import Table, PosTable, get_rel_name
 from ..table.load import find_table_files, load
 
 
@@ -26,6 +28,10 @@ class OneTableGraph(GraphBase, ABC):
         self.table = table
         self.order = order
         self.clust = clust
+
+    @cached_property
+    def rel_names(self):
+        return list(map(get_rel_name, self.rel_codes))
 
     @property
     def sample(self):
@@ -53,7 +59,7 @@ class OneTableGraph(GraphBase, ABC):
 
     @cached_property
     def row_index(self):
-        return self.table.header.select(order=self.order, clust=self.clust)
+        return make_index(self.table, order=self.order, clust=self.clust)
 
     @property
     def col_index(self):
@@ -61,7 +67,7 @@ class OneTableGraph(GraphBase, ABC):
 
     @cached_property
     def subject(self):
-        return make_subject(self.source_sample, self.order, self.clust)
+        return make_subject(self.source, self.order, self.clust)
 
     @cached_property
     def data(self):
@@ -75,7 +81,7 @@ class OneTableWriter(GraphWriter, ABC):
 
     @classmethod
     @abstractmethod
-    def graph_type(cls) -> type[OneTableGraph]:
+    def get_graph_type(cls, *args, **kwargs) -> type[OneTableGraph]:
         """ Type of the graph to write. """
 
     def __init__(self, table_file: Path):
@@ -86,12 +92,25 @@ class OneTableWriter(GraphWriter, ABC):
         """ The table providing the data for the graph(s). """
         return load(self.table_files[0])
 
+    def iter(self,
+             rels: tuple[str, ...],
+             arrange: str,
+             **kwargs):
+        for cparams in arrange_table(self.table, arrange):
+            for rel in rels:
+                graph_type = self.get_graph_type(rel)
+                yield graph_type(rels=rel,
+                                 table=self.table,
+                                 order=cparams.get("order"),
+                                 clust=cparams.get("clust"),
+                                 **kwargs)
+
 
 class OneTableRunner(GraphRunner, ABC):
 
     @classmethod
     @abstractmethod
-    def writer_type(cls) -> type[OneTableWriter]:
+    def writer_type(cls, *args, **kwargs) -> type[OneTableWriter]:
         """ Type of GraphWriter. """
 
     @classmethod

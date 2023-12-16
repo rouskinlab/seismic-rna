@@ -67,7 +67,7 @@ class RollingCorrelationGraph(TwoTableMergedGraph):
 class RollingCorrelationWriter(TwoTableWriter):
 
     @classmethod
-    def graph_type(cls):
+    def get_graph_type(cls):
         return RollingCorrelationGraph
 
 
@@ -82,7 +82,8 @@ class RollingCorrelationRunner(TwoTableRunner):
         return RollingCorrelationWriter
 
 
-@command(COMMAND, params=RollingCorrelationRunner.params())
+@command(RollingCorrelationGraph.graph_kind(),
+         params=RollingCorrelationRunner.params())
 def cli(*args, **kwargs):
     """ Create line graphs of rolling correlations between datasets. """
     return RollingCorrelationRunner.run(*args, **kwargs)
