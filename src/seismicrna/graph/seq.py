@@ -1,39 +1,5 @@
 from .base import GraphBase
-from ..core.arg import CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
-from ..table.base import PosTable, ClustPosTable
 
-
-def get_table_params(table: PosTable | ClustPosTable,
-                     arrange: str,
-                     es_type: type[GraphBase] | None = None,
-                     cs_type: type[GraphBase] | None = None,
-                     em_type: type[GraphBase] | None = None,
-                     cm_type: type[GraphBase] | None = None):
-    if isinstance(table, ClustPosTable):
-        single_type = cs_type
-        multi_type = cm_type
-        if arrange == CLUST_INDIV:
-            # One file per cluster, with no subplots.
-            clusters_params = [dict(order=order, clust=cluster)
-                               for order, cluster in table.header.clusts]
-        elif arrange == CLUST_ORDER:
-            # One file per order, with one subplot per cluster.
-            clusters_params = [dict(order=order) for order
-                               in sorted(table.header.orders)]
-        elif arrange == CLUST_UNITE:
-            # One file, with one subplot per cluster for all orders.
-            clusters_params = [dict()]
-        else:
-            raise ValueError(f"Invalid value for arrange: {repr(arrange)}")
-    elif isinstance(table, PosTable):
-        single_type = es_type
-        multi_type = em_type
-        clusters_params = [dict()]
-    else:
-        single_type = None
-        multi_type = None
-        clusters_params = []
-    return single_type, multi_type, clusters_params
 
 ########################################################################
 #                                                                      #

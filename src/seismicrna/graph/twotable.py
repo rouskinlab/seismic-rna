@@ -11,11 +11,11 @@ from .base import (LINKER,
                    GraphBase,
                    GraphRunner,
                    GraphWriter,
+                   arrange_table,
                    get_source_name,
+                   make_source_sample,
                    make_subject)
-from .seq import get_table_params
 from ..core.arg import opt_comppair, opt_compself
-from ..core.header import make_header
 from ..core.parallel import dispatch
 from ..core.seq import POS_NAME
 from ..table.base import ClustTable, PosTable, Table
@@ -27,17 +27,6 @@ logger = getLogger(__name__)
 SAMPLE_NAME = "Sample"
 ROW_NAME = "Row"
 COL_NAME = "Column"
-
-
-def _get_clusts(max_order: int,
-                min_order: int,
-                order: int | None,
-                clust: int | None):
-    return (make_header(max_order=max_order,
-                        min_order=min_order).select(order=order,
-                                                    clust=clust)
-            if max_order > 0
-            else None)
 
 
 # Base Sequence Pair Graph #############################################
@@ -54,20 +43,15 @@ class TwoTableGraph(GraphBase, ABC):
                  clust2: int | None,
                  **kwargs):
         super().__init__(**kwargs)
+        if len(self.rel_codes) != 1:
+            raise ValueError(f"{type(self).__name__} expected exactly one "
+                             f"relationship, but got {list(self.rel_codes)}")
         self.table1 = table1
         self.table2 = table2
         self.order1 = order1
         self.clust1 = clust1
         self.order2 = order2
         self.clust2 = clust2
-
-    @property
-    def rel_code(self):
-        """ Code of the relationship. """
-        if len(self.rel_codes) != 1:
-            raise ValueError("Expected exactly one relationship, "
-                             f"but got {list(self.rel_codes)}")
-        return self.rel_codes
 
     def _get_common_attribute(self, name: str):
         """ Get the common attribute for tables 1 and 2. """
@@ -116,20 +100,20 @@ class TwoTableGraph(GraphBase, ABC):
         return get_source_name(self.table2)
 
     @cached_property
-    def sample_source1(self):
+    def source_sample1(self):
         """ Sample and source of dataset 1. """
-        return f"{self.source1} reads from sample {repr(self.sample1)}"
+        return make_source_sample(self.source1, self.sample1)
 
     @cached_property
-    def sample_source2(self):
+    def source_sample2(self):
         """ Sample and source of dataset 2. """
-        return f"{self.source2} reads from sample {repr(self.sample2)}"
+        return make_source_sample(self.source2, self.sample2)
 
     @cached_property
-    def sample_source(self):
-        return (self.sample_source1
-                if self.sample_source1 == self.sample_source2
-                else " vs. ".join([self.sample_source1, self.sample_source2]))
+    def source_sample(self):
+        return (self.source_sample1
+                if self.source_sample1 == self.source_sample2
+                else " vs. ".join([self.source_sample1, self.source_sample2]))
 
     @cached_property
     def subject1(self):
@@ -166,17 +150,11 @@ class TwoTableGraph(GraphBase, ABC):
 
     @cached_property
     def row_index(self):
-        return _get_clusts(self.table2.header.max_order,
-                           self.table2.header.min_order,
-                           self.order2,
-                           self.clust2)
+        return self.table2.header.select(order=self.order2, clust=self.clust2)
 
     @cached_property
     def col_index(self):
-        return _get_clusts(self.table1.header.max_order,
-                           self.table1.header.min_order,
-                           self.order1,
-                           self.clust1)
+        return self.table1.header.select(order=self.order1, clust=self.clust1)
 
 
 class TwoTableMergedGraph(TwoTableGraph, ABC):
@@ -248,9 +226,8 @@ class TwoTableWriter(GraphWriter, ABC):
              rels: tuple[str, ...],
              arrange: str,
              **kwargs):
-        _, _, csparams1 = get_table_params(self.table1, arrange)
-        _, _, csparams2 = get_table_params(self.table2, arrange)
-        for cparams1, cparams2 in product(csparams1, csparams2):
+        for cparams1, cparams2 in product(arrange_table(self.table1, arrange),
+                                          arrange_table(self.table2, arrange)):
             for rel in rels:
                 yield self.graph_type()(rels=rel,
                                         table1=self.table1,
@@ -292,8 +269,8 @@ class TwoTableRunner(GraphRunner, ABC):
             # Compare every pair of two different tables.
             table_pairs.extend(combinations(table_files, 2))
         # Generate a table writer for each pair of tables.
-        writers = [cls.writer_type()(table1_file=t1, table2_file=t2)
-                   for t1, t2 in table_pairs]
+        writers = [cls.writer_type()(table1_file, table2_file)
+                   for table1_file, table2_file in table_pairs]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,
                                     parallel,

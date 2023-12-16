@@ -18,6 +18,29 @@ CLUSTER_PREFIX = "cluster"
 
 
 def validate_order_clust(order: int, clust: int, allow_zero: bool = False):
+    """ Validate a pair of order and cluster numbers.
+
+    Parameters
+    ----------
+    order: int
+        Order number
+    clust: int
+        Cluster number
+    allow_zero: bool = False
+        Allow order and cluster to be 0.
+
+    Returns
+    -------
+    None
+        If the order and cluster numbers form a valid pair.
+
+    Raises
+    ------
+    TypeError
+        If order or cluster is not an integer.
+    ValueError
+        If the order and cluster numbers do not form a valid pair.
+    """
     if not isinstance(order, int):
         raise TypeError(f"order must be an int, but got {type(order).__name__}")
     if not isinstance(clust, int):
@@ -33,6 +56,23 @@ def validate_order_clust(order: int, clust: int, allow_zero: bool = False):
 
 
 def format_clust_name(order: int, clust: int, allow_zero: bool = False):
+    """ Format a pair of order and cluster numbers into a name.
+
+    Parameters
+    ----------
+    order: int
+        Order number
+    clust: int
+        Cluster number
+    allow_zero: bool = False
+        Allow order and cluster to be 0.
+
+    Returns
+    -------
+    str
+        Name specifying the order and cluster numbers, or "average" if
+        the order number is 0.
+    """
     validate_order_clust(order, clust, allow_zero)
     return f"{CLUSTER_PREFIX} {order}-{clust}" if order > 0 else AVERAGE_PREFIX
 
@@ -40,6 +80,28 @@ def format_clust_name(order: int, clust: int, allow_zero: bool = False):
 def format_clust_names(clusts: Iterable[tuple[int, int]],
                        allow_zero: bool = False,
                        allow_duplicates: bool = False):
+    """ Format pairs of order and cluster numbers into a list of names.
+
+    Parameters
+    ----------
+    clusts: Iterable[tuple[int, int]]
+        Zero or more pairs of order and cluster numbers.
+    allow_zero: bool = False
+        Allow order and cluster to be 0.
+    allow_duplicates: bool = False
+        Allow order and cluster pairs to be duplicated.
+
+    Returns
+    -------
+    list[str]
+        List of names of the pairs of order and cluster numbers.
+
+    Raises
+    ------
+    ValueError
+        If `allow_duplicates` is False and an order-cluster pair occurs
+        more than once.
+    """
     if not allow_duplicates:
         counts = Counter(clusts := list(clusts))
         if dups := [clust for clust, count in counts.items() if count > 1]:
@@ -262,6 +324,12 @@ class Header(ABC):
         return format_clust_names(self.clusts, not self.clustered())
 
     @cached_property
+    def signature(self):
+        """ Signature of the header, which will generate an identical
+        header if passed as keyword arguments to `make_header`. """
+        return dict(max_order=self.max_order, min_order=self.min_order)
+
+    @cached_property
     @abstractmethod
     def index(self) -> pd.Index:
         """ Index of the header. """
@@ -272,7 +340,7 @@ class Header(ABC):
         return self.index.size
 
     def select(self, **kwargs):
-        """ Select items from the index. """
+        """ Select and return items from the header as an Index. """
         index = self.index
         selected = np.ones(index.size, dtype=bool)
         for key, name in self.levels().items():
@@ -289,6 +357,25 @@ class Header(ABC):
                             f"{type(self).__name__}: {extras}")
         return index[selected]
 
+    def modified(self, **kwargs):
+        """ Return a new header with a possibly modified signature.
+
+        Parameters
+        ----------
+        **kwargs
+            Keyword arguments for modifying the signature of the header.
+            Each argument given here will be passed to `make_header` and
+            override the attribute (if any) with the same name in this
+            header's signature. Attributes of this header's signature
+            that are not overriden will also be passed to `make_header`.
+
+        Returns
+        -------
+        Header
+            New header with a possibly modified signature.
+        """
+        return make_header(**(self.signature | kwargs))
+
     @property
     @abstractmethod
     def _descripts(self):
@@ -299,6 +386,31 @@ class Header(ABC):
     def _descripts_str(self):
         """ String of description keys. """
         return ", ".join(f"{k}={v}" for k, v in self._descripts.items())
+
+    def __eq__(self, other):
+        if not isinstance(other, Header):
+            return NotImplemented
+        if not isinstance(other, type(self)):
+            return False
+        if self is other:
+            return True
+        for key, value in self.signature.items():
+            other_value = other.signature[key]
+            if not isinstance(other_value, type(value)):
+                raise TypeError(f"For key {repr(key)}, types of {repr(value)} "
+                                f"and {repr(other_value)} differ")
+            if isinstance(value, int):
+                if value != other_value:
+                    return False
+            elif isinstance(value, np.ndarray):
+                if not np.array_equal(value, other_value):
+                    return False
+            elif isinstance(value, pd.Index):
+                if not value.equals(other_value):
+                    return False
+            else:
+                raise TypeError(f"Invalid type for {repr(key)}: {repr(value)}")
+        return True
 
     def __str__(self):
         return f"{type(self).__name__}({self._descripts_str})"
@@ -349,6 +461,10 @@ class RelHeader(Header):
         return 1
 
     @cached_property
+    def signature(self):
+        return super().signature | dict(rels=self.rels)
+
+    @cached_property
     def index(self):
         return pd.Index(self.rels, name=REL_NAME)
 
@@ -370,6 +486,8 @@ class ClustHeader(Header):
 
     def __init__(self, *, max_order: int, min_order: int = 1, **kwargs):
         super().__init__(**kwargs)
+        if max_order < 1:
+            raise ValueError(f"max_order must be ≥ 1, but got {max_order}")
         self._max_order = max_order
         self._min_order = min_order
 
@@ -444,12 +562,12 @@ def parse_header(index: pd.Index | pd.MultiIndex):
     Parameters
     ----------
     index: pd.Index | pd.MultiIndex
-        Index to parse
+        Index to parse.
 
     Returns
     -------
     Header
-        New Header whose index is `index`
+        New Header whose index is `index`.
     """
     kwargs = dict()
     try:

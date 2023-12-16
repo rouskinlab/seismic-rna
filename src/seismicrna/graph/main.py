@@ -1,6 +1,6 @@
 from click import group
 
-from . import seqbar, corroll, delprof, scatter
+from . import profile, corroll, delprof, scatter
 from ..core.arg import CMD_GRAPH
 
 
@@ -11,10 +11,10 @@ def cli():
 
 
 # Add graph commands to the CLI.
-cli.add_command(seqbar.cli)
-cli.add_command(corroll.cli)
+cli.add_command(profile.cli)
 cli.add_command(delprof.cli)
 cli.add_command(scatter.cli)
+cli.add_command(corroll.cli)
 
 ########################################################################
 #                                                                      #

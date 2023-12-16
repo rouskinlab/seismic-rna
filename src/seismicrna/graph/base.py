@@ -11,7 +11,10 @@ from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
 from ..core import path
-from ..core.arg import (arg_input_path,
+from ..core.arg import (CLUST_INDIV,
+                        CLUST_ORDER,
+                        CLUST_UNITE,
+                        arg_input_path,
                         opt_rels,
                         opt_use_ratio,
                         opt_quantile,
@@ -35,11 +38,13 @@ from ..table.base import (Table,
 
 logger = getLogger(__name__)
 
+# Define sources.
+RELATED = "Related"
+MASKED = "Masked"
+CLUSTERED = "Clustered"
+
 # String to join sample names.
 LINKER = "__and__"
-
-# Number of digits behind the decimal point to be kept.
-PRECISION = 6
 
 
 def _write_graph(writer: Callable[[Path], Any],
@@ -51,28 +56,58 @@ def _write_graph(writer: Callable[[Path], Any],
     return file
 
 
+def make_index(table: Table, **kwargs):
+    return table.header.select(**kwargs)
+
+
 def _index_size(index: pd.Index | None):
     return index.size if index is not None else 1
 
 
 def _index_titles(index: pd.Index | None):
+    print("Formatting cluster names", index)
     return format_clust_names(index) if index is not None else None
-
-
-def make_subject(source: str, order: int | None, clust: int | None):
-    return "-".join(map(str, [source,
-                              order if order is not None else "x",
-                              clust if clust is not None else "x"]))
 
 
 def get_source_name(table: Table):
     if isinstance(table, RelTable):
-        return "related"
+        return RELATED
     if isinstance(table, MaskTable):
-        return "masked"
+        return MASKED
     if isinstance(table, ClustTable):
-        return "clustered"
+        return CLUSTERED
     raise TypeError(f"Invalid table type: {type(table).__name__}")
+
+
+def make_source_sample(source: str, sample: str):
+    return f"{source} reads from sample {repr(sample)}"
+
+
+def make_subject(source: str, order: int | None, clust: int | None):
+    if source == RELATED or source == MASKED:
+        if order is not None or clust is not None:
+            raise ValueError(f"For {source.lower()} data, order and clust "
+                             f"must both be None, but got {order} and {clust}")
+        return source.lower()
+    if source == CLUSTERED:
+        return "-".join(map(str, [source.lower(),
+                                  order if order is not None else "x",
+                                  clust if clust is not None else "x"]))
+    raise ValueError(f"Invalid data source: {repr(source)}")
+
+
+def arrange_table(table: Table, arrange: str):
+    if arrange == CLUST_INDIV:
+        # One file per cluster, with no subplots.
+        return [dict(order=order, clust=cluster)
+                for order, cluster in table.header.clusts]
+    elif arrange == CLUST_ORDER:
+        # One file per order, with one subplot per cluster.
+        return [dict(order=order) for order in sorted(table.header.orders)]
+    elif arrange == CLUST_UNITE:
+        # One file, with one subplot per cluster for all orders.
+        return [dict()]
+    raise ValueError(f"Invalid value for arrange: {repr(arrange)}")
 
 
 class GraphBase(ABC):
@@ -151,8 +186,8 @@ class GraphBase(ABC):
 
     @property
     @abstractmethod
-    def sample_source(self) -> str:
-        """ Sample and source of the data. """
+    def source_sample(self) -> str:
+        """ Source and sample of the data. """
 
     @property
     @abstractmethod
@@ -231,9 +266,7 @@ class GraphBase(ABC):
     def _fetch_data(self, table: PosTable, **kwargs):
         """ Fetch data from the table. """
         kwargs = self._fetch_kwargs | kwargs
-        return (table.fetch_ratio(quantile=self.quantile,
-                                  precision=PRECISION,
-                                  **kwargs)
+        return (table.fetch_ratio(quantile=self.quantile, **kwargs)
                 if self.use_ratio
                 else table.fetch_count(**kwargs))
 
@@ -360,7 +393,7 @@ class GraphBase(ABC):
         """ Title of the graph. """
         return " ".join(
             [f"{self.what()} of {self.data_kind}s "
-             f"of {self.relationships.lower()} bases in {self.sample_source} "
+             f"of {self.relationships} bases in {self.source_sample} "
              f"over reference {repr(self.ref)} section {repr(self.sect)}"]
             + ([f"({'; '.join(self.details)})"] if self.details else [])
         )
@@ -410,7 +443,7 @@ class GraphRunner(ABC):
 
     @classmethod
     def universal_output_params(cls):
-        """ Universal parameters controlling the graphing output. """
+        """ Universal parameters controlling the output graph. """
         return [opt_arrange,
                 opt_out_dir,
                 opt_csv,
