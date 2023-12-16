@@ -15,7 +15,7 @@ from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
                            RNASTRUCTURE_FOLD_CMD,
                            args_to_cmd,
                            run_cmd)
-from ..core.rna.profile import RnaProfile
+from ..core.rna import RnaProfile, renumber_ct
 from ..core.write import need_write
 
 logger = getLogger(__name__)
@@ -39,8 +39,9 @@ def fold(rna: RnaProfile, *,
         try:
             # Run the command.
             run_cmd(args_to_cmd(cmd))
-            # Renumber the CT file.
-
+            # Renumber the CT file so that it has the same numbering
+            # scheme as the section, rather than always starting at 1.
+            renumber_ct(ct_temp, ct_file, rna.section.end5, force)
         finally:
             if not keep_temp:
                 # Delete the temporary files.
