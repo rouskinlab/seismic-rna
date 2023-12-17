@@ -663,11 +663,11 @@ def buildpar(*segment_types: Segment, **field_values: Any):
 def deduplicated(paths: Iterable[str | pl.Path]):
     """ Yield the non-redundant paths. """
     seen = set()
-    for path in paths:
-        if (pathstr := str(path)) in seen:
+    for path in map(sanitize, paths):
+        if path in seen:
             logger.warning(f"Duplicate path: {path}")
         else:
-            seen.add(pathstr)
+            seen.add(path)
             yield path
 
 
@@ -677,39 +677,50 @@ def parse(path: str | pl.Path, /, *segment_types: Segment):
     return create_path_type(*segment_types).parse(path)
 
 
-def find_files(path: pl.Path, segments: Sequence[Segment]):
+def find_files(path: str | pl.Path, segments: Sequence[Segment]):
     """ Yield all files that match a given sequence of path segments.
     The behavior depends on what `path` is:
 
-    - If it is a file, then yield `path` if it matches the segments.
-      Otherwise, yield nothing.
+    - If it is a file, then yield `path` if it matches the segments;
+      otherwise, yield nothing.
     - If it is a directory, then search it recursively and yield every
       matching file in the directory and its subdirectories.
-    - If it does not exist, then raise `FileNotFoundError` via calling
-      `path.iterdir()`.
+
+    Parameters
+    ----------
+    path: str | pathlib.Path
+        Path of a file to check or a directory to search recursively.
+    segments: Sequence[Segment]
+        Path segments to check if each file matches.
+
+    Returns
+    -------
+    Generator[Path, Any, None]
+        Paths of files matching the segments.
     """
-    if path.is_file():
+    path = sanitize(path, strict=True)
+    if path.is_dir():
+        # Search the directory for files matching the segments.
+        logger.debug(f"Searching {path} and all of its subdirectories "
+                     f"for files matching {list(map(str, segments))}")
+        yield from chain(*map(partial(find_files, segments=segments),
+                              path.iterdir()))
+    else:
+        # Assume that path is a file.
         try:
             # Determine if the file matches the segments.
             parse(path, *segments)
         except PathError:
-            # If not, skip it.
+            # If not, then skip it.
             pass
         else:
-            # If so, yield it.
+            # If so, then yield it.
             logger.debug(f"File {path} matches {list(map(str, segments))}")
             yield path
-    elif path.is_dir():
-        # Search the directory for files matching the segments.
-        logger.debug(
-            f"Searching {path} for files matching {list(map(str, segments))}")
-        yield from chain(*map(partial(find_files, segments=segments),
-                              path.iterdir()))
-    else:
-        logger.warning(f"Path does not exist: {path}")
 
 
-def find_files_chain(paths: Iterable[pl.Path], segments: Sequence[Segment]):
+def find_files_chain(paths: Iterable[str | pl.Path],
+                     segments: Sequence[Segment]):
     """ Yield from `find_files` called on every path in `paths`. """
     for path in deduplicated(paths):
         try:
@@ -718,9 +729,9 @@ def find_files_chain(paths: Iterable[pl.Path], segments: Sequence[Segment]):
             logger.error(f"Failed search for {path}: {error}")
 
 
-def transpath(to_dir: str | bytes | pl.Path,
-              from_dir: str | bytes | pl.Path,
-              path: str | bytes | pl.Path,
+def transpath(to_dir: str | pl.Path,
+              from_dir: str | pl.Path,
+              path: str | pl.Path,
               strict: bool = False):
     """ Return the path that would result by moving `path` from `indir`
     to `outdir` (but do not actually move the path on the file system).
@@ -729,12 +740,12 @@ def transpath(to_dir: str | bytes | pl.Path,
 
     Parameters
     ----------
-    to_dir: str | bytes | pathlib.Path
+    to_dir: str | pathlib.Path
         Directory to which to move `path`.
-    from_dir: str | bytes | pathlib.Path
+    from_dir: str | pathlib.Path
         Directory from which to move `path`; must contain `path` but not
         necessarily be the direct parent directory of `path`.
-    path: str | bytes | pathlib.Path
+    path: str | pathlib.Path
         Path to move; can be a file or directory.
     strict: bool = False
         Require that all paths exist and contain no symbolic link loops.
@@ -756,8 +767,8 @@ def transpath(to_dir: str | bytes | pl.Path,
     return sanitize(to_dir, strict).joinpath(relpath)
 
 
-def transpaths(to_dir: str | bytes | pl.Path,
-               *paths: str | bytes | pl.Path,
+def transpaths(to_dir: str | pl.Path,
+               *paths: str | pl.Path,
                strict: bool = False):
     """ Return all paths that would result by moving the paths in `path`
     from their longest common sub-path to `outdir` (but do not actually
@@ -766,9 +777,9 @@ def transpaths(to_dir: str | bytes | pl.Path,
 
     Parameters
     ----------
-    to_dir: str | bytes | pathlib.Path
+    to_dir: str | pathlib.Path
         Directory to which to move every path in `path`.
-    *paths: str | bytes | pathlib.Path
+    *paths: str | pathlib.Path
         Paths to move; can be files or directories. A common sub-path
         must exist among all of these paths.
     strict: bool = False

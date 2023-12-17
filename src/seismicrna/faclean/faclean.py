@@ -61,13 +61,24 @@ class FastaCleaner(object):
                 else self._clean_fasta_seq_line(line))
 
     def run(self, ifasta: Path, ofasta: Path, force: bool = False):
-        if ofasta.is_file() and ofasta.samefile(ifasta):
-            raise FileExistsError(f"The output FASTA {ofasta} and the input "
-                                  f"FASTA {ifasta} are the same file")
         if need_write(ofasta, force):
-            with open(ifasta) as fi, open(ofasta, write_mode(force)) as fo:
-                for line in fi:
-                    fo.write(self._clean_fasta_line(line))
+            # Clean the input file and get the resulting text.
+            with open(ifasta) as f:
+                text = "".join(map(self._clean_fasta_line, f))
+            # Write the cleaned text to the output file.
+            with open(ofasta, write_mode(force)) as f:
+                f.write(text)
+
+
+def clean_fasta(fasta_in: Path, fasta_out: Path, force: bool = False):
+    """ Clean a FASTA file. """
+    # Make the output directory, if it does not exist.
+    fasta_out.parent.mkdir(parents=True, exist_ok=True)
+    # Clean the FASTA file.
+    FastaCleaner(DNA).run(fasta_in, fasta_out, force)
+    # By convention, a function must return a Path for dispatch to deem
+    # that it has completed successfully.
+    return fasta_out
 
 ########################################################################
 #                                                                      #

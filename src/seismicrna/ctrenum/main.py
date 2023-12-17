@@ -7,7 +7,6 @@ CT Renumbering Module
 """
 
 from collections import defaultdict
-from itertools import chain
 from logging import getLogger
 from pathlib import Path
 

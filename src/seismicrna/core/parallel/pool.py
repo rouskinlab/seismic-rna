@@ -221,9 +221,9 @@ def dispatch(funcs: list[Callable] | Callable,
         n_pass = len(results)
         n_fail = n_tasks - n_pass
         logger.info(
-            f"Tasks passed: {n_pass: >6d} ({100 * n_pass / n_tasks: >6.2f} %)")
+            f"Tasks passed: {n_pass: >6d} ({100 * n_pass / n_tasks: >5.1f} %)")
         logger.info(
-            f"Tasks failed: {n_fail: >6d} ({100 * n_fail / n_tasks: >6.2f} %)")
+            f"Tasks failed: {n_fail: >6d} ({100 * n_fail / n_tasks: >5.1f} %)")
     return results
 
 
