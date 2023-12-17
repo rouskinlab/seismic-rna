@@ -67,7 +67,7 @@ def param_defaults(defaults: dict[str, Any], exclude_defaults: tuple[str, ...]):
 
         @wraps(func)
         def new_func(*args, **kwargs):
-            return func(*args, **{**default_kwargs, **kwargs})
+            return func(*args, **(default_kwargs | kwargs))
 
         return new_func
 

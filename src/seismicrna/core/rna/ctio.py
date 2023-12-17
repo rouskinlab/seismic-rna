@@ -51,7 +51,11 @@ def to_ct(structures: Iterable[RNAStructure],
         Overwrite the output CT file if it already exists.
     """
     if need_write(ct_path, force):
+        # Make the output directory, if it does not already exist.
+        ct_path.parent.mkdir(parents=True, exist_ok=True)
         with open(ct_path, write_mode(force)) as f:
+            # Write the text for each structure, skipping and logging an
+            # error message for any structure that raises an error.
             for structure in structures:
                 try:
                     f.write(structure.ct_text)

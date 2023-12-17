@@ -15,7 +15,7 @@ from .. import (demult as demultiplex_mod,
                 table as table_mod,
                 fold as fold_mod,
                 faclean as fastc_mod)
-from ..core.arg import (CMD_WHOLE,
+from ..core.arg import (CMD_WORKFLOW,
                         docdef,
                         merge_params,
                         opt_demultiplex,
@@ -34,7 +34,7 @@ params = merge_params([opt_demultiplex],
                       fastc_mod.params)
 
 
-@command(CMD_WHOLE, params=params)
+@command(CMD_WORKFLOW, params=params)
 def cli(*args, **kwargs):
     """ Run 'align', 'relate', 'mask', (optionally) 'cluster', 'table',
     (optionally) 'fold', and (optionally) 'graph', in that order. """

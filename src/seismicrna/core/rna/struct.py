@@ -119,6 +119,9 @@ class RNAStructure(RnaSection):
             PAIR_FIELD: pairs,
             POS_NAME: self.section.range_int,
         }
+        # The last value of the next field must be 0.
+        if index.size > 0:
+            data[NEXT_FIELD][-1] = 0
         # Assemble the data into a DataFrame.
         return pd.DataFrame.from_dict({field: pd.Series(values, index=index)
                                        for field, values in data.items()})

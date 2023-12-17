@@ -30,6 +30,8 @@ from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader
 
 logger = getLogger(__name__)
 
+DEFAULT_QUANTILE = 0.95
+
 params = [
     arg_fasta,
     arg_input_path,
@@ -68,18 +70,15 @@ def run(fasta: str,
         max_procs: int,
         parallel: bool,
         force: bool):
-    """
-    Predict RNA structures using mutation rates as constraints.
-    """
-
+    """ Predict the structure(s) of an RNA using mutation rates from the
+    individual clusters or the ensemble average ('mask' step). """
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_dependency(RNASTRUCTURE_CT2DOT_CMD, __name__)
-
     # Reactivities must be normalized before using them to fold.
     if quantile <= 0.:
-        logger.warning("Fold requires normalized mutation rates, but got "
-                       f"quantile = {quantile}; setting quantile to 1.0")
-        quantile = 1.
+        logger.warning("Fold needs normalized mutation rates, but got quantile "
+                       f"= {quantile}; setting quantile to {DEFAULT_QUANTILE}")
+        quantile = DEFAULT_QUANTILE
     # Get the sections for every reference sequence.
     ref_sections = RefSections(parse_fasta(Path(fasta), DNA),
                                sects_file=(Path(sections_file) if sections_file

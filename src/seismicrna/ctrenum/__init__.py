@@ -1,31 +1,4 @@
-"""
-
-Command Core Module
-
-========================================================================
-
-Define the names of the commands.
-
-------------------------------------------------------------------------
-
-"""
-
-
-CMD_WORKFLOW = "all"
-CMD_DEMULT = "demult"
-CMD_QC = "qc"
-CMD_ALIGN = "align"
-CMD_REL = "relate"
-CMD_MASK = "mask"
-CMD_CLUST = "cluster"
-CMD_TABLE = "table"
-CMD_FOLD = "fold"
-CMD_GRAPH = "graph"
-CMD_EXPORT = "export"
-CMD_SIM = "sim"
-CMD_TEST = "test"
-CMD_FACLEAN = "faclean"
-CMD_CTRENUM = "ctrenum"
+from .main import params, cli, run
 
 ########################################################################
 #                                                                      #

@@ -177,13 +177,29 @@ class PathValueError(PathError, ValueError):
 
 # Path Functions #######################################################
 
-def fill_whitespace(path: str | Path, fill: str = '_'):
+def fill_whitespace(path: str | Path, fill: str = "_"):
     """ Replace all whitespace in `path` with `fill`. """
-    return type(path)(fill.join(str(path).split()))
+    return path.__class__(fill.join(str(path).split()))
 
 
-def sanitize(path: str | pl.Path):
-    return pl.Path(os.path.realpath(os.path.normpath(os.path.abspath(path))))
+def sanitize(path: str | pl.Path, strict: bool = False):
+    """ Sanitize a path-like object by ensuring it is an absolute path,
+    eliminating symbolic links and redundant path separators/references,
+    and returning a Path object.
+
+    Parameters
+    ----------
+    path: str | pathlib.Path
+        Path to sanitize.
+    strict: bool = False
+        Require the path to exist and contain no symbolic link loops.
+
+    Returns
+    -------
+    pathlib.Path
+        Absolute, normalized, symlink-free path.
+    """
+    return pl.Path(path).resolve(strict=strict)
 
 
 # Path Fields ##########################################################
@@ -700,6 +716,76 @@ def find_files_chain(paths: Iterable[pl.Path], segments: Sequence[Segment]):
             yield from find_files(path, segments)
         except Exception as error:
             logger.error(f"Failed search for {path}: {error}")
+
+
+def transpath(to_dir: str | bytes | pl.Path,
+              from_dir: str | bytes | pl.Path,
+              path: str | bytes | pl.Path,
+              strict: bool = False):
+    """ Return the path that would result by moving `path` from `indir`
+    to `outdir` (but do not actually move the path on the file system).
+    This function does not require that any of the given paths exist
+    unless `strict` is True.
+
+    Parameters
+    ----------
+    to_dir: str | bytes | pathlib.Path
+        Directory to which to move `path`.
+    from_dir: str | bytes | pathlib.Path
+        Directory from which to move `path`; must contain `path` but not
+        necessarily be the direct parent directory of `path`.
+    path: str | bytes | pathlib.Path
+        Path to move; can be a file or directory.
+    strict: bool = False
+        Require that all paths exist and contain no symbolic link loops.
+
+    Returns
+    -------
+    pathlib.Path
+        Hypothetical path after moving `path` from `indir` to `outdir`.
+    """
+    # Ensure from_dir is sanitized.
+    from_dir = sanitize(from_dir, strict)
+    # Find the part of the given path relative to from_dir.
+    relpath = sanitize(path, strict).relative_to(from_dir)
+    if relpath == pl.Path():
+        # If the relative path is empty, then use the parent directory
+        # of from_dir instead.
+        return transpath(to_dir, from_dir.parent, path, strict)
+    # Append the relative part of the path to to_dir.
+    return sanitize(to_dir, strict).joinpath(relpath)
+
+
+def transpaths(to_dir: str | bytes | pl.Path,
+               *paths: str | bytes | pl.Path,
+               strict: bool = False):
+    """ Return all paths that would result by moving the paths in `path`
+    from their longest common sub-path to `outdir` (but do not actually
+    move the paths on the file system). This function does not require
+    that any of the given paths exist unless `strict` is True.
+
+    Parameters
+    ----------
+    to_dir: str | bytes | pathlib.Path
+        Directory to which to move every path in `path`.
+    *paths: str | bytes | pathlib.Path
+        Paths to move; can be files or directories. A common sub-path
+        must exist among all of these paths.
+    strict: bool = False
+        Require that all paths exist and contain no symbolic link loops.
+
+    Returns
+    -------
+    tuple[pathlib.Path, ...]
+        Hypothetical paths after moving all paths in `path` to `outdir`.
+    """
+    if not paths:
+        # There are no paths to transplant.
+        return tuple()
+    # Determine the longest common sub-path of all given paths.
+    common_path = (os.path.commonpath([sanitize(p, strict) for p in paths]))
+    # Move each path from that common path to the given directory.
+    return tuple(transpath(to_dir, common_path, p, strict) for p in paths)
 
 ########################################################################
 #                                                                      #

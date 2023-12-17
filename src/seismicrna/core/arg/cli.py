@@ -10,6 +10,7 @@ from datetime import datetime
 import logging
 import os
 
+import click
 from click import Argument, Choice, Option, Parameter, Path
 
 from ..io import DEFAULT_BROTLI_LEVEL
@@ -834,6 +835,15 @@ opt_pdf = Option(
     default=False,
     type=bool,
     help="Output each graph as a PDF file"
+)
+
+# CT renumbering
+
+opt_renumber_ct = Option(
+    ("--renumber-ct", "-c"),
+    type=(click.Path(exists=True), int),
+    multiple=True,
+    help="CT file/directory and the number to assign the first position in each"
 )
 
 # Export
