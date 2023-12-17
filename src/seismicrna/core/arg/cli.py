@@ -846,6 +846,14 @@ opt_renumber_ct = Option(
     help="CT file/directory and the number to assign the first position in each"
 )
 
+opt_inplace = Option(
+    ("--inplace/--newfile",),
+    type=bool,
+    default=False,
+    help="Modify files in-place instead of writing new files (use --inplace "
+         "cautiously because it will erase the original files)"
+)
+
 # Export
 
 opt_samples_file = Option(
