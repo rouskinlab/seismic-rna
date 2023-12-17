@@ -77,7 +77,7 @@ opt_out_dir = Option(
     ("--out-dir", "-o"),
     type=Path(file_okay=False),
     default=os.path.join(".", "out"),
-    help="Destination for all finished files"
+    help="Destination for all new output files"
 )
 
 opt_temp_dir = Option(
@@ -839,11 +839,11 @@ opt_pdf = Option(
 
 # CT renumbering
 
-opt_renumber_ct = Option(
-    ("--renumber-ct", "-c"),
+opt_ct_pos_5 = Option(
+    ("--ct-pos-5", "-c"),
     type=(click.Path(exists=True), int),
     multiple=True,
-    help="CT file/directory and the number to assign the first position in each"
+    help="CT file/directory and the 5' position to assign to each"
 )
 
 opt_inplace = Option(

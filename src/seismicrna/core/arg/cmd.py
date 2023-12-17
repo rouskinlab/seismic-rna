@@ -25,7 +25,7 @@ CMD_EXPORT = "export"
 CMD_SIM = "sim"
 CMD_TEST = "test"
 CMD_FACLEAN = "faclean"
-CMD_CTRENUM = "ctrenum"
+CMD_CTREPOS = "ctrepos"
 
 ########################################################################
 #                                                                      #

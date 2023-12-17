@@ -13,21 +13,21 @@ from pathlib import Path
 from click import command
 
 from ..core import path
-from ..core.arg import (CMD_CTRENUM,
+from ..core.arg import (CMD_CTREPOS,
                         docdef,
-                        opt_renumber_ct,
+                        opt_ct_pos_5,
                         opt_inplace,
                         opt_out_dir,
                         opt_force,
                         opt_max_procs,
                         opt_parallel)
 from ..core.parallel import dispatch
-from ..core.rna import renumber_ct as renumber_ct_func
+from ..core.rna import renumber_ct as renumber_ct
 
 logger = getLogger(__name__)
 
 params = [
-    opt_renumber_ct,
+    opt_ct_pos_5,
     opt_inplace,
     opt_out_dir,
     opt_force,
@@ -36,24 +36,24 @@ params = [
 ]
 
 
-@command(CMD_CTRENUM, params=params)
+@command(CMD_CTREPOS, params=params)
 def cli(*args, **kwargs):
-    """ Renumber connectivity table (CT) files. """
+    """ Renumber connectivity table (CT) files given a 5' position. """
     return run(*args, **kwargs)
 
 
 @docdef.auto()
-def run(renumber_ct: tuple[tuple[str, int], ...],
+def run(ct_pos_5: tuple[tuple[str, int], ...],
         inplace: bool,
         out_dir: str,
         force: bool,
         max_procs: int,
         parallel: bool):
-    """ Renumber connectivity table (CT) files. """
+    """ Renumber connectivity table (CT) files given a 5' position. """
     # For each start position, find all files to renumber.
     start_files = {start: list(path.find_files(Path(files),
                                                [path.ConnectTableSeg]))
-                   for files, start in renumber_ct}
+                   for files, start in ct_pos_5}
     # Check for files with multiple start positions.
     file_starts = defaultdict(set)
     for start, files in start_files.items():
@@ -80,7 +80,7 @@ def run(renumber_ct: tuple[tuple[str, int], ...],
     # Generate the positional arguments for renumber_ct.
     args = [(file, file_out[file], file_start[file]) for file in file_start]
     # Renumber the files; if modifying in-place, force must be True.
-    return dispatch(renumber_ct_func,
+    return dispatch(renumber_ct,
                     max_procs,
                     parallel,
                     args=args,

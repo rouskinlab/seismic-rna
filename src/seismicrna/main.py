@@ -28,7 +28,7 @@ from . import (workflow,
                export,
                test,
                faclean,
-               ctrenum,
+               ctrepos,
                __version__)
 from .core import logs
 from .core.arg import (opt_log,
@@ -97,7 +97,7 @@ for module in (workflow,
                export,
                test,
                faclean,
-               ctrenum):
+               ctrepos):
     cli.add_command(module.cli)
 
 ########################################################################
