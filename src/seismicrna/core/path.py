@@ -150,9 +150,10 @@ CRAM_EXT = ".cram"
 XAM_EXTS = SAM_EXT, BAM_EXT, CRAM_EXT
 FAI_EXT = ".fai"
 CT_EXT = ".ct"
-DOT_EXT = ".dot"
+DB_EXT = ".db"
 DBN_EXT = ".dbn"
-DOT_EXTS = DOT_EXT, DBN_EXT
+DOT_EXT = ".dot"
+DOT_EXTS = DB_EXT, DBN_EXT, DOT_EXT
 DMS_EXT = ".dms"
 HTML_EXT = ".html"
 PDF_EXT = ".pdf"
@@ -438,13 +439,11 @@ CMD = "cmd"
 SAMP = "sample"
 REF = "ref"
 SECT = "sect"
-FOLD_SECT = "fold_sect"
 BATCH = "batch"
 TABLE = "table"
 NCLUST = "k"
 RUN = "run"
-STRUCT = "struct"
-REACTS = "reacts"
+PROFILE = "profile"
 GRAPH = "graph"
 EXT = "ext"
 
@@ -456,7 +455,6 @@ CmdSeg = Segment("command-dir", {CMD: CmdField}, order=50)
 StepSeg = Segment("step-dir", {STEP: StepField}, order=40)
 RefSeg = Segment("ref-dir", {REF: NameField}, order=30)
 SectSeg = Segment("section-dir", {SECT: NameField}, order=20)
-FoldSectSeg = Segment("fold-section-dir", {FOLD_SECT: NameField}, order=10)
 
 # File segments
 
@@ -515,12 +513,15 @@ ClustRepSeg = Segment("clust-rep", {EXT: ReportExt}, frmt="cluster-report{ext}")
 TableSeg = Segment("table", {TABLE: CountTabField, EXT: MutTabExt})
 
 # RNA Structure Formats
-ConnectTableSeg = Segment("rna-ct", {STRUCT: NameField, EXT: ConnectTableExt})
-DotBracketSeg = Segment("rna-dot", {STRUCT: NameField, EXT: DotBracketExt})
-DmsReactsSeg = Segment("dms-reacts", {REACTS: NameField, EXT: DmsReactsExt})
+ConnectTableSeg = Segment("rna-ct",
+                          {PROFILE: NameField, EXT: ConnectTableExt})
+DotBracketSeg = Segment("rna-dot",
+                        {PROFILE: NameField, EXT: DotBracketExt})
+DmsReactsSeg = Segment("dms-reacts",
+                       {PROFILE: NameField, EXT: DmsReactsExt})
 VarnaColorSeg = Segment("varna-color",
-                        {REACTS: NameField, EXT: TextExt},
-                        frmt="{reacts}__varna-color{ext}")
+                        {PROFILE: NameField, EXT: TextExt},
+                        frmt="{profile}__varna-color{ext}")
 
 # Graphs
 GraphSeg = Segment("graph", {GRAPH: NameField, EXT: GraphExt})
@@ -548,9 +549,8 @@ XAM_STEP_SEGS = SampSeg, CmdSeg, StepSeg, XamSeg
 CLUST_TAB_SEGS = (*SECT_DIR_SEGS, ClustTabSeg)
 CLUST_COUNT_SEGS = (*SECT_DIR_SEGS, ClustCountSeg)
 TABLE_SEGS = (*SECT_DIR_SEGS, TableSeg)
-FOLD_SECT_DIR_SEGS = (*SECT_DIR_SEGS, FoldSectSeg)
-CT_FILE_SEGS = (*FOLD_SECT_DIR_SEGS, ConnectTableSeg)
-DB_FILE_SEGS = (*FOLD_SECT_DIR_SEGS, DotBracketSeg)
+CT_FILE_SEGS = (*SECT_DIR_SEGS, ConnectTableSeg)
+DB_FILE_SEGS = (*SECT_DIR_SEGS, DotBracketSeg)
 
 
 # Paths ################################################################

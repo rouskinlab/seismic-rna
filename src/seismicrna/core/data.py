@@ -21,12 +21,12 @@ from .report import (SampleF,
 from .seq import FULL_NAME, DNA, Section, hyphenate_ends
 
 # Type variable for reports.
-R = TypeVar('R')
+R = TypeVar("R")
 # Type variable for data.
-D = TypeVar('D')
+D = TypeVar("D")
 # Type variables for datasets.
-S1 = TypeVar('S1')
-S2 = TypeVar('S2')
+S1 = TypeVar("S1")
+S2 = TypeVar("S2")
 
 logger = getLogger(__name__)
 

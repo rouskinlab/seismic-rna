@@ -50,8 +50,7 @@ params = [
 
 @command(CMD_FOLD, params=params)
 def cli(*args, **kwargs):
-    """ Predict the structure(s) of an RNA using mutation rates from the
-    individual clusters or the ensemble average ('mask' step). """
+    """ Predict RNA secondary structures based on mutation rates. """
     return run(*args, **kwargs)
 
 
@@ -70,8 +69,7 @@ def run(fasta: str,
         max_procs: int,
         parallel: bool,
         force: bool):
-    """ Predict the structure(s) of an RNA using mutation rates from the
-    individual clusters or the ensemble average ('mask' step). """
+    """ Predict RNA secondary structures based on mutation rates. """
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_dependency(RNASTRUCTURE_CT2DOT_CMD, __name__)
     # Reactivities must be normalized before using them to fold.
@@ -81,30 +79,42 @@ def run(fasta: str,
         quantile = DEFAULT_QUANTILE
     # Get the sections for every reference sequence.
     ref_sections = RefSections(parse_fasta(Path(fasta), DNA),
-                               sects_file=(Path(sections_file) if sections_file
+                               sects_file=(Path(sections_file)
+                                           if sections_file
                                            else None),
                                coords=coords,
                                primers=primers,
                                primer_gap=primer_gap)
     # Initialize the table loaders.
     tab_files = path.find_files_chain(map(Path, input_path), [path.TableSeg])
-    loaders = [loader for loader in dispatch(load, max_procs, parallel,
+    loaders = [loader for loader in dispatch(load,
+                                             max_procs,
+                                             parallel,
                                              args=as_list_of_tuples(tab_files),
                                              pass_n_procs=False)
                if isinstance(loader, (MaskPosTableLoader, ClustPosTableLoader))]
     # Fold the RNA profiles.
-    return dispatch(fold_rna, max_procs, parallel,
+    return dispatch(fold_rna,
+                    max_procs,
+                    parallel,
                     args=[(loader, ref_sections.list(loader.ref))
                           for loader in loaders],
-                    kwargs=dict(temp_dir=Path(temp_dir), keep_temp=keep_temp,
-                                quantile=quantile, force=force),
+                    kwargs=dict(temp_dir=Path(temp_dir),
+                                keep_temp=keep_temp,
+                                quantile=quantile,
+                                force=force),
                     pass_n_procs=True)
 
 
 def fold_rna(loader: MaskPosTableLoader | ClustPosTableLoader,
-             sections: list[Section], n_procs: int, quantile: float, **kwargs):
+             sections: list[Section],
+             n_procs: int,
+             quantile: float,
+             **kwargs):
     """ Fold an RNA molecule from one table of reactivities. """
-    return dispatch(fold_profile, n_procs, parallel=True,
+    return dispatch(fold_profile,
+                    n_procs,
+                    parallel=True,
                     args=[(profile,)
                           for profile in loader.iter_profiles(sections,
                                                               quantile)],

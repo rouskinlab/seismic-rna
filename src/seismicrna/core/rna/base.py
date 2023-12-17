@@ -1,64 +1,56 @@
 from functools import cached_property
 from logging import getLogger
 
-from .. import path
 from ..seq import Section
 
 logger = getLogger(__name__)
 
-IDX_FIELD = "Index"
-BASE_FIELD = "Base"
-PREV_FIELD = "Prev"
-NEXT_FIELD = "Next"
-PAIR_FIELD = "Pair"
-
-
-# RNA Structure classes ################################################
-
 
 class RnaSection(object):
-    """ RNA sequence or section thereof. """
+    """ Section of an RNA sequence. """
 
-    def __init__(self, *, title: str, section: Section, **kwargs):
+    def __init__(self, *, section: Section, **kwargs):
         super().__init__(**kwargs)
-        self.title = path.fill_whitespace(title)
         self.section = section
 
     @property
     def ref(self):
+        """ Name of the reference sequence. """
         return self.section.ref
 
     @property
     def end5(self):
+        """ Position of the 5' end of the section. """
         return self.section.end5
 
     @property
     def end3(self):
+        """ Position of the 3' end of the section. """
         return self.section.end3
 
     @property
     def sect(self):
+        """ Name of the section. """
         return self.section.name
 
     @cached_property
     def seq(self):
-        """ Sequence as RNA. """
+        """ Sequence of the section as RNA. """
         return self.section.seq.tr()
 
     @property
     def seq_record(self):
         return self.section.ref_sect, self.seq
 
-    def _subsect_kwargs(self, end5: int, end3: int, title: str | None = None):
-        return dict(title=(title if title is not None
-                           else f"{self.title}__{end5}-{end3}"),
-                    section=self.section.subsection(end5, end3))
+    def _subsection_kwargs(self, end5: int, end3: int):
+        """ Keyword arguments used by self.subsection(). """
+        return dict(section=self.section.subsection(end5, end3))
 
-    def subsection(self, end5: int, end3: int, title: str | None = None):
-        return self.__class__(**self._subsect_kwargs(end5, end3, title))
+    def subsection(self, end5: int, end3: int):
+        return self.__class__(**self._subsection_kwargs(end5, end3))
 
     def __str__(self):
-        return f"{type(self).__name__} {repr(self.title)} over {self.section}"
+        return f"{type(self).__name__} over {self.section}"
 
 ########################################################################
 #                                                                      #

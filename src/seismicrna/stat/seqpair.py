@@ -172,15 +172,15 @@ class SeqPairGraph(CartesianGraph, TwoTableSeqGraph, ABC):
 
     @cached_property
     def row_index(self):
-        return _get_clusts(self.table2.header.max_order,
-                           self.table2.header.min_order,
+        return _get_clusts(self.table2.ct_title.max_order,
+                           self.table2.ct_title.min_order,
                            self._order2,
                            self._clust2)
 
     @cached_property
     def col_index(self):
-        return _get_clusts(self.table1.header.max_order,
-                           self.table1.header.min_order,
+        return _get_clusts(self.table1.ct_title.max_order,
+                           self.table1.ct_title.min_order,
                            self._order1,
                            self._clust1)
 

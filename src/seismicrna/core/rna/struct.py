@@ -5,13 +5,14 @@ import numpy as np
 import pandas as pd
 
 from .pair import find_root_pairs, pairs_to_dict, pairs_to_table, table_to_pairs
-from .section import (BASE_FIELD,
-                      IDX_FIELD,
-                      NEXT_FIELD,
-                      PAIR_FIELD,
-                      PREV_FIELD,
-                      RnaSection)
+from .base import RnaSection
 from ..seq import POS_NAME, intersection
+
+IDX_FIELD = "Index"
+BASE_FIELD = "Base"
+PREV_FIELD = "Prev"
+NEXT_FIELD = "Next"
+PAIR_FIELD = "Pair"
 
 
 class Rna2dPart(object):
@@ -67,14 +68,27 @@ class Rna2dStemLoop(RnaJunction):
 
 
 class RNAStructure(RnaSection):
-    """ RNA secondary structure. """
+    """ Secondary structure of an RNA. """
 
-    def __init__(self, *, pairs: Iterable[tuple[int, int]], **kwargs):
+    def __init__(self, *,
+                 title: str,
+                 pairs: Iterable[tuple[int, int]],
+                 **kwargs):
+        """
+        Parameters
+        ----------
+        title: str
+            Title of the RNA structure, as written in the CT/DB file.
+        pairs: Iterable[tuple[int, int]]
+            Base pairs in the structure.
+        """
         super().__init__(**kwargs)
+        self.title = title
         self.table = pairs_to_table(pairs, self.section)
 
     @cached_property
     def pairs(self):
+        """ Base pairs in the structure. """
         return tuple(table_to_pairs(self.table))
 
     @cached_property
@@ -85,8 +99,13 @@ class RNAStructure(RnaSection):
     def roots(self):
         return find_root_pairs(self.pairs)
 
-    def _subsect_kwargs(self, end5: int, end3: int, title: str | None = None):
-        return super()._subsect_kwargs(end5, end3, title) | dict(
+    def _subsection_kwargs(self,
+                           end5: int,
+                           end3: int,
+                           title: str | None = None):
+        return super()._subsection_kwargs(end5, end3) | dict(
+            title=(title if title is not None
+                   else f"{self.title}_{end5}-{end3}"),
             pairs=table_to_pairs(
                 self.table[np.logical_and(self.table.index.values >= end5,
                                           self.table.index.values <= end3)]
@@ -98,7 +117,8 @@ class RNAStructure(RnaSection):
             yield self.subsection(end5, end3)
 
     @property
-    def header(self):
+    def ct_title(self):
+        """ Header line for the CT file."""
         return f"{self.section.length}\t{self.title}"
 
     @cached_property
@@ -112,13 +132,11 @@ class RNAStructure(RnaSection):
         pairs = self.table.values.copy()
         pairs[pairs > 0] -= self.section.end5 - 1
         # Generate the data for the connectivity table.
-        data = {
-            BASE_FIELD: self.seq.array,
-            PREV_FIELD: index.values - 1,
-            NEXT_FIELD: index.values + 1,
-            PAIR_FIELD: pairs,
-            POS_NAME: self.section.range_int,
-        }
+        data = {BASE_FIELD: self.seq.array,
+                PREV_FIELD: index.values - 1,
+                NEXT_FIELD: index.values + 1,
+                PAIR_FIELD: pairs,
+                POS_NAME: self.section.range_int}
         # The last value of the next field must be 0.
         if index.size > 0:
             data[NEXT_FIELD][-1] = 0
@@ -130,7 +148,7 @@ class RNAStructure(RnaSection):
     def ct_text(self):
         """ Return the connectivity table as text. """
         data = self.ct_data.reset_index()
-        return f"{self.header}\n{data.to_string(index=False, header=False)}\n"
+        return f"{self.ct_title}\n{data.to_string(index=False, header=False)}\n"
 
 ########################################################################
 #                                                                      #

@@ -662,13 +662,16 @@ class ProfilePosTable(PosTable, ABC):
         """ Yield RNA mutational profiles from a table. """
         for section in sections if sections is not None else [self.section]:
             for ho, hc in self.header.clusts:
-                if ((order is None or order == ho)
-                        and (clust is None or clust == hc)):
-                    name = format_clust_name(ho, hc, allow_zero=True)
-                    yield RnaProfile(title=path.fill_whitespace(name),
-                                     section=section,
+                if ((order is None
+                     or order == ho) and (clust is None
+                                          or clust == hc)):
+                    data_name = path.fill_whitespace(
+                        format_clust_name(ho, hc, allow_zero=True)
+                    )
+                    yield RnaProfile(section=section,
                                      sample=self.sample,
                                      data_sect=self.sect,
+                                     data_name=data_name,
                                      data=self.fetch_ratio(quantile=quantile,
                                                            rel=MUTAT_REL,
                                                            order=ho,

@@ -178,8 +178,8 @@ class ClusterSeqBarGraph(SeqBarGraph, ABC):
     @cached_property
     def row_index(self):
         return make_header(
-            max_order=self.table.header.max_order,
-            min_order=self.table.header.min_order
+            max_order=self.table.ct_title.max_order,
+            min_order=self.table.ct_title.min_order
         ).select(
             order=self._order,
             clust=self._clust

@@ -150,7 +150,7 @@ def get_db_structs(table: PosTable,
     structs = dict()
     energies = dict()
     for profile in table.iter_profiles(order=order, clust=clust):
-        db_file = profile.dot_file(table.top)
+        db_file = profile.get_db_file(table.top)
         if db_file.is_file():
             try:
                 # Parse all structures in the dot-bracket file.
