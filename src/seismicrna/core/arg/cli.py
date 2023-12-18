@@ -617,7 +617,7 @@ opt_min_ncall_read = Option(
 opt_min_finfo_read = Option(
     ("--min-finfo-read",),
     type=float,
-    default=0.95,
+    default=0.0,
     help="Minimum fraction of information in a read to keep it"
 )
 
@@ -638,7 +638,7 @@ opt_max_nmut_read = Option(
 opt_min_mut_gap = Option(
     ("--min-mut-gap",),
     type=int,
-    default=3,
+    default=0,
     help="Minimum gap between two mutations in a read to keep it"
 )
 
