@@ -15,13 +15,13 @@ from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
                            RNASTRUCTURE_FOLD_CMD,
                            args_to_cmd,
                            run_cmd)
-from ..core.rna import RnaProfile, renumber_ct
+from ..core.rna import RNAProfile, renumber_ct
 from ..core.write import need_write
 
 logger = getLogger(__name__)
 
 
-def fold(rna: RnaProfile, *,
+def fold(rna: RNAProfile, *,
          out_dir: Path,
          temp_dir: Path,
          keep_temp: bool,

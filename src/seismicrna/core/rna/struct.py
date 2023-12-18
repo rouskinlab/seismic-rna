@@ -4,8 +4,12 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .pair import find_root_pairs, pairs_to_dict, pairs_to_table, table_to_pairs
-from .base import RnaSection
+from .pair import (find_root_pairs,
+                   pairs_to_dict,
+                   pairs_to_table,
+                   renumber_pairs,
+                   table_to_pairs)
+from .base import RNASection
 from ..seq import POS_NAME, intersection
 
 IDX_FIELD = "Index"
@@ -18,7 +22,7 @@ PAIR_FIELD = "Pair"
 class Rna2dPart(object):
     """ Part of an RNA secondary structure. """
 
-    def __init__(self, *sections: RnaSection, **kwargs):
+    def __init__(self, *sections: RNASection, **kwargs):
         super().__init__(**kwargs)
         if inter := intersection(*[section.section for section in sections]):
             raise ValueError(f"Sections intersect: {inter}")
@@ -28,7 +32,7 @@ class Rna2dPart(object):
 class Rna2dStem(Rna2dPart):
     """ An RNA stem (contiguous double helix). """
 
-    def __init__(self, side1: RnaSection, side2: RnaSection, **kwargs):
+    def __init__(self, side1: RNASection, side2: RNASection, **kwargs):
         # The lengths of the two sections must equal.
         if side1.section.length != side2.section.length:
             raise ValueError(f"The lengths of side 1 ({side1.section.length}) "
@@ -58,7 +62,7 @@ class RnaJunction(Rna2dPart):
 class Rna2dStemLoop(RnaJunction):
     """ An RNA loop at the end of a stem. """
 
-    def __init__(self, section: RnaSection, **kwargs):
+    def __init__(self, section: RNASection, **kwargs):
         super().__init__(section, **kwargs)
 
     @property
@@ -67,7 +71,7 @@ class Rna2dStemLoop(RnaJunction):
         return section
 
 
-class RNAStructure(RnaSection):
+class RNAStructure(RNASection):
     """ Secondary structure of an RNA. """
 
     def __init__(self, *,
@@ -85,6 +89,15 @@ class RNAStructure(RnaSection):
         super().__init__(**kwargs)
         self.title = title
         self.table = pairs_to_table(pairs, self.section)
+
+    @cached_property
+    def init_args(self):
+        return super().init_args | dict(title=self.title, pairs=self.pairs)
+
+    def _renumber_from_args(self, seq5: int):
+        return super()._renumber_from_args(seq5) | dict(
+            pairs=renumber_pairs(self.pairs, seq5 - self.section.end5)
+        )
 
     @cached_property
     def pairs(self):

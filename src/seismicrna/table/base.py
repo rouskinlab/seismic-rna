@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Generator, Iterable
+from typing import Any, Generator
 
 import numpy as np
 import pandas as pd
@@ -16,7 +16,7 @@ from ..core.header import (REL_NAME,
                            format_clust_name,
                            parse_header)
 from ..core.mu import winsorize
-from ..core.rna import RnaProfile
+from ..core.rna import RNAProfile
 from ..core.seq import SEQ_INDEX_NAMES, Section, index_to_pos, index_to_seq
 
 # General fields
@@ -354,24 +354,20 @@ class PosTable(RelTypeTable, ABC):
                 else self.data.loc[:, columns])
 
     @abstractmethod
-    def _iter_profiles(self,
-                       sections: Iterable[Section],
+    def _iter_profiles(self, *,
                        quantile: float,
                        order: int | None,
-                       clust: int | None) -> Generator[RnaProfile, Any, Any]:
+                       clust: int | None) -> Generator[RNAProfile, Any, Any]:
         """ Yield RNA mutational profiles from the table. """
 
-    def iter_profiles(self,
-                      sections: Iterable[Section] | None = None,
+    def iter_profiles(self, *,
                       quantile: float = 0.,
                       order: int | None = None,
                       clust: int | None = None):
         """ Yield RNA mutational profiles from the table. """
-        yield from self._iter_profiles((sections if sections is not None
-                                        else [self.section]),
-                                       quantile,
-                                       order,
-                                       clust)
+        yield from self._iter_profiles(quantile=quantile,
+                                       order=order,
+                                       clust=clust)
 
     def _compute_ci(self,
                     confidence: float,
@@ -642,8 +638,7 @@ class RelPosTable(RelTable, PosTable, ABC):
     def kind(cls):
         return path.RELATE_POS_TAB
 
-    def _iter_profiles(self,
-                       sections: Iterable[Section],
+    def _iter_profiles(self, *,
                        quantile: float,
                        order: int | None,
                        clust: int | None):
@@ -654,29 +649,25 @@ class RelPosTable(RelTable, PosTable, ABC):
 
 class ProfilePosTable(PosTable, ABC):
 
-    def _iter_profiles(self,
-                       sections: Iterable[Section] | None,
+    def _iter_profiles(self, *,
                        quantile: float,
                        order: int | None,
                        clust: int | None):
         """ Yield RNA mutational profiles from a table. """
-        for section in sections if sections is not None else [self.section]:
-            for ho, hc in self.header.clusts:
-                if ((order is None
-                     or order == ho) and (clust is None
-                                          or clust == hc)):
-                    data_name = path.fill_whitespace(
-                        format_clust_name(ho, hc, allow_zero=True)
-                    )
-                    yield RnaProfile(section=section,
-                                     sample=self.sample,
-                                     data_sect=self.sect,
-                                     data_name=data_name,
-                                     data=self.fetch_ratio(quantile=quantile,
-                                                           rel=MUTAT_REL,
-                                                           order=ho,
-                                                           clust=hc,
-                                                           squeeze=True))
+        for o, c in self.header.clusts:
+            if (order is None or order == o) and (clust is None or clust == c):
+                data_name = path.fill_whitespace(
+                    format_clust_name(o, c, allow_zero=True)
+                )
+                yield RNAProfile(section=self.section,
+                                 sample=self.sample,
+                                 data_sect=self.sect,
+                                 data_name=data_name,
+                                 data=self.fetch_ratio(quantile=quantile,
+                                                       rel=MUTAT_REL,
+                                                       order=o,
+                                                       clust=c,
+                                                       squeeze=True))
 
 
 class MaskPosTable(MaskTable, ProfilePosTable, ABC):

@@ -6,12 +6,17 @@ from ..seq import Section
 logger = getLogger(__name__)
 
 
-class RnaSection(object):
+class RNASection(object):
     """ Section of an RNA sequence. """
 
     def __init__(self, *, section: Section, **kwargs):
         super().__init__(**kwargs)
         self.section = section
+
+    @property
+    def init_args(self):
+        """ Arguments needed to initialize a new instance. """
+        return dict(section=self.section)
 
     @property
     def ref(self):
@@ -48,6 +53,25 @@ class RnaSection(object):
 
     def subsection(self, end5: int, end3: int):
         return self.__class__(**self._subsection_kwargs(end5, end3))
+
+    def _renumber_from_args(self, seq5: int):
+        """ Arguments needed to initialize a renumbered instance. """
+        return self.init_args | dict(section=self.section.renumber_from(seq5))
+
+    def renumber_from(self, seq5: int):
+        """ Return a new RNASection renumbered starting from a position.
+
+        Parameters
+        ----------
+        seq5: int
+            Position from which to start the new numbering system.
+
+        Returns
+        -------
+        RNASection
+            Section with renumbered positions.
+        """
+        return self.__class__(**self._renumber_from_args(seq5))
 
     def __str__(self):
         return f"{type(self).__name__} over {self.section}"

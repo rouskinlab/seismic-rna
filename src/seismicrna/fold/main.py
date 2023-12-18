@@ -23,7 +23,7 @@ from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
                            RNASTRUCTURE_FOLD_CMD,
                            require_dependency)
 from ..core.parallel import as_list_of_tuples, dispatch
-from ..core.rna import RnaProfile
+from ..core.rna import RNAProfile
 from ..core.seq import DNA, RefSections, Section, parse_fasta
 from ..core.parallel import lock_temp_dir
 from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader
@@ -122,7 +122,7 @@ def fold_rna(loader: MaskPosTableLoader | ClustPosTableLoader,
                     pass_n_procs=False)
 
 
-def fold_profile(rna: RnaProfile, out_dir: Path, **kwargs):
+def fold_profile(rna: RNAProfile, out_dir: Path, **kwargs):
     """ Fold a section of an RNA from one mutational profile. """
     ct_file = fold(rna, out_dir=out_dir, **kwargs)
     dot_file = ct2dot(ct_file)

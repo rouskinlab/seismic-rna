@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Iterable
+from typing import Generator, Iterable
 
 import pandas as pd
 
@@ -65,6 +65,30 @@ def pairs_to_table(pairs: Iterable[tuple[int, int]], section: Section):
 def table_to_pairs(table: pd.Series):
     """ Tuples of the 5' and 3' position in each pair. """
     return dict_to_pairs(table[table != 0].to_dict())
+
+
+def renumber_pairs(pairs: Iterable[tuple[int, int]], offset: int):
+    """ Renumber pairs by offsetting each number.
+
+    Parameters
+    ----------
+    pairs: Iterable[tuple[int, int]]
+        Pairs to renumber.
+    offset: int
+        Offset by which to chage the numbering.
+
+    Returns
+    -------
+    Generator[tuple[int, int], Any, None]
+        Renumbered pairs, in the same order as given.
+    """
+    for p1, p2 in pairs:
+        if min(p1, p2) < 0:
+            raise ValueError(f"Positions must be ≥ 1, but got {p1, p2}")
+        r1, r2 = p1 + offset, p2 + offset
+        if min(r1, r2) < 0:
+            raise ValueError(f"Positions must be ≥ 1, but got {r1, r2}")
+        yield r1, r2
 
 
 def map_nested(pairs: Iterable[tuple[int, int]]):

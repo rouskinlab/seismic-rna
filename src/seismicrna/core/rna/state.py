@@ -1,12 +1,23 @@
 from functools import cached_property
 
-from .profile import RnaProfile
+from .profile import RNAProfile
 from .roc import compute_auc_roc, compute_roc_curve
 from .struct import RNAStructure
 
 
-class RnaState(RNAStructure, RnaProfile):
+class RNAState(RNAStructure, RNAProfile):
     """ RNA secondary structure with mutation rates. """
+
+    @classmethod
+    def from_struct_profile(cls, struct: RNAStructure, profile: RNAProfile):
+        """ Make an RNAState from an RNAStructure and an RNAProfile. """
+        return cls(section=struct.section,
+                   title=struct.title,
+                   pairs=struct.pairs,
+                   sample=profile.sample,
+                   data_sect=profile.data_sect,
+                   data_name=profile.data_name,
+                   data=profile.data)
 
     @cached_property
     def roc(self):

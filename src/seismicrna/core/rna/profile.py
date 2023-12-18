@@ -1,13 +1,14 @@
+from functools import cached_property
 from pathlib import Path
 
 import pandas as pd
 
-from .base import RnaSection
+from .base import RNASection
 from .. import path
 from ..seq import write_fasta
 
 
-class RnaProfile(RnaSection):
+class RNAProfile(RNASection):
     """ Mutational profile of an RNA. """
 
     def __init__(self, *,
@@ -39,6 +40,19 @@ class RnaProfile(RnaSection):
         if data.min() < 0. or data.max() > 1.:
             raise ValueError(f"Got mutation rates outside [0, 1]:\n{data}")
         self.data = data.reindex(self.section.range)
+
+    @cached_property
+    def init_args(self):
+        return super().init_args | dict(sample=self.sample,
+                                        data_sect=self.data_sect,
+                                        data_name=self.data_name,
+                                        data=self.data)
+
+    def _renumber_from_args(self, seq5: int):
+        return super()._renumber_from_args(seq5) | dict(
+            data=pd.Series(self.data.values,
+                           index=self.section.renumber_from(seq5).range)
+        )
 
     @property
     def profile(self):

@@ -71,17 +71,14 @@ def _parse_ct_body_line(line: str, first: bool, last: bool):
     return curr_idx, base, partner, position
 
 
-def _parse_ct_structure(ct_file: TextIO,
-                        length: int,
-                        index_offset: int | None = None):
+def _parse_ct_structure(ct_file: TextIO, length: int):
     """ Return the sequence and pairs for the current structure. """
     # Initialize the bases, pairs, and position numbers.
     bases: list[str] = list()
     pairs: dict[int, int] = dict()
     reverse_pairs: dict[int, int] = dict()
     unpaired: set[int] = set()
-    positions_map: dict[int, int] = dict()
-    positions_set: set[int] = set()
+    pos_offset: int | None = None
     # Read the next length lines from the file: one per position in
     # the structure.
     indexes = list(range(1, length + 1))
@@ -89,23 +86,27 @@ def _parse_ct_structure(ct_file: TextIO,
         is_first = index == 1
         is_last = index == length
         # Parse the current line in the CT file.
-        ct_index, base, partner, position = _parse_ct_body_line(line,
-                                                                is_first,
-                                                                is_last)
+        ct_index, base, partner, pos = _parse_ct_body_line(line,
+                                                           is_first,
+                                                           is_last)
         if ct_index != index:
             raise ValueError(f"Index ({ct_index}) and line # ({index}) differ")
+        # Validate the natural position.
+        if pos_offset is not None:
+            if pos - index != pos_offset:
+                raise ValueError(
+                    f"Expected every position to be {pos_offset} more than "
+                    f"its index, but got position {pos} for index {index}"
+                )
+        else:
+            pos_offset = pos - index
+            if pos_offset < 0:
+                raise ValueError(
+                    "Expected every position to be no less than its index, "
+                    f"but got position {pos} for index {index}"
+                )
         # Add the current base to the growing sequence.
         bases.append(base)
-        # Check that the position has not been encountered, and
-        # record it.
-        if position in positions_set:
-            raise ValueError(f"Position {position} appears twice")
-        positions_set.add(position)
-        # If an index offset was given, then map the index to the
-        # index plus the offset. Otherwise, map the index to the
-        # natural position given in the CT file.
-        positions_map[index] = (position if index_offset is None
-                                else index + index_offset)
         # Check if the current base is unpaired.
         if partner == 0:
             # If the current base is unpaired, then it should not
@@ -159,12 +160,12 @@ def _parse_ct_structure(ct_file: TextIO,
     # Assemble the list of bases into an RNA sequence.
     seq = RNA("".join(bases))
     # Map all the indexes to their corresponding positions.
-    pairs_list = [(positions_map[index1], positions_map[index2])
+    pairs_list = [(index1 + pos_offset, index2 + pos_offset)
                   for index1, index2 in pairs.items()]
-    return seq, pairs_list
+    return seq, pairs_list, (pos_offset if pos_offset is not None else 0)
 
 
-def parse_ct(ct_path: Path, seq5: int | None = None):
+def parse_ct(ct_path: Path):
     """ Yield the title, section, and base pairs for each structure in a
     connectivity table (CT) file.
 
@@ -172,31 +173,27 @@ def parse_ct(ct_path: Path, seq5: int | None = None):
     ----------
     ct_path: Path
         Path of the CT file.
-    seq5: int | None = None
-        Positional number to assign the 5' end of the given part of the
-        reference sequence. Must be ≥ 1. If omitted, then the numbering
-        is taken from the last column of the CT file.
 
     Returns
     -------
     Generator[tuple[str, Section, list[tuple[int, int]]], Any, None]
     """
     # Determine the reference and section names from the path.
-    fields = path.parse(ct_path, *path.CT_FILE_SEGS)
+    fields = path.parse(ct_path,
+                        path.RefSeg,
+                        path.SectSeg,
+                        path.ConnectTableSeg)
     ref = fields[path.REF]
     sect = fields[path.SECT]
-    # If a starting position was given, then offset the index by that
-    # position minus 1 (because CT files are 1-indexed).
-    offset = seq5 - 1 if seq5 is not None else None
     # Parse each structure in the CT file.
     with open(ct_path) as file:
         while header_line := file.readline():
             # Get the title and length of the current structure.
             title, length = _parse_ct_header_line(header_line)
             # Determine the sequence and base pairs.
-            seq, pairs = _parse_ct_structure(file, length, offset)
+            seq, pairs, offset = _parse_ct_structure(file, length)
             # Make a section from the sequence.
-            section = Section(ref, seq.rt(), seq5=seq5, name=sect)
+            section = Section(ref, seq.rt(), seq5=offset + 1, name=sect)
             # Yield the title, section, and base pairs.
             yield title, section, pairs
 

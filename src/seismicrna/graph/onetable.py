@@ -13,12 +13,13 @@ from .base import (GraphBase,
                    make_subject)
 from ..core.header import parse_header
 from ..core.parallel import dispatch
+from ..core.rna import RNAProfile, RNAState, from_ct
 from ..table.base import Table, PosTable, get_rel_name
 from ..table.load import find_table_files, load
 
 
 class OneTableGraph(GraphBase, ABC):
-    """ Graph of one Table. """
+    """ Graph of data from one Table. """
 
     def __init__(self, *,
                  table: Table | PosTable,
@@ -80,6 +81,28 @@ class OneTableGraph(GraphBase, ABC):
     def data_header(self):
         """ Header of the selected data (not of the entire table). """
         return parse_header(self.data.columns)
+
+    def iter_profiles(self):
+        """ Yield each RNAProfile from the table. """
+        yield from self.table.iter_profiles(quantile=self.quantile,
+                                            order=self.order,
+                                            clust=self.clust)
+
+
+class OneTableStructureGraph(OneTableGraph, ABC):
+    """ Graph of data from one Table applied to RNA structure(s). """
+
+    def __init__(self, *, ct_file: Path | None = None, **kwargs):
+        super().__init__(**kwargs)
+        self.ct_file = ct_file
+
+    def iter_states(self, profile: RNAProfile):
+        """ Yield each RNAState for an RNAProfile. """
+        ct_file = (self.ct_file
+                   if self.ct_file is not None
+                   else profile.get_ct_file(self.top))
+        for struct in from_ct(ct_file):
+            yield RNAState.from_struct_profile(struct, profile)
 
 
 class OneTableWriter(GraphWriter, ABC):

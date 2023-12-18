@@ -329,7 +329,7 @@ class Section(object):
     def __init__(self,
                  ref: str,
                  seq: DNA, *,
-                 seq5: int = POS_INDEX,
+                 seq5: int = 1,
                  reflen: int | None = None,
                  end5: int | None = None,
                  end3: int | None = None,
@@ -357,13 +357,13 @@ class Section(object):
             Name of the section. If None, defaults to `self.range`.
         """
         self.ref = ref
-        if seq5 < POS_INDEX:
-            raise ValueError(f"seq5 must be ≥ {POS_INDEX}, but got {seq5}")
+        if seq5 < 1:
+            raise ValueError(f"seq5 must be ≥ 1, but got {seq5}")
         # Compute the 3' end position of the given sequence.
         seq3 = seq5 + len(seq) - 1
         if reflen is None:
             # Default to the 3' end position of the given sequence.
-            reflen = seq3 - (POS_INDEX - 1)
+            reflen = seq3
         elif reflen < 0:
             raise ValueError(f"reflen must be ≥ 0, but got {reflen}")
         elif reflen < seq3:
@@ -388,10 +388,10 @@ class Section(object):
         # Determine the sequence of the section and whether it is the
         # full reference sequence.
         self.seq = DNA(seq[self.end5 - seq5: self.end3 - (seq5 - 1)])
-        self.full = self.end5 == POS_INDEX and self.end3 == reflen
+        self.full = self.end5 == 1 and self.end3 == reflen
         # Assign the name of the section.
         if name is None:
-            # Default to 'full' if the section spans the full reference
+            # Default to "full" if the section spans the full reference
             # sequence and neither the 5' nor 3' coordinate was given.
             # Otherwise, default to the hyphenated coordinates.
             self.name = (FULL_NAME
@@ -402,7 +402,7 @@ class Section(object):
             # case default to the hyphenated coordinates.
             self.name = name if name else self.hyphen
         else:
-            raise TypeError(f"Parameter 'name' must be 'str', not {type(str)}")
+            raise TypeError(f"name must be a str, but got {repr(name)}")
         # Initialize an empty set of masks.
         self._masks: dict[str, np.ndarray] = dict()
 
@@ -507,9 +507,9 @@ class Section(object):
             If True, then mask out all but the given positions.
         """
         if name in self._masks:
-            raise ValueError(f"Mask '{name}' was already set")
+            raise ValueError(f"Mask {repr(name)} was already set")
         # Convert positions to a NumPy integer array.
-        p = np.unique(np.asarray(mask_pos, dtype=int))
+        p = np.unique(np.asarray(list(mask_pos), dtype=int))
         # Check for positions outside the section.
         if np.any(p < self.end5) or np.any(p > self.end3):
             out = p[np.logical_or(p < self.end5, p > self.end3)]
@@ -574,6 +574,32 @@ class Section(object):
                                                   and end3 is None
                                                   and name is None)
                                     else name))
+
+    def renumber_from(self, seq5: int, name: str | None = None):
+        """ Return a new Section renumbered starting from a position.
+
+        Parameters
+        ----------
+        seq5: int
+            Position from which to start the new numbering system.
+        name: str | None = None
+            Name of the renumbered section.
+
+        Returns
+        -------
+        Section
+            Section with renumbered positions.
+        """
+        renumbered = self.__class__(self.ref,
+                                    self.seq,
+                                    seq5=seq5,
+                                    name=name if name is not None else "")
+        # Copy any masked positions from this section, offseting them by
+        # the difference between the numbering systems.
+        offset = renumbered.end5 - self.end5
+        for mask_name, mask_pos in self._masks.items():
+            renumbered.add_mask(mask_name, mask_pos + offset)
+        return renumbered
 
     def __str__(self):
         return f"Section {self.ref_sect} ({self.hyphen}) {self.mask_names}"
