@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any, Generator, Iterable
 
 import numpy as np
 import pandas as pd
@@ -355,17 +355,23 @@ class PosTable(RelTypeTable, ABC):
 
     @abstractmethod
     def _iter_profiles(self, *,
+                       sections: Iterable[Section] | None,
                        quantile: float,
+                       rel: str,
                        order: int | None,
                        clust: int | None) -> Generator[RNAProfile, Any, Any]:
         """ Yield RNA mutational profiles from the table. """
 
     def iter_profiles(self, *,
+                      sections: Iterable[Section] | None = None,
                       quantile: float = 0.,
+                      rel: str = MUTAT_REL,
                       order: int | None = None,
                       clust: int | None = None):
         """ Yield RNA mutational profiles from the table. """
-        yield from self._iter_profiles(quantile=quantile,
+        yield from self._iter_profiles(sections=sections,
+                                       quantile=quantile,
+                                       rel=rel,
                                        order=order,
                                        clust=clust)
 
@@ -639,7 +645,9 @@ class RelPosTable(RelTable, PosTable, ABC):
         return path.RELATE_POS_TAB
 
     def _iter_profiles(self, *,
+                       sections: Iterable[Section] | None,
                        quantile: float,
+                       rel: str,
                        order: int | None,
                        clust: int | None):
         # Relation table loaders have unmasked, unfiltered reads and are
@@ -650,24 +658,31 @@ class RelPosTable(RelTable, PosTable, ABC):
 class ProfilePosTable(PosTable, ABC):
 
     def _iter_profiles(self, *,
+                       sections: Iterable[Section] | None,
                        quantile: float,
+                       rel: str,
                        order: int | None,
                        clust: int | None):
         """ Yield RNA mutational profiles from a table. """
+        if sections is not None:
+            sections = list(sections)
+        else:
+            sections = [self.section]
         for o, c in self.header.clusts:
             if (order is None or order == o) and (clust is None or clust == c):
                 data_name = path.fill_whitespace(
                     format_clust_name(o, c, allow_zero=True)
                 )
-                yield RNAProfile(section=self.section,
-                                 sample=self.sample,
-                                 data_sect=self.sect,
-                                 data_name=data_name,
-                                 data=self.fetch_ratio(quantile=quantile,
-                                                       rel=MUTAT_REL,
-                                                       order=o,
-                                                       clust=c,
-                                                       squeeze=True))
+                for section in sections:
+                    yield RNAProfile(section=section,
+                                     sample=self.sample,
+                                     data_sect=self.sect,
+                                     data_name=data_name,
+                                     data=self.fetch_ratio(quantile=quantile,
+                                                           rel=rel,
+                                                           order=o,
+                                                           clust=c,
+                                                           squeeze=True))
 
 
 class MaskPosTable(MaskTable, ProfilePosTable, ABC):

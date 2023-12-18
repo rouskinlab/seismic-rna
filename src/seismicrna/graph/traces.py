@@ -111,6 +111,17 @@ def get_seq_line_trace(data: pd.Series):
                       y=data)
 
 
+def get_roc_trace(fpr: pd.Series, tpr: pd.Series, name: str):
+    return go.Scatter(x=fpr, y=tpr, name=name)
+
+
+def iter_roc_traces(fprs: pd.DataFrame, tprs: pd.DataFrame):
+    for (sf, fpr), (st, tpr) in zip(fprs.items(), tprs.items(), strict=True):
+        if sf != st:
+            raise ValueError(f"Structure names differ: {repr(sf)} ≠ {repr(st)}")
+        yield get_roc_trace(fpr, tpr, str(sf))
+
+
 def iter_seq_line_traces(data: pd.Series, *_, **__):
     yield get_seq_line_trace(data)
 

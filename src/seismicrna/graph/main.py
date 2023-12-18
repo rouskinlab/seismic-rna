@@ -1,6 +1,6 @@
 from click import group
 
-from . import profile, corroll, delprof, scatter
+from . import profile, corroll, delprof, scatter, roc
 from ..core.arg import CMD_GRAPH
 
 
@@ -15,6 +15,7 @@ cli.add_command(profile.cli)
 cli.add_command(delprof.cli)
 cli.add_command(scatter.cli)
 cli.add_command(corroll.cli)
+cli.add_command(roc.cli)
 
 ########################################################################
 #                                                                      #

@@ -24,7 +24,7 @@ from ..table.load import find_table_files, load
 
 logger = getLogger(__name__)
 
-# Sample index level name
+# Index level names.
 SAMPLE_NAME = "Sample"
 ROW_NAME = "Row"
 COL_NAME = "Column"

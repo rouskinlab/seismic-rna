@@ -22,11 +22,11 @@ from ..core.arg import (CMD_FOLD,
 from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
                            RNASTRUCTURE_FOLD_CMD,
                            require_dependency)
-from ..core.parallel import as_list_of_tuples, dispatch
+from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
 from ..core.rna import RNAProfile
 from ..core.seq import DNA, RefSections, Section, parse_fasta
-from ..core.parallel import lock_temp_dir
-from ..table.load import load, MaskPosTableLoader, ClustPosTableLoader
+from ..table.base import MaskPosTable, ClustPosTable
+from ..table.load import load
 
 logger = getLogger(__name__)
 
@@ -87,18 +87,18 @@ def run(fasta: str,
                                primer_gap=primer_gap)
     # Initialize the table loaders.
     tab_files = path.find_files_chain(map(Path, input_path), [path.TableSeg])
-    loaders = [loader for loader in dispatch(load,
-                                             max_procs,
-                                             parallel,
-                                             args=as_list_of_tuples(tab_files),
-                                             pass_n_procs=False)
-               if isinstance(loader, (MaskPosTableLoader, ClustPosTableLoader))]
+    tables = [table for table in dispatch(load,
+                                          max_procs,
+                                          parallel,
+                                          args=as_list_of_tuples(tab_files),
+                                          pass_n_procs=False)
+              if isinstance(table, (MaskPosTable, ClustPosTable))]
     # Fold the RNA profiles.
     return dispatch(fold_rna,
                     max_procs,
                     parallel,
                     args=[(loader, ref_sections.list(loader.ref))
-                          for loader in loaders],
+                          for loader in tables],
                     kwargs=dict(temp_dir=Path(temp_dir),
                                 keep_temp=keep_temp,
                                 quantile=quantile,
@@ -106,7 +106,7 @@ def run(fasta: str,
                     pass_n_procs=True)
 
 
-def fold_rna(loader: MaskPosTableLoader | ClustPosTableLoader,
+def fold_rna(table: MaskPosTable | ClustPosTable,
              sections: list[Section],
              n_procs: int,
              quantile: float,
@@ -115,10 +115,10 @@ def fold_rna(loader: MaskPosTableLoader | ClustPosTableLoader,
     return dispatch(fold_profile,
                     n_procs,
                     parallel=True,
-                    args=[(profile,)
-                          for profile in loader.iter_profiles(sections,
-                                                              quantile)],
-                    kwargs=dict(out_dir=loader.top, **kwargs),
+                    args=as_list_of_tuples(table.iter_profiles(
+                        sections=sections, quantile=quantile)
+                    ),
+                    kwargs=dict(out_dir=table.top, **kwargs),
                     pass_n_procs=False)
 
 

@@ -16,7 +16,7 @@ from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
                            args_to_cmd,
                            run_cmd)
 from ..core.rna import RNAProfile, renumber_ct
-from ..core.write import need_write
+from ..core.write import need_write, write_mode
 
 logger = getLogger(__name__)
 
@@ -39,6 +39,8 @@ def fold(rna: RNAProfile, *,
         try:
             # Run the command.
             run_cmd(args_to_cmd(cmd))
+            # Reformat the CT file title lines so that each is unique.
+            retitle_ct_structures(ct_temp, ct_temp, force)
             # Renumber the CT file so that it has the same numbering
             # scheme as the section, rather than always starting at 1,
             # the latter of which is always output by the Fold program.
@@ -109,6 +111,103 @@ def parse_energy(line: str):
         raise ValueError(f"Failed to parse energy from line {repr(line)}")
     return float(match.groups()[0])
 
+
+def parse_rnastructure_ct_title(line: str):
+    """ Parse the title of a structure from RNAstructure.
+
+    Parameters
+    ----------
+    line: str
+        Line containing the title of the structure.
+
+    Returns
+    -------
+    tuple[int, float, str]
+        Tuple of number of positions in the structure, predicted free
+        energy of folding, and name of the reference sequence.
+    """
+    if not (m := re.match(r"\s*([0-9]+)\s+ENERGY = (-?[0-9.]+)\s+(\S+)", line)):
+        raise ValueError(f"Failed to parse title from CT line: {repr(line)}")
+    length, energy, ref = m.groups()
+    return int(length), float(energy), ref
+
+
+def format_retitled_ct_line(length: int, ref: str, uniqid: int, energy: float):
+    """ Format a new CT title line including unique identifiers:
+
+    {length}    {ref} #{uniqid}: {energy}
+
+    where {length} is the number of positions in the structure (required
+    for all CT files), {ref} is the name of the reference, {uniqid} is
+    the unique identifier, and {energy} is the free energy of folding.
+
+    Parameters
+    ----------
+    length: int
+        Number of positions in the structure.
+    uniqid: int
+        Unique identifier (non-negative integer).
+    ref: str
+        Name of the reference.
+    energy: float
+        Free energy of folding.
+
+    Returns
+    -------
+    str
+        Formatted CT title line.
+    """
+    return f"{length}\t{ref} #{uniqid}: {energy}\n"
+
+
+def retitle_ct_structures(ct_input: Path, ct_output: Path, force: bool = False):
+    """ Retitle the structures in a CT file produced by RNAstructure.
+
+    The default titles follow this format:
+
+    ENERGY = {energy}  {reference}
+
+    where {reference} is the name of the reference sequence and {energy}
+    is the predicted free energy of folding.
+
+    The major problem with this format is that structures can have equal
+    predicted free energies, so the titles of the structures can repeat,
+    which would cause some functions (e.g. graphing ROC curves) to fail.
+
+    This function assigns a unique integer to each structure (starting
+    with 0 for the minimum free energy and continuing upwards), which
+    ensures that no two structures have identical titles:
+
+    Structure {i} of {reference}: {energy}
+
+    where {i} = [0, 1, 2, ...] is the unique integer label.
+
+    Parameters
+    ----------
+    ct_input: Path
+        Path of the CT file to retitle.
+    ct_output: Path
+        Path of the CT file to which to write the retitled information.
+    force: bool = False
+        Overwrite the output CT file if it already exists.
+    """
+    if need_write(ct_output, force):
+        # Read all lines from the input file.
+        lines = list()
+        with open(ct_input) as f:
+            uniqid = 0
+            while title_line := f.readline():
+                # Parse and reformat the title line.
+                n, energy, ref = parse_rnastructure_ct_title(title_line)
+                lines.append(format_retitled_ct_line(n, ref, uniqid, energy))
+                # Add the lines that encode the structure.
+                for _ in range(n):
+                    lines.append(f.readline())
+                uniqid += 1
+        # Write the reformatted lines to the output file.
+        text = "".join(lines)
+        with open(ct_output, write_mode(force)) as f:
+            f.write(text)
 
 ########################################################################
 #                                                                      #
