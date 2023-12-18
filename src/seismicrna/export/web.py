@@ -163,10 +163,11 @@ def get_db_structs(table: PosTable,
                 logger.error("Failed to parse minimum free energy structure "
                              f"from dot-bracket file {db_file}: {error}")
             else:
-                structs[profile.title] = struct
-                energies[profile.title] = energy
+                structs[profile.data_name] = struct
+                energies[profile.data_name] = energy
         else:
-            logger.warning(f"No structure model available for {profile}")
+            logger.warning(f"No structure model available for {profile} "
+                           f"(file {db_file} does not exist)")
     return structs, energies
 
 

@@ -6,7 +6,7 @@ from click import command
 from plotly import graph_objects as go
 
 from .color import ColorMapGraph, SeqColorMap
-from .traces import iter_seq_base_bar_traces
+from .trace import iter_seq_base_bar_traces
 from .twotable import TwoTableRunner, TwoTableWriter, TwoTableMergedGraph
 
 logger = getLogger(__name__)
@@ -60,12 +60,11 @@ class DeltaProfileWriter(TwoTableWriter):
 class DeltaProfileRunner(TwoTableRunner):
 
     @classmethod
-    def writer_type(cls):
+    def get_writer_type(cls):
         return DeltaProfileWriter
 
 
-@command(DeltaProfileGraph.graph_kind(),
-         params=DeltaProfileRunner.params())
+@command(COMMAND, params=DeltaProfileRunner.params())
 def cli(*args, **kwargs):
     """ Create bar graphs of differences between pairs of samples at
     each position in a sequence. """

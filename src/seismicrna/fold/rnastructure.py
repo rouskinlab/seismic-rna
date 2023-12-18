@@ -40,7 +40,7 @@ def fold(rna: RNAProfile, *,
             # Run the command.
             run_cmd(args_to_cmd(cmd))
             # Reformat the CT file title lines so that each is unique.
-            retitle_ct_structures(ct_temp, ct_temp, force)
+            retitle_ct_structures(ct_temp, ct_temp, force=True)
             # Renumber the CT file so that it has the same numbering
             # scheme as the section, rather than always starting at 1,
             # the latter of which is always output by the Fold program.
@@ -69,10 +69,10 @@ def ct2dot(ct_file: Path, number: int | str = "all"):
     pathlib.Path
         Path to the DB file.
     """
-    dot_file = ct_file.with_suffix(path.DOT_EXT)
-    cmd = [RNASTRUCTURE_CT2DOT_CMD, ct_file, number, dot_file]
+    db_file = ct_file.with_suffix(path.DB_EXT)
+    cmd = [RNASTRUCTURE_CT2DOT_CMD, ct_file, number, db_file]
     run_cmd(args_to_cmd(cmd))
-    return dot_file
+    return db_file
 
 
 def dot2ct(db_file: Path):
@@ -94,26 +94,14 @@ def dot2ct(db_file: Path):
     return ct_file
 
 
-def parse_energy(line: str):
-    """ Parse the predicted free energy of folding from a line.
-
-    Parameters
-    ----------
-    line: str
-        Line from which to parse the energy.
-
-    Returns
-    -------
-    float
-        Free energy of folding.
-    """
-    if not (match := re.search(f"ENERGY = (-?[0-9.]+)", line)):
-        raise ValueError(f"Failed to parse energy from line {repr(line)}")
-    return float(match.groups()[0])
-
-
 def parse_rnastructure_ct_title(line: str):
-    """ Parse the title of a structure from RNAstructure.
+    """ Parse a title in a CT file from RNAstructure, in this format:
+
+    {length}  ENERGY = {energy}  {ref}
+
+    where {length} is the number of positions in the structure, {ref} is
+    the name of the reference, and {energy} is the predicted free energy
+    of folding.
 
     Parameters
     ----------
@@ -176,11 +164,7 @@ def retitle_ct_structures(ct_input: Path, ct_output: Path, force: bool = False):
 
     This function assigns a unique integer to each structure (starting
     with 0 for the minimum free energy and continuing upwards), which
-    ensures that no two structures have identical titles:
-
-    Structure {i} of {reference}: {energy}
-
-    where {i} = [0, 1, 2, ...] is the unique integer label.
+    ensures that no two structures have identical titles.
 
     Parameters
     ----------
@@ -208,6 +192,29 @@ def retitle_ct_structures(ct_input: Path, ct_output: Path, force: bool = False):
         text = "".join(lines)
         with open(ct_output, write_mode(force)) as f:
             f.write(text)
+
+
+def parse_energy(line: str):
+    """ Parse the predicted free energy of folding from a line in format
+
+    {length}    {ref} #{uniqid}: {energy}
+
+    where {length} is the number of positions in the structure (required
+    for all CT files), {ref} is the name of the reference, {uniqid} is
+    the unique identifier, and {energy} is the free energy of folding.
+
+    Parameters
+    ----------
+    line: str
+        Line from which to parse the energy.
+
+    Returns
+    -------
+    float
+        Free energy of folding.
+    """
+    _, energy = line.split(":")
+    return float(energy)
 
 ########################################################################
 #                                                                      #

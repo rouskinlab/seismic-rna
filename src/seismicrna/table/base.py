@@ -670,9 +670,10 @@ class ProfilePosTable(PosTable, ABC):
             sections = [self.section]
         for o, c in self.header.clusts:
             if (order is None or order == o) and (clust is None or clust == c):
-                data_name = path.fill_whitespace(
-                    format_clust_name(o, c, allow_zero=True)
-                )
+                data_name = path.fill_whitespace(format_clust_name(o,
+                                                                   c,
+                                                                   allow_zero=True),
+                                                 fill="-")
                 for section in sections:
                     yield RNAProfile(section=section,
                                      sample=self.sample,

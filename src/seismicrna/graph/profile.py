@@ -1,13 +1,17 @@
 import os
 from abc import ABC
+from functools import cached_property
 from logging import getLogger
 
 from click import command
 from plotly import graph_objects as go
 
+from .base import make_title_action_sample
 from .color import ColorMapGraph, RelColorMap, SeqColorMap
 from .onetable import OneTableGraph, OneTableRunner, OneTableWriter
-from .traces import iter_seq_base_bar_traces, iter_seqbar_stack_traces
+from .rel import MultiRelsGraph, OneRelGraph
+from .trace import iter_seq_base_bar_traces, iter_seqbar_stack_traces
+from ..core.header import parse_header
 from ..core.seq import POS_NAME
 
 logger = getLogger(__name__)
@@ -16,7 +20,7 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 class ProfileGraph(OneTableGraph, ColorMapGraph, ABC):
-    """ Graph of a mutational profile. """
+    """ Bar graph of a mutational profile for one table. """
 
     @classmethod
     def graph_kind(cls):
@@ -30,9 +34,20 @@ class ProfileGraph(OneTableGraph, ColorMapGraph, ABC):
     def y_title(self):
         return self.data_kind.capitalize()
 
+    @cached_property
+    def data(self):
+        return self._fetch_data(self.table,
+                                order=self.order,
+                                clust=self.clust)
 
-class WholeProfileGraph(ProfileGraph):
-    """ Bar graph where each bar shows one relationship of the base. """
+    @cached_property
+    def data_header(self):
+        """ Header of the selected data (not of the entire table). """
+        return parse_header(self.data.columns)
+
+
+class OneRelProfileGraph(OneRelGraph, ProfileGraph):
+    """ Bar graph with one relationship per position. """
 
     @classmethod
     def what(cls):
@@ -48,9 +63,8 @@ class WholeProfileGraph(ProfileGraph):
                 yield (row, 1), trace
 
 
-class TypedProfileGraph(ProfileGraph):
-    """ Stacked bar graph wherein each stacked bar represents multiple
-    relationships for a base in a sequence. """
+class MultiRelsProfileGraph(MultiRelsGraph, ProfileGraph):
+    """ Stacked bar graph with multiple relationships per position. """
 
     @classmethod
     def what(cls):
@@ -76,20 +90,24 @@ class TypedProfileGraph(ProfileGraph):
 
 class ProfileWriter(OneTableWriter):
 
-    @classmethod
-    def get_graph_type(cls, rel: str):
-        return WholeProfileGraph if len(rel) == 1 else TypedProfileGraph
+    def get_graph(self, rels_group: str, **kwargs):
+        return (OneRelProfileGraph(table=self.table,
+                                   rel=rels_group,
+                                   **kwargs)
+                if len(rels_group) == 1
+                else MultiRelsProfileGraph(table=self.table,
+                                           rels=rels_group,
+                                           **kwargs))
 
 
 class ProfileRunner(OneTableRunner):
 
     @classmethod
-    def writer_type(cls):
+    def get_writer_type(cls):
         return ProfileWriter
 
 
-@command(ProfileGraph.graph_kind(),
-         params=ProfileRunner.params())
+@command(COMMAND, params=ProfileRunner.params())
 def cli(*args, **kwargs):
     """ Create bar graphs of positions in a sequence. """
     return ProfileRunner.run(*args, **kwargs)

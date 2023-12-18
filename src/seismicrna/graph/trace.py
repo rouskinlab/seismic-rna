@@ -59,7 +59,7 @@ def iter_seq_base_scatter_traces(xdata: pd.Series,
 def get_seq_base_bar_trace(data: pd.Series, cmap: ColorMap, base: str):
     # Validate the base.
     if base not in DNA.alph():
-        raise ValueError(f"Invalid DNA base: '{base}'")
+        raise ValueError(f"Invalid DNA base: {repr(base)}")
     # Find the position of every base of that type.
     seq_mask = data.index.get_level_values(BASE_NAME) == base
     # Get the values at those positions, excluding NaN values.
@@ -111,15 +111,15 @@ def get_seq_line_trace(data: pd.Series):
                       y=data)
 
 
-def get_roc_trace(fpr: pd.Series, tpr: pd.Series, name: str):
-    return go.Scatter(x=fpr, y=tpr, name=name)
+def get_roc_trace(fpr: pd.Series, tpr: pd.Series, profile: str, struct: str):
+    return go.Scatter(x=fpr, y=tpr, name=f"{profile}, {struct}")
 
 
-def iter_roc_traces(fprs: pd.DataFrame, tprs: pd.DataFrame):
+def iter_roc_traces(fprs: pd.DataFrame, tprs: pd.DataFrame, profile: str):
     for (sf, fpr), (st, tpr) in zip(fprs.items(), tprs.items(), strict=True):
         if sf != st:
             raise ValueError(f"Structure names differ: {repr(sf)} ≠ {repr(st)}")
-        yield get_roc_trace(fpr, tpr, str(sf))
+        yield get_roc_trace(fpr, tpr, profile, str(sf))
 
 
 def iter_seq_line_traces(data: pd.Series, *_, **__):

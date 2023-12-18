@@ -11,6 +11,10 @@ class RNAState(RNAStructure, RNAProfile):
     @classmethod
     def from_struct_profile(cls, struct: RNAStructure, profile: RNAProfile):
         """ Make an RNAState from an RNAStructure and an RNAProfile. """
+        if struct.section.ref != profile.section.ref:
+            raise ValueError("Reference names differ between "
+                             f"structure ({repr(struct.section.ref)}) "
+                             f"and profile ({repr(profile.section.ref)})")
         return cls(section=struct.section,
                    title=struct.title,
                    pairs=struct.pairs,

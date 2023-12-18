@@ -37,10 +37,10 @@ from ..table.base import (Table,
 
 logger = getLogger(__name__)
 
-# Define sources.
-RELATED = "related"
-MASKED = "masked"
-CLUSTERED = "clustered"
+# Define actions.
+ACTION_REL = "related"
+ACTION_MASK = "masked"
+ACTION_CLUST = "clustered"
 
 # String to join sample names.
 LINKER = "__and__"
@@ -77,44 +77,45 @@ def _index_titles(index: pd.Index | None):
             else None)
 
 
-def get_source_name(table: Table):
+def get_action_name(table: Table):
     if isinstance(table, RelTable):
-        return RELATED
+        return ACTION_REL
     if isinstance(table, MaskTable):
-        return MASKED
+        return ACTION_MASK
     if isinstance(table, ClustTable):
-        return CLUSTERED
+        return ACTION_CLUST
     raise TypeError(f"Invalid table type: {type(table).__name__}")
 
 
-def make_source_sample(source: str, sample: str):
-    return f"{source} reads from sample {repr(sample)}"
+def make_title_action_sample(action: str, sample: str):
+    return f"{action} reads from sample {repr(sample)}"
 
 
-def make_subject(source: str, order: int | None, clust: int | None):
-    if source == RELATED or source == MASKED:
+def make_path_subject(action: str, order: int | None, clust: int | None):
+    if action == ACTION_REL or action == ACTION_MASK:
         if order or clust:
-            raise ValueError(f"For {source} data, order and clust must both "
+            raise ValueError(f"For {action} data, order and clust must both "
                              f"be 0 or None, but got {order} and {clust}")
-        return source
-    if source == CLUSTERED:
-        return "-".join(map(str, [source,
+        return action
+    if action == ACTION_CLUST:
+        return "-".join(map(str, [action,
                                   order if order is not None else "x",
                                   clust if clust is not None else "x"]))
-    raise ValueError(f"Invalid data source: {repr(source)}")
+    raise ValueError(f"Invalid action: {repr(action)}")
 
 
 def arrange_table(table: Table, arrange: str):
     if arrange == CLUST_INDIV:
         # One file per cluster, with no subplots.
-        return [dict(order=order, clust=cluster)
-                for order, cluster in table.header.clusts]
+        return [dict(order=order, clust=clust)
+                for order, clust in table.header.clusts]
     elif arrange == CLUST_ORDER:
         # One file per order, with one subplot per cluster.
-        return [dict(order=order) for order in sorted(table.header.orders)]
+        return [dict(order=order, clust=None)
+                for order in sorted(table.header.orders)]
     elif arrange == CLUST_UNITE:
         # One file, with one subplot per cluster for all orders.
-        return [dict()]
+        return [dict(order=None, clust=None)]
     raise ValueError(f"Invalid value for arrange: {repr(arrange)}")
 
 
@@ -141,7 +142,6 @@ class GraphBase(ABC):
 
     def __init__(self, *,
                  out_dir: str | Path,
-                 rels: str,
                  use_ratio: bool,
                  quantile: float):
         """
@@ -149,43 +149,24 @@ class GraphBase(ABC):
         ----------
         out_dir: str | Path
             Path of the top-level output directory for all graph files.
-
-        rels: str
-            Relationship(s) whose data will be pulled from the table(s).
-            Each is given as a one-letter code, the definitions of which
-            are given in seismicrna.table.base.REL_CODES, as follows:
-
-            - Covered: v
-            - Informed: n
-            - Matched: r
-            - Mutated: m
-            - Subbed: s
-            - Subbed to A: a
-            - Subbed to C: c
-            - Subbed to G: g
-            - Subbed to T: t
-            - Deleted: d
-            - Inserted: i
-
-            More than one relationship can be specified by passing a
-            string longer than one character; for example, `acgt` would
-            mean to use all four types of substitutions.
-
         use_ratio: bool
             Use the ratio of the number of times the relationship occurs
             to the number of occurrances of another kind of relationship
             (which is Covered for Covered and Informed, and Informed for
             all other relationships), rather than the raw count.
-
         quantile: float
             If `use_ratio` is True, then normalize the ratios to this
             quantile and then winsorize them to the interval [0, 1].
             Passing 0.0 disables normalization and winsorization.
         """
         self.top = Path(out_dir)
-        self.rel_codes = rels
         self.use_ratio = use_ratio
         self.quantile = quantile
+
+    @property
+    @abstractmethod
+    def codestring(self):
+        """ String of the relationship code(s). """
 
     @property
     def data_kind(self):
@@ -194,8 +175,8 @@ class GraphBase(ABC):
 
     @property
     @abstractmethod
-    def source_sample(self) -> str:
-        """ Source and sample of the data. """
+    def title_action_sample(self) -> str:
+        """ Action and sample for the title. """
 
     @property
     @abstractmethod
@@ -225,13 +206,13 @@ class GraphBase(ABC):
 
     @property
     @abstractmethod
-    def subject(self):
+    def path_subject(self):
         """ Subject of the graph. """
 
     @property
     def predicate(self):
         """ Predicate of the graph. """
-        fields = [self.rel_codes, self.data_kind]
+        fields = [self.codestring, self.data_kind]
         if self.use_ratio:
             fields.append(f"q{round(self.quantile * 100.)}")
         return "-".join(fields)
@@ -239,7 +220,7 @@ class GraphBase(ABC):
     @cached_property
     def graph_filename(self):
         """ Name of the graph's output file, without its extension. """
-        return "_".join([self.graph_kind(), self.subject, self.predicate])
+        return "_".join([self.graph_kind(), self.path_subject, self.predicate])
 
     def get_path_fields(self):
         """ Path fields. """
@@ -397,29 +378,33 @@ class GraphBase(ABC):
         return files
 
     @cached_property
+    def _title_main(self):
+        """ Main part of the title, as a list. """
+        return [f"{self.what()} of {self.data_kind}s "
+                f"of {self.relationships} bases "
+                f"in {self.title_action_sample} "
+                f"over reference {repr(self.ref)} "
+                f"section {repr(self.sect)}"]
+
+    @cached_property
+    def _title_details(self):
+        """ Details of the title, as a list. """
+        return [f"({'; '.join(self.details)})"] if self.details else []
+
+    @cached_property
     def title(self):
         """ Title of the graph. """
-        return " ".join(
-            [f"{self.what()} of {self.data_kind}s "
-             f"of {self.relationships} bases in {self.source_sample} "
-             f"over reference {repr(self.ref)} section {repr(self.sect)}"]
-            + ([f"({'; '.join(self.details)})"] if self.details else [])
-        )
+        return " ".join(self._title_main + self._title_details)
 
 
 class GraphWriter(ABC):
     """ Write the proper graph(s) for the table(s). """
 
-    @classmethod
-    @abstractmethod
-    def get_graph_type(cls, *args, **kwargs) -> type[GraphBase]:
-        """ Type of the graph to write. """
-
     def __init__(self, *table_files: Path):
         self.table_files = list(table_files)
 
     @abstractmethod
-    def iter(self, *args, **kwargs) -> Generator[GraphBase, None, None]:
+    def iter_graphs(self, *args, **kwargs) -> Generator[GraphBase, None, None]:
         """ Yield every graph for the table. """
 
     def write(self,
@@ -431,14 +416,14 @@ class GraphWriter(ABC):
               **kwargs):
         """ Generate and write every graph for the table. """
         return list(chain(graph.write(csv=csv, html=html, pdf=pdf, force=force)
-                          for graph in self.iter(*args, **kwargs)))
+                          for graph in self.iter_graphs(*args, **kwargs)))
 
 
 class GraphRunner(ABC):
 
     @classmethod
     @abstractmethod
-    def writer_type(cls) -> type[GraphWriter]:
+    def get_writer_type(cls) -> type[GraphWriter]:
         """ Type of GraphWriter. """
 
     @classmethod

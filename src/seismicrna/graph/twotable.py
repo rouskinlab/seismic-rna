@@ -8,18 +8,18 @@ from typing import Any, Callable
 import pandas as pd
 
 from .base import (LINKER,
-                   GraphBase,
                    GraphRunner,
                    GraphWriter,
                    arrange_table,
-                   get_source_name,
+                   get_action_name,
                    make_index,
-                   make_source_sample,
-                   make_subject)
+                   make_title_action_sample,
+                   make_path_subject)
+from .rel import OneRelGraph
 from ..core.arg import opt_comppair, opt_compself
 from ..core.parallel import dispatch
 from ..core.seq import POS_NAME
-from ..table.base import ClustTable, PosTable, Table, get_rel_name
+from ..table.base import ClustTable, PosTable, Table
 from ..table.load import find_table_files, load
 
 logger = getLogger(__name__)
@@ -30,7 +30,7 @@ ROW_NAME = "Row"
 COL_NAME = "Column"
 
 
-class TwoTableGraph(GraphBase, ABC):
+class TwoTableGraph(OneRelGraph, ABC):
     """ Graph of two Tables. """
 
     def __init__(self, *,
@@ -57,15 +57,6 @@ class TwoTableGraph(GraphBase, ABC):
             raise ValueError(f"Attribute {repr(name)} differs between "
                              f"tables 1 ({repr(attr1)}) and 2 ({repr(attr2)})")
         return attr1
-
-    @cached_property
-    def rel_name(self):
-        """ Name of the relationship to graph. """
-        return get_rel_name(self.rel_codes)
-
-    @cached_property
-    def rel_names(self):
-        return [self.rel_name]
 
     @property
     def sample1(self):
@@ -95,49 +86,50 @@ class TwoTableGraph(GraphBase, ABC):
         return self._get_common_attribute("seq")
 
     @cached_property
-    def source1(self):
-        """ Source of dataset 1. """
-        return get_source_name(self.table1)
+    def action1(self):
+        """ Action that generated dataset 1. """
+        return get_action_name(self.table1)
 
     @cached_property
-    def source2(self):
-        """ Source of dataset 2. """
-        return get_source_name(self.table2)
+    def action2(self):
+        """ Action that generated dataset 2. """
+        return get_action_name(self.table2)
 
     @cached_property
-    def source_sample1(self):
-        """ Sample and source of dataset 1. """
-        return make_source_sample(self.source1, self.sample1)
+    def action_sample1(self):
+        """ Action and sample of dataset 1. """
+        return make_title_action_sample(self.action1, self.sample1)
 
     @cached_property
-    def source_sample2(self):
-        """ Sample and source of dataset 2. """
-        return make_source_sample(self.source2, self.sample2)
+    def action_sample2(self):
+        """ Action and sample of dataset 2. """
+        return make_title_action_sample(self.action2, self.sample2)
 
     @cached_property
-    def source_sample(self):
-        return (self.source_sample1
-                if self.source_sample1 == self.source_sample2
-                else " vs. ".join([self.source_sample1, self.source_sample2]))
+    def title_action_sample(self):
+        return (self.action_sample1
+                if self.action_sample1 == self.action_sample2
+                else " vs. ".join([self.action_sample1, self.action_sample2]))
 
     @cached_property
-    def subject1(self):
+    def path_subject1(self):
         """ Name of subject 1. """
-        return (make_subject(self.source1, self.order1, self.clust1)
+        return (make_path_subject(self.action1, self.order1, self.clust1)
                 if isinstance(self.table1, ClustTable)
-                else self.source1)
+                else self.action1)
 
     @cached_property
-    def subject2(self):
+    def path_subject2(self):
         """ Name of subject 2. """
-        return (make_subject(self.source2, self.order2, self.clust2)
+        return (make_path_subject(self.action2, self.order2, self.clust2)
                 if isinstance(self.table2, ClustTable)
-                else self.source2)
+                else self.action2)
 
     @cached_property
-    def subject(self):
-        return (self.subject1 if self.subject1 == self.subject2
-                else LINKER.join([self.subject1, self.subject2]))
+    def path_subject(self):
+        return (self.path_subject1
+                if self.path_subject1 == self.path_subject2
+                else LINKER.join([self.path_subject1, self.path_subject2]))
 
     @cached_property
     def data1(self):
@@ -227,21 +219,21 @@ class TwoTableWriter(GraphWriter, ABC):
         """ The second table providing the data for the graph(s). """
         return load(self.table_files[1])
 
-    def iter(self,
-             rels: tuple[str, ...],
-             arrange: str,
-             **kwargs):
+    def iter_graphs(self,
+                    rels: tuple[str, ...],
+                    arrange: str,
+                    **kwargs):
         for cparams1, cparams2 in product(arrange_table(self.table1, arrange),
                                           arrange_table(self.table2, arrange)):
             for rel in rels:
                 graph_type = self.get_graph_type()
                 yield graph_type(rels=rel,
                                  table1=self.table1,
-                                 order1=cparams1.get("order"),
-                                 clust1=cparams1.get("clust"),
+                                 order1=cparams1["order"],
+                                 clust1=cparams1["clust"],
                                  table2=self.table2,
-                                 order2=cparams2.get("order"),
-                                 clust2=cparams2.get("clust"),
+                                 order2=cparams2["order"],
+                                 clust2=cparams2["clust"],
                                  **kwargs)
 
 
@@ -249,7 +241,7 @@ class TwoTableRunner(GraphRunner, ABC):
 
     @classmethod
     @abstractmethod
-    def writer_type(cls) -> type[TwoTableWriter]:
+    def get_writer_type(cls) -> type[TwoTableWriter]:
         """ Type of GraphWriter. """
 
     @classmethod
@@ -275,7 +267,7 @@ class TwoTableRunner(GraphRunner, ABC):
             # Compare every pair of two different tables.
             table_pairs.extend(combinations(table_files, 2))
         # Generate a table writer for each pair of tables.
-        writers = [cls.writer_type()(table1_file, table2_file)
+        writers = [cls.get_writer_type()(table1_file, table2_file)
                    for table1_file, table2_file in table_pairs]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,

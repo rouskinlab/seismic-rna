@@ -6,8 +6,9 @@ import numpy as np
 import pandas as pd
 from click import command
 
-from .onetable import OneTableStructureGraph, OneTableRunner, OneTableWriter
-from .traces import iter_roc_traces
+from .onestruct import StructOneTableGraph
+from .onetable import OneTableRunner, OneTableWriter
+from .trace import iter_roc_traces
 
 logger = getLogger(__name__)
 
@@ -17,9 +18,31 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 AXIS_NAME = "Axis"
 PROFILE_NAME = "Profile"
 STRUCT_NAME = "Structure"
+COL_NAMES = PROFILE_NAME, STRUCT_NAME
+
+# Axis names.
+TPR = "True positive rate"
+FPR = "False positive rate"
 
 
-class ROCGraph(OneTableStructureGraph):
+def _consolidate_pr(pr: dict):
+    """ Consolidate a true or false positive rate (PR) forming half the
+    ROC from a dict into a DataFrame. """
+    df = pd.DataFrame.from_dict(pr)
+    # The DataFrame's columns must be a MultiIndex with two levels named
+    # "Profile" and "Structure".
+    if df.size > 0:
+        # If the DataFrame has at least one column, then it will have a
+        # two-level MultiIndex already: just rename the column levels.
+        df.columns.names = COL_NAMES
+    else:
+        # If it is empty, then its columns will default to a RangeIndex
+        # (which has one level), so they must be replaced.
+        df.columns = pd.MultiIndex.from_arrays([[], []], names=COL_NAMES)
+    return df
+
+
+class ROCGraph(StructOneTableGraph):
     """ Graph of a receiver operating characteristic (ROC) curve. """
 
     @classmethod
@@ -32,11 +55,11 @@ class ROCGraph(OneTableStructureGraph):
 
     @property
     def x_title(self):
-        return "False positive rate"
+        return FPR
 
     @property
     def y_title(self):
-        return "True positive rate"
+        return TPR
 
     @cached_property
     def _roc(self):
@@ -51,11 +74,7 @@ class ROCGraph(OneTableStructureGraph):
                 raise ValueError(f"Duplicate RNA state: {key}")
             fpr[key], tpr[key] = state.roc
         # Consolidate the FPR and TPR data into two DataFrames.
-        fpr = pd.DataFrame.from_dict(fpr)
-        fpr.columns.names = PROFILE_NAME, STRUCT_NAME
-        tpr = pd.DataFrame.from_dict(tpr)
-        tpr.columns.names = PROFILE_NAME, STRUCT_NAME
-        return fpr, tpr
+        return _consolidate_pr(fpr), _consolidate_pr(tpr)
 
     @property
     def fpr(self):
@@ -74,8 +93,8 @@ class ROCGraph(OneTableStructureGraph):
         # Join the FPR and TPR data horizontally.
         data = pd.concat([self.fpr, self.tpr], axis=1, join="inner")
         # Add the axis name as the first level of the columns.
-        axes = np.hstack([np.repeat([self.x_title], self.fpr.columns.size),
-                          np.repeat([self.y_title], self.tpr.columns.size)])
+        axes = np.hstack([np.repeat([FPR], self.fpr.columns.size),
+                          np.repeat([TPR], self.tpr.columns.size)])
         names = [AXIS_NAME] + list(data.columns.names)
         data.columns = pd.MultiIndex.from_arrays(
             [(axes if name == AXIS_NAME
@@ -97,27 +116,25 @@ class ROCGraph(OneTableStructureGraph):
     def get_traces(self):
         for row, profile in enumerate(self.profile_names, start=1):
             for trace in iter_roc_traces(self.fpr.loc[:, profile],
-                                         self.tpr.loc[:, profile]):
+                                         self.tpr.loc[:, profile],
+                                         profile):
                 yield (row, 1), trace
 
 
 class ROCWriter(OneTableWriter):
 
-    @classmethod
-    def get_graph_type(cls, dummy):
-        # FIXME: remove the dummy argument.
-        return ROCGraph
+    def get_graph(self, rels_group: str, **kwargs):
+        return ROCGraph(table=self.table, rel=rels_group, **kwargs)
 
 
 class ROCRunner(OneTableRunner):
 
     @classmethod
-    def writer_type(cls):
+    def get_writer_type(cls):
         return ROCWriter
 
 
-@command(ROCGraph.graph_kind(),
-         params=ROCRunner.params())
+@command(COMMAND, params=ROCRunner.params())
 def cli(*args, **kwargs):
     """ Create bar graphs of positions in a sequence. """
     return ROCRunner.run(*args, **kwargs)

@@ -13,8 +13,7 @@ from .. import (demult as demultiplex_mod,
                 mask as mask_mod,
                 clust as cluster_mod,
                 table as table_mod,
-                fold as fold_mod,
-                faclean as fastc_mod)
+                fold as fold_mod)
 from ..core.arg import (CMD_WORKFLOW,
                         docdef,
                         merge_params,
@@ -30,8 +29,7 @@ params = merge_params([opt_demultiplex],
                       cluster_mod.params,
                       table_mod.params,
                       [opt_fold],
-                      fold_mod.params,
-                      fastc_mod.params)
+                      fold_mod.params)
 
 
 @command(CMD_WORKFLOW, params=params)

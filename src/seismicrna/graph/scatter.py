@@ -9,7 +9,7 @@ from click import command
 from plotly import graph_objects as go
 
 from .color import ColorMapGraph, SeqColorMap
-from .traces import iter_seq_base_scatter_traces
+from .trace import iter_seq_base_scatter_traces
 from .twotable import SAMPLE_NAME, TwoTableGraph, TwoTableRunner, TwoTableWriter
 
 logger = getLogger(__name__)
@@ -79,12 +79,11 @@ class ScatterPlotWriter(TwoTableWriter):
 class ScatterPlotRunner(TwoTableRunner):
 
     @classmethod
-    def writer_type(cls):
+    def get_writer_type(cls):
         return ScatterPlotWriter
 
 
-@command(ScatterPlotGraph.graph_kind(),
-         params=ScatterPlotRunner.params())
+@command(COMMAND, params=ScatterPlotRunner.params())
 def cli(*args, **kwargs):
     """ Create scatter plots between pairs of samples at each position
     in a sequence. """

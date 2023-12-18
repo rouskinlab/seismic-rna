@@ -6,7 +6,7 @@ from click import command
 from plotly import graph_objects as go
 
 from .twotable import TwoTableMergedGraph, TwoTableRunner, TwoTableWriter
-from .traces import iter_seq_line_traces
+from .trace import iter_seq_line_traces
 from ..core.arg import opt_mucomp, opt_window, opt_winmin
 from ..core.mu import compare_windows, get_comp_name
 
@@ -78,12 +78,11 @@ class RollingCorrelationRunner(TwoTableRunner):
         return super().var_params() + [opt_mucomp, opt_window, opt_winmin]
 
     @classmethod
-    def writer_type(cls):
+    def get_writer_type(cls):
         return RollingCorrelationWriter
 
 
-@command(RollingCorrelationGraph.graph_kind(),
-         params=RollingCorrelationRunner.params())
+@command(COMMAND, params=RollingCorrelationRunner.params())
 def cli(*args, **kwargs):
     """ Create line graphs of rolling correlations between datasets. """
     return RollingCorrelationRunner.run(*args, **kwargs)
