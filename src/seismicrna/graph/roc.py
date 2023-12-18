@@ -9,6 +9,7 @@ from click import command
 from .onestruct import StructOneTableGraph
 from .onetable import OneTableRunner, OneTableWriter
 from .trace import iter_roc_traces
+from ..core.arg import opt_ct_file
 
 logger = getLogger(__name__)
 
@@ -132,6 +133,10 @@ class ROCRunner(OneTableRunner):
     @classmethod
     def get_writer_type(cls):
         return ROCWriter
+
+    @classmethod
+    def var_params(cls):
+        return super().var_params() + [opt_ct_file]
 
 
 @command(COMMAND, params=ROCRunner.params())

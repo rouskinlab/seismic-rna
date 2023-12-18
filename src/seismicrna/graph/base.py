@@ -431,8 +431,8 @@ class GraphRunner(ABC):
         """ Universal parameters controlling the input data. """
         return [arg_input_path,
                 opt_rels,
-                opt_quantile,
-                opt_use_ratio]
+                opt_use_ratio,
+                opt_quantile]
 
     @classmethod
     def universal_output_params(cls):
@@ -463,8 +463,8 @@ class GraphRunner(ABC):
     def run(cls,
             input_path: tuple[str, ...],
             rels: tuple[str, ...],
-            quantile: float,
-            use_ratio: bool, *,
+            use_ratio: bool,
+            quantile: float, *,
             arrange: str,
             out_dir: str,
             csv: bool,

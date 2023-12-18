@@ -7,7 +7,7 @@ from plotly import graph_objects as go
 
 from .twotable import TwoTableMergedGraph, TwoTableRunner, TwoTableWriter
 from .trace import iter_seq_line_traces
-from ..core.arg import opt_mucomp, opt_window, opt_winmin
+from ..core.arg import opt_metric, opt_window, opt_winmin
 from ..core.mu import compare_windows, get_comp_name
 
 logger = getLogger(__name__)
@@ -29,9 +29,9 @@ class RollingCorrelationGraph(TwoTableMergedGraph):
     def _trace_function(cls):
         return iter_seq_line_traces
 
-    def __init__(self, *, mucomp: str, window: int, winmin: int, **kwargs):
+    def __init__(self, *, metric: str, window: int, winmin: int, **kwargs):
         super().__init__(**kwargs)
-        self._method = mucomp
+        self._metric = metric
         self._size = window
         self._min_count = winmin
 
@@ -39,23 +39,23 @@ class RollingCorrelationGraph(TwoTableMergedGraph):
     def predicate(self):
         return "_".join(
             [super().predicate,
-             "-".join(map(str, [self._method, self._size, self._min_count]))]
+             "-".join(map(str, [self._metric, self._size, self._min_count]))]
         )
 
     @cached_property
     def details(self):
-        return super().details + [f"metric = {self._method.upper()}",
+        return super().details + [f"metric = {self._metric.upper()}",
                                   f"window = {self._size} nt",
                                   f"min = {self._min_count} nt"]
 
     @cached_property
     def y_title(self):
-        return f"{get_comp_name(self._method)} of {self.data_kind}s"
+        return f"{get_comp_name(self._metric)} of {self.data_kind}s"
 
     @cached_property
     def _merge_data(self):
         return partial(compare_windows,
-                       method=self._method,
+                       method=self._metric,
                        size=self._size,
                        min_count=self._min_count)
 
@@ -75,7 +75,7 @@ class RollingCorrelationRunner(TwoTableRunner):
 
     @classmethod
     def var_params(cls):
-        return super().var_params() + [opt_mucomp, opt_window, opt_winmin]
+        return super().var_params() + [opt_metric, opt_window, opt_winmin]
 
     @classmethod
     def get_writer_type(cls):

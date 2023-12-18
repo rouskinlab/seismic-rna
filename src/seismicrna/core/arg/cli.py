@@ -735,7 +735,7 @@ opt_quantile = Option(
     ("--quantile", "-q"),
     type=float,
     default=0.,
-    help="Quantile of mutation rates for normalization; must be in [0, 1]"
+    help="Quantile for normalizing ratios of mutation rates; must be in [0, 1]"
 )
 
 # Graphing
@@ -755,7 +755,7 @@ opt_compself = Option(
 )
 
 opt_arrange = Option(
-    ("--arrange",),
+    ("--arrange", "-a"),
     type=Choice(CLUST_ARRANGE_OPTIONS),
     default=CLUST_ORDER,
     help=("Graph each INDIVidual cluster in its own file, each ORDER in its "
@@ -767,14 +767,7 @@ opt_rels = Option(
     type=str,
     multiple=True,
     default=("m",),
-    help="Relationships to graph"
-)
-
-opt_x_ratio = Option(
-    ("--x-ratio/--x-count",),
-    type=bool,
-    default=False,
-    help="Graph counts or ratios on the x-axis"
+    help="Relationship(s) to graph"
 )
 
 opt_use_ratio = Option(
@@ -785,55 +778,61 @@ opt_use_ratio = Option(
 )
 
 opt_window = Option(
-    ("--window",),
+    ("--window", "-w"),
     type=int,
     default=31,
     help="Size of the sliding window, in nucleotides"
 )
 
 opt_winmin = Option(
-    ("--winmin",),
+    ("--winmin", "-n"),
     type=int,
     default=9,
     help="Minimum number of data in the sliding window"
 )
 
-opt_mucomp = Option(
-    ("--mucomp",),
+opt_metric = Option(
+    ("--metric", "-m"),
     type=Choice(METRIC_KEYS, case_sensitive=False),
     default=KEY_NRMSD,
-    help=(f"Method to compare mutation rates: "
+    help=(f"Metric to compare mutation rates: "
           f"{repr(KEY_NRMSD)} = normalized root-mean-square deviation (NRMSD), "
           f"{repr(KEY_PEARSON)} = Pearson correlation coefficient (r), "
           f"{repr(KEY_SPEARMAN)} = Spearman correlation coefficient (ρ), "
           f"{repr(KEY_DETERM)} = coefficient of determination (R²)")
 )
 
+opt_ct_file = Option(
+    ("--ct-file", "-c"),
+    type=click.Path(exists=True, dir_okay=False),
+    help="CT file of structures against which to compare mutational profiles"
+)
+
 opt_hist_bins = Option(
     ("--hist-bins",),
-    default=24,
     type=int,
+    default=24,
     help="Number of bins in each histogram (≥ 1)"
 )
 
 opt_csv = Option(
     ("--csv/--no-csv",),
-    default=True,
     type=bool,
+    default=True,
     help="Output the source data for each graph as a CSV file"
 )
 
 opt_html = Option(
     ("--html/--no-html",),
-    default=True,
     type=bool,
+    default=True,
     help="Output each graph as an HTML file"
 )
 
 opt_pdf = Option(
     ("--pdf/--no-pdf",),
-    default=False,
     type=bool,
+    default=False,
     help="Output each graph as a PDF file"
 )
 
