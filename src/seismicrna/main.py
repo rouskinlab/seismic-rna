@@ -27,8 +27,8 @@ from . import (workflow,
                graph,
                export,
                test,
-               faclean,
-               ctrepos,
+               cleanfa,
+               renumct,
                __version__)
 from .core import logs
 from .core.arg import (opt_log,
@@ -96,8 +96,8 @@ for module in (workflow,
                graph,
                export,
                test,
-               faclean,
-               ctrepos):
+               cleanfa,
+               renumct):
     cli.add_command(module.cli)
 
 ########################################################################

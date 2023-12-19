@@ -22,10 +22,10 @@ CMD_TABLE = "table"
 CMD_FOLD = "fold"
 CMD_GRAPH = "graph"
 CMD_EXPORT = "export"
-CMD_FACLEAN = "faclean"
-CMD_CTREPOS = "ctrepos"
-CMD_SIM = "sim"
-CMD_TEST = "test"
+CMD_CLEANFA = "+cleanfa"
+CMD_RENUMCT = "+renumct"
+CMD_SIM = "+sim"
+CMD_TEST = "+test"
 
 ########################################################################
 #                                                                      #

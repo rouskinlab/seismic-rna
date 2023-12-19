@@ -15,7 +15,7 @@ that they can be imported from external modules and scripts::
 
 """
 
-from . import demult, align, relate, clust, table, faclean
+from . import demult, align, relate, clust, table, cleanfa
 from .core.version import __version__
 
 ########################################################################
