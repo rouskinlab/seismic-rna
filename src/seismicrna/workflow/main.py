@@ -34,8 +34,7 @@ params = merge_params([opt_demultiplex],
 
 @command(CMD_WORKFLOW, params=params)
 def cli(*args, **kwargs):
-    """ Run 'align', 'relate', 'mask', (optionally) 'cluster', 'table',
-    (optionally) 'fold', and (optionally) 'graph', in that order. """
+    """ Run the entire workflow, from demult/align to graph/export. """
     return run(*args, **kwargs)
 
 
@@ -141,7 +140,7 @@ def run(*,
         # Fold options
         fold: bool,
         quantile: float):
-    """ Run entire pipeline. """
+    """ Run the entire workflow, from demult/align to graph/export. """
     # Demultiplex
     if demult_on:
         for dms, dmi, dmm in demultiplex_mod.run(

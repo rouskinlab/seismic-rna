@@ -50,7 +50,7 @@ params = [
 
 @command(CMD_FOLD, params=params)
 def cli(*args, **kwargs):
-    """ Predict RNA secondary structures based on mutation rates. """
+    """ Predict RNA secondary structures using mutation rates. """
     return run(*args, **kwargs)
 
 
@@ -69,7 +69,7 @@ def run(fasta: str,
         max_procs: int,
         parallel: bool,
         force: bool):
-    """ Predict RNA secondary structures based on mutation rates. """
+    """ Predict RNA secondary structures using mutation rates. """
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_dependency(RNASTRUCTURE_CT2DOT_CMD, __name__)
     # Reactivities must be normalized before using them to fold.

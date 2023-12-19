@@ -46,8 +46,7 @@ params = [
 
 @command(CMD_CLUST, params=params)
 def cli(*args, max_clusters: int, **kwargs):
-    """ Cluster reads from 'mask' using Expectation-Maximization to find
-    alternative structures in the RNA ensemble. """
+    """ Find alternative structures by clustering reads' mutations. """
     # When cluster is called via the command "cluster" (instead of via
     # the run() function), assume that clustering is intentional. Thus,
     # override the default max_clusters == 0 (which disables clustering)
@@ -71,7 +70,7 @@ def run(input_path: tuple[str, ...], *,
         max_procs: int,
         parallel: bool,
         force: bool) -> list[Path]:
-    """ Run the clustering module. """
+    """ Find alternative structures by clustering reads' mutations. """
     if max_clusters == 0:
         # Exit immediately if the maximum number of clusters is 0.
         return list()

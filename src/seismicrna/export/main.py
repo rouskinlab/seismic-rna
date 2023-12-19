@@ -7,7 +7,7 @@ from ..core.arg import CMD_EXPORT
 # Group for all export commands
 @group(CMD_EXPORT)
 def cli():
-    """ Export command line interface """
+    """ Export data from SEISMIC-RNA for use in other applications. """
 
 
 # Add export commands to the CLI.

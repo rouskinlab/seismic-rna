@@ -7,7 +7,7 @@ from ..core.arg import CMD_GRAPH
 # Group for all graph commands
 @group(CMD_GRAPH)
 def cli():
-    """ Graphing command line interface """
+    """ Graph data from tables and/or secondary structure models. """
 
 
 # Add graph commands to the CLI.
