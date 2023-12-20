@@ -628,7 +628,7 @@ where ``{refs.fa}`` is the path to the file of reference sequences.
 Relate: Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Relate options shared with alignment
+Relate settings shared with alignment
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Because this workflow can be started from the ``align`` or ``relate``
@@ -755,7 +755,7 @@ where ``{out}`` is the path to the output directory.
 Mask: Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Mask: Defining sections
+Mask setting: Sections
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Using the Mask step, sections of reference sequences can be selected for
@@ -763,60 +763,7 @@ analysis, ignoring other parts of the sequences.
 This feature is useful for analyzing small elements of longer sequences,
 such as an `IRES`_ of several hundred nucleotides within a viral genome
 of several thousand.
-
-Mask: Defining sections by coordinates or primer sequences
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-Sections can be specified by their coordinates or, if the sample was
-prepared as an amplicon (using `RT-PCR`_ with a pair of primers flanking
-a specific sequence), by their forward and reverse primer sequences.
-
-If using coordinates, then note that the first position in the reference
-sequence is always numbered 1, and that the section will contain both
-the first and last coordinates.
-For example, if a reference sequence is 10 bases, then a section defined
-by the first and last coordinates of 4 and 9, respectively, will include
-bases 4, 5, 6, 7, 8, and 9; but not bases 1, 2, 3, or 10.
-The first coordinate must be a positive integer, and the last coordinate
-a non-negative integer greater than or equal to the first coordinate
-minus one, and no greater than the length of the reference sequence.
-If the first and last coordinates are equal, then the section will have
-exactly one position: the position of the equal coordinates.
-If the last coordinate is one less than the first, then the section will
-have zero positions; this behavior is permitted in order to handle the
-edge case of a length-zero section smoothly, but is probably of no use.
-
-If using primers, then the entire sequence of the forward primer and the
-reverse complement of the reverse primer must both occur exactly once in
-the reference sequence (no mismatches or gaps are permitted).
-Primers will cover up any mutations in the cDNA during PCR, so the sites
-bound by the primers provide no information for mutational profiling.
-Thus, the first coordinate of the section is defined as the position one
-after the last position in the forward primer binding site, and the last
-coordinate defined as the position one before the first position in the
-reverse primer binding site (the reverse complement of the primer).
-For example:
-
-- reference sequence: ``TTTCGCTATGTGTTAC``
-- forward primer: ``TCG``
-- reverse primer: ``AAC``
-
-These forward and reverse primers bind coordinates 3-5 and 12-14 of the
-reference sequence, respectively; thus, they define the section 6-11,
-with the sequence ``CTATGT``.
-
-Note that artifacts may occur near the ends of the primers, so ignoring
-one or two positions nearest the primer may help reduce artifacts.
-The option ``--primer-gap`` controls the number of positions between the
-ends of the primers and the ends of the section.
-In the example above, using ``--primer-gap 1`` would remove one position
-from each side of the section, now coordinates 7-10 (``TATG``).
-
-Mask: Defining sections using command line options
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-Coordinates and primers can be given as options on the command line.
-
+For information on defining sections, see :doc:`./sections`.
 
 Relate setting: Minimum Phred score
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -951,4 +898,3 @@ From BAM, report, and/or table file(s)::
 .. _hard link: https://en.wikipedia.org/wiki/Hard_link
 .. _samtools faidx: https://www.htslib.org/doc/samtools-faidx.html
 .. _IRES: https://en.wikipedia.org/wiki/Internal_ribosome_entry_site
-.. _RT-PCR: https://en.wikipedia.org/wiki/Reverse_transcription_polymerase_chain_reaction

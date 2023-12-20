@@ -11,7 +11,7 @@ Purpose of metadata for sections
 Define and name sections of a reference sequence.
 For references with many sections, it is more convenient, reproducible,
 and traceable to define the sections in a file than on the command line,
-using the option ``--sections-file/-s``.
+using the option ``--sections-file`` (``-s``).
 The sections file additionally permits giving each section a name.
 
 Commands that use metadata for sections

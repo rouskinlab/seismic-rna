@@ -19,7 +19,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Cleaning FASTA Files" href="cleanfa.html" />
+    <link rel="next" title="Listing Input Files" href="inputs.html" />
     <link rel="prev" title="Manuals" href="index.html" /> 
 </head>
 
@@ -71,10 +71,11 @@
 <li class="toctree-l3"><a class="reference internal" href="#run-the-entire-workflow-from-demult-align-to-graph-export">Run the entire workflow, from demult/align to graph/export.</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="cleanfa.html">Cleaning FASTA Files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="inputs.html">Listing Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sections.html">Sectioning Reference Sequences</a></li>
 <li class="toctree-l2"><a class="reference internal" href="parallel.html">Parallelizing Tasks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="logging.html">Logging Messages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cleanfa.html">Cleaning FASTA Files</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
@@ -731,8 +732,8 @@ aligned to reference <code class="docutils literal notranslate"><span class="pre
 </section>
 <section id="relate-settings">
 <h3>Relate: Settings<a class="headerlink" href="#relate-settings" title="Permalink to this headline"></a></h3>
-<section id="relate-options-shared-with-alignment">
-<h4>Relate options shared with alignment<a class="headerlink" href="#relate-options-shared-with-alignment" title="Permalink to this headline"></a></h4>
+<section id="relate-settings-shared-with-alignment">
+<h4>Relate settings shared with alignment<a class="headerlink" href="#relate-settings-shared-with-alignment" title="Permalink to this headline"></a></h4>
 <p>Because this workflow can be started from the <code class="docutils literal notranslate"><span class="pre">align</span></code> or <code class="docutils literal notranslate"><span class="pre">relate</span></code>
 commands, the latter duplicates some of the options of the former:
 <code class="docutils literal notranslate"><span class="pre">--phred-enc</span></code>, <code class="docutils literal notranslate"><span class="pre">--min-mapq</span></code>, <code class="docutils literal notranslate"><span class="pre">--min-reads</span></code>, and <code class="docutils literal notranslate"><span class="pre">--out-dir</span></code> have
@@ -839,61 +840,14 @@ settings) on every set of reads from the Relate step:</p>
 </section>
 <section id="mask-settings">
 <h3>Mask: Settings<a class="headerlink" href="#mask-settings" title="Permalink to this headline"></a></h3>
-<section id="mask-defining-sections">
-<h4>Mask: Defining sections<a class="headerlink" href="#mask-defining-sections" title="Permalink to this headline"></a></h4>
+<section id="mask-setting-sections">
+<h4>Mask setting: Sections<a class="headerlink" href="#mask-setting-sections" title="Permalink to this headline"></a></h4>
 <p>Using the Mask step, sections of reference sequences can be selected for
 analysis, ignoring other parts of the sequences.
 This feature is useful for analyzing small elements of longer sequences,
 such as an <a class="reference external" href="https://en.wikipedia.org/wiki/Internal_ribosome_entry_site">IRES</a> of several hundred nucleotides within a viral genome
-of several thousand.</p>
-<section id="mask-defining-sections-by-coordinates-or-primer-sequences">
-<h5>Mask: Defining sections by coordinates or primer sequences<a class="headerlink" href="#mask-defining-sections-by-coordinates-or-primer-sequences" title="Permalink to this headline"></a></h5>
-<p>Sections can be specified by their coordinates or, if the sample was
-prepared as an amplicon (using <a class="reference external" href="https://en.wikipedia.org/wiki/Reverse_transcription_polymerase_chain_reaction">RT-PCR</a> with a pair of primers flanking
-a specific sequence), by their forward and reverse primer sequences.</p>
-<p>If using coordinates, then note that the first position in the reference
-sequence is always numbered 1, and that the section will contain both
-the first and last coordinates.
-For example, if a reference sequence is 10 bases, then a section defined
-by the first and last coordinates of 4 and 9, respectively, will include
-bases 4, 5, 6, 7, 8, and 9; but not bases 1, 2, 3, or 10.
-The first coordinate must be a positive integer, and the last coordinate
-a non-negative integer greater than or equal to the first coordinate
-minus one, and no greater than the length of the reference sequence.
-If the first and last coordinates are equal, then the section will have
-exactly one position: the position of the equal coordinates.
-If the last coordinate is one less than the first, then the section will
-have zero positions; this behavior is permitted in order to handle the
-edge case of a length-zero section smoothly, but is probably of no use.</p>
-<p>If using primers, then the entire sequence of the forward primer and the
-reverse complement of the reverse primer must both occur exactly once in
-the reference sequence (no mismatches or gaps are permitted).
-Primers will cover up any mutations in the cDNA during PCR, so the sites
-bound by the primers provide no information for mutational profiling.
-Thus, the first coordinate of the section is defined as the position one
-after the last position in the forward primer binding site, and the last
-coordinate defined as the position one before the first position in the
-reverse primer binding site (the reverse complement of the primer).
-For example:</p>
-<ul class="simple">
-<li><p>reference sequence: <code class="docutils literal notranslate"><span class="pre">TTTCGCTATGTGTTAC</span></code></p></li>
-<li><p>forward primer: <code class="docutils literal notranslate"><span class="pre">TCG</span></code></p></li>
-<li><p>reverse primer: <code class="docutils literal notranslate"><span class="pre">AAC</span></code></p></li>
-</ul>
-<p>These forward and reverse primers bind coordinates 3-5 and 12-14 of the
-reference sequence, respectively; thus, they define the section 6-11,
-with the sequence <code class="docutils literal notranslate"><span class="pre">CTATGT</span></code>.</p>
-<p>Note that artifacts may occur near the ends of the primers, so ignoring
-one or two positions nearest the primer may help reduce artifacts.
-The option <code class="docutils literal notranslate"><span class="pre">--primer-gap</span></code> controls the number of positions between the
-ends of the primers and the ends of the section.
-In the example above, using <code class="docutils literal notranslate"><span class="pre">--primer-gap</span> <span class="pre">1</span></code> would remove one position
-from each side of the section, now coordinates 7-10 (<code class="docutils literal notranslate"><span class="pre">TATG</span></code>).</p>
-</section>
-<section id="mask-defining-sections-using-command-line-options">
-<h5>Mask: Defining sections using command line options<a class="headerlink" href="#mask-defining-sections-using-command-line-options" title="Permalink to this headline"></a></h5>
-<p>Coordinates and primers can be given as options on the command line.</p>
-</section>
+of several thousand.
+For information on defining sections, see <a class="reference internal" href="sections.html"><span class="doc">Sectioning Reference Sequences</span></a>.</p>
 </section>
 <section id="id1">
 <h4>Relate setting: Minimum Phred score<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h4>
@@ -1001,7 +955,7 @@ with the flag <code class="docutils literal notranslate"><span class="pre">--fol
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="index.html" class="btn btn-neutral float-left" title="Manuals" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="cleanfa.html" class="btn btn-neutral float-right" title="Cleaning FASTA Files" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="inputs.html" class="btn btn-neutral float-right" title="Listing Input Files" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

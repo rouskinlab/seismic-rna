@@ -528,7 +528,7 @@ opt_primers = Option(
 opt_primer_gap = Option(
     ("--primer-gap",),
     type=int,
-    default=2,
+    default=0,
     help="Length of the gap (nt) between each primer and the end of the section"
 )
 
