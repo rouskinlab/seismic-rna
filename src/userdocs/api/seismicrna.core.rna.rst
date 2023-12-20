@@ -10,7 +10,19 @@ Submodules
 ----------
 
 
+.. automodule:: seismicrna.core.rna.base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.core.rna.ct
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.core.rna.ctio
    :members:
    :undoc-members:
    :show-inheritance:
@@ -35,12 +47,6 @@ Submodules
 
 
 .. automodule:: seismicrna.core.rna.roc
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.core.rna.section
    :members:
    :undoc-members:
    :show-inheritance:

@@ -53,6 +53,7 @@
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.html#seismic-rna">SEISMIC-RNA</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="seismicrna.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.cleanfa.html">seismicrna.cleanfa package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.clust.html">seismicrna.clust package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="seismicrna.core.html#subpackages">Subpackages</a></li>
@@ -61,13 +62,12 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.faclean.html">seismicrna.faclean package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html">seismicrna.relate package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.renumct.html">seismicrna.renumct package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.html">seismicrna.sim package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.stat.html">seismicrna.stat package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.table.html">seismicrna.table package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.test.html">seismicrna.test package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.workflow.html">seismicrna.workflow package</a></li>
@@ -160,6 +160,29 @@ columns of a multidimensional array or DataFrame.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.mu.compare.calc_nrmsd">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.compare.</span></span><span class="sig-name descname"><span class="pre">calc_nrmsd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mus1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mus2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.compare.calc_nrmsd" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate the root-mean-square deviation (NRMSD) between two
+groups of mutation rates, ignoring NaNs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mus1</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span> <span class="pre">|</span> <span class="pre">pd.Series</span> <span class="pre">|</span> <span class="pre">pd.DataFrame</span></code>) – First group of mutation rates; can contain multiple sets as the
+columns of a multidimensional array or DataFrame.</p></li>
+<li><p><strong>mus2</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span> <span class="pre">|</span> <span class="pre">pd.Series</span> <span class="pre">|</span> <span class="pre">pd.DataFrame</span></code>) – Second group of mutation rates; can contain multiple sets as the
+columns of a multidimensional array or DataFrame.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Standardized mutation rates.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span> <span class="pre">|</span> <span class="pre">pd.Series</span> <span class="pre">|</span> <span class="pre">pd.DataFrame</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.mu.compare.calc_pearson">
 <span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.compare.</span></span><span class="sig-name descname"><span class="pre">calc_pearson</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mus1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mus2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.compare.calc_pearson" title="Permalink to this definition"></a></dt>
 <dd><p>Calculate the Pearson correlation coefficient between two groups
@@ -178,29 +201,6 @@ columns of a multidimensional array or DataFrame.</p></li>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span> <span class="pre">|</span> <span class="pre">np.ndarray</span> <span class="pre">|</span> <span class="pre">pd.Series</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.core.mu.compare.calc_rmsd">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.compare.</span></span><span class="sig-name descname"><span class="pre">calc_rmsd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mus1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mus2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.compare.calc_rmsd" title="Permalink to this definition"></a></dt>
-<dd><p>Calculate the root-mean-square deviation (RMSD) between two
-groups of mutation rates, ignoring NaNs.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>mus1</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span> <span class="pre">|</span> <span class="pre">pd.Series</span> <span class="pre">|</span> <span class="pre">pd.DataFrame</span></code>) – First group of mutation rates; can contain multiple sets as the
-columns of a multidimensional array or DataFrame.</p></li>
-<li><p><strong>mus2</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span> <span class="pre">|</span> <span class="pre">pd.Series</span> <span class="pre">|</span> <span class="pre">pd.DataFrame</span></code>) – Second group of mutation rates; can contain multiple sets as the
-columns of a multidimensional array or DataFrame.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Standardized mutation rates.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span> <span class="pre">|</span> <span class="pre">pd.Series</span> <span class="pre">|</span> <span class="pre">pd.DataFrame</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -229,15 +229,44 @@ columns of a multidimensional array or DataFrame.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.core.mu.compare.compare_sliding">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.compare.</span></span><span class="sig-name descname"><span class="pre">compare_sliding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mus1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mus2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mucomp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">winmin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.compare.compare_sliding" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.mu.compare.compare_windows">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.compare.</span></span><span class="sig-name descname"><span class="pre">compare_windows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mus1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mus2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><span class="pre">Union</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.compare.compare_windows" title="Permalink to this definition"></a></dt>
 <dd><p>Compare two Series via sliding windows.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.core.mu.compare.get_mucomp">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.compare.</span></span><span class="sig-name descname"><span class="pre">get_mucomp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.compare.get_mucomp" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dt class="sig sig-object py" id="seismicrna.core.mu.compare.get_comp_func">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.compare.</span></span><span class="sig-name descname"><span class="pre">get_comp_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a></span></span><a class="headerlink" href="#seismicrna.core.mu.compare.get_comp_func" title="Permalink to this definition"></a></dt>
+<dd><p>Get the function of a comparison method based on its key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Key with which to retrieve the comparison function.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Function to compare mutation rates.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.mu.compare.get_comp_name">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.compare.</span></span><span class="sig-name descname"><span class="pre">get_comp_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></span><a class="headerlink" href="#seismicrna.core.mu.compare.get_comp_name" title="Permalink to this definition"></a></dt>
+<dd><p>Get the name of a comparison method based on its key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Key with which to retrieve the comparison method name.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Name of the comparison method.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <span class="target" id="module-seismicrna.core.mu.dim"></span><dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.mu.dim.count_pos">
@@ -300,6 +329,13 @@ columns of a multidimensional array.</p>
 <dd><p>Decorate a function with one positional argument of data so that
 it converts the input data to a NumPy array, runs, and then reframes
 the return value using the original argument as the target.</p>
+<p>Note that if &#64;auto_reframe and &#64;auto_remove_nan are used to decorate
+the same function, then auto_reframe should be the inner decorator.
+If auto_remove_nan is the inner decorator and removes any NaNs, then
+auto_reframe will attempt to broadcast the NaN-less axis 0 over the
+original (longer) axis 0. This operation would raise a ValueError
+or, worse, if the NaN-less axis 0 happened to have length 1, would
+still broadcast to the original axis, causing a silent bug.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -391,7 +427,15 @@ columns of a multidimensional array or DataFrame.</p>
 <span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.nan.</span></span><span class="sig-name descname"><span class="pre">auto_remove_nan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.nan.auto_remove_nan" title="Permalink to this definition"></a></dt>
 <dd><p>Decorate a function with one positional argument of mutation
 rates so that it automatically removes positions with NaNs from the
-input argument (but not from the return value).</p>
+input argument (but, if while using the NaN-less input, the function
+produces any new NaNs, then those NaNs will be returned).</p>
+<p>Note that if &#64;auto_reframe and &#64;auto_remove_nan are used to decorate
+the same function, then auto_reframe should be the inner decorator.
+If auto_remove_nan is the inner decorator and removes any NaNs, then
+auto_reframe will attempt to broadcast the NaN-less axis 0 over the
+original (longer) axis 0. This operation would raise a ValueError
+or, worse, if the NaN-less axis 0 happened to have length 1, would
+still broadcast to the original axis, causing a silent bug.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -399,7 +443,8 @@ input argument (but not from the return value).</p>
 <span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.nan.</span></span><span class="sig-name descname"><span class="pre">auto_removes_nan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.nan.auto_removes_nan" title="Permalink to this definition"></a></dt>
 <dd><p>Decorate a function with positional argument(s) of mutation
 rates so that it automatically removes positions with NaNs from the
-input argument (but not from the return value).</p>
+input argument (but, if while using the NaN-less input, the function
+produces any new NaNs, then those NaNs will be returned).</p>
 </dd></dl>
 
 <dl class="py function">

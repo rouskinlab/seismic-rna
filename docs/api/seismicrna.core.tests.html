@@ -53,6 +53,7 @@
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.html#seismic-rna">SEISMIC-RNA</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="seismicrna.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.cleanfa.html">seismicrna.cleanfa package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.clust.html">seismicrna.clust package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="seismicrna.core.html#subpackages">Subpackages</a></li>
@@ -61,13 +62,12 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.faclean.html">seismicrna.faclean package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html">seismicrna.relate package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.renumct.html">seismicrna.renumct package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.html">seismicrna.sim package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.stat.html">seismicrna.stat package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.table.html">seismicrna.table package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.test.html">seismicrna.test package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.workflow.html">seismicrna.workflow package</a></li>
@@ -133,6 +133,11 @@
 <dd></dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestClustHeader.test_iter_clust_indexes">
+<span class="sig-name descname"><span class="pre">test_iter_clust_indexes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestClustHeader.test_iter_clust_indexes" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestClustHeader.test_level_keys">
 <span class="sig-name descname"><span class="pre">test_level_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestClustHeader.test_level_keys" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
@@ -155,6 +160,26 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestClustHeader.test_min_order">
 <span class="sig-name descname"><span class="pre">test_min_order</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestClustHeader.test_min_order" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestClustHeader.test_modified_max_order">
+<span class="sig-name descname"><span class="pre">test_modified_max_order</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestClustHeader.test_modified_max_order" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestClustHeader.test_modified_min_order">
+<span class="sig-name descname"><span class="pre">test_modified_min_order</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestClustHeader.test_modified_min_order" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestClustHeader.test_modified_none">
+<span class="sig-name descname"><span class="pre">test_modified_none</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestClustHeader.test_modified_none" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestClustHeader.test_modified_rels">
+<span class="sig-name descname"><span class="pre">test_modified_rels</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestClustHeader.test_modified_rels" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -227,6 +252,11 @@
 <span class="sig-name descname"><span class="pre">test_select_orders_clusts_exist</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestClustHeader.test_select_orders_clusts_exist" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestClustHeader.test_signature">
+<span class="sig-name descname"><span class="pre">test_signature</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestClustHeader.test_signature" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -256,6 +286,32 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestConstants.test_rel_name">
 <span class="sig-name descname"><span class="pre">test_rel_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestConstants.test_rel_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestEqualHeaders">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.tests.header_test.</span></span><span class="sig-name descname"><span class="pre">TestEqualHeaders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestEqualHeaders" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestEqualHeaders.test_clustheaders">
+<span class="sig-name descname"><span class="pre">test_clustheaders</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestEqualHeaders.test_clustheaders" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestEqualHeaders.test_different_types">
+<span class="sig-name descname"><span class="pre">test_different_types</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestEqualHeaders.test_different_types" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestEqualHeaders.test_relclustheaders">
+<span class="sig-name descname"><span class="pre">test_relclustheaders</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestEqualHeaders.test_relclustheaders" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestEqualHeaders.test_relheaders">
+<span class="sig-name descname"><span class="pre">test_relheaders</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestEqualHeaders.test_relheaders" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -598,6 +654,11 @@
 <dd></dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelClustHeader.test_iter_clust_indexes">
+<span class="sig-name descname"><span class="pre">test_iter_clust_indexes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelClustHeader.test_iter_clust_indexes" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelClustHeader.test_level_keys">
 <span class="sig-name descname"><span class="pre">test_level_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelClustHeader.test_level_keys" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
@@ -610,6 +671,41 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelClustHeader.test_levels">
 <span class="sig-name descname"><span class="pre">test_levels</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelClustHeader.test_levels" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_all">
+<span class="sig-name descname"><span class="pre">test_modified_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_all" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_empty_rels">
+<span class="sig-name descname"><span class="pre">test_modified_empty_rels</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_empty_rels" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_max_order">
+<span class="sig-name descname"><span class="pre">test_modified_max_order</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_max_order" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_max_order_0">
+<span class="sig-name descname"><span class="pre">test_modified_max_order_0</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_max_order_0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_none">
+<span class="sig-name descname"><span class="pre">test_modified_none</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_none" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_nullified">
+<span class="sig-name descname"><span class="pre">test_modified_nullified</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_nullified" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_rels">
+<span class="sig-name descname"><span class="pre">test_modified_rels</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelClustHeader.test_modified_rels" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -682,6 +778,11 @@
 <span class="sig-name descname"><span class="pre">test_select_rel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelClustHeader.test_select_rel" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelClustHeader.test_signature">
+<span class="sig-name descname"><span class="pre">test_signature</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelClustHeader.test_signature" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -701,6 +802,11 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelHeader.test_index">
 <span class="sig-name descname"><span class="pre">test_index</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelHeader.test_index" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelHeader.test_iter_clust_indexes">
+<span class="sig-name descname"><span class="pre">test_iter_clust_indexes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelHeader.test_iter_clust_indexes" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -726,6 +832,31 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelHeader.test_min_order">
 <span class="sig-name descname"><span class="pre">test_min_order</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelHeader.test_min_order" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelHeader.test_modified_empty_rels">
+<span class="sig-name descname"><span class="pre">test_modified_empty_rels</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelHeader.test_modified_empty_rels" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelHeader.test_modified_max_order">
+<span class="sig-name descname"><span class="pre">test_modified_max_order</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelHeader.test_modified_max_order" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelHeader.test_modified_min_order">
+<span class="sig-name descname"><span class="pre">test_modified_min_order</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelHeader.test_modified_min_order" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelHeader.test_modified_none">
+<span class="sig-name descname"><span class="pre">test_modified_none</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelHeader.test_modified_none" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelHeader.test_modified_rels">
+<span class="sig-name descname"><span class="pre">test_modified_rels</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelHeader.test_modified_rels" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -791,6 +922,11 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelHeader.test_select_two_rels">
 <span class="sig-name descname"><span class="pre">test_select_two_rels</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelHeader.test_select_two_rels" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.tests.header_test.TestRelHeader.test_signature">
+<span class="sig-name descname"><span class="pre">test_signature</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.tests.header_test.TestRelHeader.test_signature" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">

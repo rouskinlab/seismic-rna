@@ -1,7 +1,7 @@
-seismicrna.faclean package
+seismicrna.cleanfa package
 ==========================
 
-.. automodule:: seismicrna.faclean
+.. automodule:: seismicrna.cleanfa
    :members:
    :undoc-members:
    :show-inheritance:
@@ -10,13 +10,13 @@ Submodules
 ----------
 
 
-.. automodule:: seismicrna.faclean.faclean
+.. automodule:: seismicrna.cleanfa.cleanfa
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.faclean.main
+.. automodule:: seismicrna.cleanfa.main
    :members:
    :undoc-members:
    :show-inheritance:

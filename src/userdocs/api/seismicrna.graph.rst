@@ -22,7 +22,43 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.graph.corroll
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.graph.delprof
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.graph.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.graph.onestruct
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.graph.onetable
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.graph.profile
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.graph.rel
    :members:
    :undoc-members:
    :show-inheritance:
@@ -40,43 +76,13 @@ Submodules
    :show-inheritance:
 
 
-.. automodule:: seismicrna.graph.seq
+.. automodule:: seismicrna.graph.trace
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.graph.seqbar
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.graph.seqcorr
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.graph.seqdiff
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.graph.seqpair
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.graph.traces
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.graph.write
+.. automodule:: seismicrna.graph.twotable
    :members:
    :undoc-members:
    :show-inheritance:

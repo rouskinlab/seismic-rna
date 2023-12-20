@@ -21,15 +21,22 @@ For step-by-step tutorials, see :doc:`../tutorials/index`.
   ``seismic --help`` prints all options and subcommands for the command
   ``seismic``,
   ``seismic graph --help`` prints all options and subcommands for the
-  command ``seismic graph``,
-  and ``seismic graph seqbar --help`` prints all options and subcommands
-  for the command ``seismic graph seqbar``.
+  command ``seismic graph``, and
+  ``seismic graph profile --help`` prints all options and subcommands
+  for the command ``seismic graph profile``.
 
 
-.. _cli_all:
+Run all steps of the workflow
+========================================================================
+
+.. _cli_wf:
 
 .. click:: seismicrna.workflow:cli
-    :prog: seismic all
+    :prog: seismic wf
+
+
+Run individual steps of the workflow
+========================================================================
 
 .. _cli_demult:
 
@@ -69,21 +76,40 @@ For step-by-step tutorials, see :doc:`../tutorials/index`.
 .. _cli_graph:
 
 seismic graph
-========================================================================
+------------------------------------------------------------------------
 
-.. click:: seismicrna.graph.seqbar:cli
-    :prog: seismic graph seqbar
+.. click:: seismicrna.graph.profile:cli
+    :prog: seismic graph profile
 
-.. click:: seismicrna.graph.seqdiff:cli
-    :prog: seismic graph seqdiff
+.. click:: seismicrna.graph.delprof:cli
+    :prog: seismic graph delprof
 
-.. click:: seismicrna.graph.seqcorr:cli
-    :prog: seismic graph seqcorr
+.. click:: seismicrna.graph.corroll:cli
+    :prog: seismic graph corroll
 
 .. click:: seismicrna.graph.scatter:cli
     :prog: seismic graph scatter
 
-.. _cli_faclean:
 
-.. click:: seismicrna.faclean:cli
-    :prog: seismic faclean
+Extra Utilities
+========================================================================
+
+.. note::
+
+  For every extra utility (that is not part of the main workflow), the
+  name begins with ``+``.
+
+.. _cli_cleanfa:
+
+.. click:: seismicrna.cleanfa:cli
+    :prog: seismic +cleanfa
+
+.. _cli_renumct:
+
+.. click:: seismicrna.renumct:cli
+    :prog: seismic +renumct
+
+.. _cli_test:
+
+.. click:: seismicrna.test:cli
+    :prog: seismic +test

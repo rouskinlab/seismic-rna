@@ -28,7 +28,7 @@ Align input file: Reference sequences
 
 Alignment requires exactly one file of reference sequences, which must
 be DNA sequences (only A, C, G, T, and N) in FASTA format.
-If needed, you may clean the FASTA file with the :doc:`./faclean` tool.
+If needed, you may clean the FASTA file with the :doc:`./cleanfa` tool.
 See :doc:`../formats/data/fasta` for details.
 
 Align input file: Sequencing reads
@@ -585,7 +585,7 @@ Relate input file: Reference sequences
 
 Relate requires exactly one file of reference sequences, which must be
 DNA sequences (only A, C, G, T, and N) in FASTA format.
-If needed, you may clean the FASTA file with the :doc:`./faclean` tool.
+If needed, you may clean the FASTA file with the :doc:`./cleanfa` tool.
 See :doc:`../formats/data/fasta` for details.
 
 Relate input file: Alignment maps

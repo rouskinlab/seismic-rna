@@ -16,7 +16,7 @@ For a complete list of commands and their parameters, see :doc:`../cli`.
     :maxdepth: 2
 
     workflow
-    faclean
+    cleanfa
     inputs
     parallel
     logging
