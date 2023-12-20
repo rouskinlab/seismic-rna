@@ -2,22 +2,32 @@
 Running the Workflow
 ========================================================================
 
-There are two points from which you can begin the main workflow:
+There are three points from which you can begin the main workflow:
 
-- If you are starting from files of raw sequencing reads (FASTQ format),
-  then begin at the step :ref:`wf_align`.
+- If you are starting from files of raw sequencing reads (FASTQ format)
+  that must be demultiplexed (i.e. split into subfiles using barcodes),
+  then begin at the step :ref:`wf_demult`.
+  (If you do not know whether you need this feature, then you probably
+  do not need it.)
+- If you are starting from files of raw sequencing reads (FASTQ format)
+  that do not need to be demultiplexed (i.e. split into subfiles), then
+  begin at the step :ref:`wf_align`.
+  **Most users will begin at this step.**.
 - If you are starting from files of aligned sequencing reads (SAM, BAM,
   or CRAM format), then begin at the step :ref:`wf_relate`.
 
-.. note::
-    The command ``seismic all`` accepts both types of inputs and runs
-    the entire workflow.
-    See :ref:`wf_all` for more details.
+Each step of the workflow can be run individually by typing the command
+to which it corresponds; for example ``seismic align`` runs alignment.
+For convenience, SEISMIC-RNA also provides the command ``seismic wf``,
+which runs every step of the main workflow automatically.
+See :ref:`wf_wf` for more information.
 
+
+.. _wf_demult:
 
 .. _wf_align:
 
-Align sequencing reads to reference sequences
+Align: Trim FASTQ files and align them to reference sequences
 ------------------------------------------------------------------------
 
 Align: Input files
@@ -128,7 +138,7 @@ How to align multiple FASTQ files or pairs of paired-end FASTQ files
 
 There are three ways to align multiple FASTQ files (or pairs thereof):
 
-1.  Use options more than once.
+1.  **Use options more than once.**
     The options for FASTQ files can all be given multiple times, and can
     even be mixed in one command.
     For example, to align a pair of paired-end FASTQ files (sample 1),
@@ -139,7 +149,7 @@ There are three ways to align multiple FASTQ files (or pairs thereof):
 
     This method is most useful when you have a few FASTQ files.
 
-2.  Group FASTQ files of the same type into a directory.
+2.  **Group FASTQ files of the same type into a directory.**
     For example, suppose you have 63 FASTQ files each of paired-end 1st
     mates (named ``sample-1_R1.fq.gz`` to ``sample-63_R1.fq.gz``) and
     2nd mates (named analogously but with ``R2``), plus demultiplexed
@@ -157,7 +167,7 @@ There are three ways to align multiple FASTQ files (or pairs thereof):
 
     This method is most useful when you have many FASTQ files.
 
-3.  Combine methods 1 and 2.
+3.  **Combine methods 1 and 2.**
     Suppose you are working on two projects, have generated a set of
     many FASTQ files for each project, and want to process both sets.
     Currently, the FASTQ files for projects 1 and 2 are in directories
@@ -412,7 +422,7 @@ See :ref:`cli_align` for the full list of options that SEISMIC-RNA can
 use with Bowtie 2, and the `Bowtie 2 manual`_ for details on each of
 these options.
 These options should suffice for most users.
-If you require a more customized alignment workflow, you can align your
+If you require a more customized alignment workflow, then you can align
 your FASTQ files outside of SEISMIC-RNA, then pass the resulting XAM
 files into SEISMIC-RNA at the step :ref:`wf_relate`.
 
@@ -460,7 +470,7 @@ and to increase the robustness of the output files (because BAM files
 are self-contained, while CRAM files will break without the FASTA file
 that accompanies them).
 
-Align: output files
+Align: Output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 All output files, except FastQC reports, are written into the directory
@@ -572,9 +582,10 @@ then try the following steps (in this order):
     RNA such as from *Mycoplasma*, incorrect indexes used during FASTQ
     generation) and whether the reads that did align are still usable.
 
+
 .. _wf_relate:
 
-Relate each read to every reference position
+Relate: Compute relationships between references and aligned reads
 ------------------------------------------------------------------------
 
 Relate: Input files
@@ -591,7 +602,7 @@ See :doc:`../formats/data/fasta` for details.
 Relate input file: Alignment maps
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Relate requires one or more alignment map files, each of which must be
+Relate accepts any number of alignment map files, each of which must be
 in SAM, BAM, or CRAM format (collectively, "XAM" format).
 See :doc:`../formats/data/xam` for details.
 
@@ -602,7 +613,7 @@ See :doc:`../formats/data/xam` for details.
     erroneous relation vectors.
     This problem will not occur if you use the same (unaltered) FASTA
     file for both the ``align`` and ``relate`` commands, or run both
-    at once using the command ``seismic all``.
+    at once using the command ``seismic wf``.
 
 List every alignment map file after the FASTA file.
 Refer to :doc:`./inputs` for details on how to list multiple files.
@@ -669,11 +680,11 @@ Since *L* is known and ``--batch-size`` specifies a target size for *B*,
 
 SEISMIC-RNA will aim to put exactly *N* reads in each batch but the last
 (the last batch can be smaller because it has just the leftover reads).
-If the reads are single-ended or if alignment was not run in mixed mode,
-then every batch but the last will contain exactly *N* reads.
-If mixed mode was used, then batches may contain more than *N* reads, up
-to a maximum of 2\ *N* in the extreme case that every read in the batch
-belonged to a pair in which the other mate did not align.
+If the reads are single-ended or were not aligned in `mixed mode`_, then
+every batch but the last will contain exactly *N* reads.
+If the reads are paired-ended and were aligned in `mixed mode`_, then
+batches may contain more than *N* reads, up to a maximum of 2\ *N* in
+the extreme case that only one read aligned in every mate pair.
 
 Relate: Output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -716,25 +727,211 @@ A report file is written that records the settings used to generate
 relation vectors summarizes the results.
 See :doc:`../formats/report/relate` for more information.
 
-.. _wf_all:
 
-Run the entire workflow with one command
+.. _wf_mask:
+
+Mask: Define mutations and sections to filter reads and positions
 ------------------------------------------------------------------------
 
+Mask: Input files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Mask input file: Relate report
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Mask accepts any number of report files from the Relate step.
+As with all input files, each report file can be given individually, or
+directories containing any number of report files (alongside other types
+of files) can be given, or both.
+Refer to :doc:`./inputs` for details on how to list multiple files.
+
+For example, the following command will run the Mask step (with default
+settings) on every set of reads from the Relate step::
+
+    seismic mask {out}
+
+where ``{out}`` is the path to the output directory.
+
+Mask: Settings
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Mask: Defining sections
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Using the Mask step, sections of reference sequences can be selected for
+analysis, ignoring other parts of the sequences.
+This feature is useful for analyzing small elements of longer sequences,
+such as an `IRES`_ of several hundred nucleotides within a viral genome
+of several thousand.
+
+Mask: Defining sections by coordinates or primer sequences
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sections can be specified by their coordinates or, if the sample was
+prepared as an amplicon (using `RT-PCR`_ with a pair of primers flanking
+a specific sequence), by their forward and reverse primer sequences.
+
+If using coordinates, then note that the first position in the reference
+sequence is always numbered 1, and that the section will contain both
+the first and last coordinates.
+For example, if a reference sequence is 10 bases, then a section defined
+by the first and last coordinates of 4 and 9, respectively, will include
+bases 4, 5, 6, 7, 8, and 9; but not bases 1, 2, 3, or 10.
+The first coordinate must be a positive integer, and the last coordinate
+a non-negative integer greater than or equal to the first coordinate
+minus one, and no greater than the length of the reference sequence.
+If the first and last coordinates are equal, then the section will have
+exactly one position: the position of the equal coordinates.
+If the last coordinate is one less than the first, then the section will
+have zero positions; this behavior is permitted in order to handle the
+edge case of a length-zero section smoothly, but is probably of no use.
+
+If using primers, then the entire sequence of the forward primer and the
+reverse complement of the reverse primer must both occur exactly once in
+the reference sequence (no mismatches or gaps are permitted).
+Primers will cover up any mutations in the cDNA during PCR, so the sites
+bound by the primers provide no information for mutational profiling.
+Thus, the first coordinate of the section is defined as the position one
+after the last position in the forward primer binding site, and the last
+coordinate defined as the position one before the first position in the
+reverse primer binding site (the reverse complement of the primer).
+For example:
+
+- reference sequence: ``TTTCGCTATGTGTTAC``
+- forward primer: ``TCG``
+- reverse primer: ``AAC``
+
+These forward and reverse primers bind coordinates 3-5 and 12-14 of the
+reference sequence, respectively; thus, they define the section 6-11,
+with the sequence ``CTATGT``.
+
+Note that artifacts may occur near the ends of the primers, so ignoring
+one or two positions nearest the primer may help reduce artifacts.
+The option ``--primer-gap`` controls the number of positions between the
+ends of the primers and the ends of the section.
+In the example above, using ``--primer-gap 1`` would remove one position
+from each side of the section, now coordinates 7-10 (``TATG``).
+
+Mask: Defining sections using command line options
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Coordinates and primers can be given as options on the command line.
+
+
+Relate setting: Minimum Phred score
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Base calls with Phred scores below ``--min-phred`` are labeled ambiguous
+matches or substitutions, as if they were ``N``\s.
+For example, if the minimum Phred score is 25 (the default) and a base
+``T`` is called as a match with a Phred score of 20, then it would be
+marked as possibly a match and possibly a subsitution to A, C, or G.
+See :ref:`relate_low_qual` for more information.
+
+Relate setting: Ambiguous insertions and deletions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The most tricky problem in computing relation vectors is that insertions
+and deletions ("indels") in repetitive regions cause ambiguities.
+SEISMIC-RNA introduces a new algorithm for identifying ambiguous indels
+(see :doc:`../algos/ambrel` for more information).
+This algorithm is enabled by default.
+If it is not necessary to identify ambiguous indels, then the algorithm
+can be disabled with ``--no-ambrel``, which will speed up ``relate`` at
+the cost of reducing its accuracy on indels.
+
+Relate setting: Batch size
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+For an explanation of batching and how to use it, see :ref:`batches`.
+
+The dataset is partitioned into batches by the ``relate`` command.
+The option ``--batch-size`` sets a target amount of data for each batch,
+in millions of base calls (megabases).
+This calculation considers the total number of relationships per read,
+which equals the length of the reference sequence.
+Thus, the number of base calls *B* is the product of the number of reads
+*N* and the length of the reference sequence *L*:
+
+*B* = *NL*
+
+Since *L* is known and ``--batch-size`` specifies a target size for *B*,
+*N* can be solved for:
+
+*N* = *B*/*L*
+
+SEISMIC-RNA will aim to put exactly *N* reads in each batch but the last
+(the last batch can be smaller because it has just the leftover reads).
+If the reads are single-ended or were not aligned in `mixed mode`_, then
+every batch but the last will contain exactly *N* reads.
+If the reads are paired-ended and were aligned in `mixed mode`_, then
+batches may contain more than *N* reads, up to a maximum of 2\ *N* in
+the extreme case that only one read aligned in every mate pair.
+
+Relate: Output files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All output files go into the directory ``{out}/{sample}/relate/{ref}``,
+where ``{out}`` is the output directory, ``{sample}`` is the sample, and
+``{ref}`` is the name of the reference.
+
+Relate output file: Batch of relation vectors
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The data of relationships is written in batches.
+Each batch contains a ``RelateBatchIO`` object and is saved to the file
+``relate-batch-{num}.brickle``, where ``{num}`` is the batch number.
+See :doc:`../data/relate/relate` for details on the data structure.
+See :doc:`../formats/data/brickle` for details on brickle files.
+
+Relate output file: Batch of read names
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+For each batch, the relate step assigns an index (a nonnegative integer)
+to each read and writes a file mapping the indexes to the read names.
+Each batch contains a ``QnamesBatchIO`` object and is saved to the file
+``qnames-batch-{num}.brickle``, where ``{num}`` is the batch number.
+See :doc:`../data/relate/qnames` for details on the data structure.
+See :doc:`../formats/data/brickle` for details on brickle files.
+
+Relate output file: Reference sequence
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The relate step writes the reference sequence as a ``RefseqIO`` object
+to the file ``refseq.brickle``.
+See :doc:`../data/relate/refseq` for details on the data structure.
+See :doc:`../formats/data/brickle` for details on brickle files.
+
+Relate output file: Report
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A report file is written that records the settings used to generate
+relation vectors summarizes the results.
+See :doc:`../formats/report/relate` for more information.
+
+
+.. _wf_wf:
+
+Run the entire workflow, from demult/align to graph/export.
+------------------------------------------------------------------------
+
+
+
 .. note::
-    ``seismic all`` accepts FASTQ, SAM/BAM/CRAM, relate/mask/cluster report, and
+    ``seismic wf`` accepts FASTQ, SAM/BAM/CRAM, relate/mask/cluster report, and
     table files and directories as inputs.
 
 From BAM, report, and/or table file(s)::
 
-    seismic all refs.fa out/sample/align/Ref.bam out/sample/*/*-report.json out/sample/table/*/*.csv
+    seismic wf refs.fa out/sample/align/Ref.bam out/sample/*/*-report.json out/sample/table/*/*.csv
 
 
 .. note::
-    Only the align, relate, mask, and table steps run by default. Enable
-    clustering by specifying ``--max-clusters`` (``-k``) followed by the
+    Only the align, relate, mask, and table steps run by default.
+    Enable clustering by specifying ``--max-clusters`` (``-k``) followed by the
     maximum number of clusters to attempt. Enable structure prediction
     with the flag ``--fold``.
+
 
 .. _FastQC: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 .. _Cutadapt: https://cutadapt.readthedocs.io/en/stable/
@@ -753,4 +950,5 @@ From BAM, report, and/or table file(s)::
 .. _BLAST: https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome
 .. _hard link: https://en.wikipedia.org/wiki/Hard_link
 .. _samtools faidx: https://www.htslib.org/doc/samtools-faidx.html
-.. _glob patterns: https://en.wikipedia.org/wiki/Glob_(programming)
+.. _IRES: https://en.wikipedia.org/wiki/Internal_ribosome_entry_site
+.. _RT-PCR: https://en.wikipedia.org/wiki/Reverse_transcription_polymerase_chain_reaction

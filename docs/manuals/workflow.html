@@ -49,20 +49,26 @@
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Manuals</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Running the Workflow</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#align-sequencing-reads-to-reference-sequences">Align sequencing reads to reference sequences</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#align-trim-fastq-files-and-align-them-to-reference-sequences">Align: Trim FASTQ files and align them to reference sequences</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#align-input-files">Align: Input files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#align-settings">Align: Settings</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#align-output-files">Align: output files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#align-output-files">Align: Output files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#align-troubleshooting">Align: Troubleshooting</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#relate-each-read-to-every-reference-position">Relate each read to every reference position</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#relate-compute-relationships-between-references-and-aligned-reads">Relate: Compute relationships between references and aligned reads</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#relate-input-files">Relate: Input files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#relate-settings">Relate: Settings</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#relate-output-files">Relate: Output files</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#run-the-entire-workflow-with-one-command">Run the entire workflow with one command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mask-define-mutations-and-sections-to-filter-reads-and-positions">Mask: Define mutations and sections to filter reads and positions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mask-input-files">Mask: Input files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mask-settings">Mask: Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id4">Relate: Output files</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#run-the-entire-workflow-from-demult-align-to-graph-export">Run the entire workflow, from demult/align to graph/export.</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="cleanfa.html">Cleaning FASTA Files</a></li>
@@ -107,21 +113,27 @@
              
   <section id="running-the-workflow">
 <h1>Running the Workflow<a class="headerlink" href="#running-the-workflow" title="Permalink to this headline"></a></h1>
-<p>There are two points from which you can begin the main workflow:</p>
+<p>There are three points from which you can begin the main workflow:</p>
 <ul class="simple">
-<li><p>If you are starting from files of raw sequencing reads (FASTQ format),
-then begin at the step <a class="reference internal" href="#wf-align"><span class="std std-ref">Align sequencing reads to reference sequences</span></a>.</p></li>
+<li><p>If you are starting from files of raw sequencing reads (FASTQ format)
+that must be demultiplexed (i.e. split into subfiles using barcodes),
+then begin at the step <a class="reference internal" href="#wf-demult"><span class="std std-ref">Align: Trim FASTQ files and align them to reference sequences</span></a>.
+(If you do not know whether you need this feature, then you probably
+do not need it.)</p></li>
+<li><p>If you are starting from files of raw sequencing reads (FASTQ format)
+that do not need to be demultiplexed (i.e. split into subfiles), then
+begin at the step <a class="reference internal" href="#wf-align"><span class="std std-ref">Align: Trim FASTQ files and align them to reference sequences</span></a>.
+<strong>Most users will begin at this step.</strong>.</p></li>
 <li><p>If you are starting from files of aligned sequencing reads (SAM, BAM,
-or CRAM format), then begin at the step <a class="reference internal" href="#wf-relate"><span class="std std-ref">Relate each read to every reference position</span></a>.</p></li>
+or CRAM format), then begin at the step <a class="reference internal" href="#wf-relate"><span class="std std-ref">Relate: Compute relationships between references and aligned reads</span></a>.</p></li>
 </ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The command <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">all</span></code> accepts both types of inputs and runs
-the entire workflow.
-See <a class="reference internal" href="#wf-all"><span class="std std-ref">Run the entire workflow with one command</span></a> for more details.</p>
-</div>
-<section id="align-sequencing-reads-to-reference-sequences">
-<span id="wf-align"></span><h2>Align sequencing reads to reference sequences<a class="headerlink" href="#align-sequencing-reads-to-reference-sequences" title="Permalink to this headline"></a></h2>
+<p>Each step of the workflow can be run individually by typing the command
+to which it corresponds; for example <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code> runs alignment.
+For convenience, SEISMIC-RNA also provides the command <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code>,
+which runs every step of the main workflow automatically.
+See <a class="reference internal" href="#wf-wf"><span class="std std-ref">Run the entire workflow, from demult/align to graph/export.</span></a> for more information.</p>
+<section id="align-trim-fastq-files-and-align-them-to-reference-sequences">
+<span id="wf-align"></span><span id="wf-demult"></span><h2>Align: Trim FASTQ files and align them to reference sequences<a class="headerlink" href="#align-trim-fastq-files-and-align-them-to-reference-sequences" title="Permalink to this headline"></a></h2>
 <section id="align-input-files">
 <h3>Align: Input files<a class="headerlink" href="#align-input-files" title="Permalink to this headline"></a></h3>
 <section id="align-input-file-reference-sequences">
@@ -240,7 +252,7 @@ provide the path to that directory with <code class="docutils literal notranslat
 <h5>How to align multiple FASTQ files or pairs of paired-end FASTQ files<a class="headerlink" href="#how-to-align-multiple-fastq-files-or-pairs-of-paired-end-fastq-files" title="Permalink to this headline"></a></h5>
 <p>There are three ways to align multiple FASTQ files (or pairs thereof):</p>
 <ol class="arabic">
-<li><p>Use options more than once.
+<li><p><strong>Use options more than once.</strong>
 The options for FASTQ files can all be given multiple times, and can
 even be mixed in one command.
 For example, to align a pair of paired-end FASTQ files (sample 1),
@@ -251,7 +263,7 @@ FASTQ files (samples 3 and 4), use the following options:</p>
 </div>
 <p>This method is most useful when you have a few FASTQ files.</p>
 </li>
-<li><p>Group FASTQ files of the same type into a directory.
+<li><p><strong>Group FASTQ files of the same type into a directory.</strong>
 For example, suppose you have 63 FASTQ files each of paired-end 1st
 mates (named <code class="docutils literal notranslate"><span class="pre">sample-1_R1.fq.gz</span></code> to <code class="docutils literal notranslate"><span class="pre">sample-63_R1.fq.gz</span></code>) and
 2nd mates (named analogously but with <code class="docutils literal notranslate"><span class="pre">R2</span></code>), plus demultiplexed
@@ -269,7 +281,7 @@ seismic align {refs.fa} -x {paired} -Z {dm-single}
 </div>
 <p>This method is most useful when you have many FASTQ files.</p>
 </li>
-<li><p>Combine methods 1 and 2.
+<li><p><strong>Combine methods 1 and 2.</strong>
 Suppose you are working on two projects, have generated a set of
 many FASTQ files for each project, and want to process both sets.
 Currently, the FASTQ files for projects 1 and 2 are in directories
@@ -531,9 +543,9 @@ Setting <code class="docutils literal notranslate"><span class="pre">--min-reads
 use with Bowtie 2, and the <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml">Bowtie 2 manual</a> for details on each of
 these options.
 These options should suffice for most users.
-If you require a more customized alignment workflow, you can align your
+If you require a more customized alignment workflow, then you can align
 your FASTQ files outside of SEISMIC-RNA, then pass the resulting XAM
-files into SEISMIC-RNA at the step <a class="reference internal" href="#wf-relate"><span class="std std-ref">Relate each read to every reference position</span></a>.</p>
+files into SEISMIC-RNA at the step <a class="reference internal" href="#wf-relate"><span class="std std-ref">Relate: Compute relationships between references and aligned reads</span></a>.</p>
 </section>
 </section>
 <section id="align-setting-format-of-alignment-maps">
@@ -578,7 +590,7 @@ that accompanies them).</p>
 </section>
 </section>
 <section id="align-output-files">
-<h3>Align: output files<a class="headerlink" href="#align-output-files" title="Permalink to this headline"></a></h3>
+<h3>Align: Output files<a class="headerlink" href="#align-output-files" title="Permalink to this headline"></a></h3>
 <p>All output files, except FastQC reports, are written into the directory
 <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/align</span></code>, where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory and
 <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the name of the sample.</p>
@@ -680,8 +692,8 @@ generation) and whether the reads that did align are still usable.</p></li>
 </section>
 </section>
 </section>
-<section id="relate-each-read-to-every-reference-position">
-<span id="wf-relate"></span><h2>Relate each read to every reference position<a class="headerlink" href="#relate-each-read-to-every-reference-position" title="Permalink to this headline"></a></h2>
+<section id="relate-compute-relationships-between-references-and-aligned-reads">
+<span id="wf-relate"></span><h2>Relate: Compute relationships between references and aligned reads<a class="headerlink" href="#relate-compute-relationships-between-references-and-aligned-reads" title="Permalink to this headline"></a></h2>
 <section id="relate-input-files">
 <h3>Relate: Input files<a class="headerlink" href="#relate-input-files" title="Permalink to this headline"></a></h3>
 <section id="relate-input-file-reference-sequences">
@@ -693,7 +705,7 @@ See <a class="reference internal" href="../formats/data/fasta.html"><span class=
 </section>
 <section id="relate-input-file-alignment-maps">
 <h4>Relate input file: Alignment maps<a class="headerlink" href="#relate-input-file-alignment-maps" title="Permalink to this headline"></a></h4>
-<p>Relate requires one or more alignment map files, each of which must be
+<p>Relate accepts any number of alignment map files, each of which must be
 in SAM, BAM, or CRAM format (collectively, “XAM” format).
 See <a class="reference internal" href="../formats/data/xam.html"><span class="doc">SAM, BAM, and CRAM: Alignment Maps</span></a> for details.</p>
 <div class="admonition note">
@@ -704,7 +716,7 @@ Discrepancies can cause the <code class="docutils literal notranslate"><span cla
 erroneous relation vectors.
 This problem will not occur if you use the same (unaltered) FASTA
 file for both the <code class="docutils literal notranslate"><span class="pre">align</span></code> and <code class="docutils literal notranslate"><span class="pre">relate</span></code> commands, or run both
-at once using the command <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">all</span></code>.</p>
+at once using the command <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code>.</p>
 </div>
 <p>List every alignment map file after the FASTA file.
 Refer to <a class="reference internal" href="inputs.html"><span class="doc">Listing Input Files</span></a> for details on how to list multiple files.
@@ -762,11 +774,11 @@ Thus, the number of base calls <em>B</em> is the product of the number of reads
 <p><em>N</em> = <em>B</em>/<em>L</em></p>
 <p>SEISMIC-RNA will aim to put exactly <em>N</em> reads in each batch but the last
 (the last batch can be smaller because it has just the leftover reads).
-If the reads are single-ended or if alignment was not run in mixed mode,
-then every batch but the last will contain exactly <em>N</em> reads.
-If mixed mode was used, then batches may contain more than <em>N</em> reads, up
-to a maximum of 2<em>N</em> in the extreme case that every read in the batch
-belonged to a pair in which the other mate did not align.</p>
+If the reads are single-ended or were not aligned in <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mixed-mode-paired-where-possible-unpaired-otherwise">mixed mode</a>, then
+every batch but the last will contain exactly <em>N</em> reads.
+If the reads are paired-ended and were aligned in <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mixed-mode-paired-where-possible-unpaired-otherwise">mixed mode</a>, then
+batches may contain more than <em>N</em> reads, up to a maximum of 2<em>N</em> in
+the extreme case that only one read aligned in every mate pair.</p>
 </section>
 </section>
 <section id="relate-output-files">
@@ -806,21 +818,178 @@ See <a class="reference internal" href="../formats/report/relate.html"><span cla
 </section>
 </section>
 </section>
-<section id="run-the-entire-workflow-with-one-command">
-<span id="wf-all"></span><h2>Run the entire workflow with one command<a class="headerlink" href="#run-the-entire-workflow-with-one-command" title="Permalink to this headline"></a></h2>
+<section id="mask-define-mutations-and-sections-to-filter-reads-and-positions">
+<span id="wf-mask"></span><h2>Mask: Define mutations and sections to filter reads and positions<a class="headerlink" href="#mask-define-mutations-and-sections-to-filter-reads-and-positions" title="Permalink to this headline"></a></h2>
+<section id="mask-input-files">
+<h3>Mask: Input files<a class="headerlink" href="#mask-input-files" title="Permalink to this headline"></a></h3>
+<section id="mask-input-file-relate-report">
+<h4>Mask input file: Relate report<a class="headerlink" href="#mask-input-file-relate-report" title="Permalink to this headline"></a></h4>
+<p>Mask accepts any number of report files from the Relate step.
+As with all input files, each report file can be given individually, or
+directories containing any number of report files (alongside other types
+of files) can be given, or both.
+Refer to <a class="reference internal" href="inputs.html"><span class="doc">Listing Input Files</span></a> for details on how to list multiple files.</p>
+<p>For example, the following command will run the Mask step (with default
+settings) on every set of reads from the Relate step:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">mask</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the path to the output directory.</p>
+</section>
+</section>
+<section id="mask-settings">
+<h3>Mask: Settings<a class="headerlink" href="#mask-settings" title="Permalink to this headline"></a></h3>
+<section id="mask-defining-sections">
+<h4>Mask: Defining sections<a class="headerlink" href="#mask-defining-sections" title="Permalink to this headline"></a></h4>
+<p>Using the Mask step, sections of reference sequences can be selected for
+analysis, ignoring other parts of the sequences.
+This feature is useful for analyzing small elements of longer sequences,
+such as an <a class="reference external" href="https://en.wikipedia.org/wiki/Internal_ribosome_entry_site">IRES</a> of several hundred nucleotides within a viral genome
+of several thousand.</p>
+<section id="mask-defining-sections-by-coordinates-or-primer-sequences">
+<h5>Mask: Defining sections by coordinates or primer sequences<a class="headerlink" href="#mask-defining-sections-by-coordinates-or-primer-sequences" title="Permalink to this headline"></a></h5>
+<p>Sections can be specified by their coordinates or, if the sample was
+prepared as an amplicon (using <a class="reference external" href="https://en.wikipedia.org/wiki/Reverse_transcription_polymerase_chain_reaction">RT-PCR</a> with a pair of primers flanking
+a specific sequence), by their forward and reverse primer sequences.</p>
+<p>If using coordinates, then note that the first position in the reference
+sequence is always numbered 1, and that the section will contain both
+the first and last coordinates.
+For example, if a reference sequence is 10 bases, then a section defined
+by the first and last coordinates of 4 and 9, respectively, will include
+bases 4, 5, 6, 7, 8, and 9; but not bases 1, 2, 3, or 10.
+The first coordinate must be a positive integer, and the last coordinate
+a non-negative integer greater than or equal to the first coordinate
+minus one, and no greater than the length of the reference sequence.
+If the first and last coordinates are equal, then the section will have
+exactly one position: the position of the equal coordinates.
+If the last coordinate is one less than the first, then the section will
+have zero positions; this behavior is permitted in order to handle the
+edge case of a length-zero section smoothly, but is probably of no use.</p>
+<p>If using primers, then the entire sequence of the forward primer and the
+reverse complement of the reverse primer must both occur exactly once in
+the reference sequence (no mismatches or gaps are permitted).
+Primers will cover up any mutations in the cDNA during PCR, so the sites
+bound by the primers provide no information for mutational profiling.
+Thus, the first coordinate of the section is defined as the position one
+after the last position in the forward primer binding site, and the last
+coordinate defined as the position one before the first position in the
+reverse primer binding site (the reverse complement of the primer).
+For example:</p>
+<ul class="simple">
+<li><p>reference sequence: <code class="docutils literal notranslate"><span class="pre">TTTCGCTATGTGTTAC</span></code></p></li>
+<li><p>forward primer: <code class="docutils literal notranslate"><span class="pre">TCG</span></code></p></li>
+<li><p>reverse primer: <code class="docutils literal notranslate"><span class="pre">AAC</span></code></p></li>
+</ul>
+<p>These forward and reverse primers bind coordinates 3-5 and 12-14 of the
+reference sequence, respectively; thus, they define the section 6-11,
+with the sequence <code class="docutils literal notranslate"><span class="pre">CTATGT</span></code>.</p>
+<p>Note that artifacts may occur near the ends of the primers, so ignoring
+one or two positions nearest the primer may help reduce artifacts.
+The option <code class="docutils literal notranslate"><span class="pre">--primer-gap</span></code> controls the number of positions between the
+ends of the primers and the ends of the section.
+In the example above, using <code class="docutils literal notranslate"><span class="pre">--primer-gap</span> <span class="pre">1</span></code> would remove one position
+from each side of the section, now coordinates 7-10 (<code class="docutils literal notranslate"><span class="pre">TATG</span></code>).</p>
+</section>
+<section id="mask-defining-sections-using-command-line-options">
+<h5>Mask: Defining sections using command line options<a class="headerlink" href="#mask-defining-sections-using-command-line-options" title="Permalink to this headline"></a></h5>
+<p>Coordinates and primers can be given as options on the command line.</p>
+</section>
+</section>
+<section id="id1">
+<h4>Relate setting: Minimum Phred score<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h4>
+<p>Base calls with Phred scores below <code class="docutils literal notranslate"><span class="pre">--min-phred</span></code> are labeled ambiguous
+matches or substitutions, as if they were <code class="docutils literal notranslate"><span class="pre">N</span></code>s.
+For example, if the minimum Phred score is 25 (the default) and a base
+<code class="docutils literal notranslate"><span class="pre">T</span></code> is called as a match with a Phred score of 20, then it would be
+marked as possibly a match and possibly a subsitution to A, C, or G.
+See <a class="reference internal" href="../data/relate/codes.html#relate-low-qual"><span class="std std-ref">Encoding low-quality base calls</span></a> for more information.</p>
+</section>
+<section id="id2">
+<h4>Relate setting: Ambiguous insertions and deletions<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h4>
+<p>The most tricky problem in computing relation vectors is that insertions
+and deletions (“indels”) in repetitive regions cause ambiguities.
+SEISMIC-RNA introduces a new algorithm for identifying ambiguous indels
+(see <span class="xref std std-doc">../algos/ambrel</span> for more information).
+This algorithm is enabled by default.
+If it is not necessary to identify ambiguous indels, then the algorithm
+can be disabled with <code class="docutils literal notranslate"><span class="pre">--no-ambrel</span></code>, which will speed up <code class="docutils literal notranslate"><span class="pre">relate</span></code> at
+the cost of reducing its accuracy on indels.</p>
+</section>
+<section id="id3">
+<h4>Relate setting: Batch size<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h4>
+<p>For an explanation of batching and how to use it, see <a class="reference internal" href="parallel.html#batches"><span class="std std-ref">Batches and Benefits</span></a>.</p>
+<p>The dataset is partitioned into batches by the <code class="docutils literal notranslate"><span class="pre">relate</span></code> command.
+The option <code class="docutils literal notranslate"><span class="pre">--batch-size</span></code> sets a target amount of data for each batch,
+in millions of base calls (megabases).
+This calculation considers the total number of relationships per read,
+which equals the length of the reference sequence.
+Thus, the number of base calls <em>B</em> is the product of the number of reads
+<em>N</em> and the length of the reference sequence <em>L</em>:</p>
+<p><em>B</em> = <em>NL</em></p>
+<p>Since <em>L</em> is known and <code class="docutils literal notranslate"><span class="pre">--batch-size</span></code> specifies a target size for <em>B</em>,
+<em>N</em> can be solved for:</p>
+<p><em>N</em> = <em>B</em>/<em>L</em></p>
+<p>SEISMIC-RNA will aim to put exactly <em>N</em> reads in each batch but the last
+(the last batch can be smaller because it has just the leftover reads).
+If the reads are single-ended or were not aligned in <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mixed-mode-paired-where-possible-unpaired-otherwise">mixed mode</a>, then
+every batch but the last will contain exactly <em>N</em> reads.
+If the reads are paired-ended and were aligned in <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mixed-mode-paired-where-possible-unpaired-otherwise">mixed mode</a>, then
+batches may contain more than <em>N</em> reads, up to a maximum of 2<em>N</em> in
+the extreme case that only one read aligned in every mate pair.</p>
+</section>
+</section>
+<section id="id4">
+<h3>Relate: Output files<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h3>
+<p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/relate/{ref}</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, and
+<code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is the name of the reference.</p>
+<section id="id5">
+<h4>Relate output file: Batch of relation vectors<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h4>
+<p>The data of relationships is written in batches.
+Each batch contains a <code class="docutils literal notranslate"><span class="pre">RelateBatchIO</span></code> object and is saved to the file
+<code class="docutils literal notranslate"><span class="pre">relate-batch-{num}.brickle</span></code>, where <code class="docutils literal notranslate"><span class="pre">{num}</span></code> is the batch number.
+See <a class="reference internal" href="../data/relate/relate.html"><span class="doc">Relate Batch</span></a> for details on the data structure.
+See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for details on brickle files.</p>
+</section>
+<section id="id6">
+<h4>Relate output file: Batch of read names<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h4>
+<p>For each batch, the relate step assigns an index (a nonnegative integer)
+to each read and writes a file mapping the indexes to the read names.
+Each batch contains a <code class="docutils literal notranslate"><span class="pre">QnamesBatchIO</span></code> object and is saved to the file
+<code class="docutils literal notranslate"><span class="pre">qnames-batch-{num}.brickle</span></code>, where <code class="docutils literal notranslate"><span class="pre">{num}</span></code> is the batch number.
+See <a class="reference internal" href="../data/relate/qnames.html"><span class="doc">Read Names Batch</span></a> for details on the data structure.
+See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for details on brickle files.</p>
+</section>
+<section id="id7">
+<h4>Relate output file: Reference sequence<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h4>
+<p>The relate step writes the reference sequence as a <code class="docutils literal notranslate"><span class="pre">RefseqIO</span></code> object
+to the file <code class="docutils literal notranslate"><span class="pre">refseq.brickle</span></code>.
+See <a class="reference internal" href="../data/relate/refseq.html"><span class="doc">Reference Sequence</span></a> for details on the data structure.
+See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for details on brickle files.</p>
+</section>
+<section id="id8">
+<h4>Relate output file: Report<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h4>
+<p>A report file is written that records the settings used to generate
+relation vectors summarizes the results.
+See <a class="reference internal" href="../formats/report/relate.html"><span class="doc">Relate Report</span></a> for more information.</p>
+</section>
+</section>
+</section>
+<section id="run-the-entire-workflow-from-demult-align-to-graph-export">
+<span id="wf-wf"></span><h2>Run the entire workflow, from demult/align to graph/export.<a class="headerlink" href="#run-the-entire-workflow-from-demult-align-to-graph-export" title="Permalink to this headline"></a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">all</span></code> accepts FASTQ, SAM/BAM/CRAM, relate/mask/cluster report, and
+<p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> accepts FASTQ, SAM/BAM/CRAM, relate/mask/cluster report, and
 table files and directories as inputs.</p>
 </div>
 <p>From BAM, report, and/or table file(s):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="nb">all</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span> <span class="n">out</span><span class="o">/</span><span class="n">sample</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">Ref</span><span class="o">.</span><span class="n">bam</span> <span class="n">out</span><span class="o">/</span><span class="n">sample</span><span class="o">/*/*-</span><span class="n">report</span><span class="o">.</span><span class="n">json</span> <span class="n">out</span><span class="o">/</span><span class="n">sample</span><span class="o">/</span><span class="n">table</span><span class="o">/*/*.</span><span class="n">csv</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">wf</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span> <span class="n">out</span><span class="o">/</span><span class="n">sample</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">Ref</span><span class="o">.</span><span class="n">bam</span> <span class="n">out</span><span class="o">/</span><span class="n">sample</span><span class="o">/*/*-</span><span class="n">report</span><span class="o">.</span><span class="n">json</span> <span class="n">out</span><span class="o">/</span><span class="n">sample</span><span class="o">/</span><span class="n">table</span><span class="o">/*/*.</span><span class="n">csv</span>
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Only the align, relate, mask, and table steps run by default. Enable
-clustering by specifying <code class="docutils literal notranslate"><span class="pre">--max-clusters</span></code> (<code class="docutils literal notranslate"><span class="pre">-k</span></code>) followed by the
+<p>Only the align, relate, mask, and table steps run by default.
+Enable clustering by specifying <code class="docutils literal notranslate"><span class="pre">--max-clusters</span></code> (<code class="docutils literal notranslate"><span class="pre">-k</span></code>) followed by the
 maximum number of clusters to attempt. Enable structure prediction
 with the flag <code class="docutils literal notranslate"><span class="pre">--fold</span></code>.</p>
 </div>

@@ -17,7 +17,7 @@ The sections file additionally permits giving each section a name.
 Commands that use metadata for sections
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-- ``seismic all``
+- ``seismic wf``
 - ``seismic mask``
 - ``seismic fold``
 
