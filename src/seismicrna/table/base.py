@@ -184,7 +184,7 @@ class Table(ABC):
     def path_fields(self) -> dict[str, Any]:
         """ Table's path fields. """
         return {path.TOP: self.top,
-                path.CMD: path.CMD_TBL_DIR,
+                path.CMD: path.CMD_TABLE_DIR,
                 path.SAMP: self.sample,
                 path.REF: self.ref,
                 path.SECT: self.sect,

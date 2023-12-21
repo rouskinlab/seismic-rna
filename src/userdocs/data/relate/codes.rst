@@ -70,24 +70,25 @@ bases to define the relationship:
 .. _relate_low_qual:
 
 Encoding low-quality base calls
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-A low-quality base call is defined as having a `Phred quality score`_
-below the user-specified threshold (default: 25). Low-quality base calls
-are processed as if they could be any of the four nucleotides. The type
-of relationship that would occur if the read base were each of the four
-nucleotides is determined. The bytes for those relationships are united
-via `bitwise OR`_ into a consensus byte for the ambiguous relationship.
+A low-quality base call is defined as having a `Phred quality score`_ below the
+user-specified threshold (default: 25).
+Low-quality base calls are treated as if they could be any of the four bases.
+The type of relationship that would occur if the read base were each of the four
+bases is determined.
+The bytes for those relationships are united via `bitwise OR`_ into a consensus
+byte for the ambiguous relationship.
 
-For example, suppose a low-quality base call in the read aligns to a T
-in the reference. If the read base (which is unknown because of its low
-quality) were actually A, then the relationship would be a substitution
-to A (``00010000``). Likewise if the read base were C (``00100000``) or
-G (``01000000``). If the read base were T, then the relationship would
-be a match (``00000001``). The bytes for these four possible situations
-are merged by taking the bitwise OR into a consensus byte (``01110001``)
-that expresses the ambiguity in the relationship. This consensus byte is
-inserted into the relation vector.
+For example, suppose a low-quality base call in the read aligns to a T in the
+reference.
+If the read base (which is unknown because of its low quality) were actually A,
+then the relationship would be a substitution to A (``00010000``).
+Likewise if the read base were C (``00100000``) or G (``01000000``).
+If the read base were T, then the relationship would be a match (``00000001``).
+The bytes for these four possible situations are merged by taking the bitwise OR
+into a consensus byte (``01110001``) that shows ambiguity in the relationship.
+This consensus byte is inserted into the relation vector.
 
 ============== ============================ ========== ===== =====
  If read were   Then relationship would be   Byte       Dec   Hex
@@ -99,15 +100,16 @@ inserted into the relation vector.
  Low-quality    Any of the above             01110001   113    71
 ============== ============================ ========== ===== =====
 
-Each row of the following table repeats this calculation for one type of
-reference base (Ref). Each column "Read: A/C/G/T?" shows what would be
-the relationship if the low-quality base in the read were actually the
-base in the column header. For example, in the first row, the reference
-base is A: if the read base were A (first column), then the relationship
-would be a match (``00000001``); and if it were C (second column), then
-the relationship would be a substitution to C (``00100000``). The column
-"Byte" shows the resulting ambiguous relationship, the bitwise OR of the
-four columns "Read: A/C/G/T?".
+In the following table, each row repeats this calculation for one type of base
+in the reference (column "Ref").
+Each column named "Read: A?" / "Read: C?" / "Read: G?" / "Read: T?" shows what
+the relationship would be if the low-quality base in the read were actually the
+base in the column header.
+For example, in the first row, the reference base is A: if the read base were A,
+then the relationship would be a match (``00000001``); and if it were C, then
+the relationship would be a substitution to C (``00100000``).
+The column "Byte" shows the resulting ambiguous relationship, the bitwise OR of
+the four columns "Read: A/C/G/T?".
 
 ===== ========== ========== ========== ========== ========== ===== =====
  Ref   Read: A?   Read: C?   Read: G?   Read: T?   Byte       Dec   Hex
@@ -119,20 +121,21 @@ four columns "Read: A/C/G/T?".
 ===== ========== ========== ========== ========== ========== ===== =====
 
 .. note::
-    A byte that has more than one bit set to 1 does **not** count more
-    than once towards the total number of matches or mutations. To learn
-    how mutations in relation vectors are counted, see [REF].
+    A byte that has more than one bit set to 1 does **not** count more than once
+    towards the total number of matches or mutations.
+    To learn how mutations in relation vectors are counted, see [REF].
 
 Encoding ambiguous insertions and deletions
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Insertions and deletions (collectively, "indels") in the read can cause
-ambiguities that even the highest quality sequencing reads could not
-prevent. When one or more bases are inserted or deleted in a repetitive
-sequence, the exact base that mutated cannot be determined. For example,
-if the reference is ``ATCCTG`` and the read is ``ATCTG``, then one C was
-clearly deleted from the read. But determining whether it was the first
-or second C is impossible because the alignments are equally good:
+Insertions and deletions (collectively, "indels") in the read cause ambiguities
+that even the highest quality sequencing reads could not prevent.
+When one or more bases are inserted or deleted in a repetitive sequence, the
+exact base that mutated cannot be determined.
+For example, if the reference is ``ATCCTG`` and the read is ``ATCTG``, then one
+C was clearly deleted from the read.
+But determining whether it was the first or second C is impossible because the
+alignments are equally good:
 
 **Deletion of the first C** ::
 
@@ -146,12 +149,13 @@ or second C is impossible because the alignments are equally good:
     ||| ||
     ATCCTG
 
-Ambiguities in the location of a relationship are encoded by turning on
-the bit of every possible relationship at each position. In the above
-example, position 3 of the reference could be a deletion (``00000010``)
-or a match (``00000001``), so the byte it receives is the bitwise OR of
-the two relationships: ``00000011``. Likewise for position 4. Thus, the
-relationship byte at each position (Pos) in the alignment would be
+Ambiguities in the location of a relationship are encoded by turning on the bit
+of every possible relationship at each position.
+In the above example, there could be a deletion (``00000010``) or a match
+(``00000001``) at position 3 of the reference, so the byte it receives is the
+bitwise OR of the two relationships: ``00000011``.
+Likewise for position 4.
+Thus, the relationship byte at each position (Pos) in the alignment would be
 
 ===== ========== =====
  Pos   Byte       Hex
@@ -165,46 +169,47 @@ relationship byte at each position (Pos) in the alignment would be
 ===== ========== =====
 
 .. note::
-    A byte that has more than one bit set to 1 does **not** count more
-    than once towards the total number of matches or mutations. To learn
-    how mutations in relation vectors are counted, see [REF].
+    A byte that has more than one bit set to 1 does **not** count more than once
+    towards the total number of matches or mutations.
+    To learn how mutations in relation vectors are counted, see [REF].
 
-To learn how the algorithm that finds ambiguous indels works, see
-[REF].
+To learn how the algorithm that finds ambiguous indels works, see [REF].
 
 Encoding positions not covered by the read
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If a read is shorter than the reference, then it will not align to every
-position in the reference. The "blank" positions to which it does not
-align provide no information and are thus considered fully ambiguous and
-assigned the byte ``11111111`` (decimal 255, hexadecimal ff).
+If a read is shorter than the reference, then some positions in the reference
+will not be covered by the read.
+The "blank" positions to which the read does not align provide no information
+and are thus considered fully ambiguous and assigned the byte ``11111111``
+(decimal 255, hexadecimal ff).
 
 Encoding paired-end reads
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For paired-end reads, both mates produce a relation vector. They must be
-merged into one consensus relation vector to avoid double-counting any
-positions where the two mates overlap. Ideally, the mates would have
-identical relationships. However, they often differ because a position
-is covered in one mate but not in the other, one mate's Phred score is
-above the threshold and the other's is below, or (more rarely) the base
-calls themselves differ.
+For paired-end reads, both mates produce a relation vector.
+They must be merged into one consensus relation vector to avoid double-counting
+any positions where the two mates overlap.
+Ideally, the mates would have identical relationships.
+However, they often differ because a position is covered in one mate but not in
+the other, one mate's Phred score is above the threshold while the other's is
+below, or (more rarely) the base calls themselves differ.
 
 Encoding consensus relationships
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-When finding the consensus of two mates, information in one mate should
-compensate for a lack thereof in the other. Recall that a relationship
-byte indicates all possible relationships at its position. The more bits
-that are set to 1, the more ambiguity (and the less knowledge) there is
-about the relationship. For one mate to add knowledge to the other, the
-consensus byte must thus have no more 1s than the byte of either mate.
-Specifically, a bit in the consensus should be 1 only if it is 1 in both
-mates. This operation is `bitwise AND`_.
+When finding the consensus of two mates, information in one mate should fill in
+for a lack thereof in the other.
+Recall that each byte indicates all possible relationships at its position.
+The more bits that are set to 1, the more ambiguity (and the less knowledge)
+there is about the relationship.
+For one mate to add knowledge to the other, the consensus byte must thus have no
+more 1s than the byte of either mate.
+Specifically, a bit in the consensus should be 1 only if it is 1 in both mates.
+This result is achieved using the `bitwise AND`_ operation.
 
-For example, consider the following mate 1 and mate 2, where the column
-"Result" indicates the consensus byte after taking the bitwise AND:
+For example, consider the following mate 1 and mate 2, where the column "Result"
+indicates the consensus byte after taking the bitwise AND:
 
 ===== ========== ========== ==========
  Pos    Mate 1     Mate 2     Result
@@ -217,25 +222,24 @@ For example, consider the following mate 1 and mate 2, where the column
   6    11111111   11111111   11111111
 ===== ========== ========== ==========
 
-At position 1, the mates agree on a match. At position 2, mate 2 has low
-quality, but mate 1 compensates with a high-quality match, so that the
-result has only the match bit set to 1. Similarly, at position 3, a
-substitution to G in mate 2 compensates for the low quality base call in
-mate 1: substitution to G is the consensus. Mate 1 does not cover the
-positions 4-6 (hence the blank bytes ``11111111``). Mate 2 informs that
-position 4 is a match, but it is low quality at position 5, so even the
-consensus byte is ambiguous. Neither mate covers position 6, so the
-consensus byte is blank.
+At position 1, the mates agree on a match.
+At position 2, mate 2 has low quality, but mate 1 has a high-quality match, so
+that the result has only the match bit set to 1.
+Similarly, at position 3, a substitution to G in mate 2 compensates for the low
+quality base call in mate 1: substitution to G is the consensus.
+Mate 1 does not cover the positions 4-6 (hence the blank bytes ``11111111``).
+Mate 2 informs that position 4 is a match, but it is low quality at position 5,
+so even the consensus byte is ambiguous.
+Neither mate covers position 6, so the consensus byte is blank.
 
 Encoding irreconcilable relationships
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-It is possible, although rare, for mates 1 and 2 to share no bits. For
-example, if mate 1 were a high-quality match (``00000001``) and mate 2
-were a high-quality substitution to T (``10000000``), then the bitwise
-AND would be all zeros (``00000000``). The mates would be irreconcilable
-at this position.
-
+It is possible, although rare, for mates 1 and 2 to share no bits.
+For example, if mate 1 were a high-quality match (``00000001``) and mate 2 were
+a high-quality substitution to T (``10000000``), then the bitwise AND would be
+all zeros (``00000000``).
+The mates would be irreconcilable at this position.
 
 .. _Phred quality score: https://en.wikipedia.org/wiki/Phred_quality_score
 .. _bitwise OR: https://en.wikipedia.org/wiki/Bitwise_operation#OR

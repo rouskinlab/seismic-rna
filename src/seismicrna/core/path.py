@@ -61,26 +61,26 @@ RE_PATTERNS = {str: STR_PATTERN, int: INT_PATTERN, pl.Path: PATH_PATTERN}
 
 # Directories for commands
 
-CMD_FQC_DIR = "qc"
-CMD_ALN_DIR = "align"
+CMD_QC_DIR = "qc"
+CMD_ALIGN_DIR = "align"
 CMD_REL_DIR = "relate"
-CMD_MSK_DIR = "mask"
-CMD_CLS_DIR = "cluster"
-CMD_TBL_DIR = "table"
+CMD_MASK_DIR = "mask"
+CMD_CLUST_DIR = "cluster"
+CMD_TABLE_DIR = "table"
 CMD_FOLD_DIR = "fold"
-CMD_GRA_DIR = "graph"
+CMD_GRAPH_DIR = "graph"
 
 # Directories for steps
 
-STEP_QC_INIT = "init"
-STEP_QC_TRIM = "trim"
+STEP_QC_INIT = "initial"
+STEP_QC_TRIM = "trimmed"
 
 STEP_ALIGN_INDEX = "index"
 STEP_ALIGN_INDEX_DEMULT = "index-demult"
 STEP_ALIGN_TRIM = "trim"
 STEP_ALIGN_MAP = "map"
 
-STEPS_VECT_SAMS = "sams"
+STEPS_REL_SAMS = "sams"
 
 STEPS = (STEP_QC_INIT,
          STEP_QC_TRIM,
@@ -88,7 +88,7 @@ STEPS = (STEP_QC_INIT,
          STEP_ALIGN_INDEX_DEMULT,
          STEP_ALIGN_TRIM,
          STEP_ALIGN_MAP,
-         STEPS_VECT_SAMS)
+         STEPS_REL_SAMS)
 
 # Tables
 
@@ -287,14 +287,14 @@ class Field(object):
 # Fields
 TopField = Field(pl.Path)
 NameField = Field(str)
-CmdField = Field(str, [CMD_FQC_DIR,
-                       CMD_ALN_DIR,
+CmdField = Field(str, [CMD_QC_DIR,
+                       CMD_ALIGN_DIR,
                        CMD_REL_DIR,
-                       CMD_MSK_DIR,
-                       CMD_CLS_DIR,
-                       CMD_TBL_DIR,
+                       CMD_MASK_DIR,
+                       CMD_CLUST_DIR,
+                       CMD_TABLE_DIR,
                        CMD_FOLD_DIR,
-                       CMD_GRA_DIR])
+                       CMD_GRAPH_DIR])
 StepField = Field(str, STEPS)
 IntField = Field(int)
 CountTabField = Field(str, COUNT_TABLES)

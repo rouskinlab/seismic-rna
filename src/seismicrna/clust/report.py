@@ -71,7 +71,7 @@ class ClustReport(BatchedReport, ClustIO):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.CMD_CLS_DIR}
+        return {**super().auto_fields(), path.CMD: path.CMD_CLUST_DIR}
 
     @classmethod
     def get_batch_seg(cls):

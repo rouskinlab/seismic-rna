@@ -81,10 +81,10 @@ FASTA as input file
 
 Reference sequences for these commands must be input as FASTA files:
 
-- ``all``
-- ``align``
-- ``relate``
-- ``fold``
+- ``seismic wf``
+- ``seismic align``
+- ``seismic relate``
+- ``seismic fold``
 
 FASTA as output file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

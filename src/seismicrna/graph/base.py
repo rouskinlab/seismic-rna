@@ -226,7 +226,7 @@ class GraphBase(ABC):
         """ Path fields. """
         return {path.TOP: self.top,
                 path.SAMP: self.sample,
-                path.CMD: path.CMD_GRA_DIR,
+                path.CMD: path.CMD_GRAPH_DIR,
                 path.REF: self.ref,
                 path.SECT: self.sect,
                 path.GRAPH: self.graph_filename}
