@@ -763,17 +763,38 @@ analysis, ignoring other parts of the sequences.
 This feature is useful for analyzing small elements of longer sequences,
 such as an `IRES`_ of several hundred nucleotides within a viral genome
 of several thousand.
-For information on defining sections, see :doc:`./sections`.
+For more information, see :doc:`./sections`.
 
-Relate setting: Minimum Phred score
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Mask setting: Mutations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Base calls with Phred scores below ``--min-phred`` are labeled ambiguous
-matches or substitutions, as if they were ``N``\s.
-For example, if the minimum Phred score is 25 (the default) and a base
-``T`` is called as a match with a Phred score of 20, then it would be
-marked as possibly a match and possibly a subsitution to A, C, or G.
-See :ref:`relate_low_qual` for more information.
+The Mask step accepts relation vectors -- which encode relationships including
+ambiguous mutations -- and outputs bit vectors, wherein each position in each
+read has a binary, mutated/matched status.
+For more information, see :doc:`../data/relate/codes`.
+Producing bit vectors requires deciding which types of relationships count as
+mutations, which count as matches, and which count as neither.
+By default, all 4 types of matches (A→A, C→C, G→G, T→T) are counted as matches,
+and all 12 types of substitutions (A→C, A→G, A→T, C→A, C→G, C→T, G→A, G→C, G→T,
+T→A, T→C, T→G) are counted as mutations, but deletions and insertions (indels)
+count as neither.
+
+To count deletions and insertions as mutations, add the options ``--count-del``
+and ``--count-ins``, respectively.
+To not count specific types of relationships as either matches or mutations,
+add the option ``--discount-mut`` followed by the relationship to ignore.
+Each relationship is given as a two-letter (lowercase) code, where the first
+letter is the type of base in the reference (``a``/``c``/``g``/``t``) and
+the second letter is the either type of base in the read or ``d``/``i`` for a
+deletion or insertion, respectively.
+For example, the following options would count all substitutions except A→G and
+all deletions except for those of C as mutations:
+``--count-del --discount-mut ag --discount-mut cd``
+
+Mask setting: Excluded positions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
 
 Relate setting: Ambiguous insertions and deletions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

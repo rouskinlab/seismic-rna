@@ -1,9 +1,9 @@
 
-Sectioning Reference Sequences
+Defining Sections
 ========================================================================
 
-A reference sequence can be split into sections, each being a contiguous
-range of positions in one sequence.
+Reference sequences can be divided into (possibly overlapping) sections,
+each of which is a contiguous range of positions in one sequence.
 
 .. _sections_coords:
 

@@ -1,41 +1,47 @@
 
 Relation Vectors
-------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 Relationships between reads and references
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A relation vector encodes the relationship between one sequencing read
-(or pair of mated reads) and each base in the reference sequence.
+A relation vector encodes the relationship between one sequencing read (or pair
+of mated reads) and each base in the reference sequence.
 SEISMIC-RNA defines eight primary relationships:
 
-- **Match**: The reference base aligned to a high-quality base of the same kind in the read.
-- **Deletion**: The reference base aligned to the space between two bases in the read.
-- **5' of Insertion**: The reference base aligned to any read base immediately 5' of an extra base in the read.
-- **3' of Insertion**: The reference base aligned to any read base immediately 3' of an extra base in the read.
-- **Substitution to A**: The reference base is not A and aligned to a high-quality A in the read.
-- **Substitution to C**: The reference base is not C and aligned to a high-quality C in the read.
-- **Substitution to G**: The reference base is not G and aligned to a high-quality G in the read.
-- **Substitution to T**: The reference base is not T and aligned to a high-quality T in the read.
+- **Match**: The reference base aligned to a high-quality base of the same kind
+  in the read.
+- **Deletion**: The reference base aligned between two bases in the read.
+- **5' of Insertion**: The reference base aligned to any read base immediately
+  5' of an extra base in the read.
+- **3' of Insertion**: The reference base aligned to any read base immediately
+  3' of an extra base in the read.
+- **Substitution to A**: The reference base is not A, and it aligned to a
+  high-quality A in the read.
+- **Substitution to C**: The reference base is not C, and it aligned to a
+  high-quality C in the read.
+- **Substitution to G**: The reference base is not G, and it aligned to a
+  high-quality G in the read.
+- **Substitution to T**: The reference base is not T, and it aligned to a
+  high-quality T in the read.
 
-This figure illustrates six of these primary relationships, as well the
-"blank" relationship for positions in the reference that lie outside the
-span of the read.
+This figure illustrates six of these primary relationships, as well the "blank"
+relationship for positions in the reference outside the span of the read.
 
 .. image::
     relationships.png
 
 Encoding primary relationships
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Each position in a relation vector is physically represented by one byte
-(eight bits); each bit corresponds to one of the eight types of primary
-relationship. For a given position in the relation vector, the byte(s)
-corresponding to the relationship(s) at that position are turned on (set
-to 1); all other bits are set to 0. The following table indicates which
-relationship each bit represents. Each bit is shown as the sole 1 within
-an entire byte, an eight-digit binary number. The number's decimal (Dec)
-and hexadecimal (Hex) forms are also shown.
+Each position in a relation vector is physically represented by one byte (eight
+bits); each bit corresponds to one of the eight types of primary relationship.
+For a given position in the relation vector, the byte(s) corresponding to the
+relationship(s) at that position are turned on (set to 1); all other bits are
+set to 0.
+The following table indicates which relationship each bit represents.
+Each bit is shown as the sole 1 within an entire byte (8-digit binary number).
+The number's decimal (Dec) and hexadecimal (Hex) forms are also shown.
 
 ========== ===== ===== ===================
  Byte       Dec   Hex   Relationship
@@ -51,12 +57,12 @@ and hexadecimal (Hex) forms are also shown.
 ========== ===== ===== ===================
 
 Encoding ambiguous relationships
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Oh, if only encoding relation vectors were that straightforward! Though
-most bases in a read will have primary relationships with the bases in
-the reference to which they align, two phenomena make it more difficult
-for some bases to define the relationship:
+Oh, if only encoding relation vectors were that straightforward!
+Though most bases in a read will have primary relationships with the bases in
+the reference to which they align, two phenomena make it more difficult for some
+bases to define the relationship:
 
 - low-quality base calls
 - ambiguous insertions and deletions

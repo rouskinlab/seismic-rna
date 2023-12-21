@@ -65,14 +65,14 @@
 <li class="toctree-l3"><a class="reference internal" href="#mask-define-mutations-and-sections-to-filter-reads-and-positions">Mask: Define mutations and sections to filter reads and positions</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#mask-input-files">Mask: Input files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#mask-settings">Mask: Settings</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#id4">Relate: Output files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id3">Relate: Output files</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#run-the-entire-workflow-from-demult-align-to-graph-export">Run the entire workflow, from demult/align to graph/export.</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="inputs.html">Listing Input Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sections.html">Sectioning Reference Sequences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sections.html">Defining Sections</a></li>
 <li class="toctree-l2"><a class="reference internal" href="parallel.html">Parallelizing Tasks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="logging.html">Logging Messages</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cleanfa.html">Cleaning FASTA Files</a></li>
@@ -847,19 +847,37 @@ analysis, ignoring other parts of the sequences.
 This feature is useful for analyzing small elements of longer sequences,
 such as an <a class="reference external" href="https://en.wikipedia.org/wiki/Internal_ribosome_entry_site">IRES</a> of several hundred nucleotides within a viral genome
 of several thousand.
-For information on defining sections, see <a class="reference internal" href="sections.html"><span class="doc">Sectioning Reference Sequences</span></a>.</p>
+For more information, see <a class="reference internal" href="sections.html"><span class="doc">Defining Sections</span></a>.</p>
+</section>
+<section id="mask-setting-mutations">
+<h4>Mask setting: Mutations<a class="headerlink" href="#mask-setting-mutations" title="Permalink to this headline"></a></h4>
+<p>The Mask step accepts relation vectors – which encode relationships including
+ambiguous mutations – and outputs bit vectors, wherein each position in each
+read has a binary, mutated/matched status.
+For more information, see <a class="reference internal" href="../data/relate/codes.html"><span class="doc">Relation Vectors</span></a>.
+Producing bit vectors requires deciding which types of relationships count as
+mutations, which count as matches, and which count as neither.
+By default, all 4 types of matches (A→A, C→C, G→G, T→T) are counted as matches,
+and all 12 types of substitutions (A→C, A→G, A→T, C→A, C→G, C→T, G→A, G→C, G→T,
+T→A, T→C, T→G) are counted as mutations, but deletions and insertions (indels)
+count as neither.</p>
+<p>To count deletions and insertions as mutations, add the options <code class="docutils literal notranslate"><span class="pre">--count-del</span></code>
+and <code class="docutils literal notranslate"><span class="pre">--count-ins</span></code>, respectively.
+To not count specific types of relationships as either matches or mutations,
+add the option <code class="docutils literal notranslate"><span class="pre">--discount-mut</span></code> followed by the relationship to ignore.
+Each relationship is given as a two-letter (lowercase) code, where the first
+letter is the type of base in the reference (<code class="docutils literal notranslate"><span class="pre">a</span></code>/<code class="docutils literal notranslate"><span class="pre">c</span></code>/<code class="docutils literal notranslate"><span class="pre">g</span></code>/<code class="docutils literal notranslate"><span class="pre">t</span></code>) and
+the second letter is the either type of base in the read or <code class="docutils literal notranslate"><span class="pre">d</span></code>/<code class="docutils literal notranslate"><span class="pre">i</span></code> for a
+deletion or insertion, respectively.
+For example, the following options would count all substitutions except A→G and
+all deletions except for those of C as mutations:
+<code class="docutils literal notranslate"><span class="pre">--count-del</span> <span class="pre">--discount-mut</span> <span class="pre">ag</span> <span class="pre">--discount-mut</span> <span class="pre">cd</span></code></p>
+</section>
+<section id="mask-setting-excluded-positions">
+<h4>Mask setting: Excluded positions<a class="headerlink" href="#mask-setting-excluded-positions" title="Permalink to this headline"></a></h4>
 </section>
 <section id="id1">
-<h4>Relate setting: Minimum Phred score<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h4>
-<p>Base calls with Phred scores below <code class="docutils literal notranslate"><span class="pre">--min-phred</span></code> are labeled ambiguous
-matches or substitutions, as if they were <code class="docutils literal notranslate"><span class="pre">N</span></code>s.
-For example, if the minimum Phred score is 25 (the default) and a base
-<code class="docutils literal notranslate"><span class="pre">T</span></code> is called as a match with a Phred score of 20, then it would be
-marked as possibly a match and possibly a subsitution to A, C, or G.
-See <a class="reference internal" href="../data/relate/codes.html#relate-low-qual"><span class="std std-ref">Encoding low-quality base calls</span></a> for more information.</p>
-</section>
-<section id="id2">
-<h4>Relate setting: Ambiguous insertions and deletions<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h4>
+<h4>Relate setting: Ambiguous insertions and deletions<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h4>
 <p>The most tricky problem in computing relation vectors is that insertions
 and deletions (“indels”) in repetitive regions cause ambiguities.
 SEISMIC-RNA introduces a new algorithm for identifying ambiguous indels
@@ -869,8 +887,8 @@ If it is not necessary to identify ambiguous indels, then the algorithm
 can be disabled with <code class="docutils literal notranslate"><span class="pre">--no-ambrel</span></code>, which will speed up <code class="docutils literal notranslate"><span class="pre">relate</span></code> at
 the cost of reducing its accuracy on indels.</p>
 </section>
-<section id="id3">
-<h4>Relate setting: Batch size<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h4>
+<section id="id2">
+<h4>Relate setting: Batch size<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h4>
 <p>For an explanation of batching and how to use it, see <a class="reference internal" href="parallel.html#batches"><span class="std std-ref">Batches and Benefits</span></a>.</p>
 <p>The dataset is partitioned into batches by the <code class="docutils literal notranslate"><span class="pre">relate</span></code> command.
 The option <code class="docutils literal notranslate"><span class="pre">--batch-size</span></code> sets a target amount of data for each batch,
@@ -892,21 +910,21 @@ batches may contain more than <em>N</em> reads, up to a maximum of 2<em>N</em> i
 the extreme case that only one read aligned in every mate pair.</p>
 </section>
 </section>
-<section id="id4">
-<h3>Relate: Output files<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h3>
+<section id="id3">
+<h3>Relate: Output files<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h3>
 <p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/relate/{ref}</span></code>,
 where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, and
 <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is the name of the reference.</p>
-<section id="id5">
-<h4>Relate output file: Batch of relation vectors<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h4>
+<section id="id4">
+<h4>Relate output file: Batch of relation vectors<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h4>
 <p>The data of relationships is written in batches.
 Each batch contains a <code class="docutils literal notranslate"><span class="pre">RelateBatchIO</span></code> object and is saved to the file
 <code class="docutils literal notranslate"><span class="pre">relate-batch-{num}.brickle</span></code>, where <code class="docutils literal notranslate"><span class="pre">{num}</span></code> is the batch number.
 See <a class="reference internal" href="../data/relate/relate.html"><span class="doc">Relate Batch</span></a> for details on the data structure.
 See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for details on brickle files.</p>
 </section>
-<section id="id6">
-<h4>Relate output file: Batch of read names<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h4>
+<section id="id5">
+<h4>Relate output file: Batch of read names<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h4>
 <p>For each batch, the relate step assigns an index (a nonnegative integer)
 to each read and writes a file mapping the indexes to the read names.
 Each batch contains a <code class="docutils literal notranslate"><span class="pre">QnamesBatchIO</span></code> object and is saved to the file
@@ -914,15 +932,15 @@ Each batch contains a <code class="docutils literal notranslate"><span class="pr
 See <a class="reference internal" href="../data/relate/qnames.html"><span class="doc">Read Names Batch</span></a> for details on the data structure.
 See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for details on brickle files.</p>
 </section>
-<section id="id7">
-<h4>Relate output file: Reference sequence<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h4>
+<section id="id6">
+<h4>Relate output file: Reference sequence<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h4>
 <p>The relate step writes the reference sequence as a <code class="docutils literal notranslate"><span class="pre">RefseqIO</span></code> object
 to the file <code class="docutils literal notranslate"><span class="pre">refseq.brickle</span></code>.
 See <a class="reference internal" href="../data/relate/refseq.html"><span class="doc">Reference Sequence</span></a> for details on the data structure.
 See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for details on brickle files.</p>
 </section>
-<section id="id8">
-<h4>Relate output file: Report<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h4>
+<section id="id7">
+<h4>Relate output file: Report<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h4>
 <p>A report file is written that records the settings used to generate
 relation vectors summarizes the results.
 See <a class="reference internal" href="../formats/report/relate.html"><span class="doc">Relate Report</span></a> for more information.</p>
