@@ -408,7 +408,7 @@ using the following options:</p>
 </table>
 </section>
 <section id="how-to-trim-low-quality-base-calls">
-<h5>How to trim low-quality base calls<a class="headerlink" href="#how-to-trim-low-quality-base-calls" title="Permalink to this headline"></a></h5>
+<span id="quality-trimming"></span><h5>How to trim low-quality base calls<a class="headerlink" href="#how-to-trim-low-quality-base-calls" title="Permalink to this headline"></a></h5>
 <p>Your reads may also contain stretches of low-quality base calls, especially near
 their 3’ ends.
 Low-quality base calls can also cause problems during alignment and especially
@@ -784,7 +784,7 @@ and <code class="docutils literal notranslate"><span class="pre">--out-dir</span
 <p>In the Relate step, you can flag bases with low quality scores as ambiguous, as
 if they were <code class="docutils literal notranslate"><span class="pre">N</span></code>s.
 This step serves a purpose similar to that of quality trimming during the Align
-step (see <span class="xref std std-ref">quality_trimming</span>).
+step (see <a class="reference internal" href="#quality-trimming"><span class="std std-ref">How to trim low-quality base calls</span></a>).
 The difference is that quality trimming removes low-quality bases by shortening
 reads from their ends, while the minimum quality score in the Relate step flags
 low-quality bases located anywhere in the reads, while preserving read lengths.
@@ -1059,7 +1059,7 @@ See <a class="reference internal" href="../formats/data/brickle.html"><span clas
 <p>SEISMIC-RNA also writes a report file, <code class="docutils literal notranslate"><span class="pre">mask-report.json</span></code>, that records the
 settings you used for running the Mask step and summarizes the results, such as
 which and how many positions and reads were filtered out for each reason.
-See <a class="reference internal" href="../formats/report/relate.html"><span class="doc">Relate Report</span></a> for more information.</p>
+See <a class="reference internal" href="../formats/report/mask.html"><span class="doc">Mask Report</span></a> for more information.</p>
 </section>
 </section>
 </section>

@@ -18,5 +18,6 @@ read and widely supported by software.
 
     align
     relate
+    mask
 
 .. _JSON format: https://en.wikipedia.org/wiki/JSON

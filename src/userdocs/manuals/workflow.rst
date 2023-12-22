@@ -272,7 +272,7 @@ using the following options:
  3'     2      ``--cut-a2``
 ====== ====== ==============
 
-.. _quality_trimming
+.. _quality_trimming:
 
 How to trim low-quality base calls
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -988,7 +988,7 @@ Mask output file: Mask report
 SEISMIC-RNA also writes a report file, ``mask-report.json``, that records the
 settings you used for running the Mask step and summarizes the results, such as
 which and how many positions and reads were filtered out for each reason.
-See :doc:`../formats/report/relate` for more information.
+See :doc:`../formats/report/mask` for more information.
 
 .. _wf_wf:
 
