@@ -1,12 +1,12 @@
 
-Listing Input Files
+List Input Files
 ========================================================================
 
 For commands that take a list of input files as positional arguments,
 these files can be given in three ways -- or combinations thereof --
 so that you can choose a convenient method to list the input files.
 
-General methods to list input files as positional arguments
+How to list input files
 ------------------------------------------------------------------------
 
 - If you have a small number of input files, then the easiest method is

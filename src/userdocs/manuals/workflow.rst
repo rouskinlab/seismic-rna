@@ -1,8 +1,8 @@
 
-Running the Workflow
+Run SEISMIC-RNA
 ================================================================================
 
-There are three points from which you can begin the main workflow:
+There are three points from which you can begin the workflow of SEISMIC-RNA:
 
 - To start from files of raw sequencing reads (in FASTQ format) that must be
   demultiplexed (split into subfiles via barcodes), begin at :ref:`wf_demult`.
@@ -271,6 +271,8 @@ using the following options:
  3'     1      ``--cut-a1``
  3'     2      ``--cut-a2``
 ====== ====== ==============
+
+.. _quality_trimming
 
 How to trim low-quality base calls
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -599,11 +601,11 @@ where ``{ref}`` is the reference for demultiplexed FASTQ files.
 Outputting these files of unaligned reads can be disabled using the option
 ``--bt2-no-un``.
 
-Align output file: Report
+Align output file: Align report
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-A report file, ``align-report.json``, is also written that records the settings
-you used when running alignment and summarizes the results of alignment.
+SEISMIC-RNA also writes a report file, ``align-report.json``, that records the
+settings you used for running the Align step and summarizes the results.
 See :doc:`../formats/report/align` for more information.
 
 Align: Troubleshooting
@@ -629,305 +631,368 @@ try the following steps (in this order):
     the problem (e.g. contamination with ribosomal RNA or foreign nucleic acids
     such as from *Mycoplasma*) and whether the reads that did align are usable.
 
-
 .. _wf_relate:
 
 Relate: Compute relationships between references and aligned reads
-------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 Relate: Input files
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Relate input file: Reference sequences
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Relate requires exactly one file of reference sequences, which must be
-DNA sequences (only A, C, G, T, and N) in FASTA format.
-If needed, you may clean the FASTA file with the :doc:`./cleanfa` tool.
-See :doc:`../formats/data/fasta` for details.
+You must provide one file of reference DNA sequences (only A, C, G, T, and N) in
+FASTA format (see :doc:`../formats/data/fasta` for deatils on FASTA format).
+If your FASTA file has unallowed characters or is formatted improperly, then you
+can make it compatible with SEISMIC-RNA using the :doc:`./cleanfa` tool.
 
 Relate input file: Alignment maps
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Relate accepts any number of alignment map files, each of which must be
-in SAM, BAM, or CRAM format (collectively, "XAM" format).
-See :doc:`../formats/data/xam` for details.
+You can provide any number of alignment map files, each of which must be in SAM,
+BAM, or CRAM format (collectively, "XAM" format).
+See :doc:`../formats/data/xam` for more information.
 
 .. note::
-    The references in the FASTA file must match those to which the reads
-    in the alignment map were aligned.
-    Discrepancies can cause the ``relate`` command to fail or produce
-    erroneous relation vectors.
-    This problem will not occur if you use the same (unaltered) FASTA
-    file for both the ``align`` and ``relate`` commands, or run both
-    at once using the command ``seismic wf``.
+    The references in the FASTA file must match those to which the reads in the
+    alignment map were aligned.
+    Discrepancies can cause the Relate step to fail or produce erroneous output.
+    You can assume that the references match if you use the same (unmodified)
+    FASTA file for both the ``align`` and ``relate`` commands, or if you run
+    both steps using the command ``seismic wf``.
 
-List every alignment map file after the FASTA file.
-Refer to :doc:`./inputs` for details on how to list multiple files.
-For example, to compute relation vectors for reads from ``sample-1``
-aligned to references ``ref-1`` and ``ref-2``, and from ``sample-2``
-aligned to reference ``ref-1``, use the following command::
+Provide the alignment map files as a list after the FASTA file.
+See :doc:`./inputs` for ways to list multiple files.
+For example, to compute relation vectors for reads from ``sample-1`` aligned to
+references ``ref-1`` and ``ref-2``, and from ``sample-2`` aligned to reference
+``ref-1``, use the following command::
 
     seismic relate {refs.fa} sample-1/align/ref-1.cram sample-1/align/ref-2.cram sample-2/align/ref-1.cram
 
 where ``{refs.fa}`` is the path to the file of reference sequences.
 
 Relate: Settings
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Relate settings shared with alignment
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Because this workflow can be started from the ``align`` or ``relate``
-commands, the latter duplicates some of the options of the former:
-``--phred-enc``, ``--min-mapq``, ``--min-reads``, and ``--out-dir`` have
-the same functions in ``relate`` and ``align``.
+Because you can begin the SEISMIC-RNA workflow at ``seismic align`` or, if you
+already have alignment map files, can begin at ``seismic relate``, these two
+commands share several options: ``--phred-enc``, ``--min-mapq``,``--min-reads``,
+and ``--out-dir`` have the same functions in both commands.
 
 Relate setting: Minimum Phred score
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Base calls with Phred scores below ``--min-phred`` are labeled ambiguous
-matches or substitutions, as if they were ``N``\s.
-For example, if the minimum Phred score is 25 (the default) and a base
-``T`` is called as a match with a Phred score of 20, then it would be
-marked as possibly a match and possibly a subsitution to A, C, or G.
-See :ref:`relate_low_qual` for more information.
+In the Relate step, you can flag bases with low quality scores as ambiguous, as
+if they were ``N``\s.
+This step serves a purpose similar to that of quality trimming during the Align
+step (see :ref:`quality_trimming`).
+The difference is that quality trimming removes low-quality bases by shortening
+reads from their ends, while the minimum quality score in the Relate step flags
+low-quality bases located anywhere in the reads, while preserving read lengths.
+See :ref:`relate_low_qual` for a more detailed description of how this works.
+
+To set the minimum quality score, use the option ``--min-phred {n}``, where
+``{n}`` (an integer) is your minimum quality score.
+The default is 25, meaning that base calls with a probabilities of at least
+10\ :sup:`-2.5` = 0.3% of being incorrect are flagged as ambiguous.
+(See :ref:`phred_encodings` for an explanation of quality scores.)
+For example, if a ``T`` is called as a match with a quality score of 20, then it
+would be flagged as possibly a match and possibly a subsitution to A, C, or G.
 
 Relate setting: Ambiguous insertions and deletions
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The most tricky problem in computing relation vectors is that insertions
-and deletions ("indels") in repetitive regions cause ambiguities.
-SEISMIC-RNA introduces a new algorithm for identifying ambiguous indels
-(see :doc:`../algos/ambrel` for more information).
+When insertions and deletions (indels) occur in repetitive regions, determining
+which base(s) were inserted or deleted can be impossible due to the repetitive
+reference sequence itself, even if the reads were perfectly free of errors.
+To handle ambiguous indels, SEISMIC-RNA introduces a new algorithm that finds
+all possible indels that could have produced the observed read (for details on
+this algorithm, see :doc:`../algos/ambrel`).
 This algorithm is enabled by default.
-If it is not necessary to identify ambiguous indels, then the algorithm
-can be disabled with ``--no-ambrel``, which will speed up ``relate`` at
-the cost of reducing its accuracy on indels.
+If you do not need to identify ambiguous indels, then you can disable this
+algorithm with the option ``--no-ambrel``, which will speed up the Relate step
+at the cost of reducing its accuracy on indels.
 
 Relate setting: Batch size
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+You can divide up your data into batches to speed up the analysis and reduce the
+amount of memory needed.
 For an explanation of batching and how to use it, see :ref:`batches`.
 
-The dataset is partitioned into batches by the ``relate`` command.
-The option ``--batch-size`` sets a target amount of data for each batch,
-in millions of base calls (megabases).
-This calculation considers the total number of relationships per read,
-which equals the length of the reference sequence.
-Thus, the number of base calls *B* is the product of the number of reads
-*N* and the length of the reference sequence *L*:
+Your data are partitioned into batches during the Relate step.
+You can specify a size for each batch using the option ``--batch-size {x}``,
+where ``{x}`` (a decimal number) is the number of relationships you want to put
+in each batch, in millions.
+Relate uses the batch size to calculate the number of reads in each batch.
+The number of relationship bytes per batch, *B*, is the number of relationship
+bytes per read, *L*, times the number of reads per batch, *N*:
 
-*B* = *NL*
+*B* = *LN*
 
-Since *L* is known and ``--batch-size`` specifies a target size for *B*,
-*N* can be solved for:
+Since *L* is just the length of the reference sequence and *B* is the option
+``--batch-size``, SEISMIC-RNA can solve for *N*:
 
 *N* = *B*/*L*
 
-SEISMIC-RNA will aim to put exactly *N* reads in each batch but the last
-(the last batch can be smaller because it has just the leftover reads).
-If the reads are single-ended or were not aligned in `mixed mode`_, then
-every batch but the last will contain exactly *N* reads.
-If the reads are paired-ended and were aligned in `mixed mode`_, then
-batches may contain more than *N* reads, up to a maximum of 2\ *N* in
-the extreme case that only one read aligned in every mate pair.
+.. note::
+    SEISMIC-RNA will aim to put exactly *N* reads in each batch but the last
+    (the last batch can be smaller because it has just the leftover reads).
+    If the reads are single-ended or were not aligned in `mixed mode`_, then
+    every batch but the last will contain exactly *N* reads.
+    If the reads are paired-ended and were aligned in `mixed mode`_, then
+    batches may contain more than *N* reads, up to a maximum of 2\ *N* in the
+    extreme case that only one read aligned in every mate pair.
 
 Relate: Output files
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All output files go into the directory ``{out}/{sample}/relate/{ref}``,
-where ``{out}`` is the output directory, ``{sample}`` is the sample, and
-``{ref}`` is the name of the reference.
+All output files go into the directory ``{out}/{sample}/relate/{ref}``, where
+``{out}`` is the output directory, ``{sample}`` is the sample, and ``{ref}`` is
+the name of the reference.
 
 Relate output file: Batch of relation vectors
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The data of relationships is written in batches.
-Each batch contains a ``RelateBatchIO`` object and is saved to the file
-``relate-batch-{num}.brickle``, where ``{num}`` is the batch number.
-See :doc:`../data/relate/relate` for details on the data structure.
-See :doc:`../formats/data/brickle` for details on brickle files.
+Each batch of relation vectors contains a ``RelateBatchIO`` object and is saved
+to the file ``relate-batch-{num}.brickle``, where ``{num}`` is the batch number.
+See :doc:`../data/relate/relate` for more information on the data structure.
+See :doc:`../formats/data/brickle` for more information on brickle files.
 
 Relate output file: Batch of read names
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-For each batch, the relate step assigns an index (a nonnegative integer)
-to each read and writes a file mapping the indexes to the read names.
-Each batch contains a ``QnamesBatchIO`` object and is saved to the file
-``qnames-batch-{num}.brickle``, where ``{num}`` is the batch number.
-See :doc:`../data/relate/qnames` for details on the data structure.
-See :doc:`../formats/data/brickle` for details on brickle files.
+Within each batch, the relate step assigns an index (a nonnegative integer) to
+each read and writes a file mapping the indexes to the read names.
+Each batch of read names contains a ``QnamesBatchIO`` object and is saved to the
+file ``qnames-batch-{num}.brickle``, where ``{num}`` is the batch number.
+See :doc:`../data/relate/qnames` for more information on the data structure.
+See :doc:`../formats/data/brickle` for more information on brickle files.
 
 Relate output file: Reference sequence
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The relate step writes the reference sequence as a ``RefseqIO`` object
-to the file ``refseq.brickle``.
-See :doc:`../data/relate/refseq` for details on the data structure.
-See :doc:`../formats/data/brickle` for details on brickle files.
+The relate step writes the reference sequence as a ``RefseqIO`` object to the
+file ``refseq.brickle``.
+See :doc:`../data/relate/refseq` for more information on the data structure.
+See :doc:`../formats/data/brickle` for more information on brickle files.
 
-Relate output file: Report
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Relate output file: Relate report
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-A report file is written that records the settings used to generate
-relation vectors summarizes the results.
+SEISMIC-RNA also writes a report file, ``relate-report.json``, that records the
+settings you used for running the Relate step and summarizes the results.
 See :doc:`../formats/report/relate` for more information.
-
 
 .. _wf_mask:
 
 Mask: Define mutations and sections to filter reads and positions
-------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 Mask: Input files
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Mask input file: Relate report
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Mask accepts any number of report files from the Relate step.
-As with all input files, each report file can be given individually, or
-directories containing any number of report files (alongside other types
-of files) can be given, or both.
-Refer to :doc:`./inputs` for details on how to list multiple files.
+You can give any number of Relate report files as inputs for the Mask step.
+See :doc:`./inputs` for ways to list multiple files.
 
-For example, the following command will run the Mask step (with default
-settings) on every set of reads from the Relate step::
+For example, to mask relation vectors of reads from ``sample-1`` related to
+references ``ref-1`` and ``ref-2``, and from ``sample-2`` related to reference
+``ref-1``, use the command ::
+
+    seismic mask {out}/sample-1/align/ref-1.cram {out}/sample-1/align/ref-2.cram {out}/sample-2/align/ref-1.cram
+
+where ``{out}`` is the path of your output directory from the Relate step.
+
+To mask all relation vectors in ``{out}``, you can use the command ::
 
     seismic mask {out}
 
-where ``{out}`` is the path to the output directory.
-
 Mask: Settings
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Mask setting: Sections
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-Using the Mask step, sections of reference sequences can be selected for
-analysis, ignoring other parts of the sequences.
-This feature is useful for analyzing small elements of longer sequences,
-such as an `IRES`_ of several hundred nucleotides within a viral genome
-of several thousand.
-For more information, see :doc:`./sections`.
-
-Mask setting: Mutations
+Mask setting: Define sections
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The Mask step accepts relation vectors -- which encode relationships including
+In the Mask step, you can process full reference sequences or focus on specific
+sections of each reference sequence.
+Selecting specific sections is useful for investigating small elements of longer
+sequences, such as a 350 nt `IRES`_ within a 9,600 nt viral genome.
+See :doc:`./sections` for ways to define sections.
+
+Mask setting: Define mutations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The Mask step takes in relation vectors -- which encode relationships including
 ambiguous mutations -- and outputs bit vectors, wherein each position in each
 read has a binary, mutated/matched status.
-For more information, see :doc:`../data/relate/codes`.
+For more information on relation vectors, see :doc:`../data/relate/codes`.
+
 Producing bit vectors requires deciding which types of relationships count as
 mutations, which count as matches, and which count as neither.
-By default, all 4 types of matches (A→A, C→C, G→G, T→T) are counted as matches,
+You can choose which types of relationships to count as matches and mutations.
+The default is to count all 4 types of matches (A→A, C→C, G→G, T→T) as matches
 and all 12 types of substitutions (A→C, A→G, A→T, C→A, C→G, C→T, G→A, G→C, G→T,
-T→A, T→C, T→G) are counted as mutations, but deletions and insertions (indels)
-count as neither.
-
+T→A, T→C, T→G) as mutations, but not to count deletions and insertions (indels).
 To count deletions and insertions as mutations, add the options ``--count-del``
 and ``--count-ins``, respectively.
-To not count specific types of relationships as either matches or mutations,
-add the option ``--discount-mut`` followed by the relationship to ignore.
-Each relationship is given as a two-letter (lowercase) code, where the first
-letter is the type of base in the reference (``a``/``c``/``g``/``t``) and
-the second letter is the either type of base in the read or ``d``/``i`` for a
-deletion or insertion, respectively.
-For example, the following options would count all substitutions except A→G and
-all deletions except for those of C as mutations:
+
+You can also choose to not count individual types of relationships, such as
+substitutions from A to G (but still count every other type of substitution).
+To ignore one type of relationship, add the option ``--discount-mut {a}{b}``,
+where ``{a}`` is the type of base in the reference (``a``/``c``/``g``/``t``) and
+``{b}`` is the type of base in the read (for substitutions) or ``d`` or ``i``
+(for deletions and insertions, respectively).
+For example, the following options would consider all substitutions except A→G
+and all deletions except for when the reference base is C to be mutations:
 ``--count-del --discount-mut ag --discount-mut cd``
 
-Mask setting: Excluded positions
+.. _mask_exclude:
+
+Mask setting: Exclude positions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+The first substep of masking is excluding pre-specified positions.
+You can specify three types of positions to exclude:
 
+- **G and U bases:**
+  DMS methylates G and U much less than A and C residues under physiological
+  conditions [`Zubradt et al. (2017)`_], so positions with G or U bases are
+  generally excluded when DMS is the chemical probe.
+  Use the options ``--exclude-gu`` (default) and ``--include-gu`` to decide
+  whether to use G and U bases.
+- **Poly(A) sequences:**
+  Although DMS and SHAPE reagents do modify A residues that are not immobilized
+  by base pairing, stretches of 5 or more consecutive A residues tend to have
+  very low mutation rates because of a behavior of the reverse transcriptases
+  that are used in mutational profiling (including TGIRT-III and SuperScript II,
+  III, and IV) [`Kladwang et al. (2020)`_].
+  Thus, using poly(A) sequences for structural analysis can produce artifacts.
+  SEISMIC-RNA automatically excludes all positions within stretches of 5 or more
+  consecutive A residues.
+  You can customize this behavior with the option ``--exclude-polya {n}``, where
+  ``{n}`` (an integer) is the minimum length of poly(A) sequences to exclude.
+  To disable poly(A) exclusion, use the option ``--exclude-polya 0``.
+- **Arbitrary positions:**
+  You can also exclude any arbitary positions from any reference sequence.
+  A common reason to exclude a position is if the base is modified endogenously
+  in a way that causes mutations during reverse transcription.
+  To exclude an arbitrary position, use the option ``--exclude-pos {ref} {n}``,
+  where ``{ref}`` is the name of the reference and ``{n}`` is the position to
+  exclude (where the first base in the reference is position 1).
 
-Relate setting: Ambiguous insertions and deletions
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Mask setting: Filter reads
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The most tricky problem in computing relation vectors is that insertions
-and deletions ("indels") in repetitive regions cause ambiguities.
-SEISMIC-RNA introduces a new algorithm for identifying ambiguous indels
-(see :doc:`../algos/ambrel` for more information).
-This algorithm is enabled by default.
-If it is not necessary to identify ambiguous indels, then the algorithm
-can be disabled with ``--no-ambrel``, which will speed up ``relate`` at
-the cost of reducing its accuracy on indels.
+The second substep of masking is filtering reads.
+You can filter reads based on three criteria, in this order:
 
-Relate setting: Batch size
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+- **Fraction of informative positions:**
+  For some applications, such as finding alternative structures, you need every
+  read to span the vast majority of positions in the section of the reference.
+  You can set a limit on the minimum number of informative bases in the read,
+  as a fraction of the number of non-excluded positions in the section, using
+  the option ``--min-finfo-read {f}``, where ``{f}`` is the fraction.
+  For example, to require 95% of the non-excluded positions in the section to be
+  informative, you can use the option ``--min-finfo-read 0.95``.
+  If the section had 296 positions, and 141 remained after excluding positions
+  (see :ref:`mask_exclude`), then a read with 137 informative positions would
+  have an informed fraction of 97% and be kept, but a read with 133 informative
+  positions would have an informed fraction of 94% and be discarded.
+- **Fraction of mutated positions:**
+  Rarely, a read may have an excessive number of mutations, possibly because it
+  underwent template switching during reverse transcription or misaligned during
+  the Align step.
+  You can set a limit to the fraction of mutated positions in the read using the
+  option ``--max-fmut-read {f}``, where ``{f}`` is the fraction.
+  For example, using the default limit of 10%, a read with 121 informative and
+  15 mutated positions would have a mutated fraction of 15 / 121 = 12% and be
+  discarded, but a read with 121 informative and 10 mutated positions would have
+  a mutated fraction of 8% and be kept.
+  Using the option ``--max-fmut-read 1`` disables filtering by fraction mutated.
+- **Space between mutations:**
+  Reads with closely spaced mutations are very underrepresented in mutational
+  profiling data, presumably because reverse transcripases struggle to read
+  through closely spaced pairs of modifications [`Tomezsko et al. (2020)`_].
+  Therefore, the data are biased towards reads without closely spaced mutations,
+  which would skew the mutation rates.
+  However, SEISMIC-RNA can correct the bias: first by removing any reads that
+  did happen to have mutations close together, then calculating the mutation
+  rates without such reads, and inferring what the mutation rates would have
+  been if no reads had dropped out.
+  The correction for observer bias is most important for finding alternative
+  structures and (to minimize surprises) does not run by default.
+  You can correct observer bias using the option ``--min-mut-gap {n}``, where
+  ``{n}`` is the minimum number of non-mutated bases that must separate two
+  mutations; if a read has any pair of mutations that are closer than this gap,
+  then the read is discarded during the Mask step.
+  If you correct for observer bias, then we recommend using ``--min-mut-gap 3``,
+  based on our previous findings in `Tomezsko et al. (2020)`_.
 
-For an explanation of batching and how to use it, see :ref:`batches`.
+Mask setting: Filter positions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The dataset is partitioned into batches by the ``relate`` command.
-The option ``--batch-size`` sets a target amount of data for each batch,
-in millions of base calls (megabases).
-This calculation considers the total number of relationships per read,
-which equals the length of the reference sequence.
-Thus, the number of base calls *B* is the product of the number of reads
-*N* and the length of the reference sequence *L*:
+The third substep of masking is filtering positions.
+You can filter positions based on two criteria, in this order:
 
-*B* = *NL*
+- **Number of informative reads:**
+  Estimating the fraction of mutated reads at a given position requires a large
+  number of reads so that the uncertainty (i.e. error bars) is much smaller than
+  the fraction of mutated reads.
+  The default minimum number of informative reads is 1000, which we have found
+  to yield a reasonably small uncertainties in the mutation fraction.
+  You can specify the minimum number of informative reads at each position using
+  the option ``--min-ninfo-pos {n}``, where ``{n}`` is the number of informative
+  positions.
+  We discourage going below 1000 reads unless you have multiple replicates, the
+  total number of informative reads at the position among all replicates is at
+  least 1000, and the mutation rates of the replicates correlate with a Pearson
+  or Spearman coefficient of at least 0.95.
+- **Fraction of mutated reads:**
+  Mutational profiling generally yields fractions of mutated reads up to 0.3.
+  Positions with fractions of mutated reads that exceed 0.5 are likely to be
+  mutated for some reason other than chemcial probing, such as misalignment
+  (especially when two or more reference sequences are very similar), an
+  endogenous RNA modification (if the RNA came from cells), a mistake in the
+  template DNA (if the RNA was transcribed *in vitro*), or a mistake in the
+  reference sequence.
+  Thus, SEISMIC-RNA discards positions with a fraction of mutated reads greater
+  than 0.5, by default.
+  You can change the maximum fraction of mutated reads using the option
+  ``--max-fmut-pos {f}``, where ``{f}`` is the fraction of mutated reads.
 
-Since *L* is known and ``--batch-size`` specifies a target size for *B*,
-*N* can be solved for:
+Mask: Output files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-*N* = *B*/*L*
+All output files go into the directory ``{out}/{sample}/mask/{ref}``, where
+``{out}`` is the output directory, ``{sample}`` is the sample, and ``{ref}`` is
+the name of the reference.
 
-SEISMIC-RNA will aim to put exactly *N* reads in each batch but the last
-(the last batch can be smaller because it has just the leftover reads).
-If the reads are single-ended or were not aligned in `mixed mode`_, then
-every batch but the last will contain exactly *N* reads.
-If the reads are paired-ended and were aligned in `mixed mode`_, then
-batches may contain more than *N* reads, up to a maximum of 2\ *N* in
-the extreme case that only one read aligned in every mate pair.
+Mask output file: Batch of masked reads
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Relate: Output files
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Each batch of masked reads contains a ``MaskBatchIO`` object and is saved to the
+file ``mask-batch-{num}.brickle``, where ``{num}`` is the batch number.
+See :doc:`../data/mask/mask` for more information on the data structure.
+See :doc:`../formats/data/brickle` for more information on brickle files.
 
-All output files go into the directory ``{out}/{sample}/relate/{ref}``,
-where ``{out}`` is the output directory, ``{sample}`` is the sample, and
-``{ref}`` is the name of the reference.
+Mask output file: Mask report
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Relate output file: Batch of relation vectors
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-The data of relationships is written in batches.
-Each batch contains a ``RelateBatchIO`` object and is saved to the file
-``relate-batch-{num}.brickle``, where ``{num}`` is the batch number.
-See :doc:`../data/relate/relate` for details on the data structure.
-See :doc:`../formats/data/brickle` for details on brickle files.
-
-Relate output file: Batch of read names
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-For each batch, the relate step assigns an index (a nonnegative integer)
-to each read and writes a file mapping the indexes to the read names.
-Each batch contains a ``QnamesBatchIO`` object and is saved to the file
-``qnames-batch-{num}.brickle``, where ``{num}`` is the batch number.
-See :doc:`../data/relate/qnames` for details on the data structure.
-See :doc:`../formats/data/brickle` for details on brickle files.
-
-Relate output file: Reference sequence
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-The relate step writes the reference sequence as a ``RefseqIO`` object
-to the file ``refseq.brickle``.
-See :doc:`../data/relate/refseq` for details on the data structure.
-See :doc:`../formats/data/brickle` for details on brickle files.
-
-Relate output file: Report
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-A report file is written that records the settings used to generate
-relation vectors summarizes the results.
+SEISMIC-RNA also writes a report file, ``mask-report.json``, that records the
+settings you used for running the Mask step and summarizes the results, such as
+which and how many positions and reads were filtered out for each reason.
 See :doc:`../formats/report/relate` for more information.
-
 
 .. _wf_wf:
 
-Run the entire workflow, from demult/align to graph/export.
+Run the entire workflow
 ------------------------------------------------------------------------
 
 
@@ -966,3 +1031,6 @@ From BAM, report, and/or table file(s)::
 .. _hard link: https://en.wikipedia.org/wiki/Hard_link
 .. _samtools faidx: https://www.htslib.org/doc/samtools-faidx.html
 .. _IRES: https://en.wikipedia.org/wiki/Internal_ribosome_entry_site
+.. _Zubradt et al. (2017): https://doi.org/10.1038/nmeth.4057
+.. _Kladwang et al. (2020): https://doi.org/10.1021/acs.biochem.0c00020
+.. _Tomezsko et al. (2020): https://doi.org/10.1038/s41586-020-2253-5

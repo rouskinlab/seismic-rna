@@ -1,11 +1,11 @@
 
-Cleaning FASTA Files
+Clean FASTA Files
 ------------------------------------------------------------------------
 
 The FASTA file cleaner modifies FASTA files so that they are compatible
 with SEISMIC-RNA.
 
-Background
+Background about cleaning FASTA files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Purpose of cleaning FASTA files
@@ -39,10 +39,10 @@ The FASTA file cleaner of SEISMIC-RNA follows the following procedure:
   If any illegal characters remain after that, then an error is raised.
 
 
-Usage
+How to clean FASTA files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Command line
+Command line for cleaning FASTA files
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Clean the FASTA file ``refs.fa``::
@@ -65,10 +65,10 @@ To force overwriting, use the option ``--force``::
     seismic +cleanfa --force refs.fa
 
 
-Troubleshooting
+Troubleshooting cleaning FASTA files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Errors
+Errors while cleaning FASTA files
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 *Line contains sequence characters other than whitespace or IUPAC codes*

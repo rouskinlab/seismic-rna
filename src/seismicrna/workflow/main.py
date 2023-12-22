@@ -34,7 +34,7 @@ params = merge_params([opt_demultiplex],
 
 @command(CMD_WORKFLOW, params=params)
 def cli(*args, **kwargs):
-    """ Run the entire workflow, from demult/align to graph/export. """
+    """ Run the entire workflow. """
     return run(*args, **kwargs)
 
 
@@ -140,7 +140,7 @@ def run(*,
         # Fold options
         fold: bool,
         quantile: float):
-    """ Run the entire workflow, from demult/align to graph/export. """
+    """ Run the entire workflow. """
     # Demultiplex
     if demult_on:
         for dms, dmi, dmm in demultiplex_mod.run(

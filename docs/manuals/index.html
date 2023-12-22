@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manuals &mdash; seismic-rna  documentation</title>
+  <title>How To &mdash; seismic-rna  documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="../_static/favicon-32x32.ico"/>
@@ -19,7 +19,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Running the Workflow" href="workflow.html" />
+    <link rel="next" title="Run SEISMIC-RNA" href="workflow.html" />
     <link rel="prev" title="Step-by-step walkthrough" href="../tutorials/amplicon.html" /> 
 </head>
 
@@ -47,13 +47,13 @@
 <li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Manuals</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="workflow.html">Running the Workflow</a></li>
-<li class="toctree-l2"><a class="reference internal" href="inputs.html">Listing Input Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sections.html">Defining Sections</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parallel.html">Parallelizing Tasks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="logging.html">Logging Messages</a></li>
-<li class="toctree-l2"><a class="reference internal" href="cleanfa.html">Cleaning FASTA Files</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How To</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html">Run SEISMIC-RNA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inputs.html">List Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sections.html">Define Sections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallel.html">Parallelize Tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html">Log Messages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cleanfa.html">Clean FASTA Files</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
@@ -79,7 +79,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Manuals</li>
+      <li class="breadcrumb-item active">How To</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/manuals/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -89,48 +89,42 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="manuals">
-<h1>Manuals<a class="headerlink" href="#manuals" title="Permalink to this headline"></a></h1>
-<p>These manuals explain how to use each component of SEISMIC-RNA.</p>
-<p>They are meant to be browsed freely, not followed from start to finish.
-For step-by-step tutorials, see <a class="reference internal" href="../tutorials/index.html"><span class="doc">Tutorials</span></a>.</p>
-<p>As they describe each component in detail, they are not quick references
-for commands and parameters.
-For a complete list of commands and their parameters, see <a class="reference internal" href="../cli.html"><span class="doc">Command Line Interface</span></a>.</p>
+  <section id="how-to">
+<h1>How To<a class="headerlink" href="#how-to" title="Permalink to this headline"></a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="workflow.html">Running the Workflow</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Run SEISMIC-RNA</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="workflow.html#demultiplex-split-multiplexed-fastq-files-by-their-barcodes">Demultiplex: Split multiplexed FASTQ files by their barcodes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="workflow.html#align-trim-fastq-files-and-align-them-to-reference-sequences">Align: Trim FASTQ files and align them to reference sequences</a></li>
 <li class="toctree-l2"><a class="reference internal" href="workflow.html#relate-compute-relationships-between-references-and-aligned-reads">Relate: Compute relationships between references and aligned reads</a></li>
 <li class="toctree-l2"><a class="reference internal" href="workflow.html#mask-define-mutations-and-sections-to-filter-reads-and-positions">Mask: Define mutations and sections to filter reads and positions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="workflow.html#run-the-entire-workflow-from-demult-align-to-graph-export">Run the entire workflow, from demult/align to graph/export.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#run-the-entire-workflow">Run the entire workflow</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="inputs.html">Listing Input Files</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="inputs.html#general-methods-to-list-input-files-as-positional-arguments">General methods to list input files as positional arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inputs.html">List Input Files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="inputs.html#how-to-list-input-files">How to list input files</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="sections.html">Defining Sections</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="sections.html">Define Sections</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="sections.html#how-to-define-sections-using-coordinates-or-primers">How to define sections using coordinates or primers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sections.html#how-to-define-multiple-sections-simultaneously">How to define multiple sections simultaneously</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sections.html#how-to-name-sections">How to name sections</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallelizing Tasks</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallelize Tasks</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="parallel.html#batches-and-benefits">Batches and Benefits</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging Messages</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Log Messages</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="logging.html#logged-messages-come-in-five-levels">Logged messages come in five levels</a></li>
 <li class="toctree-l2"><a class="reference internal" href="logging.html#logging-messages-on-standard-output">Logging messages on standard output</a></li>
 <li class="toctree-l2"><a class="reference internal" href="logging.html#logging-messages-to-files">Logging messages to files</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="cleanfa.html">Cleaning FASTA Files</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="cleanfa.html#background">Background</a></li>
-<li class="toctree-l2"><a class="reference internal" href="cleanfa.html#usage">Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="cleanfa.html#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cleanfa.html">Clean FASTA Files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cleanfa.html#background-about-cleaning-fasta-files">Background about cleaning FASTA files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cleanfa.html#how-to-clean-fasta-files">How to clean FASTA files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cleanfa.html#troubleshooting-cleaning-fasta-files">Troubleshooting cleaning FASTA files</a></li>
 </ul>
 </li>
 </ul>
@@ -142,7 +136,7 @@ For a complete list of commands and their parameters, see <a class="reference in
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="../tutorials/amplicon.html" class="btn btn-neutral float-left" title="Step-by-step walkthrough" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="workflow.html" class="btn btn-neutral float-right" title="Running the Workflow" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="workflow.html" class="btn btn-neutral float-right" title="Run SEISMIC-RNA" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

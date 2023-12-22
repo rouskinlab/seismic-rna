@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cleaning FASTA Files &mdash; seismic-rna  documentation</title>
+  <title>Clean FASTA Files &mdash; seismic-rna  documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="../_static/favicon-32x32.ico"/>
@@ -20,7 +20,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Command Line Interface" href="../cli.html" />
-    <link rel="prev" title="Logging Messages" href="logging.html" /> 
+    <link rel="prev" title="Log Messages" href="logging.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,24 +47,24 @@
 <li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="index.html">Manuals</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="workflow.html">Running the Workflow</a></li>
-<li class="toctree-l2"><a class="reference internal" href="inputs.html">Listing Input Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sections.html">Defining Sections</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parallel.html">Parallelizing Tasks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="logging.html">Logging Messages</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Cleaning FASTA Files</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#background">Background</a><ul>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How To</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="workflow.html">Run SEISMIC-RNA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inputs.html">List Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sections.html">Define Sections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallel.html">Parallelize Tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html">Log Messages</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Clean FASTA Files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#background-about-cleaning-fasta-files">Background about cleaning FASTA files</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#purpose-of-cleaning-fasta-files">Purpose of cleaning FASTA files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#algorithm-for-cleaning-fasta-files">Algorithm for cleaning FASTA files</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#usage">Usage</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#command-line">Command line</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-to-clean-fasta-files">How to clean FASTA files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#command-line-for-cleaning-fasta-files">Command line for cleaning FASTA files</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#errors">Errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#troubleshooting-cleaning-fasta-files">Troubleshooting cleaning FASTA files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#errors-while-cleaning-fasta-files">Errors while cleaning FASTA files</a></li>
 </ul>
 </li>
 </ul>
@@ -94,8 +94,8 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="index.html">Manuals</a></li>
-      <li class="breadcrumb-item active">Cleaning FASTA Files</li>
+          <li class="breadcrumb-item"><a href="index.html">How To</a></li>
+      <li class="breadcrumb-item active">Clean FASTA Files</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/manuals/cleanfa.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -105,12 +105,12 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="cleaning-fasta-files">
-<h1>Cleaning FASTA Files<a class="headerlink" href="#cleaning-fasta-files" title="Permalink to this headline"></a></h1>
+  <section id="clean-fasta-files">
+<h1>Clean FASTA Files<a class="headerlink" href="#clean-fasta-files" title="Permalink to this headline"></a></h1>
 <p>The FASTA file cleaner modifies FASTA files so that they are compatible
 with SEISMIC-RNA.</p>
-<section id="background">
-<h2>Background<a class="headerlink" href="#background" title="Permalink to this headline"></a></h2>
+<section id="background-about-cleaning-fasta-files">
+<h2>Background about cleaning FASTA files<a class="headerlink" href="#background-about-cleaning-fasta-files" title="Permalink to this headline"></a></h2>
 <section id="purpose-of-cleaning-fasta-files">
 <h3>Purpose of cleaning FASTA files<a class="headerlink" href="#purpose-of-cleaning-fasta-files" title="Permalink to this headline"></a></h3>
 <p>Variants of FASTA format exist that are not compatible with SEISMIC-RNA.
@@ -140,10 +140,10 @@ If any illegal characters remain after that, then an error is raised.</p></li>
 </ul>
 </section>
 </section>
-<section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline"></a></h2>
-<section id="command-line">
-<h3>Command line<a class="headerlink" href="#command-line" title="Permalink to this headline"></a></h3>
+<section id="how-to-clean-fasta-files">
+<h2>How to clean FASTA files<a class="headerlink" href="#how-to-clean-fasta-files" title="Permalink to this headline"></a></h2>
+<section id="command-line-for-cleaning-fasta-files">
+<h3>Command line for cleaning FASTA files<a class="headerlink" href="#command-line-for-cleaning-fasta-files" title="Permalink to this headline"></a></h3>
 <p>Clean the FASTA file <code class="docutils literal notranslate"><span class="pre">refs.fa</span></code>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="o">+</span><span class="n">cleanfa</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span>
 </pre></div>
@@ -163,10 +163,10 @@ To force overwriting, use the option <code class="docutils literal notranslate">
 </div>
 </section>
 </section>
-<section id="troubleshooting">
-<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline"></a></h2>
-<section id="errors">
-<h3>Errors<a class="headerlink" href="#errors" title="Permalink to this headline"></a></h3>
+<section id="troubleshooting-cleaning-fasta-files">
+<h2>Troubleshooting cleaning FASTA files<a class="headerlink" href="#troubleshooting-cleaning-fasta-files" title="Permalink to this headline"></a></h2>
+<section id="errors-while-cleaning-fasta-files">
+<h3>Errors while cleaning FASTA files<a class="headerlink" href="#errors-while-cleaning-fasta-files" title="Permalink to this headline"></a></h3>
 <p><em>Line contains sequence characters other than whitespace or IUPAC codes</em></p>
 <p>This error means that the sequence contains characters that cannot be
 cleaned because they do not belong in FASTA files, so it is unclear how
@@ -191,7 +191,7 @@ The error message will indicate which line(s) have invalid characters.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="logging.html" class="btn btn-neutral float-left" title="Logging Messages" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="logging.html" class="btn btn-neutral float-left" title="Log Messages" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="../cli.html" class="btn btn-neutral float-right" title="Command Line Interface" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

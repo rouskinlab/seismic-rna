@@ -1,5 +1,5 @@
 
-Defining Sections
+Define Sections
 ========================================================================
 
 Reference sequences can be divided into (possibly overlapping) sections,
