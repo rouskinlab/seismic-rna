@@ -120,9 +120,7 @@ class RelationWriter(object):
         return self.xam.ref
 
     def _write_report(self, *, out_dir: Path, **kwargs):
-        report = RelateReport(sample=self.sample,
-                              ref=self.ref,
-                              **kwargs)
+        report = RelateReport(sample=self.sample, ref=self.ref, **kwargs)
         return report.save(out_dir, force=True)
 
     def _write_refseq(self, out_dir: Path, brotli_level: int):
@@ -187,6 +185,8 @@ class RelationWriter(object):
 
     def write(self, *,
               out_dir: Path,
+              min_mapq: int,
+              min_reads: int,
               brotli_level: int,
               force: bool,
               **kwargs):
@@ -199,20 +199,23 @@ class RelationWriter(object):
         if need_write(report_file, force):
             began = datetime.now()
             # Write the reference sequence to a file.
-            refcheck = self._write_refseq(out_dir, brotli_level)
+            refseq_checksum = self._write_refseq(out_dir, brotli_level)
             # Compute relation vectors and time how long it takes.
             (nreads,
              nbats,
              checks) = self._generate_batches(out_dir=out_dir,
                                               brotli_level=brotli_level,
+                                              min_mapq=min_mapq,
                                               **kwargs)
             ended = datetime.now()
             # Write a report of the relation step.
             self._write_report(out_dir=out_dir,
+                               min_mapq=min_mapq,
+                               min_reads=min_reads,
                                n_reads_rel=nreads,
                                n_batches=nbats,
                                checksums=checks,
-                               refseq_checksum=refcheck,
+                               refseq_checksum=refseq_checksum,
                                began=began,
                                ended=ended)
         return report_file
@@ -240,7 +243,7 @@ def write_one(xam_file: Path, *,
             f"Insufficient reads in {xam}: {xam.n_reads} (< {min_reads})")
     # Write the batches.
     writer = RelationWriter(xam, seq)
-    return writer.write(**kwargs)
+    return writer.write(min_reads=min_reads, **kwargs)
 
 
 def write_all(xam_files: Iterable[Path],

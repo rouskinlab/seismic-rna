@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Command Line Interface &mdash; seismic-rna  documentation</title>
+  <title>Commands, Arguments, Options &mdash; seismic-rna  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon-32x32.ico"/>
@@ -48,7 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="install/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="steps/index.html">Step-By-Step</a></li>
 <li class="toctree-l1"><a class="reference internal" href="howto/index.html">How To</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Command Line Interface</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Commands, Arguments, Options</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#run-all-steps-of-the-workflow">Run all steps of the workflow</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#seismic-wf">seismic wf</a></li>
 </ul>
@@ -100,7 +100,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Command Line Interface</li>
+      <li class="breadcrumb-item active">Commands, Arguments, Options</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/cli.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -110,8 +110,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="command-line-interface">
-<h1>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline"></a></h1>
+  <section id="commands-arguments-options">
+<h1>Commands, Arguments, Options<a class="headerlink" href="#commands-arguments-options" title="Permalink to this headline"></a></h1>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>All subcommands, arguments, and options listed in these documents can be
@@ -472,7 +472,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-min-mapq">
 <span class="sig-name descname"><span class="pre">--min-mapq</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_mapq&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-min-mapq" title="Permalink to this definition"></a></dt>
-<dd><p>Minimum mapping quality to keep an aligned read from Bowtie2</p>
+<dd><p>Minimum mapping quality to use an aligned read</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1068,7 +1068,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-align-min-mapq">
 <span class="sig-name descname"><span class="pre">--min-mapq</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_mapq&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-min-mapq" title="Permalink to this definition"></a></dt>
-<dd><p>Minimum mapping quality to keep an aligned read from Bowtie2</p>
+<dd><p>Minimum mapping quality to use an aligned read</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1113,7 +1113,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-relate-min-mapq">
 <span class="sig-name descname"><span class="pre">--min-mapq</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_mapq&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-min-mapq" title="Permalink to this definition"></a></dt>
-<dd><p>Minimum mapping quality to keep an aligned read from Bowtie2</p>
+<dd><p>Minimum mapping quality to use an aligned read</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1321,7 +1321,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </section>
 <section id="seismic-cluster">
 <span id="cli-cluster"></span><h3>seismic cluster<a class="headerlink" href="#seismic-cluster" title="Permalink to this headline"></a></h3>
-<p>Find alternative structures by clustering reads’ mutations.</p>
+<p>Infer alternative structures by clustering reads’ mutations.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>cluster<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
 </pre></div>
 </div>

@@ -47,6 +47,8 @@ from .arg import (opt_phred_enc,
                   opt_bt2_dovetail,
                   opt_bt2_contain,
                   opt_bt2_local,
+                  opt_cram,
+                  opt_min_reads,
                   opt_min_mapq)
 from .io import FileIO, ReadBatchIO, RefIO
 from .rel import HalfRelPattern
@@ -306,7 +308,6 @@ def iconv_dict_str_int(mapping: dict[Any, Any]) -> dict[str, int]:
 
 @cache
 def get_oconv_float(precision: int = DECIMAL_PRECISION):
-
     def oconv_float(num: float):
         return round(num, precision)
 
@@ -444,39 +445,41 @@ Bowtie2ExtTries = Field("bt2_d", opt_bt2_d.help, int, check_val=check_nonneg_int
 Bowtie2Reseed = Field("bt2_r", opt_bt2_r.help, int, check_val=check_nonneg_int)
 Bowtie2Dpad = Field("bt2_dpad", opt_bt2_dpad.help, int, check_val=check_nonneg_int)
 Bowtie2Orient = Field("bt2_orient", opt_bt2_orient.help, str)
-MinMapQual = Field("min_mapq",
-                   opt_min_mapq.help,
+MinMapQualF = Field("min_mapq",
+                    opt_min_mapq.help,
+                    int,
+                    check_val=check_nonneg_int)
+ReadsInitF = Field("reads_init",
+                   "Number of reads initially",
                    int,
                    check_val=check_nonneg_int)
-ReadsInit = Field("reads_init",
-                  "Number of reads initially",
-                  int,
-                  check_val=check_nonneg_int)
-ReadsTrim = Field("reads_trim",
-                  "Number of reads after trimming",
-                  int,
-                  check_val=check_nonneg_int)
-ReadsAlign = Field("reads_align",
-                   "Number of reads after alignment",
-                   dict,
-                   iconv=iconv_dict_str_int,
-                   check_val=check_dict_vals_nonneg_ints)
-ReadsDedup = Field("reads_filter",
-                   "Number of reads after filtering",
-                   dict,
-                   iconv=iconv_dict_str_int,
-                   check_val=check_dict_vals_nonneg_ints)
+ReadsTrimF = Field("reads_trim",
+                   "Number of reads after trimming",
+                   int,
+                   check_val=check_nonneg_int)
+ReadsAlignF = Field("reads_align",
+                    "Number of reads after alignment",
+                    dict,
+                    iconv=iconv_dict_str_int,
+                    check_val=check_dict_vals_nonneg_ints)
+ReadsDedupF = Field("reads_filter",
+                    "Number of reads after filtering",
+                    dict,
+                    iconv=iconv_dict_str_int,
+                    check_val=check_dict_vals_nonneg_ints)
 ReadsRefs = Field("reads_refs",
                   "Number of reads aligned by reference",
                   dict,
                   iconv=iconv_dict_str_int,
                   check_val=check_dict_vals_nonneg_ints)
+MinReadsF = Field("min_reads", opt_min_reads.help, int, check_val=check_nonneg_int)
+CramOutF = Field("cram", opt_cram.help, bool)
 
 # Relation vector generation
-NumReadsRel = Field("n_reads_rel",
-                    "Number of Reads",
-                    int,
-                    check_val=check_nonneg_int)
+NumReadsRelF = Field("n_reads_rel",
+                     "Number of Reads",
+                     int,
+                     check_val=check_nonneg_int)
 NumBatchF = Field("n_batches",
                   "Number of Batches",
                   int,

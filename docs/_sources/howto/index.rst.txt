@@ -6,7 +6,7 @@ How To
 .. toctree::
     :maxdepth: 2
 
-    workflow
+    runwf
     inputs
     sections
     parallel

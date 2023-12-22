@@ -28,7 +28,7 @@ from ..fold.rnastructure import parse_energy
 from ..mask.data import MaskMerger
 from ..mask.report import MaskReport
 from ..relate.data import RelateLoader
-from ..relate.report import RelateReport, NumReadsRel
+from ..relate.report import RelateReport, NumReadsRelF
 from ..table.base import (COVER_REL,
                           INFOR_REL,
                           SUBST_REL,
@@ -109,7 +109,7 @@ def get_ref_metadata(top: Path,
                                                         sample=sample,
                                                         ref=ref))
     ref_metadata = {REF_SEQ: str(dataset.refseq),
-                    REF_NUM_ALIGN: dataset.report.get_field(NumReadsRel)}
+                    REF_NUM_ALIGN: dataset.report.get_field(NumReadsRelF)}
     return format_metadata(combine_metadata(ref_metadata,
                                             refs_metadata,
                                             ref,

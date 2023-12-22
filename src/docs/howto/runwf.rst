@@ -788,6 +788,77 @@ SEISMIC-RNA also writes a report file, ``relate-report.json``, that records the
 settings you used for running the Relate step and summarizes the results.
 See :doc:`../formats/report/relate` for more information.
 
+Relate: Troubleshooting
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you encounted problems during the Relate step, then the most likely cause is
+that the FASTA file or settings you used for the Relate step differ from those
+that you used during alignment.
+
+Relate troubleshooting: Insufficient reads in {file} ...
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This error means that you provided a SAM/BAM/CRAM file containing fewer reads
+than the minimum number set by the option ``--min-reads`` (``-n``).
+There are two common causes of this error:
+
+- You ran ``seismic align`` and ``seismic relate`` separately (instead of with
+  ``seismic wf``), and you used a larger value for ``--min-reads`` during the
+  Relate step than the Align step.
+  To check if this happened, open your report files from Align and Relate and
+  see if the field "Minimum number of reads in an alignment map" has a larger
+  value in the Relate report.
+- You ran alignment outside of SEISMIC-RNA or obtained alignment map files from
+  an external source, and some of the alignment maps have insufficient reads.
+
+The solution for the problem is to ensure that you run ``seismic relate`` with
+``--min-reads`` set to the minimum number of reads you actually want during the
+Relate step.
+As long as you do so, you may ignore error messages about insufficient reads,
+since these messages just indicate that SEISMIC-RNA is skipping alignment maps
+with insufficient reads, which is exactly what you want to happen.
+
+Relate troubleshooting: Read {read} mapped with a quality score {score} ...
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This error means that a read inside an alignment file aligned with a mapping
+quality lower than the minimum set by the option ``--min-mapq``.
+There are two common causes of this error:
+
+- You ran ``seismic align`` and ``seismic relate`` separately (instead of with
+  ``seismic wf``), and you used a larger value for ``--min-mapq`` during the
+  Relate step than the Align step.
+  To check if this happened, open your report files from Align and Relate and
+  see if the field "Minimum mapping quality to use an aligned read" has a larger
+  value in the Relate report.
+- You ran alignment outside of SEISMIC-RNA or obtained alignment map files from
+  an external source, and some reads in the alignment maps have insufficient
+  mapping quality.
+
+The solution for the problem is to ensure that you run ``seismic relate`` with
+``--min-mapq`` set to the minimum mapping quality you actually want during the
+Relate step.
+As long as you do so, you may ignore error messages about insufficient quality,
+since these messages just indicate that SEISMIC-RNA is skipping reads with
+with insufficient mapping quality, which is exactly what you want to happen.
+
+Relate troubleshooting: Read {read} mapped to a reference named {name} ...
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This error means that a read inside an alignment file aligned to a reference
+whose name does not match the name of the alignment file (minus the extension).
+For example, if your alignment map file ``azure.cram`` contains a read that
+aligned to a reference named ``cyan`` (instead of ``azure``), then you will get
+this error message.
+
+If you aligned the reads using ``seismic align`` or ``seismic wf``, then this
+error should never occur (unless you renamed or modified the output files).
+Otherwise, you can solve the problem by ensuring that
+
+- Each alignment map file contains reads that aligned to only one reference.
+- Each alignment map file is named (up to the file extension) the same as the
+  one reference to which all of the reads aligned.
+
 .. _wf_mask:
 
 Mask: Define mutations and sections to filter reads and positions
@@ -806,7 +877,7 @@ For example, to mask relation vectors of reads from ``sample-1`` related to
 references ``ref-1`` and ``ref-2``, and from ``sample-2`` related to reference
 ``ref-1``, use the command ::
 
-    seismic mask {out}/sample-1/align/ref-1.cram {out}/sample-1/align/ref-2.cram {out}/sample-2/align/ref-1.cram
+    seismic mask {out}/sample-1/relate/ref-1 {out}/sample-1/relate/ref-2 {out}/sample-2/relate/ref-1
 
 where ``{out}`` is the path of your output directory from the Relate step.
 
@@ -861,31 +932,39 @@ Mask setting: Exclude positions
 The first substep of masking is excluding pre-specified positions.
 You can specify three types of positions to exclude:
 
-- **G and U bases:**
-  DMS methylates G and U much less than A and C residues under physiological
-  conditions [`Zubradt et al. (2017)`_], so positions with G or U bases are
-  generally excluded when DMS is the chemical probe.
-  Use the options ``--exclude-gu`` (default) and ``--include-gu`` to decide
-  whether to use G and U bases.
-- **Poly(A) sequences:**
-  Although DMS and SHAPE reagents do modify A residues that are not immobilized
-  by base pairing, stretches of 5 or more consecutive A residues tend to have
-  very low mutation rates because of a behavior of the reverse transcriptases
-  that are used in mutational profiling (including TGIRT-III and SuperScript II,
-  III, and IV) [`Kladwang et al. (2020)`_].
-  Thus, using poly(A) sequences for structural analysis can produce artifacts.
-  SEISMIC-RNA automatically excludes all positions within stretches of 5 or more
-  consecutive A residues.
-  You can customize this behavior with the option ``--exclude-polya {n}``, where
-  ``{n}`` (an integer) is the minimum length of poly(A) sequences to exclude.
-  To disable poly(A) exclusion, use the option ``--exclude-polya 0``.
-- **Arbitrary positions:**
-  You can also exclude any arbitary positions from any reference sequence.
-  A common reason to exclude a position is if the base is modified endogenously
-  in a way that causes mutations during reverse transcription.
-  To exclude an arbitrary position, use the option ``--exclude-pos {ref} {n}``,
-  where ``{ref}`` is the name of the reference and ``{n}`` is the position to
-  exclude (where the first base in the reference is position 1).
+Exclude positions with G and U bases
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+DMS methylates G and U much less than A and C residues under physiological
+conditions [`Zubradt et al. (2017)`_], so positions with G or U bases are
+generally excluded when DMS is the chemical probe.
+Use the options ``--exclude-gu`` (default) and ``--include-gu`` to decide
+whether to use G and U bases.
+
+Exclude positions with poly(A) sequences
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Although DMS and SHAPE reagents do modify A residues that are not immobilized
+by base pairing, stretches of 5 or more consecutive A residues tend to have
+very low mutation rates because of a behavior of the reverse transcriptases
+that are used in mutational profiling (including TGIRT-III and SuperScript II,
+III, and IV) [`Kladwang et al. (2020)`_].
+Thus, using poly(A) sequences for structural analysis can produce artifacts.
+SEISMIC-RNA automatically excludes all positions within stretches of 5 or more
+consecutive A residues.
+You can customize this behavior with the option ``--exclude-polya {n}``, where
+``{n}`` (an integer) is the minimum length of poly(A) sequences to exclude.
+To disable poly(A) exclusion, use the option ``--exclude-polya 0``.
+
+Exclude arbitary positions
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+You can also exclude any arbitary positions from any reference sequence.
+A common reason to exclude a position is if the base is modified endogenously
+in a way that causes mutations during reverse transcription.
+To exclude an arbitrary position, use the option ``--exclude-pos {ref} {n}``,
+where ``{ref}`` is the name of the reference and ``{n}`` is the position to
+exclude (where the first base in the reference is position 1).
 
 Mask setting: Filter reads
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -893,47 +972,56 @@ Mask setting: Filter reads
 The second substep of masking is filtering reads.
 You can filter reads based on three criteria, in this order:
 
-- **Fraction of informative positions:**
-  For some applications, such as finding alternative structures, you need every
-  read to span the vast majority of positions in the section of the reference.
-  You can set a limit on the minimum number of informative bases in the read,
-  as a fraction of the number of non-excluded positions in the section, using
-  the option ``--min-finfo-read {f}``, where ``{f}`` is the fraction.
-  For example, to require 95% of the non-excluded positions in the section to be
-  informative, you can use the option ``--min-finfo-read 0.95``.
-  If the section had 296 positions, and 141 remained after excluding positions
-  (see :ref:`mask_exclude`), then a read with 137 informative positions would
-  have an informed fraction of 97% and be kept, but a read with 133 informative
-  positions would have an informed fraction of 94% and be discarded.
-- **Fraction of mutated positions:**
-  Rarely, a read may have an excessive number of mutations, possibly because it
-  underwent template switching during reverse transcription or misaligned during
-  the Align step.
-  You can set a limit to the fraction of mutated positions in the read using the
-  option ``--max-fmut-read {f}``, where ``{f}`` is the fraction.
-  For example, using the default limit of 10%, a read with 121 informative and
-  15 mutated positions would have a mutated fraction of 15 / 121 = 12% and be
-  discarded, but a read with 121 informative and 10 mutated positions would have
-  a mutated fraction of 8% and be kept.
-  Using the option ``--max-fmut-read 1`` disables filtering by fraction mutated.
-- **Space between mutations:**
-  Reads with closely spaced mutations are very underrepresented in mutational
-  profiling data, presumably because reverse transcripases struggle to read
-  through closely spaced pairs of modifications [`Tomezsko et al. (2020)`_].
-  Therefore, the data are biased towards reads without closely spaced mutations,
-  which would skew the mutation rates.
-  However, SEISMIC-RNA can correct the bias: first by removing any reads that
-  did happen to have mutations close together, then calculating the mutation
-  rates without such reads, and inferring what the mutation rates would have
-  been if no reads had dropped out.
-  The correction for observer bias is most important for finding alternative
-  structures and (to minimize surprises) does not run by default.
-  You can correct observer bias using the option ``--min-mut-gap {n}``, where
-  ``{n}`` is the minimum number of non-mutated bases that must separate two
-  mutations; if a read has any pair of mutations that are closer than this gap,
-  then the read is discarded during the Mask step.
-  If you correct for observer bias, then we recommend using ``--min-mut-gap 3``,
-  based on our previous findings in `Tomezsko et al. (2020)`_.
+Filter reads by fraction of informative positions
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+For some applications, such as finding alternative structures, you need every
+read to span the vast majority of positions in the section of the reference.
+You can set a limit on the minimum number of informative bases in the read,
+as a fraction of the number of non-excluded positions in the section, using
+the option ``--min-finfo-read {f}``, where ``{f}`` is the fraction.
+For example, to require 95% of the non-excluded positions in the section to be
+informative, you can use the option ``--min-finfo-read 0.95``.
+If the section had 296 positions, and 141 remained after excluding positions
+(see :ref:`mask_exclude`), then a read with 137 informative positions would
+have an informed fraction of 97% and be kept, but a read with 133 informative
+positions would have an informed fraction of 94% and be discarded.
+
+Filter reads by fraction of mutated positions
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Rarely, a read may have an excessive number of mutations, possibly because it
+underwent template switching during reverse transcription or misaligned during
+the Align step.
+You can set a limit to the fraction of mutated positions in the read using the
+option ``--max-fmut-read {f}``, where ``{f}`` is the fraction.
+For example, using the default limit of 10%, a read with 121 informative and
+15 mutated positions would have a mutated fraction of 15 / 121 = 12% and be
+discarded, but a read with 121 informative and 10 mutated positions would have
+a mutated fraction of 8% and be kept.
+Using the option ``--max-fmut-read 1`` disables filtering by fraction mutated.
+
+Filter reads by space between mutations
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Reads with closely spaced mutations are very underrepresented in mutational
+profiling data, presumably because reverse transcripases struggle to read
+through closely spaced pairs of modifications [`Tomezsko et al. (2020)`_].
+Therefore, the data are biased towards reads without closely spaced mutations,
+which would skew the mutation rates.
+However, SEISMIC-RNA can correct the bias: first by removing any reads that
+did happen to have mutations close together, then calculating the mutation
+rates without such reads, and inferring what the mutation rates would have
+been if no reads had dropped out.
+
+The correction for observer bias is most important for finding alternative
+structures and (to minimize surprises) does not run by default.
+You can correct observer bias using the option ``--min-mut-gap {n}``, where
+``{n}`` is the minimum number of non-mutated bases that must separate two
+mutations; if a read has any pair of mutations that are closer than this gap,
+then the read is discarded during the Mask step.
+If you correct for observer bias, then we recommend using ``--min-mut-gap 3``,
+based on our previous findings in `Tomezsko et al. (2020)`_.
 
 Mask setting: Filter positions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -941,38 +1029,43 @@ Mask setting: Filter positions
 The third substep of masking is filtering positions.
 You can filter positions based on two criteria, in this order:
 
-- **Number of informative reads:**
-  Estimating the fraction of mutated reads at a given position requires a large
-  number of reads so that the uncertainty (i.e. error bars) is much smaller than
-  the fraction of mutated reads.
-  The default minimum number of informative reads is 1000, which we have found
-  to yield a reasonably small uncertainties in the mutation fraction.
-  You can specify the minimum number of informative reads at each position using
-  the option ``--min-ninfo-pos {n}``, where ``{n}`` is the number of informative
-  positions.
-  We discourage going below 1000 reads unless you have multiple replicates, the
-  total number of informative reads at the position among all replicates is at
-  least 1000, and the mutation rates of the replicates correlate with a Pearson
-  or Spearman coefficient of at least 0.95.
-- **Fraction of mutated reads:**
-  Mutational profiling generally yields fractions of mutated reads up to 0.3.
-  Positions with fractions of mutated reads that exceed 0.5 are likely to be
-  mutated for some reason other than chemcial probing, such as misalignment
-  (especially when two or more reference sequences are very similar), an
-  endogenous RNA modification (if the RNA came from cells), a mistake in the
-  template DNA (if the RNA was transcribed *in vitro*), or a mistake in the
-  reference sequence.
-  Thus, SEISMIC-RNA discards positions with a fraction of mutated reads greater
-  than 0.5, by default.
-  You can change the maximum fraction of mutated reads using the option
-  ``--max-fmut-pos {f}``, where ``{f}`` is the fraction of mutated reads.
+Filter positions by number of informative reads
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Estimating the fraction of mutated reads at a given position requires a large
+number of reads so that the uncertainty (i.e. error bars) is much smaller than
+the fraction of mutated reads.
+The default minimum number of informative reads is 1000, which we have found
+to yield a reasonably small uncertainties in the mutation fraction.
+You can specify the minimum number of informative reads at each position using
+the option ``--min-ninfo-pos {n}``, where ``{n}`` is the number of informative
+positions.
+We discourage going below 1000 reads unless you have multiple replicates, the
+total number of informative reads at the position among all replicates is at
+least 1000, and the mutation rates of the replicates correlate with a Pearson
+or Spearman coefficient of at least 0.95.
+
+Filter positions by fraction of mutated reads
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Mutational profiling generally yields fractions of mutated reads up to 0.3.
+Positions with fractions of mutated reads that exceed 0.5 are likely to be
+mutated for some reason other than chemcial probing, such as misalignment
+(especially when two or more reference sequences are very similar), an
+endogenous RNA modification (if the RNA came from cells), a mistake in the
+template DNA (if the RNA was transcribed *in vitro*), or a mistake in the
+reference sequence.
+Thus, SEISMIC-RNA discards positions with a fraction of mutated reads greater
+than 0.5, by default.
+You can change the maximum fraction of mutated reads using the option
+``--max-fmut-pos {f}``, where ``{f}`` is the fraction of mutated reads.
 
 Mask: Output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All output files go into the directory ``{out}/{sample}/mask/{ref}``, where
-``{out}`` is the output directory, ``{sample}`` is the sample, and ``{ref}`` is
-the name of the reference.
+All output files go into the directory ``{out}/{sample}/mask/{ref}/{sect}``,
+where ``{out}`` is the output directory, ``{sample}`` is the sample, ``{ref}``
+is the reference, and ``{sect}`` is the section.
 
 Mask output file: Batch of masked reads
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -990,12 +1083,146 @@ settings you used for running the Mask step and summarizes the results, such as
 which and how many positions and reads were filtered out for each reason.
 See :doc:`../formats/report/mask` for more information.
 
+Mask: Troubleshooting
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Troubleshooting too many reads being filtered out
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Check the Mask report file to double check the settings for filtering reads and
+see how many reads were filtered out because of each specific filter.
+If many reads were filtered out because
+
+
+Cluster: Infer alternative structures by clustering reads' mutations
+--------------------------------------------------------------------------------
+
+Cluster: Input files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Cluster input file: Mask report
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+You can give any number of Mask report files as inputs for the Cluster step.
+See :doc:`./inputs` for ways to list multiple files.
+
+For example, to cluster relation vectors of reads from ``sample-1`` masked over
+reference ``ref-1`` section ``abc``, and from ``sample-2`` masked over reference
+``ref-2`` section ``full``, use the command ::
+
+    seismic cluster {out}/sample-1/mask/ref-1/abc {out}/sample-2/mask/ref-2/full
+
+where ``{out}`` is the path of your output directory from the Relate step.
+
+To cluster all masked relation vectors in ``{out}``, you can use the command ::
+
+    seismic cluster {out}
+
+Cluster: Settings
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Cluster setting: Maximum number of clusters
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The clustering algorithm in SEISMIC-RNA uses `expectation-maximization`_ (EM) to
+infer a mutational profiles for each RNA structure in an ensemble.
+The EM algorithm needs to know the number of structural states before it runs;
+however, the number of states is unknown before the algorithm runs, creating a
+`chicken-and-egg problem`_.
+
+SEISMIC-RNA solves this problem by first running the EM algorithm assuming there
+is 1 structural state, then running it again with 2 states, then 3, and so on.
+This process continues until one of two limits is reached:
+
+- The `Bayesian information criterion`_ (BIC) -- a measure of clustering quality
+  that rewards models that fit the reads' mutations and penalizes models with
+  too many clusters -- gets worse upon adding another cluster.
+- The maximum number of clusters is reached.
+  You can set this limit using the option ``--max-clusters {n}`` (``-k {n}``),
+  where ``{n}`` (a non-negative integer) is the number of clusters.
+
+If you run the entire workflow using ``seismic wf`` (see :ref:`wf_wf`), then the
+maximum number of clusters defaults to 0 (meaning that clustering is not run).
+If you run the Cluster step individually using ``seismic cluster``, then the
+maxmimum number of clusters defaults to 2 (i.e. the minimum non-trivial number).
+
+.. note::
+    If the BIC score gets worse before reaching the maximum number of clusters,
+    then SEISMIC-RNA will stop.
+    The Cluster report (see :doc:`../formats/report/mask`) records the maximum
+    number of clusters you specified (field "Maximum Number of Clusters") and
+    the number that SEISMIC-RNA found to be optimal (field "Optimal Number of
+    Clusters"), which is less than or equal to the maximum you specified.
+
+Cluster setting: Expectation-maximization iterations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+`Expectation-maximization`_ is an iterative algorithm, meaning that it begins by
+guessing an initial solution and then calculates progressively better solutions,
+stopping once successive solutions stop changing, which is called convergence.
+
+You can set limits on the minimum/maximum number of iterations using the options
+``--min-em-iter {n}`` and ``--max-em-iter {n}``, respectively, where ``{n}`` (an
+integer) is the limit of the number of iterations.
+Generally, as the number of clusters increases, so does the number of iterations
+required for convergence.
+Thus, to treat different numbers of clusters more fairly, SEISMIC-RNA multiplies
+the iteration limits by the number of clusters -- that is, if you set a maximum
+limit of 300 iterations using ``--max-em-iter 300``, then SEISMIC-RNA will allow
+up to 600 iterations for 2 clusters, 900 iterations for 3 clusters, and so on.
+The exception is for 1 cluster: since all reads go into the same cluster, there
+is no need to iterate, so the iteration limit is always the minimum possible, 2.
+
+You can set the threshold for convergence using the option ``--em-thresh {t}``
+(``-e {t}``), where ``{t}`` (a decimal) is the minimum difference between the
+log-likelihoods of successive iterations for them to be considered different.
+For example, if you set the threshold to 0.1 with ``--em-thresh 0.1``, then if
+iterations 38 and 39 had log-likelihoods of -567.28 and -567.17, respectively,
+then the algorithm would keep going because their difference in log-likelihood
+(0.11) would exceed the threshold; but if iteration 40 had a log-likelihood of
+-567.08, then the algorithm would consider itself converged and stop running
+because the difference in log-likelihood between iterations 40 and 39 would be
+0.09, which would be below the threshold.
+
+Cluster setting: Expectation-maximization runs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+`Expectation-maximization`_ is guaranteed to return a locally optimal solution,
+but there is no guarantee that the solution will be globally optimal.
+To improve the odds of finding the global optimum, SEISMIC-RNA runs EM multiple
+times (by default, 6 times), each time starting at a different initial guess.
+The idea is that if multiple EM runs, initialized randomly, converge on the same
+solution, then that solution is probably the global optimum.
+You can set the number of independent EM runs using the option ``--em-runs {n}``
+(``-e {n}``), where ``{n}`` (a positive integer) is the number of runs.
+
+Cluster: Output files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All output files go into the directory ``{out}/{sample}/cluster/{ref}/{sect}``,
+where ``{out}`` is the output directory, ``{sample}`` is the sample, ``{ref}``
+is the reference, and ``{sect}`` is the section.
+
+Cluster output file: Batch of cluster memberships
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Each batch of clustered reads contains a ``ClustBatchIO`` object and is saved to
+the file ``cluster-batch-{num}.brickle``, where ``{num}`` is the batch number.
+See :doc:`../data/cluster/cluster` for more information on the data structure.
+See :doc:`../formats/data/brickle` for more information on brickle files.
+
+Cluster output file: Cluster report
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+SEISMIC-RNA also writes a report file, ``cluster-report.json``, that records the
+settings you used for running the Cluster step and summarizes the results, such
+as the number of clusters, number of iterations, and the BIC scores.
+See :doc:`../formats/report/cluster` for more information.
+
 .. _wf_wf:
 
-Run the entire workflow
+Workflow: Run the entire workflow
 ------------------------------------------------------------------------
-
-
 
 .. note::
     ``seismic wf`` accepts FASTQ, SAM/BAM/CRAM, relate/mask/cluster report, and
@@ -1034,3 +1261,6 @@ From BAM, report, and/or table file(s)::
 .. _Zubradt et al. (2017): https://doi.org/10.1038/nmeth.4057
 .. _Kladwang et al. (2020): https://doi.org/10.1021/acs.biochem.0c00020
 .. _Tomezsko et al. (2020): https://doi.org/10.1038/s41586-020-2253-5
+.. _expectation-maximization: https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm
+.. _chicken-and-egg problem: https://en.wikipedia.org/wiki/Chicken_or_the_egg
+.. _Bayesian information criterion: https://en.wikipedia.org/wiki/Bayesian_information_criterion

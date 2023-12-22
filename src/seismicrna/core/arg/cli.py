@@ -497,7 +497,7 @@ opt_min_mapq = Option(
     ("--min-mapq",),
     type=int,
     default=25,
-    help="Minimum mapping quality to keep an aligned read from Bowtie2"
+    help="Minimum mapping quality to use an aligned read"
 )
 
 opt_cram = Option(

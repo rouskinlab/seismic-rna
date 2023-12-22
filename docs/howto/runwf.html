@@ -61,15 +61,23 @@
 <li class="toctree-l4"><a class="reference internal" href="#relate-input-files">Relate: Input files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#relate-settings">Relate: Settings</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#relate-output-files">Relate: Output files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#relate-troubleshooting">Relate: Troubleshooting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#mask-define-mutations-and-sections-to-filter-reads-and-positions">Mask: Define mutations and sections to filter reads and positions</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#mask-input-files">Mask: Input files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#mask-settings">Mask: Settings</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#mask-output-files">Mask: Output files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mask-troubleshooting">Mask: Troubleshooting</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#run-the-entire-workflow">Run the entire workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cluster-infer-alternative-structures-by-clustering-reads-mutations">Cluster: Infer alternative structures by clustering reads’ mutations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#cluster-input-files">Cluster: Input files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cluster-settings">Cluster: Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cluster-output-files">Cluster: Output files</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#workflow-run-the-entire-workflow">Workflow: Run the entire workflow</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="inputs.html">List Input Files</a></li>
@@ -79,7 +87,7 @@
 <li class="toctree-l2"><a class="reference internal" href="cleanfa.html">Clean FASTA Files</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">Commands, Arguments, Options</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../api/seismicrna.html">seismicrna package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../formats/index.html">File Formats</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../data/index.html">Data Structures</a></li>
@@ -105,7 +113,7 @@
           <li class="breadcrumb-item"><a href="index.html">How To</a></li>
       <li class="breadcrumb-item active">Run SEISMIC-RNA</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/howto/workflow.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/howto/runwf.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -131,7 +139,7 @@ begin at the step <a class="reference internal" href="#wf-relate"><span class="s
 command; for example, type <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code> to run alignment.
 For convenience, you can use <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> to run every step of the workflow
 automatically, without needing to type every command.
-See <a class="reference internal" href="#wf-wf"><span class="std std-ref">Run the entire workflow</span></a> for more information.</p>
+See <a class="reference internal" href="#wf-wf"><span class="std std-ref">Workflow: Run the entire workflow</span></a> for more information.</p>
 <section id="demultiplex-split-multiplexed-fastq-files-by-their-barcodes">
 <span id="wf-demult"></span><h2>Demultiplex: Split multiplexed FASTQ files by their barcodes<a class="headerlink" href="#demultiplex-split-multiplexed-fastq-files-by-their-barcodes" title="Permalink to this headline"></a></h2>
 <p>[WRITE ME]</p>
@@ -873,6 +881,73 @@ settings you used for running the Relate step and summarizes the results.
 See <a class="reference internal" href="../formats/report/relate.html"><span class="doc">Relate Report</span></a> for more information.</p>
 </section>
 </section>
+<section id="relate-troubleshooting">
+<h3>Relate: Troubleshooting<a class="headerlink" href="#relate-troubleshooting" title="Permalink to this headline"></a></h3>
+<p>If you encounted problems during the Relate step, then the most likely cause is
+that the FASTA file or settings you used for the Relate step differ from those
+that you used during alignment.</p>
+<section id="relate-troubleshooting-insufficient-reads-in-file">
+<h4>Relate troubleshooting: Insufficient reads in {file} …<a class="headerlink" href="#relate-troubleshooting-insufficient-reads-in-file" title="Permalink to this headline"></a></h4>
+<p>This error means that you provided a SAM/BAM/CRAM file containing fewer reads
+than the minimum number set by the option <code class="docutils literal notranslate"><span class="pre">--min-reads</span></code> (<code class="docutils literal notranslate"><span class="pre">-n</span></code>).
+There are two common causes of this error:</p>
+<ul class="simple">
+<li><p>You ran <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code> and <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">relate</span></code> separately (instead of with
+<code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code>), and you used a larger value for <code class="docutils literal notranslate"><span class="pre">--min-reads</span></code> during the
+Relate step than the Align step.
+To check if this happened, open your report files from Align and Relate and
+see if the field “Minimum number of reads in an alignment map” has a larger
+value in the Relate report.</p></li>
+<li><p>You ran alignment outside of SEISMIC-RNA or obtained alignment map files from
+an external source, and some of the alignment maps have insufficient reads.</p></li>
+</ul>
+<p>The solution for the problem is to ensure that you run <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">relate</span></code> with
+<code class="docutils literal notranslate"><span class="pre">--min-reads</span></code> set to the minimum number of reads you actually want during the
+Relate step.
+As long as you do so, you may ignore error messages about insufficient reads,
+since these messages just indicate that SEISMIC-RNA is skipping alignment maps
+with insufficient reads, which is exactly what you want to happen.</p>
+</section>
+<section id="relate-troubleshooting-read-read-mapped-with-a-quality-score-score">
+<h4>Relate troubleshooting: Read {read} mapped with a quality score {score} …<a class="headerlink" href="#relate-troubleshooting-read-read-mapped-with-a-quality-score-score" title="Permalink to this headline"></a></h4>
+<p>This error means that a read inside an alignment file aligned with a mapping
+quality lower than the minimum set by the option <code class="docutils literal notranslate"><span class="pre">--min-mapq</span></code>.
+There are two common causes of this error:</p>
+<ul class="simple">
+<li><p>You ran <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code> and <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">relate</span></code> separately (instead of with
+<code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code>), and you used a larger value for <code class="docutils literal notranslate"><span class="pre">--min-mapq</span></code> during the
+Relate step than the Align step.
+To check if this happened, open your report files from Align and Relate and
+see if the field “Minimum mapping quality to use an aligned read” has a larger
+value in the Relate report.</p></li>
+<li><p>You ran alignment outside of SEISMIC-RNA or obtained alignment map files from
+an external source, and some reads in the alignment maps have insufficient
+mapping quality.</p></li>
+</ul>
+<p>The solution for the problem is to ensure that you run <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">relate</span></code> with
+<code class="docutils literal notranslate"><span class="pre">--min-mapq</span></code> set to the minimum mapping quality you actually want during the
+Relate step.
+As long as you do so, you may ignore error messages about insufficient quality,
+since these messages just indicate that SEISMIC-RNA is skipping reads with
+with insufficient mapping quality, which is exactly what you want to happen.</p>
+</section>
+<section id="relate-troubleshooting-read-read-mapped-to-a-reference-named-name">
+<h4>Relate troubleshooting: Read {read} mapped to a reference named {name} …<a class="headerlink" href="#relate-troubleshooting-read-read-mapped-to-a-reference-named-name" title="Permalink to this headline"></a></h4>
+<p>This error means that a read inside an alignment file aligned to a reference
+whose name does not match the name of the alignment file (minus the extension).
+For example, if your alignment map file <code class="docutils literal notranslate"><span class="pre">azure.cram</span></code> contains a read that
+aligned to a reference named <code class="docutils literal notranslate"><span class="pre">cyan</span></code> (instead of <code class="docutils literal notranslate"><span class="pre">azure</span></code>), then you will get
+this error message.</p>
+<p>If you aligned the reads using <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code> or <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code>, then this
+error should never occur (unless you renamed or modified the output files).
+Otherwise, you can solve the problem by ensuring that</p>
+<ul class="simple">
+<li><p>Each alignment map file contains reads that aligned to only one reference.</p></li>
+<li><p>Each alignment map file is named (up to the file extension) the same as the
+one reference to which all of the reads aligned.</p></li>
+</ul>
+</section>
+</section>
 </section>
 <section id="mask-define-mutations-and-sections-to-filter-reads-and-positions">
 <span id="wf-mask"></span><h2>Mask: Define mutations and sections to filter reads and positions<a class="headerlink" href="#mask-define-mutations-and-sections-to-filter-reads-and-positions" title="Permalink to this headline"></a></h2>
@@ -885,7 +960,7 @@ See <a class="reference internal" href="inputs.html"><span class="doc">List Inpu
 <p>For example, to mask relation vectors of reads from <code class="docutils literal notranslate"><span class="pre">sample-1</span></code> related to
 references <code class="docutils literal notranslate"><span class="pre">ref-1</span></code> and <code class="docutils literal notranslate"><span class="pre">ref-2</span></code>, and from <code class="docutils literal notranslate"><span class="pre">sample-2</span></code> related to reference
 <code class="docutils literal notranslate"><span class="pre">ref-1</span></code>, use the command</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">mask</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mf">1.</span><span class="n">cram</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mf">2.</span><span class="n">cram</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">2</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mf">1.</span><span class="n">cram</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">mask</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">relate</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mi">1</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">relate</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mi">2</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">2</span><span class="o">/</span><span class="n">relate</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mi">1</span>
 </pre></div>
 </div>
 <p>where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the path of your output directory from the Relate step.</p>
@@ -933,15 +1008,17 @@ and all deletions except for when the reference base is C to be mutations:
 <span id="mask-exclude"></span><h4>Mask setting: Exclude positions<a class="headerlink" href="#mask-setting-exclude-positions" title="Permalink to this headline"></a></h4>
 <p>The first substep of masking is excluding pre-specified positions.
 You can specify three types of positions to exclude:</p>
-<ul class="simple">
-<li><p><strong>G and U bases:</strong>
-DMS methylates G and U much less than A and C residues under physiological
+<section id="exclude-positions-with-g-and-u-bases">
+<h5>Exclude positions with G and U bases<a class="headerlink" href="#exclude-positions-with-g-and-u-bases" title="Permalink to this headline"></a></h5>
+<p>DMS methylates G and U much less than A and C residues under physiological
 conditions [<a class="reference external" href="https://doi.org/10.1038/nmeth.4057">Zubradt et al. (2017)</a>], so positions with G or U bases are
 generally excluded when DMS is the chemical probe.
 Use the options <code class="docutils literal notranslate"><span class="pre">--exclude-gu</span></code> (default) and <code class="docutils literal notranslate"><span class="pre">--include-gu</span></code> to decide
-whether to use G and U bases.</p></li>
-<li><p><strong>Poly(A) sequences:</strong>
-Although DMS and SHAPE reagents do modify A residues that are not immobilized
+whether to use G and U bases.</p>
+</section>
+<section id="exclude-positions-with-poly-a-sequences">
+<h5>Exclude positions with poly(A) sequences<a class="headerlink" href="#exclude-positions-with-poly-a-sequences" title="Permalink to this headline"></a></h5>
+<p>Although DMS and SHAPE reagents do modify A residues that are not immobilized
 by base pairing, stretches of 5 or more consecutive A residues tend to have
 very low mutation rates because of a behavior of the reverse transcriptases
 that are used in mutational profiling (including TGIRT-III and SuperScript II,
@@ -951,23 +1028,25 @@ SEISMIC-RNA automatically excludes all positions within stretches of 5 or more
 consecutive A residues.
 You can customize this behavior with the option <code class="docutils literal notranslate"><span class="pre">--exclude-polya</span> <span class="pre">{n}</span></code>, where
 <code class="docutils literal notranslate"><span class="pre">{n}</span></code> (an integer) is the minimum length of poly(A) sequences to exclude.
-To disable poly(A) exclusion, use the option <code class="docutils literal notranslate"><span class="pre">--exclude-polya</span> <span class="pre">0</span></code>.</p></li>
-<li><p><strong>Arbitrary positions:</strong>
-You can also exclude any arbitary positions from any reference sequence.
+To disable poly(A) exclusion, use the option <code class="docutils literal notranslate"><span class="pre">--exclude-polya</span> <span class="pre">0</span></code>.</p>
+</section>
+<section id="exclude-arbitary-positions">
+<h5>Exclude arbitary positions<a class="headerlink" href="#exclude-arbitary-positions" title="Permalink to this headline"></a></h5>
+<p>You can also exclude any arbitary positions from any reference sequence.
 A common reason to exclude a position is if the base is modified endogenously
 in a way that causes mutations during reverse transcription.
 To exclude an arbitrary position, use the option <code class="docutils literal notranslate"><span class="pre">--exclude-pos</span> <span class="pre">{ref}</span> <span class="pre">{n}</span></code>,
 where <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is the name of the reference and <code class="docutils literal notranslate"><span class="pre">{n}</span></code> is the position to
-exclude (where the first base in the reference is position 1).</p></li>
-</ul>
+exclude (where the first base in the reference is position 1).</p>
+</section>
 </section>
 <section id="mask-setting-filter-reads">
 <h4>Mask setting: Filter reads<a class="headerlink" href="#mask-setting-filter-reads" title="Permalink to this headline"></a></h4>
 <p>The second substep of masking is filtering reads.
 You can filter reads based on three criteria, in this order:</p>
-<ul class="simple">
-<li><p><strong>Fraction of informative positions:</strong>
-For some applications, such as finding alternative structures, you need every
+<section id="filter-reads-by-fraction-of-informative-positions">
+<h5>Filter reads by fraction of informative positions<a class="headerlink" href="#filter-reads-by-fraction-of-informative-positions" title="Permalink to this headline"></a></h5>
+<p>For some applications, such as finding alternative structures, you need every
 read to span the vast majority of positions in the section of the reference.
 You can set a limit on the minimum number of informative bases in the read,
 as a fraction of the number of non-excluded positions in the section, using
@@ -977,9 +1056,11 @@ informative, you can use the option <code class="docutils literal notranslate"><
 If the section had 296 positions, and 141 remained after excluding positions
 (see <a class="reference internal" href="#mask-exclude"><span class="std std-ref">Mask setting: Exclude positions</span></a>), then a read with 137 informative positions would
 have an informed fraction of 97% and be kept, but a read with 133 informative
-positions would have an informed fraction of 94% and be discarded.</p></li>
-<li><p><strong>Fraction of mutated positions:</strong>
-Rarely, a read may have an excessive number of mutations, possibly because it
+positions would have an informed fraction of 94% and be discarded.</p>
+</section>
+<section id="filter-reads-by-fraction-of-mutated-positions">
+<h5>Filter reads by fraction of mutated positions<a class="headerlink" href="#filter-reads-by-fraction-of-mutated-positions" title="Permalink to this headline"></a></h5>
+<p>Rarely, a read may have an excessive number of mutations, possibly because it
 underwent template switching during reverse transcription or misaligned during
 the Align step.
 You can set a limit to the fraction of mutated positions in the read using the
@@ -988,9 +1069,11 @@ For example, using the default limit of 10%, a read with 121 informative and
 15 mutated positions would have a mutated fraction of 15 / 121 = 12% and be
 discarded, but a read with 121 informative and 10 mutated positions would have
 a mutated fraction of 8% and be kept.
-Using the option <code class="docutils literal notranslate"><span class="pre">--max-fmut-read</span> <span class="pre">1</span></code> disables filtering by fraction mutated.</p></li>
-<li><p><strong>Space between mutations:</strong>
-Reads with closely spaced mutations are very underrepresented in mutational
+Using the option <code class="docutils literal notranslate"><span class="pre">--max-fmut-read</span> <span class="pre">1</span></code> disables filtering by fraction mutated.</p>
+</section>
+<section id="filter-reads-by-space-between-mutations">
+<h5>Filter reads by space between mutations<a class="headerlink" href="#filter-reads-by-space-between-mutations" title="Permalink to this headline"></a></h5>
+<p>Reads with closely spaced mutations are very underrepresented in mutational
 profiling data, presumably because reverse transcripases struggle to read
 through closely spaced pairs of modifications [<a class="reference external" href="https://doi.org/10.1038/s41586-020-2253-5">Tomezsko et al. (2020)</a>].
 Therefore, the data are biased towards reads without closely spaced mutations,
@@ -998,24 +1081,24 @@ which would skew the mutation rates.
 However, SEISMIC-RNA can correct the bias: first by removing any reads that
 did happen to have mutations close together, then calculating the mutation
 rates without such reads, and inferring what the mutation rates would have
-been if no reads had dropped out.
-The correction for observer bias is most important for finding alternative
+been if no reads had dropped out.</p>
+<p>The correction for observer bias is most important for finding alternative
 structures and (to minimize surprises) does not run by default.
 You can correct observer bias using the option <code class="docutils literal notranslate"><span class="pre">--min-mut-gap</span> <span class="pre">{n}</span></code>, where
 <code class="docutils literal notranslate"><span class="pre">{n}</span></code> is the minimum number of non-mutated bases that must separate two
 mutations; if a read has any pair of mutations that are closer than this gap,
 then the read is discarded during the Mask step.
 If you correct for observer bias, then we recommend using <code class="docutils literal notranslate"><span class="pre">--min-mut-gap</span> <span class="pre">3</span></code>,
-based on our previous findings in <a class="reference external" href="https://doi.org/10.1038/s41586-020-2253-5">Tomezsko et al. (2020)</a>.</p></li>
-</ul>
+based on our previous findings in <a class="reference external" href="https://doi.org/10.1038/s41586-020-2253-5">Tomezsko et al. (2020)</a>.</p>
+</section>
 </section>
 <section id="mask-setting-filter-positions">
 <h4>Mask setting: Filter positions<a class="headerlink" href="#mask-setting-filter-positions" title="Permalink to this headline"></a></h4>
 <p>The third substep of masking is filtering positions.
 You can filter positions based on two criteria, in this order:</p>
-<ul class="simple">
-<li><p><strong>Number of informative reads:</strong>
-Estimating the fraction of mutated reads at a given position requires a large
+<section id="filter-positions-by-number-of-informative-reads">
+<h5>Filter positions by number of informative reads<a class="headerlink" href="#filter-positions-by-number-of-informative-reads" title="Permalink to this headline"></a></h5>
+<p>Estimating the fraction of mutated reads at a given position requires a large
 number of reads so that the uncertainty (i.e. error bars) is much smaller than
 the fraction of mutated reads.
 The default minimum number of informative reads is 1000, which we have found
@@ -1026,9 +1109,11 @@ positions.
 We discourage going below 1000 reads unless you have multiple replicates, the
 total number of informative reads at the position among all replicates is at
 least 1000, and the mutation rates of the replicates correlate with a Pearson
-or Spearman coefficient of at least 0.95.</p></li>
-<li><p><strong>Fraction of mutated reads:</strong>
-Mutational profiling generally yields fractions of mutated reads up to 0.3.
+or Spearman coefficient of at least 0.95.</p>
+</section>
+<section id="filter-positions-by-fraction-of-mutated-reads">
+<h5>Filter positions by fraction of mutated reads<a class="headerlink" href="#filter-positions-by-fraction-of-mutated-reads" title="Permalink to this headline"></a></h5>
+<p>Mutational profiling generally yields fractions of mutated reads up to 0.3.
 Positions with fractions of mutated reads that exceed 0.5 are likely to be
 mutated for some reason other than chemcial probing, such as misalignment
 (especially when two or more reference sequences are very similar), an
@@ -1038,15 +1123,15 @@ reference sequence.
 Thus, SEISMIC-RNA discards positions with a fraction of mutated reads greater
 than 0.5, by default.
 You can change the maximum fraction of mutated reads using the option
-<code class="docutils literal notranslate"><span class="pre">--max-fmut-pos</span> <span class="pre">{f}</span></code>, where <code class="docutils literal notranslate"><span class="pre">{f}</span></code> is the fraction of mutated reads.</p></li>
-</ul>
+<code class="docutils literal notranslate"><span class="pre">--max-fmut-pos</span> <span class="pre">{f}</span></code>, where <code class="docutils literal notranslate"><span class="pre">{f}</span></code> is the fraction of mutated reads.</p>
+</section>
 </section>
 </section>
 <section id="mask-output-files">
 <h3>Mask: Output files<a class="headerlink" href="#mask-output-files" title="Permalink to this headline"></a></h3>
-<p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/mask/{ref}</span></code>, where
-<code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, and <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is
-the name of the reference.</p>
+<p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/mask/{ref}/{sect}</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, <code class="docutils literal notranslate"><span class="pre">{ref}</span></code>
+is the reference, and <code class="docutils literal notranslate"><span class="pre">{sect}</span></code> is the section.</p>
 <section id="mask-output-file-batch-of-masked-reads">
 <h4>Mask output file: Batch of masked reads<a class="headerlink" href="#mask-output-file-batch-of-masked-reads" title="Permalink to this headline"></a></h4>
 <p>Each batch of masked reads contains a <code class="docutils literal notranslate"><span class="pre">MaskBatchIO</span></code> object and is saved to the
@@ -1062,9 +1147,133 @@ which and how many positions and reads were filtered out for each reason.
 See <a class="reference internal" href="../formats/report/mask.html"><span class="doc">Mask Report</span></a> for more information.</p>
 </section>
 </section>
+<section id="mask-troubleshooting">
+<h3>Mask: Troubleshooting<a class="headerlink" href="#mask-troubleshooting" title="Permalink to this headline"></a></h3>
+<section id="troubleshooting-too-many-reads-being-filtered-out">
+<h4>Troubleshooting too many reads being filtered out<a class="headerlink" href="#troubleshooting-too-many-reads-being-filtered-out" title="Permalink to this headline"></a></h4>
+<p>Check the Mask report file to double check the settings for filtering reads and
+see how many reads were filtered out because of each specific filter.
+If many reads were filtered out because</p>
 </section>
-<section id="run-the-entire-workflow">
-<span id="wf-wf"></span><h2>Run the entire workflow<a class="headerlink" href="#run-the-entire-workflow" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+<section id="cluster-infer-alternative-structures-by-clustering-reads-mutations">
+<h2>Cluster: Infer alternative structures by clustering reads’ mutations<a class="headerlink" href="#cluster-infer-alternative-structures-by-clustering-reads-mutations" title="Permalink to this headline"></a></h2>
+<section id="cluster-input-files">
+<h3>Cluster: Input files<a class="headerlink" href="#cluster-input-files" title="Permalink to this headline"></a></h3>
+<section id="cluster-input-file-mask-report">
+<h4>Cluster input file: Mask report<a class="headerlink" href="#cluster-input-file-mask-report" title="Permalink to this headline"></a></h4>
+<p>You can give any number of Mask report files as inputs for the Cluster step.
+See <a class="reference internal" href="inputs.html"><span class="doc">List Input Files</span></a> for ways to list multiple files.</p>
+<p>For example, to cluster relation vectors of reads from <code class="docutils literal notranslate"><span class="pre">sample-1</span></code> masked over
+reference <code class="docutils literal notranslate"><span class="pre">ref-1</span></code> section <code class="docutils literal notranslate"><span class="pre">abc</span></code>, and from <code class="docutils literal notranslate"><span class="pre">sample-2</span></code> masked over reference
+<code class="docutils literal notranslate"><span class="pre">ref-2</span></code> section <code class="docutils literal notranslate"><span class="pre">full</span></code>, use the command</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">cluster</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">mask</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">abc</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">2</span><span class="o">/</span><span class="n">mask</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mi">2</span><span class="o">/</span><span class="n">full</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the path of your output directory from the Relate step.</p>
+<p>To cluster all masked relation vectors in <code class="docutils literal notranslate"><span class="pre">{out}</span></code>, you can use the command</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">cluster</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="cluster-settings">
+<h3>Cluster: Settings<a class="headerlink" href="#cluster-settings" title="Permalink to this headline"></a></h3>
+<section id="cluster-setting-maximum-number-of-clusters">
+<h4>Cluster setting: Maximum number of clusters<a class="headerlink" href="#cluster-setting-maximum-number-of-clusters" title="Permalink to this headline"></a></h4>
+<p>The clustering algorithm in SEISMIC-RNA uses <a class="reference external" href="https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm">expectation-maximization</a> (EM) to
+infer a mutational profiles for each RNA structure in an ensemble.
+The EM algorithm needs to know the number of structural states before it runs;
+however, the number of states is unknown before the algorithm runs, creating a
+<a class="reference external" href="https://en.wikipedia.org/wiki/Chicken_or_the_egg">chicken-and-egg problem</a>.</p>
+<p>SEISMIC-RNA solves this problem by first running the EM algorithm assuming there
+is 1 structural state, then running it again with 2 states, then 3, and so on.
+This process continues until one of two limits is reached:</p>
+<ul class="simple">
+<li><p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Bayesian_information_criterion">Bayesian information criterion</a> (BIC) – a measure of clustering quality
+that rewards models that fit the reads’ mutations and penalizes models with
+too many clusters – gets worse upon adding another cluster.</p></li>
+<li><p>The maximum number of clusters is reached.
+You can set this limit using the option <code class="docutils literal notranslate"><span class="pre">--max-clusters</span> <span class="pre">{n}</span></code> (<code class="docutils literal notranslate"><span class="pre">-k</span> <span class="pre">{n}</span></code>),
+where <code class="docutils literal notranslate"><span class="pre">{n}</span></code> (a non-negative integer) is the number of clusters.</p></li>
+</ul>
+<p>If you run the entire workflow using <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> (see <a class="reference internal" href="#wf-wf"><span class="std std-ref">Workflow: Run the entire workflow</span></a>), then the
+maximum number of clusters defaults to 0 (meaning that clustering is not run).
+If you run the Cluster step individually using <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">cluster</span></code>, then the
+maxmimum number of clusters defaults to 2 (i.e. the minimum non-trivial number).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the BIC score gets worse before reaching the maximum number of clusters,
+then SEISMIC-RNA will stop.
+The Cluster report (see <a class="reference internal" href="../formats/report/mask.html"><span class="doc">Mask Report</span></a>) records the maximum
+number of clusters you specified (field “Maximum Number of Clusters”) and
+the number that SEISMIC-RNA found to be optimal (field “Optimal Number of
+Clusters”), which is less than or equal to the maximum you specified.</p>
+</div>
+</section>
+<section id="cluster-setting-expectation-maximization-iterations">
+<h4>Cluster setting: Expectation-maximization iterations<a class="headerlink" href="#cluster-setting-expectation-maximization-iterations" title="Permalink to this headline"></a></h4>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm">Expectation-maximization</a> is an iterative algorithm, meaning that it begins by
+guessing an initial solution and then calculates progressively better solutions,
+stopping once successive solutions stop changing, which is called convergence.</p>
+<p>You can set limits on the minimum/maximum number of iterations using the options
+<code class="docutils literal notranslate"><span class="pre">--min-em-iter</span> <span class="pre">{n}</span></code> and <code class="docutils literal notranslate"><span class="pre">--max-em-iter</span> <span class="pre">{n}</span></code>, respectively, where <code class="docutils literal notranslate"><span class="pre">{n}</span></code> (an
+integer) is the limit of the number of iterations.
+Generally, as the number of clusters increases, so does the number of iterations
+required for convergence.
+Thus, to treat different numbers of clusters more fairly, SEISMIC-RNA multiplies
+the iteration limits by the number of clusters – that is, if you set a maximum
+limit of 300 iterations using <code class="docutils literal notranslate"><span class="pre">--max-em-iter</span> <span class="pre">300</span></code>, then SEISMIC-RNA will allow
+up to 600 iterations for 2 clusters, 900 iterations for 3 clusters, and so on.
+The exception is for 1 cluster: since all reads go into the same cluster, there
+is no need to iterate, so the iteration limit is always the minimum possible, 2.</p>
+<p>You can set the threshold for convergence using the option <code class="docutils literal notranslate"><span class="pre">--em-thresh</span> <span class="pre">{t}</span></code>
+(<code class="docutils literal notranslate"><span class="pre">-e</span> <span class="pre">{t}</span></code>), where <code class="docutils literal notranslate"><span class="pre">{t}</span></code> (a decimal) is the minimum difference between the
+log-likelihoods of successive iterations for them to be considered different.
+For example, if you set the threshold to 0.1 with <code class="docutils literal notranslate"><span class="pre">--em-thresh</span> <span class="pre">0.1</span></code>, then if
+iterations 38 and 39 had log-likelihoods of -567.28 and -567.17, respectively,
+then the algorithm would keep going because their difference in log-likelihood
+(0.11) would exceed the threshold; but if iteration 40 had a log-likelihood of
+-567.08, then the algorithm would consider itself converged and stop running
+because the difference in log-likelihood between iterations 40 and 39 would be
+0.09, which would be below the threshold.</p>
+</section>
+<section id="cluster-setting-expectation-maximization-runs">
+<h4>Cluster setting: Expectation-maximization runs<a class="headerlink" href="#cluster-setting-expectation-maximization-runs" title="Permalink to this headline"></a></h4>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm">Expectation-maximization</a> is guaranteed to return a locally optimal solution,
+but there is no guarantee that the solution will be globally optimal.
+To improve the odds of finding the global optimum, SEISMIC-RNA runs EM multiple
+times (by default, 6 times), each time starting at a different initial guess.
+The idea is that if multiple EM runs, initialized randomly, converge on the same
+solution, then that solution is probably the global optimum.
+You can set the number of independent EM runs using the option <code class="docutils literal notranslate"><span class="pre">--em-runs</span> <span class="pre">{n}</span></code>
+(<code class="docutils literal notranslate"><span class="pre">-e</span> <span class="pre">{n}</span></code>), where <code class="docutils literal notranslate"><span class="pre">{n}</span></code> (a positive integer) is the number of runs.</p>
+</section>
+</section>
+<section id="cluster-output-files">
+<h3>Cluster: Output files<a class="headerlink" href="#cluster-output-files" title="Permalink to this headline"></a></h3>
+<p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/cluster/{ref}/{sect}</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, <code class="docutils literal notranslate"><span class="pre">{ref}</span></code>
+is the reference, and <code class="docutils literal notranslate"><span class="pre">{sect}</span></code> is the section.</p>
+<section id="cluster-output-file-batch-of-cluster-memberships">
+<h4>Cluster output file: Batch of cluster memberships<a class="headerlink" href="#cluster-output-file-batch-of-cluster-memberships" title="Permalink to this headline"></a></h4>
+<p>Each batch of clustered reads contains a <code class="docutils literal notranslate"><span class="pre">ClustBatchIO</span></code> object and is saved to
+the file <code class="docutils literal notranslate"><span class="pre">cluster-batch-{num}.brickle</span></code>, where <code class="docutils literal notranslate"><span class="pre">{num}</span></code> is the batch number.
+See <span class="xref std std-doc">../data/cluster/cluster</span> for more information on the data structure.
+See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for more information on brickle files.</p>
+</section>
+<section id="cluster-output-file-cluster-report">
+<h4>Cluster output file: Cluster report<a class="headerlink" href="#cluster-output-file-cluster-report" title="Permalink to this headline"></a></h4>
+<p>SEISMIC-RNA also writes a report file, <code class="docutils literal notranslate"><span class="pre">cluster-report.json</span></code>, that records the
+settings you used for running the Cluster step and summarizes the results, such
+as the number of clusters, number of iterations, and the BIC scores.
+See <a class="reference internal" href="../formats/report/cluster.html"><span class="doc">Cluster Report</span></a> for more information.</p>
+</section>
+</section>
+</section>
+<section id="workflow-run-the-entire-workflow">
+<span id="wf-wf"></span><h2>Workflow: Run the entire workflow<a class="headerlink" href="#workflow-run-the-entire-workflow" title="Permalink to this headline"></a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> accepts FASTQ, SAM/BAM/CRAM, relate/mask/cluster report, and
