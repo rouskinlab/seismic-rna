@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Run SEISMIC-RNA &mdash; seismic-rna  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/favicon-32x32.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="List Input Files" href="inputs.html" />
+    <link rel="prev" title="How To" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            seismic-rna
+              <img src="../_static/logo-200.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../steps/index.html">Step-By-Step</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How To</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Run SEISMIC-RNA</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#demultiplex-split-multiplexed-fastq-files-by-their-barcodes">Demultiplex: Split multiplexed FASTQ files by their barcodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#align-trim-fastq-files-and-align-them-to-reference-sequences">Align: Trim FASTQ files and align them to reference sequences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#align-input-files">Align: Input files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#align-settings">Align: Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#align-output-files">Align: Output files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#align-troubleshooting">Align: Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#relate-compute-relationships-between-references-and-aligned-reads">Relate: Compute relationships between references and aligned reads</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#relate-input-files">Relate: Input files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#relate-settings">Relate: Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#relate-output-files">Relate: Output files</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#mask-define-mutations-and-sections-to-filter-reads-and-positions">Mask: Define mutations and sections to filter reads and positions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mask-input-files">Mask: Input files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mask-settings">Mask: Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mask-output-files">Mask: Output files</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#run-the-entire-workflow">Run the entire workflow</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="inputs.html">List Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sections.html">Define Sections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallel.html">Parallelize Tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html">Log Messages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cleanfa.html">Clean FASTA Files</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/seismicrna.html">seismicrna package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../formats/index.html">File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/index.html">Data Structures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algos/index.html">Algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../issues.html">Bugs and Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../writeme.html">How to Write this Manual</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">seismic-rna</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">How To</a></li>
+      <li class="breadcrumb-item active">Run SEISMIC-RNA</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/howto/workflow.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="run-seismic-rna">
+<h1>Run SEISMIC-RNA<a class="headerlink" href="#run-seismic-rna" title="Permalink to this headline"></a></h1>
+<p>There are three points from which you can begin the workflow of SEISMIC-RNA:</p>
+<ul class="simple">
+<li><p>To start from files of raw sequencing reads (in FASTQ format) that must be
+demultiplexed (split into subfiles via barcodes), begin at <a class="reference internal" href="#wf-demult"><span class="std std-ref">Demultiplex: Split multiplexed FASTQ files by their barcodes</span></a>.
+(If you are unsure whether you need to demultiplex your FASTQ files, then you
+probably do not need to.)</p></li>
+<li><p>To start from files of raw sequencing reads (FASTQ format) that do not need to
+be demultiplexed (i.e. split into subfiles), begin at <a class="reference internal" href="#wf-align"><span class="std std-ref">Align: Trim FASTQ files and align them to reference sequences</span></a>.
+<strong>Most users will begin here.</strong></p></li>
+<li><p>To start from files of aligned sequencing reads (SAM, BAM, or CRAM format),
+begin at the step <a class="reference internal" href="#wf-relate"><span class="std std-ref">Relate: Compute relationships between references and aligned reads</span></a>.</p></li>
+</ul>
+<p>You can run each step of the workflow individually by typing its corresponding
+command; for example, type <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code> to run alignment.
+For convenience, you can use <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> to run every step of the workflow
+automatically, without needing to type every command.
+See <a class="reference internal" href="#wf-wf"><span class="std std-ref">Run the entire workflow</span></a> for more information.</p>
+<section id="demultiplex-split-multiplexed-fastq-files-by-their-barcodes">
+<span id="wf-demult"></span><h2>Demultiplex: Split multiplexed FASTQ files by their barcodes<a class="headerlink" href="#demultiplex-split-multiplexed-fastq-files-by-their-barcodes" title="Permalink to this headline"></a></h2>
+<p>[WRITE ME]</p>
+</section>
+<section id="align-trim-fastq-files-and-align-them-to-reference-sequences">
+<span id="wf-align"></span><h2>Align: Trim FASTQ files and align them to reference sequences<a class="headerlink" href="#align-trim-fastq-files-and-align-them-to-reference-sequences" title="Permalink to this headline"></a></h2>
+<section id="align-input-files">
+<h3>Align: Input files<a class="headerlink" href="#align-input-files" title="Permalink to this headline"></a></h3>
+<section id="align-input-file-reference-sequences">
+<h4>Align input file: Reference sequences<a class="headerlink" href="#align-input-file-reference-sequences" title="Permalink to this headline"></a></h4>
+<p>You must provide one file of reference DNA sequences (only A, C, G, T, and N) in
+FASTA format (see <a class="reference internal" href="../formats/data/fasta.html"><span class="doc">FASTA: Reference sequences</span></a> for deatils on FASTA format).
+If your FASTA file has unallowed characters or is formatted improperly, then you
+can make it compatible with SEISMIC-RNA using the <a class="reference internal" href="cleanfa.html"><span class="doc">Clean FASTA Files</span></a> tool.</p>
+</section>
+<section id="align-input-file-sequencing-reads">
+<h4>Align input file: Sequencing reads<a class="headerlink" href="#align-input-file-sequencing-reads" title="Permalink to this headline"></a></h4>
+<p>You must provide one or more files of sequencing reads (only A, C, G, T, and N)
+in FASTQ format (see <a class="reference internal" href="../formats/data/fastq.html"><span class="doc">FASTQ: Sequencing Reads</span></a> for details on FASTQ format).</p>
+<section id="sequencing-reads-can-be-single-end-or-paired-end">
+<h5>Sequencing reads can be single-end or paired-end<a class="headerlink" href="#sequencing-reads-can-be-single-end-or-paired-end" title="Permalink to this headline"></a></h5>
+<p>You can align FASTQ files of single- and paired-end reads with SEISMIC-RNA,
+provided that no FASTQ file contains a mixture of both types of reads.
+(For definitions of single- and paired-end reads, see <a class="reference internal" href="../formats/data/fastq.html#fastq-endedness"><span class="std std-ref">Endedness: single-end and paired-end reads</span></a>).</p>
+</section>
+<section id="sequencing-reads-can-come-from-whole-or-demultiplexed-samples">
+<h5>Sequencing reads can come from whole or demultiplexed samples<a class="headerlink" href="#sequencing-reads-can-come-from-whole-or-demultiplexed-samples" title="Permalink to this headline"></a></h5>
+<p>You can align FASTQ files that come from a whole sample (possibly containing
+multiple RNA sequences) or that have been demultiplexed before alignment so
+that they contain reads from only one RNA sequence.
+For more information on demultiplexing and how to perform it if needed, see
+<a class="reference internal" href="#wf-demult"><span class="std std-ref">Demultiplex: Split multiplexed FASTQ files by their barcodes</span></a>.</p>
+</section>
+<section id="how-to-specify-the-endedness-and-source-of-sequencing-reads">
+<h5>How to specify the endedness and source of sequencing reads<a class="headerlink" href="#how-to-specify-the-endedness-and-source-of-sequencing-reads" title="Permalink to this headline"></a></h5>
+<p>Specify the endedness (single-end, paired-end interleaved, or paired-end in
+separate files) and source of the reads (whole or demultiplexed sample) in a
+FASTQ file by giving the file name after the appropriate option below.
+Each option has “long” and “short” forms (prefixed with <code class="docutils literal notranslate"><span class="pre">--</span></code> and <code class="docutils literal notranslate"><span class="pre">-</span></code>,
+respectively), both shown in this table, with the short form in parentheses:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 37%" />
+<col style="width: 30%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Endedness</p></th>
+<th class="head"><p>Whole Sample</p></th>
+<th class="head"><p>Demultiplexed</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>paired-end, separate files</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--fastqx</span></code> (<code class="docutils literal notranslate"><span class="pre">-x</span></code>)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--dmfastqx</span></code> (<code class="docutils literal notranslate"><span class="pre">-X</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p>paired-end, interleaved</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--fastqy</span></code> (<code class="docutils literal notranslate"><span class="pre">-y</span></code>)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--dmfastqy</span></code> (<code class="docutils literal notranslate"><span class="pre">-Y</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p>single-end</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--fastqz</span></code> (<code class="docutils literal notranslate"><span class="pre">-z</span></code>)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--dmfastqz</span></code> (<code class="docutils literal notranslate"><span class="pre">-Z</span></code>)</p></td>
+</tr>
+</tbody>
+</table>
+<p>For example, you could type <code class="docutils literal notranslate"><span class="pre">-z</span> <span class="pre">{myfile}</span></code> to input a FASTQ file of single-end
+reads from a whole sample or <code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">{myfile1}</span> <span class="pre">-X</span> <span class="pre">{myfile2}</span></code> to input two FASTQ
+files of paired-end reads from a demultiplexed sample, replacing <code class="docutils literal notranslate"><span class="pre">{myfile}</span></code>
+with the actual path(s) of your file(s).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you have paired-end reads in separate FASTQ files (<code class="docutils literal notranslate"><span class="pre">-x</span></code> or <code class="docutils literal notranslate"><span class="pre">-X</span></code>),
+then you must give both files of 1st and 2nd mates.
+See <a class="reference internal" href="#fastq-pair"><span class="std std-ref">How to align a pair of FASTQ files (paired-end reads in separate files)</span></a> for instructions.</p>
+</div>
+</section>
+<section id="how-to-align-one-fastq-file-single-end-or-interleaved-paired-end-reads">
+<h5>How to align one FASTQ file (single-end or interleaved paired-end reads)<a class="headerlink" href="#how-to-align-one-fastq-file-single-end-or-interleaved-paired-end-reads" title="Permalink to this headline"></a></h5>
+<p>To align a FASTQ of single-end reads from a whole sample, use <code class="docutils literal notranslate"><span class="pre">-z</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">align</span> <span class="p">{</span><span class="n">refs</span><span class="o">.</span><span class="n">fa</span><span class="p">}</span> <span class="o">-</span><span class="n">z</span> <span class="p">{</span><span class="n">sample</span><span class="o">.</span><span class="n">fq</span><span class="o">.</span><span class="n">gz</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">{refs.fa}</span></code> is the path to your FASTA file of reference sequences and
+<code class="docutils literal notranslate"><span class="pre">{sample.fq.gz}</span></code> is the path to your FASTQ file of the sample.</p>
+<p>For a FASTQ of paired-end, interleaved reads that were demultiplexed, use <code class="docutils literal notranslate"><span class="pre">-Y</span></code>
+instead:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">align</span> <span class="p">{</span><span class="n">refs</span><span class="o">.</span><span class="n">fa</span><span class="p">}</span> <span class="o">-</span><span class="n">Y</span> <span class="p">{</span><span class="n">sample</span><span class="o">/</span><span class="n">ref</span><span class="o">.</span><span class="n">fq</span><span class="o">.</span><span class="n">gz</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">{sample/ref.fq.gz}</span></code> is the path to your FASTQ file containing reads
+from only one reference in the sample.</p>
+</section>
+<section id="how-to-align-a-pair-of-fastq-files-paired-end-reads-in-separate-files">
+<span id="fastq-pair"></span><h5>How to align a pair of FASTQ files (paired-end reads in separate files)<a class="headerlink" href="#how-to-align-a-pair-of-fastq-files-paired-end-reads-in-separate-files" title="Permalink to this headline"></a></h5>
+<p>If your reads are paired-end and you have one FASTQ file containing all 1st
+mates and another containing all 2nd mates, then you will need to provide both
+FASTQ files.
+There are two methods:</p>
+<ol class="arabic">
+<li><p>Use the option <code class="docutils literal notranslate"><span class="pre">-x</span></code>/<code class="docutils literal notranslate"><span class="pre">-X</span></code> twice, once per FASTQ file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">align</span> <span class="p">{</span><span class="n">refs</span><span class="o">.</span><span class="n">fa</span><span class="p">}</span> <span class="o">-</span><span class="n">x</span> <span class="p">{</span><span class="n">sample_R1</span><span class="o">.</span><span class="n">fq</span><span class="o">.</span><span class="n">gz</span><span class="p">}</span> <span class="o">-</span><span class="n">x</span> <span class="p">{</span><span class="n">sample_R2</span><span class="o">.</span><span class="n">fq</span><span class="o">.</span><span class="n">gz</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">{sample_R1.fq.gz}</span></code> and <code class="docutils literal notranslate"><span class="pre">{sample_R2.fq.gz}</span></code> are the paths to your
+FASTQ files of the 1st and 2nd mates, respectively.</p>
+</li>
+<li><p>Make a new directory, move both FASTQ files into that directory, and provide
+the path to that directory with <code class="docutils literal notranslate"><span class="pre">-x</span></code>/<code class="docutils literal notranslate"><span class="pre">-X</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="p">{</span><span class="n">sample</span><span class="p">}</span>
+<span class="n">mv</span> <span class="p">{</span><span class="n">sample_R1</span><span class="o">.</span><span class="n">fq</span><span class="o">.</span><span class="n">gz</span><span class="p">}</span> <span class="p">{</span><span class="n">sample_R2</span><span class="o">.</span><span class="n">fq</span><span class="o">.</span><span class="n">gz</span><span class="p">}</span> <span class="p">{</span><span class="n">sample</span><span class="p">}</span>
+<span class="n">seismic</span> <span class="n">align</span> <span class="p">{</span><span class="n">refs</span><span class="o">.</span><span class="n">fa</span><span class="p">}</span> <span class="o">-</span><span class="n">x</span> <span class="p">{</span><span class="n">sample</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the new directory for both FASTQ files.</p>
+</li>
+</ol>
+</section>
+<section id="how-to-align-multiple-fastq-files-or-pairs-of-paired-end-fastq-files">
+<h5>How to align multiple FASTQ files or pairs of paired-end FASTQ files<a class="headerlink" href="#how-to-align-multiple-fastq-files-or-pairs-of-paired-end-fastq-files" title="Permalink to this headline"></a></h5>
+<p>There are three ways to align multiple FASTQ files (or pairs thereof):</p>
+<ol class="arabic">
+<li><p><strong>Use options more than once.</strong>
+You can repeat any of the options <code class="docutils literal notranslate"><span class="pre">-x</span></code>/<code class="docutils literal notranslate"><span class="pre">-y</span></code>/<code class="docutils literal notranslate"><span class="pre">-z</span></code>/<code class="docutils literal notranslate"><span class="pre">-X</span></code>/<code class="docutils literal notranslate"><span class="pre">-Y</span></code>/<code class="docutils literal notranslate"><span class="pre">-Z</span></code>,
+as well as mix them in one command.
+For example, to align one pair of paired-end FASTQ files (sample 1), one
+interleaved paired-end FASTQ file (sample 2), and two single-end FASTQ files
+(samples 3 and 4), use the following options:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">align</span> <span class="p">{</span><span class="n">refs</span><span class="o">.</span><span class="n">fa</span><span class="p">}</span> <span class="o">-</span><span class="n">x</span> <span class="p">{</span><span class="n">sample1_R1</span><span class="o">.</span><span class="n">fq</span><span class="o">.</span><span class="n">gz</span><span class="p">}</span> <span class="o">-</span><span class="n">x</span> <span class="p">{</span><span class="n">sample1_R2</span><span class="o">.</span><span class="n">fq</span><span class="o">.</span><span class="n">gz</span><span class="p">}</span> <span class="o">-</span><span class="n">y</span> <span class="p">{</span><span class="n">sample2</span><span class="o">.</span><span class="n">fq</span><span class="o">.</span><span class="n">gz</span><span class="p">}</span> <span class="o">-</span><span class="n">z</span> <span class="p">{</span><span class="n">sample3</span><span class="o">.</span><span class="n">fq</span><span class="o">.</span><span class="n">gz</span><span class="p">}</span> <span class="o">-</span><span class="n">z</span> <span class="p">{</span><span class="n">sample4</span><span class="o">.</span><span class="n">fq</span><span class="o">.</span><span class="n">gz</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>This method is most useful when you have a small number of FASTQ files.</p>
+</li>
+<li><p><strong>Group FASTQ files of the same type into a directory.</strong>
+Suppose you have 63 pairs of FASTQ files, with the files of mate 1s named
+<code class="docutils literal notranslate"><span class="pre">sample-1_R1.fq.gz</span></code> to <code class="docutils literal notranslate"><span class="pre">sample-63_R1.fq.gz</span></code> and the files of mate 2s
+named <code class="docutils literal notranslate"><span class="pre">sample-1_R2.fq.gz</span></code> to <code class="docutils literal notranslate"><span class="pre">sample-63_R2.fq.gz</span></code>; plus demultiplexed
+single-end reads from three samples (I-III) and six references (A-F), named
+<code class="docutils literal notranslate"><span class="pre">sample-I/ref-A.fq.gz</span></code> to <code class="docutils literal notranslate"><span class="pre">sample-III/ref-F.fq.gz</span></code>).
+You can align all of them with one command if you move the whole-sample,
+paired-end FASTQ files into their own directory, and the demultiplexed,
+single-end FASTQ files into another directory, and then give each directory
+after the appropriate options (<code class="docutils literal notranslate"><span class="pre">-x</span></code> and <code class="docutils literal notranslate"><span class="pre">-Z</span></code>, respectively):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mkdir {paired}
+mv sample-*_R?.fq.gz {paired}
+mkdir {dm-single}
+mv sample-I* {dm-single}
+seismic align {refs.fa} -x {paired} -Z {dm-single}
+</pre></div>
+</div>
+<p>This method is most useful when you have many FASTQ files.</p>
+</li>
+<li><p><strong>Combine methods 1 and 2.</strong>
+Suppose you are working on two projects, have generated a set of many FASTQ
+files for each project, and want to process both sets.
+Currently, the FASTQ files for projects 1 and 2 are in directories <code class="docutils literal notranslate"><span class="pre">proj1</span></code>
+and <code class="docutils literal notranslate"><span class="pre">proj2</span></code>, and you want to keep them separate.
+You can process both directories with one command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">align</span> <span class="p">{</span><span class="n">refs</span><span class="o">.</span><span class="n">fa</span><span class="p">}</span> <span class="o">-</span><span class="n">x</span> <span class="n">proj1</span> <span class="o">-</span><span class="n">x</span> <span class="n">proj2</span>
+</pre></div>
+</div>
+<p>This method is most useful when you have multiple directories of FASTQ files
+that you would like to keep separate.</p>
+</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you give a directory for any of the FASTQ options, then SEISMIC-RNA will
+search for FASTQ files recursively, with no limit to the depth.</p>
+</div>
+</section>
+</section>
+</section>
+<section id="align-settings">
+<h3>Align: Settings<a class="headerlink" href="#align-settings" title="Permalink to this headline"></a></h3>
+<section id="align-setting-quality-score-encoding">
+<h4>Align setting: Quality score encoding<a class="headerlink" href="#align-setting-quality-score-encoding" title="Permalink to this headline"></a></h4>
+<p>Your FASTQ files may encode quality scores using one of several schemes.
+Modern Illumina sequencers use the encoding scheme Phred+33, which is default in
+SEISMIC-RNA.
+To change the quality score encoding, use the option <code class="docutils literal notranslate"><span class="pre">--phred-enc</span> <span class="pre">{n}</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">{n}</span></code> (an integer) is the Phred encoding scheme.
+See <a class="reference internal" href="../formats/data/fastq.html#phred-encodings"><span class="std std-ref">Phred quality score encodings</span></a> for more information on encoding schemes.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If your FASTQ files do not use the Phred+33 encoding, then you must
+specify the correct Phred score encoding, or else Cutadapt and/or
+Bowtie 2 can produce incorrect output or fail outright.</p>
+</div>
+<p>If you do not know the encoding scheme of your FASTQ files, then you may be able
+to determine it by using <a class="reference external" href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">FastQC</a> or <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code> (which runs FastQC by
+default).
+In the HTML report file generated by FastQC, check the “Encoding” field in the
+“Basic Statisics” section:</p>
+<ul class="simple">
+<li><p>If the Encoding field says <code class="docutils literal notranslate"><span class="pre">Illumina</span> <span class="pre">1.0</span></code> to <code class="docutils literal notranslate"><span class="pre">1.7</span></code>, then your FASTQ files
+use Phred+64 encoding (<code class="docutils literal notranslate"><span class="pre">--phred-enc</span> <span class="pre">64</span></code>).</p></li>
+<li><p>If the Encoding field says <code class="docutils literal notranslate"><span class="pre">Illumina</span> <span class="pre">1.8</span></code> or greater, then your FASTQ files
+use Phred+33 encoding (<code class="docutils literal notranslate"><span class="pre">--phred-enc</span> <span class="pre">33</span></code>, the default).</p></li>
+<li><p>Otherwise, you will need to search elsewhere for your encoding scheme to
+determine the Phred score offset.</p></li>
+</ul>
+</section>
+<section id="align-setting-quality-assessment-with-fastqc">
+<h4>Align setting: Quality assessment with FastQC<a class="headerlink" href="#align-setting-quality-assessment-with-fastqc" title="Permalink to this headline"></a></h4>
+<p>You can check the quality of your FASTQ files to find potential problems with
+the Align step of SEISMIC-RNA.
+SEISMIC-RNA uses <a class="reference external" href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">FastQC</a> to check the quality of your input FASTQ files, as
+well as of the FASTQ files after trimming (if trimming is enabled), by default.
+To disable FastQC, use the option <code class="docutils literal notranslate"><span class="pre">--no-fastqc</span></code>.
+You can also enable automatic unzipping of the zipped output files from FastQC
+with the option <code class="docutils literal notranslate"><span class="pre">--qc-extract</span></code>.</p>
+</section>
+<section id="align-setting-trimming-reads-with-cutadapt">
+<h4>Align setting: Trimming reads with Cutadapt<a class="headerlink" href="#align-setting-trimming-reads-with-cutadapt" title="Permalink to this headline"></a></h4>
+<p>You can trim adapter sequences and low-quality base calls from the ends of your
+reads before the reads are aligned.
+SEISMIC-RNA uses <a class="reference external" href="https://cutadapt.readthedocs.io/en/stable/">Cutadapt</a> to trim FASTQ files by default.
+To disable trimming, use the option <code class="docutils literal notranslate"><span class="pre">--no-cut</span></code>.</p>
+<p>You can check if your FASTQ files need adapter and quality trimming by examining
+the FastQC report file.
+In the graph of “Per base sequence quality”, if any positions drop below your
+desired quality score, then we recommend using quality trimming.
+(For an explanation of quality scores, see <a class="reference internal" href="../formats/data/fastq.html#phred-encodings"><span class="std std-ref">Phred quality score encodings</span></a>.)
+In the graph of “Adapter Content”, if any positions have an adapter content
+above 0, then we recommend using adapter trimming.</p>
+<section id="how-to-trim-adapter-sequences">
+<h5>How to trim adapter sequences<a class="headerlink" href="#how-to-trim-adapter-sequences" title="Permalink to this headline"></a></h5>
+<p>Your reads may contain unwanted adapters in addition to the desired sequences.
+As adapter sequences may cause problems such as misalignment (alignment to the
+wrong location), removing them before alignment is preferable.
+Your adapter sequences depend on how your samples were prepared for sequencing
+(i.e. on your library prep kit) and on your sequencing platform.
+Since Illumina sequencers are the most widely used for mutational profiling,
+SEISMIC-RNA defaults to the standard, minimal adapter sequences for Illumina
+for both read 1 and (if paired-end) read 2:</p>
+<ul class="simple">
+<li><p>5’: <code class="docutils literal notranslate"><span class="pre">GCTCTTCCGATCT</span></code></p></li>
+<li><p>3’: <code class="docutils literal notranslate"><span class="pre">AGATCGGAAGAGC</span></code></p></li>
+</ul>
+<p>If your samples have different adapters, then you can specify their sequences
+using the following options:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 23%" />
+<col style="width: 54%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Side</p></th>
+<th class="head"><p>Read</p></th>
+<th class="head"><p>Option</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>5’</p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--cut-g1</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>5’</p></td>
+<td><p>2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--cut-g2</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>3’</p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--cut-a1</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>3’</p></td>
+<td><p>2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--cut-a2</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="how-to-trim-low-quality-base-calls">
+<span id="quality-trimming"></span><h5>How to trim low-quality base calls<a class="headerlink" href="#how-to-trim-low-quality-base-calls" title="Permalink to this headline"></a></h5>
+<p>Your reads may also contain stretches of low-quality base calls, especially near
+their 3’ ends.
+Low-quality base calls can also cause problems during alignment and especially
+when calling mutations, by increasing the background noise in mutation rates.
+The default minimum quality is 25, a probability of 10<sup>-2.5</sup> = 0.3% that
+the base call is incorrect (see <a class="reference internal" href="../formats/data/fastq.html#phred-encodings"><span class="std std-ref">Phred quality score encodings</span></a> for an explanation).
+You can change the quality threshold with the option <code class="docutils literal notranslate"><span class="pre">--min-phred</span> <span class="pre">{n}</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">{n}</span></code> (an integer) is your minimum quality score.
+We discourage using a quality threshold less than 25 because doing so could lead
+to a background error rate that is too high (e.g. 1% for a threshold of 20) for
+accurate mutational profiling, especially if you want to cluster your reads.</p>
+</section>
+<section id="how-to-use-cutadapt-to-trim-dark-cycles-for-illumina-nextseq-or-iseq">
+<h5>How to use Cutadapt to trim dark cycles (for Illumina NextSeq or iSeq)<a class="headerlink" href="#how-to-use-cutadapt-to-trim-dark-cycles-for-illumina-nextseq-or-iseq" title="Permalink to this headline"></a></h5>
+<p>On some Illumina sequencers (e.g. NextSeq, iSeq), the probes used to detect G
+bases emit no light.
+Hence, these instruments will label a base call as a G if it appears dark.
+If sequencing reaches the end of a read, then there will be no more bases to
+sequence, so every cycle thereafter will be dark, causing a string of Gs to be
+added to the 3’ end of the read.
+Using the option <code class="docutils literal notranslate"><span class="pre">--cut-nextseq</span></code> tells Cutadapt to trim off any high-quality G
+bases from the 3’ end of each read.
+This trimming may improve the alignment (especially in end-to-end mode) but also
+removes real G bases (which cannot be distinguished from artefactual ones) from
+the 3’ ends of reads.</p>
+</section>
+<section id="how-to-further-customize-read-trimming">
+<h5>How to further customize read trimming<a class="headerlink" href="#how-to-further-customize-read-trimming" title="Permalink to this headline"></a></h5>
+<p>Refer to <a class="reference internal" href="../cli.html#cli-align"><span class="std std-ref">seismic align</span></a> for the full list of options that SEISMIC-RNA can use
+with Cutadapt, and the <a class="reference external" href="https://cutadapt.readthedocs.io/en/stable/reference.html">Cutadapt reference guide</a> for details on each option.
+These options should suffice for most users.
+If you require a more customized adapter trimming workflow, then you can trim
+your FASTQ files externally and then perform alignment within SEISMIC-RNA, using
+the option <code class="docutils literal notranslate"><span class="pre">--no-cut</span></code> to disable additional adapter trimming.</p>
+</section>
+</section>
+<section id="align-setting-mapping-reads-with-bowtie-2">
+<h4>Align setting: Mapping reads with Bowtie 2<a class="headerlink" href="#align-setting-mapping-reads-with-bowtie-2" title="Permalink to this headline"></a></h4>
+<section id="how-to-pre-build-a-bowtie-2-index-optional">
+<h5>How to pre-build a Bowtie 2 index (optional)<a class="headerlink" href="#how-to-pre-build-a-bowtie-2-index-optional" title="Permalink to this headline"></a></h5>
+<p>Bowtie 2 requires the FASTA file of reference sequences to be indexed.
+You have the option of having SEISMIC-RNA build the index for you automatically
+(the default) or indexing your FASTA file yourself.</p>
+<p>If you use the automatic indexing feature, then SEISMIC-RNA will build the index
+in a temporary directory and delete it after alignment finishes.
+This option is ideal for small sets of references (i.e. up to several hundred
+sequences of several thousand nucleotides each) because building the index will
+take from several seconds to several minutes.
+However, for large sets of references (e.g. an entire mammalian transcriptome),
+building the index can take on the order of hours.
+If you need to align to the same large FASTA file multiple times, then it would
+be inefficient to rebuild its index every time you run alignment.</p>
+<p>In the latter case, we recommend pre-building the index yourself, which you can
+do with the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bowtie2</span><span class="o">-</span><span class="n">build</span> <span class="p">{</span><span class="n">refs</span><span class="p">}</span><span class="o">.</span><span class="n">fa</span> <span class="p">{</span><span class="n">refs</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">{refs}.fa</span></code> is the path of your FASTA file and <code class="docutils literal notranslate"><span class="pre">{refs}</span></code> is the path
+without the FASTA file extension.
+See the <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#the-bowtie2-build-indexer">Bowtie 2 Indexer manual</a> for more information on building an index.
+Note that, while Bowtie 2 does not require the index to have the same name as
+the FASTA file, SEISMIC-RNA does, so make sure that you use the same path for
+the FASTA file and the index, except that the index path should not have the
+FASTA file extension.</p>
+<p>Indexing will generate six files with the extensions <code class="docutils literal notranslate"><span class="pre">.1.bt2</span></code>, <code class="docutils literal notranslate"><span class="pre">.2.bt2</span></code>,
+<code class="docutils literal notranslate"><span class="pre">.3.bt2</span></code>, <code class="docutils literal notranslate"><span class="pre">.4.bt2</span></code>, <code class="docutils literal notranslate"><span class="pre">.rev.1.bt2</span></code>, and <code class="docutils literal notranslate"><span class="pre">.rev.2.bt2</span></code>.
+As long as all six files are in the same directory as and have the same name
+(minus the file extension) as the FASTA file, SEISMIC-RNA will use the index.
+If it cannot find a complete set of six files</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you use a pre-built Bowtie 2 index, then SEISMIC-RNA does <em>not</em> verify
+that the index was actually built from the FASTA file of the same name.
+You can assume the index is correct if you build it using the above command
+and avoid modifying or replacing the FASTA and index files.
+Discrepancies between the FASTA file and the index files can crash the Align
+and Relate steps or produce erroneous results.</p>
+</div>
+</section>
+<section id="how-to-choose-between-local-and-end-to-end-alignment">
+<h5>How to choose between local and end-to-end alignment<a class="headerlink" href="#how-to-choose-between-local-and-end-to-end-alignment" title="Permalink to this headline"></a></h5>
+<p>You can align either the entirety of each read (end-to-end mode) or align only
+the section of the read that yields the best alignment score (local mode).
+See the <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#end-to-end-alignment-versus-local-alignment">description of alignment modes in Bowtie 2</a> for more details.</p>
+<p>Generally, end-to-end mode yields spurious mutations (false positives) at the
+ends of reads if the reads contain artifacts such as low-quality base calls or
+untrimmed or improperly trimmed adapters.
+Conversely, local mode misses real mutations (false negatives) within several
+nucleotides of the ends of reads because such mutations are not, by definition,
+part of the best local alignment.</p>
+<p>For RNA mutational profiling, false positives generally cause more problems than
+do false negatives, so SEISMIC-RNA uses local mode (<code class="docutils literal notranslate"><span class="pre">--bt2-local</span></code>) by default.
+Use end-to-end mode (<code class="docutils literal notranslate"><span class="pre">--bt2-end-to-end</span></code>) only if you have a compelling reason
+to do so (e.g. if you must quantify mutations at the ends of reads) and only
+after carefully trimming any extraneous sequences from the ends of the reads.</p>
+</section>
+<section id="how-to-align-paired-end-reads">
+<h5>How to align paired-end reads<a class="headerlink" href="#how-to-align-paired-end-reads" title="Permalink to this headline"></a></h5>
+<p>If your reads are paired-end, then you have additional options for keeping or
+discarding read pairs depending on how the two reads in the pair (called mates)
+align relative to each other.
+Bowtie 2 considers mates to align “concordantly” when their relative positions
+match expectations and “discordantly” otherwise.
+See the <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#concordant-pairs-match-pair-expectations-discordant-pairs-dont">Bowtie 2 manual for details on concordant/discordant alignments</a>.
+By default, SEISMIC-RNA keeps only concordantly aligned pairs.
+To include discordantly aligned pairs too, use the option <code class="docutils literal notranslate"><span class="pre">--bt2-discordant</span></code>.</p>
+<p>Several options control which types of alignments are considered concordant
+versus discordant.</p>
+<p>You can specify where mates should align relative to each other: mates may
+<a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mates-can-overlap-contain-or-dovetail-each-other">overlap partially or completely, or dovetail</a>.
+By default, overlaps (partial and complete) are considered concordant, while
+dovetailing is considered discordant.
+You can treat complete overlaps as discordant with flag <code class="docutils literal notranslate"><span class="pre">--bt2-no-contain</span></code>,
+or dovetailed mates as concordant with the flag <code class="docutils literal notranslate"><span class="pre">--bt2-dovetail</span></code>.
+Pairs that overlap partially (without dovetailing) are always concordant in
+SEISMIC-RNA.</p>
+<p>You can also specify the expected orientation of paired mates using the option
+<code class="docutils literal notranslate"><span class="pre">--bt2-orient</span></code>.
+The choices are <code class="docutils literal notranslate"><span class="pre">fr</span></code> (the 5’-most mate is forward, the 3’-most is reversed),
+<code class="docutils literal notranslate"><span class="pre">rf</span></code> (the 5’-most mate is reversed, the 3’-most is forward), or <code class="docutils literal notranslate"><span class="pre">ff</span></code> (both
+mates are forward).
+The default is <code class="docutils literal notranslate"><span class="pre">fr</span></code> (and if you are not sure which orientation you need, then
+you probably need the default).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The options above (<code class="docutils literal notranslate"><span class="pre">--bt2[-no]-contain</span></code>, <code class="docutils literal notranslate"><span class="pre">--bt2[-no]-dovetail</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">--bt2-orient</span></code>) determine which types of paired-end alignments count as
+concordant or discordant.
+Then, if these types of overlaps are treated as discordant, the option
+<code class="docutils literal notranslate"><span class="pre">--bt2-[no-]discordant</span></code> determines whether or not they are kept.
+So, if you use the option <code class="docutils literal notranslate"><span class="pre">--bt2-no-contain</span></code> with <code class="docutils literal notranslate"><span class="pre">--bt2-discordant</span></code>,
+then alignments where one mate fully contains the other will be considered
+discordant (because of <code class="docutils literal notranslate"><span class="pre">--bt2-no-contain</span></code>) but will still be kept (because
+of <code class="docutils literal notranslate"><span class="pre">--bt2-discordant</span></code>), despite what the name “no-contain” would imply.</p>
+</div>
+<p>You can also enable <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mixed-mode-paired-where-possible-unpaired-otherwise">mixed mode</a> with the option <code class="docutils literal notranslate"><span class="pre">--bt2-mixed</span></code>.
+In mixed mode, if two mates do not align as a pair, then Bowtie 2 will attempt
+to align each mate individually (as if it were a single-end read).
+Thus, it is possible in mixed mode that only one mate in a pair appears in the
+alignment map file.</p>
+</section>
+<section id="how-to-filter-aligned-reads">
+<h5>How to filter aligned reads<a class="headerlink" href="#how-to-filter-aligned-reads" title="Permalink to this headline"></a></h5>
+<p>You can filter alignments by <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#scores-higher-more-similar">alignment score</a> and <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mapping-quality-higher-more-unique">mapping quality</a>, which
+are distinct properties, as explained below.</p>
+<p><a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#scores-higher-more-similar">Alignment score</a> measures how <em>well</em> a read aligns to <em>one specific location</em>
+in <em>one reference sequence</em>.
+It is calculated from the number of matches, substitutions, and gaps using the
+score parameters.
+You can specify the minimum alignment score for local and end-to-end modes using
+<code class="docutils literal notranslate"><span class="pre">--bt2-score-min-loc</span></code> and <code class="docutils literal notranslate"><span class="pre">--bt2-score-min-e2e</span></code>, respectively.
+See the <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#valid-alignments-meet-or-exceed-the-minimum-score-threshold">section of the Bowtie 2 manual on alignment scores</a> for advice on
+setting this parameter.</p>
+<p><a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mapping-quality-higher-more-unique">Mapping quality</a> measures how <em>unique</em> an alignment is among <em>all locations</em>
+in <em>all reference sequences</em>: high if the read aligns with a high alignment
+score to exactly one location, low quality if it aligns with similar alignment
+scores to multiple locations in the reference (and thus it is hard to determine
+a single location where the read aligns).
+The default minimum mapping quality is 25, meaning that the probability that the
+chosen location is incorrect is 10<sup>-2.5</sup> = 0.3%.
+You can change the minimum mapping quality using the option <code class="docutils literal notranslate"><span class="pre">--min-mapq</span> <span class="pre">{n}</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">{n}</span></code> (an integer) is your minimum quality.
+(Minimum mapping quality is not actually an option in Bowtie 2, but rather in
+the post-alignment filtering step using the <a class="reference external" href="https://www.htslib.org/doc/samtools-view.html">view command in Samtools</a>).</p>
+</section>
+<section id="how-to-filter-by-number-of-aligned-reads">
+<h5>How to filter by number of aligned reads<a class="headerlink" href="#how-to-filter-by-number-of-aligned-reads" title="Permalink to this headline"></a></h5>
+<p>Alignment maps containing very few reads are not generally useful for mutational
+profiling, due to their inherently low coverage per position.
+If aligning to a very large number of references (e.g. an entire transcriptome),
+most of the references would likely receive few reads, so alignment would create
+many output files that would be unusable for further processing.</p>
+<p>To prevent unusable files from cluttering your output directory, you can choose
+to have SEISMIC-RNA automatically delete alignment map files that received too
+few reads.
+The default threshold is 1000 reads, which you can change using the option
+<code class="docutils literal notranslate"><span class="pre">--min-reads</span> <span class="pre">{n}</span></code>, where <code class="docutils literal notranslate"><span class="pre">{n}</span></code> (an integer) is your minimum number of reads.
+You can also disable automatic alignment map deletion using <code class="docutils literal notranslate"><span class="pre">--min-reads</span> <span class="pre">0</span></code>.</p>
+</section>
+<section id="how-to-further-customize-alignment">
+<h5>How to further customize alignment<a class="headerlink" href="#how-to-further-customize-alignment" title="Permalink to this headline"></a></h5>
+<p>See <a class="reference internal" href="../cli.html#cli-align"><span class="std std-ref">seismic align</span></a> for the full list of options that SEISMIC-RNA can use with
+Bowtie 2, and the <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml">Bowtie 2 manual</a> for details on each of these options.
+These options should suffice for most users.
+If you require a more customized alignment workflow, then you can align your
+FASTQ files outside of SEISMIC-RNA, then pass the resulting XAM files into
+SEISMIC-RNA at the step <a class="reference internal" href="#wf-relate"><span class="std std-ref">Relate: Compute relationships between references and aligned reads</span></a>.</p>
+</section>
+</section>
+<section id="align-setting-format-of-alignment-maps">
+<span id="bam-vs-cram"></span><h4>Align setting: Format of alignment maps<a class="headerlink" href="#align-setting-format-of-alignment-maps" title="Permalink to this headline"></a></h4>
+<p>You can choose to output alignment map files in either BAM or CRAM format.
+For information on these file formats, see <a class="reference internal" href="../formats/data/xam.html"><span class="doc">SAM, BAM, and CRAM: Alignment Maps</span></a>.
+The default is CRAM format (option <code class="docutils literal notranslate"><span class="pre">--cram</span></code>); you can switch to BAM format
+using the option <code class="docutils literal notranslate"><span class="pre">--bam</span></code>.</p>
+<p>Alignment maps in CRAM format are smaller than their BAM counterparts, and hence
+better suited to long-term storage.
+However, the better compression of CRAM files comes at three costs:</p>
+<ul class="simple">
+<li><p>A CRAM file must be accompanied by a FASTA file storing the sequence of every
+reference that appears in the header of the CRAM file.
+A CRAM file stores only the relative path to its FASTA file, not the sequence
+information, which enables the CRAM file to be much smaller than it would be
+if it did need to contain its own sequences.
+Because the FASTA file existed before and during the alignment, having this
+FASTA file accompany the CRAM file usually incurs no extra cost.
+However, moving or deleting the FASTA will break the CRAM file.
+As a safeguard against this fragility, SEISMIC-RNA keeps a copy of the FASTA
+file in the same directory as the output CRAM file.
+Creating an actual copy would require more storage space and defeat the point
+of CRAM’s smaller file size, so SEISMIC-RNA actually makes a <a class="reference external" href="https://en.wikipedia.org/wiki/Hard_link">hard link</a> –
+not a copy – which requires minimal extra space.
+In some circumstances, making a hard link can fail, in which case SEISMIC-RNA
+will resort to copying the FASTA file instead.</p></li>
+<li><p>Reading and writing CRAM files is slower than for BAM files due to the extra
+effort needed for compressing and decompressing CRAM files.</p></li>
+<li><p>In the <a class="reference external" href="https://samtools.github.io/hts-specs/">CIGAR strings</a>, distinction between reference matches (<code class="docutils literal notranslate"><span class="pre">=</span></code>) and
+substitutions (<code class="docutils literal notranslate"><span class="pre">X</span></code>) is lost upon compressing to CRAM format.
+Thus, the Relate step must perform extra work to determine if each non-indel
+position is a match or substitution, which makes it run more slowly than it
+would if the distinction had been preserved.</p></li>
+</ul>
+<p>In general, use CRAM format if minimizing the size of your alignment map files
+is a priority, especially for long-term storage.
+Use BAM format to make the <code class="docutils literal notranslate"><span class="pre">align</span></code> and <code class="docutils literal notranslate"><span class="pre">relate</span></code> steps run faster, and to
+make the output files more portable (since BAM files are self-contained, while
+CRAM files will break without the FASTA file that accompanies them).</p>
+</section>
+</section>
+<section id="align-output-files">
+<h3>Align: Output files<a class="headerlink" href="#align-output-files" title="Permalink to this headline"></a></h3>
+<p>All output files except FastQC reports are written to <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/align</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is your output directory and <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample name.</p>
+<section id="align-output-file-fastqc-reports">
+<h4>Align output file: FastQC reports<a class="headerlink" href="#align-output-file-fastqc-reports" title="Permalink to this headline"></a></h4>
+<p>If you run FastQC, then its report files go into <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/qc</span></code>.
+The directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/qc/initial</span></code> contains the FastQC reports for your
+initial FASTQ files, before trimming.
+If you also run trimming, then reports for the post-trimmed FASTQ files go into
+<code class="docutils literal notranslate"><span class="pre">{out}/{sample}/qc/trimmed</span></code>.</p>
+<p>In each directory (<code class="docutils literal notranslate"><span class="pre">init</span></code> and possibly <code class="docutils literal notranslate"><span class="pre">trim</span></code>), FastQC writes two files for
+each FASTQ file: <code class="docutils literal notranslate"><span class="pre">{fq_name}_fastqc.html</span></code> and <code class="docutils literal notranslate"><span class="pre">{fq_name}_fastqc.zip</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">{fq_name}</span></code> is the name of the original FASTQ file up to the file extension.
+If you use the option <code class="docutils literal notranslate"><span class="pre">--qc-extract</span></code>, then FastQC will also unzip each file
+named <code class="docutils literal notranslate"><span class="pre">{fq_name}_fastqc.zip</span></code> into the directory named <code class="docutils literal notranslate"><span class="pre">{fq_name}_fastqc</span></code>.
+For details on these outputs, see the documentation for <a class="reference external" href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">FastQC</a>.</p>
+</section>
+<section id="align-output-file-alignment-maps">
+<h4>Align output file: Alignment maps<a class="headerlink" href="#align-output-file-alignment-maps" title="Permalink to this headline"></a></h4>
+<p>The most important outputs of <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code> are alignment map files.
+Alignment maps store the location in the reference sequence to which each read
+aligned, plus the Phred quality scores, mapping quality, and mutated positions.
+SEISMIC-RNA outputs alignment maps where every read aligns to the same reference
+(although this is not a restriction outside of SEISMIC-RNA).
+Each alignment map is written to <code class="docutils literal notranslate"><span class="pre">{ref}.{xam}</span></code>, where <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is the name of
+the reference to which the reads aligned, and <code class="docutils literal notranslate"><span class="pre">{xam}</span></code> is the file extension
+(depending on the selected format).
+SEISMIC-RNA can output alignment maps in either BAM or CRAM format.
+For a comparison of these formats, see <a class="reference internal" href="#bam-vs-cram"><span class="std std-ref">Align setting: Format of alignment maps</span></a>.</p>
+</section>
+<section id="align-output-file-reference-sequences">
+<h4>Align output file: Reference sequences<a class="headerlink" href="#align-output-file-reference-sequences" title="Permalink to this headline"></a></h4>
+<p>If the alignment maps are output in CRAM format, then FASTA file(s) of the
+reference sequence(s) are also output alongside the CRAM files.
+If the sequencing reads came from a whole sample, then a single FASTA file,
+bearing the same name as the input FASTA file, will be output.
+The output file will be a <a class="reference external" href="https://en.wikipedia.org/wiki/Hard_link">hard link</a> to the input file, if possible, to avoid
+consuming unnecessary storage space.
+If the sequencing reads were demultiplexed before alignment, then for each CRAM
+file, a FASTA file with the same name (up to the file extension) will be written
+to the same directory.
+In both cases, each FASTA file will be indexed using <a class="reference external" href="https://www.htslib.org/doc/samtools-faidx.html">samtools faidx</a> to speed
+up reading the CRAM files.
+If the alignment maps are output in BAM format, then FASTA files are not output
+alongside them.</p>
+</section>
+<section id="align-output-file-unaligned-reads">
+<span id="wf-unaligned"></span><h4>Align output file: Unaligned reads<a class="headerlink" href="#align-output-file-unaligned-reads" title="Permalink to this headline"></a></h4>
+<p>In addition to the alignment maps, SEISMIC-RNA outputs FASTQ file(s) of reads
+that Bowtie 2 could not align:</p>
+<ul class="simple">
+<li><p>Each whole-sample FASTQ file of single-end (<code class="docutils literal notranslate"><span class="pre">-z</span></code>) or interleaved (<code class="docutils literal notranslate"><span class="pre">-y</span></code>)
+reads yields one file: <code class="docutils literal notranslate"><span class="pre">unaligned.fq.gz</span></code></p></li>
+<li><p>Each pair of whole-sample FASTQ files of 1st and 2nd mates (<code class="docutils literal notranslate"><span class="pre">-x</span></code>) yields two
+files: <code class="docutils literal notranslate"><span class="pre">unaligned.fq.1.gz</span></code> and <code class="docutils literal notranslate"><span class="pre">unaligned.fq.2.gz</span></code></p></li>
+<li><p>Each demultiplexed FASTQ file of single-end (<code class="docutils literal notranslate"><span class="pre">-Z</span></code>) or interleaved (<code class="docutils literal notranslate"><span class="pre">-Y</span></code>)
+reads yields one file: <code class="docutils literal notranslate"><span class="pre">{ref}__unaligned.fq.gz</span></code></p></li>
+<li><p>Each pair of demultiplexed FASTQ files of 1st and 2nd mates (<code class="docutils literal notranslate"><span class="pre">-X</span></code>) yields
+two files: <code class="docutils literal notranslate"><span class="pre">{ref}__unaligned.fq.1.gz</span></code> and <code class="docutils literal notranslate"><span class="pre">{ref}__unaligned.fq.2.gz</span></code></p></li>
+</ul>
+<p>where <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is the reference for demultiplexed FASTQ files.</p>
+<p>Outputting these files of unaligned reads can be disabled using the option
+<code class="docutils literal notranslate"><span class="pre">--bt2-no-un</span></code>.</p>
+</section>
+<section id="align-output-file-align-report">
+<h4>Align output file: Align report<a class="headerlink" href="#align-output-file-align-report" title="Permalink to this headline"></a></h4>
+<p>SEISMIC-RNA also writes a report file, <code class="docutils literal notranslate"><span class="pre">align-report.json</span></code>, that records the
+settings you used for running the Align step and summarizes the results.
+See <a class="reference internal" href="../formats/report/align.html"><span class="doc">Align Report</span></a> for more information.</p>
+</section>
+</section>
+<section id="align-troubleshooting">
+<h3>Align: Troubleshooting<a class="headerlink" href="#align-troubleshooting" title="Permalink to this headline"></a></h3>
+<section id="troubleshooting-a-lower-than-expected-alignment-rate">
+<h4>Troubleshooting a lower-than-expected alignment rate<a class="headerlink" href="#troubleshooting-a-lower-than-expected-alignment-rate" title="Permalink to this headline"></a></h4>
+<p>If the percent of reads aligning to the reference is less than expected, then
+try the following steps (in this order):</p>
+<ol class="arabic simple">
+<li><p>Ensure you are using Bowtie version 2.5.1 or later (version 2.5.0 has a bug
+that affects alignment rate).
+You can check the version with <code class="docutils literal notranslate"><span class="pre">bowtie2</span> <span class="pre">--version</span> <span class="pre">|</span> <span class="pre">head</span> <span class="pre">-n</span> <span class="pre">1</span></code>.</p></li>
+<li><p>Double check that your FASTA file has the correct reference sequence(s) and
+that, if you pre-built the Bowtie 2 index before running <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code>,
+that you indexed the correct FASTA file.</p></li>
+<li><p>Examine the reads that failed to align (see <a class="reference internal" href="#wf-unaligned"><span class="std std-ref">Align output file: Unaligned reads</span></a>).
+Choose several reads randomly, copy one or two 20 - 40 nt segments from the
+middle of each read, and check if the segments come from any known sources
+by querying <a class="reference external" href="https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&amp;PAGE_TYPE=BlastSearch&amp;LINK_LOC=blasthome">BLAST</a> (or similar tools).
+Identifying the sources of unaligned reads can help determine the cause of
+the problem (e.g. contamination with ribosomal RNA or foreign nucleic acids
+such as from <em>Mycoplasma</em>) and whether the reads that did align are usable.</p></li>
+</ol>
+</section>
+</section>
+</section>
+<section id="relate-compute-relationships-between-references-and-aligned-reads">
+<span id="wf-relate"></span><h2>Relate: Compute relationships between references and aligned reads<a class="headerlink" href="#relate-compute-relationships-between-references-and-aligned-reads" title="Permalink to this headline"></a></h2>
+<section id="relate-input-files">
+<h3>Relate: Input files<a class="headerlink" href="#relate-input-files" title="Permalink to this headline"></a></h3>
+<section id="relate-input-file-reference-sequences">
+<h4>Relate input file: Reference sequences<a class="headerlink" href="#relate-input-file-reference-sequences" title="Permalink to this headline"></a></h4>
+<p>You must provide one file of reference DNA sequences (only A, C, G, T, and N) in
+FASTA format (see <a class="reference internal" href="../formats/data/fasta.html"><span class="doc">FASTA: Reference sequences</span></a> for deatils on FASTA format).
+If your FASTA file has unallowed characters or is formatted improperly, then you
+can make it compatible with SEISMIC-RNA using the <a class="reference internal" href="cleanfa.html"><span class="doc">Clean FASTA Files</span></a> tool.</p>
+</section>
+<section id="relate-input-file-alignment-maps">
+<h4>Relate input file: Alignment maps<a class="headerlink" href="#relate-input-file-alignment-maps" title="Permalink to this headline"></a></h4>
+<p>You can provide any number of alignment map files, each of which must be in SAM,
+BAM, or CRAM format (collectively, “XAM” format).
+See <a class="reference internal" href="../formats/data/xam.html"><span class="doc">SAM, BAM, and CRAM: Alignment Maps</span></a> for more information.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The references in the FASTA file must match those to which the reads in the
+alignment map were aligned.
+Discrepancies can cause the Relate step to fail or produce erroneous output.
+You can assume that the references match if you use the same (unmodified)
+FASTA file for both the <code class="docutils literal notranslate"><span class="pre">align</span></code> and <code class="docutils literal notranslate"><span class="pre">relate</span></code> commands, or if you run
+both steps using the command <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code>.</p>
+</div>
+<p>Provide the alignment map files as a list after the FASTA file.
+See <a class="reference internal" href="inputs.html"><span class="doc">List Input Files</span></a> for ways to list multiple files.
+For example, to compute relation vectors for reads from <code class="docutils literal notranslate"><span class="pre">sample-1</span></code> aligned to
+references <code class="docutils literal notranslate"><span class="pre">ref-1</span></code> and <code class="docutils literal notranslate"><span class="pre">ref-2</span></code>, and from <code class="docutils literal notranslate"><span class="pre">sample-2</span></code> aligned to reference
+<code class="docutils literal notranslate"><span class="pre">ref-1</span></code>, use the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">relate</span> <span class="p">{</span><span class="n">refs</span><span class="o">.</span><span class="n">fa</span><span class="p">}</span> <span class="n">sample</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mf">1.</span><span class="n">cram</span> <span class="n">sample</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mf">2.</span><span class="n">cram</span> <span class="n">sample</span><span class="o">-</span><span class="mi">2</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mf">1.</span><span class="n">cram</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">{refs.fa}</span></code> is the path to the file of reference sequences.</p>
+</section>
+</section>
+<section id="relate-settings">
+<h3>Relate: Settings<a class="headerlink" href="#relate-settings" title="Permalink to this headline"></a></h3>
+<section id="relate-settings-shared-with-alignment">
+<h4>Relate settings shared with alignment<a class="headerlink" href="#relate-settings-shared-with-alignment" title="Permalink to this headline"></a></h4>
+<p>Because you can begin the SEISMIC-RNA workflow at <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code> or, if you
+already have alignment map files, can begin at <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">relate</span></code>, these two
+commands share several options: <code class="docutils literal notranslate"><span class="pre">--phred-enc</span></code>, <code class="docutils literal notranslate"><span class="pre">--min-mapq</span></code>,``–min-reads``,
+and <code class="docutils literal notranslate"><span class="pre">--out-dir</span></code> have the same functions in both commands.</p>
+</section>
+<section id="relate-setting-minimum-phred-score">
+<h4>Relate setting: Minimum Phred score<a class="headerlink" href="#relate-setting-minimum-phred-score" title="Permalink to this headline"></a></h4>
+<p>In the Relate step, you can flag bases with low quality scores as ambiguous, as
+if they were <code class="docutils literal notranslate"><span class="pre">N</span></code>s.
+This step serves a purpose similar to that of quality trimming during the Align
+step (see <a class="reference internal" href="#quality-trimming"><span class="std std-ref">How to trim low-quality base calls</span></a>).
+The difference is that quality trimming removes low-quality bases by shortening
+reads from their ends, while the minimum quality score in the Relate step flags
+low-quality bases located anywhere in the reads, while preserving read lengths.
+See <a class="reference internal" href="../data/relate/codes.html#relate-low-qual"><span class="std std-ref">Encoding low-quality base calls</span></a> for a more detailed description of how this works.</p>
+<p>To set the minimum quality score, use the option <code class="docutils literal notranslate"><span class="pre">--min-phred</span> <span class="pre">{n}</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">{n}</span></code> (an integer) is your minimum quality score.
+The default is 25, meaning that base calls with a probabilities of at least
+10<sup>-2.5</sup> = 0.3% of being incorrect are flagged as ambiguous.
+(See <a class="reference internal" href="../formats/data/fastq.html#phred-encodings"><span class="std std-ref">Phred quality score encodings</span></a> for an explanation of quality scores.)
+For example, if a <code class="docutils literal notranslate"><span class="pre">T</span></code> is called as a match with a quality score of 20, then it
+would be flagged as possibly a match and possibly a subsitution to A, C, or G.</p>
+</section>
+<section id="relate-setting-ambiguous-insertions-and-deletions">
+<h4>Relate setting: Ambiguous insertions and deletions<a class="headerlink" href="#relate-setting-ambiguous-insertions-and-deletions" title="Permalink to this headline"></a></h4>
+<p>When insertions and deletions (indels) occur in repetitive regions, determining
+which base(s) were inserted or deleted can be impossible due to the repetitive
+reference sequence itself, even if the reads were perfectly free of errors.
+To handle ambiguous indels, SEISMIC-RNA introduces a new algorithm that finds
+all possible indels that could have produced the observed read (for details on
+this algorithm, see <span class="xref std std-doc">../algos/ambrel</span>).
+This algorithm is enabled by default.
+If you do not need to identify ambiguous indels, then you can disable this
+algorithm with the option <code class="docutils literal notranslate"><span class="pre">--no-ambrel</span></code>, which will speed up the Relate step
+at the cost of reducing its accuracy on indels.</p>
+</section>
+<section id="relate-setting-batch-size">
+<h4>Relate setting: Batch size<a class="headerlink" href="#relate-setting-batch-size" title="Permalink to this headline"></a></h4>
+<p>You can divide up your data into batches to speed up the analysis and reduce the
+amount of memory needed.
+For an explanation of batching and how to use it, see <a class="reference internal" href="parallel.html#batches"><span class="std std-ref">Batches and Benefits</span></a>.</p>
+<p>Your data are partitioned into batches during the Relate step.
+You can specify a size for each batch using the option <code class="docutils literal notranslate"><span class="pre">--batch-size</span> <span class="pre">{x}</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">{x}</span></code> (a decimal number) is the number of relationships you want to put
+in each batch, in millions.
+Relate uses the batch size to calculate the number of reads in each batch.
+The number of relationship bytes per batch, <em>B</em>, is the number of relationship
+bytes per read, <em>L</em>, times the number of reads per batch, <em>N</em>:</p>
+<p><em>B</em> = <em>LN</em></p>
+<p>Since <em>L</em> is just the length of the reference sequence and <em>B</em> is the option
+<code class="docutils literal notranslate"><span class="pre">--batch-size</span></code>, SEISMIC-RNA can solve for <em>N</em>:</p>
+<p><em>N</em> = <em>B</em>/<em>L</em></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>SEISMIC-RNA will aim to put exactly <em>N</em> reads in each batch but the last
+(the last batch can be smaller because it has just the leftover reads).
+If the reads are single-ended or were not aligned in <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mixed-mode-paired-where-possible-unpaired-otherwise">mixed mode</a>, then
+every batch but the last will contain exactly <em>N</em> reads.
+If the reads are paired-ended and were aligned in <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#mixed-mode-paired-where-possible-unpaired-otherwise">mixed mode</a>, then
+batches may contain more than <em>N</em> reads, up to a maximum of 2<em>N</em> in the
+extreme case that only one read aligned in every mate pair.</p>
+</div>
+</section>
+</section>
+<section id="relate-output-files">
+<h3>Relate: Output files<a class="headerlink" href="#relate-output-files" title="Permalink to this headline"></a></h3>
+<p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/relate/{ref}</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, and <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is
+the name of the reference.</p>
+<section id="relate-output-file-batch-of-relation-vectors">
+<h4>Relate output file: Batch of relation vectors<a class="headerlink" href="#relate-output-file-batch-of-relation-vectors" title="Permalink to this headline"></a></h4>
+<p>Each batch of relation vectors contains a <code class="docutils literal notranslate"><span class="pre">RelateBatchIO</span></code> object and is saved
+to the file <code class="docutils literal notranslate"><span class="pre">relate-batch-{num}.brickle</span></code>, where <code class="docutils literal notranslate"><span class="pre">{num}</span></code> is the batch number.
+See <a class="reference internal" href="../data/relate/relate.html"><span class="doc">Relate Batch</span></a> for more information on the data structure.
+See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for more information on brickle files.</p>
+</section>
+<section id="relate-output-file-batch-of-read-names">
+<h4>Relate output file: Batch of read names<a class="headerlink" href="#relate-output-file-batch-of-read-names" title="Permalink to this headline"></a></h4>
+<p>Within each batch, the relate step assigns an index (a nonnegative integer) to
+each read and writes a file mapping the indexes to the read names.
+Each batch of read names contains a <code class="docutils literal notranslate"><span class="pre">QnamesBatchIO</span></code> object and is saved to the
+file <code class="docutils literal notranslate"><span class="pre">qnames-batch-{num}.brickle</span></code>, where <code class="docutils literal notranslate"><span class="pre">{num}</span></code> is the batch number.
+See <a class="reference internal" href="../data/relate/qnames.html"><span class="doc">Read Names Batch</span></a> for more information on the data structure.
+See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for more information on brickle files.</p>
+</section>
+<section id="relate-output-file-reference-sequence">
+<h4>Relate output file: Reference sequence<a class="headerlink" href="#relate-output-file-reference-sequence" title="Permalink to this headline"></a></h4>
+<p>The relate step writes the reference sequence as a <code class="docutils literal notranslate"><span class="pre">RefseqIO</span></code> object to the
+file <code class="docutils literal notranslate"><span class="pre">refseq.brickle</span></code>.
+See <a class="reference internal" href="../data/relate/refseq.html"><span class="doc">Reference Sequence</span></a> for more information on the data structure.
+See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for more information on brickle files.</p>
+</section>
+<section id="relate-output-file-relate-report">
+<h4>Relate output file: Relate report<a class="headerlink" href="#relate-output-file-relate-report" title="Permalink to this headline"></a></h4>
+<p>SEISMIC-RNA also writes a report file, <code class="docutils literal notranslate"><span class="pre">relate-report.json</span></code>, that records the
+settings you used for running the Relate step and summarizes the results.
+See <a class="reference internal" href="../formats/report/relate.html"><span class="doc">Relate Report</span></a> for more information.</p>
+</section>
+</section>
+</section>
+<section id="mask-define-mutations-and-sections-to-filter-reads-and-positions">
+<span id="wf-mask"></span><h2>Mask: Define mutations and sections to filter reads and positions<a class="headerlink" href="#mask-define-mutations-and-sections-to-filter-reads-and-positions" title="Permalink to this headline"></a></h2>
+<section id="mask-input-files">
+<h3>Mask: Input files<a class="headerlink" href="#mask-input-files" title="Permalink to this headline"></a></h3>
+<section id="mask-input-file-relate-report">
+<h4>Mask input file: Relate report<a class="headerlink" href="#mask-input-file-relate-report" title="Permalink to this headline"></a></h4>
+<p>You can give any number of Relate report files as inputs for the Mask step.
+See <a class="reference internal" href="inputs.html"><span class="doc">List Input Files</span></a> for ways to list multiple files.</p>
+<p>For example, to mask relation vectors of reads from <code class="docutils literal notranslate"><span class="pre">sample-1</span></code> related to
+references <code class="docutils literal notranslate"><span class="pre">ref-1</span></code> and <code class="docutils literal notranslate"><span class="pre">ref-2</span></code>, and from <code class="docutils literal notranslate"><span class="pre">sample-2</span></code> related to reference
+<code class="docutils literal notranslate"><span class="pre">ref-1</span></code>, use the command</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">mask</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mf">1.</span><span class="n">cram</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mf">2.</span><span class="n">cram</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">2</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mf">1.</span><span class="n">cram</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the path of your output directory from the Relate step.</p>
+<p>To mask all relation vectors in <code class="docutils literal notranslate"><span class="pre">{out}</span></code>, you can use the command</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">mask</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="mask-settings">
+<h3>Mask: Settings<a class="headerlink" href="#mask-settings" title="Permalink to this headline"></a></h3>
+<section id="mask-setting-define-sections">
+<h4>Mask setting: Define sections<a class="headerlink" href="#mask-setting-define-sections" title="Permalink to this headline"></a></h4>
+<p>In the Mask step, you can process full reference sequences or focus on specific
+sections of each reference sequence.
+Selecting specific sections is useful for investigating small elements of longer
+sequences, such as a 350 nt <a class="reference external" href="https://en.wikipedia.org/wiki/Internal_ribosome_entry_site">IRES</a> within a 9,600 nt viral genome.
+See <a class="reference internal" href="sections.html"><span class="doc">Define Sections</span></a> for ways to define sections.</p>
+</section>
+<section id="mask-setting-define-mutations">
+<h4>Mask setting: Define mutations<a class="headerlink" href="#mask-setting-define-mutations" title="Permalink to this headline"></a></h4>
+<p>The Mask step takes in relation vectors – which encode relationships including
+ambiguous mutations – and outputs bit vectors, wherein each position in each
+read has a binary, mutated/matched status.
+For more information on relation vectors, see <a class="reference internal" href="../data/relate/codes.html"><span class="doc">Relation Vectors</span></a>.</p>
+<p>Producing bit vectors requires deciding which types of relationships count as
+mutations, which count as matches, and which count as neither.
+You can choose which types of relationships to count as matches and mutations.
+The default is to count all 4 types of matches (A→A, C→C, G→G, T→T) as matches
+and all 12 types of substitutions (A→C, A→G, A→T, C→A, C→G, C→T, G→A, G→C, G→T,
+T→A, T→C, T→G) as mutations, but not to count deletions and insertions (indels).
+To count deletions and insertions as mutations, add the options <code class="docutils literal notranslate"><span class="pre">--count-del</span></code>
+and <code class="docutils literal notranslate"><span class="pre">--count-ins</span></code>, respectively.</p>
+<p>You can also choose to not count individual types of relationships, such as
+substitutions from A to G (but still count every other type of substitution).
+To ignore one type of relationship, add the option <code class="docutils literal notranslate"><span class="pre">--discount-mut</span> <span class="pre">{a}{b}</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">{a}</span></code> is the type of base in the reference (<code class="docutils literal notranslate"><span class="pre">a</span></code>/<code class="docutils literal notranslate"><span class="pre">c</span></code>/<code class="docutils literal notranslate"><span class="pre">g</span></code>/<code class="docutils literal notranslate"><span class="pre">t</span></code>) and
+<code class="docutils literal notranslate"><span class="pre">{b}</span></code> is the type of base in the read (for substitutions) or <code class="docutils literal notranslate"><span class="pre">d</span></code> or <code class="docutils literal notranslate"><span class="pre">i</span></code>
+(for deletions and insertions, respectively).
+For example, the following options would consider all substitutions except A→G
+and all deletions except for when the reference base is C to be mutations:
+<code class="docutils literal notranslate"><span class="pre">--count-del</span> <span class="pre">--discount-mut</span> <span class="pre">ag</span> <span class="pre">--discount-mut</span> <span class="pre">cd</span></code></p>
+</section>
+<section id="mask-setting-exclude-positions">
+<span id="mask-exclude"></span><h4>Mask setting: Exclude positions<a class="headerlink" href="#mask-setting-exclude-positions" title="Permalink to this headline"></a></h4>
+<p>The first substep of masking is excluding pre-specified positions.
+You can specify three types of positions to exclude:</p>
+<ul class="simple">
+<li><p><strong>G and U bases:</strong>
+DMS methylates G and U much less than A and C residues under physiological
+conditions [<a class="reference external" href="https://doi.org/10.1038/nmeth.4057">Zubradt et al. (2017)</a>], so positions with G or U bases are
+generally excluded when DMS is the chemical probe.
+Use the options <code class="docutils literal notranslate"><span class="pre">--exclude-gu</span></code> (default) and <code class="docutils literal notranslate"><span class="pre">--include-gu</span></code> to decide
+whether to use G and U bases.</p></li>
+<li><p><strong>Poly(A) sequences:</strong>
+Although DMS and SHAPE reagents do modify A residues that are not immobilized
+by base pairing, stretches of 5 or more consecutive A residues tend to have
+very low mutation rates because of a behavior of the reverse transcriptases
+that are used in mutational profiling (including TGIRT-III and SuperScript II,
+III, and IV) [<a class="reference external" href="https://doi.org/10.1021/acs.biochem.0c00020">Kladwang et al. (2020)</a>].
+Thus, using poly(A) sequences for structural analysis can produce artifacts.
+SEISMIC-RNA automatically excludes all positions within stretches of 5 or more
+consecutive A residues.
+You can customize this behavior with the option <code class="docutils literal notranslate"><span class="pre">--exclude-polya</span> <span class="pre">{n}</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">{n}</span></code> (an integer) is the minimum length of poly(A) sequences to exclude.
+To disable poly(A) exclusion, use the option <code class="docutils literal notranslate"><span class="pre">--exclude-polya</span> <span class="pre">0</span></code>.</p></li>
+<li><p><strong>Arbitrary positions:</strong>
+You can also exclude any arbitary positions from any reference sequence.
+A common reason to exclude a position is if the base is modified endogenously
+in a way that causes mutations during reverse transcription.
+To exclude an arbitrary position, use the option <code class="docutils literal notranslate"><span class="pre">--exclude-pos</span> <span class="pre">{ref}</span> <span class="pre">{n}</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is the name of the reference and <code class="docutils literal notranslate"><span class="pre">{n}</span></code> is the position to
+exclude (where the first base in the reference is position 1).</p></li>
+</ul>
+</section>
+<section id="mask-setting-filter-reads">
+<h4>Mask setting: Filter reads<a class="headerlink" href="#mask-setting-filter-reads" title="Permalink to this headline"></a></h4>
+<p>The second substep of masking is filtering reads.
+You can filter reads based on three criteria, in this order:</p>
+<ul class="simple">
+<li><p><strong>Fraction of informative positions:</strong>
+For some applications, such as finding alternative structures, you need every
+read to span the vast majority of positions in the section of the reference.
+You can set a limit on the minimum number of informative bases in the read,
+as a fraction of the number of non-excluded positions in the section, using
+the option <code class="docutils literal notranslate"><span class="pre">--min-finfo-read</span> <span class="pre">{f}</span></code>, where <code class="docutils literal notranslate"><span class="pre">{f}</span></code> is the fraction.
+For example, to require 95% of the non-excluded positions in the section to be
+informative, you can use the option <code class="docutils literal notranslate"><span class="pre">--min-finfo-read</span> <span class="pre">0.95</span></code>.
+If the section had 296 positions, and 141 remained after excluding positions
+(see <a class="reference internal" href="#mask-exclude"><span class="std std-ref">Mask setting: Exclude positions</span></a>), then a read with 137 informative positions would
+have an informed fraction of 97% and be kept, but a read with 133 informative
+positions would have an informed fraction of 94% and be discarded.</p></li>
+<li><p><strong>Fraction of mutated positions:</strong>
+Rarely, a read may have an excessive number of mutations, possibly because it
+underwent template switching during reverse transcription or misaligned during
+the Align step.
+You can set a limit to the fraction of mutated positions in the read using the
+option <code class="docutils literal notranslate"><span class="pre">--max-fmut-read</span> <span class="pre">{f}</span></code>, where <code class="docutils literal notranslate"><span class="pre">{f}</span></code> is the fraction.
+For example, using the default limit of 10%, a read with 121 informative and
+15 mutated positions would have a mutated fraction of 15 / 121 = 12% and be
+discarded, but a read with 121 informative and 10 mutated positions would have
+a mutated fraction of 8% and be kept.
+Using the option <code class="docutils literal notranslate"><span class="pre">--max-fmut-read</span> <span class="pre">1</span></code> disables filtering by fraction mutated.</p></li>
+<li><p><strong>Space between mutations:</strong>
+Reads with closely spaced mutations are very underrepresented in mutational
+profiling data, presumably because reverse transcripases struggle to read
+through closely spaced pairs of modifications [<a class="reference external" href="https://doi.org/10.1038/s41586-020-2253-5">Tomezsko et al. (2020)</a>].
+Therefore, the data are biased towards reads without closely spaced mutations,
+which would skew the mutation rates.
+However, SEISMIC-RNA can correct the bias: first by removing any reads that
+did happen to have mutations close together, then calculating the mutation
+rates without such reads, and inferring what the mutation rates would have
+been if no reads had dropped out.
+The correction for observer bias is most important for finding alternative
+structures and (to minimize surprises) does not run by default.
+You can correct observer bias using the option <code class="docutils literal notranslate"><span class="pre">--min-mut-gap</span> <span class="pre">{n}</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">{n}</span></code> is the minimum number of non-mutated bases that must separate two
+mutations; if a read has any pair of mutations that are closer than this gap,
+then the read is discarded during the Mask step.
+If you correct for observer bias, then we recommend using <code class="docutils literal notranslate"><span class="pre">--min-mut-gap</span> <span class="pre">3</span></code>,
+based on our previous findings in <a class="reference external" href="https://doi.org/10.1038/s41586-020-2253-5">Tomezsko et al. (2020)</a>.</p></li>
+</ul>
+</section>
+<section id="mask-setting-filter-positions">
+<h4>Mask setting: Filter positions<a class="headerlink" href="#mask-setting-filter-positions" title="Permalink to this headline"></a></h4>
+<p>The third substep of masking is filtering positions.
+You can filter positions based on two criteria, in this order:</p>
+<ul class="simple">
+<li><p><strong>Number of informative reads:</strong>
+Estimating the fraction of mutated reads at a given position requires a large
+number of reads so that the uncertainty (i.e. error bars) is much smaller than
+the fraction of mutated reads.
+The default minimum number of informative reads is 1000, which we have found
+to yield a reasonably small uncertainties in the mutation fraction.
+You can specify the minimum number of informative reads at each position using
+the option <code class="docutils literal notranslate"><span class="pre">--min-ninfo-pos</span> <span class="pre">{n}</span></code>, where <code class="docutils literal notranslate"><span class="pre">{n}</span></code> is the number of informative
+positions.
+We discourage going below 1000 reads unless you have multiple replicates, the
+total number of informative reads at the position among all replicates is at
+least 1000, and the mutation rates of the replicates correlate with a Pearson
+or Spearman coefficient of at least 0.95.</p></li>
+<li><p><strong>Fraction of mutated reads:</strong>
+Mutational profiling generally yields fractions of mutated reads up to 0.3.
+Positions with fractions of mutated reads that exceed 0.5 are likely to be
+mutated for some reason other than chemcial probing, such as misalignment
+(especially when two or more reference sequences are very similar), an
+endogenous RNA modification (if the RNA came from cells), a mistake in the
+template DNA (if the RNA was transcribed <em>in vitro</em>), or a mistake in the
+reference sequence.
+Thus, SEISMIC-RNA discards positions with a fraction of mutated reads greater
+than 0.5, by default.
+You can change the maximum fraction of mutated reads using the option
+<code class="docutils literal notranslate"><span class="pre">--max-fmut-pos</span> <span class="pre">{f}</span></code>, where <code class="docutils literal notranslate"><span class="pre">{f}</span></code> is the fraction of mutated reads.</p></li>
+</ul>
+</section>
+</section>
+<section id="mask-output-files">
+<h3>Mask: Output files<a class="headerlink" href="#mask-output-files" title="Permalink to this headline"></a></h3>
+<p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/mask/{ref}</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, and <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is
+the name of the reference.</p>
+<section id="mask-output-file-batch-of-masked-reads">
+<h4>Mask output file: Batch of masked reads<a class="headerlink" href="#mask-output-file-batch-of-masked-reads" title="Permalink to this headline"></a></h4>
+<p>Each batch of masked reads contains a <code class="docutils literal notranslate"><span class="pre">MaskBatchIO</span></code> object and is saved to the
+file <code class="docutils literal notranslate"><span class="pre">mask-batch-{num}.brickle</span></code>, where <code class="docutils literal notranslate"><span class="pre">{num}</span></code> is the batch number.
+See <span class="xref std std-doc">../data/mask/mask</span> for more information on the data structure.
+See <a class="reference internal" href="../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for more information on brickle files.</p>
+</section>
+<section id="mask-output-file-mask-report">
+<h4>Mask output file: Mask report<a class="headerlink" href="#mask-output-file-mask-report" title="Permalink to this headline"></a></h4>
+<p>SEISMIC-RNA also writes a report file, <code class="docutils literal notranslate"><span class="pre">mask-report.json</span></code>, that records the
+settings you used for running the Mask step and summarizes the results, such as
+which and how many positions and reads were filtered out for each reason.
+See <a class="reference internal" href="../formats/report/mask.html"><span class="doc">Mask Report</span></a> for more information.</p>
+</section>
+</section>
+</section>
+<section id="run-the-entire-workflow">
+<span id="wf-wf"></span><h2>Run the entire workflow<a class="headerlink" href="#run-the-entire-workflow" title="Permalink to this headline"></a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> accepts FASTQ, SAM/BAM/CRAM, relate/mask/cluster report, and
+table files and directories as inputs.</p>
+</div>
+<p>From BAM, report, and/or table file(s):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">wf</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span> <span class="n">out</span><span class="o">/</span><span class="n">sample</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">Ref</span><span class="o">.</span><span class="n">bam</span> <span class="n">out</span><span class="o">/</span><span class="n">sample</span><span class="o">/*/*-</span><span class="n">report</span><span class="o">.</span><span class="n">json</span> <span class="n">out</span><span class="o">/</span><span class="n">sample</span><span class="o">/</span><span class="n">table</span><span class="o">/*/*.</span><span class="n">csv</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Only the align, relate, mask, and table steps run by default.
+Enable clustering by specifying <code class="docutils literal notranslate"><span class="pre">--max-clusters</span></code> (<code class="docutils literal notranslate"><span class="pre">-k</span></code>) followed by the
+maximum number of clusters to attempt. Enable structure prediction
+with the flag <code class="docutils literal notranslate"><span class="pre">--fold</span></code>.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="How To" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="inputs.html" class="btn btn-neutral float-right" title="List Input Files" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, the Rouskin Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
