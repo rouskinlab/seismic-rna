@@ -1086,6 +1086,8 @@ See :doc:`../formats/report/mask` for more information.
 Mask: Troubleshooting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. _mask_too_many_reads:
+
 Troubleshooting too many reads being filtered out
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -1100,7 +1102,7 @@ of reads removed by each filter.
   masking and ensure that the section is not too long compared to your reads.
 - If you are losing too many reads for having too many mutations, or mutations
   that are too close together, then there may be a problem with the data quality
-  that is causing excessive mutations in the reads, such as
+  that is causing excessive mutations, such as
 
   - Your RNA was low-quality, contained many endogenous modififications that
     caused mutations during RT, or did not have the sequence you expected.
@@ -1111,6 +1113,34 @@ of reads removed by each filter.
     sequences), and your mapping quality filter did not remove misaligned reads.
   - In the Mask step, you did not pre-exclude problematic positions, such as
     sites of endogenous RNA modifications.
+
+Troubleshooting too many positions being filtered out
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In the Mask report file, check the settings for filtering positions and the
+number of positions removed by each filter.
+
+- If the settings appear too strict, then rerun the Mask step using new settings
+  that would keep more positions, such as a lower value for ``--min-ninfo-pos``
+  or a higher value for ``--max-fmut-pos``.
+- If you are losing too many positions for having too few informative reads,
+  then there are three likely reasons:
+
+  - Your sample was sequenced with insufficient depth or quality.
+  - Your sample contained insufficient RNAs from this reference/section.
+  - You lost too many reads during filtering; see :ref:`mask_too_many_reads`.
+
+- If you are losing too many positions for having too many mutations, then there
+  may be a problem with the data quality that is causing excessive mutations,
+  such as
+
+  - Your RNA was low-quality, contained many endogenous modififications that
+    caused mutations during RT, or did not have the sequence you expected.
+  - Your sequencing run gave low-quality base calls (check the FastQC reports)
+    that you did not trim (in Align) or flag as ambiguous (in Relate).
+  - You aligned to reference sequences that differ from the actual RNA.
+  - Many reads misaligned (possibly because your FASTA file has several similar
+    sequences), and your mapping quality filter did not remove misaligned reads.
 
 Cluster: Infer alternative structures by clustering reads' mutations
 --------------------------------------------------------------------------------
