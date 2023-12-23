@@ -1150,10 +1150,63 @@ See <a class="reference internal" href="../formats/report/mask.html"><span class
 <section id="mask-troubleshooting">
 <h3>Mask: Troubleshooting<a class="headerlink" href="#mask-troubleshooting" title="Permalink to this headline"></a></h3>
 <section id="troubleshooting-too-many-reads-being-filtered-out">
-<h4>Troubleshooting too many reads being filtered out<a class="headerlink" href="#troubleshooting-too-many-reads-being-filtered-out" title="Permalink to this headline"></a></h4>
-<p>Check the Mask report file to double check the settings for filtering reads and
-see how many reads were filtered out because of each specific filter.
-If many reads were filtered out because</p>
+<span id="mask-too-many-reads"></span><h4>Troubleshooting too many reads being filtered out<a class="headerlink" href="#troubleshooting-too-many-reads-being-filtered-out" title="Permalink to this headline"></a></h4>
+<p>In the Mask report file, check the settings for filtering reads and the number
+of reads removed by each filter.</p>
+<ul class="simple">
+<li><p>If the settings appear too strict, then rerun the Mask step using new settings
+that would keep more reads, such as a lower value for <code class="docutils literal notranslate"><span class="pre">--min-finfo-read</span></code> or
+<code class="docutils literal notranslate"><span class="pre">--min-mut-gap</span></code> or a higher value for <code class="docutils literal notranslate"><span class="pre">--max-fmut-read</span></code>.</p></li>
+<li><p>If you are losing too many reads for having too few informative positions,
+then also double check the 5’ and 3’ ends of the section over which you are
+masking and ensure that the section is not too long compared to your reads.</p></li>
+<li><p>If you are losing too many reads for having too many mutations, or mutations
+that are too close together, then there may be a problem with the data quality
+that is causing excessive mutations, such as</p>
+<ul>
+<li><p>Your RNA was low-quality, contained many endogenous modififications that
+caused mutations during RT, or did not have the sequence you expected.</p></li>
+<li><p>Your sequencing run gave low-quality base calls (check the FastQC reports)
+that you did not trim (in Align) or flag as ambiguous (in Relate).</p></li>
+<li><p>You aligned to reference sequences that differ from the actual RNA.</p></li>
+<li><p>Many reads misaligned (possibly because your FASTA file has several similar
+sequences), and your mapping quality filter did not remove misaligned reads.</p></li>
+<li><p>In the Mask step, you did not pre-exclude problematic positions, such as
+sites of endogenous RNA modifications.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="troubleshooting-too-many-positions-being-filtered-out">
+<h4>Troubleshooting too many positions being filtered out<a class="headerlink" href="#troubleshooting-too-many-positions-being-filtered-out" title="Permalink to this headline"></a></h4>
+<p>In the Mask report file, check the settings for filtering positions and the
+number of positions removed by each filter.</p>
+<ul class="simple">
+<li><p>If the settings appear too strict, then rerun the Mask step using new settings
+that would keep more positions, such as a lower value for <code class="docutils literal notranslate"><span class="pre">--min-ninfo-pos</span></code>
+or a higher value for <code class="docutils literal notranslate"><span class="pre">--max-fmut-pos</span></code>.</p></li>
+<li><p>If you are losing too many positions for having too few informative reads,
+then there are three likely reasons:</p>
+<ul>
+<li><p>Your sample was sequenced with insufficient depth or quality.</p></li>
+<li><p>Your sample contained insufficient RNAs from this reference/section.</p></li>
+<li><p>You lost too many reads during filtering; see <a class="reference internal" href="#mask-too-many-reads"><span class="std std-ref">Troubleshooting too many reads being filtered out</span></a>.</p></li>
+</ul>
+</li>
+<li><p>If you are losing too many positions for having too many mutations, then there
+may be a problem with the data quality that is causing excessive mutations,
+such as</p>
+<ul>
+<li><p>Your RNA was low-quality, contained many endogenous modififications that
+caused mutations during RT, or did not have the sequence you expected.</p></li>
+<li><p>Your sequencing run gave low-quality base calls (check the FastQC reports)
+that you did not trim (in Align) or flag as ambiguous (in Relate).</p></li>
+<li><p>You aligned to reference sequences that differ from the actual RNA.</p></li>
+<li><p>Many reads misaligned (possibly because your FASTA file has several similar
+sequences), and your mapping quality filter did not remove misaligned reads.</p></li>
+</ul>
+</li>
+</ul>
 </section>
 </section>
 </section>
@@ -1191,17 +1244,16 @@ however, the number of states is unknown before the algorithm runs, creating a
 is 1 structural state, then running it again with 2 states, then 3, and so on.
 This process continues until one of two limits is reached:</p>
 <ul class="simple">
-<li><p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Bayesian_information_criterion">Bayesian information criterion</a> (BIC) – a measure of clustering quality
-that rewards models that fit the reads’ mutations and penalizes models with
-too many clusters – gets worse upon adding another cluster.</p></li>
+<li><p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Bayesian_information_criterion">Bayesian information criterion</a> (BIC) worsens upon increasing the number
+of clusters.</p></li>
 <li><p>The maximum number of clusters is reached.
 You can set this limit using the option <code class="docutils literal notranslate"><span class="pre">--max-clusters</span> <span class="pre">{n}</span></code> (<code class="docutils literal notranslate"><span class="pre">-k</span> <span class="pre">{n}</span></code>),
-where <code class="docutils literal notranslate"><span class="pre">{n}</span></code> (a non-negative integer) is the number of clusters.</p></li>
-</ul>
-<p>If you run the entire workflow using <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> (see <a class="reference internal" href="#wf-wf"><span class="std std-ref">Workflow: Run the entire workflow</span></a>), then the
-maximum number of clusters defaults to 0 (meaning that clustering is not run).
+where <code class="docutils literal notranslate"><span class="pre">{n}</span></code> (a non-negative integer) is the number of clusters.
+If you run the entire workflow using <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> (see <a class="reference internal" href="#wf-wf"><span class="std std-ref">Workflow: Run the entire workflow</span></a>), then
+the maximum number of clusters defaults to 0 (so clustering is not run).
 If you run the Cluster step individually using <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">cluster</span></code>, then the
-maxmimum number of clusters defaults to 2 (i.e. the minimum non-trivial number).</p>
+maxmimum number of clusters defaults to 2 (the minimum non-trivial number).</p></li>
+</ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If the BIC score gets worse before reaching the maximum number of clusters,
@@ -1216,7 +1268,7 @@ Clusters”), which is less than or equal to the maximum you specified.</p>
 <h4>Cluster setting: Expectation-maximization iterations<a class="headerlink" href="#cluster-setting-expectation-maximization-iterations" title="Permalink to this headline"></a></h4>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm">Expectation-maximization</a> is an iterative algorithm, meaning that it begins by
 guessing an initial solution and then calculates progressively better solutions,
-stopping once successive solutions stop changing, which is called convergence.</p>
+halting once successive solutions cease changing, which is called convergence.</p>
 <p>You can set limits on the minimum/maximum number of iterations using the options
 <code class="docutils literal notranslate"><span class="pre">--min-em-iter</span> <span class="pre">{n}</span></code> and <code class="docutils literal notranslate"><span class="pre">--max-em-iter</span> <span class="pre">{n}</span></code>, respectively, where <code class="docutils literal notranslate"><span class="pre">{n}</span></code> (an
 integer) is the limit of the number of iterations.

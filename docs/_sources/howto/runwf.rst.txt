@@ -1086,13 +1086,61 @@ See :doc:`../formats/report/mask` for more information.
 Mask: Troubleshooting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. _mask_too_many_reads:
+
 Troubleshooting too many reads being filtered out
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Check the Mask report file to double check the settings for filtering reads and
-see how many reads were filtered out because of each specific filter.
-If many reads were filtered out because
+In the Mask report file, check the settings for filtering reads and the number
+of reads removed by each filter.
 
+- If the settings appear too strict, then rerun the Mask step using new settings
+  that would keep more reads, such as a lower value for ``--min-finfo-read`` or
+  ``--min-mut-gap`` or a higher value for ``--max-fmut-read``.
+- If you are losing too many reads for having too few informative positions,
+  then also double check the 5' and 3' ends of the section over which you are
+  masking and ensure that the section is not too long compared to your reads.
+- If you are losing too many reads for having too many mutations, or mutations
+  that are too close together, then there may be a problem with the data quality
+  that is causing excessive mutations, such as
+
+  - Your RNA was low-quality, contained many endogenous modififications that
+    caused mutations during RT, or did not have the sequence you expected.
+  - Your sequencing run gave low-quality base calls (check the FastQC reports)
+    that you did not trim (in Align) or flag as ambiguous (in Relate).
+  - You aligned to reference sequences that differ from the actual RNA.
+  - Many reads misaligned (possibly because your FASTA file has several similar
+    sequences), and your mapping quality filter did not remove misaligned reads.
+  - In the Mask step, you did not pre-exclude problematic positions, such as
+    sites of endogenous RNA modifications.
+
+Troubleshooting too many positions being filtered out
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In the Mask report file, check the settings for filtering positions and the
+number of positions removed by each filter.
+
+- If the settings appear too strict, then rerun the Mask step using new settings
+  that would keep more positions, such as a lower value for ``--min-ninfo-pos``
+  or a higher value for ``--max-fmut-pos``.
+- If you are losing too many positions for having too few informative reads,
+  then there are three likely reasons:
+
+  - Your sample was sequenced with insufficient depth or quality.
+  - Your sample contained insufficient RNAs from this reference/section.
+  - You lost too many reads during filtering; see :ref:`mask_too_many_reads`.
+
+- If you are losing too many positions for having too many mutations, then there
+  may be a problem with the data quality that is causing excessive mutations,
+  such as
+
+  - Your RNA was low-quality, contained many endogenous modififications that
+    caused mutations during RT, or did not have the sequence you expected.
+  - Your sequencing run gave low-quality base calls (check the FastQC reports)
+    that you did not trim (in Align) or flag as ambiguous (in Relate).
+  - You aligned to reference sequences that differ from the actual RNA.
+  - Many reads misaligned (possibly because your FASTA file has several similar
+    sequences), and your mapping quality filter did not remove misaligned reads.
 
 Cluster: Infer alternative structures by clustering reads' mutations
 --------------------------------------------------------------------------------
@@ -1134,17 +1182,15 @@ SEISMIC-RNA solves this problem by first running the EM algorithm assuming there
 is 1 structural state, then running it again with 2 states, then 3, and so on.
 This process continues until one of two limits is reached:
 
-- The `Bayesian information criterion`_ (BIC) -- a measure of clustering quality
-  that rewards models that fit the reads' mutations and penalizes models with
-  too many clusters -- gets worse upon adding another cluster.
+- The `Bayesian information criterion`_ (BIC) worsens upon increasing the number
+  of clusters.
 - The maximum number of clusters is reached.
   You can set this limit using the option ``--max-clusters {n}`` (``-k {n}``),
   where ``{n}`` (a non-negative integer) is the number of clusters.
-
-If you run the entire workflow using ``seismic wf`` (see :ref:`wf_wf`), then the
-maximum number of clusters defaults to 0 (meaning that clustering is not run).
-If you run the Cluster step individually using ``seismic cluster``, then the
-maxmimum number of clusters defaults to 2 (i.e. the minimum non-trivial number).
+  If you run the entire workflow using ``seismic wf`` (see :ref:`wf_wf`), then
+  the maximum number of clusters defaults to 0 (so clustering is not run).
+  If you run the Cluster step individually using ``seismic cluster``, then the
+  maxmimum number of clusters defaults to 2 (the minimum non-trivial number).
 
 .. note::
     If the BIC score gets worse before reaching the maximum number of clusters,
@@ -1159,7 +1205,7 @@ Cluster setting: Expectation-maximization iterations
 
 `Expectation-maximization`_ is an iterative algorithm, meaning that it begins by
 guessing an initial solution and then calculates progressively better solutions,
-stopping once successive solutions stop changing, which is called convergence.
+halting once successive solutions cease changing, which is called convergence.
 
 You can set limits on the minimum/maximum number of iterations using the options
 ``--min-em-iter {n}`` and ``--max-em-iter {n}``, respectively, where ``{n}`` (an
