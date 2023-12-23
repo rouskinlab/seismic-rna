@@ -780,8 +780,7 @@ class Report(FileIO, ABC):
         fields) into a dict of encoded values (keyed by the keys of
         their fields), from which a new Report is instantiated. """
         if not isinstance(odata, dict):
-            raise TypeError("Report classmethod from_data expected 'dict', "
-                            f"but got {repr(type(odata).__name__)}")
+            raise TypeError(f"Expected dict, but got {type(odata).__name__}")
         # Read every raw value, keyed by the title of its field.
         idata = dict()
         for title, value in odata.items():
