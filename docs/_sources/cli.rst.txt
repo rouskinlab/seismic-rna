@@ -14,7 +14,7 @@ Commands, Arguments, Options
     ``seismic graph profile --help`` prints all options and subcommands for the
     command ``seismic graph profile``.
 
-Run all steps of the workflow
+Run the entire workflow
 ================================================================================
 
 .. _cli_wf:
