@@ -227,7 +227,7 @@ class TwoTableWriter(GraphWriter, ABC):
                                           arrange_table(self.table2, arrange)):
             for rel in rels:
                 graph_type = self.get_graph_type()
-                yield graph_type(rels=rel,
+                yield graph_type(rel=rel,
                                  table1=self.table1,
                                  order1=cparams1["order"],
                                  clust1=cparams1["clust"],
