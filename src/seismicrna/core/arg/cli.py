@@ -855,15 +855,22 @@ opt_inplace = Option(
 
 # Export
 
-opt_samples_file = Option(
-    ("--samples-file", "-S"),
+opt_export = Option(
+    ("--export/--no-export",),
+    type=bool,
+    default=False,
+    help="Export per-sample results for the seismic-graph web app"
+)
+
+opt_samples_meta = Option(
+    ("--samples-meta", "-S"),
     type=Path(dir_okay=False),
     default="",
     help="CSV file of metadata for each sample"
 )
 
-opt_refs_file = Option(
-    ("--refs-file", "-R"),
+opt_refs_meta = Option(
+    ("--refs-meta", "-R"),
     type=Path(dir_okay=False),
     default="",
     help="CSV file of metadata for each reference"

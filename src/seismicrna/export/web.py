@@ -14,8 +14,8 @@ from .meta import combine_metadata, parse_refs_metadata, parse_samples_metadata
 from ..core import path
 from ..core.arg import (docdef,
                         arg_input_path,
-                        opt_samples_file,
-                        opt_refs_file,
+                        opt_samples_meta,
+                        opt_refs_meta,
                         opt_all_pos,
                         opt_force,
                         opt_max_procs,
@@ -53,8 +53,8 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 params = [
     arg_input_path,
-    opt_samples_file,
-    opt_refs_file,
+    opt_samples_meta,
+    opt_refs_meta,
     opt_all_pos,
     opt_force,
     opt_max_procs,
@@ -298,19 +298,19 @@ def export_sample(top_sample: tuple[Path, str], *args, force: bool, **kwargs):
 
 @docdef.auto()
 def run(input_path: tuple[str, ...], *,
-        samples_file: str,
-        refs_file: str,
+        samples_meta: str,
+        refs_meta: str,
         all_pos: bool,
         force: bool,
         max_procs: int,
         parallel: bool) -> list[Path]:
-    """ Export a JSON file of each sample for the DREEM Web App. """
+    """ Export a file of each sample for the seismic-graph web app. """
     tables = defaultdict(list)
-    samples_metadata = (parse_samples_metadata(Path(samples_file))
-                        if samples_file
+    samples_metadata = (parse_samples_metadata(Path(samples_meta))
+                        if samples_meta
                         else dict())
-    refs_metadata = (parse_refs_metadata(Path(refs_file))
-                     if refs_file
+    refs_metadata = (parse_refs_metadata(Path(refs_meta))
+                     if refs_meta
                      else dict())
     for table in load_tables(input_path):
         if isinstance(table, (MaskTable, ClustTable, ClustFreqTable)):

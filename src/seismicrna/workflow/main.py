@@ -5,6 +5,8 @@ Whole Pipeline Main Module
 
 """
 
+from typing import Iterable
+
 from click import command
 
 from .. import (demult as demultiplex_mod,
@@ -18,8 +20,18 @@ from ..core.arg import (CMD_WORKFLOW,
                         docdef,
                         merge_params,
                         opt_demultiplex,
-                        opt_fold)
+                        opt_fold,
+                        opt_export,
+                        opt_arrange,
+                        opt_csv,
+                        opt_html,
+                        opt_pdf)
 from ..core.seq import DNA
+from ..export import web as export_web_mod
+from ..graph.profile import ProfileRunner
+from ..graph.roc import ROCRunner
+
+graph_options = [opt_arrange, opt_csv, opt_html, opt_pdf]
 
 params = merge_params([opt_demultiplex],
                       demultiplex_mod.params,
@@ -29,7 +41,14 @@ params = merge_params([opt_demultiplex],
                       cluster_mod.params,
                       table_mod.params,
                       [opt_fold],
-                      fold_mod.params)
+                      fold_mod.params,
+                      [opt_export],
+                      export_web_mod.params,
+                      graph_options)
+
+
+def as_tuple_str(items: Iterable):
+    return tuple(map(str, items))
 
 
 @command(CMD_WORKFLOW, params=params)
@@ -139,7 +158,17 @@ def run(*,
         table_clust: bool,
         # Fold options
         fold: bool,
-        quantile: float):
+        quantile: float,
+        # Export options,
+        export: bool,
+        samples_meta: str,
+        refs_meta: str,
+        all_pos: bool,
+        # Graph options
+        arrange: str,
+        csv: bool,
+        html: bool,
+        pdf: bool):
     """ Run the entire workflow. """
     # Demultiplex
     if demult_on:
@@ -167,7 +196,7 @@ def run(*,
         fastqy = tuple()
         fastqz = tuple()
     # Align
-    input_path += tuple(map(str, align_mod.run(
+    input_path += as_tuple_str(align_mod.run(
         out_dir=out_dir,
         temp_dir=temp_dir,
         keep_temp=keep_temp,
@@ -218,9 +247,9 @@ def run(*,
         min_mapq=min_mapq,
         min_reads=min_reads,
         cram=cram,
-    )))
+    ))
     # Relate
-    input_path += tuple(map(str, relate_mod.run(
+    input_path += as_tuple_str(relate_mod.run(
         fasta=fasta,
         input_path=input_path,
         out_dir=out_dir,
@@ -236,9 +265,9 @@ def run(*,
         brotli_level=brotli_level,
         force=force,
         keep_temp=keep_temp,
-    )))
+    ))
     # Mask
-    input_path += tuple(map(str, mask_mod.run(
+    input_path += as_tuple_str(mask_mod.run(
         input_path=input_path,
         coords=coords,
         primers=primers,
@@ -259,9 +288,9 @@ def run(*,
         max_procs=max_procs,
         parallel=parallel,
         force=force,
-    )))
+    ))
     # Cluster
-    input_path += tuple(map(str, cluster_mod.run(
+    input_path += as_tuple_str(cluster_mod.run(
         input_path=input_path,
         max_clusters=max_clusters,
         em_runs=em_runs,
@@ -273,9 +302,9 @@ def run(*,
         max_procs=max_procs,
         parallel=parallel,
         force=force,
-    )))
+    ))
     # Table
-    input_path += tuple(map(str, table_mod.run(
+    input_path += as_tuple_str(table_mod.run(
         input_path=input_path,
         table_pos=table_pos,
         table_read=table_read,
@@ -283,10 +312,10 @@ def run(*,
         max_procs=max_procs,
         parallel=parallel,
         force=force,
-    )))
+    ))
     # Fold
     if fold:
-        fold_mod.run(
+        input_path += as_tuple_str(fold_mod.run(
             input_path=input_path,
             fasta=fasta,
             sections_file=sections_file,
@@ -299,8 +328,55 @@ def run(*,
             max_procs=max_procs,
             parallel=parallel,
             force=force,
+        ))
+    # Export
+    if export:
+        export_web_mod.run(
+            input_path=input_path,
+            samples_meta=samples_meta,
+            refs_meta=refs_meta,
+            all_pos=all_pos,
+            max_procs=max_procs,
+            parallel=parallel,
+            force=force,
         )
-    # Graph
+    # Graph mutational profiles
+    ProfileRunner.run(input_path=input_path,
+                      rels="m",
+                      use_ratio=True,
+                      arrange=arrange,
+                      out_dir=out_dir,
+                      csv=csv,
+                      html=html,
+                      pdf=pdf,
+                      max_procs=max_procs,
+                      parallel=parallel,
+                      force=force)
+    # Graph informational coverage
+    ProfileRunner.run(input_path=input_path,
+                      rels="n",
+                      use_ratio=False,
+                      arrange=arrange,
+                      out_dir=out_dir,
+                      csv=csv,
+                      html=html,
+                      pdf=pdf,
+                      max_procs=max_procs,
+                      parallel=parallel,
+                      force=force)
+    # Graph ROC curves
+    if fold:
+        ROCRunner.run(input_path=input_path,
+                      rels="m",
+                      use_ratio=True,
+                      arrange=arrange,
+                      out_dir=out_dir,
+                      csv=csv,
+                      html=html,
+                      pdf=pdf,
+                      max_procs=max_procs,
+                      parallel=parallel,
+                      force=force)
 
 ########################################################################
 #                                                                      #

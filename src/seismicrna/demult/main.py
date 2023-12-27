@@ -17,9 +17,9 @@ from ..core.arg import (CMD_DEMULT,
                         opt_fastqx,
                         opt_out_dir,
                         opt_phred_enc,
-                        opt_refs_file,
+                        opt_refs_meta,
                         opt_temp_dir,
-                        opt_keep_temp,)
+                        opt_keep_temp, )
 from ..core.parallel import lock_temp_dir
 
 params = [
@@ -30,7 +30,7 @@ params = [
     opt_barcode_start,
     opt_barcode_end,
     opt_out_dir,
-    opt_refs_file,
+    opt_refs_meta,
     # options
     opt_parallel_demultiplexing,
     opt_clipped_demultiplexing,
