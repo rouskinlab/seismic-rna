@@ -2,19 +2,11 @@
 Run SEISMIC-RNA
 ================================================================================
 
-There are three points at which you can begin:
+You can run the SEISMIC-RNA workflow in two ways:
 
-- If you have FASTQ files that must be demultiplexed (split into subfiles), then
-  begin at :ref:`wf_demult`.
-- If you have FASTQ files that do not need to be demultiplexed, then begin at
-  :ref:`wf_align`.
-  **Most users will begin here.**
-- If you have SAM, BAM, or CRAM files, then begin at :ref:`wf_relate`.
-
-You can run each step individually by typing its command (e.g. ``seismic align``
-for the Align step).
-You can also run all steps automatically using the command ``seismic wf``; see
-:ref:`wf_wf` for more information.
+- Run all steps automatically using ``seismic wf`` (see :ref:`wf_wf`).
+- Run each step individually using its command (e.g. ``seismic align`` for the
+  Align step).
 
 .. _wf_demult:
 
@@ -1298,22 +1290,26 @@ a CSV file named ``clust-freq.csv``.
 
 .. _wf_wf:
 
-Run the entire workflow
-------------------------------------------------------------------------
+Workflow: Run all steps
+--------------------------------------------------------------------------------
 
-.. note::
-    ``seismic wf`` accepts FASTQ, SAM/BAM/CRAM, relate/mask/cluster report, and
-    table files and directories as inputs.
+Workflow: Input files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-From BAM, report, and/or table file(s)::
+``seismic wf`` accepts all types of input files that the other commands accept.
+The only mandatory input file is a FASTA file of reference sequences.
 
-    seismic wf refs.fa out/sample/align/Ref.bam out/sample/*/*-report.json out/sample/table/*/*.csv
+.. image::
+    seismic-wf.png
 
-.. note::
-    Only the align, relate, mask, and table steps run by default.
-    Enable clustering by specifying ``--max-clusters`` (``-k``) followed by the
-    maximum number of clusters to attempt. Enable structure prediction
-    with the flag ``--fold``.
+
+Align input file: Reference sequences
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+You need one file of reference sequences in FASTA format (for details on this
+format, see :doc:`../formats/data/fasta`).
+If your file has characters or formatting incompatible with SEISMIC-RNA, then
+you can fix it using the :doc:`./cleanfa` tool.
 
 
 .. _FastQC: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/

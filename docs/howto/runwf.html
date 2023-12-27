@@ -87,7 +87,10 @@
 <li class="toctree-l4"><a class="reference internal" href="#table-output-files">Table: Output files</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#run-the-entire-workflow">Run the entire workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#workflow-run-all-steps">Workflow: Run all steps</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#workflow-input-files">Workflow: Input files</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="inputs.html">List Input Files</a></li>
@@ -133,19 +136,12 @@
              
   <section id="run-seismic-rna">
 <h1>Run SEISMIC-RNA<a class="headerlink" href="#run-seismic-rna" title="Permalink to this headline"></a></h1>
-<p>There are three points at which you can begin:</p>
+<p>You can run the SEISMIC-RNA workflow in two ways:</p>
 <ul class="simple">
-<li><p>If you have FASTQ files that must be demultiplexed (split into subfiles), then
-begin at <a class="reference internal" href="#wf-demult"><span class="std std-ref">Demultiplex: Split multiplexed FASTQ files by their barcodes</span></a>.</p></li>
-<li><p>If you have FASTQ files that do not need to be demultiplexed, then begin at
-<a class="reference internal" href="#wf-align"><span class="std std-ref">Align: Trim FASTQ files and align them to reference sequences</span></a>.
-<strong>Most users will begin here.</strong></p></li>
-<li><p>If you have SAM, BAM, or CRAM files, then begin at <a class="reference internal" href="#wf-relate"><span class="std std-ref">Relate: Compute relationships between references and aligned reads</span></a>.</p></li>
+<li><p>Run all steps automatically using <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> (see <a class="reference internal" href="#wf-wf"><span class="std std-ref">Workflow: Run all steps</span></a>).</p></li>
+<li><p>Run each step individually using its command (e.g. <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code> for the
+Align step).</p></li>
 </ul>
-<p>You can run each step individually by typing its command (e.g. <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code>
-for the Align step).
-You can also run all steps automatically using the command <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code>; see
-<a class="reference internal" href="#wf-wf"><span class="std std-ref">Run the entire workflow</span></a> for more information.</p>
 <section id="demultiplex-split-multiplexed-fastq-files-by-their-barcodes">
 <span id="wf-demult"></span><h2>Demultiplex: Split multiplexed FASTQ files by their barcodes<a class="headerlink" href="#demultiplex-split-multiplexed-fastq-files-by-their-barcodes" title="Permalink to this headline"></a></h2>
 <p>[WRITE ME]</p>
@@ -1236,7 +1232,7 @@ This process continues until one of two limits is reached:</p>
 of clusters.</p></li>
 <li><p>The maximum number of clusters is reached.
 You can set this limit using <code class="docutils literal notranslate"><span class="pre">--max-clusters</span></code> (<code class="docutils literal notranslate"><span class="pre">-k</span></code>).
-If you run the entire workflow using <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> (see <a class="reference internal" href="#wf-wf"><span class="std std-ref">Run the entire workflow</span></a>), then
+If you run the entire workflow using <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> (see <a class="reference internal" href="#wf-wf"><span class="std std-ref">Workflow: Run all steps</span></a>), then
 the maximum number of clusters defaults to 0 (so clustering is not run).
 If you run the Cluster step individually using <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">cluster</span></code>, then the
 maxmimum number of clusters defaults to 2 (the minimum non-trivial number).</p></li>
@@ -1357,24 +1353,21 @@ a CSV file named <code class="docutils literal notranslate"><span class="pre">cl
 </section>
 </section>
 </section>
-<section id="run-the-entire-workflow">
-<span id="wf-wf"></span><h2>Run the entire workflow<a class="headerlink" href="#run-the-entire-workflow" title="Permalink to this headline"></a></h2>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> accepts FASTQ, SAM/BAM/CRAM, relate/mask/cluster report, and
-table files and directories as inputs.</p>
-</div>
-<p>From BAM, report, and/or table file(s):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">wf</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span> <span class="n">out</span><span class="o">/</span><span class="n">sample</span><span class="o">/</span><span class="n">align</span><span class="o">/</span><span class="n">Ref</span><span class="o">.</span><span class="n">bam</span> <span class="n">out</span><span class="o">/</span><span class="n">sample</span><span class="o">/*/*-</span><span class="n">report</span><span class="o">.</span><span class="n">json</span> <span class="n">out</span><span class="o">/</span><span class="n">sample</span><span class="o">/</span><span class="n">table</span><span class="o">/*/*.</span><span class="n">csv</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Only the align, relate, mask, and table steps run by default.
-Enable clustering by specifying <code class="docutils literal notranslate"><span class="pre">--max-clusters</span></code> (<code class="docutils literal notranslate"><span class="pre">-k</span></code>) followed by the
-maximum number of clusters to attempt. Enable structure prediction
-with the flag <code class="docutils literal notranslate"><span class="pre">--fold</span></code>.</p>
-</div>
+<section id="workflow-run-all-steps">
+<span id="wf-wf"></span><h2>Workflow: Run all steps<a class="headerlink" href="#workflow-run-all-steps" title="Permalink to this headline"></a></h2>
+<section id="workflow-input-files">
+<h3>Workflow: Input files<a class="headerlink" href="#workflow-input-files" title="Permalink to this headline"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> accepts all types of input files that the other commands accept.
+The only mandatory input file is a FASTA file of reference sequences.</p>
+<img alt="../_images/seismic-wf.png" src="../_images/seismic-wf.png" />
+<section id="id1">
+<h4>Align input file: Reference sequences<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h4>
+<p>You need one file of reference sequences in FASTA format (for details on this
+format, see <a class="reference internal" href="../formats/data/fasta.html"><span class="doc">FASTA: Reference sequences</span></a>).
+If your file has characters or formatting incompatible with SEISMIC-RNA, then
+you can fix it using the <a class="reference internal" href="cleanfa.html"><span class="doc">Clean FASTA Files</span></a> tool.</p>
+</section>
+</section>
 </section>
 </section>
 
