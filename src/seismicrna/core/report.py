@@ -16,7 +16,8 @@ from typing import Any, Hashable, Callable, Iterable
 import numpy as np
 
 from . import path
-from .arg import (opt_phred_enc,
+from .arg import (cli_defaults,
+    opt_phred_enc,
                   opt_fastqc,
                   opt_cutadapt,
                   opt_cut_q1,
@@ -809,7 +810,21 @@ class Report(FileIO, ABC):
         # Add any missing arguments if they have default values.
         kwargs = self.autofill_report_fields(**kwargs)
         for name in self.field_names():
-            value = kwargs.pop(name)
+            # Try to get the value of the field from the report.
+            try:
+                value = kwargs.pop(name)
+            except KeyError:
+                # If the report is missing that field (probably because
+                # it was made by an older version of SEISMIC-RNA), then
+                # use the default value, if it exists.
+                try:
+                    value = cli_defaults[name]
+                except KeyError:
+                    raise ValueError(f"Field {repr(name)} with no default "
+                                     f"is missing from {kwargs}")
+                else:
+                    logger.warning(f"Field {repr(name)} is missing: using "
+                                   f"default value {repr(value)}")
             if callable(value):
                 # If the value of the keyword argument is callable, then
                 # it must accept one argument -- self -- and return the
