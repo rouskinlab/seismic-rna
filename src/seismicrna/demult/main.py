@@ -17,7 +17,6 @@ from ..core.arg import (CMD_DEMULT,
                         opt_fastqx,
                         opt_out_dir,
                         opt_phred_enc,
-                        opt_refs_file,
                         opt_sections_file,
                         opt_temp_dir,
                         opt_keep_temp,)
@@ -31,7 +30,6 @@ params = [
     opt_barcode_start,
     opt_barcode_end,
     opt_out_dir,
-    opt_refs_file,
     # options
     opt_parallel_demultiplexing,
     opt_clipped_demultiplexing,
@@ -54,7 +52,7 @@ def cli(*args, **kwargs):
 
 
 @lock_temp_dir
-def run(sect_file: str,
+def run(sections_file: str,
         out_dir: str,
         temp_dir: str,
         fastqx: tuple[str, ...],
@@ -71,7 +69,7 @@ def run(sect_file: str,
         ):
     fq_units = list(FastqUnit.from_paths(fastqx=list(map(Path, fastqx)),
                                          phred_enc=phred_enc))
-    return [demultiplex_run(refs_file_csv=sect_file,
+    return [demultiplex_run(refs_file_csv=sections_file,
                             overwrite=demulti_overwrite,
                             demulti_workspace=temp_dir,
                             report_folder=out_dir,
