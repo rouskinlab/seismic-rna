@@ -551,7 +551,7 @@ settings you used for running the Align step and summarizes the results.
 See :doc:`../formats/report/align` for more information.
 
 Check the number of reads that aligned overall
---------------------------------------------------------------------------------
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Under "Number of reads after alignment", the report says how many single-end
 and/or paired-end reads were in the FASTQ file(s), and how many reads aligned.
@@ -560,7 +560,7 @@ see its documentation for more details.
 For paired-end reads, each pair counts as one read.
 
 Check the number of reads that aligned to each reference
---------------------------------------------------------------------------------
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Under "Number of reads aligned by reference", the report lists every reference
 in your input FASTA file and the number of reads that aligned to it.
@@ -1473,8 +1473,49 @@ number of clusters and ``{i}`` is the cluster number).
 Fold output file: Connectivity table
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The primary output is a connectivity table file (for details on this format, see
-:doc:`../formats/data/ct`).
+The primary output is a connectivity table file.
+For details on this format, see :doc:`../formats/data/ct`.
+
+.. _fold_db:
+
+Fold output file: Dot-bracket structure
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The Fold step also outputs the structures in dot-bracket format, which you can
+copy-paste into RNA drawing software such as `VARNA`_.
+For details on this format, see :doc:`../formats/data/db`.
+
+Fold output file: VARNA color file
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The Fold step also outputs the normalized mutation rates in VARNA color format,
+which you can import into the RNA drawing software `VARNA`_.
+For details on this format, see :doc:`../formats/data/varna-color`.
+
+Fold: Visualize structures in VARNA
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+`VARNA`_ is a third-party application for drawing RNA structures.
+To draw a structure from SEISMIC-RNA in VARNA:
+
+1.  Install (if needed) and launch VARNA.
+2.  Open your dot-bracket file (see :ref:`fold_db`) in a text editor.
+3.  Right-click the drawing canvas, select "File" > "New...", and copy-paste the
+    sequence and dot-bracket structure.
+4.  Adjust the layout of the structure by clicking and dragging.
+5.  To color the bases by their mutation rates, right-click the drawing canvas,
+    select "Display" > "Color map" > "Load values...", copy-paste the path to
+    your VARNA color file into the box or click "Choose file" and navigate to
+    your VARNA color file, and click "OK" to load the file.
+6.  To customize the colors, select "Display" > "Color map" > "Style...":
+
+    - Drag a color bar to adjust its location.
+    - Click the square below a color bar to change its color.
+    - Click the X below the square to delete the color.
+    - Click anywhere on the color spectrum to create a new color bar.
+
+    We recommend setting the color for missing data (-1) to white or light gray
+    and using a continuous (not discrete) color scale for the mutation data.
 
 .. _wf_wf:
 
@@ -1603,3 +1644,4 @@ Refer to the advice for the individual step you are troubleshooting/optimizing.
 .. _expectation-maximization: https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm
 .. _chicken-and-egg problem: https://en.wikipedia.org/wiki/Chicken_or_the_egg
 .. _Bayesian information criterion: https://en.wikipedia.org/wiki/Bayesian_information_criterion
+.. _VARNA: https://varna.lisn.upsaclay.fr/

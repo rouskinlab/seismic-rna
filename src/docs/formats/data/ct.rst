@@ -52,9 +52,8 @@ SEISMIC-RNA accepts the following extensions for CT files:
 CT path parsing
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Every CT file that SEISMIC-RNA outputs is named after its mutational
-profile, but for input CT files, SEISMIC-RNA does not use the name of
-the file for any purpose.
+Every output CT file is named after its mutational profile, but names of
+input CT files are not used for any purpose.
 
 CT file: Uses
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

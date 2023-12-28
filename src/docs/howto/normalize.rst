@@ -24,6 +24,7 @@ scaled proportionally.
 If the maximum mutation rate were 0.20, for instance, then it would be scaled to
 1.00; proportionally, other mutations rates of 0.01, 0.05, and 0.10 would be
 scaled to 0.05, 0.25, and 0.50, respectively.
+
 If you chose quantile 0.5 instead, then the value at quantile 0.5 (i.e. the
 median mutation rate) would be set to 1; all other mutation rates less than the
 median would be scaled proportionally, and all greater than the median would be

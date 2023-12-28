@@ -10,3 +10,5 @@ Data Formats
     xam
     brickle
     ct
+    db
+    varna-color

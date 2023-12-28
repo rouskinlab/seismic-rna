@@ -54,10 +54,6 @@
 <li class="toctree-l4"><a class="reference internal" href="#align-input-files">Align: Input files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#align-settings">Align: Settings</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#align-output-files">Align: Output files</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#check-the-number-of-reads-that-aligned-overall">Check the number of reads that aligned overall</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#check-the-number-of-reads-that-aligned-to-each-reference">Check the number of reads that aligned to each reference</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#align-troubleshoot-and-optimize">Align: Troubleshoot and optimize</a></li>
 </ul>
 </li>
@@ -93,6 +89,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#fold-input-files">Fold: Input files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#fold-settings">Fold: Settings</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#fold-output-files">Fold: Output files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fold-visualize-structures-in-varna">Fold: Visualize structures in VARNA</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#workflow-run-all-steps">Workflow: Run all steps</a><ul>
@@ -687,11 +684,8 @@ two files: <code class="docutils literal notranslate"><span class="pre">{ref}__u
 <p>SEISMIC-RNA also writes a report file, <code class="docutils literal notranslate"><span class="pre">align-report.json</span></code>, that records the
 settings you used for running the Align step and summarizes the results.
 See <a class="reference internal" href="../formats/report/align.html"><span class="doc">Align Report</span></a> for more information.</p>
-</section>
-</section>
-</section>
 <section id="check-the-number-of-reads-that-aligned-overall">
-<h2>Check the number of reads that aligned overall<a class="headerlink" href="#check-the-number-of-reads-that-aligned-overall" title="Permalink to this headline"></a></h2>
+<h5>Check the number of reads that aligned overall<a class="headerlink" href="#check-the-number-of-reads-that-aligned-overall" title="Permalink to this headline"></a></h5>
 <p>Under “Number of reads after alignment”, the report says how many single-end
 and/or paired-end reads were in the FASTQ file(s), and how many reads aligned.
 This information is copied verbatim from the <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#alignment-summary">alignment summary</a> of Bowtie 2;
@@ -699,10 +693,13 @@ see its documentation for more details.
 For paired-end reads, each pair counts as one read.</p>
 </section>
 <section id="check-the-number-of-reads-that-aligned-to-each-reference">
-<h2>Check the number of reads that aligned to each reference<a class="headerlink" href="#check-the-number-of-reads-that-aligned-to-each-reference" title="Permalink to this headline"></a></h2>
+<h5>Check the number of reads that aligned to each reference<a class="headerlink" href="#check-the-number-of-reads-that-aligned-to-each-reference" title="Permalink to this headline"></a></h5>
 <p>Under “Number of reads aligned by reference”, the report lists every reference
 in your input FASTA file and the number of reads that aligned to it.
 For paired-end reads, each pair counts as one read.</p>
+</section>
+</section>
+</section>
 <section id="align-troubleshoot-and-optimize">
 <h3>Align: Troubleshoot and optimize<a class="headerlink" href="#align-troubleshoot-and-optimize" title="Permalink to this headline"></a></h3>
 <section id="align-produces-alignment-map-files-too-slowly">
@@ -1538,9 +1535,47 @@ folded) and <code class="docutils literal notranslate"><span class="pre">{profil
 number of clusters and <code class="docutils literal notranslate"><span class="pre">{i}</span></code> is the cluster number).</p>
 <section id="fold-output-file-connectivity-table">
 <h4>Fold output file: Connectivity table<a class="headerlink" href="#fold-output-file-connectivity-table" title="Permalink to this headline"></a></h4>
-<p>The primary output is a connectivity table file (for details on this format, see
-<a class="reference internal" href="../formats/data/ct.html"><span class="doc">Connectivity Table (CT): RNA secondary structures</span></a>).</p>
+<p>The primary output is a connectivity table file.
+For details on this format, see <a class="reference internal" href="../formats/data/ct.html"><span class="doc">Connectivity Table (CT): RNA secondary structures</span></a>.</p>
 </section>
+<section id="fold-output-file-dot-bracket-structure">
+<span id="fold-db"></span><h4>Fold output file: Dot-bracket structure<a class="headerlink" href="#fold-output-file-dot-bracket-structure" title="Permalink to this headline"></a></h4>
+<p>The Fold step also outputs the structures in dot-bracket format, which you can
+copy-paste into RNA drawing software such as <a class="reference external" href="https://varna.lisn.upsaclay.fr/">VARNA</a>.
+For details on this format, see <a class="reference internal" href="../formats/data/db.html"><span class="doc">Dot-bracket (DB): RNA secondary structures</span></a>.</p>
+</section>
+<section id="fold-output-file-varna-color-file">
+<h4>Fold output file: VARNA color file<a class="headerlink" href="#fold-output-file-varna-color-file" title="Permalink to this headline"></a></h4>
+<p>The Fold step also outputs the normalized mutation rates in VARNA color format,
+which you can import into the RNA drawing software <a class="reference external" href="https://varna.lisn.upsaclay.fr/">VARNA</a>.
+For details on this format, see <a class="reference internal" href="../formats/data/varna-color.html"><span class="doc">VARNA Color: Color codes for VARNA</span></a>.</p>
+</section>
+</section>
+<section id="fold-visualize-structures-in-varna">
+<h3>Fold: Visualize structures in VARNA<a class="headerlink" href="#fold-visualize-structures-in-varna" title="Permalink to this headline"></a></h3>
+<p><a class="reference external" href="https://varna.lisn.upsaclay.fr/">VARNA</a> is a third-party application for drawing RNA structures.
+To draw a structure from SEISMIC-RNA in VARNA:</p>
+<ol class="arabic">
+<li><p>Install (if needed) and launch VARNA.</p></li>
+<li><p>Open your dot-bracket file (see <a class="reference internal" href="#fold-db"><span class="std std-ref">Fold output file: Dot-bracket structure</span></a>) in a text editor.</p></li>
+<li><p>Right-click the drawing canvas, select “File” &gt; “New…”, and copy-paste the
+sequence and dot-bracket structure.</p></li>
+<li><p>Adjust the layout of the structure by clicking and dragging.</p></li>
+<li><p>To color the bases by their mutation rates, right-click the drawing canvas,
+select “Display” &gt; “Color map” &gt; “Load values…”, copy-paste the path to
+your VARNA color file into the box or click “Choose file” and navigate to
+your VARNA color file, and click “OK” to load the file.</p></li>
+<li><p>To customize the colors, select “Display” &gt; “Color map” &gt; “Style…”:</p>
+<ul class="simple">
+<li><p>Drag a color bar to adjust its location.</p></li>
+<li><p>Click the square below a color bar to change its color.</p></li>
+<li><p>Click the X below the square to delete the color.</p></li>
+<li><p>Click anywhere on the color spectrum to create a new color bar.</p></li>
+</ul>
+<p>We recommend setting the color for missing data (-1) to white or light gray
+and using a continuous (not discrete) color scale for the mutation data.</p>
+</li>
+</ol>
 </section>
 </section>
 <section id="workflow-run-all-steps">
