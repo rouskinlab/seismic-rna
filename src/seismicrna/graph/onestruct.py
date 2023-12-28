@@ -2,24 +2,25 @@ from abc import ABC
 from functools import cached_property
 from pathlib import Path
 
-from .onetable import OneTableGraph
+from .onetable import OneTableGraph, OneTableRunner
 from .rel import OneRelGraph
 from ..core import path
+from ..core.arg import opt_structs
 from ..core.rna import RNAState, from_ct
 
 
 class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
     """ Graph of data from one Table applied to RNA structure(s). """
 
-    def __init__(self, *, ct_file: Path | None = None, **kwargs):
+    def __init__(self, *, structs: Path | None = None, **kwargs):
         super().__init__(**kwargs)
-        self.ct_file = ct_file
+        self.structs_file = structs
 
     @cached_property
     def _struct_fields(self):
         """ Get the fields of the structure. """
-        if self.ct_file is not None:
-            fields = path.parse(self.ct_file,
+        if self.structs_file is not None:
+            fields = path.parse(self.structs_file,
                                 path.RefSeg,
                                 path.SectSeg,
                                 path.ConnectTableSeg)
@@ -64,8 +65,15 @@ class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
     def iter_states(self):
         """ Yield each RNAState. """
         for profile in self.iter_profiles():
-            ct_file = (self.ct_file
-                       if self.ct_file is not None
+            ct_file = (self.structs_file
+                       if self.structs_file is not None
                        else profile.get_ct_file(self.top))
             for struct in from_ct(ct_file):
                 yield RNAState.from_struct_profile(struct, profile)
+
+
+class StructOneTableRunner(OneTableRunner, ABC):
+
+    @classmethod
+    def var_params(cls):
+        return super().var_params() + [opt_structs]

@@ -802,8 +802,8 @@ opt_metric = Option(
           f"{repr(KEY_DETERM)} = coefficient of determination (R²)")
 )
 
-opt_ct_file = Option(
-    ("--ct-file", "-c"),
+opt_structs = Option(
+    ("--structs",),
     type=click.Path(exists=True, dir_okay=False),
     help="CT file of structures against which to compare mutational profiles"
 )
