@@ -569,7 +569,7 @@ For paired-end reads, each pair counts as one read.
 Align: Troubleshoot and optimize
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Alignment produces alignment map files too slowly
+Align produces alignment map files too slowly
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 First, try running the Align step using more processors (with ``--max-procs``),
@@ -581,7 +581,7 @@ and the `Bowtie 2 manual`_ for more detailed descriptions.
 
 .. _align_crash_hang:
 
-Alignment crashes or hangs without producing alignment map files
+Align crashes or hangs without producing alignment map files
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Most likely, your system has run out of memory.
@@ -630,7 +630,7 @@ you can fix it using the :doc:`./cleanfa` tool.
 Relate input file: Alignment maps
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-You can provide any number of alignment map files, each of which must be in SAM,
+You can give any number of alignment map files, each of which must be in SAM,
 BAM, or CRAM format (collectively, "XAM" format).
 See :doc:`../formats/data/xam` for more information.
 
@@ -766,11 +766,11 @@ See :doc:`../formats/report/relate` for more information.
 Relate: Troubleshoot and optimize
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you encounted problems during the Relate step, then the most likely cause is
+If you encounted errors during the Relate step, then the most likely cause is
 that the FASTA file or settings you used for the Relate step differ from those
 that you used during alignment.
 
-Relate troubleshooting: Insufficient reads in {file} ...
+Insufficient reads in {file} ...
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This error means that you provided a SAM/BAM/CRAM file containing fewer reads
@@ -793,7 +793,7 @@ As long as you do so, you may ignore error messages about insufficient reads,
 since these messages just indicate that SEISMIC-RNA is skipping alignment maps
 with insufficient reads, which is exactly what you want to happen.
 
-Relate troubleshooting: Read {read} mapped with a quality score {score} ...
+Read {read} mapped with a quality score {score} ...
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This error means that a read inside an alignment file aligned with a mapping
@@ -817,7 +817,7 @@ As long as you do so, you may ignore error messages about insufficient quality,
 since these messages just indicate that SEISMIC-RNA is skipping reads with
 with insufficient mapping quality, which is exactly what you want to happen.
 
-Relate troubleshooting: Read {read} mapped to a reference named {name} ...
+Read {read} mapped to a reference named {name} ...
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This error means that a read inside an alignment file aligned to a reference
@@ -833,6 +833,19 @@ Otherwise, you can solve the problem by ensuring that
 - Each alignment map file contains reads that aligned to only one reference.
 - Each alignment map file is named (up to the file extension) the same as the
   one reference to which all of the reads aligned.
+
+Relate crashes or hangs while producing few or no batch files
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Most likely, your system has run out of memory.
+You can confirm using a program that monitors memory usage (such as ``top`` in a
+Linux/macOS terminal, Activity Monitor on macOS, or Task Manager on Windows).
+If so, then rerun Relate with adjustments to one or both settings:
+
+- Use smaller batches (with ``--batch-size``) to limit the size of each batch,
+  at the cost of having more files with a larger total size.
+- Use fewer processors (with ``--max-procs``) to limit the memory usage, at the
+  cost of slower processing.
 
 .. _wf_mask:
 
@@ -1062,7 +1075,7 @@ Mask: Troubleshoot and optimize
 
 .. _mask_too_many_reads:
 
-Troubleshooting too many reads being filtered out
+Too many reads are filtered out
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 In the Mask report file, check the settings for filtering reads and the number
@@ -1088,7 +1101,7 @@ of reads removed by each filter.
   - In the Mask step, you did not pre-exclude problematic positions, such as
     sites of endogenous RNA modifications.
 
-Troubleshooting too many positions being filtered out
+Too many positions are filtered out
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 In the Mask report file, check the settings for filtering positions and the
@@ -1115,6 +1128,20 @@ number of positions removed by each filter.
   - You aligned to reference sequences that differ from the actual RNA.
   - Many reads misaligned (possibly because your FASTA file has several similar
     sequences), and your mapping quality filter did not remove misaligned reads.
+
+Mask crashes or hangs while producing few or no batch files
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Most likely, your system has run out of memory.
+You can confirm using a program that monitors memory usage (such as ``top`` in a
+Linux/macOS terminal, Activity Monitor on macOS, or Task Manager on Windows).
+If so, then you can either
+
+- Use fewer processors (with ``--max-procs``) to limit the memory usage, at the
+  cost of slower processing.
+- Rerun Relate with smaller batches (with ``--batch-size``) to limit the size of
+  each batch, at the cost of having more files with a larger total size.
+
 
 Cluster: Infer alternative structures by clustering reads' mutations
 --------------------------------------------------------------------------------
@@ -1236,6 +1263,75 @@ settings you used for running the Cluster step and summarizes the results, such
 as the number of clusters, number of iterations, and the BIC scores.
 See :doc:`../formats/report/cluster` for more information.
 
+You **must** look at the report file to determine whether your clusters come
+from true alternative structures or just noise and artifacts.
+See :ref:`clust_verify` for how to verify that your clusters are real.
+
+.. _clust_verify:
+
+Cluster: Verify clusters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You **must** check whether your clusters are real or artifacts.
+
+In your cluster report:
+
+- The number of clusters that SEISMIC-RNA found is Optimal Number of Clusters.
+  Several important caveats exist about this number:
+
+  - This number can never exceed the Maximum Number of Clusters.
+    So if you want to know whether an RNA forms *N* alternative structures, the
+    results of clustering can provide useful information only if you set the
+    Maximum Number of Clusters to at least *N*.
+  - A "cluster" is as subjective as a "conformational state": two clusters can
+    correspond to completely different structures at one extreme and to slightly
+    different structures at the other.
+    With more reads comes better ability to distinguish clusters that are more
+    similar -- the same way that, in a study examining differences between two
+    groups, larger sample sizes would enable finding more subtle differences.
+    Thus, the number of clusters you find will generally increase with more
+    reads, but that doesn't mean that your RNA actually forms more structures,
+    just that you can resolve more subtle structural differences.
+  - The Number of Unique Bit Vectors is the number of reads that were used for
+    clustering; it should be about 20,000 at minimum, and ideally ≥ 30,000.
+    If you have < 20,000 unique bit vectors, then clustering will probably not
+    be able to find real clusters; so if the Optimal Number of Clusters is 1,
+    then that does not mean your RNA necessarily forms only one structure.
+
+- `Expectation-maximization`_ is guaranteed to find a local optimum, but not a
+  global optimum.
+  SEISMIC-RNA thus runs multiple trajectories from different starting points; if
+  the trajectories converge to the same solution, then that solution is likely
+  (but still not necessarily) the global optimum.
+  You must check if your trajectories converged to the same solution by checking
+  the Log Likelihood per Run in the report.
+  For each number of clusters (i.e. clustering order), the runs are sorted from
+  largest (best) to smallest (worst) log likelihood, with run 0 being the best.
+  At minimum, the log likelihood of run 1 should differ from run 0 by ≤ 1 unit.
+  Ideally, several more runs will also differ from run 0 by ≤ 1 unit.
+  If not, then there you have no evidence that run 0 is the global optimum for
+  that number of clusters, so it would be best to rerun clustering using more
+  independent runs (e.g. 12 instead of the default 6) to increase the chances
+  of finding the global optimum.
+
+Cluster: Troubleshoot and optimize
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Cluster takes too long to finish
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+- Adjust the settings of ``seismic cluster``:
+
+  - Increase the threshold for convergence (``--em-thresh``) from 0.01 (e.g. to
+    0.05).
+    Larger thresholds will make clustering converge in fewer iterations at the
+    cost of making the runs end at more variable solutions.
+    Check the Log Likelihood per Run field to verify that clustering is finding
+    the global optimum; see :ref:`clust_verify` for more information.
+  - Decrease the number of independent runs (``--em-runs``/``-e``) to 3 or 4;
+    don't go below 3 for anything you intend to publish, or else you won't be
+    able to tell if your clustering is finding the global optimum.
+
 Table: Count mutations for each read and position
 --------------------------------------------------------------------------------
 
@@ -1289,6 +1385,96 @@ Table output file: Reads per cluster
 
 For Cluster reports, SEISMIC-RNA outputs the number of reads in each cluster to
 a CSV file named ``clust-freq.csv``.
+
+Fold: Predict RNA secondary structures using mutation rates
+--------------------------------------------------------------------------------
+
+Fold: Input files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fold input file: Reference sequences
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+You need one file of reference sequences in FASTA format (for details on this
+format, see :doc:`../formats/data/fasta`).
+If your file has characters or formatting incompatible with SEISMIC-RNA, then
+you can fix it using the :doc:`./cleanfa` tool.
+
+Fold input file: Mask or Cluster positional table
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+You can give any number of positional table files of masked or clustered reads
+(``mask-per-pos.csv`` or ``clust-per-pos.csv``, respectively) as inputs for the
+Fold step.
+See :doc:`./inputs` for ways to list multiple files.
+(SEISMIC-RNA will not crash if you give other type of table files, such as a
+``relate-per-pos.csv`` or ``mask-per-read.csv.gz`` file, but will ignore them.)
+
+To predict structures using the mutational profiles in all valid tables in the
+directory ``{out}``, you could use the command ::
+
+    seismic fold {refs.fa} {out}
+
+where ``{refs.fa}`` is the path to the file of reference sequences.
+
+Fold: Settings
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fold setting: Define sections
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+You can predict structures of the full reference sequences or specific sections.
+See :doc:`./sections` for ways to define sections.
+
+Defining sections in ``seismic fold`` works identically to ``seismic mask`` but
+accomplishes a very different purpose.
+Sections in ``seismic fold`` determine for which parts of the reference sequence
+to predict structures.
+Sections in ``seismic mask`` determine for which parts of the reference sequence
+to use mutational data.
+SEISMIC-RNA allows these sections to be different.
+There are several common scenarios:
+
+- The section you are folding matches the section for which you have data.
+  For example, you could have mutationally profiled a full transcript and now
+  want to predict the structure of the full transcript using the data from the
+  full mutational profile.
+- You are folding a section that contains and is longer than the section for
+  which you have data.
+  For example, you could have mutationally profiled a short amplicon from a much
+  longer transcript; and after clustering that amplicon, you want to model each
+  alternative structure of the long transcript while using the short mutational
+  profile of each cluster to guide the structure predictions.
+- You are folding a short section that is contained by a longer section for
+  which you have mutational profiling data.
+  For example, you could have mutationally profiled a full transcript and now
+  want to predict the structure of a small part of the transcript that you are
+  reasonably sure does not interact with any other part of the transcript.
+
+Fold setting: Quantile for normalization
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Folding requires that the mutation rates be normalized to the interval [0, 1].
+See :doc:`./normalize` for ways to normalize mutation rates.
+
+Fold: Output files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All output files go into the directory ``{out}/{sample}/fold/{ref}/{sect}``,
+where ``{out}`` is the output directory, ``{sample}`` is the sample, ``{ref}``
+is the reference, and ``{sect}`` is the section you *folded* (**not** that from
+which the data came).
+The files for each predicted structure are named ``{sect}__{profile}``, where
+``{sect}`` is the section from which the *data* came (**not** that which you
+folded) and ``{profile}`` is the mutational profile of those data, which can be
+``average`` (ensemble average) or ``cluster-{n}-{i}`` (where ``{n}`` is the
+number of clusters and ``{i}`` is the cluster number).
+
+Fold output file: Connectivity table
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The primary output is a connectivity table file (for details on this format, see
+:doc:`../formats/data/ct`).
 
 .. _wf_wf:
 

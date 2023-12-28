@@ -9,6 +9,7 @@ How To
     runwf
     inputs
     sections
+    normalize
     parallel
     logging
     cleanfa

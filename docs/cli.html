@@ -172,7 +172,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-R">
-<span id="cmdoption-seismic-wf-r"></span><span id="cmdoption-seismic-wf-refs-file"></span><span class="sig-name descname"><span class="pre">-R</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--refs-meta</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;refs_file&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-R" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-seismic-wf-r"></span><span id="cmdoption-seismic-wf-refs-meta"></span><span class="sig-name descname"><span class="pre">-R</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--refs-meta</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;refs_meta&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-R" title="Permalink to this definition"></a></dt>
 <dd><p>CSV file of metadata for each reference</p>
 </dd></dl>
 
@@ -667,6 +667,53 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dd><p>Quantile for normalizing ratios of mutation rates; must be in [0, 1]</p>
 </dd></dl>
 
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-export">
+<span id="cmdoption-seismic-wf-no-export"></span><span class="sig-name descname"><span class="pre">--export</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-export</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-export" title="Permalink to this definition"></a></dt>
+<dd><p>Export per-sample results for the seismic-graph web app</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-S">
+<span id="cmdoption-seismic-wf-samples-meta"></span><span class="sig-name descname"><span class="pre">-S</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--samples-meta</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;samples_meta&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-S" title="Permalink to this definition"></a></dt>
+<dd><p>CSV file of metadata for each sample</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-all-pos">
+<span id="cmdoption-seismic-wf-unmasked-pos"></span><span class="sig-name descname"><span class="pre">--all-pos</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--unmasked-pos</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-all-pos" title="Permalink to this definition"></a></dt>
+<dd><p>Export all positions (not just unmasked positions)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-a">
+<span id="cmdoption-seismic-wf-arrange"></span><span class="sig-name descname"><span class="pre">-a</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--arrange</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;arrange&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-a" title="Permalink to this definition"></a></dt>
+<dd><p>Graph each INDIVidual cluster in its own file, each ORDER in its own file, or UNITE all clusters in one file containing all orders</p>
+<dl class="field-list simple">
+<dt class="field-odd">Options</dt>
+<dd class="field-odd"><p>indiv | order | unite</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-csv">
+<span id="cmdoption-seismic-wf-no-csv"></span><span class="sig-name descname"><span class="pre">--csv</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-csv</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-csv" title="Permalink to this definition"></a></dt>
+<dd><p>Output the source data for each graph as a CSV file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-html">
+<span id="cmdoption-seismic-wf-no-html"></span><span class="sig-name descname"><span class="pre">--html</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-html</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-html" title="Permalink to this definition"></a></dt>
+<dd><p>Output each graph as an HTML file</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-pdf">
+<span id="cmdoption-seismic-wf-no-pdf"></span><span class="sig-name descname"><span class="pre">--pdf</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-pdf</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-pdf" title="Permalink to this definition"></a></dt>
+<dd><p>Output each graph as a PDF file</p>
+</dd></dl>
+
 <p class="rubric">Arguments</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-arg-FASTA">
@@ -723,7 +770,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-demult-R">
-<span id="cmdoption-seismic-demult-r"></span><span id="cmdoption-seismic-demult-refs-file"></span><span class="sig-name descname"><span class="pre">-R</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--refs-meta</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;refs_file&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-R" title="Permalink to this definition"></a></dt>
+<span id="cmdoption-seismic-demult-r"></span><span id="cmdoption-seismic-demult-refs-meta"></span><span class="sig-name descname"><span class="pre">-R</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--refs-meta</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;refs_meta&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-R" title="Permalink to this definition"></a></dt>
 <dd><p>CSV file of metadata for each reference</p>
 </dd></dl>
 

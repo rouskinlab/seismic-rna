@@ -9,3 +9,4 @@ Data Formats
     fastq
     xam
     brickle
+    ct

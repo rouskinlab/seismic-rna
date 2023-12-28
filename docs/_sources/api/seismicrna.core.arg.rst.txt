@@ -22,6 +22,12 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.core.arg.default
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.core.arg.docdef
    :members:
    :undoc-members:

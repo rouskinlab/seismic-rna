@@ -79,12 +79,20 @@
 <li class="toctree-l4"><a class="reference internal" href="#cluster-input-files">Cluster: Input files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#cluster-settings">Cluster: Settings</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#cluster-output-files">Cluster: Output files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cluster-verify-clusters">Cluster: Verify clusters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cluster-troubleshoot-and-optimize">Cluster: Troubleshoot and optimize</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#table-count-mutations-for-each-read-and-position">Table: Count mutations for each read and position</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#table-input-files">Table: Input files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#table-settings">Table: Settings</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#table-output-files">Table: Output files</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#fold-predict-rna-secondary-structures-using-mutation-rates">Fold: Predict RNA secondary structures using mutation rates</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#fold-input-files">Fold: Input files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fold-settings">Fold: Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fold-output-files">Fold: Output files</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#workflow-run-all-steps">Workflow: Run all steps</a><ul>
@@ -98,6 +106,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="inputs.html">List Input Files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sections.html">Define Sections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="normalize.html">Normalize Mutation Rates</a></li>
 <li class="toctree-l2"><a class="reference internal" href="parallel.html">Parallelize Tasks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="logging.html">Log Messages</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cleanfa.html">Clean FASTA Files</a></li>
@@ -696,17 +705,17 @@ in your input FASTA file and the number of reads that aligned to it.
 For paired-end reads, each pair counts as one read.</p>
 <section id="align-troubleshoot-and-optimize">
 <h3>Align: Troubleshoot and optimize<a class="headerlink" href="#align-troubleshoot-and-optimize" title="Permalink to this headline"></a></h3>
-<section id="alignment-produces-alignment-map-files-too-slowly">
-<h4>Alignment produces alignment map files too slowly<a class="headerlink" href="#alignment-produces-alignment-map-files-too-slowly" title="Permalink to this headline"></a></h4>
+<section id="align-produces-alignment-map-files-too-slowly">
+<h4>Align produces alignment map files too slowly<a class="headerlink" href="#align-produces-alignment-map-files-too-slowly" title="Permalink to this headline"></a></h4>
 <p>First, try running the Align step using more processors (with <code class="docutils literal notranslate"><span class="pre">--max-procs</span></code>),
 at the cost of using more memory.
-If, as a result, <a class="reference internal" href="#align-crash-hang"><span class="std std-ref">Alignment crashes or hangs without producing alignment map files</span></a>, then try adjusting the settings of
+If, as a result, <a class="reference internal" href="#align-crash-hang"><span class="std std-ref">Align crashes or hangs without producing alignment map files</span></a>, then try adjusting the settings of
 Bowtie 2 to increase the speed, at the risk of overlooking valid alignments.
 See <a class="reference internal" href="../cli.html#cli-align"><span class="std std-ref">seismic align</span></a> for the Bowtie 2 settings you can adjust in SEISMIC-RNA,
 and the <a class="reference external" href="https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml">Bowtie 2 manual</a> for more detailed descriptions.</p>
 </section>
-<section id="alignment-crashes-or-hangs-without-producing-alignment-map-files">
-<span id="align-crash-hang"></span><h4>Alignment crashes or hangs without producing alignment map files<a class="headerlink" href="#alignment-crashes-or-hangs-without-producing-alignment-map-files" title="Permalink to this headline"></a></h4>
+<section id="align-crashes-or-hangs-without-producing-alignment-map-files">
+<span id="align-crash-hang"></span><h4>Align crashes or hangs without producing alignment map files<a class="headerlink" href="#align-crashes-or-hangs-without-producing-alignment-map-files" title="Permalink to this headline"></a></h4>
 <p>Most likely, your system has run out of memory.
 You can confirm using a program that monitors memory usage (such as <code class="docutils literal notranslate"><span class="pre">top</span></code> in a
 Linux/macOS terminal, Activity Monitor on macOS, or Task Manager on Windows).
@@ -747,7 +756,7 @@ you can fix it using the <a class="reference internal" href="cleanfa.html"><span
 </section>
 <section id="relate-input-file-alignment-maps">
 <h4>Relate input file: Alignment maps<a class="headerlink" href="#relate-input-file-alignment-maps" title="Permalink to this headline"></a></h4>
-<p>You can provide any number of alignment map files, each of which must be in SAM,
+<p>You can give any number of alignment map files, each of which must be in SAM,
 BAM, or CRAM format (collectively, “XAM” format).
 See <a class="reference internal" href="../formats/data/xam.html"><span class="doc">SAM, BAM, and CRAM: Alignment Maps</span></a> for more information.</p>
 <div class="admonition note">
@@ -871,11 +880,11 @@ See <a class="reference internal" href="../formats/report/relate.html"><span cla
 </section>
 <section id="relate-troubleshoot-and-optimize">
 <h3>Relate: Troubleshoot and optimize<a class="headerlink" href="#relate-troubleshoot-and-optimize" title="Permalink to this headline"></a></h3>
-<p>If you encounted problems during the Relate step, then the most likely cause is
+<p>If you encounted errors during the Relate step, then the most likely cause is
 that the FASTA file or settings you used for the Relate step differ from those
 that you used during alignment.</p>
-<section id="relate-troubleshooting-insufficient-reads-in-file">
-<h4>Relate troubleshooting: Insufficient reads in {file} …<a class="headerlink" href="#relate-troubleshooting-insufficient-reads-in-file" title="Permalink to this headline"></a></h4>
+<section id="insufficient-reads-in-file">
+<h4>Insufficient reads in {file} …<a class="headerlink" href="#insufficient-reads-in-file" title="Permalink to this headline"></a></h4>
 <p>This error means that you provided a SAM/BAM/CRAM file containing fewer reads
 than the minimum number set by <code class="docutils literal notranslate"><span class="pre">--min-reads</span></code> (<code class="docutils literal notranslate"><span class="pre">-n</span></code>).
 There are two common causes of this error:</p>
@@ -896,8 +905,8 @@ As long as you do so, you may ignore error messages about insufficient reads,
 since these messages just indicate that SEISMIC-RNA is skipping alignment maps
 with insufficient reads, which is exactly what you want to happen.</p>
 </section>
-<section id="relate-troubleshooting-read-read-mapped-with-a-quality-score-score">
-<h4>Relate troubleshooting: Read {read} mapped with a quality score {score} …<a class="headerlink" href="#relate-troubleshooting-read-read-mapped-with-a-quality-score-score" title="Permalink to this headline"></a></h4>
+<section id="read-read-mapped-with-a-quality-score-score">
+<h4>Read {read} mapped with a quality score {score} …<a class="headerlink" href="#read-read-mapped-with-a-quality-score-score" title="Permalink to this headline"></a></h4>
 <p>This error means that a read inside an alignment file aligned with a mapping
 quality lower than the minimum set by <code class="docutils literal notranslate"><span class="pre">--min-mapq</span></code>.
 There are two common causes of this error:</p>
@@ -919,8 +928,8 @@ As long as you do so, you may ignore error messages about insufficient quality,
 since these messages just indicate that SEISMIC-RNA is skipping reads with
 with insufficient mapping quality, which is exactly what you want to happen.</p>
 </section>
-<section id="relate-troubleshooting-read-read-mapped-to-a-reference-named-name">
-<h4>Relate troubleshooting: Read {read} mapped to a reference named {name} …<a class="headerlink" href="#relate-troubleshooting-read-read-mapped-to-a-reference-named-name" title="Permalink to this headline"></a></h4>
+<section id="read-read-mapped-to-a-reference-named-name">
+<h4>Read {read} mapped to a reference named {name} …<a class="headerlink" href="#read-read-mapped-to-a-reference-named-name" title="Permalink to this headline"></a></h4>
 <p>This error means that a read inside an alignment file aligned to a reference
 whose name does not match the name of the alignment file (minus the extension).
 For example, if your alignment map file <code class="docutils literal notranslate"><span class="pre">azure.cram</span></code> contains a read that
@@ -933,6 +942,19 @@ Otherwise, you can solve the problem by ensuring that</p>
 <li><p>Each alignment map file contains reads that aligned to only one reference.</p></li>
 <li><p>Each alignment map file is named (up to the file extension) the same as the
 one reference to which all of the reads aligned.</p></li>
+</ul>
+</section>
+<section id="relate-crashes-or-hangs-while-producing-few-or-no-batch-files">
+<h4>Relate crashes or hangs while producing few or no batch files<a class="headerlink" href="#relate-crashes-or-hangs-while-producing-few-or-no-batch-files" title="Permalink to this headline"></a></h4>
+<p>Most likely, your system has run out of memory.
+You can confirm using a program that monitors memory usage (such as <code class="docutils literal notranslate"><span class="pre">top</span></code> in a
+Linux/macOS terminal, Activity Monitor on macOS, or Task Manager on Windows).
+If so, then rerun Relate with adjustments to one or both settings:</p>
+<ul class="simple">
+<li><p>Use smaller batches (with <code class="docutils literal notranslate"><span class="pre">--batch-size</span></code>) to limit the size of each batch,
+at the cost of having more files with a larger total size.</p></li>
+<li><p>Use fewer processors (with <code class="docutils literal notranslate"><span class="pre">--max-procs</span></code>) to limit the memory usage, at the
+cost of slower processing.</p></li>
 </ul>
 </section>
 </section>
@@ -1136,8 +1158,8 @@ See <a class="reference internal" href="../formats/report/mask.html"><span class
 </section>
 <section id="mask-troubleshoot-and-optimize">
 <h3>Mask: Troubleshoot and optimize<a class="headerlink" href="#mask-troubleshoot-and-optimize" title="Permalink to this headline"></a></h3>
-<section id="troubleshooting-too-many-reads-being-filtered-out">
-<span id="mask-too-many-reads"></span><h4>Troubleshooting too many reads being filtered out<a class="headerlink" href="#troubleshooting-too-many-reads-being-filtered-out" title="Permalink to this headline"></a></h4>
+<section id="too-many-reads-are-filtered-out">
+<span id="mask-too-many-reads"></span><h4>Too many reads are filtered out<a class="headerlink" href="#too-many-reads-are-filtered-out" title="Permalink to this headline"></a></h4>
 <p>In the Mask report file, check the settings for filtering reads and the number
 of reads removed by each filter.</p>
 <ul class="simple">
@@ -1164,8 +1186,8 @@ sites of endogenous RNA modifications.</p></li>
 </li>
 </ul>
 </section>
-<section id="troubleshooting-too-many-positions-being-filtered-out">
-<h4>Troubleshooting too many positions being filtered out<a class="headerlink" href="#troubleshooting-too-many-positions-being-filtered-out" title="Permalink to this headline"></a></h4>
+<section id="too-many-positions-are-filtered-out">
+<h4>Too many positions are filtered out<a class="headerlink" href="#too-many-positions-are-filtered-out" title="Permalink to this headline"></a></h4>
 <p>In the Mask report file, check the settings for filtering positions and the
 number of positions removed by each filter.</p>
 <ul class="simple">
@@ -1177,7 +1199,7 @@ then there are three likely reasons:</p>
 <ul>
 <li><p>Your sample was sequenced with insufficient depth or quality.</p></li>
 <li><p>Your sample contained insufficient RNAs from this reference/section.</p></li>
-<li><p>You lost too many reads during filtering; see <a class="reference internal" href="#mask-too-many-reads"><span class="std std-ref">Troubleshooting too many reads being filtered out</span></a>.</p></li>
+<li><p>You lost too many reads during filtering; see <a class="reference internal" href="#mask-too-many-reads"><span class="std std-ref">Too many reads are filtered out</span></a>.</p></li>
 </ul>
 </li>
 <li><p>If you are losing too many positions for having too many mutations, then there
@@ -1193,6 +1215,19 @@ that you did not trim (in Align) or flag as ambiguous (in Relate).</p></li>
 sequences), and your mapping quality filter did not remove misaligned reads.</p></li>
 </ul>
 </li>
+</ul>
+</section>
+<section id="mask-crashes-or-hangs-while-producing-few-or-no-batch-files">
+<h4>Mask crashes or hangs while producing few or no batch files<a class="headerlink" href="#mask-crashes-or-hangs-while-producing-few-or-no-batch-files" title="Permalink to this headline"></a></h4>
+<p>Most likely, your system has run out of memory.
+You can confirm using a program that monitors memory usage (such as <code class="docutils literal notranslate"><span class="pre">top</span></code> in a
+Linux/macOS terminal, Activity Monitor on macOS, or Task Manager on Windows).
+If so, then you can either</p>
+<ul class="simple">
+<li><p>Use fewer processors (with <code class="docutils literal notranslate"><span class="pre">--max-procs</span></code>) to limit the memory usage, at the
+cost of slower processing.</p></li>
+<li><p>Rerun Relate with smaller batches (with <code class="docutils literal notranslate"><span class="pre">--batch-size</span></code>) to limit the size of
+each batch, at the cost of having more files with a larger total size.</p></li>
 </ul>
 </section>
 </section>
@@ -1305,6 +1340,75 @@ See <a class="reference internal" href="../formats/data/brickle.html"><span clas
 settings you used for running the Cluster step and summarizes the results, such
 as the number of clusters, number of iterations, and the BIC scores.
 See <a class="reference internal" href="../formats/report/cluster.html"><span class="doc">Cluster Report</span></a> for more information.</p>
+<p>You <strong>must</strong> look at the report file to determine whether your clusters come
+from true alternative structures or just noise and artifacts.
+See <a class="reference internal" href="#clust-verify"><span class="std std-ref">Cluster: Verify clusters</span></a> for how to verify that your clusters are real.</p>
+</section>
+</section>
+<section id="cluster-verify-clusters">
+<span id="clust-verify"></span><h3>Cluster: Verify clusters<a class="headerlink" href="#cluster-verify-clusters" title="Permalink to this headline"></a></h3>
+<p>You <strong>must</strong> check whether your clusters are real or artifacts.</p>
+<p>In your cluster report:</p>
+<ul class="simple">
+<li><p>The number of clusters that SEISMIC-RNA found is Optimal Number of Clusters.
+Several important caveats exist about this number:</p>
+<ul>
+<li><p>This number can never exceed the Maximum Number of Clusters.
+So if you want to know whether an RNA forms <em>N</em> alternative structures, the
+results of clustering can provide useful information only if you set the
+Maximum Number of Clusters to at least <em>N</em>.</p></li>
+<li><p>A “cluster” is as subjective as a “conformational state”: two clusters can
+correspond to completely different structures at one extreme and to slightly
+different structures at the other.
+With more reads comes better ability to distinguish clusters that are more
+similar – the same way that, in a study examining differences between two
+groups, larger sample sizes would enable finding more subtle differences.
+Thus, the number of clusters you find will generally increase with more
+reads, but that doesn’t mean that your RNA actually forms more structures,
+just that you can resolve more subtle structural differences.</p></li>
+<li><p>The Number of Unique Bit Vectors is the number of reads that were used for
+clustering; it should be about 20,000 at minimum, and ideally ≥ 30,000.
+If you have &lt; 20,000 unique bit vectors, then clustering will probably not
+be able to find real clusters; so if the Optimal Number of Clusters is 1,
+then that does not mean your RNA necessarily forms only one structure.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm">Expectation-maximization</a> is guaranteed to find a local optimum, but not a
+global optimum.
+SEISMIC-RNA thus runs multiple trajectories from different starting points; if
+the trajectories converge to the same solution, then that solution is likely
+(but still not necessarily) the global optimum.
+You must check if your trajectories converged to the same solution by checking
+the Log Likelihood per Run in the report.
+For each number of clusters (i.e. clustering order), the runs are sorted from
+largest (best) to smallest (worst) log likelihood, with run 0 being the best.
+At minimum, the log likelihood of run 1 should differ from run 0 by ≤ 1 unit.
+Ideally, several more runs will also differ from run 0 by ≤ 1 unit.
+If not, then there you have no evidence that run 0 is the global optimum for
+that number of clusters, so it would be best to rerun clustering using more
+independent runs (e.g. 12 instead of the default 6) to increase the chances
+of finding the global optimum.</p></li>
+</ul>
+</section>
+<section id="cluster-troubleshoot-and-optimize">
+<h3>Cluster: Troubleshoot and optimize<a class="headerlink" href="#cluster-troubleshoot-and-optimize" title="Permalink to this headline"></a></h3>
+<section id="cluster-takes-too-long-to-finish">
+<h4>Cluster takes too long to finish<a class="headerlink" href="#cluster-takes-too-long-to-finish" title="Permalink to this headline"></a></h4>
+<ul class="simple">
+<li><p>Adjust the settings of <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">cluster</span></code>:</p>
+<ul>
+<li><p>Increase the threshold for convergence (<code class="docutils literal notranslate"><span class="pre">--em-thresh</span></code>) from 0.01 (e.g. to
+0.05).
+Larger thresholds will make clustering converge in fewer iterations at the
+cost of making the runs end at more variable solutions.
+Check the Log Likelihood per Run field to verify that clustering is finding
+the global optimum; see <a class="reference internal" href="#clust-verify"><span class="std std-ref">Cluster: Verify clusters</span></a> for more information.</p></li>
+<li><p>Decrease the number of independent runs (<code class="docutils literal notranslate"><span class="pre">--em-runs</span></code>/<code class="docutils literal notranslate"><span class="pre">-e</span></code>) to 3 or 4;
+don’t go below 3 for anything you intend to publish, or else you won’t be
+able to tell if your clustering is finding the global optimum.</p></li>
+</ul>
+</li>
+</ul>
 </section>
 </section>
 </section>
@@ -1353,6 +1457,89 @@ named <code class="docutils literal notranslate"><span class="pre">{step}-per-po
 <h4>Table output file: Reads per cluster<a class="headerlink" href="#table-output-file-reads-per-cluster" title="Permalink to this headline"></a></h4>
 <p>For Cluster reports, SEISMIC-RNA outputs the number of reads in each cluster to
 a CSV file named <code class="docutils literal notranslate"><span class="pre">clust-freq.csv</span></code>.</p>
+</section>
+</section>
+</section>
+<section id="fold-predict-rna-secondary-structures-using-mutation-rates">
+<h2>Fold: Predict RNA secondary structures using mutation rates<a class="headerlink" href="#fold-predict-rna-secondary-structures-using-mutation-rates" title="Permalink to this headline"></a></h2>
+<section id="fold-input-files">
+<h3>Fold: Input files<a class="headerlink" href="#fold-input-files" title="Permalink to this headline"></a></h3>
+<section id="fold-input-file-reference-sequences">
+<h4>Fold input file: Reference sequences<a class="headerlink" href="#fold-input-file-reference-sequences" title="Permalink to this headline"></a></h4>
+<p>You need one file of reference sequences in FASTA format (for details on this
+format, see <a class="reference internal" href="../formats/data/fasta.html"><span class="doc">FASTA: Reference sequences</span></a>).
+If your file has characters or formatting incompatible with SEISMIC-RNA, then
+you can fix it using the <a class="reference internal" href="cleanfa.html"><span class="doc">Clean FASTA Files</span></a> tool.</p>
+</section>
+<section id="fold-input-file-mask-or-cluster-positional-table">
+<h4>Fold input file: Mask or Cluster positional table<a class="headerlink" href="#fold-input-file-mask-or-cluster-positional-table" title="Permalink to this headline"></a></h4>
+<p>You can give any number of positional table files of masked or clustered reads
+(<code class="docutils literal notranslate"><span class="pre">mask-per-pos.csv</span></code> or <code class="docutils literal notranslate"><span class="pre">clust-per-pos.csv</span></code>, respectively) as inputs for the
+Fold step.
+See <a class="reference internal" href="inputs.html"><span class="doc">List Input Files</span></a> for ways to list multiple files.
+(SEISMIC-RNA will not crash if you give other type of table files, such as a
+<code class="docutils literal notranslate"><span class="pre">relate-per-pos.csv</span></code> or <code class="docutils literal notranslate"><span class="pre">mask-per-read.csv.gz</span></code> file, but will ignore them.)</p>
+<p>To predict structures using the mutational profiles in all valid tables in the
+directory <code class="docutils literal notranslate"><span class="pre">{out}</span></code>, you could use the command</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">fold</span> <span class="p">{</span><span class="n">refs</span><span class="o">.</span><span class="n">fa</span><span class="p">}</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">{refs.fa}</span></code> is the path to the file of reference sequences.</p>
+</section>
+</section>
+<section id="fold-settings">
+<h3>Fold: Settings<a class="headerlink" href="#fold-settings" title="Permalink to this headline"></a></h3>
+<section id="fold-setting-define-sections">
+<h4>Fold setting: Define sections<a class="headerlink" href="#fold-setting-define-sections" title="Permalink to this headline"></a></h4>
+<p>You can predict structures of the full reference sequences or specific sections.
+See <a class="reference internal" href="sections.html"><span class="doc">Define Sections</span></a> for ways to define sections.</p>
+<p>Defining sections in <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">fold</span></code> works identically to <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">mask</span></code> but
+accomplishes a very different purpose.
+Sections in <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">fold</span></code> determine for which parts of the reference sequence
+to predict structures.
+Sections in <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">mask</span></code> determine for which parts of the reference sequence
+to use mutational data.
+SEISMIC-RNA allows these sections to be different.
+There are several common scenarios:</p>
+<ul class="simple">
+<li><p>The section you are folding matches the section for which you have data.
+For example, you could have mutationally profiled a full transcript and now
+want to predict the structure of the full transcript using the data from the
+full mutational profile.</p></li>
+<li><p>You are folding a section that contains and is longer than the section for
+which you have data.
+For example, you could have mutationally profiled a short amplicon from a much
+longer transcript; and after clustering that amplicon, you want to model each
+alternative structure of the long transcript while using the short mutational
+profile of each cluster to guide the structure predictions.</p></li>
+<li><p>You are folding a short section that is contained by a longer section for
+which you have mutational profiling data.
+For example, you could have mutationally profiled a full transcript and now
+want to predict the structure of a small part of the transcript that you are
+reasonably sure does not interact with any other part of the transcript.</p></li>
+</ul>
+</section>
+<section id="fold-setting-quantile-for-normalization">
+<h4>Fold setting: Quantile for normalization<a class="headerlink" href="#fold-setting-quantile-for-normalization" title="Permalink to this headline"></a></h4>
+<p>Folding requires that the mutation rates be normalized to the interval [0, 1].
+See <a class="reference internal" href="normalize.html"><span class="doc">Normalize Mutation Rates</span></a> for ways to normalize mutation rates.</p>
+</section>
+</section>
+<section id="fold-output-files">
+<h3>Fold: Output files<a class="headerlink" href="#fold-output-files" title="Permalink to this headline"></a></h3>
+<p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/fold/{ref}/{sect}</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, <code class="docutils literal notranslate"><span class="pre">{ref}</span></code>
+is the reference, and <code class="docutils literal notranslate"><span class="pre">{sect}</span></code> is the section you <em>folded</em> (<strong>not</strong> that from
+which the data came).
+The files for each predicted structure are named <code class="docutils literal notranslate"><span class="pre">{sect}__{profile}</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">{sect}</span></code> is the section from which the <em>data</em> came (<strong>not</strong> that which you
+folded) and <code class="docutils literal notranslate"><span class="pre">{profile}</span></code> is the mutational profile of those data, which can be
+<code class="docutils literal notranslate"><span class="pre">average</span></code> (ensemble average) or <code class="docutils literal notranslate"><span class="pre">cluster-{n}-{i}</span></code> (where <code class="docutils literal notranslate"><span class="pre">{n}</span></code> is the
+number of clusters and <code class="docutils literal notranslate"><span class="pre">{i}</span></code> is the cluster number).</p>
+<section id="fold-output-file-connectivity-table">
+<h4>Fold output file: Connectivity table<a class="headerlink" href="#fold-output-file-connectivity-table" title="Permalink to this headline"></a></h4>
+<p>The primary output is a connectivity table file (for details on this format, see
+<a class="reference internal" href="../formats/data/ct.html"><span class="doc">Connectivity Table (CT): RNA secondary structures</span></a>).</p>
 </section>
 </section>
 </section>
