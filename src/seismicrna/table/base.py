@@ -132,9 +132,9 @@ class Table(ABC):
         return list(range(cls.index_depth()))
 
     @classmethod
-    def path_segs(cls):
+    @abstractmethod
+    def path_segs(cls) -> tuple[path.Segment, ...]:
         """ Table's path segments. """
-        return path.TABLE_SEGS
 
     @classmethod
     def gzipped(cls):
@@ -269,15 +269,25 @@ class AvgTable(RelTypeTable, ABC):
 
 
 class RelTable(AvgTable, ABC):
-    pass
+
+    @classmethod
+    def kind(cls):
+        return path.RELATE_TABLE
 
 
 class MaskTable(AvgTable, ABC):
-    pass
+
+    @classmethod
+    def kind(cls):
+        return path.MASK_TABLE
 
 
 class ClustTable(RelTypeTable, ABC):
     """ Cluster for each RNA structure in an ensemble. """
+
+    @classmethod
+    def kind(cls):
+        return path.CLUST_TABLE
 
     @classmethod
     def header_type(cls):
@@ -298,6 +308,10 @@ class PosTable(RelTypeTable, ABC):
     @classmethod
     def index_depth(cls):
         return len(SEQ_INDEX_NAMES)
+
+    @classmethod
+    def path_segs(cls):
+        return path.POS_TABLE_SEGS
 
     @cached_property
     def range(self):
@@ -626,6 +640,10 @@ class ReadTable(RelTypeTable, ABC):
     def index_depth(cls):
         return len(RB_INDEX_NAMES)
 
+    @classmethod
+    def path_segs(cls):
+        return path.READ_TABLE_SEGS
+
     @property
     def reads(self):
         return self.data.index.values
@@ -636,13 +654,25 @@ class ReadTable(RelTypeTable, ABC):
         return self.data.loc[:, columns]
 
 
+class FreqTable(Table, ABC):
+    """ Table of frequencies. """
+
+    @classmethod
+    def by_read(cls):
+        return False
+
+    @classmethod
+    def path_segs(cls):
+        return path.FREQ_TABLE_SEGS
+
+    @classmethod
+    def transposed(cls):
+        return True
+
+
 # Table by Source and Index ############################################
 
 class RelPosTable(RelTable, PosTable, ABC):
-
-    @classmethod
-    def kind(cls):
-        return path.RELATE_POS_TAB
 
     def _iter_profiles(self, *,
                        sections: Iterable[Section] | None,
@@ -687,53 +717,30 @@ class ProfilePosTable(PosTable, ABC):
 
 
 class MaskPosTable(MaskTable, ProfilePosTable, ABC):
-
-    @classmethod
-    def kind(cls):
-        return path.MASKED_POS_TAB
+    pass
 
 
 class ClustPosTable(ClustTable, ProfilePosTable, ABC):
-
-    @classmethod
-    def kind(cls):
-        return path.CLUST_POS_TAB
+    pass
 
 
 class RelReadTable(RelTable, ReadTable, ABC):
-
-    @classmethod
-    def kind(cls):
-        return path.RELATE_READ_TAB
+    pass
 
 
 class MaskReadTable(MaskTable, ReadTable, ABC):
-
-    @classmethod
-    def kind(cls):
-        return path.MASKED_READ_TAB
+    pass
 
 
 class ClustReadTable(ClustTable, ReadTable, ABC):
+    pass
+
+
+class ClustFreqTable(FreqTable, ABC):
 
     @classmethod
     def kind(cls):
-        return path.CLUST_READ_TAB
-
-
-class ClustFreqTable(Table, ABC):
-
-    @classmethod
-    def kind(cls):
-        return path.CLUST_FREQ_TAB
-
-    @classmethod
-    def by_read(cls):
-        return False
-
-    @classmethod
-    def transposed(cls):
-        return True
+        return path.CLUST_TABLE
 
     @classmethod
     def header_type(cls):

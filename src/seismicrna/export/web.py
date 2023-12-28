@@ -45,7 +45,7 @@ from ..table.base import (Table,
                           ReadTable,
                           ClustFreqTable,
                           R_ADJ_TITLE)
-from ..table.load import load_tables
+from ..table.load import load_all_tables
 
 logger = getLogger(__name__)
 
@@ -312,7 +312,8 @@ def run(input_path: tuple[str, ...], *,
     refs_metadata = (parse_refs_metadata(Path(refs_meta))
                      if refs_meta
                      else dict())
-    for table in load_tables(input_path):
+    for table in load_all_tables(input_path):
+        print("TABLE:", table)
         if isinstance(table, (MaskTable, ClustTable, ClustFreqTable)):
             tables[(table.top, table.sample)].append(table)
     return list(dispatch(export_sample,

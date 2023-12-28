@@ -101,20 +101,10 @@ CLUST_TABLES = (CLUST_PROP_RUN_TABLE,
                 CLUST_RESP_RUN_TABLE,
                 CLUST_COUNT_RUN_TABLE)
 
-RELATE_POS_TAB = "relate-per-pos"
-RELATE_READ_TAB = "relate-per-read"
-MASKED_POS_TAB = "mask-per-pos"
-MASKED_READ_TAB = "mask-per-read"
-CLUST_POS_TAB = "clust-per-pos"
-CLUST_READ_TAB = "clust-per-read"
-CLUST_FREQ_TAB = "clust-freq"
-COUNT_TABLES = (RELATE_POS_TAB,
-                RELATE_READ_TAB,
-                MASKED_POS_TAB,
-                MASKED_READ_TAB,
-                CLUST_POS_TAB,
-                CLUST_READ_TAB,
-                CLUST_FREQ_TAB)
+RELATE_TABLE = "relate"
+MASK_TABLE = "mask"
+CLUST_TABLE = "clust"
+TABLES = (RELATE_TABLE, MASK_TABLE, CLUST_TABLE)
 
 # File extensions
 
@@ -297,8 +287,10 @@ CmdField = Field(str, [CMD_QC_DIR,
                        CMD_GRAPH_DIR])
 StepField = Field(str, STEPS)
 IntField = Field(int)
-CountTabField = Field(str, COUNT_TABLES)
 ClustTabField = Field(str, CLUST_TABLES)
+PosTableField = Field(str, TABLES)
+ReadTableField = Field(str, TABLES)
+FreqTableField = Field(str, [CLUST_TABLE])
 
 # File extensions
 TextExt = Field(str, [TXT_EXT], is_ext=True)
@@ -307,7 +299,9 @@ RefseqFileExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 BatchExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 ClustTabExt = Field(str, CSV_EXTS, is_ext=True)
 ClustCountExt = Field(str, CSV_EXTS, is_ext=True)
-MutTabExt = Field(str, CSV_EXTS, is_ext=True)
+PosTableExt = Field(str, [CSV_EXT], is_ext=True)
+ReadTableExt = Field(str, [CSVZIP_EXT], is_ext=True)
+FreqTableExt = Field(str, [CSV_EXT], is_ext=True)
 FastaExt = Field(str, FASTA_EXTS, is_ext=True)
 FastaIndexExt = Field(str, BOWTIE2_INDEX_EXTS, is_ext=True)
 FastqExt = Field(str, FQ_EXTS, is_ext=True)
@@ -510,7 +504,15 @@ ClustBatSeg = Segment("clust-bat",
 ClustRepSeg = Segment("clust-rep", {EXT: ReportExt}, frmt="cluster-report{ext}")
 
 # Tabulation
-TableSeg = Segment("table", {TABLE: CountTabField, EXT: MutTabExt})
+PosTableSeg = Segment("pos-table",
+                      {TABLE: PosTableField, EXT: PosTableExt},
+                      frmt="{table}-per-pos{ext}")
+ReadTableSeg = Segment("read-table",
+                       {TABLE: ReadTableField, EXT: ReadTableExt},
+                       frmt="{table}-per-read{ext}")
+FreqTableSeg = Segment("freq-table",
+                       {TABLE: FreqTableField, EXT: FreqTableExt},
+                       frmt="{table}-freq{ext}")
 
 # RNA Structure Formats
 ConnectTableSeg = Segment("rna-ct",
@@ -548,7 +550,9 @@ XAM_SEGS = SampSeg, CmdSeg, XamSeg
 XAM_STEP_SEGS = SampSeg, CmdSeg, StepSeg, XamSeg
 CLUST_TAB_SEGS = (*SECT_DIR_SEGS, ClustTabSeg)
 CLUST_COUNT_SEGS = (*SECT_DIR_SEGS, ClustCountSeg)
-TABLE_SEGS = (*SECT_DIR_SEGS, TableSeg)
+POS_TABLE_SEGS = (*SECT_DIR_SEGS, PosTableSeg)
+READ_TABLE_SEGS = (*SECT_DIR_SEGS, ReadTableSeg)
+FREQ_TABLE_SEGS = (*SECT_DIR_SEGS, FreqTableSeg)
 CT_FILE_SEGS = (*SECT_DIR_SEGS, ConnectTableSeg)
 DB_FILE_SEGS = (*SECT_DIR_SEGS, DotBracketSeg)
 
@@ -794,7 +798,7 @@ def transpaths(to_dir: str | pl.Path,
         # There are no paths to transplant.
         return tuple()
     # Determine the longest common sub-path of all given paths.
-    common_path = (os.path.commonpath([sanitize(p, strict) for p in paths]))
+    common_path = os.path.commonpath([sanitize(p, strict) for p in paths])
     # Move each path from that common path to the given directory.
     return tuple(transpath(to_dir, common_path, p, strict) for p in paths)
 

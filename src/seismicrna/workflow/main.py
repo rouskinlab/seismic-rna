@@ -315,7 +315,7 @@ def run(*,
     ))
     # Fold
     if fold:
-        input_path += as_tuple_str(fold_mod.run(
+        fold_mod.run(
             input_path=input_path,
             fasta=fasta,
             sections_file=sections_file,
@@ -328,7 +328,7 @@ def run(*,
             max_procs=max_procs,
             parallel=parallel,
             force=force,
-        ))
+        )
     # Export
     if export:
         export_web_mod.run(
@@ -344,6 +344,7 @@ def run(*,
     ProfileRunner.run(input_path=input_path,
                       rels="m",
                       use_ratio=True,
+                      quantile=0.,
                       arrange=arrange,
                       out_dir=out_dir,
                       csv=csv,
@@ -356,6 +357,7 @@ def run(*,
     ProfileRunner.run(input_path=input_path,
                       rels="n",
                       use_ratio=False,
+                      quantile=0.,
                       arrange=arrange,
                       out_dir=out_dir,
                       csv=csv,
@@ -369,6 +371,7 @@ def run(*,
         ROCRunner.run(input_path=input_path,
                       rels="m",
                       use_ratio=True,
+                      quantile=0.,
                       arrange=arrange,
                       out_dir=out_dir,
                       csv=csv,

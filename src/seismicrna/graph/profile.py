@@ -6,7 +6,6 @@ from logging import getLogger
 from click import command
 from plotly import graph_objects as go
 
-from .base import make_title_action_sample
 from .color import ColorMapGraph, RelColorMap, SeqColorMap
 from .onetable import OneTableGraph, OneTableRunner, OneTableWriter
 from .rel import MultiRelsGraph, OneRelGraph

@@ -20,7 +20,7 @@ from ..core.arg import opt_comppair, opt_compself
 from ..core.parallel import dispatch
 from ..core.seq import POS_NAME
 from ..table.base import ClustTable, PosTable, Table
-from ..table.load import find_table_files, load
+from ..table.load import find_pos_tables, load_pos_table
 
 logger = getLogger(__name__)
 
@@ -212,12 +212,12 @@ class TwoTableWriter(GraphWriter, ABC):
     @cached_property
     def table1(self):
         """ The first table providing the data for the graph(s). """
-        return load(self.table_files[0])
+        return load_pos_table(self.table_files[0])
 
     @cached_property
     def table2(self):
         """ The second table providing the data for the graph(s). """
-        return load(self.table_files[1])
+        return load_pos_table(self.table_files[1])
 
     def iter_graphs(self,
                     rels: tuple[str, ...],
@@ -257,7 +257,7 @@ class TwoTableRunner(GraphRunner, ABC):
             parallel: bool,
             **kwargs):
         # List all table files.
-        table_files = list(find_table_files(input_path))
+        table_files = list(find_pos_tables(input_path))
         # Determine all pairs of tables to compare.
         table_pairs = list()
         if compself:

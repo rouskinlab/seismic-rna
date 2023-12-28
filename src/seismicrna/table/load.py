@@ -2,7 +2,7 @@ from abc import ABC
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 import pandas as pd
 
@@ -118,37 +118,83 @@ class ClustFreqTableLoader(TableLoader, ClustFreqTable):
 
 # Helper Functions #####################################################
 
-def load(table_file: Path):
-    """ Helper function to load a TableLoader from a table file. """
-    for loader_type in (RelPosTableLoader,
-                        RelReadTableLoader,
-                        MaskPosTableLoader,
-                        MaskReadTableLoader,
-                        ClustPosTableLoader,
-                        ClustReadTableLoader,
-                        ClustFreqTableLoader):
+
+POS_LOADS = RelPosTableLoader, MaskPosTableLoader, ClustPosTableLoader
+READ_LOADS = RelReadTableLoader, MaskReadTableLoader, ClustReadTableLoader
+FREQ_LOADS = ClustFreqTableLoader,
+
+
+def load_table(types: Iterable[type[TableLoader]], table_file: Path):
+    """ Load a Table of one of several types from a file. """
+    for table_type in types:
         try:
             # Try to load the table file using the type of TableLoader.
-            return loader_type(table_file)
+            return table_type(table_file)
         except (FileNotFoundError, ValueError):
             # The TableLoader was not the correct type for the file.
             pass
-    # None of the TableLoader types were able to open the file.
-    raise ValueError(f"Failed to open table: {table_file}")
+    raise TypeError(f"Failed to open {table_file} as one of {types}")
 
 
-def find_table_files(tables: Iterable[str | Path]):
-    """ Yield a file for each given file/directory of a table. """
-    yield from path.find_files_chain(map(Path, tables), [path.TableSeg])
+def load_any_table(table_file: Path):
+    return load_table([*POS_LOADS, *READ_LOADS, *FREQ_LOADS], table_file)
 
 
-def load_tables(tables: Iterable[str | Path]):
-    """ Yield a table for each given file/directory of a table. """
-    for file in find_table_files(tables):
+def load_pos_table(table_file: Path):
+    return load_table(POS_LOADS, table_file)
+
+
+def load_read_table(table_file: Path):
+    return load_table(READ_LOADS, table_file)
+
+
+def find_tables(segments: Iterable[path.Segment], files: Iterable[str | Path]):
+    """ Yield every table file with the given type of segment from among
+    the given paths. """
+    for segment in segments:
+        yield from path.find_files_chain(files, [segment])
+
+
+def find_all_tables(files: Iterable[str | Path]):
+    yield from find_tables([path.PosTableSeg,
+                            path.ReadTableSeg,
+                            path.FreqTableSeg],
+                           files)
+
+
+def find_pos_tables(files: Iterable[str | Path]):
+    yield from find_tables([path.PosTableSeg], files)
+
+
+def find_read_tables(files: Iterable[str | Path]):
+    yield from find_tables([path.ReadTableSeg], files)
+
+
+def load_tables(finder: Callable[[Iterable[str | Path]], Iterable[Path]],
+                loader: Callable[[Path], TableLoader],
+                files: Iterable[str | Path]):
+    """ Yield every table with the given type of segment from among the
+    given paths. """
+    for file in finder(files):
         try:
-            yield load(file)
-        except Exception as error:
-            logger.error(f"Failed to load table from {file}: {error}")
+            yield loader(file)
+        except TypeError as error:
+            logger.error(error)
+
+
+def load_all_tables(files: Iterable[str | Path]):
+    """ Yield every table among the given paths. """
+    yield from load_tables(find_all_tables, load_any_table, files)
+
+
+def load_pos_tables(files: Iterable[str | Path]):
+    """ Yield every positional table among the given paths. """
+    yield from load_tables(find_pos_tables, load_pos_table, files)
+
+
+def load_read_tables(files: Iterable[str | Path]):
+    """ Yield every per-read table among the given paths. """
+    yield from load_tables(find_read_tables, load_read_table, files)
 
 ########################################################################
 #                                                                      #

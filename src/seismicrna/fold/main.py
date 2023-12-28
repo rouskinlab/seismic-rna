@@ -1,10 +1,10 @@
+from itertools import chain
 from logging import getLogger
 from pathlib import Path
 
 from click import command
 
 from .rnastructure import fold, ct2dot
-from ..core import path
 from ..core.arg import (CMD_FOLD,
                         docdef,
                         arg_input_path,
@@ -26,7 +26,7 @@ from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
 from ..core.rna import RNAProfile
 from ..core.seq import DNA, RefSections, Section, parse_fasta
 from ..table.base import MaskPosTable, ClustPosTable
-from ..table.load import load
+from ..table.load import load_pos_tables
 
 logger = getLogger(__name__)
 
@@ -86,33 +86,28 @@ def run(fasta: str,
                                primers=primers,
                                primer_gap=primer_gap)
     # Initialize the table loaders.
-    tab_files = path.find_files_chain(map(Path, input_path), [path.TableSeg])
-    tables = [table for table in dispatch(load,
-                                          max_procs,
-                                          parallel,
-                                          args=as_list_of_tuples(tab_files),
-                                          pass_n_procs=False)
+    tables = [table for table in load_pos_tables(input_path)
               if isinstance(table, (MaskPosTable, ClustPosTable))]
     # Fold the RNA profiles.
-    return dispatch(fold_rna,
-                    max_procs,
-                    parallel,
-                    args=[(loader, ref_sections.list(loader.ref))
-                          for loader in tables],
-                    kwargs=dict(temp_dir=Path(temp_dir),
-                                keep_temp=keep_temp,
-                                quantile=quantile,
-                                force=force),
-                    pass_n_procs=True)
+    return list(chain(dispatch(fold_profile,
+                               max_procs,
+                               parallel,
+                               args=[(loader, ref_sections.list(loader.ref))
+                                     for loader in tables],
+                               kwargs=dict(temp_dir=Path(temp_dir),
+                                           keep_temp=keep_temp,
+                                           quantile=quantile,
+                                           force=force),
+                               pass_n_procs=True)))
 
 
-def fold_rna(table: MaskPosTable | ClustPosTable,
-             sections: list[Section],
-             n_procs: int,
-             quantile: float,
-             **kwargs):
+def fold_profile(table: MaskPosTable | ClustPosTable,
+                 sections: list[Section],
+                 n_procs: int,
+                 quantile: float,
+                 **kwargs):
     """ Fold an RNA molecule from one table of reactivities. """
-    return dispatch(fold_profile,
+    return dispatch(fold_section,
                     n_procs,
                     parallel=True,
                     args=as_list_of_tuples(table.iter_profiles(
@@ -122,7 +117,7 @@ def fold_rna(table: MaskPosTable | ClustPosTable,
                     pass_n_procs=False)
 
 
-def fold_profile(rna: RNAProfile, out_dir: Path, **kwargs):
+def fold_section(rna: RNAProfile, out_dir: Path, **kwargs):
     """ Fold a section of an RNA from one mutational profile. """
     ct_file = fold(rna, out_dir=out_dir, **kwargs)
     dot_file = ct2dot(ct_file)
