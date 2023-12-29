@@ -22,6 +22,12 @@ logger = getLogger(__name__)
 
 
 def fold(rna: RNAProfile, *,
+         fold_temp: float,
+         fold_constraint: Path | None,
+         fold_md: int,
+         fold_mfe: bool,
+         fold_max: int,
+         fold_percent: float,
          out_dir: Path,
          temp_dir: Path,
          keep_temp: bool,
@@ -29,7 +35,20 @@ def fold(rna: RNAProfile, *,
     """ Run the 'Fold' program of RNAstructure. """
     ct_file = rna.get_ct_file(out_dir)
     if need_write(ct_file, force):
-        cmd = [RNASTRUCTURE_FOLD_CMD]
+        cmd = [RNASTRUCTURE_FOLD_CMD, "--temperature", fold_temp]
+        # Constraints.
+        if fold_constraint is not None:
+            cmd.extend(["--constraint", fold_constraint])
+        # Maximum distance between paired bases.
+        if fold_md > 0:
+            cmd.extend(["--maxdistance", fold_md])
+        # Predict only the minimum free energy structure.
+        if fold_mfe:
+            cmd.append("--MFE")
+        # Maximum number of structures.
+        cmd.extend(["--maximum", fold_max])
+        # Maximum % difference between free energies of structures.
+        cmd.extend(["--percent", fold_percent])
         # Write the DMS reactivities file for the RNA.
         cmd.extend(["--DMS", dms_file := rna.to_dms(temp_dir)])
         # Write a temporary FASTA file for the RNA.

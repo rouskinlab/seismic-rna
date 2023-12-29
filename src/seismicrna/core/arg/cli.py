@@ -731,6 +731,26 @@ opt_fold = Option(
     help="Predict the secondary structure using the RNAstructure Fold program"
 )
 
+opt_quantile = Option(
+    ("--quantile", "-q"),
+    type=float,
+    default=0.,
+    help="Quantile for normalizing ratios of mutation rates; must be in [0, 1]"
+)
+
+opt_fold_temp = Option(
+    ("--fold-temp",),
+    type=float,
+    default=310.15,
+    help="Temperature at which to predict structures (in Kelvin)"
+)
+
+opt_fold_constraint = Option(
+    ("--fold-constraint",),
+    type=click.Path(exists=True, dir_okay=False),
+    help="File of constraints for predicting structures"
+)
+
 opt_fold_md = Option(
     ("--fold-md",),
     type=int,
@@ -739,18 +759,26 @@ opt_fold_md = Option(
          "(use 0 for no limit)"
 )
 
-opt_fold_t = Option(
-    ("--fold-t",),
-    type=float,
-    default=310.15,
-    help="Temperature at which to predict structures (in Kelvin)"
+opt_fold_mfe = Option(
+    ("--fold-mfe/--fold-sub",),
+    type=bool,
+    default=False,
+    help="Predict only the minimum free energy (MFE) structure, without any "
+         "suboptimal structures"
 )
 
-opt_quantile = Option(
-    ("--quantile", "-q"),
+opt_fold_max = Option(
+    ("--fold-max",),
+    type=int,
+    default=20,
+    help="Maximum number of predicted structures"
+)
+
+opt_fold_percent = Option(
+    ("--fold-percent",),
     type=float,
-    default=0.,
-    help="Quantile for normalizing ratios of mutation rates; must be in [0, 1]"
+    default=20.,
+    help="Maximum % difference in energy between suboptimal structures"
 )
 
 # Graph
