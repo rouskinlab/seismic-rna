@@ -16,7 +16,7 @@ All mutation rates less than that quantile will then be scaled up linearly,
 while mutation rates greater than that quantile will be set to 1.
 
 .. image::
-    winsorize.png
+    normalize.png
 
 For example, if you chose quantile 1, then the value at quantile 1 (i.e. the
 maximum mutation rate) would be set to 1, and all other mutation rates would be

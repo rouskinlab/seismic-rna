@@ -48,7 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../steps/index.html">Step-By-Step</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">How To</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="runwf.html">Run SEISMIC-RNA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="run/index.html">Run SEISMIC-RNA</a></li>
 <li class="toctree-l2"><a class="reference internal" href="inputs.html">List Input Files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sections.html">Define Sections</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Normalize Mutation Rates</a><ul>
@@ -104,7 +104,7 @@ mutation rates) require that the mutation rates be normalized first.</p>
 rates to set to 1 using <code class="docutils literal notranslate"><span class="pre">--quantile</span></code> (<code class="docutils literal notranslate"><span class="pre">-q</span></code>).
 All mutation rates less than that quantile will then be scaled up linearly,
 while mutation rates greater than that quantile will be set to 1.</p>
-<img alt="../_images/winsorize.png" src="../_images/winsorize.png" />
+<img alt="../_images/normalize.png" src="../_images/normalize.png" />
 <p>For example, if you chose quantile 1, then the value at quantile 1 (i.e. the
 maximum mutation rate) would be set to 1, and all other mutation rates would be
 scaled proportionally.
