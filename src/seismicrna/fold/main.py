@@ -10,7 +10,6 @@ from ..core.arg import (CMD_FOLD,
                         arg_input_path,
                         opt_temp_dir,
                         opt_keep_temp,
-                        arg_fasta,
                         opt_sections_file,
                         opt_coords,
                         opt_primers,
@@ -24,7 +23,9 @@ from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
                            require_dependency)
 from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
 from ..core.rna import RNAProfile
-from ..core.seq import DNA, RefSections, Section, parse_fasta
+from ..core.seq import DNA, RefSections, RefSeqs, Section
+from ..relate.data import RelateLoader
+from ..relate.report import RelateReport
 from ..table.base import MaskPosTable, ClustPosTable
 from ..table.load import load_pos_tables
 
@@ -33,7 +34,6 @@ logger = getLogger(__name__)
 DEFAULT_QUANTILE = 0.95
 
 params = [
-    arg_fasta,
     arg_input_path,
     opt_sections_file,
     opt_coords,
@@ -56,8 +56,7 @@ def cli(*args, **kwargs):
 
 @lock_temp_dir
 @docdef.auto()
-def run(fasta: str,
-        input_path: tuple[str, ...],
+def run(input_path: tuple[str, ...],
         *,
         sections_file: str | None,
         coords: tuple[tuple[str, int, int], ...],
@@ -77,17 +76,30 @@ def run(fasta: str,
         logger.warning("Fold needs normalized mutation rates, but got quantile "
                        f"= {quantile}; setting quantile to {DEFAULT_QUANTILE}")
         quantile = DEFAULT_QUANTILE
+    # Gather the tables and reference sequences.
+    tables = list()
+    ref_seqs = RefSeqs()
+    for table in load_pos_tables(input_path):
+        # Fold can use only positional tables from Mask and Cluster.
+        if isinstance(table, (MaskPosTable, ClustPosTable)):
+            tables.append(table)
+            # Fetch the reference sequence from the Relate step.
+            ref_seqs.add(
+                table.ref,
+                RelateLoader.load(
+                    RelateReport.build_path(top=table.top,
+                                            sample=table.sample,
+                                            ref=table.ref)
+                ).refseq
+            )
     # Get the sections for every reference sequence.
-    ref_sections = RefSections(parse_fasta(Path(fasta), DNA),
+    ref_sections = RefSections(ref_seqs,
                                sects_file=(Path(sections_file)
                                            if sections_file
                                            else None),
                                coords=coords,
                                primers=primers,
                                primer_gap=primer_gap)
-    # Initialize the table loaders.
-    tables = [table for table in load_pos_tables(input_path)
-              if isinstance(table, (MaskPosTable, ClustPosTable))]
     # Fold the RNA profiles.
     return list(chain(dispatch(fold_profile,
                                max_procs,

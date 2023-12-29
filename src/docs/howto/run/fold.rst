@@ -5,14 +5,6 @@ Fold: Predict RNA secondary structures using mutation rates
 Fold: Input files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Fold input file: Reference sequences
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-You need one file of reference sequences in FASTA format (for details on this
-format, see :doc:`../../formats/data/fasta`).
-If your file has characters or formatting incompatible with SEISMIC-RNA, then
-you can fix it using the :doc:`../cleanfa` tool.
-
 Fold input file: Mask or Cluster positional table
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -26,9 +18,7 @@ See :doc:`../inputs` for ways to list multiple files.
 To predict structures using the mutational profiles in all valid tables in the
 directory ``{out}``, you could use the command ::
 
-    seismic fold {refs.fa} {out}
-
-where ``{refs.fa}`` is the path to the file of reference sequences.
+    seismic fold {out}
 
 Fold: Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

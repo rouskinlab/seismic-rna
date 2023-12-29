@@ -317,7 +317,6 @@ def run(*,
     if fold:
         fold_mod.run(
             input_path=input_path,
-            fasta=fasta,
             sections_file=sections_file,
             coords=coords,
             primers=primers,

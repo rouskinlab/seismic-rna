@@ -313,7 +313,6 @@ def run(input_path: tuple[str, ...], *,
                      if refs_meta
                      else dict())
     for table in load_all_tables(input_path):
-        print("TABLE:", table)
         if isinstance(table, (MaskTable, ClustTable, ClustFreqTable)):
             tables[(table.top, table.sample)].append(table)
     return list(dispatch(export_sample,

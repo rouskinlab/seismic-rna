@@ -18,6 +18,7 @@ from typing import Iterable, Sequence
 import numpy as np
 import pandas as pd
 
+from .refs import RefSeqs
 from .xna import BASEA, BASEC, DNA
 
 logger = getLogger(__name__)
@@ -802,7 +803,7 @@ class RefSections(object):
     """ A collection of sections, grouped by reference. """
 
     def __init__(self,
-                 refseqs: Iterable[tuple[str, DNA]], *,
+                 ref_seqs: Iterable[tuple[str, DNA]], *,
                  sects_file: Path | None = None,
                  coords: Iterable[tuple[str, int, int]] = (),
                  primers: Iterable[tuple[str, DNA, DNA]] = (),
@@ -826,7 +827,7 @@ class RefSections(object):
         ref_primers = get_coords_by_ref(primers)
         # For each reference, generate sections from the coordinates.
         self._sections: dict[str, dict[tuple[int, int], Section]] = dict()
-        for ref, seq in refseqs:
+        for ref, seq in RefSeqs(ref_seqs):
             self._sections[ref] = dict()
             for end5, end3 in ref_coords[ref]:
                 # Add a section for each pair of 5' and 3' coordinates.

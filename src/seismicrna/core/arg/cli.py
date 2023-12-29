@@ -722,13 +722,28 @@ opt_table_clust = Option(
     help="Tabulate per cluster"
 )
 
-# RNA structure prediction
+# Fold
 
 opt_fold = Option(
     ("--fold/--no-fold",),
     type=bool,
     default=False,
     help="Predict the secondary structure using the RNAstructure Fold program"
+)
+
+opt_fold_md = Option(
+    ("--fold-md",),
+    type=int,
+    default=0,
+    help="Maximum distance between two paired bases in predicted structures "
+         "(use 0 for no limit)"
+)
+
+opt_fold_t = Option(
+    ("--fold-t",),
+    type=float,
+    default=310.15,
+    help="Temperature at which to predict structures (in Kelvin)"
 )
 
 opt_quantile = Option(
@@ -738,7 +753,7 @@ opt_quantile = Option(
     help="Quantile for normalizing ratios of mutation rates; must be in [0, 1]"
 )
 
-# Graphing
+# Graph
 
 opt_comppair = Option(
     ("--comppair/--no-comppair",),
