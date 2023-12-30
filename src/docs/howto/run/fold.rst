@@ -60,6 +60,23 @@ Fold setting: Quantile for normalization
 Folding requires that the mutation rates be normalized to the interval [0, 1].
 See :doc:`../normalize` for ways to normalize mutation rates.
 
+Fold setting: RNAstructure parameters
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+``seismic fold`` exposes several options for the RNAstructure Fold program (see
+the `documentation for Fold`_ for details on each option):
+
+========================== =========================== =============================================================================================
+Option in ``seismic fold`` Option in RNAstructure Fold Brief explanation
+========================== =========================== =============================================================================================
+``--fold-temp``            ``--temperature``           temperature (K) of folding
+``--fold-constraint``      ``--constraint``            optional `folding constraints file`_
+``--fold-md``              ``--maxdistance``           maximum distance between paired bases
+``--fold-mfe``             ``--MFE``                   predict only the optimal structure (same result as ``--fold-max 1``, but about twice as fast)
+``--fold-max``             ``--maximum``               maximum number of structures to predict (ignored if using ``--fold-mfe``)
+``--fold-percent``         ``--percent``               maximum % difference in free energy of predicted structures (ignored if using ``--fold-mfe``)
+========================== =========================== =============================================================================================
+
 Fold: Output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -127,4 +144,6 @@ To draw a structure from SEISMIC-RNA in VARNA:
     We recommend setting the color for missing data (-1) to white or light gray
     and using a continuous (not discrete) color scale for the mutation data.
 
+.. _documentation for Fold: https://rna.urmc.rochester.edu/Text/Fold.html
+.. _folding constraints file: https://rna.urmc.rochester.edu/Text/File_Formats.html#Constraint
 .. _VARNA: https://varna.lisn.upsaclay.fr/
