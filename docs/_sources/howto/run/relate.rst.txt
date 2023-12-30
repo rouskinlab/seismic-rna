@@ -19,7 +19,7 @@ Relate input file: Alignment maps
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 You can give any number of alignment map files, each of which must be in SAM,
-BAM, or CRAM format (collectively, "XAM" format).
+BAM, or CRAM (collectively, "XAM") format.
 See :doc:`../../formats/data/xam` for more information.
 
 .. note::
@@ -48,8 +48,8 @@ Relate settings shared with alignment
 
 Because you can begin the SEISMIC-RNA workflow at ``seismic align`` or, if you
 already have alignment map files, can begin at ``seismic relate``, these two
-commands share several options: ``--phred-enc``, ``--min-mapq``,``--min-reads``,
-and ``--out-dir`` have the same functions in both commands.
+commands share the options ``--phred-enc``, ``--min-mapq``, ``--min-reads``, and
+``--out-dir``.
 
 Relate setting: Minimum Phred score
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
