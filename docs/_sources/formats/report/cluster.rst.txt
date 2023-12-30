@@ -11,8 +11,6 @@ Name                                     Data Type
 Name of Sample                           str
 Name of Reference                        str
 Name of Section                          str
-5' end of Section                        int
-3' end of Section                        int
 Number of Unique Bit Vectors             int
 Maximum Number of Clusters               int
 Number of Independent EM Runs            int
@@ -44,8 +42,6 @@ Cluster Report: Example
         "Name of Sample": "ldi",
         "Name of Reference": "sars2_1799",
         "Name of Section": "fse",
-        "5' end of Section": 198,
-        "3' end of Section": 426,
         "Number of Unique Bit Vectors": 104850,
         "Maximum Number of Clusters": 2,
         "Number of Independent EM Runs": 1,

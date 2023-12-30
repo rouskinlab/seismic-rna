@@ -855,13 +855,15 @@ class Report(FileIO, ABC):
             try:
                 value = kwargs.pop(name)
             except KeyError:
-                # If the report is missing that field (probably because
-                # it was made by an older version of SEISMIC-RNA), then
-                # use the default value, if it exists.
+                # If the report file is missing that field (e.g. because
+                # it came from a different version of SEISMIC-RNA), then
+                # if the field has a default value, use it and just log
+                # a warning (to make different versions compatible); if
+                # not, the versions are incompatible, so raise an error.
                 try:
                     value = cli_defaults[name]
                 except KeyError:
-                    raise ValueError(f"Field {repr(name)} with no default "
+                    raise ValueError(f"Field {repr(name)} (with no default) "
                                      f"is missing from {kwargs}")
                 else:
                     logger.warning(f"Field {repr(name)} is missing: using "
@@ -873,8 +875,12 @@ class Report(FileIO, ABC):
                 value = value(self)
             setattr(self, name, value)
         if kwargs:
-            raise ValueError(f"Invalid keywords for {type(self).__name__}: "
-                             f"{list(kwargs)}")
+            # If the report file has extra fields (e.g. because it came
+            # from a different version of SEISMIC-RNA), then just log a
+            # warning and ignore the extra fields (to make different
+            # versions compatible).
+            logger.warning(f"Got extra fields for {type(self).__name__}: "
+                           f"{list(kwargs)}")
 
     def get_field(self, field: Field, missing_ok: bool = False):
         """ Return the value of a field of the report using the field

@@ -674,14 +674,14 @@ opt_em_runs = Option(
 opt_min_em_iter = Option(
     ("--min-em-iter",),
     type=int,
-    default=10,
+    default=8,
     help="Minimum iterations per clustering run"
 )
 
 opt_max_em_iter = Option(
     ("--max-em-iter",),
     type=int,
-    default=300,
+    default=512,
     help="Maximum iterations per clustering run"
 )
 
