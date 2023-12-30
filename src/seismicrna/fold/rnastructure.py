@@ -121,6 +121,8 @@ def parse_rnastructure_ct_title(line: str):
     where {length} is the number of positions in the structure, {ref} is
     the name of the reference, and {energy} is the predicted free energy
     of folding.
+    Also handle the edge case when RNAstructure predicts no base pairs
+    (and thus does not write the free energy) by returning NaN.
 
     Parameters
     ----------
@@ -133,9 +135,19 @@ def parse_rnastructure_ct_title(line: str):
         Tuple of number of positions in the structure, predicted free
         energy of folding, and name of the reference sequence.
     """
-    if not (m := re.match(r"\s*([0-9]+)\s+ENERGY = (-?[0-9.]+)\s+(\S+)", line)):
-        raise ValueError(f"Failed to parse title from CT line: {repr(line)}")
-    length, energy, ref = m.groups()
+    # Parse the line assuming it contains an energy term.
+    if m := re.match(r"\s*([0-9]+)\s+ENERGY = (-?[0-9.]+)\s+(\S+)", line):
+        length, energy, ref = m.groups()
+    else:
+        # If that failed, then parse the line assuming it does not.
+        if m := re.match(r"\s*([0-9]+)\s+(\S+)", line):
+            length, ref = m.groups()
+        else:
+            # The line violated the basic length-and-title format.
+            raise ValueError(f"Failed to parse CT title line: {repr(line)}")
+        logger.warning("CT line contains no energy term (probably because no "
+                       f"base pairs were predicted): {repr(line)}")
+        energy = "nan"
     return int(length), float(energy), ref
 
 
