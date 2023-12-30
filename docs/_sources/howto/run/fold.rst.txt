@@ -9,8 +9,7 @@ Fold input file: Mask or Cluster positional table
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 You can give any number of positional table files of masked or clustered reads
-(``mask-per-pos.csv`` or ``clust-per-pos.csv``, respectively) as inputs for the
-Fold step.
+(``mask-per-pos.csv`` or ``clust-per-pos.csv``, respectively) as inputs.
 See :doc:`../inputs` for ways to list multiple files.
 (SEISMIC-RNA will not crash if you give other type of table files, such as a
 ``relate-per-pos.csv`` or ``mask-per-read.csv.gz`` file, but will ignore them.)

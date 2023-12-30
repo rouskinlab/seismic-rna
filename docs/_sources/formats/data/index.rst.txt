@@ -12,3 +12,4 @@ Data Formats
     ct
     db
     varna-color
+    sample
