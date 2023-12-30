@@ -50,7 +50,7 @@ You can give any input file to ``seismic wf`` if you could give it to any
 individual command in the workflow.
 
 The only required input file is of the reference sequences, which is used by the
-Align, Fold, and Relate steps; see :ref:`relate_refs` for more information.
+Align and Relate steps; see :ref:`relate_refs` for more information.
 This file must be the first positional argument::
 
     seismic wf {refs.fa}

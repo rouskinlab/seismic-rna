@@ -22,6 +22,12 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.fold.report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.fold.rnastructure
    :members:
    :undoc-members:

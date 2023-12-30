@@ -20,5 +20,6 @@ read and widely supported by software.
     relate
     mask
     cluster
+    fold
 
 .. _JSON format: https://en.wikipedia.org/wiki/JSON

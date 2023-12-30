@@ -668,6 +668,42 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-fold-temp">
+<span class="sig-name descname"><span class="pre">--fold-temp</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fold_temp&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-fold-temp" title="Permalink to this definition"></a></dt>
+<dd><p>Temperature at which to predict structures (in Kelvin)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-fold-constraint">
+<span class="sig-name descname"><span class="pre">--fold-constraint</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fold_constraint&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-fold-constraint" title="Permalink to this definition"></a></dt>
+<dd><p>File of constraints for predicting structures</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-fold-md">
+<span class="sig-name descname"><span class="pre">--fold-md</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fold_md&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-fold-md" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum distance between two paired bases in predicted structures (use 0 for no limit)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-fold-mfe">
+<span id="cmdoption-seismic-wf-fold-sub"></span><span class="sig-name descname"><span class="pre">--fold-mfe</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--fold-sub</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-fold-mfe" title="Permalink to this definition"></a></dt>
+<dd><p>Predict only the minimum free energy (MFE) structure, without any suboptimal structures</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-fold-max">
+<span class="sig-name descname"><span class="pre">--fold-max</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fold_max&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-fold-max" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of predicted structures</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-fold-percent">
+<span class="sig-name descname"><span class="pre">--fold-percent</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fold_percent&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-fold-percent" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum % difference in energy between suboptimal structures</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-export">
 <span id="cmdoption-seismic-wf-no-export"></span><span class="sig-name descname"><span class="pre">--export</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-export</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-export" title="Permalink to this definition"></a></dt>
 <dd><p>Export per-sample results for the seismic-graph web app</p>
@@ -1495,7 +1531,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <section id="seismic-fold">
 <span id="cli-fold"></span><h3>seismic fold<a class="headerlink" href="#seismic-fold" title="Permalink to this headline"></a></h3>
 <p>Predict RNA secondary structures using mutation rates.</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>fold<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>FASTA<span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>fold<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
 </pre></div>
 </div>
 <p class="rubric">Options</p>
@@ -1530,6 +1566,42 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-fold-temp">
+<span class="sig-name descname"><span class="pre">--fold-temp</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fold_temp&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-fold-temp" title="Permalink to this definition"></a></dt>
+<dd><p>Temperature at which to predict structures (in Kelvin)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-fold-constraint">
+<span class="sig-name descname"><span class="pre">--fold-constraint</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fold_constraint&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-fold-constraint" title="Permalink to this definition"></a></dt>
+<dd><p>File of constraints for predicting structures</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-fold-md">
+<span class="sig-name descname"><span class="pre">--fold-md</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fold_md&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-fold-md" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum distance between two paired bases in predicted structures (use 0 for no limit)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-fold-mfe">
+<span id="cmdoption-seismic-fold-fold-sub"></span><span class="sig-name descname"><span class="pre">--fold-mfe</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--fold-sub</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-fold-mfe" title="Permalink to this definition"></a></dt>
+<dd><p>Predict only the minimum free energy (MFE) structure, without any suboptimal structures</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-fold-max">
+<span class="sig-name descname"><span class="pre">--fold-max</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fold_max&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-fold-max" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of predicted structures</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-fold-percent">
+<span class="sig-name descname"><span class="pre">--fold-percent</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fold_percent&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-fold-percent" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum % difference in energy between suboptimal structures</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-fold-t">
 <span id="cmdoption-seismic-fold-temp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--temp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;temp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-t" title="Permalink to this definition"></a></dt>
 <dd><p>Destination for all temporary files</p>
@@ -1560,12 +1632,6 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <p class="rubric">Arguments</p>
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-fold-arg-FASTA">
-<span id="cmdoption-seismic-fold-arg-fasta"></span><span class="sig-name descname"><span class="pre">FASTA</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-arg-FASTA" title="Permalink to this definition"></a></dt>
-<dd><p>Required argument</p>
-</dd></dl>
-
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-fold-arg-INPUT_PATH">
 <span id="cmdoption-seismic-fold-arg-input-path"></span><span class="sig-name descname"><span class="pre">INPUT_PATH</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-arg-INPUT_PATH" title="Permalink to this definition"></a></dt>

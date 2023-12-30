@@ -24,6 +24,12 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.core.seq.refs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.core.seq.section
    :members:
    :undoc-members:

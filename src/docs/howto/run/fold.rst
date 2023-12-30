@@ -73,6 +73,13 @@ folded) and ``{profile}`` is the mutational profile of those data, which can be
 ``average`` (ensemble average) or ``cluster-{n}-{i}`` (where ``{n}`` is the
 number of clusters and ``{i}`` is the cluster number).
 
+Fold output file: Fold report
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+SEISMIC-RNA writes a report file, ``fold-report.json``, to record the settings
+you used for running the Fold step.
+See :doc:`../../formats/report/fold` for more information.
+
 Fold output file: Connectivity table
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

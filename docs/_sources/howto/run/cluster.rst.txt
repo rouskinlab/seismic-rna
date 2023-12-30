@@ -120,9 +120,10 @@ settings you used for running the Cluster step and summarizes the results, such
 as the number of clusters, number of iterations, and the BIC scores.
 See :doc:`../../formats/report/cluster` for more information.
 
-You **must** look at the report file to determine whether your clusters come
-from true alternative structures or just noise and artifacts.
-See :ref:`clust_verify` for how to verify that your clusters are real.
+.. note::
+    You **must** look at the report file to determine whether your clusters come
+    from true alternative structures or are just noise and artifacts.
+    See :ref:`clust_verify` for how to verify that your clusters are real.
 
 .. _clust_verify:
 

@@ -112,13 +112,6 @@
 <h1>Fold: Predict RNA secondary structures using mutation rates<a class="headerlink" href="#fold-predict-rna-secondary-structures-using-mutation-rates" title="Permalink to this headline"></a></h1>
 <section id="fold-input-files">
 <h2>Fold: Input files<a class="headerlink" href="#fold-input-files" title="Permalink to this headline"></a></h2>
-<section id="fold-input-file-reference-sequences">
-<h3>Fold input file: Reference sequences<a class="headerlink" href="#fold-input-file-reference-sequences" title="Permalink to this headline"></a></h3>
-<p>You need one file of reference sequences in FASTA format (for details on this
-format, see <a class="reference internal" href="../../formats/data/fasta.html"><span class="doc">FASTA: Reference sequences</span></a>).
-If your file has characters or formatting incompatible with SEISMIC-RNA, then
-you can fix it using the <a class="reference internal" href="../cleanfa.html"><span class="doc">Clean FASTA Files</span></a> tool.</p>
-</section>
 <section id="fold-input-file-mask-or-cluster-positional-table">
 <h3>Fold input file: Mask or Cluster positional table<a class="headerlink" href="#fold-input-file-mask-or-cluster-positional-table" title="Permalink to this headline"></a></h3>
 <p>You can give any number of positional table files of masked or clustered reads
@@ -129,10 +122,9 @@ See <a class="reference internal" href="../inputs.html"><span class="doc">List I
 <code class="docutils literal notranslate"><span class="pre">relate-per-pos.csv</span></code> or <code class="docutils literal notranslate"><span class="pre">mask-per-read.csv.gz</span></code> file, but will ignore them.)</p>
 <p>To predict structures using the mutational profiles in all valid tables in the
 directory <code class="docutils literal notranslate"><span class="pre">{out}</span></code>, you could use the command</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">fold</span> <span class="p">{</span><span class="n">refs</span><span class="o">.</span><span class="n">fa</span><span class="p">}</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">fold</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span>
 </pre></div>
 </div>
-<p>where <code class="docutils literal notranslate"><span class="pre">{refs.fa}</span></code> is the path to the file of reference sequences.</p>
 </section>
 </section>
 <section id="fold-settings">
@@ -184,6 +176,12 @@ The files for each predicted structure are named <code class="docutils literal n
 folded) and <code class="docutils literal notranslate"><span class="pre">{profile}</span></code> is the mutational profile of those data, which can be
 <code class="docutils literal notranslate"><span class="pre">average</span></code> (ensemble average) or <code class="docutils literal notranslate"><span class="pre">cluster-{n}-{i}</span></code> (where <code class="docutils literal notranslate"><span class="pre">{n}</span></code> is the
 number of clusters and <code class="docutils literal notranslate"><span class="pre">{i}</span></code> is the cluster number).</p>
+<section id="fold-output-file-fold-report">
+<h3>Fold output file: Fold report<a class="headerlink" href="#fold-output-file-fold-report" title="Permalink to this headline"></a></h3>
+<p>SEISMIC-RNA writes a report file, <code class="docutils literal notranslate"><span class="pre">fold-report.json</span></code>, to record the settings
+you used for running the Fold step.
+See <a class="reference internal" href="../../formats/report/fold.html"><span class="doc">Fold Report</span></a> for more information.</p>
+</section>
 <section id="fold-output-file-connectivity-table">
 <h3>Fold output file: Connectivity table<a class="headerlink" href="#fold-output-file-connectivity-table" title="Permalink to this headline"></a></h3>
 <p>The primary output is a connectivity table file.
