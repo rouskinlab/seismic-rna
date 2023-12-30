@@ -106,6 +106,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                 min_mapq: int,
                 min_reads: int,
                 cram: bool,
+                force: bool,
                 n_procs: int = 1) -> list[Path]:
     """ Run all steps of the alignment pipeline for one FASTQ file or
     one pair of mated FASTQ files. """
@@ -370,7 +371,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                          reads_refs=reads_refs,
                          began=began,
                          ended=ended)
-    report.save(out_dir, force=True)
+    report.save(out_dir, force=force)
     # Return a list of name-sorted XAM files, each of which contains a
     # set of reads that all align to the same reference.
     return xams_out
@@ -394,8 +395,10 @@ def fqs_pipeline(fq_units: list[FastqUnit],
     temp_refs = set(filter(None, (fq_unit.ref for fq_unit in fq_units)))
     # Write a temporary FASTA file and Bowtie2 index for each
     # demultiplexed FASTQ.
-    temp_fasta_paths = write_temp_ref_files(temp_dir, main_fasta,
-                                            temp_refs, max_procs)
+    temp_fasta_paths = write_temp_ref_files(temp_dir,
+                                            main_fasta,
+                                            temp_refs,
+                                            max_procs)
     # Check if the main FASTA file already has a Bowtie2 index.
     main_index = main_fasta.with_suffix("")
     if not all(index.is_file() for index in get_bowtie2_index_paths(main_index)):
@@ -441,7 +444,8 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                 logger.debug(f"Created directory: {main_index.parent}")
                 # Build the Bowtie2 index.
                 try:
-                    run_bowtie2_build(main_fasta, main_index,
+                    run_bowtie2_build(main_fasta,
+                                      main_index,
                                       n_procs=max_procs)
                     # Create a symbolic link to the reference file in
                     # the same directory as the new index.
@@ -505,7 +509,7 @@ def figure_alignments(fq_units: list[FastqUnit], refs: set[str]):
             # The FASTQ contains reads from only one reference.
             # Confirm that the reference actually exists.
             if fq_unit.ref not in refs:
-                logger.error(f"No reference '{fq_unit.ref}' for {fq_unit}")
+                logger.error(f"No reference {repr(fq_unit.ref)} for {fq_unit}")
                 continue
             fq_refs = {fq_unit.ref}
         # Add each sample-reference pair to the expected alignments.
@@ -607,6 +611,7 @@ def align_samples(fq_units: list[FastqUnit],
         xams_new = set(fqs_pipeline(fqs_to_align,
                                     fasta,
                                     out_dir=out_dir,
+                                    force=force,
                                     **kwargs))
     else:
         logger.warning("All given FASTQ files have already been aligned")

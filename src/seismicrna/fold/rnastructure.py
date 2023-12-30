@@ -49,11 +49,11 @@ def fold(rna: RNAProfile, *,
         cmd.extend(["--maximum", fold_max])
         # Maximum % difference between free energies of structures.
         cmd.extend(["--percent", fold_percent])
-        # Write the DMS reactivities file for the RNA.
+        # DMS reactivities file for the RNA.
         cmd.extend(["--DMS", dms_file := rna.to_dms(temp_dir)])
-        # Write a temporary FASTA file for the RNA.
+        # Temporary FASTA file for the RNA.
         cmd.append(fasta := rna.to_fasta(temp_dir))
-        # Determine the path of the temporary CT file.
+        # Path of the temporary CT file.
         cmd.append(ct_temp := rna.get_ct_file(temp_dir))
         try:
             # Run the command.

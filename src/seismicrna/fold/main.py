@@ -1,9 +1,11 @@
+from datetime import datetime
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
 
 from click import command
 
+from .report import FoldReport
 from .rnastructure import fold, ct2dot
 from ..core.arg import (CMD_FOLD,
                         docdef,
@@ -153,16 +155,51 @@ def fold_profile(table: MaskPosTable | ClustPosTable,
                     args=as_list_of_tuples(table.iter_profiles(
                         sections=sections, quantile=quantile)
                     ),
-                    kwargs=dict(out_dir=table.top, **kwargs),
+                    kwargs=dict(out_dir=table.top,
+                                quantile=quantile,
+                                **kwargs),
                     pass_n_procs=False)
 
 
-def fold_section(rna: RNAProfile, out_dir: Path, **kwargs):
+def fold_section(rna: RNAProfile,
+                 out_dir: Path,
+                 quantile: float,
+                 fold_temp: float,
+                 fold_constraint: Path | None,
+                 fold_md: int,
+                 fold_mfe: bool,
+                 fold_max: int,
+                 fold_percent: float,
+                 force: bool,
+                 **kwargs):
     """ Fold a section of an RNA from one mutational profile. """
-    ct_file = fold(rna, out_dir=out_dir, **kwargs)
-    dot_file = ct2dot(ct_file)
-    varna_color_file = rna.to_varna_color_file(out_dir)
-    return ct_file, dot_file, varna_color_file
+    began = datetime.now()
+    rna.to_varna_color_file(out_dir)
+    ct_file = fold(rna,
+                   out_dir=out_dir,
+                   fold_temp=fold_temp,
+                   fold_constraint=fold_constraint,
+                   fold_md=fold_md,
+                   fold_mfe=fold_mfe,
+                   fold_max=fold_max,
+                   fold_percent=fold_percent,
+                   force=force,
+                   **kwargs)
+    ct2dot(ct_file)
+    ended = datetime.now()
+    report = FoldReport(sample=rna.sample,
+                        ref=rna.ref,
+                        sect=rna.sect,
+                        profile=rna.profile,
+                        quantile=quantile,
+                        fold_temp=fold_temp,
+                        fold_md=fold_md,
+                        fold_mfe=fold_mfe,
+                        fold_max=fold_max,
+                        fold_percent=fold_percent,
+                        began=began,
+                        ended=ended)
+    return report.save(out_dir, force=force)
 
 ########################################################################
 #                                                                      #

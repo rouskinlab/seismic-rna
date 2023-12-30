@@ -17,7 +17,7 @@ import numpy as np
 
 from . import path
 from .arg import (cli_defaults,
-    opt_phred_enc,
+                  opt_phred_enc,
                   opt_fastqc,
                   opt_cutadapt,
                   opt_cut_q1,
@@ -50,11 +50,17 @@ from .arg import (cli_defaults,
                   opt_bt2_local,
                   opt_cram,
                   opt_min_reads,
-                  opt_min_mapq)
+                  opt_min_mapq,
+                  opt_fold_temp,
+                  opt_fold_md,
+                  opt_fold_mfe,
+                  opt_fold_max,
+                  opt_fold_percent,
+                  opt_quantile)
 from .io import FileIO, ReadBatchIO, RefIO
 from .rel import HalfRelPattern
 from .version import __version__
-from .write import write_mode
+from .write import need_write, write_mode
 
 logger = getLogger(__name__)
 
@@ -713,6 +719,41 @@ ClustsVarInfoF = Field("var_info",
                        oconv=get_oconv_dict_float(),
                        check_val=check_clusts_floats)
 
+# Folding
+
+ProfileF = Field("profile",
+                 "Name of Profile",
+                 str)
+
+Quantile = Field("quantile",
+                 opt_quantile.help,
+                 float,
+                 check_val=check_probability)
+
+FoldTempF = Field("fold_temp",
+                  opt_fold_temp.help,
+                  float,
+                  check_val=check_nonneg_float)
+
+FoldMaxDistF = Field("fold_md",
+                     opt_fold_md.help,
+                     int,
+                     check_val=check_nonneg_int)
+
+FoldMinFreeEnergyF = Field("fold_mfe",
+                           opt_fold_mfe.help,
+                           bool)
+
+FoldMaxStructsF = Field("fold_max",
+                        opt_fold_max.help,
+                        int,
+                        check_val=check_nonneg_int)
+
+FoldPercent = Field("fold_percent",
+                    opt_fold_percent.help,
+                    float,
+                    check_val=check_percentage)
+
 
 # Field managing functions
 
@@ -863,9 +904,10 @@ class Report(FileIO, ABC):
         """ Save the report to a JSON file. """
         text = json.dumps(self.to_dict(), indent=4)
         save_path = self.get_path(top)
-        with open(save_path, write_mode(force)) as f:
-            f.write(text)
-        logger.info(f"Wrote {self} to {save_path}")
+        if need_write(save_path, force):
+            with open(save_path, write_mode(force)) as f:
+                f.write(text)
+            logger.info(f"Wrote {self} to {save_path}")
         return save_path
 
     def __setattr__(self, key: str, value: Any):

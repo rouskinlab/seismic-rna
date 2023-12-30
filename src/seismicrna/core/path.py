@@ -514,7 +514,10 @@ FreqTableSeg = Segment("freq-table",
                        {TABLE: FreqTableField, EXT: FreqTableExt},
                        frmt="{table}-freq{ext}")
 
-# RNA Structure Formats
+# Folding
+FoldRepSeg = Segment("fold-rep",
+                     {PROFILE: NameField, EXT: ReportExt},
+                     frmt="{profile}__fold-report{ext}")
 ConnectTableSeg = Segment("rna-ct",
                           {PROFILE: NameField, EXT: ConnectTableExt})
 DotBracketSeg = Segment("rna-dot",
