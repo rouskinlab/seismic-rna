@@ -1,17 +1,71 @@
-from click import group
+from collections import defaultdict
+from pathlib import Path
 
-from . import web
-from ..core.arg import CMD_EXPORT
+from click import command
+
+from .meta import parse_refs_metadata, parse_samples_metadata
+from .web import export_sample
+from ..core.arg import (CMD_EXPORT,
+                        docdef,
+                        arg_input_path,
+                        opt_samples_meta,
+                        opt_refs_meta,
+                        opt_all_pos,
+                        opt_force,
+                        opt_max_procs,
+                        opt_parallel)
+from ..core.parallel import dispatch
+from ..table.base import (MaskTable,
+                          ClustTable,
+                          ClustFreqTable)
+from ..table.load import load_all_tables
 
 
-# Group for all export commands
-@group(CMD_EXPORT)
-def cli():
-    """ Export data from SEISMIC-RNA for use in other applications. """
+@docdef.auto()
+def run(input_path: tuple[str, ...], *,
+        samples_meta: str,
+        refs_meta: str,
+        all_pos: bool,
+        force: bool,
+        max_procs: int,
+        parallel: bool) -> list[Path]:
+    """ Export a file of each sample for the seismic-graph web app. """
+    tables = defaultdict(list)
+    samples_metadata = (parse_samples_metadata(Path(samples_meta))
+                        if samples_meta
+                        else dict())
+    refs_metadata = (parse_refs_metadata(Path(refs_meta))
+                     if refs_meta
+                     else dict())
+    for table in load_all_tables(input_path):
+        if isinstance(table, (MaskTable, ClustTable, ClustFreqTable)):
+            tables[(table.top, table.sample)].append(table)
+    return list(dispatch(export_sample,
+                         max_procs,
+                         parallel,
+                         pass_n_procs=False,
+                         args=list(tables.items()),
+                         kwargs=dict(samples_metadata=samples_metadata,
+                                     refs_metadata=refs_metadata,
+                                     all_pos=all_pos,
+                                     force=force)))
 
 
-# Add export commands to the CLI.
-cli.add_command(web.cli)
+params = [
+    arg_input_path,
+    opt_samples_meta,
+    opt_refs_meta,
+    opt_all_pos,
+    opt_force,
+    opt_max_procs,
+    opt_parallel,
+]
+
+
+@command(CMD_EXPORT, params=params)
+def cli(*args, **kwargs):
+    """ Export a file of each sample for the seismic-graph web app. """
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

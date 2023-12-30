@@ -1,6 +1,4 @@
 import json
-import os
-from collections import defaultdict
 from functools import cache, partial
 from logging import getLogger
 from pathlib import Path
@@ -8,20 +6,10 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from click import command
 
-from .meta import combine_metadata, parse_refs_metadata, parse_samples_metadata
+from .meta import combine_metadata
 from ..core import path
-from ..core.arg import (docdef,
-                        arg_input_path,
-                        opt_samples_meta,
-                        opt_refs_meta,
-                        opt_all_pos,
-                        opt_force,
-                        opt_max_procs,
-                        opt_parallel)
 from ..core.header import format_clust_name
-from ..core.parallel import dispatch
 from ..core.rna import parse_db_strings
 from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
@@ -39,27 +27,12 @@ from ..table.base import (COVER_REL,
                           DELET_REL,
                           INSRT_REL)
 from ..table.base import (Table,
-                          MaskTable,
-                          ClustTable,
                           PosTable,
                           ReadTable,
                           ClustFreqTable,
                           R_ADJ_TITLE)
-from ..table.load import load_all_tables
 
 logger = getLogger(__name__)
-
-COMMAND = __name__.split(os.path.extsep)[-1]
-
-params = [
-    arg_input_path,
-    opt_samples_meta,
-    opt_refs_meta,
-    opt_all_pos,
-    opt_force,
-    opt_max_procs,
-    opt_parallel,
-]
 
 META_SYMBOL = '#'
 SAMPLE = "sample"
@@ -294,42 +267,6 @@ def export_sample(top_sample: tuple[Path, str], *args, force: bool, **kwargs):
         with open(sample_file, write_mode(force)) as f:
             json.dump(get_sample_data(top, sample, *args, **kwargs), f)
     return sample_file
-
-
-@docdef.auto()
-def run(input_path: tuple[str, ...], *,
-        samples_meta: str,
-        refs_meta: str,
-        all_pos: bool,
-        force: bool,
-        max_procs: int,
-        parallel: bool) -> list[Path]:
-    """ Export a file of each sample for the seismic-graph web app. """
-    tables = defaultdict(list)
-    samples_metadata = (parse_samples_metadata(Path(samples_meta))
-                        if samples_meta
-                        else dict())
-    refs_metadata = (parse_refs_metadata(Path(refs_meta))
-                     if refs_meta
-                     else dict())
-    for table in load_all_tables(input_path):
-        if isinstance(table, (MaskTable, ClustTable, ClustFreqTable)):
-            tables[(table.top, table.sample)].append(table)
-    return list(dispatch(export_sample,
-                         max_procs,
-                         parallel,
-                         pass_n_procs=False,
-                         args=list(tables.items()),
-                         kwargs=dict(samples_metadata=samples_metadata,
-                                     refs_metadata=refs_metadata,
-                                     all_pos=all_pos,
-                                     force=force)))
-
-
-@command(COMMAND, params=params)
-def cli(*args, **kwargs):
-    """ Export a JSON file of each sample for the DREEM Web App. """
-    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

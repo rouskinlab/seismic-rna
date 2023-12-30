@@ -15,7 +15,8 @@ from .. import (demult as demultiplex_mod,
                 mask as mask_mod,
                 clust as cluster_mod,
                 table as table_mod,
-                fold as fold_mod)
+                fold as fold_mod,
+                export as export_mod)
 from ..core.arg import (CMD_WORKFLOW,
                         docdef,
                         merge_params,
@@ -27,7 +28,6 @@ from ..core.arg import (CMD_WORKFLOW,
                         opt_html,
                         opt_pdf)
 from ..core.seq import DNA
-from ..export import web as export_web_mod
 from ..graph.profile import ProfileRunner
 from ..graph.roc import ROCRunner
 
@@ -43,7 +43,7 @@ params = merge_params([opt_demultiplex],
                       [opt_fold],
                       fold_mod.params,
                       [opt_export],
-                      export_web_mod.params,
+                      export_mod.params,
                       graph_options)
 
 
@@ -340,17 +340,6 @@ def run(*,
             parallel=parallel,
             force=force,
         )
-    # Export
-    if export:
-        export_web_mod.run(
-            input_path=input_path,
-            samples_meta=samples_meta,
-            refs_meta=refs_meta,
-            all_pos=all_pos,
-            max_procs=max_procs,
-            parallel=parallel,
-            force=force,
-        )
     # Graph mutational profiles
     ProfileRunner.run(input_path=input_path,
                       rels="m",
@@ -391,6 +380,17 @@ def run(*,
                       max_procs=max_procs,
                       parallel=parallel,
                       force=force)
+    # Export
+    if export:
+        export_mod.run(
+            input_path=input_path,
+            samples_meta=samples_meta,
+            refs_meta=refs_meta,
+            all_pos=all_pos,
+            max_procs=max_procs,
+            parallel=parallel,
+            force=force,
+        )
 
 ########################################################################
 #                                                                      #
