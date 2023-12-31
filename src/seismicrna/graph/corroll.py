@@ -85,7 +85,7 @@ class RollingCorrelationRunner(TwoTableRunner, PosGraphRunner):
 
 @command(COMMAND, params=RollingCorrelationRunner.params())
 def cli(*args, **kwargs):
-    """ Create line graphs of rolling correlations between datasets. """
+    """ Rolling correlation/comparison of two profiles. """
     return RollingCorrelationRunner.run(*args, **kwargs)
 
 ########################################################################

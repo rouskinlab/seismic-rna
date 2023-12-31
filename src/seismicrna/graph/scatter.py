@@ -86,8 +86,7 @@ class ScatterPlotRunner(TwoTableRunner, PosGraphRunner):
 
 @command(COMMAND, params=ScatterPlotRunner.params())
 def cli(*args, **kwargs):
-    """ Create scatter plots between pairs of samples at each position
-    in a sequence. """
+    """ Scatter plot comparing two profiles. """
     return ScatterPlotRunner.run(*args, **kwargs)
 
 ########################################################################

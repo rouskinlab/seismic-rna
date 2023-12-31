@@ -137,7 +137,7 @@ class ROCRunner(StructOneTableRunner, PosGraphRunner):
 
 @command(COMMAND, params=ROCRunner.params())
 def cli(*args, **kwargs):
-    """ Create bar graphs of positions in a sequence. """
+    """ ROC curve comparing a profile to a structure. """
     return ROCRunner.run(*args, **kwargs)
 
 ########################################################################

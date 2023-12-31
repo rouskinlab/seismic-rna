@@ -42,7 +42,7 @@ class PosHistogramRunner(RelHistogramRunner, PosGraphRunner):
 
 @command(COMMAND, params=PosHistogramRunner.params())
 def cli(*args, **kwargs):
-    """ Histogram of relationship(s) per position in one table. """
+    """ Histogram of relationship(s) per position. """
     return PosHistogramRunner.run(*args, **kwargs)
 
 ########################################################################

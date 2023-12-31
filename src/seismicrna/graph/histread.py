@@ -42,7 +42,7 @@ class ReadHistogramRunner(RelHistogramRunner, ReadGraphRunner):
 
 @command(COMMAND, params=ReadHistogramRunner.params())
 def cli(*args, **kwargs):
-    """ Histogram of relationship(s) per read in one table. """
+    """ Histogram of relationship(s) per read. """
     return ReadHistogramRunner.run(*args, **kwargs)
 
 ########################################################################
