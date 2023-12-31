@@ -34,6 +34,30 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.graph.hist
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.graph.histpos
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.graph.histread
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.graph.histrel
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.graph.main
    :members:
    :undoc-members:

@@ -130,21 +130,6 @@
 </li>
       </ul></li>
       <li>
-    --arrange
-
-      <ul>
-        <li><a href="cli.html#cmdoption-seismic-graph-corroll-a">seismic-graph-corroll command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-seismic-graph-delprof-a">seismic-graph-delprof command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-seismic-graph-profile-a">seismic-graph-profile command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-seismic-graph-scatter-a">seismic-graph-scatter command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-seismic-wf-a">seismic-wf command line option</a>
-</li>
-      </ul></li>
-      <li>
     --bam
 
       <ul>
@@ -398,6 +383,21 @@
         <li><a href="cli.html#cmdoption-seismic-align-bt2-X">seismic-align command line option</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-bt2-X">seismic-wf command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --cgroup
+
+      <ul>
+        <li><a href="cli.html#cmdoption-seismic-graph-corroll-cgroup">seismic-graph-corroll command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-graph-delprof-cgroup">seismic-graph-delprof command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-graph-profile-cgroup">seismic-graph-profile command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-graph-scatter-cgroup">seismic-graph-scatter command line option</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-wf-cgroup">seismic-wf command line option</a>
 </li>
       </ul></li>
       <li>
@@ -937,6 +937,20 @@
 </li>
       </ul></li>
       <li>
+    --hist-bins
+
+      <ul>
+        <li><a href="cli.html#cmdoption-seismic-wf-hist-bins">seismic-wf command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --hist-margin
+
+      <ul>
+        <li><a href="cli.html#cmdoption-seismic-wf-hist-margin">seismic-wf command line option</a>
+</li>
+      </ul></li>
+      <li>
     --html
 
       <ul>
@@ -1029,6 +1043,8 @@
         <li><a href="cli.html#cmdoption-seismic-wf-max-fmut-read">seismic-wf command line option</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     --max-procs
 
@@ -1060,8 +1076,6 @@
         <li><a href="cli.html#cmdoption-seismic-wf-max-procs">seismic-wf command line option</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     --metric
 
@@ -1647,21 +1661,6 @@
 </li>
       </ul></li>
       <li>
-    -a
-
-      <ul>
-        <li><a href="cli.html#cmdoption-seismic-graph-corroll-a">seismic-graph-corroll command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-seismic-graph-delprof-a">seismic-graph-delprof command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-seismic-graph-profile-a">seismic-graph-profile command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-seismic-graph-scatter-a">seismic-graph-scatter command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-seismic-wf-a">seismic-wf command line option</a>
-</li>
-      </ul></li>
-      <li>
     -c
 
       <ul>
@@ -1988,8 +1987,6 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.arrange_table">arrange_table() (in module seismicrna.graph.base)</a>
-</li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.xna.XNA.array">array (seismicrna.core.seq.xna.XNA property)</a>
 </li>
       <li><a href="api/seismicrna.core.rel.html#seismicrna.core.rel.pattern.HalfRelPattern.as_fancy">as_fancy() (seismicrna.core.rel.pattern.HalfRelPattern class method)</a>
@@ -2177,6 +2174,8 @@
       <li><a href="api/seismicrna.clust.html#seismicrna.clust.compare.calc_var_info_pair">calc_var_info_pair() (in module seismicrna.clust.compare)</a>
 </li>
       <li><a href="api/seismicrna.clust.html#seismicrna.clust.compare.calc_var_info_pqr">calc_var_info_pqr() (in module seismicrna.clust.compare)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.cgroup_table">cgroup_table() (in module seismicrna.graph.base)</a>
 </li>
       <li><a href="api/seismicrna.demult.html#seismicrna.demult.demultiplex.check_all_done">check_all_done() (in module seismicrna.demult.demultiplex)</a>
 </li>
@@ -2447,6 +2446,8 @@
       <ul>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphBase.data">(seismicrna.graph.base.GraphBase property)</a>
 </li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histrel.RelHistogramGraph.data">(seismicrna.graph.histrel.RelHistogramGraph property)</a>
+</li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.profile.ProfileGraph.data">(seismicrna.graph.profile.ProfileGraph property)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.roc.ROCGraph.data">(seismicrna.graph.roc.ROCGraph property)</a>
@@ -2470,8 +2471,12 @@
 </li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.twotable.TwoTableGraph.data2">data2 (seismicrna.graph.twotable.TwoTableGraph property)</a>
 </li>
-      <li><a href="api/seismicrna.graph.html#seismicrna.graph.profile.ProfileGraph.data_header">data_header (seismicrna.graph.profile.ProfileGraph property)</a>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.histrel.RelHistogramGraph.data_header">data_header (seismicrna.graph.histrel.RelHistogramGraph property)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.profile.ProfileGraph.data_header">(seismicrna.graph.profile.ProfileGraph property)</a>
 </li>
+      </ul></li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphBase.data_kind">data_kind (seismicrna.graph.base.GraphBase property)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset">Dataset (class in seismicrna.core.data)</a>
@@ -2492,10 +2497,10 @@
 </li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambrel.Indel.del_pos3">del_pos3 (seismicrna.relate.py.ambrel.Indel property)</a>
 </li>
-      <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambrel.Indel.del_pos5">del_pos5 (seismicrna.relate.py.ambrel.Indel property)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambrel.Indel.del_pos5">del_pos5 (seismicrna.relate.py.ambrel.Indel property)</a>
+</li>
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.sam.XamViewer.delete_temp_sam">delete_temp_sam() (seismicrna.relate.sam.XamViewer method)</a>
 </li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambrel.Deletion">Deletion (class in seismicrna.relate.py.ambrel)</a>
@@ -2877,6 +2882,8 @@
       </ul></li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.BatchedReport.get_batch_type">get_batch_type() (seismicrna.core.report.BatchedReport class method)</a>
 </li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.hist.HistogramGraph.get_bounds">get_bounds() (seismicrna.graph.hist.HistogramGraph method)</a>
+</li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.xamops.get_bowtie2_index_paths">get_bowtie2_index_paths() (in module seismicrna.align.xamops)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.data.BatchedLoadedDataset.get_btype_name">get_btype_name() (seismicrna.core.data.BatchedLoadedDataset class method)</a>
@@ -2889,6 +2896,8 @@
 
       <ul>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.delprof.DeltaProfileGraph.get_cmap_type">(seismicrna.graph.delprof.DeltaProfileGraph class method)</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histrel.RelHistogramGraph.get_cmap_type">(seismicrna.graph.histrel.RelHistogramGraph class method)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.profile.MultiRelsProfileGraph.get_cmap_type">(seismicrna.graph.profile.MultiRelsProfileGraph class method)</a>
 </li>
@@ -2967,15 +2976,21 @@
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.types.get_dtype">get_dtype() (in module seismicrna.core.types)</a>
 </li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.hist.HistogramGraph.get_edges">get_edges() (seismicrna.graph.hist.HistogramGraph method)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.hist.get_edges_index">get_edges_index() (in module seismicrna.graph.hist)</a>
+</li>
       <li><a href="api/seismicrna.core.rna.html#seismicrna.core.rna.profile.RNAProfile.get_fasta">get_fasta() (seismicrna.core.rna.profile.RNAProfile method)</a>
 </li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.fasta.get_fasta_seq">get_fasta_seq() (in module seismicrna.core.seq.fasta)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.Report.get_field">get_field() (seismicrna.core.report.Report method)</a>
 </li>
-      <li><a href="api/seismicrna.graph.html#seismicrna.graph.onetable.OneTableWriter.get_graph">get_graph() (seismicrna.graph.onetable.OneTableWriter method)</a>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.histrel.RelHistogramWriter.get_graph">get_graph() (seismicrna.graph.histrel.RelHistogramWriter method)</a>
 
       <ul>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.onetable.OneTableWriter.get_graph">(seismicrna.graph.onetable.OneTableWriter method)</a>
+</li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.profile.ProfileWriter.get_graph">(seismicrna.graph.profile.ProfileWriter method)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.roc.ROCWriter.get_graph">(seismicrna.graph.roc.ROCWriter method)</a>
@@ -2986,12 +3001,20 @@
       <ul>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.delprof.DeltaProfileWriter.get_graph_type">(seismicrna.graph.delprof.DeltaProfileWriter class method)</a>
 </li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histpos.PosHistogramWriter.get_graph_type">(seismicrna.graph.histpos.PosHistogramWriter class method)</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histread.ReadHistogramWriter.get_graph_type">(seismicrna.graph.histread.ReadHistogramWriter class method)</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histrel.RelHistogramWriter.get_graph_type">(seismicrna.graph.histrel.RelHistogramWriter class method)</a>
+</li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.scatter.ScatterPlotWriter.get_graph_type">(seismicrna.graph.scatter.ScatterPlotWriter class method)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.twotable.TwoTableWriter.get_graph_type">(seismicrna.graph.twotable.TwoTableWriter class method)</a>
 </li>
       </ul></li>
       <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.count.get_half_coverage_matrix">get_half_coverage_matrix() (in module seismicrna.core.batch.count)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.trace.get_hist_trace">get_hist_trace() (in module seismicrna.graph.trace)</a>
 </li>
       <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.index.get_inverse">get_inverse() (in module seismicrna.core.batch.index)</a>
 </li>
@@ -3025,10 +3048,10 @@
       </ul></li>
       <li><a href="api/seismicrna.core.parallel.html#seismicrna.core.parallel.pool.get_num_parallel">get_num_parallel() (in module seismicrna.core.parallel.pool)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.get_oconv_array_float">get_oconv_array_float() (in module seismicrna.core.report)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.get_oconv_dict_float">get_oconv_dict_float() (in module seismicrna.core.report)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.get_oconv_dict_list_float">get_oconv_dict_list_float() (in module seismicrna.core.report)</a>
@@ -3109,6 +3132,22 @@
 </li>
       <li><a href="api/seismicrna.export.html#seismicrna.export.web.get_table_data">get_table_data() (in module seismicrna.export.web)</a>
 </li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphRunner.get_table_finder">get_table_finder() (seismicrna.graph.base.GraphRunner class method)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.PosGraphRunner.get_table_finder">(seismicrna.graph.base.PosGraphRunner class method)</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.ReadGraphRunner.get_table_finder">(seismicrna.graph.base.ReadGraphRunner class method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphWriter.get_table_loader">get_table_loader() (seismicrna.graph.base.GraphWriter class method)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.PosGraphWriter.get_table_loader">(seismicrna.graph.base.PosGraphWriter class method)</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.ReadGraphWriter.get_table_loader">(seismicrna.graph.base.ReadGraphWriter class method)</a>
+</li>
+      </ul></li>
       <li><a href="api/seismicrna.clust.html#seismicrna.clust.csv.get_table_path">get_table_path() (in module seismicrna.clust.csv)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.write.get_tabulator_writer_types">get_tabulator_writer_types() (in module seismicrna.table.write)</a>
@@ -3120,6 +3159,8 @@
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphBase.get_traces">get_traces() (seismicrna.graph.base.GraphBase method)</a>
 
       <ul>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histrel.RelHistogramGraph.get_traces">(seismicrna.graph.histrel.RelHistogramGraph method)</a>
+</li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.profile.MultiRelsProfileGraph.get_traces">(seismicrna.graph.profile.MultiRelsProfileGraph method)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.profile.OneRelProfileGraph.get_traces">(seismicrna.graph.profile.OneRelProfileGraph method)</a>
@@ -3154,6 +3195,10 @@
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.delprof.DeltaProfileRunner.get_writer_type">(seismicrna.graph.delprof.DeltaProfileRunner class method)</a>
 </li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histpos.PosHistogramRunner.get_writer_type">(seismicrna.graph.histpos.PosHistogramRunner class method)</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histread.ReadHistogramRunner.get_writer_type">(seismicrna.graph.histread.ReadHistogramRunner class method)</a>
+</li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.profile.ProfileRunner.get_writer_type">(seismicrna.graph.profile.ProfileRunner class method)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.roc.ROCRunner.get_writer_type">(seismicrna.graph.roc.ROCRunner class method)</a>
@@ -3171,6 +3216,10 @@
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.corroll.RollingCorrelationGraph.graph_kind">(seismicrna.graph.corroll.RollingCorrelationGraph class method)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.delprof.DeltaProfileGraph.graph_kind">(seismicrna.graph.delprof.DeltaProfileGraph class method)</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histpos.PosHistogramGraph.graph_kind">(seismicrna.graph.histpos.PosHistogramGraph class method)</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histread.ReadHistogramGraph.graph_kind">(seismicrna.graph.histread.ReadHistogramGraph class method)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.profile.ProfileGraph.graph_kind">(seismicrna.graph.profile.ProfileGraph class method)</a>
 </li>
@@ -3209,8 +3258,6 @@
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.base.Table.header_rows">header_rows() (seismicrna.table.base.Table class method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.table.html#seismicrna.table.base.AvgTable.header_type">header_type() (seismicrna.table.base.AvgTable class method)</a>
 
       <ul>
@@ -3221,6 +3268,12 @@
         <li><a href="api/seismicrna.table.html#seismicrna.table.base.Table.header_type">(seismicrna.table.base.Table class method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.hist.HistogramGraph">HistogramGraph (class in seismicrna.graph.hist)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.hist.HistogramRunner">HistogramRunner (class in seismicrna.graph.hist)</a>
+</li>
       <li><a href="api/seismicrna.relate.aux.html#seismicrna.relate.aux.human.humanize_relvec">humanize_relvec() (in module seismicrna.relate.aux.human)</a>
 </li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.Section.hyphen">hyphen (seismicrna.core.seq.section.Section property)</a>
@@ -3370,6 +3423,8 @@
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.twotable.TwoTableWriter.iter_graphs">(seismicrna.graph.twotable.TwoTableWriter method)</a>
 </li>
       </ul></li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.trace.iter_hist_traces">iter_hist_traces() (in module seismicrna.graph.trace)</a>
+</li>
       <li><a href="api/seismicrna.export.html#seismicrna.export.web.iter_pos_table_data">iter_pos_table_data() (in module seismicrna.export.web)</a>
 </li>
       <li><a href="api/seismicrna.export.html#seismicrna.export.web.iter_pos_table_series">iter_pos_table_series() (in module seismicrna.export.web)</a>
@@ -3496,6 +3551,8 @@
 </li>
       <li><a href="api/seismicrna.relate.aux.tests.html#seismicrna.relate.aux.tests.iterrel_test.TestIterRelvecsQ53.list_rels">list_rels() (seismicrna.relate.aux.tests.iterrel_test.TestIterRelvecsQ53 static method)</a>
 </li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphRunner.list_table_files">list_table_files() (seismicrna.graph.base.GraphRunner class method)</a>
+</li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.load">load() (seismicrna.core.data.LoadedDataset class method)</a>
 
       <ul>
@@ -3537,6 +3594,8 @@
       <li><a href="api/seismicrna.mask.html#seismicrna.mask.main.load_sections">load_sections() (in module seismicrna.mask.main)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.load.load_table">load_table() (in module seismicrna.table.load)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphWriter.load_table_file">load_table_file() (seismicrna.graph.base.GraphWriter class method)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.load.load_tables">load_tables() (in module seismicrna.table.load)</a>
 </li>
@@ -4002,6 +4061,14 @@
 </li>
         <li><a href="api/seismicrna.graph.html#module-seismicrna.graph.delprof">seismicrna.graph.delprof</a>
 </li>
+        <li><a href="api/seismicrna.graph.html#module-seismicrna.graph.hist">seismicrna.graph.hist</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#module-seismicrna.graph.histpos">seismicrna.graph.histpos</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#module-seismicrna.graph.histread">seismicrna.graph.histread</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#module-seismicrna.graph.histrel">seismicrna.graph.histrel</a>
+</li>
         <li><a href="api/seismicrna.graph.html#module-seismicrna.graph.main">seismicrna.graph.main</a>
 </li>
         <li><a href="api/seismicrna.graph.html#module-seismicrna.graph.onestruct">seismicrna.graph.onestruct</a>
@@ -4387,10 +4454,10 @@
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.twotable.TwoTableGraph.path_subject">(seismicrna.graph.twotable.TwoTableGraph property)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.twotable.TwoTableGraph.path_subject1">path_subject1 (seismicrna.graph.twotable.TwoTableGraph property)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.twotable.TwoTableGraph.path_subject2">path_subject2 (seismicrna.graph.twotable.TwoTableGraph property)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.path.PathError">PathError</a>
@@ -4460,6 +4527,16 @@
       <li><a href="api/seismicrna.mask.html#seismicrna.mask.write.RelMasker.pos_polya">pos_polya (seismicrna.mask.write.RelMasker property)</a>
 </li>
       <li><a href="api/seismicrna.mask.html#seismicrna.mask.write.RelMasker.pos_user">pos_user (seismicrna.mask.write.RelMasker property)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.PosGraphRunner">PosGraphRunner (class in seismicrna.graph.base)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.PosGraphWriter">PosGraphWriter (class in seismicrna.graph.base)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.histpos.PosHistogramGraph">PosHistogramGraph (class in seismicrna.graph.histpos)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.histpos.PosHistogramRunner">PosHistogramRunner (class in seismicrna.graph.histpos)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.histpos.PosHistogramWriter">PosHistogramWriter (class in seismicrna.graph.histpos)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.base.PosTable">PosTable (class in seismicrna.table.base)</a>
 </li>
@@ -4578,6 +4655,16 @@
       <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.read.ReadBatch">ReadBatch (class in seismicrna.core.batch.read)</a>
 </li>
       <li><a href="api/seismicrna.core.io.html#seismicrna.core.io.batch.ReadBatchIO">ReadBatchIO (class in seismicrna.core.io.batch)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.ReadGraphRunner">ReadGraphRunner (class in seismicrna.graph.base)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.ReadGraphWriter">ReadGraphWriter (class in seismicrna.graph.base)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.histread.ReadHistogramGraph">ReadHistogramGraph (class in seismicrna.graph.histread)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.histread.ReadHistogramRunner">ReadHistogramRunner (class in seismicrna.graph.histread)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.histread.ReadHistogramWriter">ReadHistogramWriter (class in seismicrna.graph.histread)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.base.ReadTable.reads">reads (seismicrna.table.base.ReadTable property)</a>
 </li>
@@ -4705,10 +4792,10 @@
 </li>
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.report.RelateReport">RelateReport (class in seismicrna.relate.report)</a>
 </li>
-      <li><a href="api/seismicrna.table.html#seismicrna.table.calc.RelateTabulator">RelateTabulator (class in seismicrna.table.calc)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/seismicrna.table.html#seismicrna.table.calc.RelateTabulator">RelateTabulator (class in seismicrna.table.calc)</a>
+</li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.error.RelateValueError">RelateValueError</a>
 </li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphBase.relationships">relationships (seismicrna.graph.base.GraphBase property)</a>
@@ -4720,6 +4807,12 @@
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.color.RelColorMap">RelColorMap (class in seismicrna.graph.color)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.header.RelHeader">RelHeader (class in seismicrna.core.header)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.histrel.RelHistogramGraph">RelHistogramGraph (class in seismicrna.graph.histrel)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.histrel.RelHistogramRunner">RelHistogramRunner (class in seismicrna.graph.histrel)</a>
+</li>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.histrel.RelHistogramWriter">RelHistogramWriter (class in seismicrna.graph.histrel)</a>
 </li>
       <li><a href="api/seismicrna.mask.html#seismicrna.mask.write.RelMasker">RelMasker (class in seismicrna.mask.write)</a>
 </li>
@@ -5370,7 +5463,7 @@
     seismic-graph-corroll command line option
 
       <ul>
-        <li><a href="cli.html#cmdoption-seismic-graph-corroll-a">--arrange</a>
+        <li><a href="cli.html#cmdoption-seismic-graph-corroll-cgroup">--cgroup</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-corroll-comppair">--comppair</a>
 </li>
@@ -5418,8 +5511,6 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-corroll-n">--winmin</a>
 </li>
-        <li><a href="cli.html#cmdoption-seismic-graph-corroll-a">-a</a>
-</li>
         <li><a href="cli.html#cmdoption-seismic-graph-corroll-m">-m</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-corroll-n">-n</a>
@@ -5439,7 +5530,7 @@
     seismic-graph-delprof command line option
 
       <ul>
-        <li><a href="cli.html#cmdoption-seismic-graph-delprof-a">--arrange</a>
+        <li><a href="cli.html#cmdoption-seismic-graph-delprof-cgroup">--cgroup</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-delprof-comppair">--comppair</a>
 </li>
@@ -5481,8 +5572,6 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-delprof-use-ratio">--use-ratio</a>
 </li>
-        <li><a href="cli.html#cmdoption-seismic-graph-delprof-a">-a</a>
-</li>
         <li><a href="cli.html#cmdoption-seismic-graph-delprof-o">-o</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-delprof-q">-q</a>
@@ -5496,7 +5585,7 @@
     seismic-graph-profile command line option
 
       <ul>
-        <li><a href="cli.html#cmdoption-seismic-graph-profile-a">--arrange</a>
+        <li><a href="cli.html#cmdoption-seismic-graph-profile-cgroup">--cgroup</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-profile-csv">--csv</a>
 </li>
@@ -5530,8 +5619,6 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-profile-use-ratio">--use-ratio</a>
 </li>
-        <li><a href="cli.html#cmdoption-seismic-graph-profile-a">-a</a>
-</li>
         <li><a href="cli.html#cmdoption-seismic-graph-profile-o">-o</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-profile-q">-q</a>
@@ -5545,7 +5632,7 @@
     seismic-graph-scatter command line option
 
       <ul>
-        <li><a href="cli.html#cmdoption-seismic-graph-scatter-a">--arrange</a>
+        <li><a href="cli.html#cmdoption-seismic-graph-scatter-cgroup">--cgroup</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-scatter-comppair">--comppair</a>
 </li>
@@ -5586,8 +5673,6 @@
         <li><a href="cli.html#cmdoption-seismic-graph-scatter-use-ratio">--use-count</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-scatter-use-ratio">--use-ratio</a>
-</li>
-        <li><a href="cli.html#cmdoption-seismic-graph-scatter-a">-a</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-scatter-o">-o</a>
 </li>
@@ -5745,8 +5830,6 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-ambrel">--ambrel</a>
 </li>
-        <li><a href="cli.html#cmdoption-seismic-wf-a">--arrange</a>
-</li>
         <li><a href="cli.html#cmdoption-seismic-wf-cram">--bam</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-barcode-end">--barcode-end</a>
@@ -5802,6 +5885,8 @@
         <li><a href="cli.html#cmdoption-seismic-wf-bt2-un">--bt2-un</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-bt2-X">--bt2-X</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-wf-cgroup">--cgroup</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-clipped">--clipped</a>
 </li>
@@ -5909,6 +5994,10 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-force">--force</a>
 </li>
+        <li><a href="cli.html#cmdoption-seismic-wf-hist-bins">--hist-bins</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-wf-hist-margin">--hist-margin</a>
+</li>
         <li><a href="cli.html#cmdoption-seismic-wf-html">--html</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-exclude-gu">--include-gu</a>
@@ -6006,8 +6095,6 @@
         <li><a href="cli.html#cmdoption-seismic-wf-t">--temp-dir</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-all-pos">--unmasked-pos</a>
-</li>
-        <li><a href="cli.html#cmdoption-seismic-wf-a">-a</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-c">-c</a>
 </li>
@@ -6937,6 +7024,34 @@
 
       <ul>
         <li><a href="api/seismicrna.graph.html#module-seismicrna.graph.delprof">module</a>
+</li>
+      </ul></li>
+      <li>
+    seismicrna.graph.hist
+
+      <ul>
+        <li><a href="api/seismicrna.graph.html#module-seismicrna.graph.hist">module</a>
+</li>
+      </ul></li>
+      <li>
+    seismicrna.graph.histpos
+
+      <ul>
+        <li><a href="api/seismicrna.graph.html#module-seismicrna.graph.histpos">module</a>
+</li>
+      </ul></li>
+      <li>
+    seismicrna.graph.histread
+
+      <ul>
+        <li><a href="api/seismicrna.graph.html#module-seismicrna.graph.histread">module</a>
+</li>
+      </ul></li>
+      <li>
+    seismicrna.graph.histrel
+
+      <ul>
+        <li><a href="api/seismicrna.graph.html#module-seismicrna.graph.histrel">module</a>
 </li>
       </ul></li>
       <li>
@@ -9124,6 +9239,8 @@
       <ul>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.corroll.RollingCorrelationRunner.var_params">(seismicrna.graph.corroll.RollingCorrelationRunner class method)</a>
 </li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.hist.HistogramRunner.var_params">(seismicrna.graph.hist.HistogramRunner class method)</a>
+</li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.onestruct.StructOneTableRunner.var_params">(seismicrna.graph.onestruct.StructOneTableRunner class method)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.twotable.TwoTableRunner.var_params">(seismicrna.graph.twotable.TwoTableRunner class method)</a>
@@ -9147,6 +9264,10 @@
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.corroll.RollingCorrelationGraph.what">(seismicrna.graph.corroll.RollingCorrelationGraph class method)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.delprof.DeltaProfileGraph.what">(seismicrna.graph.delprof.DeltaProfileGraph class method)</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histpos.PosHistogramGraph.what">(seismicrna.graph.histpos.PosHistogramGraph class method)</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histread.ReadHistogramGraph.what">(seismicrna.graph.histread.ReadHistogramGraph class method)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.profile.MultiRelsProfileGraph.what">(seismicrna.graph.profile.MultiRelsProfileGraph class method)</a>
 </li>
@@ -9212,6 +9333,8 @@
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphBase.x_title">x_title (seismicrna.graph.base.GraphBase property)</a>
 
       <ul>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histrel.RelHistogramGraph.x_title">(seismicrna.graph.histrel.RelHistogramGraph property)</a>
+</li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.profile.ProfileGraph.x_title">(seismicrna.graph.profile.ProfileGraph property)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.roc.ROCGraph.x_title">(seismicrna.graph.roc.ROCGraph property)</a>
@@ -9245,6 +9368,10 @@
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.corroll.RollingCorrelationGraph.y_title">(seismicrna.graph.corroll.RollingCorrelationGraph property)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.delprof.DeltaProfileGraph.y_title">(seismicrna.graph.delprof.DeltaProfileGraph property)</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histpos.PosHistogramGraph.y_title">(seismicrna.graph.histpos.PosHistogramGraph property)</a>
+</li>
+        <li><a href="api/seismicrna.graph.html#seismicrna.graph.histread.ReadHistogramGraph.y_title">(seismicrna.graph.histread.ReadHistogramGraph property)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.profile.ProfileGraph.y_title">(seismicrna.graph.profile.ProfileGraph property)</a>
 </li>

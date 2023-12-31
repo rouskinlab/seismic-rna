@@ -55,6 +55,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#profile-input-files">Profile: Input files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#profile-settings">Profile: Settings</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#profile-output-files">Profile: Output files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#profile-examples">Profile: Examples</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="params.html">General parameters for graphing</a></li>
@@ -122,6 +123,94 @@
 <section id="profile-output-files">
 <h2>Profile: Output files<a class="headerlink" href="#profile-output-files" title="Permalink to this headline"></a></h2>
 <p>See <a class="reference internal" href="params.html#graph-outputs"><span class="std std-ref">General parameters for graphing: Output files</span></a> for more information on output files.</p>
+</section>
+<section id="profile-examples">
+<h2>Profile: Examples<a class="headerlink" href="#profile-examples" title="Permalink to this headline"></a></h2>
+<p>Assume your output files are in the directory <code class="docutils literal notranslate"><span class="pre">out</span></code>.</p>
+<section id="graph-the-fraction-of-reads-mutated-the-mutation-rate-at-each-position">
+<h3>Graph the fraction of reads mutated (the mutation rate) at each position<a class="headerlink" href="#graph-the-fraction-of-reads-mutated-the-mutation-rate-at-each-position" title="Permalink to this headline"></a></h3>
+<p>Command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">graph</span> <span class="n">profile</span> <span class="n">out</span>
+</pre></div>
+</div>
+<p>Outputs:</p>
+<blockquote>
+<div><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">out/{sample}/graph/{ref}/{sect}/profile_masked_m-ratio-q0.csv</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Position</span><span class="p">,</span><span class="n">Base</span><span class="p">,</span><span class="n">Mutated</span>
+<span class="mi">196</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="mf">0.03212678813091909</span>
+<span class="mi">197</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="mf">0.003393658868599399</span>
+<span class="mi">198</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="mf">0.010770982726367673</span>
+<span class="mi">199</span><span class="p">,</span><span class="n">G</span><span class="p">,</span>
+<span class="mi">200</span><span class="p">,</span><span class="n">T</span><span class="p">,</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">out/{sample}/graph/{ref}/{sect}/profile_masked_m-ratio-q0.html</span></code></p>
+<blockquote>
+<div><img alt="../../_images/profile_m-ratio.png" src="../../_images/profile_m-ratio.png" />
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</section>
+<section id="graph-the-fraction-each-type-of-mutation-at-each-position">
+<h3>Graph the fraction each type of mutation at each position<a class="headerlink" href="#graph-the-fraction-each-type-of-mutation-at-each-position" title="Permalink to this headline"></a></h3>
+<p>Command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">graph</span> <span class="n">profile</span> <span class="o">-</span><span class="n">r</span> <span class="n">acgtdi</span> <span class="n">out</span>
+</pre></div>
+</div>
+<p>Outputs:</p>
+<blockquote>
+<div><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">out/{sample}/graph/{ref}/{sect}/profile_masked_acgtdi-ratio-q0.csv</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Position</span><span class="p">,</span><span class="n">Base</span><span class="p">,</span><span class="n">Subbed</span><span class="o">-</span><span class="n">A</span><span class="p">,</span><span class="n">Subbed</span><span class="o">-</span><span class="n">C</span><span class="p">,</span><span class="n">Subbed</span><span class="o">-</span><span class="n">G</span><span class="p">,</span><span class="n">Subbed</span><span class="o">-</span><span class="n">T</span><span class="p">,</span><span class="n">Deleted</span><span class="p">,</span><span class="n">Inserted</span>
+<span class="mi">196</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.018827932574530207</span><span class="p">,</span><span class="mf">0.0016602828354697209</span><span class="p">,</span><span class="mf">0.011638240863466542</span><span class="p">,</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.0</span>
+<span class="mi">197</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="mf">0.0012500543750758389</span><span class="p">,</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.00042715097170304697</span><span class="p">,</span><span class="mf">0.0017164535218205134</span><span class="p">,</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.0</span>
+<span class="mi">198</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.002887023310345601</span><span class="p">,</span><span class="mf">0.0005903400048243549</span><span class="p">,</span><span class="mf">0.007293619411197718</span><span class="p">,</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.0</span>
+<span class="mi">199</span><span class="p">,</span><span class="n">G</span><span class="p">,,,,,,</span>
+<span class="mi">200</span><span class="p">,</span><span class="n">T</span><span class="p">,,,,,,</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">out/{sample}/graph/{ref}/{sect}/profile_masked_acgtdi-ratio-q0.html</span></code></p>
+<blockquote>
+<div><img alt="../../_images/profile_acgtdi-ratio.png" src="../../_images/profile_acgtdi-ratio.png" />
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</section>
+<section id="graph-the-number-of-informative-reads-at-each-position">
+<h3>Graph the number of informative reads at each position<a class="headerlink" href="#graph-the-number-of-informative-reads-at-each-position" title="Permalink to this headline"></a></h3>
+<p>Command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">graph</span> <span class="n">profile</span> <span class="o">-</span><span class="n">r</span> <span class="n">n</span> <span class="o">--</span><span class="n">use</span><span class="o">-</span><span class="n">count</span> <span class="n">out</span>
+</pre></div>
+</div>
+<p>Outputs:</p>
+<blockquote>
+<div><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">out/{sample}/graph/{ref}/{sect}/profile_masked_n-count.csv</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Position</span><span class="p">,</span><span class="n">Base</span><span class="p">,</span><span class="n">Informed</span>
+<span class="mi">196</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="mf">301334.2</span>
+<span class="mi">197</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="mf">305746.7</span>
+<span class="mi">198</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="mf">303045.7</span>
+<span class="mi">199</span><span class="p">,</span><span class="n">G</span><span class="p">,</span>
+<span class="mi">200</span><span class="p">,</span><span class="n">T</span><span class="p">,</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">out/{sample}/graph/{ref}/{sect}/profile_masked_n-count.html</span></code></p>
+<blockquote>
+<div><img alt="../../_images/profile_n-count.png" src="../../_images/profile_n-count.png" />
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</section>
 </section>
 </section>
 

@@ -190,18 +190,18 @@ With <code class="docutils literal notranslate"><span class="pre">-q</span></cod
 where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, <code class="docutils literal notranslate"><span class="pre">{ref}</span></code>
 is the reference, and <code class="docutils literal notranslate"><span class="pre">{sect}</span></code> is the section.
 Each output file is prefixed with the name of the subcommand that produced it.</p>
-<section id="arrange-a-arrange-orders-and-clusters-among-output-files">
-<h3><code class="docutils literal notranslate"><span class="pre">--arrange</span></code> (<code class="docutils literal notranslate"><span class="pre">-a</span></code>): Arrange orders and clusters among output files<a class="headerlink" href="#arrange-a-arrange-orders-and-clusters-among-output-files" title="Permalink to this headline"></a></h3>
-<p>When graphing tables containing multiple clusters, you can distribute</p>
+<section id="cgroup-group-orders-and-clusters-into-output-files">
+<h3><code class="docutils literal notranslate"><span class="pre">--cgroup</span></code>: Group orders and clusters into output files<a class="headerlink" href="#cgroup-group-orders-and-clusters-into-output-files" title="Permalink to this headline"></a></h3>
+<p>When graphing tables containing multiple clusters, you can group</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">-a</span> <span class="pre">indiv</span></code>: Each cluster individually in its own file.
+<li><p><code class="docutils literal notranslate"><span class="pre">--cgroup</span> <span class="pre">indiv</span></code>: Each cluster individually in its own file.
 Each output file will be named with its order and cluster, e.g. <code class="docutils literal notranslate"><span class="pre">2-1</span></code> for
 cluster 1 of order 2.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">-a</span> <span class="pre">order</span></code>: Each order in its own file and every cluster in that order as
-a subplot in that file.
+<li><p><code class="docutils literal notranslate"><span class="pre">--cgroup</span> <span class="pre">order</span></code>: Each order in its own file and every cluster in that
+order as a subplot in that file.
 Each output file will be named with its order, with an “x” for the cluster,
 e.g. <code class="docutils literal notranslate"><span class="pre">2-x</span></code> for all clusters of order 2.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">-a</span> <span class="pre">unite</span></code>: All orders and clusters as subplots in one file.
+<li><p><code class="docutils literal notranslate"><span class="pre">--cgroup</span> <span class="pre">unite</span></code>: All orders and clusters as subplots in one file.
 Each output file will be named with an “x” for both the order and cluster,
 e.g. <code class="docutils literal notranslate"><span class="pre">x-x</span></code> for all clusters of all orders.</p></li>
 </ul>

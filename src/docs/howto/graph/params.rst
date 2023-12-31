@@ -105,14 +105,14 @@ Each output file is prefixed with the name of the subcommand that produced it.
 
 When graphing tables containing multiple clusters, you can group
 
--   ``-a indiv``: Each cluster individually in its own file.
+-   ``--cgroup indiv``: Each cluster individually in its own file.
     Each output file will be named with its order and cluster, e.g. ``2-1`` for
     cluster 1 of order 2.
--   ``-a order``: Each order in its own file and every cluster in that order as
-    a subplot in that file.
+-   ``--cgroup order``: Each order in its own file and every cluster in that
+    order as a subplot in that file.
     Each output file will be named with its order, with an "x" for the cluster,
     e.g. ``2-x`` for all clusters of order 2.
--   ``-a unite``: All orders and clusters as subplots in one file.
+-   ``--cgroup unite``: All orders and clusters as subplots in one file.
     Each output file will be named with an "x" for both the order and cluster,
     e.g. ``x-x`` for all clusters of all orders.
 

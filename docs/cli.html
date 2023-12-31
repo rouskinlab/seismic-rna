@@ -723,14 +723,26 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-a">
-<span id="cmdoption-seismic-wf-arrange"></span><span class="sig-name descname"><span class="pre">-a</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--arrange</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;arrange&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-a" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-cgroup">
+<span class="sig-name descname"><span class="pre">--cgroup</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cgroup&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-cgroup" title="Permalink to this definition"></a></dt>
 <dd><p>Graph each INDIVidual cluster in its own file, each ORDER in its own file, or UNITE all clusters in one file containing all orders</p>
 <dl class="field-list simple">
 <dt class="field-odd">Options</dt>
 <dd class="field-odd"><p>indiv | order | unite</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-hist-bins">
+<span class="sig-name descname"><span class="pre">--hist-bins</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;hist_bins&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-hist-bins" title="Permalink to this definition"></a></dt>
+<dd><p>Number of bins in each histogram (≥ 1)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-hist-margin">
+<span class="sig-name descname"><span class="pre">--hist-margin</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;hist_margin&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-hist-margin" title="Permalink to this definition"></a></dt>
+<dd><p>For ratio-based histograms, maximum margin to autofill between the data and 0 or 1</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1668,8 +1680,8 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-graph-profile-a">
-<span id="cmdoption-seismic-graph-profile-arrange"></span><span class="sig-name descname"><span class="pre">-a</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--arrange</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;arrange&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-profile-a" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-profile-cgroup">
+<span class="sig-name descname"><span class="pre">--cgroup</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cgroup&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-profile-cgroup" title="Permalink to this definition"></a></dt>
 <dd><p>Graph each INDIVidual cluster in its own file, each ORDER in its own file, or UNITE all clusters in one file containing all orders</p>
 <dl class="field-list simple">
 <dt class="field-odd">Options</dt>
@@ -1766,8 +1778,8 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-graph-delprof-a">
-<span id="cmdoption-seismic-graph-delprof-arrange"></span><span class="sig-name descname"><span class="pre">-a</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--arrange</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;arrange&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-delprof-a" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-delprof-cgroup">
+<span class="sig-name descname"><span class="pre">--cgroup</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cgroup&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-delprof-cgroup" title="Permalink to this definition"></a></dt>
 <dd><p>Graph each INDIVidual cluster in its own file, each ORDER in its own file, or UNITE all clusters in one file containing all orders</p>
 <dl class="field-list simple">
 <dt class="field-odd">Options</dt>
@@ -1828,7 +1840,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </section>
 <section id="seismic-graph-corroll">
 <h4>seismic graph corroll<a class="headerlink" href="#seismic-graph-corroll" title="Permalink to this headline"></a></h4>
-<p>Create line graphs of rolling correlations between datasets.</p>
+<p>Rolling correlation/comparison of two profiles.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>graph<span class="w"> </span>corroll<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
 </pre></div>
 </div>
@@ -1883,12 +1895,12 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-corroll-n">
 <span id="cmdoption-seismic-graph-corroll-winmin"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--winmin</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;winmin&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-corroll-n" title="Permalink to this definition"></a></dt>
-<dd><p>Minimum number of data in the sliding window</p>
+<dd><p>Minimum number of data to use a sliding window (otherwise NaN)</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-graph-corroll-a">
-<span id="cmdoption-seismic-graph-corroll-arrange"></span><span class="sig-name descname"><span class="pre">-a</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--arrange</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;arrange&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-corroll-a" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-corroll-cgroup">
+<span class="sig-name descname"><span class="pre">--cgroup</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cgroup&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-corroll-cgroup" title="Permalink to this definition"></a></dt>
 <dd><p>Graph each INDIVidual cluster in its own file, each ORDER in its own file, or UNITE all clusters in one file containing all orders</p>
 <dl class="field-list simple">
 <dt class="field-odd">Options</dt>
@@ -1949,8 +1961,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </section>
 <section id="seismic-graph-scatter">
 <h4>seismic graph scatter<a class="headerlink" href="#seismic-graph-scatter" title="Permalink to this headline"></a></h4>
-<p>Create scatter plots between pairs of samples at each position
-in a sequence.</p>
+<p>Scatter plot comparing two profiles.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>graph<span class="w"> </span>scatter<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
 </pre></div>
 </div>
@@ -1986,8 +1997,8 @@ in a sequence.</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-a">
-<span id="cmdoption-seismic-graph-scatter-arrange"></span><span class="sig-name descname"><span class="pre">-a</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--arrange</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;arrange&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-a" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-cgroup">
+<span class="sig-name descname"><span class="pre">--cgroup</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cgroup&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-cgroup" title="Permalink to this definition"></a></dt>
 <dd><p>Graph each INDIVidual cluster in its own file, each ORDER in its own file, or UNITE all clusters in one file containing all orders</p>
 <dl class="field-list simple">
 <dt class="field-odd">Options</dt>
