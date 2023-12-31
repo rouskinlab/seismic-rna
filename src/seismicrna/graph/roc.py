@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from click import command
 
+from .base import PosGraphRunner, PosGraphWriter
 from .onestruct import StructOneTableGraph, StructOneTableRunner
 from .onetable import OneTableWriter
 from .trace import iter_roc_traces
@@ -121,13 +122,13 @@ class ROCGraph(StructOneTableGraph):
                 yield (row, 1), trace
 
 
-class ROCWriter(OneTableWriter):
+class ROCWriter(OneTableWriter, PosGraphWriter):
 
     def get_graph(self, rels_group: str, **kwargs):
         return ROCGraph(table=self.table, rel=rels_group, **kwargs)
 
 
-class ROCRunner(StructOneTableRunner):
+class ROCRunner(StructOneTableRunner, PosGraphRunner):
 
     @classmethod
     def get_writer_type(cls):

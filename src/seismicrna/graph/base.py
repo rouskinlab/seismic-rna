@@ -412,7 +412,8 @@ class GraphWriter(ABC):
     @classmethod
     def load_table_file(cls, table_file: Path):
         """ Load one table file. """
-        return cls.get_table_loader()(table_file)
+        loader = cls.get_table_loader()
+        return loader(table_file)
 
     def __init__(self, *table_files: Path):
         self.table_files = list(table_files)
@@ -494,7 +495,8 @@ class GraphRunner(ABC):
     @classmethod
     def list_table_files(cls, input_path: tuple[str, ...]):
         """ Find, filter, and list all table files from input files. """
-        return list(cls.get_table_finder()(input_path))
+        finder = cls.get_table_finder()
+        return list(finder(input_path))
 
     @classmethod
     @abstractmethod
