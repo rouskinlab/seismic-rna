@@ -112,7 +112,7 @@ def get_hist_trace(data: pd.Series, rel: str, cmap: ColorMap):
         lower = data.index.get_level_values(LOWER_NAME)
         upper = data.index.get_level_values(UPPER_NAME)
         center = (lower + upper) / 2.
-        hovertext = [(f"{round(lo, PRECISION)} - {round(up, PRECISION)} "
+        hovertext = [(f"[{round(lo, PRECISION)} - {round(up, PRECISION)}] "
                       f"{rel}: {round(value, PRECISION)}")
                      for lo, up, value in zip(lower, upper, data, strict=True)]
     else:

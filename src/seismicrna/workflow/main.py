@@ -24,14 +24,22 @@ from ..core.arg import (CMD_WORKFLOW,
                         opt_fold,
                         opt_export,
                         opt_cgroup,
+                        opt_hist_bins,
+                        opt_hist_margin,
                         opt_csv,
                         opt_html,
                         opt_pdf)
 from ..core.seq import DNA
+from ..graph.histread import ReadHistogramRunner
 from ..graph.profile import ProfileRunner
 from ..graph.roc import ROCRunner
 
-graph_options = [opt_cgroup, opt_csv, opt_html, opt_pdf]
+graph_options = [opt_cgroup,
+                 opt_hist_bins,
+                 opt_hist_margin,
+                 opt_csv,
+                 opt_html,
+                 opt_pdf]
 
 params = merge_params([opt_demultiplex],
                       demultiplex_mod.params,
@@ -172,6 +180,8 @@ def run(*,
         all_pos: bool,
         # Graph options
         cgroup: str,
+        hist_bins: int,
+        hist_margin: float,
         csv: bool,
         html: bool,
         pdf: bool):
@@ -340,7 +350,7 @@ def run(*,
             parallel=parallel,
             force=force,
         )
-    # Graph mutational profiles
+    # Graph mutational profiles.
     ProfileRunner.run(input_path=input_path,
                       rels="m",
                       use_ratio=True,
@@ -353,7 +363,7 @@ def run(*,
                       max_procs=max_procs,
                       parallel=parallel,
                       force=force)
-    # Graph informational coverage
+    # Graph information per position.
     ProfileRunner.run(input_path=input_path,
                       rels="n",
                       use_ratio=False,
@@ -366,7 +376,22 @@ def run(*,
                       max_procs=max_procs,
                       parallel=parallel,
                       force=force)
-    # Graph ROC curves
+    # Graph mutations per read.
+    ReadHistogramRunner.run(input_path=input_path,
+                            rels="m",
+                            use_ratio=False,
+                            quantile=0.,
+                            cgroup=cgroup,
+                            hist_bins=hist_bins,
+                            hist_margin=hist_margin,
+                            out_dir=out_dir,
+                            csv=csv,
+                            html=html,
+                            pdf=pdf,
+                            max_procs=max_procs,
+                            parallel=parallel,
+                            force=force)
+    # Graph ROC curves.
     if fold:
         ROCRunner.run(input_path=input_path,
                       rels="m",
