@@ -45,7 +45,8 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whatdoes/index.html">What it Does</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/index.html">Install</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../steps/index.html">Step-By-Step</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../howto/index.html">How To</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../cli.html">Commands, Arguments, Options</a></li>
@@ -146,7 +147,7 @@
 <li><p><strong>coords</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>) – Reference name and 5’/3’ ends of a section; ends are 1-indexed [keyword-only, default: ()]</p></li>
 <li><p><strong>primers</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>) – Reference name and forward/reverse primers for a section; for the reverse primer, use its actual sequence, not its reverse complement [keyword-only, default: ()]</p></li>
 <li><p><strong>primer_gap</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Length of the gap (nt) between each primer and the end of the section [keyword-only, default: 0]</p></li>
-<li><p><strong>quantile</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Quantile for normalizing ratios of mutation rates; must be in [0, 1] [keyword-only, default: 0.0]</p></li>
+<li><p><strong>quantile</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Quantile for normalizing ratios; must be in [0, 1] [keyword-only, default: 0.0]</p></li>
 <li><p><strong>fold_temp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Temperature at which to predict structures (in Kelvin) [keyword-only, default: 310.15]</p></li>
 <li><p><strong>fold_constraint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span></code>) – File of constraints for predicting structures [keyword-only]</p></li>
 <li><p><strong>fold_md</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Maximum distance between two paired bases in predicted structures (use 0 for no limit) [keyword-only, default: 0]</p></li>
@@ -293,7 +294,9 @@ the unique identifier, and {energy} is the free energy of folding.</p>
 <p>{length}  ENERGY = {energy}  {ref}</p>
 <p>where {length} is the number of positions in the structure, {ref} is
 the name of the reference, and {energy} is the predicted free energy
-of folding.</p>
+of folding.
+Also handle the edge case when RNAstructure predicts no base pairs
+(and thus does not write the free energy) by returning NaN.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>line</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Line containing the title of the structure.</p>

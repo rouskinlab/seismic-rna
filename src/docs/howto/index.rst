@@ -6,6 +6,7 @@ How To
     :maxdepth: 2
 
     run/index
+    graph/index
     inputs
     sections
     normalize

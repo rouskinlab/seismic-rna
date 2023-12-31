@@ -12,7 +12,7 @@ Name of Sample                                                                  
 Name of Reference                                                                       str
 Name of Section                                                                         str
 Name of Profile                                                                         str
-Quantile for normalizing ratios of mutation rates; must be in [0, 1]                    float
+Quantile for normalizing ratios; must be in [0, 1]                    float
 Temperature at which to predict structures (in Kelvin)                                  float
 Maximum distance between two paired bases in predicted structures (use 0 for no limit)  int
 Predict only the minimum free energy (MFE) structure, without any suboptimal structures bool
@@ -35,7 +35,7 @@ Fold Report: Example
         "Name of Reference": "sars2_1799",
         "Name of Section": "third",
         "Name of Profile": "fse__average",
-        "Quantile for normalizing ratios of mutation rates; must be in [0, 1]": 0.95,
+        "Quantile for normalizing ratios; must be in [0, 1]": 0.95,
         "Temperature at which to predict structures (in Kelvin)": 310.15,
         "Maximum distance between two paired bases in predicted structures (use 0 for no limit)": 0,
         "Predict only the minimum free energy (MFE) structure, without any suboptimal structures": false,

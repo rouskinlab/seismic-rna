@@ -18,5 +18,6 @@ You can run the SEISMIC-RNA workflow in two ways:
     cluster
     table
     fold
+    graph
     export
     wf

@@ -66,8 +66,7 @@ class DeltaProfileRunner(TwoTableRunner):
 
 @command(COMMAND, params=DeltaProfileRunner.params())
 def cli(*args, **kwargs):
-    """ Create bar graphs of differences between pairs of samples at
-    each position in a sequence. """
+    """ Bar graph of differences between two profiles per position. """
     return DeltaProfileRunner.run(*args, **kwargs)
 
 ########################################################################

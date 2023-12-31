@@ -45,7 +45,8 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="about/index.html">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install/index.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="whatdoes/index.html">What it Does</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install/index.html">Install</a></li>
 <li class="toctree-l1"><a class="reference internal" href="steps/index.html">Step-By-Step</a></li>
 <li class="toctree-l1"><a class="reference internal" href="howto/index.html">How To</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Commands, Arguments, Options</a><ul>
@@ -664,7 +665,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-q">
 <span id="cmdoption-seismic-wf-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-q" title="Permalink to this definition"></a></dt>
-<dd><p>Quantile for normalizing ratios of mutation rates; must be in [0, 1]</p>
+<dd><p>Quantile for normalizing ratios; must be in [0, 1]</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1562,7 +1563,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-fold-q">
 <span id="cmdoption-seismic-fold-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-q" title="Permalink to this definition"></a></dt>
-<dd><p>Quantile for normalizing ratios of mutation rates; must be in [0, 1]</p>
+<dd><p>Quantile for normalizing ratios; must be in [0, 1]</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1643,7 +1644,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <span id="cli-graph"></span><h3>seismic graph<a class="headerlink" href="#seismic-graph" title="Permalink to this headline"></a></h3>
 <section id="seismic-graph-profile">
 <h4>seismic graph profile<a class="headerlink" href="#seismic-graph-profile" title="Permalink to this headline"></a></h4>
-<p>Create bar graphs of positions in a sequence.</p>
+<p>Bar graph of relationships(s) per position.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>graph<span class="w"> </span>profile<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
 </pre></div>
 </div>
@@ -1657,13 +1658,13 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-profile-use-ratio">
 <span id="cmdoption-seismic-graph-profile-use-count"></span><span class="sig-name descname"><span class="pre">--use-ratio</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--use-count</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-profile-use-ratio" title="Permalink to this definition"></a></dt>
-<dd><p>Use ratios or counts when graphing</p>
+<dd><p>Graph ratios or counts</p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-profile-q">
 <span id="cmdoption-seismic-graph-profile-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-profile-q" title="Permalink to this definition"></a></dt>
-<dd><p>Quantile for normalizing ratios of mutation rates; must be in [0, 1]</p>
+<dd><p>Quantile for normalizing ratios; must be in [0, 1]</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1729,8 +1730,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </section>
 <section id="seismic-graph-delprof">
 <h4>seismic graph delprof<a class="headerlink" href="#seismic-graph-delprof" title="Permalink to this headline"></a></h4>
-<p>Create bar graphs of differences between pairs of samples at
-each position in a sequence.</p>
+<p>Bar graph of differences between two profiles per position.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>seismic<span class="w"> </span>graph<span class="w"> </span>delprof<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>INPUT_PATH<span class="o">]</span>...
 </pre></div>
 </div>
@@ -1744,13 +1744,13 @@ each position in a sequence.</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-delprof-use-ratio">
 <span id="cmdoption-seismic-graph-delprof-use-count"></span><span class="sig-name descname"><span class="pre">--use-ratio</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--use-count</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-delprof-use-ratio" title="Permalink to this definition"></a></dt>
-<dd><p>Use ratios or counts when graphing</p>
+<dd><p>Graph ratios or counts</p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-delprof-q">
 <span id="cmdoption-seismic-graph-delprof-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-delprof-q" title="Permalink to this definition"></a></dt>
-<dd><p>Quantile for normalizing ratios of mutation rates; must be in [0, 1]</p>
+<dd><p>Quantile for normalizing ratios; must be in [0, 1]</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1842,13 +1842,13 @@ each position in a sequence.</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-corroll-use-ratio">
 <span id="cmdoption-seismic-graph-corroll-use-count"></span><span class="sig-name descname"><span class="pre">--use-ratio</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--use-count</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-corroll-use-ratio" title="Permalink to this definition"></a></dt>
-<dd><p>Use ratios or counts when graphing</p>
+<dd><p>Graph ratios or counts</p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-corroll-q">
 <span id="cmdoption-seismic-graph-corroll-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-corroll-q" title="Permalink to this definition"></a></dt>
-<dd><p>Quantile for normalizing ratios of mutation rates; must be in [0, 1]</p>
+<dd><p>Quantile for normalizing ratios; must be in [0, 1]</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1964,13 +1964,13 @@ in a sequence.</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-use-ratio">
 <span id="cmdoption-seismic-graph-scatter-use-count"></span><span class="sig-name descname"><span class="pre">--use-ratio</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--use-count</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-use-ratio" title="Permalink to this definition"></a></dt>
-<dd><p>Use ratios or counts when graphing</p>
+<dd><p>Graph ratios or counts</p>
 </dd></dl>
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-graph-scatter-q">
 <span id="cmdoption-seismic-graph-scatter-quantile"></span><span class="sig-name descname"><span class="pre">-q</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--quantile</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;quantile&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-graph-scatter-q" title="Permalink to this definition"></a></dt>
-<dd><p>Quantile for normalizing ratios of mutation rates; must be in [0, 1]</p>
+<dd><p>Quantile for normalizing ratios; must be in [0, 1]</p>
 </dd></dl>
 
 <dl class="std option">

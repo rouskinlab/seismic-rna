@@ -735,7 +735,7 @@ opt_quantile = Option(
     ("--quantile", "-q"),
     type=float,
     default=0.,
-    help="Quantile for normalizing ratios of mutation rates; must be in [0, 1]"
+    help="Quantile for normalizing ratios; must be in [0, 1]"
 )
 
 opt_fold_temp = Option(
@@ -817,7 +817,7 @@ opt_use_ratio = Option(
     ("--use-ratio/--use-count",),
     type=bool,
     default=True,
-    help="Use ratios or counts when graphing"
+    help="Graph ratios or counts"
 )
 
 opt_window = Option(

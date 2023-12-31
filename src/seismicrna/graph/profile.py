@@ -108,7 +108,7 @@ class ProfileRunner(OneTableRunner):
 
 @command(COMMAND, params=ProfileRunner.params())
 def cli(*args, **kwargs):
-    """ Create bar graphs of positions in a sequence. """
+    """ Bar graph of relationships(s) per position. """
     return ProfileRunner.run(*args, **kwargs)
 
 ########################################################################

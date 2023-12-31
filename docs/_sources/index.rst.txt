@@ -1,12 +1,12 @@
 ########################################################################
-SEISMIC-RNA User Guide
+How to Research RNA Structures with SEISMIC-RNA
 ########################################################################
-
 
 .. toctree::
     :maxdepth: 2
 
     about/index
+    whatdoes/index
     install/index
     steps/index
     howto/index
