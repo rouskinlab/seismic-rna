@@ -24,9 +24,10 @@ See :doc:`../graph/index` for details and instructions.
 Graph: Default graphs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can make four graphs when you run the entire workflow (``seismic wf``):
+You can make five graphs when you run the entire workflow (``seismic wf``):
 
 - Profile of the fraction of reads mutated (the mutation rate) at each position.
+- Profile of the fraction of each type of mutation at each position.
 - Profile of the number of reads with information at each position.
 - Histogram of the number of positions mutated in each read.
 - ROC for each predicted structure (if you use ``--fold``).

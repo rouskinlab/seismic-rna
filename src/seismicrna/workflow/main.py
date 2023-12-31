@@ -352,7 +352,7 @@ def run(*,
         )
     # Graph mutational profiles.
     ProfileRunner.run(input_path=input_path,
-                      rels="m",
+                      rels=("m", "acgtdi"),
                       use_ratio=True,
                       quantile=0.,
                       cgroup=cgroup,
@@ -365,7 +365,7 @@ def run(*,
                       force=force)
     # Graph information per position.
     ProfileRunner.run(input_path=input_path,
-                      rels="n",
+                      rels=("n",),
                       use_ratio=False,
                       quantile=0.,
                       cgroup=cgroup,
@@ -378,7 +378,7 @@ def run(*,
                       force=force)
     # Graph mutations per read.
     ReadHistogramRunner.run(input_path=input_path,
-                            rels="m",
+                            rels=("m",),
                             use_ratio=False,
                             quantile=0.,
                             cgroup=cgroup,
@@ -394,7 +394,7 @@ def run(*,
     # Graph ROC curves.
     if fold:
         ROCRunner.run(input_path=input_path,
-                      rels="m",
+                      rels=("m",),
                       use_ratio=True,
                       quantile=0.,
                       cgroup=cgroup,
