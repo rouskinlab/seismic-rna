@@ -23,7 +23,7 @@ from ..core.arg import (CMD_WORKFLOW,
                         opt_demultiplex,
                         opt_fold,
                         opt_export,
-                        opt_arrange,
+                        opt_cgroup,
                         opt_csv,
                         opt_html,
                         opt_pdf)
@@ -31,7 +31,7 @@ from ..core.seq import DNA
 from ..graph.profile import ProfileRunner
 from ..graph.roc import ROCRunner
 
-graph_options = [opt_arrange, opt_csv, opt_html, opt_pdf]
+graph_options = [opt_cgroup, opt_csv, opt_html, opt_pdf]
 
 params = merge_params([opt_demultiplex],
                       demultiplex_mod.params,
@@ -171,7 +171,7 @@ def run(*,
         refs_meta: str,
         all_pos: bool,
         # Graph options
-        arrange: str,
+        cgroup: str,
         csv: bool,
         html: bool,
         pdf: bool):
@@ -345,7 +345,7 @@ def run(*,
                       rels="m",
                       use_ratio=True,
                       quantile=0.,
-                      arrange=arrange,
+                      cgroup=cgroup,
                       out_dir=out_dir,
                       csv=csv,
                       html=html,
@@ -358,7 +358,7 @@ def run(*,
                       rels="n",
                       use_ratio=False,
                       quantile=0.,
-                      arrange=arrange,
+                      cgroup=cgroup,
                       out_dir=out_dir,
                       csv=csv,
                       html=html,
@@ -372,7 +372,7 @@ def run(*,
                       rels="m",
                       use_ratio=True,
                       quantile=0.,
-                      arrange=arrange,
+                      cgroup=cgroup,
                       out_dir=out_dir,
                       csv=csv,
                       html=html,

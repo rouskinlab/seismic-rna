@@ -100,10 +100,10 @@ where ``{out}`` is the output directory, ``{sample}`` is the sample, ``{ref}``
 is the reference, and ``{sect}`` is the section.
 Each output file is prefixed with the name of the subcommand that produced it.
 
-``--arrange`` (``-a``): Arrange orders and clusters among output files
+``--cgroup``: Group orders and clusters into output files
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-When graphing tables containing multiple clusters, you can distribute
+When graphing tables containing multiple clusters, you can group
 
 -   ``-a indiv``: Each cluster individually in its own file.
     Each output file will be named with its order and cluster, e.g. ``2-1`` for

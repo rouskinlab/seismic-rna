@@ -6,7 +6,7 @@ from pathlib import Path
 from .base import (GraphBase,
                    GraphRunner,
                    GraphWriter,
-                   arrange_table,
+                   cgroup_table,
                    get_action_name,
                    make_index,
                    make_path_subject,
@@ -83,9 +83,9 @@ class OneTableWriter(GraphWriter, ABC):
 
     def iter_graphs(self,
                     rels: tuple[str, ...],
-                    arrange: str,
+                    cgroup: str,
                     **kwargs):
-        for cparams in arrange_table(self.table, arrange):
+        for cparams in cgroup_table(self.table, cgroup):
             for rels_group in rels:
                 yield self.get_graph(rels_group, **kwargs | cparams)
 

@@ -797,8 +797,8 @@ opt_compself = Option(
     help="Compare every input file with itself"
 )
 
-opt_arrange = Option(
-    ("--arrange", "-a"),
+opt_cgroup = Option(
+    ("--cgroup",),
     type=Choice(CLUST_ARRANGE_OPTIONS),
     default=CLUST_ORDER,
     help=("Graph each INDIVidual cluster in its own file, each ORDER in its "
@@ -831,7 +831,7 @@ opt_winmin = Option(
     ("--winmin", "-n"),
     type=int,
     default=9,
-    help="Minimum number of data in the sliding window"
+    help="Minimum number of data to use a sliding window (otherwise NaN)"
 )
 
 opt_metric = Option(

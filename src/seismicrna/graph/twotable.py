@@ -10,7 +10,7 @@ import pandas as pd
 from .base import (LINKER,
                    GraphRunner,
                    GraphWriter,
-                   arrange_table,
+                   cgroup_table,
                    get_action_name,
                    make_index,
                    make_title_action_sample,
@@ -221,10 +221,10 @@ class TwoTableWriter(GraphWriter, ABC):
 
     def iter_graphs(self,
                     rels: tuple[str, ...],
-                    arrange: str,
+                    cgroup: str,
                     **kwargs):
-        for cparams1, cparams2 in product(arrange_table(self.table1, arrange),
-                                          arrange_table(self.table2, arrange)):
+        for cparams1, cparams2 in product(cgroup_table(self.table1, cgroup),
+                                          cgroup_table(self.table2, cgroup)):
             for rel in rels:
                 graph_type = self.get_graph_type()
                 yield graph_type(rel=rel,

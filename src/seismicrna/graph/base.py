@@ -18,7 +18,7 @@ from ..core.arg import (CLUST_INDIV,
                         opt_rels,
                         opt_use_ratio,
                         opt_quantile,
-                        opt_arrange,
+                        opt_cgroup,
                         opt_out_dir,
                         opt_csv,
                         opt_html,
@@ -104,19 +104,19 @@ def make_path_subject(action: str, order: int | None, clust: int | None):
     raise ValueError(f"Invalid action: {repr(action)}")
 
 
-def arrange_table(table: Table, arrange: str):
-    if arrange == CLUST_INDIV:
+def cgroup_table(table: Table, cgroup: str):
+    if cgroup == CLUST_INDIV:
         # One file per cluster, with no subplots.
         return [dict(order=order, clust=clust)
                 for order, clust in table.header.clusts]
-    elif arrange == CLUST_ORDER:
+    elif cgroup == CLUST_ORDER:
         # One file per order, with one subplot per cluster.
         return [dict(order=order, clust=None)
                 for order in sorted(table.header.orders)]
-    elif arrange == CLUST_UNITE:
+    elif cgroup == CLUST_UNITE:
         # One file, with one subplot per cluster for all orders.
         return [dict(order=None, clust=None)]
-    raise ValueError(f"Invalid value for arrange: {repr(arrange)}")
+    raise ValueError(f"Invalid value for cgroup: {repr(cgroup)}")
 
 
 class GraphBase(ABC):
@@ -437,7 +437,7 @@ class GraphRunner(ABC):
     @classmethod
     def universal_output_params(cls):
         """ Universal parameters controlling the output graph. """
-        return [opt_arrange,
+        return [opt_cgroup,
                 opt_out_dir,
                 opt_csv,
                 opt_html,
@@ -465,7 +465,7 @@ class GraphRunner(ABC):
             rels: tuple[str, ...],
             use_ratio: bool,
             quantile: float, *,
-            arrange: str,
+            cgroup: str,
             out_dir: str,
             csv: bool,
             html: bool,
