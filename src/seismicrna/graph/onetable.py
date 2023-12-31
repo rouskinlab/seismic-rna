@@ -13,7 +13,6 @@ from .base import (GraphBase,
                    make_title_action_sample)
 from ..core.parallel import dispatch
 from ..table.base import Table, PosTable
-from ..table.load import find_pos_tables, load_pos_table
 
 
 class OneTableGraph(GraphBase, ABC):
@@ -75,7 +74,7 @@ class OneTableWriter(GraphWriter, ABC):
     @cached_property
     def table(self):
         """ The table providing the data for the graph(s). """
-        return load_pos_table(self.table_files[0])
+        return self.load_table_file(self.table_files[0])
 
     @abstractmethod
     def get_graph(self, *args, **kwargs) -> OneTableGraph:
@@ -98,11 +97,10 @@ class OneTableRunner(GraphRunner, ABC):
             max_procs: int,
             parallel: bool,
             **kwargs):
-        # List all table files.
-        table_files = list(find_pos_tables(input_path))
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
-        writers = [writer_type(table_file) for table_file in table_files]
+        writers = [writer_type(table_file)
+                   for table_file in cls.list_table_files(input_path)]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,
                                     parallel,

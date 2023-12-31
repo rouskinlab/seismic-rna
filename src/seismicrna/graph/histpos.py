@@ -1,30 +1,49 @@
-from click import group
+import os
+from logging import getLogger
 
-from . import (corroll,
-               delprof,
-               histpos,
-               histread,
-               profile,
-               roc,
-               scatter)
-from ..core.arg import CMD_GRAPH
+from click import command
 
+from .base import PosGraphWriter, PosGraphRunner
+from .histrel import RelHistogramGraph, RelHistogramWriter, RelHistogramRunner
 
-# Group for all graph commands
-@group(CMD_GRAPH)
-def cli():
-    """ Graph and compare data from tables and/or structures. """
+logger = getLogger(__name__)
+
+COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-# Add graph commands to the CLI.
-for module in (corroll,
-               delprof,
-               histpos,
-               histread,
-               profile,
-               roc,
-               scatter):
-    cli.add_command(module.cli)
+class PosHistogramGraph(RelHistogramGraph):
+
+    @classmethod
+    def graph_kind(cls):
+        return COMMAND
+
+    @classmethod
+    def what(cls):
+        return "Histogram per position"
+
+    @property
+    def y_title(self):
+        return "Number of positions"
+
+
+class PosHistogramWriter(RelHistogramWriter, PosGraphWriter):
+
+    @classmethod
+    def get_graph_type(cls):
+        return PosHistogramGraph
+
+
+class PosHistogramRunner(RelHistogramRunner, PosGraphRunner):
+
+    @classmethod
+    def get_writer_type(cls):
+        return PosHistogramWriter
+
+
+@command(COMMAND, params=PosHistogramRunner.params())
+def cli(*args, **kwargs):
+    """ Histogram of relationship(s) per position in one table. """
+    return PosHistogramRunner.run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

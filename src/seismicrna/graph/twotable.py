@@ -204,7 +204,7 @@ class TwoTableWriter(GraphWriter, ABC):
     @classmethod
     @abstractmethod
     def get_graph_type(cls, *args, **kwargs) -> type[TwoTableGraph]:
-        """ Type of the graph to write. """
+        """ Type of graph. """
 
     def __init__(self, table1_file: Path, table2_file: Path):
         super().__init__(table1_file, table2_file)

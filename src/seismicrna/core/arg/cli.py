@@ -854,8 +854,16 @@ opt_structs = Option(
 opt_hist_bins = Option(
     ("--hist-bins",),
     type=int,
-    default=24,
+    default=10,
     help="Number of bins in each histogram (≥ 1)"
+)
+
+opt_hist_margin = Option(
+    ("--hist-margin",),
+    type=float,
+    default=0.01,
+    help=("For ratio-based histograms, maximum margin to autofill between the "
+          "data and 0 or 1")
 )
 
 opt_csv = Option(

@@ -34,6 +34,10 @@ from ..table.base import (Table,
                           RelTable,
                           MaskTable,
                           ClustTable)
+from ..table.load import (find_pos_tables,
+                          find_read_tables,
+                          load_pos_table,
+                          load_read_table)
 
 logger = getLogger(__name__)
 
@@ -400,6 +404,16 @@ class GraphBase(ABC):
 class GraphWriter(ABC):
     """ Write the proper graph(s) for the table(s). """
 
+    @classmethod
+    @abstractmethod
+    def get_table_loader(cls) -> Callable[[Path], Table]:
+        """ Function to load table files. """
+
+    @classmethod
+    def load_table_file(cls, table_file: Path):
+        """ Load one table file. """
+        return cls.get_table_loader()(table_file)
+
     def __init__(self, *table_files: Path):
         self.table_files = list(table_files)
 
@@ -417,6 +431,20 @@ class GraphWriter(ABC):
         """ Generate and write every graph for the table. """
         return list(chain(graph.write(csv=csv, html=html, pdf=pdf, force=force)
                           for graph in self.iter_graphs(*args, **kwargs)))
+
+
+class PosGraphWriter(GraphWriter, ABC):
+
+    @classmethod
+    def get_table_loader(cls):
+        return load_pos_table
+
+
+class ReadGraphWriter(GraphWriter, ABC):
+
+    @classmethod
+    def get_table_loader(cls):
+        return load_read_table
 
 
 class GraphRunner(ABC):
@@ -460,6 +488,16 @@ class GraphRunner(ABC):
 
     @classmethod
     @abstractmethod
+    def get_table_finder(cls) -> Callable[[tuple[str, ...]], Generator]:
+        """ Function to find and filter table files. """
+
+    @classmethod
+    def list_table_files(cls, input_path: tuple[str, ...]):
+        """ Find, filter, and list all table files from input files. """
+        return list(cls.get_table_finder()(input_path))
+
+    @classmethod
+    @abstractmethod
     def run(cls,
             input_path: tuple[str, ...],
             rels: tuple[str, ...],
@@ -475,6 +513,20 @@ class GraphRunner(ABC):
             parallel: bool,
             **kwargs) -> list[Path]:
         """ Run graphing. """
+
+
+class PosGraphRunner(GraphRunner, ABC):
+
+    @classmethod
+    def get_table_finder(cls):
+        return find_pos_tables
+
+
+class ReadGraphRunner(GraphRunner, ABC):
+
+    @classmethod
+    def get_table_finder(cls):
+        return find_read_tables
 
 ########################################################################
 #                                                                      #

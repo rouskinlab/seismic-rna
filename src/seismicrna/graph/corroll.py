@@ -5,6 +5,7 @@ from logging import getLogger
 from click import command
 from plotly import graph_objects as go
 
+from .base import PosGraphWriter, PosGraphRunner
 from .twotable import TwoTableMergedGraph, TwoTableRunner, TwoTableWriter
 from .trace import iter_seq_line_traces
 from ..core.arg import opt_metric, opt_window, opt_winmin
@@ -64,14 +65,14 @@ class RollingCorrelationGraph(TwoTableMergedGraph):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class RollingCorrelationWriter(TwoTableWriter):
+class RollingCorrelationWriter(TwoTableWriter, PosGraphWriter):
 
     @classmethod
     def get_graph_type(cls):
         return RollingCorrelationGraph
 
 
-class RollingCorrelationRunner(TwoTableRunner):
+class RollingCorrelationRunner(TwoTableRunner, PosGraphRunner):
 
     @classmethod
     def var_params(cls):

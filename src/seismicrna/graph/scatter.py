@@ -8,6 +8,7 @@ import pandas as pd
 from click import command
 from plotly import graph_objects as go
 
+from .base import PosGraphWriter, PosGraphRunner
 from .color import ColorMapGraph, SeqColorMap
 from .trace import iter_seq_base_scatter_traces
 from .twotable import SAMPLE_NAME, TwoTableGraph, TwoTableRunner, TwoTableWriter
@@ -69,14 +70,14 @@ class ScatterPlotGraph(TwoTableGraph, ColorMapGraph):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class ScatterPlotWriter(TwoTableWriter):
+class ScatterPlotWriter(TwoTableWriter, PosGraphWriter):
 
     @classmethod
     def get_graph_type(cls):
         return ScatterPlotGraph
 
 
-class ScatterPlotRunner(TwoTableRunner):
+class ScatterPlotRunner(TwoTableRunner, PosGraphRunner):
 
     @classmethod
     def get_writer_type(cls):
