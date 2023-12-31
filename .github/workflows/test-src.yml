@@ -37,4 +37,4 @@ jobs:
     - name: Test with unittest
       run: |
         # Print all tests in real time using double verbose mode.
-        seismic test -vv
+        seismic +test -vv
