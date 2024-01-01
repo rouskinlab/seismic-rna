@@ -9,7 +9,7 @@ from plotly import graph_objects as go
 from .base import PosGraphWriter, PosGraphRunner
 from .onestruct import StructOneTableGraph, StructOneTableRunner
 from .onetable import OneTableWriter
-from .roc import COL_NAMES, PROFILE_NAME
+from .roc import PROFILE_NAME, rename_columns
 from .roll import RollingGraph
 from .trace import iter_rolling_auc_traces
 from ..core.arg import opt_window, opt_winmin
@@ -42,11 +42,8 @@ class RollingAUCGraph(StructOneTableGraph, RollingGraph):
             if key in data:
                 raise ValueError(f"Duplicate RNA state: {key}")
             data[key] = state.rolling_auc(self._size, self._min_count)
-        # Compile the data into a DataFrame.
-        data = pd.DataFrame.from_dict(data)
-        # Rename the levels of the columns.
-        data.columns.names = COL_NAMES
-        return data
+        # Covert the data into a DataFrame and rename the column levels.
+        return rename_columns(pd.DataFrame.from_dict(data))
 
     @cached_property
     def profile_names(self):

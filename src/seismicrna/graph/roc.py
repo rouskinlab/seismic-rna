@@ -26,10 +26,8 @@ TPR = "True positive rate"
 FPR = "False positive rate"
 
 
-def _consolidate_pr(pr: dict):
-    """ Consolidate a true or false positive rate (PR) forming half the
-    ROC from a dict into a DataFrame. """
-    df = pd.DataFrame.from_dict(pr)
+def rename_columns(df: pd.DataFrame):
+    """ Rename the levels of the columns. """
     # The DataFrame's columns must be a MultiIndex with two levels named
     # "Profile" and "Structure".
     if df.size > 0:
@@ -41,6 +39,12 @@ def _consolidate_pr(pr: dict):
         # (which has one level), so they must be replaced.
         df.columns = pd.MultiIndex.from_arrays([[], []], names=COL_NAMES)
     return df
+
+
+def _consolidate_pr(pr: dict):
+    """ Consolidate a true or false positive rate (PR) forming half the
+    ROC from a dict into a DataFrame. """
+    return rename_columns(pd.DataFrame.from_dict(pr))
 
 
 class ROCGraph(StructOneTableGraph):
