@@ -61,7 +61,7 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">seismicrna.graph package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#module-seismicrna.graph.base">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-seismicrna.graph.aucroll">Submodules</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
@@ -110,9 +110,81 @@
              
   <section id="module-seismicrna.graph">
 <span id="seismicrna-graph-package"></span><h1>seismicrna.graph package<a class="headerlink" href="#module-seismicrna.graph" title="Permalink to this headline"></a></h1>
-<section id="module-seismicrna.graph.base">
-<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.graph.base" title="Permalink to this headline"></a></h2>
+<section id="module-seismicrna.graph.aucroll">
+<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.graph.aucroll" title="Permalink to this headline"></a></h2>
 <dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.graph.aucroll.RollingAUCGraph">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.graph.aucroll.</span></span><span class="sig-name descname"><span class="pre">RollingAUCGraph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">structs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.aucroll.RollingAUCGraph" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.graph.onestruct.StructOneTableGraph" title="seismicrna.graph.onestruct.StructOneTableGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.graph.onestruct.StructOneTableGraph</span></code></a>, <a class="reference internal" href="#seismicrna.graph.roll.RollingGraph" title="seismicrna.graph.roll.RollingGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.graph.roll.RollingGraph</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.graph.aucroll.RollingAUCGraph.data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#seismicrna.graph.aucroll.RollingAUCGraph.data" title="Permalink to this definition"></a></dt>
+<dd><p>Data of the graph.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.graph.aucroll.RollingAUCGraph.get_traces">
+<span class="sig-name descname"><span class="pre">get_traces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.aucroll.RollingAUCGraph.get_traces" title="Permalink to this definition"></a></dt>
+<dd><p>Data traces of the graph.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.graph.aucroll.RollingAUCGraph.graph_kind">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">graph_kind</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.aucroll.RollingAUCGraph.graph_kind" title="Permalink to this definition"></a></dt>
+<dd><p>Kind of graph.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.graph.aucroll.RollingAUCGraph.profile_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">profile_names</span></span><a class="headerlink" href="#seismicrna.graph.aucroll.RollingAUCGraph.profile_names" title="Permalink to this definition"></a></dt>
+<dd><p>Names of the profiles as they appear in the data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.graph.aucroll.RollingAUCGraph.what">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">what</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.aucroll.RollingAUCGraph.what" title="Permalink to this definition"></a></dt>
+<dd><p>What is being graphed.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.graph.aucroll.RollingAUCGraph.y_title">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">y_title</span></span><a class="headerlink" href="#seismicrna.graph.aucroll.RollingAUCGraph.y_title" title="Permalink to this definition"></a></dt>
+<dd><p>Title of the y-axis.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.graph.aucroll.RollingAUCRunner">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.graph.aucroll.</span></span><span class="sig-name descname"><span class="pre">RollingAUCRunner</span></span><a class="headerlink" href="#seismicrna.graph.aucroll.RollingAUCRunner" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.graph.onestruct.StructOneTableRunner" title="seismicrna.graph.onestruct.StructOneTableRunner"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.graph.onestruct.StructOneTableRunner</span></code></a>, <a class="reference internal" href="#seismicrna.graph.base.PosGraphRunner" title="seismicrna.graph.base.PosGraphRunner"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.graph.base.PosGraphRunner</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.graph.aucroll.RollingAUCRunner.get_writer_type">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_writer_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.aucroll.RollingAUCRunner.get_writer_type" title="Permalink to this definition"></a></dt>
+<dd><p>Type of GraphWriter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.graph.aucroll.RollingAUCRunner.var_params">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">var_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.aucroll.RollingAUCRunner.var_params" title="Permalink to this definition"></a></dt>
+<dd><p>Parameters that can vary among different classes.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.graph.aucroll.RollingAUCWriter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.graph.aucroll.</span></span><span class="sig-name descname"><span class="pre">RollingAUCWriter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.aucroll.RollingAUCWriter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.graph.onetable.OneTableWriter" title="seismicrna.graph.onetable.OneTableWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.graph.onetable.OneTableWriter</span></code></a>, <a class="reference internal" href="#seismicrna.graph.base.PosGraphWriter" title="seismicrna.graph.base.PosGraphWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.graph.base.PosGraphWriter</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.graph.aucroll.RollingAUCWriter.get_graph">
+<span class="sig-name descname"><span class="pre">get_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rels_group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.aucroll.RollingAUCWriter.get_graph" title="Permalink to this definition"></a></dt>
+<dd><p>Return a graph instance.</p>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-seismicrna.graph.base"></span><dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.graph.base.GraphBase">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.graph.base.</span></span><span class="sig-name descname"><span class="pre">GraphBase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.base.GraphBase" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
@@ -545,8 +617,8 @@
 
 <span class="target" id="module-seismicrna.graph.corroll"></span><dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.graph.corroll.RollingCorrelationGraph">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.graph.corroll.</span></span><span class="sig-name descname"><span class="pre">RollingCorrelationGraph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">winmin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.corroll.RollingCorrelationGraph" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#seismicrna.graph.twotable.TwoTableMergedGraph" title="seismicrna.graph.twotable.TwoTableMergedGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.graph.twotable.TwoTableMergedGraph</span></code></a></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.graph.corroll.</span></span><span class="sig-name descname"><span class="pre">RollingCorrelationGraph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.corroll.RollingCorrelationGraph" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.graph.twotable.TwoTableMergedGraph" title="seismicrna.graph.twotable.TwoTableMergedGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.graph.twotable.TwoTableMergedGraph</span></code></a>, <a class="reference internal" href="#seismicrna.graph.roll.RollingGraph" title="seismicrna.graph.roll.RollingGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.graph.roll.RollingGraph</span></code></a></p>
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.graph.corroll.RollingCorrelationGraph.details">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">details</span></span><a class="headerlink" href="#seismicrna.graph.corroll.RollingCorrelationGraph.details" title="Permalink to this definition"></a></dt>
@@ -629,6 +701,12 @@
 <dt class="sig sig-object py" id="seismicrna.graph.delprof.DeltaProfileGraph.what">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">what</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.delprof.DeltaProfileGraph.what" title="Permalink to this definition"></a></dt>
 <dd><p>What is being graphed.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.graph.delprof.DeltaProfileGraph.x_title">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">x_title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></em><a class="headerlink" href="#seismicrna.graph.delprof.DeltaProfileGraph.x_title" title="Permalink to this definition"></a></dt>
+<dd><p>Title of the x-axis.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1204,7 +1282,7 @@
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.graph.roc.ROCGraph.profile_names">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">profile_names</span></span><a class="headerlink" href="#seismicrna.graph.roc.ROCGraph.profile_names" title="Permalink to this definition"></a></dt>
-<dd><p>Names of the profiles as they appear in the ROC data.</p>
+<dd><p>Names of the profiles as they appear in the data.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1253,6 +1331,30 @@
 <dt class="sig sig-object py" id="seismicrna.graph.roc.ROCWriter.get_graph">
 <span class="sig-name descname"><span class="pre">get_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rels_group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.roc.ROCWriter.get_graph" title="Permalink to this definition"></a></dt>
 <dd><p>Return a graph instance.</p>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-seismicrna.graph.roll"></span><dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.graph.roll.RollingGraph">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.graph.roll.</span></span><span class="sig-name descname"><span class="pre">RollingGraph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">winmin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.roll.RollingGraph" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.graph.base.GraphBase" title="seismicrna.graph.base.GraphBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.graph.base.GraphBase</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.graph.roll.RollingGraph.details">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">details</span></span><a class="headerlink" href="#seismicrna.graph.roll.RollingGraph.details" title="Permalink to this definition"></a></dt>
+<dd><p>Additional details about the graph.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.graph.roll.RollingGraph.predicate">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">predicate</span></span><a class="headerlink" href="#seismicrna.graph.roll.RollingGraph.predicate" title="Permalink to this definition"></a></dt>
+<dd><p>Predicate of the graph.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.graph.roll.RollingGraph.x_title">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">x_title</span></span><a class="headerlink" href="#seismicrna.graph.roll.RollingGraph.x_title" title="Permalink to this definition"></a></dt>
+<dd><p>Title of the x-axis.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1340,6 +1442,11 @@
 <dd></dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.graph.trace.get_rolling_auc_trace">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.graph.trace.</span></span><span class="sig-name descname"><span class="pre">get_rolling_auc_trace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">auc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">struct</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.trace.get_rolling_auc_trace" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.graph.trace.get_seq_base_bar_trace">
 <span class="sig-prename descclassname"><span class="pre">seismicrna.graph.trace.</span></span><span class="sig-name descname"><span class="pre">get_seq_base_bar_trace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#seismicrna.graph.color.ColorMap" title="seismicrna.graph.color.ColorMap"><span class="pre">seismicrna.graph.color.ColorMap</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.trace.get_seq_base_bar_trace" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
@@ -1367,6 +1474,11 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.graph.trace.iter_roc_traces">
 <span class="sig-prename descclassname"><span class="pre">seismicrna.graph.trace.</span></span><span class="sig-name descname"><span class="pre">iter_roc_traces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fprs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tprs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.trace.iter_roc_traces" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.graph.trace.iter_rolling_auc_traces">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.graph.trace.</span></span><span class="sig-name descname"><span class="pre">iter_rolling_auc_traces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aucs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.trace.iter_rolling_auc_traces" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
@@ -1521,12 +1633,6 @@ original data are not graphed directly.</p>
 <dt class="sig sig-object py" id="seismicrna.graph.twotable.TwoTableMergedGraph.get_traces">
 <span class="sig-name descname"><span class="pre">get_traces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.graph.twotable.TwoTableMergedGraph.get_traces" title="Permalink to this definition"></a></dt>
 <dd><p>Data traces of the graph.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.graph.twotable.TwoTableMergedGraph.x_title">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">x_title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></em><a class="headerlink" href="#seismicrna.graph.twotable.TwoTableMergedGraph.x_title" title="Permalink to this definition"></a></dt>
-<dd><p>Title of the x-axis.</p>
 </dd></dl>
 
 </dd></dl>

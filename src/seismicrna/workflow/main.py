@@ -26,10 +26,13 @@ from ..core.arg import (CMD_WORKFLOW,
                         opt_cgroup,
                         opt_hist_bins,
                         opt_hist_margin,
+                        opt_window,
+                        opt_winmin,
                         opt_csv,
                         opt_html,
                         opt_pdf)
 from ..core.seq import DNA
+from ..graph.aucroll import RollingAUCRunner
 from ..graph.histread import ReadHistogramRunner
 from ..graph.profile import ProfileRunner
 from ..graph.roc import ROCRunner
@@ -37,6 +40,8 @@ from ..graph.roc import ROCRunner
 graph_options = [opt_cgroup,
                  opt_hist_bins,
                  opt_hist_margin,
+                 opt_window,
+                 opt_winmin,
                  opt_csv,
                  opt_html,
                  opt_pdf]
@@ -182,6 +187,8 @@ def run(*,
         cgroup: str,
         hist_bins: int,
         hist_margin: float,
+        window: int,
+        winmin: int,
         csv: bool,
         html: bool,
         pdf: bool):
@@ -391,8 +398,8 @@ def run(*,
                             max_procs=max_procs,
                             parallel=parallel,
                             force=force)
-    # Graph ROC curves.
     if fold:
+        # Graph ROC curves.
         ROCRunner.run(input_path=input_path,
                       rels=("m",),
                       use_ratio=True,
@@ -405,6 +412,21 @@ def run(*,
                       max_procs=max_procs,
                       parallel=parallel,
                       force=force)
+        # Graph rolling AUC-ROC.
+        RollingAUCRunner.run(input_path=input_path,
+                             rels=("m",),
+                             use_ratio=True,
+                             quantile=0.,
+                             window=window,
+                             winmin=winmin,
+                             cgroup=cgroup,
+                             out_dir=out_dir,
+                             csv=csv,
+                             html=html,
+                             pdf=pdf,
+                             max_procs=max_procs,
+                             parallel=parallel,
+                             force=force)
     # Export
     if export:
         export_mod.run(

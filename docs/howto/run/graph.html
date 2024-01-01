@@ -114,7 +114,7 @@
 <h1>Graph: Plot data from tables and/or structures and compare samples<a class="headerlink" href="#graph-plot-data-from-tables-and-or-structures-and-compare-samples" title="Permalink to this headline"></a></h1>
 <section id="graph-types-of-graphs">
 <h2>Graph: Types of graphs<a class="headerlink" href="#graph-types-of-graphs" title="Permalink to this headline"></a></h2>
-<p>SEISMIC-RNA can create several types of graphs:</p>
+<p>SEISMIC-RNA can create eight types of graphs:</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 9%" />
@@ -147,19 +147,23 @@
 <tr class="row-even"><td><p>roc</p></td>
 <td><p>Receiver operating characteristic (ROC) curve comparing a profile to a structure</p></td>
 </tr>
+<tr class="row-odd"><td><p>aucroll</p></td>
+<td><p>Rolling area under the ROC curve (AUC-ROC) comparing a profile to a structure</p></td>
+</tr>
 </tbody>
 </table>
 <p>See <a class="reference internal" href="../graph/index.html"><span class="doc">Graph Results</span></a> for details and instructions.</p>
 </section>
 <section id="graph-default-graphs">
 <h2>Graph: Default graphs<a class="headerlink" href="#graph-default-graphs" title="Permalink to this headline"></a></h2>
-<p>You can make five graphs when you run the entire workflow (<code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code>):</p>
+<p>You can make six graphs when you run the entire workflow (<code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code>):</p>
 <ul class="simple">
 <li><p>Profile of the fraction of reads mutated (the mutation rate) at each position.</p></li>
 <li><p>Profile of the fraction of each type of mutation at each position.</p></li>
 <li><p>Profile of the number of reads with information at each position.</p></li>
 <li><p>Histogram of the number of positions mutated in each read.</p></li>
-<li><p>ROC for each predicted structure (if you use <code class="docutils literal notranslate"><span class="pre">--fold</span></code>).</p></li>
+<li><p>ROC for each predicted structure (with <code class="docutils literal notranslate"><span class="pre">--fold</span></code>).</p></li>
+<li><p>Rolling AUC-ROC for each predicted structure (with <code class="docutils literal notranslate"><span class="pre">--fold</span></code>).</p></li>
 </ul>
 <p>These graphs are created by default in <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code>.
 To make additional types of graphs, see <a class="reference internal" href="../graph/index.html"><span class="doc">Graph Results</span></a>.</p>

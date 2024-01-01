@@ -307,6 +307,12 @@ which it pairs, or 0 if it does not pair.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.rna.pair.table_to_dict">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.rna.pair.</span></span><span class="sig-name descname"><span class="pre">table_to_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rna.pair.table_to_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Dictionary of the 5’ and 3’ position in each pair.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.rna.pair.table_to_pairs">
 <span class="sig-prename descclassname"><span class="pre">seismicrna.core.rna.pair.</span></span><span class="sig-name descname"><span class="pre">table_to_pairs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rna.pair.table_to_pairs" title="Permalink to this definition"></a></dt>
 <dd><p>Tuples of the 5’ and 3’ position in each pair.</p>
@@ -468,17 +474,96 @@ which it pairs, or 0 if it does not pair.</p>
 </dd></dl>
 
 <span class="target" id="module-seismicrna.core.rna.roc"></span><dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.core.rna.roc.compute_auc_roc">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.rna.roc.</span></span><span class="sig-name descname"><span class="pre">compute_auc_roc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fpr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tpr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rna.roc.compute_auc_roc" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.rna.roc.compute_auc">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.rna.roc.</span></span><span class="sig-name descname"><span class="pre">compute_auc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fpr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tpr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rna.roc.compute_auc" title="Permalink to this definition"></a></dt>
 <dd><p>Compute the area under the curve (AUC) of the receiver operating
 characteristic (ROC).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fpr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – False positive rate (FPR) of the ROC curve.</p></li>
+<li><p><strong>tpr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – True positive rate (TPR) of the ROC curve.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>AUC-ROC</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.rna.roc.compute_auc_roc">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.rna.roc.</span></span><span class="sig-name descname"><span class="pre">compute_auc_roc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paired</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rna.roc.compute_auc_roc" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the receiver operating characteristic (ROC) and the area
+under the curve (AUC) to indicate how well mutation data agree with
+a structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>paired</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code>) – Boolean series with one index per position, where each value is
+True if the base at the position is paired, otherwise False.</p></li>
+<li><p><strong>profile</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code>) – Mutational profile with one index per position, where each value
+is the mutation rate at the position.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>AUC-ROC</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.rna.roc.compute_roc_curve">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.rna.roc.</span></span><span class="sig-name descname"><span class="pre">compute_roc_curve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paired</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reacts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rna.roc.compute_roc_curve" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.rna.roc.</span></span><span class="sig-name descname"><span class="pre">compute_roc_curve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paired</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rna.roc.compute_roc_curve" title="Permalink to this definition"></a></dt>
 <dd><p>Compute the receiver operating characteristic (ROC) curve to
-compute how well chemical reactivities agree with a structure.</p>
+indicate how well mutation data agree with a structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>paired</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code>) – Boolean series with one index per position, where each value is
+True if the base at the position is paired, otherwise False.</p></li>
+<li><p><strong>profile</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code>) – Mutational profile with one index per position, where each value
+is the mutation rate at the position.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>FPR and TPR axes, respectively, of the ROC curve.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple[numpy.ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray]</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.rna.roc.compute_rolling_auc">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.rna.roc.</span></span><span class="sig-name descname"><span class="pre">compute_rolling_auc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paired</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rna.roc.compute_rolling_auc" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the area under the curve (AUC) of the receiver operating
+characteristic (ROC) at each position using a sliding window.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>paired</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code>) – Boolean series with one index per position, where each value is
+True if the base at the position is paired, otherwise False.</p></li>
+<li><p><strong>profile</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code>) – Mutational profile with one index per position, where each value
+is the mutation rate at the position.</p></li>
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Size of the window.</p></li>
+<li><p><strong>min_data</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span> <span class="pre">=</span> <span class="pre">2</span></code>) – Minimum number of data in a window to use it (otherwise NaN).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>AUC-ROC at each position.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <span class="target" id="module-seismicrna.core.rna.state"></span><dl class="py class">
@@ -500,6 +585,11 @@ compute how well chemical reactivities agree with a structure.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.core.rna.state.RNAState.roc">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">roc</span></span><a class="headerlink" href="#seismicrna.core.rna.state.RNAState.roc" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.rna.state.RNAState.rolling_auc">
+<span class="sig-name descname"><span class="pre">rolling_auc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rna.state.RNAState.rolling_auc" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -536,6 +626,13 @@ compute how well chemical reactivities agree with a structure.</p>
 <dt class="sig sig-object py" id="seismicrna.core.rna.struct.RNAStructure.init_args">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">init_args</span></span><a class="headerlink" href="#seismicrna.core.rna.struct.RNAStructure.init_args" title="Permalink to this definition"></a></dt>
 <dd><p>Arguments needed to initialize a new instance.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.rna.struct.RNAStructure.is_paired">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_paired</span></span><a class="headerlink" href="#seismicrna.core.rna.struct.RNAStructure.is_paired" title="Permalink to this definition"></a></dt>
+<dd><p>Series where each index is a position and each value is True
+if the corresponding base is paired, otherwise False.</p>
 </dd></dl>
 
 <dl class="py method">

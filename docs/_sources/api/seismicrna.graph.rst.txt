@@ -10,6 +10,12 @@ Submodules
 ----------
 
 
+.. automodule:: seismicrna.graph.aucroll
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.graph.base
    :members:
    :undoc-members:
@@ -89,6 +95,12 @@ Submodules
 
 
 .. automodule:: seismicrna.graph.roc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.graph.roll
    :members:
    :undoc-members:
    :show-inheritance:
