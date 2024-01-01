@@ -7,7 +7,6 @@ from ..align.fqops import FastqUnit
 from ..core.arg import (CMD_DEMULT,
                         opt_barcode_end,
                         opt_barcode_start,
-
                         opt_parallel_demultiplexing,
                         opt_clipped_demultiplexing,
                         opt_mismatch_tolerence,
@@ -19,7 +18,7 @@ from ..core.arg import (CMD_DEMULT,
                         opt_phred_enc,
                         opt_sections_file,
                         opt_temp_dir,
-                        opt_keep_temp,)
+                        opt_keep_temp, )
 from ..core.parallel import lock_temp_dir
 
 params = [
@@ -67,6 +66,7 @@ def run(sections_file: str,
         demulti_overwrite: bool = False,
         keep_temp: bool =True,
         ):
+    """ Split multiplexed FASTQ files by their barcodes. """
     fq_units = list(FastqUnit.from_paths(fastqx=list(map(Path, fastqx)),
                                          phred_enc=phred_enc))
     return [demultiplex_run(refs_file_csv=sections_file,

@@ -17,7 +17,7 @@ from os.path import dirname
 
 from click import command
 
-from ..core.arg import CMD_TEST, docdef, opt_verbose
+from seismicrna.core.arg import CMD_TEST, docdef, opt_verbose
 
 # Parameters for command line interface
 params = [opt_verbose]
@@ -31,9 +31,7 @@ def cli(**kwargs):
 
 @docdef.auto()
 def run(verbose: int):
-    """
-    Run all unit tests.
-    """
+    """ Run all unit tests. """
     # Discover all unit test modules.
     main_dir = dirname(dirname(__file__))
     # The line top_level_dir=dirname(main_dir) is needed to make Python
@@ -45,6 +43,11 @@ def run(verbose: int):
     # Run all unit tests.
     runner = ut.TextTestRunner(verbosity=verbose)
     runner.run(suite)
+
+
+if __name__ == "__main__":
+    # Run all unit tests by executing this script on the command line.
+    run(verbose=0)
 
 ########################################################################
 #                                                                      #

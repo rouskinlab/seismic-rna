@@ -18,9 +18,9 @@ from ..core.arg import (opt_barcode_end,
                         arg_fasta,
                         opt_sections_file,
                         opt_fastqx,
-                        opt_refs_file,
+                        opt_refs_meta,
                         opt_temp_dir,
-                        opt_keep_temp,)
+                        opt_keep_temp, )
 
 # from scipy import signal
 
@@ -39,7 +39,7 @@ params = [
     opt_mismatch_tolerence,
     opt_index_tolerence,
     opt_demulti_overwrite,
-    opt_refs_file,
+    opt_refs_meta,
     opt_temp_dir,
     opt_keep_temp,
 

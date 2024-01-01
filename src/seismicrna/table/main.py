@@ -1,8 +1,6 @@
-from collections import Counter
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
-from typing import Iterable
 
 from click import command
 
@@ -25,15 +23,14 @@ params = [arg_input_path,
           opt_table_pos,
           opt_table_read,
           opt_table_clust,
-opt_force,
+          opt_force,
           opt_max_procs,
           opt_parallel]
 
 
 @command(CMD_TABLE, params=params)
 def cli(*args, **kwargs):
-    """ Tabulate per-base and per-read mutation counts from 'relate' and
-    'mask', and mutation rates and read memberships from 'cluster'. """
+    """ Count mutations for each read and position; output tables. """
     return run(*args, **kwargs)
 
 
@@ -45,9 +42,7 @@ def run(input_path: tuple[str, ...], *,
         force: bool,
         max_procs: int,
         parallel: bool):
-    """
-    Run the table module.
-    """
+    """ Count mutations for each read and position; output tables. """
     report_files = list(map(Path, input_path))
     relate_reports = path.find_files_chain(report_files, [path.RelateRepSeg])
     if relate_reports:
@@ -70,14 +65,6 @@ def run(input_path: tuple[str, ...], *,
                                             table_clust=table_clust,
                                             force=force),
                                 pass_n_procs=False)))
-
-
-def join_rels(rels: Iterable[str]):
-    """ Join relationships into one string. """
-    counts = Counter(r for rel in rels for r in rel)
-    if dups := [item for item, count in counts.items() if count > 1]:
-        logger.warning(f"Got duplicate relationships: {dups}")
-    return "".join(counts)
 
 ########################################################################
 #                                                                      #

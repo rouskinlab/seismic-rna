@@ -5,7 +5,12 @@ from pathlib import Path
 
 from .io import RelateIO, QnamesBatchIO, RelateBatchIO
 from ..core import path
-from ..core.report import BatchedRefseqReport, RefF, SampleF, NumReadsRel
+from ..core.report import (BatchedRefseqReport,
+                           RefF,
+                           SampleF,
+                           MinMapQualF,
+                           MinReadsF,
+                           NumReadsRelF)
 
 BATCH_INDEX_COL = "Read Name"
 
@@ -14,7 +19,11 @@ class RelateReport(BatchedRefseqReport, RelateIO):
 
     @classmethod
     def fields(cls):
-        return [SampleF, RefF, NumReadsRel] + super().fields()
+        return [SampleF,
+                RefF,
+                MinMapQualF,
+                MinReadsF,
+                NumReadsRelF] + super().fields()
 
     @classmethod
     def file_seg_type(cls):

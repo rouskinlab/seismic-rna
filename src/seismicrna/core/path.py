@@ -61,26 +61,26 @@ RE_PATTERNS = {str: STR_PATTERN, int: INT_PATTERN, pl.Path: PATH_PATTERN}
 
 # Directories for commands
 
-CMD_FQC_DIR = "qc"
-CMD_ALN_DIR = "align"
+CMD_QC_DIR = "qc"
+CMD_ALIGN_DIR = "align"
 CMD_REL_DIR = "relate"
-CMD_MSK_DIR = "mask"
-CMD_CLS_DIR = "cluster"
-CMD_TBL_DIR = "table"
+CMD_MASK_DIR = "mask"
+CMD_CLUST_DIR = "cluster"
+CMD_TABLE_DIR = "table"
 CMD_FOLD_DIR = "fold"
-CMD_GRA_DIR = "graph"
+CMD_GRAPH_DIR = "graph"
 
 # Directories for steps
 
-STEP_QC_INIT = "init"
-STEP_QC_TRIM = "trim"
+STEP_QC_INIT = "initial"
+STEP_QC_TRIM = "trimmed"
 
 STEP_ALIGN_INDEX = "index"
 STEP_ALIGN_INDEX_DEMULT = "index-demult"
 STEP_ALIGN_TRIM = "trim"
 STEP_ALIGN_MAP = "map"
 
-STEPS_VECT_SAMS = "sams"
+STEPS_REL_SAMS = "sams"
 
 STEPS = (STEP_QC_INIT,
          STEP_QC_TRIM,
@@ -88,7 +88,7 @@ STEPS = (STEP_QC_INIT,
          STEP_ALIGN_INDEX_DEMULT,
          STEP_ALIGN_TRIM,
          STEP_ALIGN_MAP,
-         STEPS_VECT_SAMS)
+         STEPS_REL_SAMS)
 
 # Tables
 
@@ -101,20 +101,10 @@ CLUST_TABLES = (CLUST_PROP_RUN_TABLE,
                 CLUST_RESP_RUN_TABLE,
                 CLUST_COUNT_RUN_TABLE)
 
-RELATE_POS_TAB = "relate-per-pos"
-RELATE_READ_TAB = "relate-per-read"
-MASKED_POS_TAB = "mask-per-pos"
-MASKED_READ_TAB = "mask-per-read"
-CLUST_POS_TAB = "clust-per-pos"
-CLUST_READ_TAB = "clust-per-read"
-CLUST_FREQ_TAB = "clust-freq"
-COUNT_TABLES = (RELATE_POS_TAB,
-                RELATE_READ_TAB,
-                MASKED_POS_TAB,
-                MASKED_READ_TAB,
-                CLUST_POS_TAB,
-                CLUST_READ_TAB,
-                CLUST_FREQ_TAB)
+RELATE_TABLE = "relate"
+MASK_TABLE = "mask"
+CLUST_TABLE = "clust"
+TABLES = (RELATE_TABLE, MASK_TABLE, CLUST_TABLE)
 
 # File extensions
 
@@ -150,9 +140,10 @@ CRAM_EXT = ".cram"
 XAM_EXTS = SAM_EXT, BAM_EXT, CRAM_EXT
 FAI_EXT = ".fai"
 CT_EXT = ".ct"
-DOT_EXT = ".dot"
+DB_EXT = ".db"
 DBN_EXT = ".dbn"
-DOT_EXTS = DOT_EXT, DBN_EXT
+DOT_EXT = ".dot"
+DOT_EXTS = DB_EXT, DBN_EXT, DOT_EXT
 DMS_EXT = ".dms"
 HTML_EXT = ".html"
 PDF_EXT = ".pdf"
@@ -177,13 +168,29 @@ class PathValueError(PathError, ValueError):
 
 # Path Functions #######################################################
 
-def fill_whitespace(path: str | Path, fill: str = '_'):
+def fill_whitespace(path: str | Path, fill: str = "_"):
     """ Replace all whitespace in `path` with `fill`. """
-    return type(path)(fill.join(str(path).split()))
+    return path.__class__(fill.join(str(path).split()))
 
 
-def sanitize(path: str | pl.Path):
-    return pl.Path(os.path.realpath(os.path.normpath(os.path.abspath(path))))
+def sanitize(path: str | pl.Path, strict: bool = False):
+    """ Sanitize a path-like object by ensuring it is an absolute path,
+    eliminating symbolic links and redundant path separators/references,
+    and returning a Path object.
+
+    Parameters
+    ----------
+    path: str | pathlib.Path
+        Path to sanitize.
+    strict: bool = False
+        Require the path to exist and contain no symbolic link loops.
+
+    Returns
+    -------
+    pathlib.Path
+        Absolute, normalized, symlink-free path.
+    """
+    return pl.Path(path).resolve(strict=strict)
 
 
 # Path Fields ##########################################################
@@ -270,18 +277,20 @@ class Field(object):
 # Fields
 TopField = Field(pl.Path)
 NameField = Field(str)
-CmdField = Field(str, [CMD_FQC_DIR,
-                       CMD_ALN_DIR,
+CmdField = Field(str, [CMD_QC_DIR,
+                       CMD_ALIGN_DIR,
                        CMD_REL_DIR,
-                       CMD_MSK_DIR,
-                       CMD_CLS_DIR,
-                       CMD_TBL_DIR,
+                       CMD_MASK_DIR,
+                       CMD_CLUST_DIR,
+                       CMD_TABLE_DIR,
                        CMD_FOLD_DIR,
-                       CMD_GRA_DIR])
+                       CMD_GRAPH_DIR])
 StepField = Field(str, STEPS)
 IntField = Field(int)
-CountTabField = Field(str, COUNT_TABLES)
 ClustTabField = Field(str, CLUST_TABLES)
+PosTableField = Field(str, TABLES)
+ReadTableField = Field(str, TABLES)
+FreqTableField = Field(str, [CLUST_TABLE])
 
 # File extensions
 TextExt = Field(str, [TXT_EXT], is_ext=True)
@@ -290,7 +299,9 @@ RefseqFileExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 BatchExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 ClustTabExt = Field(str, CSV_EXTS, is_ext=True)
 ClustCountExt = Field(str, CSV_EXTS, is_ext=True)
-MutTabExt = Field(str, CSV_EXTS, is_ext=True)
+PosTableExt = Field(str, [CSV_EXT], is_ext=True)
+ReadTableExt = Field(str, [CSVZIP_EXT], is_ext=True)
+FreqTableExt = Field(str, [CSV_EXT], is_ext=True)
 FastaExt = Field(str, FASTA_EXTS, is_ext=True)
 FastaIndexExt = Field(str, BOWTIE2_INDEX_EXTS, is_ext=True)
 FastqExt = Field(str, FQ_EXTS, is_ext=True)
@@ -422,13 +433,11 @@ CMD = "cmd"
 SAMP = "sample"
 REF = "ref"
 SECT = "sect"
-FOLD_SECT = "fold_sect"
 BATCH = "batch"
 TABLE = "table"
 NCLUST = "k"
 RUN = "run"
-STRUCT = "struct"
-REACTS = "reacts"
+PROFILE = "profile"
 GRAPH = "graph"
 EXT = "ext"
 
@@ -440,7 +449,6 @@ CmdSeg = Segment("command-dir", {CMD: CmdField}, order=50)
 StepSeg = Segment("step-dir", {STEP: StepField}, order=40)
 RefSeg = Segment("ref-dir", {REF: NameField}, order=30)
 SectSeg = Segment("section-dir", {SECT: NameField}, order=20)
-FoldSectSeg = Segment("fold-section-dir", {FOLD_SECT: NameField}, order=10)
 
 # File segments
 
@@ -496,15 +504,29 @@ ClustBatSeg = Segment("clust-bat",
 ClustRepSeg = Segment("clust-rep", {EXT: ReportExt}, frmt="cluster-report{ext}")
 
 # Tabulation
-TableSeg = Segment("table", {TABLE: CountTabField, EXT: MutTabExt})
+PosTableSeg = Segment("pos-table",
+                      {TABLE: PosTableField, EXT: PosTableExt},
+                      frmt="{table}-per-pos{ext}")
+ReadTableSeg = Segment("read-table",
+                       {TABLE: ReadTableField, EXT: ReadTableExt},
+                       frmt="{table}-per-read{ext}")
+FreqTableSeg = Segment("freq-table",
+                       {TABLE: FreqTableField, EXT: FreqTableExt},
+                       frmt="{table}-freq{ext}")
 
-# RNA Structure Formats
-ConnectTableSeg = Segment("rna-ct", {STRUCT: NameField, EXT: ConnectTableExt})
-DotBracketSeg = Segment("rna-dot", {STRUCT: NameField, EXT: DotBracketExt})
-DmsReactsSeg = Segment("dms-reacts", {REACTS: NameField, EXT: DmsReactsExt})
+# Folding
+FoldRepSeg = Segment("fold-rep",
+                     {PROFILE: NameField, EXT: ReportExt},
+                     frmt="{profile}__fold-report{ext}")
+ConnectTableSeg = Segment("rna-ct",
+                          {PROFILE: NameField, EXT: ConnectTableExt})
+DotBracketSeg = Segment("rna-dot",
+                        {PROFILE: NameField, EXT: DotBracketExt})
+DmsReactsSeg = Segment("dms-reacts",
+                       {PROFILE: NameField, EXT: DmsReactsExt})
 VarnaColorSeg = Segment("varna-color",
-                        {REACTS: NameField, EXT: TextExt},
-                        frmt="{reacts}__varna-color{ext}")
+                        {PROFILE: NameField, EXT: TextExt},
+                        frmt="{profile}__varna-color{ext}")
 
 # Graphs
 GraphSeg = Segment("graph", {GRAPH: NameField, EXT: GraphExt})
@@ -515,6 +537,8 @@ WebAppFileSeg = Segment("webapp",
                         frmt="{sample}__webapp{ext}")
 
 # Path segment patterns
+REF_DIR_SEGS = SampSeg, CmdSeg, RefSeg
+SECT_DIR_SEGS = (*REF_DIR_SEGS, SectSeg)
 FASTA_STEP_SEGS = StepSeg, FastaSeg
 FASTA_INDEX_DIR_STEP_SEGS = StepSeg, RefSeg
 FASTQ_SEGS = FastqSeg,
@@ -527,10 +551,13 @@ FASTQC_SEGS = CmdSeg, StepSeg, SampSeg
 FASTQC_DEMULT_SEGS = CmdSeg, StepSeg, SampSeg, RefSeg
 XAM_SEGS = SampSeg, CmdSeg, XamSeg
 XAM_STEP_SEGS = SampSeg, CmdSeg, StepSeg, XamSeg
-CLUST_TAB_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, ClustTabSeg
-CLUST_COUNT_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, ClustCountSeg
-TABLE_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, TableSeg
-FOLD_SECT_DIR_SEGS = SampSeg, CmdSeg, RefSeg, SectSeg, FoldSectSeg
+CLUST_TAB_SEGS = (*SECT_DIR_SEGS, ClustTabSeg)
+CLUST_COUNT_SEGS = (*SECT_DIR_SEGS, ClustCountSeg)
+POS_TABLE_SEGS = (*SECT_DIR_SEGS, PosTableSeg)
+READ_TABLE_SEGS = (*SECT_DIR_SEGS, ReadTableSeg)
+FREQ_TABLE_SEGS = (*SECT_DIR_SEGS, FreqTableSeg)
+CT_FILE_SEGS = (*SECT_DIR_SEGS, ConnectTableSeg)
+DB_FILE_SEGS = (*SECT_DIR_SEGS, DotBracketSeg)
 
 
 # Paths ################################################################
@@ -643,11 +670,11 @@ def buildpar(*segment_types: Segment, **field_values: Any):
 def deduplicated(paths: Iterable[str | pl.Path]):
     """ Yield the non-redundant paths. """
     seen = set()
-    for path in paths:
-        if (pathstr := str(path)) in seen:
+    for path in map(sanitize, paths):
+        if path in seen:
             logger.warning(f"Duplicate path: {path}")
         else:
-            seen.add(pathstr)
+            seen.add(path)
             yield path
 
 
@@ -657,45 +684,126 @@ def parse(path: str | pl.Path, /, *segment_types: Segment):
     return create_path_type(*segment_types).parse(path)
 
 
-def find_files(path: pl.Path, segments: Sequence[Segment]):
+def find_files(path: str | pl.Path, segments: Sequence[Segment]):
     """ Yield all files that match a given sequence of path segments.
     The behavior depends on what `path` is:
 
-    - If it is a file, then yield `path` if it matches the segments.
-      Otherwise, yield nothing.
+    - If it is a file, then yield `path` if it matches the segments;
+      otherwise, yield nothing.
     - If it is a directory, then search it recursively and yield every
       matching file in the directory and its subdirectories.
-    - If it does not exist, then raise `FileNotFoundError` via calling
-      `path.iterdir()`.
+
+    Parameters
+    ----------
+    path: str | pathlib.Path
+        Path of a file to check or a directory to search recursively.
+    segments: Sequence[Segment]
+        Path segments to check if each file matches.
+
+    Returns
+    -------
+    Generator[Path, Any, None]
+        Paths of files matching the segments.
     """
-    if path.is_file():
+    path = sanitize(path, strict=True)
+    if path.is_dir():
+        # Search the directory for files matching the segments.
+        logger.debug(f"Searching {path} and all of its subdirectories "
+                     f"for files matching {list(map(str, segments))}")
+        yield from chain(*map(partial(find_files, segments=segments),
+                              path.iterdir()))
+    else:
+        # Assume that path is a file.
         try:
             # Determine if the file matches the segments.
             parse(path, *segments)
         except PathError:
-            # If not, skip it.
+            # If not, then skip it.
             pass
         else:
-            # If so, yield it.
+            # If so, then yield it.
             logger.debug(f"File {path} matches {list(map(str, segments))}")
             yield path
-    elif path.is_dir():
-        # Search the directory for files matching the segments.
-        logger.debug(
-            f"Searching {path} for files matching {list(map(str, segments))}")
-        yield from chain(*map(partial(find_files, segments=segments),
-                              path.iterdir()))
-    else:
-        logger.warning(f"Path does not exist: {path}")
 
 
-def find_files_chain(paths: Iterable[pl.Path], segments: Sequence[Segment]):
+def find_files_chain(paths: Iterable[str | pl.Path],
+                     segments: Sequence[Segment]):
     """ Yield from `find_files` called on every path in `paths`. """
     for path in deduplicated(paths):
         try:
             yield from find_files(path, segments)
         except Exception as error:
             logger.error(f"Failed search for {path}: {error}")
+
+
+def transpath(to_dir: str | pl.Path,
+              from_dir: str | pl.Path,
+              path: str | pl.Path,
+              strict: bool = False):
+    """ Return the path that would result by moving `path` from `indir`
+    to `outdir` (but do not actually move the path on the file system).
+    This function does not require that any of the given paths exist
+    unless `strict` is True.
+
+    Parameters
+    ----------
+    to_dir: str | pathlib.Path
+        Directory to which to move `path`.
+    from_dir: str | pathlib.Path
+        Directory from which to move `path`; must contain `path` but not
+        necessarily be the direct parent directory of `path`.
+    path: str | pathlib.Path
+        Path to move; can be a file or directory.
+    strict: bool = False
+        Require that all paths exist and contain no symbolic link loops.
+
+    Returns
+    -------
+    pathlib.Path
+        Hypothetical path after moving `path` from `indir` to `outdir`.
+    """
+    # Ensure from_dir is sanitized.
+    from_dir = sanitize(from_dir, strict)
+    # Find the part of the given path relative to from_dir.
+    relpath = sanitize(path, strict).relative_to(from_dir)
+    if relpath == pl.Path():
+        # If the relative path is empty, then use the parent directory
+        # of from_dir instead.
+        return transpath(to_dir, from_dir.parent, path, strict)
+    # Append the relative part of the path to to_dir.
+    return sanitize(to_dir, strict).joinpath(relpath)
+
+
+def transpaths(to_dir: str | pl.Path,
+               *paths: str | pl.Path,
+               strict: bool = False):
+    """ Return all paths that would result by moving the paths in `path`
+    from their longest common sub-path to `outdir` (but do not actually
+    move the paths on the file system). This function does not require
+    that any of the given paths exist unless `strict` is True.
+
+    Parameters
+    ----------
+    to_dir: str | pathlib.Path
+        Directory to which to move every path in `path`.
+    *paths: str | pathlib.Path
+        Paths to move; can be files or directories. A common sub-path
+        must exist among all of these paths.
+    strict: bool = False
+        Require that all paths exist and contain no symbolic link loops.
+
+    Returns
+    -------
+    tuple[pathlib.Path, ...]
+        Hypothetical paths after moving all paths in `path` to `outdir`.
+    """
+    if not paths:
+        # There are no paths to transplant.
+        return tuple()
+    # Determine the longest common sub-path of all given paths.
+    common_path = os.path.commonpath([sanitize(p, strict) for p in paths])
+    # Move each path from that common path to the given directory.
+    return tuple(transpath(to_dir, common_path, p, strict) for p in paths)
 
 ########################################################################
 #                                                                      #

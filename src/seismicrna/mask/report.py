@@ -100,7 +100,7 @@ class MaskReport(BatchedReport, MaskIO):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.CMD_MSK_DIR}
+        return {**super().auto_fields(), path.CMD: path.CMD_MASK_DIR}
 
     @classmethod
     def get_batch_seg(cls):

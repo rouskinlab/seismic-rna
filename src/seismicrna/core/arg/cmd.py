@@ -11,7 +11,7 @@ Define the names of the commands.
 """
 
 
-CMD_WHOLE = "all"
+CMD_WORKFLOW = "wf"
 CMD_DEMULT = "demult"
 CMD_QC = "qc"
 CMD_ALIGN = "align"
@@ -22,9 +22,10 @@ CMD_TABLE = "table"
 CMD_FOLD = "fold"
 CMD_GRAPH = "graph"
 CMD_EXPORT = "export"
-CMD_SIM = "sim"
-CMD_TEST = "test"
-CMD_FASTACLEAN = "fastaclean"
+CMD_CLEANFA = "+cleanfa"
+CMD_RENUMCT = "+renumct"
+CMD_SIM = "+sim"
+CMD_TEST = "+test"
 
 ########################################################################
 #                                                                      #

@@ -63,8 +63,7 @@ params = [
 
 @command(CMD_REL, params=params)
 def cli(**kwargs):
-    """ For every read, find the relationship between each read base and
-    the reference base to which it aligned. """
+    """ Compute relationships between references and aligned reads. """
     return run(**kwargs)
 
 
@@ -86,14 +85,7 @@ def run(fasta: str,
         brotli_level: int,
         force: bool,
         keep_temp: bool):
-    """
-    Run the relation step. For each read (or each pair of reads, if the
-    reads are paired-end), generate a 'relation vector' that encodes the
-    relationship between each base in the read and the corresponding
-    base in the reference sequence -- that is, whether the base in the
-    read matches the base in the reference, is substituted to another
-    base, is deleted, or has one or more extra bases inserted beside it.
-    """
+    """ Compute relationships between references and aligned reads. """
     return write_all(xam_files=path.find_files_chain(map(Path, input_path),
                                                      path.XAM_SEGS),
                      fasta=Path(fasta),

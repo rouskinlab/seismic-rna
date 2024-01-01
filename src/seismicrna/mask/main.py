@@ -68,8 +68,7 @@ params = [
 
 @command(CMD_MASK, params=params)
 def cli(*args, **kwargs):
-    """ Select a section of the reference, define which relationships
-    count as mutations, and filter out unusable positions and reads. """
+    """ Define mutations and sections to filter reads and positions. """
     return run(*args, **kwargs)
 
 
@@ -100,7 +99,7 @@ def run(input_path: tuple[str, ...], *,
         parallel: bool,
         # Effort
         force: bool) -> list[Path]:
-    """ Run the mask command. """
+    """ Define mutations and sections to filter reads and positions. """
     # Load all relation vector datasets and get the sections for each.
     datasets, sections = load_sections(map(Path, input_path),
                                        coords=coords,

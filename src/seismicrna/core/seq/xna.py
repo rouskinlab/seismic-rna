@@ -316,6 +316,14 @@ class CompressedSeq(object):
         """ Restore the original sequence. """
         return decompress(self)
 
+    def __eq__(self, other):
+        if not isinstance(other, CompressedSeq):
+            return NotImplemented
+        return (self.r == other.r
+                and self.s == other.s
+                and self.b == other.b
+                and self.n == other.n)
+
 
 @cache
 def _base_to_index(base: str, alph: tuple[str, str, str, str]):

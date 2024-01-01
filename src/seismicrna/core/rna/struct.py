@@ -1,28 +1,28 @@
 from functools import cached_property
-from logging import getLogger
-from pathlib import Path
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
-from .ct import parse_ct
-from .pair import find_root_pairs, pairs_to_dict, pairs_to_table, table_to_pairs
-from .section import (BASE_FIELD,
-                      IDX_FIELD,
-                      NEXT_FIELD,
-                      PAIR_FIELD,
-                      PREV_FIELD,
-                      RnaSection)
-from ..seq import intersection, POS_NAME, Section
+from .pair import (find_root_pairs,
+                   pairs_to_dict,
+                   pairs_to_table,
+                   renumber_pairs,
+                   table_to_pairs)
+from .base import RNASection
+from ..seq import POS_NAME, intersection
 
-logger = getLogger(__name__)
+IDX_FIELD = "Index"
+BASE_FIELD = "Base"
+PREV_FIELD = "Prev"
+NEXT_FIELD = "Next"
+PAIR_FIELD = "Pair"
 
 
 class Rna2dPart(object):
     """ Part of an RNA secondary structure. """
 
-    def __init__(self, *sections: RnaSection, **kwargs):
+    def __init__(self, *sections: RNASection, **kwargs):
         super().__init__(**kwargs)
         if inter := intersection(*[section.section for section in sections]):
             raise ValueError(f"Sections intersect: {inter}")
@@ -32,7 +32,7 @@ class Rna2dPart(object):
 class Rna2dStem(Rna2dPart):
     """ An RNA stem (contiguous double helix). """
 
-    def __init__(self, side1: RnaSection, side2: RnaSection, **kwargs):
+    def __init__(self, side1: RNASection, side2: RNASection, **kwargs):
         # The lengths of the two sections must equal.
         if side1.section.length != side2.section.length:
             raise ValueError(f"The lengths of side 1 ({side1.section.length}) "
@@ -62,7 +62,7 @@ class RnaJunction(Rna2dPart):
 class Rna2dStemLoop(RnaJunction):
     """ An RNA loop at the end of a stem. """
 
-    def __init__(self, section: RnaSection, **kwargs):
+    def __init__(self, section: RNASection, **kwargs):
         super().__init__(section, **kwargs)
 
     @property
@@ -71,15 +71,37 @@ class Rna2dStemLoop(RnaJunction):
         return section
 
 
-class Rna2dStructure(RnaSection):
-    """ RNA secondary structure. """
+class RNAStructure(RNASection):
+    """ Secondary structure of an RNA. """
 
-    def __init__(self, *, pairs: Iterable[tuple[int, int]], **kwargs):
+    def __init__(self, *,
+                 title: str,
+                 pairs: Iterable[tuple[int, int]],
+                 **kwargs):
+        """
+        Parameters
+        ----------
+        title: str
+            Title of the RNA structure, as written in the CT/DB file.
+        pairs: Iterable[tuple[int, int]]
+            Base pairs in the structure.
+        """
         super().__init__(**kwargs)
+        self.title = title
         self.table = pairs_to_table(pairs, self.section)
 
     @cached_property
+    def init_args(self):
+        return super().init_args | dict(title=self.title, pairs=self.pairs)
+
+    def _renumber_from_args(self, seq5: int):
+        return super()._renumber_from_args(seq5) | dict(
+            pairs=renumber_pairs(self.pairs, seq5 - self.section.end5)
+        )
+
+    @cached_property
     def pairs(self):
+        """ Base pairs in the structure. """
         return tuple(table_to_pairs(self.table))
 
     @cached_property
@@ -90,11 +112,24 @@ class Rna2dStructure(RnaSection):
     def roots(self):
         return find_root_pairs(self.pairs)
 
-    def _subsect_kwargs(self, end5: int, end3: int, title: str | None = None):
-        return super()._subsect_kwargs(end5, end3, title) | dict(
+    @cached_property
+    def is_paired(self):
+        """ Series where each index is a position and each value is True
+        if the corresponding base is paired, otherwise False. """
+        return self.table != 0
+
+    def _subsection_kwargs(self,
+                           end5: int,
+                           end3: int,
+                           title: str | None = None):
+        return super()._subsection_kwargs(end5, end3) | dict(
+            title=(title if title is not None
+                   else f"{self.title}_{end5}-{end3}"),
             pairs=table_to_pairs(
-                self.table[np.logical_and(self.table.index.values >= end5,
-                                          self.table.index.values <= end3)]
+                self.table[np.logical_and(
+                    self.table.index.get_level_values(POS_NAME) >= end5,
+                    self.table.index.get_level_values(POS_NAME) <= end3
+                )]
             )
         )
 
@@ -103,7 +138,8 @@ class Rna2dStructure(RnaSection):
             yield self.subsection(end5, end3)
 
     @property
-    def header(self):
+    def ct_title(self):
+        """ Header line for the CT file."""
         return f"{self.section.length}\t{self.title}"
 
     @cached_property
@@ -117,13 +153,14 @@ class Rna2dStructure(RnaSection):
         pairs = self.table.values.copy()
         pairs[pairs > 0] -= self.section.end5 - 1
         # Generate the data for the connectivity table.
-        data = {
-            BASE_FIELD: self.seq.to_str_array(),
-            PREV_FIELD: index.values - 1,
-            NEXT_FIELD: index.values + 1,
-            PAIR_FIELD: pairs,
-            POS_NAME: self.section.range_int,
-        }
+        data = {BASE_FIELD: self.seq.array,
+                PREV_FIELD: index.values - 1,
+                NEXT_FIELD: index.values + 1,
+                PAIR_FIELD: pairs,
+                POS_NAME: self.section.range_int}
+        # The last value of the next field must be 0.
+        if index.size > 0:
+            data[NEXT_FIELD][-1] = 0
         # Assemble the data into a DataFrame.
         return pd.DataFrame.from_dict({field: pd.Series(values, index=index)
                                        for field, values in data.items()})
@@ -132,16 +169,7 @@ class Rna2dStructure(RnaSection):
     def ct_text(self):
         """ Return the connectivity table as text. """
         data = self.ct_data.reset_index()
-        return f"{self.header}\n{data.to_string(index=False, header=False)}\n"
-
-
-def from_ct(ct_file: Path, section: Section):
-    section_rna_seq = section.seq.tr()
-    for title, seq, pairs in parse_ct(ct_file, section.end5):
-        if seq == section_rna_seq:
-            yield Rna2dStructure(title=title, section=section, pairs=pairs)
-        else:
-            logger.error(f"Expected {section_rna_seq}, but got {seq}")
+        return f"{self.ct_title}\n{data.to_string(index=False, header=False)}\n"
 
 ########################################################################
 #                                                                      #

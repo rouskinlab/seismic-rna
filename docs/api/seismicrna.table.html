@@ -45,23 +45,25 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../install/index.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../manuals/index.html">Manuals</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../cli.html">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whatdoes/index.html">What it Does</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/index.html">Install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../steps/index.html">Step-By-Step</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../howto/index.html">How To</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">Commands, Arguments, Options</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="seismicrna.html">seismicrna package</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.html#seismic-rna">SEISMIC-RNA</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="seismicrna.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.cleanfa.html">seismicrna.cleanfa package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.clust.html">seismicrna.clust package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.fastaclean.html">seismicrna.fastaclean package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html">seismicrna.relate package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.renumct.html">seismicrna.renumct package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.html">seismicrna.sim package</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">seismicrna.table package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#module-seismicrna.table.base">Submodules</a></li>
@@ -126,13 +128,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.table.base.ClustFreqTable">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.base.</span></span><span class="sig-name descname"><span class="pre">ClustFreqTable</span></span><a class="headerlink" href="#seismicrna.table.base.ClustFreqTable" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#seismicrna.table.base.Table" title="seismicrna.table.base.Table"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.Table</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.base.ClustFreqTable.by_read">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">by_read</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.ClustFreqTable.by_read" title="Permalink to this definition"></a></dt>
-<dd><p>Whether the table contains data for each read.</p>
-</dd></dl>
-
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.table.base.FreqTable" title="seismicrna.table.base.FreqTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.FreqTable</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.table.base.ClustFreqTable.header_type">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">header_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.ClustFreqTable.header_type" title="Permalink to this definition"></a></dt>
@@ -151,36 +147,18 @@
 <dd><p>Kind of table.</p>
 </dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.base.ClustFreqTable.transposed">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">transposed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.ClustFreqTable.transposed" title="Permalink to this definition"></a></dt>
-<dd><p>Whether the data is saved as its transpose.</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.table.base.ClustPosTable">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.base.</span></span><span class="sig-name descname"><span class="pre">ClustPosTable</span></span><a class="headerlink" href="#seismicrna.table.base.ClustPosTable" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.table.base.ClustTable" title="seismicrna.table.base.ClustTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.ClustTable</span></code></a>, <a class="reference internal" href="#seismicrna.table.base.ProfilePosTable" title="seismicrna.table.base.ProfilePosTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.ProfilePosTable</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.base.ClustPosTable.kind">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kind</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.ClustPosTable.kind" title="Permalink to this definition"></a></dt>
-<dd><p>Kind of table.</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.table.base.ClustReadTable">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.base.</span></span><span class="sig-name descname"><span class="pre">ClustReadTable</span></span><a class="headerlink" href="#seismicrna.table.base.ClustReadTable" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.table.base.ClustTable" title="seismicrna.table.base.ClustTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.ClustTable</span></code></a>, <a class="reference internal" href="#seismicrna.table.base.ReadTable" title="seismicrna.table.base.ReadTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.ReadTable</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.base.ClustReadTable.kind">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kind</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.ClustReadTable.kind" title="Permalink to this definition"></a></dt>
-<dd><p>Kind of table.</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
@@ -194,36 +172,61 @@
 <dd><p>Type of the header for the table.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.table.base.ClustTable.kind">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kind</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.ClustTable.kind" title="Permalink to this definition"></a></dt>
+<dd><p>Kind of table.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.table.base.FreqTable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.base.</span></span><span class="sig-name descname"><span class="pre">FreqTable</span></span><a class="headerlink" href="#seismicrna.table.base.FreqTable" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.table.base.Table" title="seismicrna.table.base.Table"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.Table</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<p>Table of frequencies.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.table.base.FreqTable.by_read">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">by_read</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.FreqTable.by_read" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the table contains data for each read.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.table.base.FreqTable.path_segs">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">path_segs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.FreqTable.path_segs" title="Permalink to this definition"></a></dt>
+<dd><p>Table’s path segments.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.table.base.FreqTable.transposed">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">transposed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.FreqTable.transposed" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the data is saved as its transpose.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.table.base.MaskPosTable">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.base.</span></span><span class="sig-name descname"><span class="pre">MaskPosTable</span></span><a class="headerlink" href="#seismicrna.table.base.MaskPosTable" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.table.base.MaskTable" title="seismicrna.table.base.MaskTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.MaskTable</span></code></a>, <a class="reference internal" href="#seismicrna.table.base.ProfilePosTable" title="seismicrna.table.base.ProfilePosTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.ProfilePosTable</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.base.MaskPosTable.kind">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kind</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.MaskPosTable.kind" title="Permalink to this definition"></a></dt>
-<dd><p>Kind of table.</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.table.base.MaskReadTable">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.base.</span></span><span class="sig-name descname"><span class="pre">MaskReadTable</span></span><a class="headerlink" href="#seismicrna.table.base.MaskReadTable" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.table.base.MaskTable" title="seismicrna.table.base.MaskTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.MaskTable</span></code></a>, <a class="reference internal" href="#seismicrna.table.base.ReadTable" title="seismicrna.table.base.ReadTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.ReadTable</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.base.MaskReadTable.kind">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kind</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.MaskReadTable.kind" title="Permalink to this definition"></a></dt>
-<dd><p>Kind of table.</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.table.base.MaskTable">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.base.</span></span><span class="sig-name descname"><span class="pre">MaskTable</span></span><a class="headerlink" href="#seismicrna.table.base.MaskTable" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.table.base.AvgTable" title="seismicrna.table.base.AvgTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.AvgTable</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.table.base.MaskTable.kind">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kind</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.MaskTable.kind" title="Permalink to this definition"></a></dt>
+<dd><p>Kind of table.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -242,10 +245,54 @@
 <dd><p>Whether the table contains data for each read.</p>
 </dd></dl>
 
-<dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.table.base.PosTable.data">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#seismicrna.table.base.PosTable.data" title="Permalink to this definition"></a></dt>
-<dd><p>Table’s data frame.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.table.base.PosTable.ci_count">
+<span class="sig-name descname"><span class="pre">ci_count</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">confidence</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.PosTable.ci_count" title="Permalink to this definition"></a></dt>
+<dd><p>Confidence intervals of counts, under these simplifications:</p>
+<ul class="simple">
+<li><p>Counts are independent of each other.</p></li>
+<li><p>Counts follow binomial distributions.</p></li>
+<li><p>Coverage counts are constant.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>confidence</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Confidence level; must be in [0, 1).</p></li>
+<li><p><strong>**kwargs</strong> – Keyword arguments for fetch methods.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Lower and upper bounds of the confidence interval.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple[pandas.DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame]</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.table.base.PosTable.ci_ratio">
+<span class="sig-name descname"><span class="pre">ci_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">confidence</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.PosTable.ci_ratio" title="Permalink to this definition"></a></dt>
+<dd><p>Confidence intervals of ratios, under these simplifications:</p>
+<ul class="simple">
+<li><p>Ratios are independent of each other.</p></li>
+<li><p>Ratios follow beta distributions.</p></li>
+<li><p>Coverage counts are constant.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>confidence</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Confidence level; must be in [0, 1).</p></li>
+<li><p><strong>**kwargs</strong> – Keyword arguments for fetch methods.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Lower and upper bounds of the confidence interval.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple[pandas.DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame]</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
@@ -266,7 +313,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.table.base.PosTable.iter_profiles">
-<span class="sig-name descname"><span class="pre">iter_profiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sections</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.section.Section" title="seismicrna.core.seq.section.Section"><span class="pre">seismicrna.core.seq.section.Section</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clust</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.PosTable.iter_profiles" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">iter_profiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sections</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.section.Section" title="seismicrna.core.seq.section.Section"><span class="pre">seismicrna.core.seq.section.Section</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Mutated'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clust</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.PosTable.iter_profiles" title="Permalink to this definition"></a></dt>
 <dd><p>Yield RNA mutational profiles from the table.</p>
 </dd></dl>
 
@@ -274,6 +321,12 @@
 <dt class="sig sig-object py" id="seismicrna.table.base.PosTable.masked_bool">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">masked_bool</span></span><a class="headerlink" href="#seismicrna.table.base.PosTable.masked_bool" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.table.base.PosTable.path_segs">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">path_segs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.PosTable.path_segs" title="Permalink to this definition"></a></dt>
+<dd><p>Table’s path segments.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.table.base.PosTable.range">
@@ -284,6 +337,23 @@
 <dt class="sig sig-object py" id="seismicrna.table.base.PosTable.range_int">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">range_int</span></span><a class="headerlink" href="#seismicrna.table.base.PosTable.range_int" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.table.base.PosTable.resample">
+<span class="sig-name descname"><span class="pre">resample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fraction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude_masked</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4294967296</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.PosTable.resample" title="Permalink to this definition"></a></dt>
+<dd><p>Resample the reads and return a new DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fraction</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.</span></code>) – Number of reads to resample, expressed as a fraction of the
+original number of reads. Must be ≥ 0; may be &gt; 1.</p></li>
+<li><p><strong>exclude_masked</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></code>) – Exclude positions that have been masked.</p></li>
+<li><p><strong>seed</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></code>) – Seed for the random number generator.</p></li>
+<li><p><strong>max_seed</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span> <span class="pre">=</span> <span class="pre">2</span> <span class="pre">**</span> <span class="pre">32</span></code>) – Maximum seed to pass to the next random number generator.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.table.base.PosTable.section">
@@ -336,6 +406,12 @@
 <dd><p>Number of columns in the index.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.table.base.ReadTable.path_segs">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">path_segs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.ReadTable.path_segs" title="Permalink to this definition"></a></dt>
+<dd><p>Table’s path segments.</p>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.table.base.ReadTable.reads">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">reads</span></span><a class="headerlink" href="#seismicrna.table.base.ReadTable.reads" title="Permalink to this definition"></a></dt>
@@ -347,30 +423,24 @@
 <dt class="sig sig-object py" id="seismicrna.table.base.RelPosTable">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.base.</span></span><span class="sig-name descname"><span class="pre">RelPosTable</span></span><a class="headerlink" href="#seismicrna.table.base.RelPosTable" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.table.base.RelTable" title="seismicrna.table.base.RelTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.RelTable</span></code></a>, <a class="reference internal" href="#seismicrna.table.base.PosTable" title="seismicrna.table.base.PosTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.PosTable</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.base.RelPosTable.kind">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kind</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.RelPosTable.kind" title="Permalink to this definition"></a></dt>
-<dd><p>Kind of table.</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.table.base.RelReadTable">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.base.</span></span><span class="sig-name descname"><span class="pre">RelReadTable</span></span><a class="headerlink" href="#seismicrna.table.base.RelReadTable" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.table.base.RelTable" title="seismicrna.table.base.RelTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.RelTable</span></code></a>, <a class="reference internal" href="#seismicrna.table.base.ReadTable" title="seismicrna.table.base.ReadTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.ReadTable</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.base.RelReadTable.kind">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kind</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.RelReadTable.kind" title="Permalink to this definition"></a></dt>
-<dd><p>Kind of table.</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.table.base.RelTable">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.base.</span></span><span class="sig-name descname"><span class="pre">RelTable</span></span><a class="headerlink" href="#seismicrna.table.base.RelTable" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.table.base.AvgTable" title="seismicrna.table.base.AvgTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.AvgTable</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.table.base.RelTable.kind">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kind</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.RelTable.kind" title="Permalink to this definition"></a></dt>
+<dd><p>Kind of table.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -380,13 +450,13 @@
 <p>Table with multiple types of relationships.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.table.base.RelTypeTable.fetch_count">
-<span class="sig-name descname"><span class="pre">fetch_count</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="headerlink" href="#seismicrna.table.base.RelTypeTable.fetch_count" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fetch_count</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude_masked</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">squeeze</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="headerlink" href="#seismicrna.table.base.RelTypeTable.fetch_count" title="Permalink to this definition"></a></dt>
 <dd><p>Fetch counts of one or more columns.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.table.base.RelTypeTable.fetch_ratio">
-<span class="sig-name descname"><span class="pre">fetch_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="headerlink" href="#seismicrna.table.base.RelTypeTable.fetch_ratio" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fetch_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude_masked</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">squeeze</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="headerlink" href="#seismicrna.table.base.RelTypeTable.fetch_ratio" title="Permalink to this definition"></a></dt>
 <dd><p>Fetch ratios of one or more columns.</p>
 </dd></dl>
 
@@ -411,7 +481,7 @@
 
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.table.base.Table.data">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#seismicrna.table.base.Table.data" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></em><a class="headerlink" href="#seismicrna.table.base.Table.data" title="Permalink to this definition"></a></dt>
 <dd><p>Table’s data frame.</p>
 </dd></dl>
 
@@ -482,7 +552,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.table.base.Table.path_segs">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">path_segs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.Table.path_segs" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">path_segs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="seismicrna.core.html#seismicrna.core.path.Segment" title="seismicrna.core.path.Segment"><span class="pre">seismicrna.core.path.Segment</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#seismicrna.table.base.Table.path_segs" title="Permalink to this definition"></a></dt>
 <dd><p>Table’s path segments.</p>
 </dd></dl>
 
@@ -791,6 +861,12 @@ of the argument <cite>dataset</cite>.</p>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.table.base.Table" title="seismicrna.table.base.Table"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.Table</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
 <p>Load a table from a file.</p>
 <dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.table.load.TableLoader.data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#seismicrna.table.load.TableLoader.data" title="Permalink to this definition"></a></dt>
+<dd><p>Table’s data frame.</p>
+</dd></dl>
+
+<dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.table.load.TableLoader.ref">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ref</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></em><a class="headerlink" href="#seismicrna.table.load.TableLoader.ref" title="Permalink to this definition"></a></dt>
 <dd><p>Name of the table’s reference.</p>
@@ -817,33 +893,77 @@ of the argument <cite>dataset</cite>.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.table.load.find_all_tables">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">find_all_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.find_all_tables" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.table.load.find_pos_tables">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">find_pos_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.find_pos_tables" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.table.load.find_read_tables">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">find_read_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.find_read_tables" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.table.load.find_tables">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">find_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tables</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.find_tables" title="Permalink to this definition"></a></dt>
-<dd><p>Yield a file for each given file/directory of a table.</p>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">find_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">segments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="seismicrna.core.html#seismicrna.core.path.Segment" title="seismicrna.core.path.Segment"><span class="pre">seismicrna.core.path.Segment</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.find_tables" title="Permalink to this definition"></a></dt>
+<dd><p>Yield every table file with the given type of segment from among
+the given paths.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.table.load.load">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.load" title="Permalink to this definition"></a></dt>
-<dd><p>Helper function to load a TableLoader from a table file.</p>
+<dt class="sig sig-object py" id="seismicrna.table.load.load_all_tables">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">load_all_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.load_all_tables" title="Permalink to this definition"></a></dt>
+<dd><p>Yield every table among the given paths.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.table.load.load_any_table">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">load_any_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.load_any_table" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.table.load.load_pos_table">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">load_pos_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.load_pos_table" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.table.load.load_pos_tables">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">load_pos_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.load_pos_tables" title="Permalink to this definition"></a></dt>
+<dd><p>Yield every positional table among the given paths.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.table.load.load_read_table">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">load_read_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.load_read_table" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.table.load.load_read_tables">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">load_read_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.load_read_tables" title="Permalink to this definition"></a></dt>
+<dd><p>Yield every per-read table among the given paths.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.table.load.load_table">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">load_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.table.load.TableLoader" title="seismicrna.table.load.TableLoader"><span class="pre">seismicrna.table.load.TableLoader</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.load_table" title="Permalink to this definition"></a></dt>
+<dd><p>Load a Table of one of several types from a file.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.table.load.load_tables">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">load_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tables</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.load_tables" title="Permalink to this definition"></a></dt>
-<dd><p>Yield a table for each given file/directory of a table.</p>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.table.load.</span></span><span class="sig-name descname"><span class="pre">load_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">finder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#seismicrna.table.load.TableLoader" title="seismicrna.table.load.TableLoader"><span class="pre">seismicrna.table.load.TableLoader</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.load.load_tables" title="Permalink to this definition"></a></dt>
+<dd><p>Yield every table with the given type of segment from among the
+given paths.</p>
 </dd></dl>
 
 <span class="target" id="module-seismicrna.table.main"></span><dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.table.main.join_rels">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.table.main.</span></span><span class="sig-name descname"><span class="pre">join_rels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.main.join_rels" title="Permalink to this definition"></a></dt>
-<dd><p>Join relationships into one string.</p>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.table.main.run">
 <span class="sig-prename descclassname"><span class="pre">seismicrna.table.main.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_read</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_clust</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_procs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.main.run" title="Permalink to this definition"></a></dt>
-<dd><p>Run the table module.</p>
+<dd><p>Count mutations for each read and position; output tables.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -862,6 +982,12 @@ of the argument <cite>dataset</cite>.</p>
 <dt class="sig sig-object py" id="seismicrna.table.write.ClustFreqTableWriter">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.write.</span></span><span class="sig-name descname"><span class="pre">ClustFreqTableWriter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tabulator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#seismicrna.table.calc.AvgTabulator" title="seismicrna.table.calc.AvgTabulator"><span class="pre">seismicrna.table.calc.AvgTabulator</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#seismicrna.table.calc.ClustTabulator" title="seismicrna.table.calc.ClustTabulator"><span class="pre">seismicrna.table.calc.ClustTabulator</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.write.ClustFreqTableWriter" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.table.write.TableWriter" title="seismicrna.table.write.TableWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.write.TableWriter</span></code></a>, <a class="reference internal" href="#seismicrna.table.base.ClustFreqTable" title="seismicrna.table.base.ClustFreqTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.ClustFreqTable</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.table.write.ClustFreqTableWriter.data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#seismicrna.table.write.ClustFreqTableWriter.data" title="Permalink to this definition"></a></dt>
+<dd><p>Table’s data frame.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -892,12 +1018,24 @@ of the argument <cite>dataset</cite>.</p>
 <dt class="sig sig-object py" id="seismicrna.table.write.PosTableWriter">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.write.</span></span><span class="sig-name descname"><span class="pre">PosTableWriter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tabulator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#seismicrna.table.calc.AvgTabulator" title="seismicrna.table.calc.AvgTabulator"><span class="pre">seismicrna.table.calc.AvgTabulator</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#seismicrna.table.calc.ClustTabulator" title="seismicrna.table.calc.ClustTabulator"><span class="pre">seismicrna.table.calc.ClustTabulator</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.write.PosTableWriter" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.table.write.TableWriter" title="seismicrna.table.write.TableWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.write.TableWriter</span></code></a>, <a class="reference internal" href="#seismicrna.table.base.PosTable" title="seismicrna.table.base.PosTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.PosTable</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.table.write.PosTableWriter.data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#seismicrna.table.write.PosTableWriter.data" title="Permalink to this definition"></a></dt>
+<dd><p>Table’s data frame.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.table.write.ReadTableWriter">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.write.</span></span><span class="sig-name descname"><span class="pre">ReadTableWriter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tabulator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#seismicrna.table.calc.AvgTabulator" title="seismicrna.table.calc.AvgTabulator"><span class="pre">seismicrna.table.calc.AvgTabulator</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#seismicrna.table.calc.ClustTabulator" title="seismicrna.table.calc.ClustTabulator"><span class="pre">seismicrna.table.calc.ClustTabulator</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.write.ReadTableWriter" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.table.write.TableWriter" title="seismicrna.table.write.TableWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.write.TableWriter</span></code></a>, <a class="reference internal" href="#seismicrna.table.base.ReadTable" title="seismicrna.table.base.ReadTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.ReadTable</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.table.write.ReadTableWriter.data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#seismicrna.table.write.ReadTableWriter.data" title="Permalink to this definition"></a></dt>
+<dd><p>Table’s data frame.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">

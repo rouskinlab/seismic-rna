@@ -8,8 +8,6 @@ from ..core.report import (BatchedReport,
                            SampleF,
                            RefF,
                            SectF,
-                           End5F,
-                           End3F,
                            NumUniqReadKeptF,
                            MaxClustsF,
                            ClustNumRunsF,
@@ -42,8 +40,6 @@ class ClustReport(BatchedReport, ClustIO):
             SampleF,
             RefF,
             SectF,
-            End5F,
-            End3F,
             NumUniqReadKeptF,
             # Clustering parameters.
             MaxClustsF,
@@ -71,7 +67,7 @@ class ClustReport(BatchedReport, ClustIO):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.CMD_CLS_DIR}
+        return {**super().auto_fields(), path.CMD: path.CMD_CLUST_DIR}
 
     @classmethod
     def get_batch_seg(cls):
@@ -94,8 +90,6 @@ class ClustReport(BatchedReport, ClustIO):
         return cls(sample=uniq_reads.sample,
                    ref=uniq_reads.ref,
                    sect=uniq_reads.section.name,
-                   end5=uniq_reads.section.end5,
-                   end3=uniq_reads.section.end3,
                    n_uniq_reads=uniq_reads.num_uniq,
                    max_order=max_order,
                    num_runs=num_runs,

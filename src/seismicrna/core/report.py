@@ -16,7 +16,8 @@ from typing import Any, Hashable, Callable, Iterable
 import numpy as np
 
 from . import path
-from .arg import (opt_phred_enc,
+from .arg import (cli_defaults,
+                  opt_phred_enc,
                   opt_fastqc,
                   opt_cutadapt,
                   opt_cut_q1,
@@ -47,11 +48,19 @@ from .arg import (opt_phred_enc,
                   opt_bt2_dovetail,
                   opt_bt2_contain,
                   opt_bt2_local,
-                  opt_min_mapq)
+                  opt_cram,
+                  opt_min_reads,
+                  opt_min_mapq,
+                  opt_fold_temp,
+                  opt_fold_md,
+                  opt_fold_mfe,
+                  opt_fold_max,
+                  opt_fold_percent,
+                  opt_quantile)
 from .io import FileIO, ReadBatchIO, RefIO
 from .rel import HalfRelPattern
-from .version import __version__, check_compatibility
-from .write import write_mode
+from .version import __version__
+from .write import need_write, write_mode
 
 logger = getLogger(__name__)
 
@@ -306,7 +315,6 @@ def iconv_dict_str_int(mapping: dict[Any, Any]) -> dict[str, int]:
 
 @cache
 def get_oconv_float(precision: int = DECIMAL_PRECISION):
-
     def oconv_float(num: float):
         return round(num, precision)
 
@@ -444,39 +452,41 @@ Bowtie2ExtTries = Field("bt2_d", opt_bt2_d.help, int, check_val=check_nonneg_int
 Bowtie2Reseed = Field("bt2_r", opt_bt2_r.help, int, check_val=check_nonneg_int)
 Bowtie2Dpad = Field("bt2_dpad", opt_bt2_dpad.help, int, check_val=check_nonneg_int)
 Bowtie2Orient = Field("bt2_orient", opt_bt2_orient.help, str)
-MinMapQual = Field("min_mapq",
-                   opt_min_mapq.help,
+MinMapQualF = Field("min_mapq",
+                    opt_min_mapq.help,
+                    int,
+                    check_val=check_nonneg_int)
+ReadsInitF = Field("reads_init",
+                   "Number of reads initially",
                    int,
                    check_val=check_nonneg_int)
-ReadsInit = Field("reads_init",
-                  "Number of reads initially",
-                  int,
-                  check_val=check_nonneg_int)
-ReadsTrim = Field("reads_trim",
-                  "Number of reads after trimming",
-                  int,
-                  check_val=check_nonneg_int)
-ReadsAlign = Field("reads_align",
-                   "Number of reads after alignment",
-                   dict,
-                   iconv=iconv_dict_str_int,
-                   check_val=check_dict_vals_nonneg_ints)
-ReadsDedup = Field("reads_filter",
-                   "Number of reads after filtering",
-                   dict,
-                   iconv=iconv_dict_str_int,
-                   check_val=check_dict_vals_nonneg_ints)
+ReadsTrimF = Field("reads_trim",
+                   "Number of reads after trimming",
+                   int,
+                   check_val=check_nonneg_int)
+ReadsAlignF = Field("reads_align",
+                    "Number of reads after alignment",
+                    dict,
+                    iconv=iconv_dict_str_int,
+                    check_val=check_dict_vals_nonneg_ints)
+ReadsDedupF = Field("reads_filter",
+                    "Number of reads after filtering",
+                    dict,
+                    iconv=iconv_dict_str_int,
+                    check_val=check_dict_vals_nonneg_ints)
 ReadsRefs = Field("reads_refs",
                   "Number of reads aligned by reference",
                   dict,
                   iconv=iconv_dict_str_int,
                   check_val=check_dict_vals_nonneg_ints)
+MinReadsF = Field("min_reads", opt_min_reads.help, int, check_val=check_nonneg_int)
+CramOutF = Field("cram", opt_cram.help, bool)
 
 # Relation vector generation
-NumReadsRel = Field("n_reads_rel",
-                    "Number of Reads",
-                    int,
-                    check_val=check_nonneg_int)
+NumReadsRelF = Field("n_reads_rel",
+                     "Number of Reads",
+                     int,
+                     check_val=check_nonneg_int)
 NumBatchF = Field("n_batches",
                   "Number of Batches",
                   int,
@@ -709,6 +719,41 @@ ClustsVarInfoF = Field("var_info",
                        oconv=get_oconv_dict_float(),
                        check_val=check_clusts_floats)
 
+# Folding
+
+ProfileF = Field("profile",
+                 "Name of Profile",
+                 str)
+
+Quantile = Field("quantile",
+                 opt_quantile.help,
+                 float,
+                 check_val=check_probability)
+
+FoldTempF = Field("fold_temp",
+                  opt_fold_temp.help,
+                  float,
+                  check_val=check_nonneg_float)
+
+FoldMaxDistF = Field("fold_md",
+                     opt_fold_md.help,
+                     int,
+                     check_val=check_nonneg_int)
+
+FoldMinFreeEnergyF = Field("fold_mfe",
+                           opt_fold_mfe.help,
+                           bool)
+
+FoldMaxStructsF = Field("fold_max",
+                        opt_fold_max.help,
+                        int,
+                        check_val=check_nonneg_int)
+
+FoldPercent = Field("fold_percent",
+                    opt_fold_percent.help,
+                    float,
+                    check_val=check_percentage)
+
 
 # Field managing functions
 
@@ -777,8 +822,7 @@ class Report(FileIO, ABC):
         fields) into a dict of encoded values (keyed by the keys of
         their fields), from which a new Report is instantiated. """
         if not isinstance(odata, dict):
-            raise TypeError("Report classmethod from_data expected 'dict', "
-                            f"but got {repr(type(odata).__name__)}")
+            raise TypeError(f"Expected dict, but got {type(odata).__name__}")
         # Read every raw value, keyed by the title of its field.
         idata = dict()
         for title, value in odata.items():
@@ -806,10 +850,24 @@ class Report(FileIO, ABC):
     def __init__(self, **kwargs: Any | Callable[[Report], Any]):
         # Add any missing arguments if they have default values.
         kwargs = self.autofill_report_fields(**kwargs)
-        # Ensure the report is compatible with this version of SEISMIC.
-        check_compatibility(kwargs[VersionF.key], self)
         for name in self.field_names():
-            value = kwargs.pop(name)
+            # Try to get the value of the field from the report.
+            try:
+                value = kwargs.pop(name)
+            except KeyError:
+                # If the report file is missing that field (e.g. because
+                # it came from a different version of SEISMIC-RNA), then
+                # if the field has a default value, use it and just log
+                # a warning (to make different versions compatible); if
+                # not, the versions are incompatible, so raise an error.
+                try:
+                    value = cli_defaults[name]
+                except KeyError:
+                    raise ValueError(f"Field {repr(name)} (with no default) "
+                                     f"is missing from {kwargs}")
+                else:
+                    logger.warning(f"Field {repr(name)} is missing: using "
+                                   f"default value {repr(value)}")
             if callable(value):
                 # If the value of the keyword argument is callable, then
                 # it must accept one argument -- self -- and return the
@@ -817,8 +875,12 @@ class Report(FileIO, ABC):
                 value = value(self)
             setattr(self, name, value)
         if kwargs:
-            raise ValueError(f"Invalid keywords for {type(self).__name__}: "
-                             f"{list(kwargs)}")
+            # If the report file has extra fields (e.g. because it came
+            # from a different version of SEISMIC-RNA), then just log a
+            # warning and ignore the extra fields (to make different
+            # versions compatible).
+            logger.warning(f"Got extra fields for {type(self).__name__}: "
+                           f"{list(kwargs)}")
 
     def get_field(self, field: Field, missing_ok: bool = False):
         """ Return the value of a field of the report using the field
@@ -848,9 +910,10 @@ class Report(FileIO, ABC):
         """ Save the report to a JSON file. """
         text = json.dumps(self.to_dict(), indent=4)
         save_path = self.get_path(top)
-        with open(save_path, write_mode(force)) as f:
-            f.write(text)
-        logger.info(f"Wrote {self} to {save_path}")
+        if need_write(save_path, force):
+            with open(save_path, write_mode(force)) as f:
+                f.write(text)
+            logger.info(f"Wrote {self} to {save_path}")
         return save_path
 
     def __setattr__(self, key: str, value: Any):

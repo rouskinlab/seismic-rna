@@ -129,7 +129,7 @@ class XamViewer(object):
                           top=self.temp_dir,
                           sample=self.sample,
                           cmd=path.CMD_REL_DIR,
-                          step=path.STEPS_VECT_SAMS,
+                          step=path.STEPS_REL_SAMS,
                           ref=self.ref,
                           ext=path.SAM_EXT)
 

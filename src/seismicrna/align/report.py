@@ -40,11 +40,13 @@ from ..core.report import (Report,
                            Bowtie2Reseed,
                            Bowtie2Dpad,
                            Bowtie2Orient,
-                           MinMapQual,
-                           ReadsInit,
-                           ReadsTrim,
-                           ReadsAlign,
-                           ReadsDedup,
+                           CramOutF,
+                           MinMapQualF,
+                           MinReadsF,
+                           ReadsInitF,
+                           ReadsTrimF,
+                           ReadsAlignF,
+                           ReadsDedupF,
                            ReadsRefs)
 
 
@@ -87,11 +89,13 @@ class AlignReport(Report, ABC):
                 Bowtie2Dpad,
                 Bowtie2Orient,
                 Bowtie2Un,
-                MinMapQual,
-                ReadsInit,
-                ReadsTrim,
-                ReadsAlign,
-                ReadsDedup,
+                CramOutF,
+                MinMapQualF,
+                MinReadsF,
+                ReadsInitF,
+                ReadsTrimF,
+                ReadsAlignF,
+                ReadsDedupF,
                 ReadsRefs] + super().fields()
 
     @classmethod
@@ -100,7 +104,7 @@ class AlignReport(Report, ABC):
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.CMD_ALN_DIR}
+        return {**super().auto_fields(), path.CMD: path.CMD_ALIGN_DIR}
 
 
 class AlignSampleReport(AlignReport):

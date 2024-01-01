@@ -1,24 +1,16 @@
 from functools import wraps
-from inspect import getmembers, Parameter, Signature
+from inspect import Parameter, Signature
 from textwrap import dedent
 from typing import Any, Callable
 
-from click import Argument, Option
-
 from . import cli
+from .default import cli_defaults, cli_opts
 
 # Ignore special parameters with reserved names.
 reserved_params = ["self", "cls"]
 
-# Get every parameter defined for the command line interface.
-cli_args = dict(getmembers(cli, lambda member: isinstance(member, Argument)))
-cli_opts = dict(getmembers(cli, lambda member: isinstance(member, Option)))
-
 # Get the default value for every parameter.
 api_defaults = dict(n_procs=cli.NUM_CPUS)
-cli_defaults = {param.name: param.default
-                for param in (cli_args | cli_opts).values()
-                if param.default is not None}
 all_defaults = cli_defaults | api_defaults
 
 # Get the documentation for every CLI option.
@@ -67,7 +59,7 @@ def param_defaults(defaults: dict[str, Any], exclude_defaults: tuple[str, ...]):
 
         @wraps(func)
         def new_func(*args, **kwargs):
-            return func(*args, **{**default_kwargs, **kwargs})
+            return func(*args, **(default_kwargs | kwargs))
 
         return new_func
 

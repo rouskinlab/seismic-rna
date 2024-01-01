@@ -9,7 +9,7 @@ class ClustIO(SectIO, ABC):
 
     @classmethod
     def auto_fields(cls):
-        return super().auto_fields() | {path.CMD: path.CMD_CLS_DIR}
+        return super().auto_fields() | {path.CMD: path.CMD_CLUST_DIR}
 
 
 class ClustBatchIO(ReadBatchIO, ClustIO, ClustReadBatch):

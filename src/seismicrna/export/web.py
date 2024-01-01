@@ -1,6 +1,4 @@
 import json
-import os
-from collections import defaultdict
 from functools import cache, partial
 from logging import getLogger
 from pathlib import Path
@@ -8,27 +6,17 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from click import command
 
-from .meta import combine_metadata, parse_refs_metadata, parse_samples_metadata
+from .meta import combine_metadata
 from ..core import path
-from ..core.arg import (docdef,
-                        arg_input_path,
-                        opt_samples_file,
-                        opt_refs_file,
-                        opt_all_pos,
-                        opt_force,
-                        opt_max_procs,
-                        opt_parallel)
 from ..core.header import format_clust_name
-from ..core.parallel import dispatch
 from ..core.rna import parse_db_strings
 from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
 from ..mask.data import MaskMerger
 from ..mask.report import MaskReport
 from ..relate.data import RelateLoader
-from ..relate.report import RelateReport, NumReadsRel
+from ..relate.report import RelateReport, NumReadsRelF
 from ..table.base import (COVER_REL,
                           INFOR_REL,
                           SUBST_REL,
@@ -39,27 +27,12 @@ from ..table.base import (COVER_REL,
                           DELET_REL,
                           INSRT_REL)
 from ..table.base import (Table,
-                          MaskTable,
-                          ClustTable,
                           PosTable,
                           ReadTable,
                           ClustFreqTable,
                           R_ADJ_TITLE)
-from ..table.load import load_tables
 
 logger = getLogger(__name__)
-
-COMMAND = __name__.split(os.path.extsep)[-1]
-
-params = [
-    arg_input_path,
-    opt_samples_file,
-    opt_refs_file,
-    opt_all_pos,
-    opt_force,
-    opt_max_procs,
-    opt_parallel,
-]
 
 META_SYMBOL = '#'
 SAMPLE = "sample"
@@ -109,7 +82,7 @@ def get_ref_metadata(top: Path,
                                                         sample=sample,
                                                         ref=ref))
     ref_metadata = {REF_SEQ: str(dataset.refseq),
-                    REF_NUM_ALIGN: dataset.report.get_field(NumReadsRel)}
+                    REF_NUM_ALIGN: dataset.report.get_field(NumReadsRelF)}
     return format_metadata(combine_metadata(ref_metadata,
                                             refs_metadata,
                                             ref,
@@ -144,24 +117,13 @@ def conform_series(series: pd.Series | pd.DataFrame):
     return series
 
 
-def format_series(series: pd.Series | pd.DataFrame,
-                  index: pd.Index | None = None,
-                  precision: int | None = None):
-    series = conform_series(series)
-    if index is not None:
-        series = series.reindex(index)
-    if precision is not None:
-        series = series.round(precision)
-    return series.to_list()
-
-
 def get_db_structs(table: PosTable,
                    order: int | None = None,
                    clust: int | None = None):
     structs = dict()
     energies = dict()
     for profile in table.iter_profiles(order=order, clust=clust):
-        db_file = profile.dot_file(table.top)
+        db_file = profile.get_db_file(table.top)
         if db_file.is_file():
             try:
                 # Parse all structures in the dot-bracket file.
@@ -174,10 +136,11 @@ def get_db_structs(table: PosTable,
                 logger.error("Failed to parse minimum free energy structure "
                              f"from dot-bracket file {db_file}: {error}")
             else:
-                structs[profile.title] = struct
-                energies[profile.title] = energy
+                structs[profile.data_name] = struct
+                energies[profile.data_name] = energy
         else:
-            logger.warning(f"No structure model available for {profile}")
+            logger.warning(f"No structure model available for {profile} "
+                           f"(file {db_file} does not exist)")
     return structs, energies
 
 
@@ -199,17 +162,21 @@ def iter_pos_table_series(table: PosTable,
                           order: int,
                           clust: int,
                           all_pos: bool):
-    index = table.section.range if all_pos else None
+    exclude_masked = not all_pos
     for key, rel in POS_DATA.items():
-        yield key, format_series(table.fetch_count(rel=rel,
-                                                   order=order,
-                                                   clust=clust),
-                                 index=index)
-    yield SUBST_RATE, format_series(table.fetch_ratio(rel=SUBST_REL,
-                                                      order=order,
-                                                      clust=clust,
-                                                      precision=PRECISION),
-                                    index=index)
+        yield key, conform_series(
+            table.fetch_count(rel=rel,
+                              order=order,
+                              clust=clust,
+                              exclude_masked=exclude_masked)
+        ).to_list()
+    yield SUBST_RATE, conform_series(
+        table.fetch_ratio(rel=SUBST_REL,
+                          order=order,
+                          clust=clust,
+                          exclude_masked=exclude_masked,
+                          precision=PRECISION)
+    ).to_list()
 
 
 def iter_pos_table_data(table: PosTable, order: int, clust: int, all_pos: bool):
@@ -300,42 +267,6 @@ def export_sample(top_sample: tuple[Path, str], *args, force: bool, **kwargs):
         with open(sample_file, write_mode(force)) as f:
             json.dump(get_sample_data(top, sample, *args, **kwargs), f)
     return sample_file
-
-
-@docdef.auto()
-def run(input_path: tuple[str, ...], *,
-        samples_file: str,
-        refs_file: str,
-        all_pos: bool,
-        force: bool,
-        max_procs: int,
-        parallel: bool) -> list[Path]:
-    """ Export a JSON file of each sample for the DREEM Web App. """
-    tables = defaultdict(list)
-    samples_metadata = (parse_samples_metadata(Path(samples_file))
-                        if samples_file
-                        else dict())
-    refs_metadata = (parse_refs_metadata(Path(refs_file))
-                     if refs_file
-                     else dict())
-    for table in load_tables(input_path):
-        if isinstance(table, (MaskTable, ClustTable, ClustFreqTable)):
-            tables[(table.top, table.sample)].append(table)
-    return list(dispatch(export_sample,
-                         max_procs,
-                         parallel,
-                         pass_n_procs=False,
-                         args=list(tables.items()),
-                         kwargs=dict(samples_metadata=samples_metadata,
-                                     refs_metadata=refs_metadata,
-                                     all_pos=all_pos,
-                                     force=force)))
-
-
-@command(COMMAND, params=params)
-def cli(*args, **kwargs):
-    """ Export a JSON file of each sample for the DREEM Web App. """
-    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

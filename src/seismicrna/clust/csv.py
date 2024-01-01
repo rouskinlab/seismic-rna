@@ -24,7 +24,7 @@ def get_table_path(top: Path,
     """ Build a path for a table of clustering results. """
     return path.buildpar(*path.CLUST_TAB_SEGS,
                          top=top,
-                         cmd=path.CMD_CLS_DIR,
+                         cmd=path.CMD_CLUST_DIR,
                          sample=sample,
                          ref=ref,
                          sect=sect,
@@ -64,7 +64,7 @@ def get_count_path(top: Path, sample: str, ref: str, sect: str):
     """ Build a path for a table of bit vector counts. """
     return path.buildpar(*path.CLUST_COUNT_SEGS,
                          top=top,
-                         cmd=path.CMD_CLS_DIR,
+                         cmd=path.CMD_CLUST_DIR,
                          sample=sample,
                          ref=ref,
                          sect=sect,

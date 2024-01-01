@@ -1,8 +1,8 @@
 
 # SEISMIC-RNA
 
-RNA Structure Ensemble Inference by Sequencing, Mutation Identification,
-and Clustering
+Structure Ensemble Inference by Sequencing, Mutation Identification, and
+Clustering of RNA
 
 ![Logo of SEISMIC-RNA](logo/logo-1200.png "SEISMIC-RNA")
 

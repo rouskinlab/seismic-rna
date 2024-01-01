@@ -1,37 +1,60 @@
 import os
+from functools import cached_property
 from itertools import product
 from logging import getLogger
 
+import numpy as np
+import pandas as pd
 from click import command
 from plotly import graph_objects as go
 
-from .seqpair import SeqPairGraphRunner, SeqPairTwoAxisGraph, SeqPairGraphWriter
-from .traces import iter_seq_base_scatter_traces
+from .base import PosGraphWriter, PosGraphRunner
+from .color import ColorMapGraph, SeqColorMap
+from .trace import iter_seq_base_scatter_traces
+from .twotable import SAMPLE_NAME, TwoTableGraph, TwoTableRunner, TwoTableWriter
 
 logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-class SeqScatterGraphRunner(SeqPairGraphRunner):
+class ScatterPlotGraph(TwoTableGraph, ColorMapGraph):
 
     @classmethod
-    def writer_type(cls):
-        return SeqScatterGraphWriter
-
-
-@command(COMMAND, params=SeqScatterGraphRunner.params)
-def cli(*args, **kwargs):
-    """ Create scatter plots between pairs of samples at each position
-    in a sequence. """
-    return SeqScatterGraphRunner.run(*args, **kwargs)
-
-
-class SeqScatterGraph(SeqPairTwoAxisGraph):
-
-    @classmethod
-    def graph_type(cls):
+    def graph_kind(cls):
         return COMMAND
+
+    @classmethod
+    def what(cls):
+        return "Scatter plot"
+
+    @classmethod
+    def get_cmap_type(cls):
+        return SeqColorMap
+
+    @property
+    def x_title(self):
+        return self.sample1
+
+    @property
+    def y_title(self):
+        return self.sample2
+
+    @cached_property
+    def data(self):
+        # Join data tables 1 and 2 horizontally.
+        data = pd.concat([self.data1, self.data2], axis=1, join="inner")
+        # Add the sample names as the first level of the columns.
+        samples = np.hstack([np.repeat(self.sample1, self.data1.columns.size),
+                             np.repeat(self.sample2, self.data2.columns.size)])
+        names = [SAMPLE_NAME] + list(data.columns.names)
+        data.columns = pd.MultiIndex.from_arrays(
+            [(samples if name == SAMPLE_NAME
+              else data.columns.get_level_values(name).values)
+             for name in names],
+            names=names
+        )
+        return data
 
     def get_traces(self):
         for (col, (_, vals1)), (row, (_, vals2)) in product(
@@ -47,11 +70,24 @@ class SeqScatterGraph(SeqPairTwoAxisGraph):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class SeqScatterGraphWriter(SeqPairGraphWriter):
+class ScatterPlotWriter(TwoTableWriter, PosGraphWriter):
 
-    @property
-    def graph_type(self):
-        return SeqScatterGraph
+    @classmethod
+    def get_graph_type(cls):
+        return ScatterPlotGraph
+
+
+class ScatterPlotRunner(TwoTableRunner, PosGraphRunner):
+
+    @classmethod
+    def get_writer_type(cls):
+        return ScatterPlotWriter
+
+
+@command(COMMAND, params=ScatterPlotRunner.params())
+def cli(*args, **kwargs):
+    """ Scatter plot comparing two profiles. """
+    return ScatterPlotRunner.run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

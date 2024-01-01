@@ -18,6 +18,7 @@ from typing import Iterable, Sequence
 import numpy as np
 import pandas as pd
 
+from .refs import RefSeqs
 from .xna import BASEA, BASEC, DNA
 
 logger = getLogger(__name__)
@@ -171,11 +172,16 @@ def seq_pos_to_index(seq: DNA, positions: Sequence[int], start: int):
     return index
 
 
-def index_to_pos(index: pd.MultiIndex):
-    """ Get the positions from a MultiIndex of (pos, base) pairs. """
+def verify_index_names(index: pd.MultiIndex):
+    """ Verify that the names of the index are correct. """
     if tuple(index.names) != SEQ_INDEX_NAMES:
         raise ValueError(f"Expected index with names {SEQ_INDEX_NAMES}, "
                          f"but got {index.names}")
+
+
+def index_to_pos(index: pd.MultiIndex):
+    """ Get the positions from a MultiIndex of (pos, base) pairs. """
+    verify_index_names(index)
     positions = index.get_level_values(POS_NAME)
     if positions.has_duplicates:
         raise ValueError(f"Index has duplicate positions:\n{positions}")
@@ -200,7 +206,117 @@ def index_to_seq(index: pd.MultiIndex, allow_gaps: bool = False):
     return DNA("".join(index.get_level_values(BASE_NAME)))
 
 
+def get_shared_index(indexes: Iterable[pd.MultiIndex], empty_ok: bool = False):
+    """ Get the shared index among all those given, as follows:
+
+    - If indexes contains no elements and empty_ok is True, then return
+      an empty MultiIndex with levels named 'Positions' and 'Base'.
+    - If indexes contains one element or multiple identical elements,
+      and each has two levels named 'Positions' and 'Base', then return
+      the first element.
+    - Otherwise, raise an error.
+
+    Parameters
+    ----------
+    indexes: Iterable[pandas.MultiIndex]
+        Indexes to compare.
+    empty_ok: bool = False
+        If given no indexes, then default to an empty index (if True)
+        or raise a ValueError (if False).
+
+    Returns
+    -------
+    pandas.MultiIndex
+        The shared index.
+    """
+    # Ensure indexes is a list-like object.
+    indexes = list(indexes)
+    try:
+        # Get the first index.
+        index = indexes[0]
+    except IndexError:
+        if empty_ok:
+            # Return an empty MultiIndex.
+            return pd.MultiIndex.from_arrays([np.array([], dtype=int),
+                                              np.array([], dtype=str)],
+                                             names=SEQ_INDEX_NAMES)
+        raise ValueError("No indexes were given")
+    # Ensure the first index is a MultiIndex with levels 'Positions' and
+    # 'Base'.
+    if tuple(index.names) != SEQ_INDEX_NAMES:
+        raise ValueError(
+            f"Expected levels named {SEQ_INDEX_NAMES}, but got {index.names}")
+    # Ensure all indexes are identical.
+    for i, other in enumerate(indexes[1:], start=1):
+        if not index.equals(other) or not index.equal_levels(other):
+            raise ValueError(f"Indexes 0 and {i} differ: {index} ≠ {other}")
+    return index
+
+
+def window_to_margins(window: int):
+    """ Compute the 5' and 3' margins from the size of the window. """
+    if not isinstance(window, int):
+        raise TypeError(f"window must be int, but got {type(window).__name__}")
+    if window <= 0:
+        raise ValueError(f"window must be ≥ 1, but got {window}")
+    margin3 = window // 2
+    margin5 = window - (margin3 + 1)
+    return margin5, margin3
+
+
+def iter_windows(*series: pd.Series,
+                 size: int,
+                 min_count: int = 1,
+                 include_nan: bool = False):
+    # Determine the index; the index of all series must match.
+    index = get_shared_index((s.index for s in series), empty_ok=True)
+    # Calculate the 5' and 3' margins.
+    margin5, margin3 = window_to_margins(size)
+    if min_count > size:
+        logger.warning(f"min_count ({min_count}) is > window size ({size}), "
+                       "so no positions will have enough data")
+    # Yield each window from each series.
+    for center in index_to_pos(index):
+        # Determine the 5' and 3' ends of the window.
+        end5 = center - margin5
+        end3 = center + margin3
+        # Slice the window from each series.
+        windows = tuple(s.loc[end5: end3] for s in series)
+        if include_nan:
+            if min_count > 0 and windows[0].size < min_count:
+                # If there are insufficient positions in this window,
+                # then skip it.
+                continue
+        else:
+            # Determine which positions have no NaN value in any series.
+            no_nan = np.logical_not(reduce(np.logical_or,
+                                           map(np.isnan, windows)))
+            if min_count > 0 and np.count_nonzero(no_nan) < min_count:
+                # If there are insufficient positions where no series
+                # has a NaN value, then skip this window.
+                continue
+            if not np.all(no_nan):
+                # Keep only positions with no NaN value in any series.
+                windows = tuple(w[no_nan] for w in windows)
+        # Yield the window from each series.
+        yield center, windows
+
+
 def hyphenate_ends(end5: int, end3: int):
+    """ Return the 5' and 3' ends as a hyphenated string.
+
+    Parameters
+    ----------
+    end5: int
+        5' end (1-indexed)
+    end3: int
+        3' end (1-indexed)
+
+    Returns
+    -------
+    str
+        Hyphenated 5' and 3' ends
+    """
     return f"{end5}-{end3}"
 
 
@@ -214,7 +330,7 @@ class Section(object):
     def __init__(self,
                  ref: str,
                  seq: DNA, *,
-                 seq5: int = POS_INDEX,
+                 seq5: int = 1,
                  reflen: int | None = None,
                  end5: int | None = None,
                  end3: int | None = None,
@@ -242,13 +358,13 @@ class Section(object):
             Name of the section. If None, defaults to `self.range`.
         """
         self.ref = ref
-        if seq5 < POS_INDEX:
-            raise ValueError(f"seq5 must be ≥ {POS_INDEX}, but got {seq5}")
+        if seq5 < 1:
+            raise ValueError(f"seq5 must be ≥ 1, but got {seq5}")
         # Compute the 3' end position of the given sequence.
         seq3 = seq5 + len(seq) - 1
         if reflen is None:
             # Default to the 3' end position of the given sequence.
-            reflen = seq3 - (POS_INDEX - 1)
+            reflen = seq3
         elif reflen < 0:
             raise ValueError(f"reflen must be ≥ 0, but got {reflen}")
         elif reflen < seq3:
@@ -273,10 +389,10 @@ class Section(object):
         # Determine the sequence of the section and whether it is the
         # full reference sequence.
         self.seq = DNA(seq[self.end5 - seq5: self.end3 - (seq5 - 1)])
-        self.full = self.end5 == POS_INDEX and self.end3 == reflen
+        self.full = self.end5 == 1 and self.end3 == reflen
         # Assign the name of the section.
         if name is None:
-            # Default to 'full' if the section spans the full reference
+            # Default to "full" if the section spans the full reference
             # sequence and neither the 5' nor 3' coordinate was given.
             # Otherwise, default to the hyphenated coordinates.
             self.name = (FULL_NAME
@@ -287,7 +403,7 @@ class Section(object):
             # case default to the hyphenated coordinates.
             self.name = name if name else self.hyphen
         else:
-            raise TypeError(f"Parameter 'name' must be 'str', not {type(str)}")
+            raise TypeError(f"name must be a str, but got {repr(name)}")
         # Initialize an empty set of masks.
         self._masks: dict[str, np.ndarray] = dict()
 
@@ -392,9 +508,9 @@ class Section(object):
             If True, then mask out all but the given positions.
         """
         if name in self._masks:
-            raise ValueError(f"Mask '{name}' was already set")
+            raise ValueError(f"Mask {repr(name)} was already set")
         # Convert positions to a NumPy integer array.
-        p = np.unique(np.asarray(mask_pos, dtype=int))
+        p = np.unique(np.asarray(list(mask_pos), dtype=int))
         # Check for positions outside the section.
         if np.any(p < self.end5) or np.any(p > self.end3):
             out = p[np.logical_or(p < self.end5, p > self.end3)]
@@ -459,6 +575,32 @@ class Section(object):
                                                   and end3 is None
                                                   and name is None)
                                     else name))
+
+    def renumber_from(self, seq5: int, name: str | None = None):
+        """ Return a new Section renumbered starting from a position.
+
+        Parameters
+        ----------
+        seq5: int
+            Position from which to start the new numbering system.
+        name: str | None = None
+            Name of the renumbered section.
+
+        Returns
+        -------
+        Section
+            Section with renumbered positions.
+        """
+        renumbered = self.__class__(self.ref,
+                                    self.seq,
+                                    seq5=seq5,
+                                    name=name if name is not None else "")
+        # Copy any masked positions from this section, offseting them by
+        # the difference between the numbering systems.
+        offset = renumbered.end5 - self.end5
+        for mask_name, mask_pos in self._masks.items():
+            renumbered.add_mask(mask_name, mask_pos + offset)
+        return renumbered
 
     def __str__(self):
         return f"Section {self.ref_sect} ({self.hyphen}) {self.mask_names}"
@@ -661,7 +803,7 @@ class RefSections(object):
     """ A collection of sections, grouped by reference. """
 
     def __init__(self,
-                 refseqs: Iterable[tuple[str, DNA]], *,
+                 ref_seqs: Iterable[tuple[str, DNA]], *,
                  sects_file: Path | None = None,
                  coords: Iterable[tuple[str, int, int]] = (),
                  primers: Iterable[tuple[str, DNA, DNA]] = (),
@@ -685,7 +827,7 @@ class RefSections(object):
         ref_primers = get_coords_by_ref(primers)
         # For each reference, generate sections from the coordinates.
         self._sections: dict[str, dict[tuple[int, int], Section]] = dict()
-        for ref, seq in refseqs:
+        for ref, seq in RefSeqs(ref_seqs):
             self._sections[ref] = dict()
             for end5, end3 in ref_coords[ref]:
                 # Add a section for each pair of 5' and 3' coordinates.

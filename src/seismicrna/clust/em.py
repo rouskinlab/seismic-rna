@@ -25,8 +25,7 @@ def calc_bic(n_params: int,
              n_data: int,
              log_like: float,
              min_data_param_ratio: float = 10.):
-    """
-    Compute the Bayesian Information Criterion (BIC) of a model.
+    """ Compute the Bayesian Information Criterion (BIC) of a model.
     Typically, the model with the smallest BIC is preferred.
 
     Parameters
@@ -48,7 +47,7 @@ def calc_bic(n_params: int,
     Returns
     -------
     float
-        The Bayesian Information Criterion (BIC)
+        Bayesian Information Criterion (BIC)
     """
     if n_data < min_data_param_ratio * n_params:
         logger.warning(f"The Bayesian Information Criterion (BIC) uses an "

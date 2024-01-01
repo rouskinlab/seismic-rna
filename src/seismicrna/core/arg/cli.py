@@ -10,6 +10,7 @@ from datetime import datetime
 import logging
 import os
 
+import click
 from click import Argument, Choice, Option, Parameter, Path
 
 from ..io import DEFAULT_BROTLI_LEVEL
@@ -35,6 +36,15 @@ CLUST_INDIV = "indiv"
 CLUST_ORDER = "order"
 CLUST_UNITE = "unite"
 CLUST_ARRANGE_OPTIONS = CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
+
+KEY_NRMSD = "nrmsd"
+KEY_PEARSON = "pcc"
+KEY_SPEARMAN = "scc"
+KEY_DETERM = "r2"
+METRIC_KEYS = [KEY_NRMSD,
+               KEY_PEARSON,
+               KEY_SPEARMAN,
+               KEY_DETERM]
 
 # Configuration options
 
@@ -67,7 +77,7 @@ opt_out_dir = Option(
     ("--out-dir", "-o"),
     type=Path(file_okay=False),
     default=os.path.join(".", "out"),
-    help="Destination for all finished files"
+    help="Destination for all new output files"
 )
 
 opt_temp_dir = Option(
@@ -217,6 +227,12 @@ opt_barcode_start = Option(
 
 opt_barcode_end = Option(
     ("--barcode-end",),
+    type=int,
+    default=0,
+    help="length of barcode")
+
+opt_barcode_length = Option(
+    ("--barcode-length",),
     type=int,
     default=0,
     help="length of barcode")
@@ -481,7 +497,7 @@ opt_min_mapq = Option(
     ("--min-mapq",),
     type=int,
     default=25,
-    help="Minimum mapping quality to keep an aligned read from Bowtie2"
+    help="Minimum mapping quality to use an aligned read"
 )
 
 opt_cram = Option(
@@ -512,7 +528,7 @@ opt_primers = Option(
 opt_primer_gap = Option(
     ("--primer-gap",),
     type=int,
-    default=2,
+    default=0,
     help="Length of the gap (nt) between each primer and the end of the section"
 )
 
@@ -601,7 +617,7 @@ opt_min_ncall_read = Option(
 opt_min_finfo_read = Option(
     ("--min-finfo-read",),
     type=float,
-    default=0.95,
+    default=0.0,
     help="Minimum fraction of information in a read to keep it"
 )
 
@@ -622,7 +638,7 @@ opt_max_nmut_read = Option(
 opt_min_mut_gap = Option(
     ("--min-mut-gap",),
     type=int,
-    default=3,
+    default=0,
     help="Minimum gap between two mutations in a read to keep it"
 )
 
@@ -658,14 +674,14 @@ opt_em_runs = Option(
 opt_min_em_iter = Option(
     ("--min-em-iter",),
     type=int,
-    default=10,
+    default=8,
     help="Minimum iterations per clustering run"
 )
 
 opt_max_em_iter = Option(
     ("--max-em-iter",),
     type=int,
-    default=300,
+    default=512,
     help="Maximum iterations per clustering run"
 )
 
@@ -706,7 +722,7 @@ opt_table_clust = Option(
     help="Tabulate per cluster"
 )
 
-# RNA structure prediction
+# Fold
 
 opt_fold = Option(
     ("--fold/--no-fold",),
@@ -719,13 +735,70 @@ opt_quantile = Option(
     ("--quantile", "-q"),
     type=float,
     default=0.,
-    help="Quantile of mutation rates for normalization; must be in [0, 1]"
+    help="Quantile for normalizing ratios; must be in [0, 1]"
 )
 
-# Graphing
+opt_fold_temp = Option(
+    ("--fold-temp",),
+    type=float,
+    default=310.15,
+    help="Temperature at which to predict structures (in Kelvin)"
+)
 
-opt_arrange = Option(
-    ("--arrange",),
+opt_fold_constraint = Option(
+    ("--fold-constraint",),
+    type=click.Path(exists=True, dir_okay=False),
+    help="File of constraints for predicting structures"
+)
+
+opt_fold_md = Option(
+    ("--fold-md",),
+    type=int,
+    default=0,
+    help="Maximum distance between two paired bases in predicted structures "
+         "(use 0 for no limit)"
+)
+
+opt_fold_mfe = Option(
+    ("--fold-mfe/--fold-sub",),
+    type=bool,
+    default=False,
+    help="Predict only the minimum free energy (MFE) structure, without any "
+         "suboptimal structures"
+)
+
+opt_fold_max = Option(
+    ("--fold-max",),
+    type=int,
+    default=20,
+    help="Maximum number of predicted structures"
+)
+
+opt_fold_percent = Option(
+    ("--fold-percent",),
+    type=float,
+    default=20.,
+    help="Maximum % difference in energy between suboptimal structures"
+)
+
+# Graph
+
+opt_comppair = Option(
+    ("--comppair/--no-comppair",),
+    type=bool,
+    default=True,
+    help="Compare every pair of input files"
+)
+
+opt_compself = Option(
+    ("--compself/--no-compself",),
+    type=bool,
+    default=False,
+    help="Compare every input file with itself"
+)
+
+opt_cgroup = Option(
+    ("--cgroup",),
     type=Choice(CLUST_ARRANGE_OPTIONS),
     default=CLUST_ORDER,
     help=("Graph each INDIVidual cluster in its own file, each ORDER in its "
@@ -737,62 +810,118 @@ opt_rels = Option(
     type=str,
     multiple=True,
     default=("m",),
-    help="Relationships to graph"
+    help="Relationship(s) to graph"
 )
 
-opt_x_ratio = Option(
-    ("--x-ratio/--x-count",),
-    default=False,
+opt_use_ratio = Option(
+    ("--use-ratio/--use-count",),
     type=bool,
-    help="Graph counts or ratios on the x-axis"
-)
-
-opt_y_ratio = Option(
-    ("--y-ratio/--y-count",),
     default=True,
-    type=bool,
-    help="Graph counts or ratios on the y-axis"
+    help="Graph ratios or counts"
+)
+
+opt_window = Option(
+    ("--window", "-w"),
+    type=int,
+    default=31,
+    help="Size of the sliding window, in nucleotides"
+)
+
+opt_winmin = Option(
+    ("--winmin", "-n"),
+    type=int,
+    default=9,
+    help="Minimum number of data to use a sliding window (otherwise NaN)"
+)
+
+opt_metric = Option(
+    ("--metric", "-m"),
+    type=Choice(METRIC_KEYS, case_sensitive=False),
+    default=KEY_NRMSD,
+    help=(f"Metric to compare mutation rates: "
+          f"{repr(KEY_NRMSD)} = normalized root-mean-square deviation (NRMSD), "
+          f"{repr(KEY_PEARSON)} = Pearson correlation coefficient (r), "
+          f"{repr(KEY_SPEARMAN)} = Spearman correlation coefficient (ρ), "
+          f"{repr(KEY_DETERM)} = coefficient of determination (R²)")
+)
+
+opt_structs = Option(
+    ("--structs",),
+    type=click.Path(exists=True, dir_okay=False),
+    help="CT file of structures against which to compare mutational profiles"
 )
 
 opt_hist_bins = Option(
     ("--hist-bins",),
-    default=24,
     type=int,
+    default=10,
     help="Number of bins in each histogram (≥ 1)"
+)
+
+opt_hist_margin = Option(
+    ("--hist-margin",),
+    type=float,
+    default=0.01,
+    help=("For ratio-based histograms, maximum margin to autofill between the "
+          "data and 0 or 1")
 )
 
 opt_csv = Option(
     ("--csv/--no-csv",),
-    default=True,
     type=bool,
+    default=True,
     help="Output the source data for each graph as a CSV file"
 )
 
 opt_html = Option(
     ("--html/--no-html",),
-    default=True,
     type=bool,
+    default=True,
     help="Output each graph as an HTML file"
 )
 
 opt_pdf = Option(
     ("--pdf/--no-pdf",),
-    default=False,
     type=bool,
+    default=False,
     help="Output each graph as a PDF file"
+)
+
+# CT renumbering
+
+opt_ct_pos_5 = Option(
+    ("--ct-pos-5", "-c"),
+    type=(click.Path(exists=True), int),
+    multiple=True,
+    help="CT file/directory and the 5' position to assign to each"
+)
+
+opt_inplace = Option(
+    ("--inplace/--newfile",),
+    type=bool,
+    default=False,
+    help="Modify files in-place instead of writing new files (use --inplace "
+         "cautiously because it will erase the original files)"
 )
 
 # Export
 
-opt_samples_file = Option(
-    ("--samples-file", "-S"),
+opt_export = Option(
+    ("--export/--no-export",),
+    type=bool,
+    default=False,
+    help="Export per-sample results for the seismic-graph web app"
+)
+
+opt_samples_meta = Option(
+    ("--samples-meta", "-S"),
     type=Path(dir_okay=False),
     default="",
     help="CSV file of metadata for each sample"
 )
 
-opt_refs_file = Option(
-    ("--refs-file", "-R"),
+opt_refs_meta = Option(
+    ("--refs-meta", "-R"),
     type=Path(dir_okay=False),
     default="",
     help="CSV file of metadata for each reference"

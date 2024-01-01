@@ -1,24 +1,53 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
+from itertools import chain
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Generator, Iterable
 
 import pandas as pd
+from click import Argument, Option
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
-from .color import ColorMap, get_cmap
 from ..core import path
-from ..core.header import format_clust_names
+from ..core.arg import (CLUST_INDIV,
+                        CLUST_ORDER,
+                        CLUST_UNITE,
+                        arg_input_path,
+                        opt_rels,
+                        opt_use_ratio,
+                        opt_quantile,
+                        opt_cgroup,
+                        opt_out_dir,
+                        opt_csv,
+                        opt_html,
+                        opt_pdf,
+                        opt_force,
+                        opt_max_procs,
+                        opt_parallel)
+from ..core.header import Header, format_clust_names
 from ..core.seq import DNA
 from ..core.write import need_write
-from ..table.base import Table, PosTable
+from ..table.base import (Table,
+                          PosTable,
+                          RelTable,
+                          MaskTable,
+                          ClustTable)
+from ..table.load import (find_pos_tables,
+                          find_read_tables,
+                          load_pos_table,
+                          load_read_table)
 
 logger = getLogger(__name__)
 
-# Number of digits behind the decimal point to be kept.
-PRECISION = 6
+# Define actions.
+ACTION_REL = "related"
+ACTION_MASK = "masked"
+ACTION_CLUST = "clustered"
+
+# String to join sample names.
+LINKER = "__and__"
 
 
 def _write_graph(writer: Callable[[Path], Any],
@@ -30,73 +59,180 @@ def _write_graph(writer: Callable[[Path], Any],
     return file
 
 
+def make_index(header: Header, order: int | None, clust: int | None):
+    """ Make an index for the rows or columns of a graph. """
+    if header.max_order == 0:
+        # If there are no clusters, then no clusters must be selected.
+        if order or clust:
+            raise ValueError(f"Cannot select orders or clusters from {header}")
+        return header.clusts
+    # If there are any relationship names in the index, then drop them
+    # and then select the order(s) and cluster(s) for the index.
+    return header.modified(rels=()).select(order=order, clust=clust)
+
+
 def _index_size(index: pd.Index | None):
     return index.size if index is not None else 1
 
 
 def _index_titles(index: pd.Index | None):
-    return format_clust_names(index) if index is not None else None
+    return (format_clust_names(index, allow_zero=True, allow_duplicates=False)
+            if index is not None
+            else None)
 
 
-def make_subject(source: str, order: int | None, clust: int | None):
-    return "-".join(map(str, [source,
-                              order if order is not None else "x",
-                              clust if clust is not None else "x"]))
+def get_action_name(table: Table):
+    if isinstance(table, RelTable):
+        return ACTION_REL
+    if isinstance(table, MaskTable):
+        return ACTION_MASK
+    if isinstance(table, ClustTable):
+        return ACTION_CLUST
+    raise TypeError(f"Invalid table type: {type(table).__name__}")
+
+
+def make_title_action_sample(action: str, sample: str):
+    return f"{action} reads from sample {repr(sample)}"
+
+
+def make_path_subject(action: str, order: int | None, clust: int | None):
+    if action == ACTION_REL or action == ACTION_MASK:
+        if order or clust:
+            raise ValueError(f"For {action} data, order and clust must both "
+                             f"be 0 or None, but got {order} and {clust}")
+        return action
+    if action == ACTION_CLUST:
+        return "-".join(map(str, [action,
+                                  order if order is not None else "x",
+                                  clust if clust is not None else "x"]))
+    raise ValueError(f"Invalid action: {repr(action)}")
+
+
+def cgroup_table(table: Table, cgroup: str):
+    if cgroup == CLUST_INDIV:
+        # One file per cluster, with no subplots.
+        return [dict(order=order, clust=clust)
+                for order, clust in table.header.clusts]
+    elif cgroup == CLUST_ORDER:
+        # One file per order, with one subplot per cluster.
+        return [dict(order=order, clust=None)
+                for order in sorted(table.header.orders)]
+    elif cgroup == CLUST_UNITE:
+        # One file, with one subplot per cluster for all orders.
+        return [dict(order=None, clust=None)]
+    raise ValueError(f"Invalid value for cgroup: {repr(cgroup)}")
 
 
 class GraphBase(ABC):
 
     @classmethod
+    @abstractmethod
+    def graph_kind(cls) -> str:
+        """ Kind of graph. """
+
+    @classmethod
+    @abstractmethod
+    def what(cls) -> str:
+        """ What is being graphed. """
+
+    @classmethod
     def get_path_segs(cls):
         """ Path segments. """
-        return path.CmdSeg, path.GraphSeg
+        return (path.SampSeg,
+                path.CmdSeg,
+                path.RefSeg,
+                path.SectSeg,
+                path.GraphSeg)
 
-    @classmethod
-    def col_row_sep(cls):
-        """ Separator between column and row title. """
-        return " "
+    def __init__(self, *,
+                 out_dir: str | Path,
+                 use_ratio: bool,
+                 quantile: float):
+        """
+        Parameters
+        ----------
+        out_dir: str | Path
+            Path of the top-level output directory for all graph files.
+        use_ratio: bool
+            Use the ratio of the number of times the relationship occurs
+            to the number of occurrances of another kind of relationship
+            (which is Covered for Covered and Informed, and Informed for
+            all other relationships), rather than the raw count.
+        quantile: float
+            If `use_ratio` is True, then normalize the ratios to this
+            quantile and then winsorize them to the interval [0, 1].
+            Passing 0.0 disables normalization and winsorization.
+        """
+        self.top = Path(out_dir)
+        self.use_ratio = use_ratio
+        self.quantile = quantile
 
-    def __init__(self, *, cmap: str | None = None):
-        self._cmap_name = cmap
+    @property
+    @abstractmethod
+    def codestring(self):
+        """ String of the relationship code(s). """
+
+    @property
+    def data_kind(self):
+        """ Kind of data being used: either "ratio" or "count". """
+        return "ratio" if self.use_ratio else "count"
+
+    @property
+    @abstractmethod
+    def title_action_sample(self) -> str:
+        """ Action and sample for the title. """
+
+    @property
+    @abstractmethod
+    def sample(self) -> str:
+        """ Name(s) of the sample(s) from which the data come. """
+
+    @property
+    @abstractmethod
+    def ref(self) -> str:
+        """ Name of the reference sequence from which the data come. """
+
+    @property
+    @abstractmethod
+    def sect(self) -> str:
+        """ Name of the reference section from which the data come. """
+
+    @property
+    @abstractmethod
+    def seq(self) -> DNA:
+        """ Sequence of the section from which the data come. """
 
     @cached_property
-    @abstractmethod
-    def data(self) -> Any:
-        """ Data of the graph. """
+    def details(self) -> list[str]:
+        """ Additional details about the graph. """
+        return ([f"quantile = {round(self.quantile, 3)}"] if self.use_ratio
+                else list())
 
     @property
     @abstractmethod
-    def title(self) -> str:
-        """ Title of the graph. """
-
-    @classmethod
-    @abstractmethod
-    def get_cmap_type(cls) -> type[ColorMap]:
-        """ Type of the color map. """
+    def path_subject(self):
+        """ Subject of the graph. """
 
     @property
-    def cmap(self) -> ColorMap:
-        """ Color map of the graph. """
-        return get_cmap(self.get_cmap_type(), self._cmap_name)
+    def predicate(self):
+        """ Predicate of the graph. """
+        fields = [self.codestring, self.data_kind]
+        if self.use_ratio:
+            fields.append(f"q{round(self.quantile * 100.)}")
+        return "-".join(fields)
 
-    @abstractmethod
-    def get_traces(self) -> Iterable[tuple[tuple[int, int], go.Trace]]:
-        """ Data traces of the graph. """
-
-    @property
-    @abstractmethod
-    def top(self) -> Path:
-        """ Output directory. """
-
-    @property
-    @abstractmethod
+    @cached_property
     def graph_filename(self):
-        """ Name of the graph file. """
+        """ Name of the graph's output file, without its extension. """
+        return "_".join([self.graph_kind(), self.path_subject, self.predicate])
 
     def get_path_fields(self):
         """ Path fields. """
         return {path.TOP: self.top,
-                path.CMD: path.CMD_GRA_DIR,
+                path.SAMP: self.sample,
+                path.CMD: path.CMD_GRAPH_DIR,
+                path.REF: self.ref,
+                path.SECT: self.sect,
                 path.GRAPH: self.graph_filename}
 
     def get_path(self, ext: str):
@@ -104,6 +240,37 @@ class GraphBase(ABC):
         return path.buildpar(*self.get_path_segs(),
                              **self.get_path_fields(),
                              ext=ext)
+
+    @property
+    @abstractmethod
+    def rel_names(self):
+        """ Names of the relationships to graph. """
+
+    @cached_property
+    def relationships(self) -> str:
+        """ Relationships being graphed as a slash-separated string. """
+        return "/".join(self.rel_names)
+
+    @cached_property
+    def _fetch_kwargs(self) -> dict[str, Any]:
+        """ Keyword arguments for self._fetch_data. """
+        return dict(rel=self.rel_names)
+
+    def _fetch_data(self, table: PosTable, **kwargs):
+        """ Fetch data from the table. """
+        kwargs = self._fetch_kwargs | kwargs
+        return (table.fetch_ratio(quantile=self.quantile, **kwargs)
+                if self.use_ratio
+                else table.fetch_count(**kwargs))
+
+    @cached_property
+    @abstractmethod
+    def data(self) -> pd.DataFrame:
+        """ Data of the graph. """
+
+    @abstractmethod
+    def get_traces(self) -> Iterable[tuple[tuple[int, int], go.Trace]]:
+        """ Data traces of the graph. """
 
     @property
     @abstractmethod
@@ -136,11 +303,25 @@ class GraphBase(ABC):
         return _index_titles(self.col_index)
 
     @property
+    @abstractmethod
+    def x_title(self) -> str:
+        """ Title of the x-axis. """
+
+    @property
+    @abstractmethod
+    def y_title(self) -> str:
+        """ Title of the y-axis. """
+
+    @property
     def _subplots_params(self):
         return dict(rows=self.nrows,
                     cols=self.ncols,
                     row_titles=self.row_titles,
-                    column_titles=self.col_titles)
+                    column_titles=self.col_titles,
+                    x_title=self.x_title,
+                    y_title=self.y_title,
+                    shared_xaxes="all",
+                    shared_yaxes="all")
 
     def _figure_init(self):
         """ Initialize the figure. """
@@ -156,6 +337,12 @@ class GraphBase(ABC):
         figure.update_layout(title=self.title,
                              plot_bgcolor="#ffffff",
                              paper_bgcolor="#ffffff")
+        figure.update_xaxes(linewidth=1,
+                            linecolor="#000000",
+                            autorange=True)
+        figure.update_yaxes(linewidth=1,
+                            linecolor="#000000",
+                            autorange=True)
 
     @cached_property
     def figure(self):
@@ -194,248 +381,154 @@ class GraphBase(ABC):
             files.append(self.write_pdf(force))
         return files
 
+    @cached_property
+    def _title_main(self):
+        """ Main part of the title, as a list. """
+        return [f"{self.what()} of {self.data_kind}s "
+                f"of {self.relationships} bases "
+                f"in {self.title_action_sample} "
+                f"over reference {repr(self.ref)} "
+                f"section {repr(self.sect)}"]
 
-class SampleGraph(GraphBase, ABC):
-    """ Graph of one or more samples. """
+    @cached_property
+    def _title_details(self):
+        """ Details of the title, as a list. """
+        return [f"({'; '.join(self.details)})"] if self.details else []
 
-    @property
-    @abstractmethod
-    def sample(self):
-        """ Name of the sample. """
-        return ""
-
-    @classmethod
-    def get_path_segs(cls):
-        """ Path segments. """
-        return super().get_path_segs() + (path.SampSeg,)
-
-    def get_path_fields(self):
-        return super().get_path_fields() | {path.SAMP: self.sample}
-
-
-class OneSampleGraph(SampleGraph, ABC):
-    """ Graph of one sample. """
+    @cached_property
+    def title(self):
+        """ Title of the graph. """
+        return " ".join(self._title_main + self._title_details)
 
 
-class TwoSampleGraph(SampleGraph, ABC):
-    """ Graph of two samples. """
-
-    @property
-    @abstractmethod
-    def sample1(self) -> str:
-        """ Name of the first sample. """
-
-    @property
-    @abstractmethod
-    def sample2(self) -> str:
-        """ Name of the second sample. """
-
-    @property
-    def sample(self):
-        return f"{self.sample1}_vs_{self.sample2}"
-
-
-class OneRefGraph(GraphBase, ABC):
-    """ Graph of one reference.  """
-
-    @property
-    @abstractmethod
-    def ref(self) -> str:
-        """ Name of the reference sequence. """
-
-    @property
-    @abstractmethod
-    def sect(self) -> str:
-        """ Name of the section of the reference sequence. """
-
-    @classmethod
-    def get_path_segs(cls):
-        """ Path segments. """
-        return super().get_path_segs() + (path.RefSeg, path.SectSeg)
-
-    def get_path_fields(self):
-        return super().get_path_fields() | {path.REF: self.ref,
-                                            path.SECT: self.sect}
-
-
-class OneSeqGraph(OneRefGraph, ABC):
-    """ Graph of one reference with an explicit sequence. """
-
-    @property
-    @abstractmethod
-    def seq(self) -> DNA:
-        """ Reference sequence as a DNA object. """
-
-
-class OneTableGraph(OneSampleGraph, OneRefGraph, ABC):
-    """ Graph of data from one TableLoader. """
-
-    def __init__(self, *, table: Table | PosTable, **kwargs):
-        super().__init__(**kwargs)
-        if not isinstance(table, self.get_table_type()):
-            raise TypeError(f"{type(self).__name__} expected table "
-                            f"of type '{self.get_table_type().__name__}', "
-                            f"but got type '{type(table).__name__}'")
-        self._table = table
+class GraphWriter(ABC):
+    """ Write the proper graph(s) for the table(s). """
 
     @classmethod
     @abstractmethod
-    def get_table_type(cls) -> type[Table | PosTable]:
-        """ Type of TableLoader for this graph. """
+    def get_table_loader(cls) -> Callable[[Path], Table]:
+        """ Function to load table files. """
 
-    @property
-    def table(self):
-        """ Table of data. """
-        return self._table
+    @classmethod
+    def load_table_file(cls, table_file: Path):
+        """ Load one table file. """
+        loader = cls.get_table_loader()
+        return loader(table_file)
 
-    @property
-    def top(self):
-        return self.table.top
+    def __init__(self, *table_files: Path):
+        self.table_files = list(table_files)
 
-    @property
-    def sample(self):
-        return self.table.sample
+    @abstractmethod
+    def iter_graphs(self, *args, **kwargs) -> Generator[GraphBase, None, None]:
+        """ Yield every graph for the table. """
 
-    @property
-    def ref(self):
-        return self.table.ref
-
-    @property
-    def sect(self):
-        return self.table.sect
-
-    @property
-    def col_index(self):
-        return None
+    def write(self,
+              *args,
+              csv: bool,
+              html: bool,
+              pdf: bool,
+              force: bool,
+              **kwargs):
+        """ Generate and write every graph for the table. """
+        return list(chain(graph.write(csv=csv, html=html, pdf=pdf, force=force)
+                          for graph in self.iter_graphs(*args, **kwargs)))
 
 
-class TwoTableGraph(TwoSampleGraph, OneRefGraph, ABC):
+class PosGraphWriter(GraphWriter, ABC):
 
-    def __init__(self, *,
-                 table1: Table | PosTable,
-                 table2: Table | PosTable,
-                 **kwargs):
-        super().__init__(**kwargs)
-        for table, table_type in zip((table1, table2),
-                                     (self.get_table1_type(),
-                                      self.get_table2_type()),
-                                     strict=True):
-            if not isinstance(table, table_type):
-                raise TypeError(f"{type(self).__name__} expected table "
-                                f"of type '{table_type.__name__}', "
-                                f"but got type '{type(table).__name__}'")
-        self._table1 = table1
-        self._table2 = table2
+    @classmethod
+    def get_table_loader(cls):
+        return load_pos_table
+
+
+class ReadGraphWriter(GraphWriter, ABC):
+
+    @classmethod
+    def get_table_loader(cls):
+        return load_read_table
+
+
+class GraphRunner(ABC):
 
     @classmethod
     @abstractmethod
-    def get_table1_type(cls) -> type[Table | PosTable]:
-        """ Type of the first TableLoader for this graph. """
+    def get_writer_type(cls) -> type[GraphWriter]:
+        """ Type of GraphWriter. """
+
+    @classmethod
+    def universal_input_params(cls):
+        """ Universal parameters controlling the input data. """
+        return [arg_input_path,
+                opt_rels,
+                opt_use_ratio,
+                opt_quantile]
+
+    @classmethod
+    def universal_output_params(cls):
+        """ Universal parameters controlling the output graph. """
+        return [opt_cgroup,
+                opt_out_dir,
+                opt_csv,
+                opt_html,
+                opt_pdf,
+                opt_force,
+                opt_max_procs,
+                opt_parallel]
+
+    @classmethod
+    def var_params(cls) -> list[Argument | Option]:
+        """ Parameters that can vary among different classes. """
+        return list()
+
+    @classmethod
+    def params(cls) -> list[Argument | Option]:
+        """ Parameters for the command line. """
+        return list(chain(cls.universal_input_params(),
+                          cls.var_params(),
+                          cls.universal_output_params()))
 
     @classmethod
     @abstractmethod
-    def get_table2_type(cls) -> type[Table | PosTable]:
-        """ Type of the second TableLoader for this graph. """
-
-    @property
-    def table1(self):
-        """ First table of data. """
-        return self._table1
-
-    @property
-    def table2(self):
-        """ Second table of data. """
-        return self._table2
-
-    def _get_common_attribute(self, name: str):
-        """ Get the common attribute for tables 1 and 2. """
-        attr1 = getattr(self.table1, name)
-        attr2 = getattr(self.table2, name)
-        if attr1 != attr2:
-            raise ValueError(f"Attribute {repr(name)} differs between tables "
-                             f"1 ({repr(attr1)}) and 2 ({repr(attr2)})")
-        return attr1
-
-    @property
-    def top(self):
-        return self._get_common_attribute("top")
-
-    @property
-    def ref(self):
-        return self._get_common_attribute("ref")
-
-    @property
-    def sect(self):
-        return self._get_common_attribute("sect")
-
-    @property
-    def sample1(self):
-        return self.table1.sample
-
-    @property
-    def sample2(self):
-        return self.table2.sample
-
-    @property
-    def sample(self):
-        return (self.sample1 if self.sample1 == self.sample2
-                else f"{self.sample1}__and__{self.sample2}")
-
-
-class OneTableSeqGraph(OneTableGraph, OneSeqGraph, ABC):
+    def get_table_finder(cls) -> Callable[[tuple[str, ...]], Generator]:
+        """ Function to find and filter table files. """
 
     @classmethod
-    def get_table_type(cls):
-        return PosTable
-
-    @property
-    def seq(self):
-        return self.table.seq
-
-
-class TwoTableSeqGraph(TwoTableGraph, OneSeqGraph, ABC):
+    def list_table_files(cls, input_path: tuple[str, ...]):
+        """ Find, filter, and list all table files from input files. """
+        finder = cls.get_table_finder()
+        return list(finder(input_path))
 
     @classmethod
-    def get_table1_type(cls):
-        return PosTable
-
-    @classmethod
-    def get_table2_type(cls):
-        return PosTable
-
-    @property
-    def seq(self):
-        return self._get_common_attribute("seq")
-
-
-class CartesianGraph(GraphBase, ABC):
-    """ Graph with one pair of x and y axes per subplot. """
-
-    @property
     @abstractmethod
-    def x_title(self) -> str:
-        """ Title of the x-axis. """
+    def run(cls,
+            input_path: tuple[str, ...],
+            rels: tuple[str, ...],
+            use_ratio: bool,
+            quantile: float, *,
+            cgroup: str,
+            out_dir: str,
+            csv: bool,
+            html: bool,
+            pdf: bool,
+            force: bool,
+            max_procs: int,
+            parallel: bool,
+            **kwargs) -> list[Path]:
+        """ Run graphing. """
 
-    @property
-    @abstractmethod
-    def y_title(self) -> str:
-        """ Title of the y-axis. """
 
-    def _figure_layout(self, figure: go.Figure):
-        super()._figure_layout(figure)
-        figure.update_xaxes(linewidth=1,
-                            linecolor="#000000",
-                            autorange=True)
-        figure.update_yaxes(linewidth=1,
-                            linecolor="#000000",
-                            autorange=True)
+class PosGraphRunner(GraphRunner, ABC):
 
-    @property
-    def _subplots_params(self):
-        return super()._subplots_params | dict(x_title=self.x_title,
-                                               y_title=self.y_title,
-                                               shared_xaxes="all",
-                                               shared_yaxes="all")
+    @classmethod
+    def get_table_finder(cls):
+        return find_pos_tables
+
+
+class ReadGraphRunner(GraphRunner, ABC):
+
+    @classmethod
+    def get_table_finder(cls):
+        return find_read_tables
 
 ########################################################################
 #                                                                      #
