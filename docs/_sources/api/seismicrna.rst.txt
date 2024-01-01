@@ -14,7 +14,7 @@ Subpackages
 
    seismicrna.align
    seismicrna.cleanfa
-   seismicrna.clust
+   seismicrna.cluster
    seismicrna.core
    seismicrna.demult
    seismicrna.export
@@ -26,7 +26,7 @@ Subpackages
    seismicrna.sim
    seismicrna.table
    seismicrna.test
-   seismicrna.workflow
+   seismicrna.wf
 
 Submodules
 ----------

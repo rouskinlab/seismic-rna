@@ -1,7 +1,7 @@
-seismicrna.clust package
-========================
+seismicrna.cluster package
+==========================
 
-.. automodule:: seismicrna.clust
+.. automodule:: seismicrna.cluster
    :members:
    :undoc-members:
    :show-inheritance:
@@ -10,67 +10,67 @@ Submodules
 ----------
 
 
-.. automodule:: seismicrna.clust.batch
+.. automodule:: seismicrna.cluster.batch
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.clust.compare
+.. automodule:: seismicrna.cluster.compare
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.clust.csv
+.. automodule:: seismicrna.cluster.csv
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.clust.data
+.. automodule:: seismicrna.cluster.data
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.clust.em
+.. automodule:: seismicrna.cluster.em
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.clust.io
+.. automodule:: seismicrna.cluster.io
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.clust.main
+.. automodule:: seismicrna.cluster.main
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.clust.names
+.. automodule:: seismicrna.cluster.names
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.clust.report
+.. automodule:: seismicrna.cluster.report
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.clust.uniq
+.. automodule:: seismicrna.cluster.uniq
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.clust.write
+.. automodule:: seismicrna.cluster.write
    :members:
    :undoc-members:
    :show-inheritance:

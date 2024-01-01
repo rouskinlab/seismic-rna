@@ -19,7 +19,7 @@ Run the entire workflow
 
 .. _cli_wf:
 
-.. click:: seismicrna.workflow:cli
+.. click:: seismicrna.wf:cli
     :prog: seismic wf
 
 Run individual steps of the workflow
@@ -47,7 +47,7 @@ Run individual steps of the workflow
 
 .. _cli_cluster:
 
-.. click:: seismicrna.clust:cli
+.. click:: seismicrna.cluster:cli
     :prog: seismic cluster
 
 .. _cli_table:

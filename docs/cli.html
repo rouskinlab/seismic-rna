@@ -172,12 +172,6 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-R">
-<span id="cmdoption-seismic-wf-r"></span><span id="cmdoption-seismic-wf-refs-meta"></span><span class="sig-name descname"><span class="pre">-R</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--refs-meta</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;refs_meta&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-R" title="Permalink to this definition"></a></dt>
-<dd><p>CSV file of metadata for each reference</p>
-</dd></dl>
-
-<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-parallel-demultiplexing">
 <span class="sig-name descname"><span class="pre">--parallel-demultiplexing</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;parallel_demultiplexing&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-parallel-demultiplexing" title="Permalink to this definition"></a></dt>
 <dd><p>Whether to run demultiplexing at maximum speed by submitting multithreaded grep functions</p>
@@ -217,6 +211,12 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-keep-temp">
 <span id="cmdoption-seismic-wf-erase-temp"></span><span class="sig-name descname"><span class="pre">--keep-temp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-temp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-keep-temp" title="Permalink to this definition"></a></dt>
 <dd><p>Keep temporary files after the program exits</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-s">
+<span id="cmdoption-seismic-wf-sections-file"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--sections-file</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;sections_file&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-s" title="Permalink to this definition"></a></dt>
+<dd><p>CSV file of sections by name, reference, and coordinates/primers</p>
 </dd></dl>
 
 <dl class="std option">
@@ -531,12 +531,6 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-s">
-<span id="cmdoption-seismic-wf-sections-file"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--sections-file</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;sections_file&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-s" title="Permalink to this definition"></a></dt>
-<dd><p>CSV file of sections by name, reference, and coordinates/primers</p>
-</dd></dl>
-
-<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-count-del">
 <span id="cmdoption-seismic-wf-discount-del"></span><span class="sig-name descname"><span class="pre">--count-del</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--discount-del</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-count-del" title="Permalink to this definition"></a></dt>
 <dd><p>Count deletions as mutations</p>
@@ -717,6 +711,12 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-R">
+<span id="cmdoption-seismic-wf-r"></span><span id="cmdoption-seismic-wf-refs-meta"></span><span class="sig-name descname"><span class="pre">-R</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--refs-meta</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;refs_meta&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-R" title="Permalink to this definition"></a></dt>
+<dd><p>CSV file of metadata for each reference</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-all-pos">
 <span id="cmdoption-seismic-wf-unmasked-pos"></span><span class="sig-name descname"><span class="pre">--all-pos</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--unmasked-pos</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-all-pos" title="Permalink to this definition"></a></dt>
 <dd><p>Export all positions (not just unmasked positions)</p>
@@ -830,12 +830,6 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-demult-R">
-<span id="cmdoption-seismic-demult-r"></span><span id="cmdoption-seismic-demult-refs-meta"></span><span class="sig-name descname"><span class="pre">-R</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--refs-meta</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;refs_meta&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-R" title="Permalink to this definition"></a></dt>
-<dd><p>CSV file of metadata for each reference</p>
-</dd></dl>
-
-<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-demult-parallel-demultiplexing">
 <span class="sig-name descname"><span class="pre">--parallel-demultiplexing</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;parallel_demultiplexing&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-parallel-demultiplexing" title="Permalink to this definition"></a></dt>
 <dd><p>Whether to run demultiplexing at maximum speed by submitting multithreaded grep functions</p>
@@ -875,6 +869,12 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dt class="sig sig-object std" id="cmdoption-seismic-demult-keep-temp">
 <span id="cmdoption-seismic-demult-erase-temp"></span><span class="sig-name descname"><span class="pre">--keep-temp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-temp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-demult-keep-temp" title="Permalink to this definition"></a></dt>
 <dd><p>Keep temporary files after the program exits</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-s">
+<span id="cmdoption-seismic-demult-sections-file"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--sections-file</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;sections_file&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-s" title="Permalink to this definition"></a></dt>
+<dd><p>CSV file of sections by name, reference, and coordinates/primers</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>
