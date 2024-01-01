@@ -534,7 +534,7 @@ opt_primer_gap = Option(
 
 # Relate
 opt_min_reads = Option(
-    ("--min-reads", "-n"),
+    ("--min-reads", "-N"),
     type=int,
     default=1000,
     help="Minimum number of reads in an alignment map"
