@@ -71,11 +71,23 @@ seismic graph
 .. click:: seismicrna.graph.delprof:cli
     :prog: seismic graph delprof
 
+.. click:: seismicrna.graph.scatter:cli
+    :prog: seismic graph scatter
+
 .. click:: seismicrna.graph.corroll:cli
     :prog: seismic graph corroll
 
-.. click:: seismicrna.graph.scatter:cli
-    :prog: seismic graph scatter
+.. click:: seismicrna.graph.histpos:cli
+    :prog: seismic graph histpos
+
+.. click:: seismicrna.graph.histread:cli
+    :prog: seismic graph histread
+
+.. click:: seismicrna.graph.roc:cli
+    :prog: seismic graph roc
+
+.. click:: seismicrna.graph.aucroll:cli
+    :prog: seismic graph aucroll
 
 Extra Utilities
 ================================================================================
