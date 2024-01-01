@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from functools import cached_property
 from itertools import chain, combinations, product
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 
 import pandas as pd
 
@@ -16,6 +17,7 @@ from .base import (LINKER,
                    make_title_action_sample,
                    make_path_subject)
 from .rel import OneRelGraph
+from ..core import path
 from ..core.arg import opt_comppair, opt_compself
 from ..core.parallel import dispatch
 from ..table.base import ClustTable, PosTable, Table
@@ -233,6 +235,41 @@ class TwoTableWriter(GraphWriter, ABC):
                                  **kwargs)
 
 
+def _iter_table_pairs(table_files: Iterable[Path],
+                      table_segs: tuple[path.Segment, ...]):
+    """ Yield every pair of files whose reference and section match. """
+    logger.debug("Seeking all pairs of table files with identical references "
+                 f"and sections matching segments {list(map(str, table_segs))}")
+    # Determine the reference and section of each table.
+    table_fields = defaultdict(set)
+    for file in table_files:
+        fields = path.parse(file, *table_segs)
+        key = fields[path.REF], fields[path.SECT]
+        if file in table_fields[key]:
+            logger.warning(f"Duplicate table file: {file}")
+        else:
+            table_fields[key].add(file)
+    # Yield every pair of table files.
+    for (ref, sect), tables in table_fields.items():
+        n_files = len(tables)
+        n_pairs = n_files * (n_files - 1) // 2
+        logger.debug(f"Found {n_files} table files ({n_pairs} pairs) with "
+                     f"reference {repr(ref)} and section {repr(sect)}")
+        yield from combinations(tables, 2)
+
+
+def iter_pos_table_pairs(table_files: Iterable[Path]):
+    """ Yield every pair of files of positional tables whose reference
+    and section match. """
+    yield from _iter_table_pairs(table_files, path.POS_TABLE_SEGS)
+
+
+def iter_read_table_pairs(table_files: Iterable[Path]):
+    """ Yield every pair of files of per-read tables whose reference and
+    section match. """
+    yield from _iter_table_pairs(table_files, path.READ_TABLE_SEGS)
+
+
 class TwoTableRunner(GraphRunner, ABC):
 
     @classmethod
@@ -261,7 +298,7 @@ class TwoTableRunner(GraphRunner, ABC):
             table_pairs.extend((file, file) for file in table_files)
         if comppair:
             # Compare every pair of two different tables.
-            table_pairs.extend(combinations(table_files, 2))
+            table_pairs.extend(iter_pos_table_pairs(table_files))
         # Generate a table writer for each pair of tables.
         writers = [cls.get_writer_type()(table1_file, table2_file)
                    for table1_file, table2_file in table_pairs]
