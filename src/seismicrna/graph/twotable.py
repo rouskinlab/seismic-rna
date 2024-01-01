@@ -255,7 +255,7 @@ def _iter_table_pairs(table_files: Iterable[Path],
         n_pairs = n_files * (n_files - 1) // 2
         logger.debug(f"Found {n_files} table files ({n_pairs} pairs) with "
                      f"reference {repr(ref)} and section {repr(sect)}")
-        yield from combinations(tables, 2)
+        yield from combinations(sorted(tables), 2)
 
 
 def iter_pos_table_pairs(table_files: Iterable[Path]):
