@@ -8,8 +8,8 @@
 # -- Project information -----------------------------------------------------
 
 project = "seismic-rna"
-project_copyright = "2023, the Rouskin Lab"
-author = "Matthew Allan, Yves Martin, Scott Grote, and Alberic de Lajarte"
+project_copyright = "2024, the Rouskin Lab"
+author = "Matthew Allan, Yves Martin, Scott Grote, Alberic de Lajarte, and Justin Aruda"
 
 # The full version, including alpha/beta/rc tags
 # release = "28.02.2023"
@@ -91,7 +91,7 @@ nitpick_ignore = [("py:class", "type")]
 
 ########################################################################
 #                                                                      #
-# Copyright ©2023, the Rouskin Lab.                                    #
+# © Copyright 2024, the Rouskin Lab.                                   #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

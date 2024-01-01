@@ -218,9 +218,9 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-s">
-<span id="cmdoption-seismic-wf-sections-file"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--sections-file</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;sections_file&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-s" title="Permalink to this definition"></a></dt>
-<dd><p>CSV file of sections by name, reference, and coordinates/primers</p>
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-R">
+<span id="cmdoption-seismic-wf-r"></span><span id="cmdoption-seismic-wf-refs-meta"></span><span class="sig-name descname"><span class="pre">-R</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--refs-meta</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;refs_meta&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-R" title="Permalink to this definition"></a></dt>
+<dd><p>CSV file of metadata for each reference</p>
 </dd></dl>
 
 <dl class="std option">
@@ -481,8 +481,8 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-n">
-<span id="cmdoption-seismic-wf-min-reads"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--min-reads</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_reads&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-n" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-N">
+<span id="cmdoption-seismic-wf-n"></span><span id="cmdoption-seismic-wf-min-reads"></span><span class="sig-name descname"><span class="pre">-N</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--min-reads</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_reads&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-N" title="Permalink to this definition"></a></dt>
 <dd><p>Minimum number of reads in an alignment map</p>
 </dd></dl>
 
@@ -532,6 +532,12 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-primer-gap">
 <span class="sig-name descname"><span class="pre">--primer-gap</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;primer_gap&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-primer-gap" title="Permalink to this definition"></a></dt>
 <dd><p>Length of the gap (nt) between each primer and the end of the section</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-s">
+<span id="cmdoption-seismic-wf-sections-file"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--sections-file</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;sections_file&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-s" title="Permalink to this definition"></a></dt>
+<dd><p>CSV file of sections by name, reference, and coordinates/primers</p>
 </dd></dl>
 
 <dl class="std option">
@@ -715,12 +721,6 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-R">
-<span id="cmdoption-seismic-wf-r"></span><span id="cmdoption-seismic-wf-refs-meta"></span><span class="sig-name descname"><span class="pre">-R</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--refs-meta</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;refs_meta&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-R" title="Permalink to this definition"></a></dt>
-<dd><p>CSV file of metadata for each reference</p>
-</dd></dl>
-
-<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-all-pos">
 <span id="cmdoption-seismic-wf-unmasked-pos"></span><span class="sig-name descname"><span class="pre">--all-pos</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--unmasked-pos</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-all-pos" title="Permalink to this definition"></a></dt>
 <dd><p>Export all positions (not just unmasked positions)</p>
@@ -876,9 +876,9 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-demult-s">
-<span id="cmdoption-seismic-demult-sections-file"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--sections-file</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;sections_file&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-s" title="Permalink to this definition"></a></dt>
-<dd><p>CSV file of sections by name, reference, and coordinates/primers</p>
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-R">
+<span id="cmdoption-seismic-demult-r"></span><span id="cmdoption-seismic-demult-refs-meta"></span><span class="sig-name descname"><span class="pre">-R</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--refs-meta</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;refs_meta&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-R" title="Permalink to this definition"></a></dt>
+<dd><p>CSV file of metadata for each reference</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>
@@ -1184,8 +1184,8 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-align-n">
-<span id="cmdoption-seismic-align-min-reads"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--min-reads</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_reads&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-n" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-align-N">
+<span id="cmdoption-seismic-align-n"></span><span id="cmdoption-seismic-align-min-reads"></span><span class="sig-name descname"><span class="pre">-N</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--min-reads</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_reads&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-N" title="Permalink to this definition"></a></dt>
 <dd><p>Minimum number of reads in an alignment map</p>
 </dd></dl>
 
@@ -1241,8 +1241,8 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-relate-n">
-<span id="cmdoption-seismic-relate-min-reads"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--min-reads</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_reads&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-n" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-N">
+<span id="cmdoption-seismic-relate-n"></span><span id="cmdoption-seismic-relate-min-reads"></span><span class="sig-name descname"><span class="pre">-N</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--min-reads</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_reads&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-N" title="Permalink to this definition"></a></dt>
 <dd><p>Minimum number of reads in an alignment map</p>
 </dd></dl>
 
@@ -2591,7 +2591,7 @@ begins with <code class="docutils literal notranslate"><span class="pre">+</span
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2023, the Rouskin Lab.</p>
+    <p>&#169; Copyright 2024, the Rouskin Lab.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

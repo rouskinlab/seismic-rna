@@ -5,7 +5,7 @@ from .unbias import *
 
 ########################################################################
 #                                                                      #
-# Copyright ©2023, the Rouskin Lab.                                    #
+# © Copyright 2024, the Rouskin Lab.                                   #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

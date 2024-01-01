@@ -88,7 +88,7 @@ def lock_temp_dir(run: Callable):
 
 ########################################################################
 #                                                                      #
-# Copyright ©2023, the Rouskin Lab.                                    #
+# © Copyright 2024, the Rouskin Lab.                                   #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

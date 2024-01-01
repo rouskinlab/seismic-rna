@@ -15,7 +15,7 @@ logger = getLogger(__name__)
 LICENSE_PY = """
 ########################################################################
 #                                                                      #
-# Copyright ©2023, the Rouskin Lab.                                    #
+# © Copyright 2024, the Rouskin Lab.                                   #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
 ########################################################################
 #                                                                      #
-# Copyright ©2023, the Rouskin Lab.                                    #
+# © Copyright 2024, the Rouskin Lab.                                   #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

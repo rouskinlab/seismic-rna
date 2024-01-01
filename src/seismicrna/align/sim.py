@@ -184,7 +184,7 @@ def relvecs_to_sam_file(file: Path, *args, overwrite: bool = False, **kwargs):
 
 ########################################################################
 #                                                                      #
-# Copyright ©2023, the Rouskin Lab.                                    #
+# © Copyright 2024, the Rouskin Lab.                                   #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #

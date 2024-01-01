@@ -162,7 +162,7 @@ Insufficient reads in {file} ...
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This error means that you provided a SAM/BAM/CRAM file containing fewer reads
-than the minimum number set by ``--min-reads`` (``-n``).
+than the minimum number set by ``--min-reads`` (``-N``).
 There are two common causes of this error:
 
 - You ran ``seismic align`` and ``seismic relate`` separately (instead of with

@@ -2,7 +2,7 @@
 License
 ========================================================================
  
-©2023, the Rouskin Lab.
+©2024, the Rouskin Lab.
 
 SEISMIC-RNA is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the

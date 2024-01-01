@@ -1150,7 +1150,7 @@ def demultiplex_run(refs_file_csv, demulti_workspace, report_folder, fq_unit: Fa
 
 ########################################################################
 #                                                                      #
-# Copyright ©2023, the Rouskin Lab.                                    #
+# © Copyright 2024, the Rouskin Lab.                                   #
 #                                                                      #
 # This file is part of SEISMIC-RNA.                                    #
 #                                                                      #
