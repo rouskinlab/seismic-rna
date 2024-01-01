@@ -305,8 +305,8 @@ def fq_pipeline(fq_inp: FastqUnit,
                              f"{reads_refs[ref]} reads (< {min_reads})")
         finally:
             # Remove the temporary FASTA files.
-            refs_file.unlink()
-            refs_file_index.unlink()
+            refs_file.unlink(missing_ok=True)
+            refs_file_index.unlink(missing_ok=True)
     # The whole XAM file is no longer needed.
     if not keep_temp:
         xam_whole.unlink()
