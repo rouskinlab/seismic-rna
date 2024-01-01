@@ -107,7 +107,7 @@ class ROCGraph(StructOneTableGraph):
 
     @cached_property
     def profile_names(self):
-        """ Names of the profiles as they appear in the ROC data. """
+        """ Names of the profiles as they appear in the data. """
         profile_names = self.fpr.columns.unique(PROFILE_NAME)
         if not profile_names.equals(self.tpr.columns.unique(PROFILE_NAME)):
             raise ValueError(f"Profile names differ: {profile_names} "

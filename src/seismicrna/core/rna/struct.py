@@ -112,6 +112,12 @@ class RNAStructure(RNASection):
     def roots(self):
         return find_root_pairs(self.pairs)
 
+    @cached_property
+    def is_paired(self):
+        """ Series where each index is a position and each value is True
+        if the corresponding base is paired, otherwise False. """
+        return self.table != 0
+
     def _subsection_kwargs(self,
                            end5: int,
                            end3: int,
@@ -120,8 +126,10 @@ class RNAStructure(RNASection):
             title=(title if title is not None
                    else f"{self.title}_{end5}-{end3}"),
             pairs=table_to_pairs(
-                self.table[np.logical_and(self.table.index.values >= end5,
-                                          self.table.index.values <= end3)]
+                self.table[np.logical_and(
+                    self.table.index.get_level_values(POS_NAME) >= end5,
+                    self.table.index.get_level_values(POS_NAME) <= end3
+                )]
             )
         )
 

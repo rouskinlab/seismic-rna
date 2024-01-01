@@ -1,7 +1,7 @@
 from functools import cached_property
 
 from .profile import RNAProfile
-from .roc import compute_auc_roc, compute_roc_curve
+from .roc import compute_auc, compute_roc_curve, compute_rolling_auc
 from .struct import RNAStructure
 
 
@@ -25,11 +25,15 @@ class RNAState(RNAStructure, RNAProfile):
 
     @cached_property
     def roc(self):
-        return compute_roc_curve(self.table != 0, self.data)
+        return compute_roc_curve(self.is_paired, self.data)
 
     @cached_property
     def auc(self):
-        return compute_auc_roc(*self.roc)
+        return compute_auc(*self.roc)
+
+    def rolling_auc(self, size: int, min_data: int = 2):
+        return compute_rolling_auc(self.is_paired, self.data, size, min_data)
+
 
 ########################################################################
 #                                                                      #

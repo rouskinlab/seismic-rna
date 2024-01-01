@@ -9,6 +9,7 @@ from .base import PosGraphWriter, PosGraphRunner
 from .color import ColorMapGraph, SeqColorMap
 from .trace import iter_seq_base_bar_traces
 from .twotable import TwoTableRunner, TwoTableWriter, TwoTableMergedGraph
+from ..core.seq import POS_NAME
 
 logger = getLogger(__name__)
 
@@ -32,6 +33,10 @@ class DeltaProfileGraph(TwoTableMergedGraph, ColorMapGraph):
     @classmethod
     def _trace_function(cls):
         return iter_seq_base_bar_traces
+
+    @property
+    def x_title(self) -> str:
+        return POS_NAME
 
     @property
     def _trace_kwargs(self):

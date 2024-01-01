@@ -1,6 +1,7 @@
 from click import group
 
-from . import (corroll,
+from . import (aucroll,
+               corroll,
                delprof,
                histpos,
                histread,
@@ -17,7 +18,8 @@ def cli():
 
 
 # Add graph commands to the CLI.
-for module in (corroll,
+for module in (aucroll,
+               corroll,
                delprof,
                histpos,
                histread,

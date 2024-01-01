@@ -10,7 +10,7 @@ from seismicrna.core.seq.section import (BASE_NAME,
                                          SEQ_INDEX_NAMES,
                                          Section,
                                          get_shared_index,
-                                         get_windows,
+                                         iter_windows,
                                          hyphenate_ends,
                                          index_to_pos,
                                          index_to_seq,
@@ -1170,7 +1170,7 @@ class TestGetWindows(ut.TestCase):
     """ Test function `get_windows`. """
 
     def compare(self, expected: list, *series: pd.Series, **kwargs):
-        windows = list(get_windows(*series, **kwargs))
+        windows = list(iter_windows(*series, **kwargs))
         for (wcenter, wseries), (ecenter, eseries) in zip(windows,
                                                           expected,
                                                           strict=True):
@@ -1179,7 +1179,7 @@ class TestGetWindows(ut.TestCase):
                 self.assertTrue(np.allclose(window, expect, equal_nan=True))
 
     def test_empty(self):
-        self.assertEqual(list(get_windows(size=1)), [])
+        self.assertEqual(list(iter_windows(size=1)), [])
 
     def test_1_series_size_1_min_1_excl_nan(self):
         series = pd.Series([3., 1., 6., np.nan, 8., np.nan, 4., 5.],

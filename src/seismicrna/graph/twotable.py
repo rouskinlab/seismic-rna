@@ -18,7 +18,6 @@ from .base import (LINKER,
 from .rel import OneRelGraph
 from ..core.arg import opt_comppair, opt_compself
 from ..core.parallel import dispatch
-from ..core.seq import POS_NAME
 from ..table.base import ClustTable, PosTable, Table
 from ..table.load import find_pos_tables, load_pos_table
 
@@ -170,10 +169,6 @@ class TwoTableMergedGraph(TwoTableGraph, ABC):
         return dict()
 
     @property
-    def x_title(self) -> str:
-        return POS_NAME
-
-    @property
     @abstractmethod
     def _merge_data(self) -> Callable:
         """ Function to merge the two datasets into one. """
@@ -193,8 +188,9 @@ class TwoTableMergedGraph(TwoTableGraph, ABC):
         return data
 
     def get_traces(self):
+        trace_func = self._trace_function()
         for (row, col), series in self.data.items():
-            for trace in self._trace_function()(series, **self._trace_kwargs):
+            for trace in trace_func(series, **self._trace_kwargs):
                 yield (row, col), trace
 
 

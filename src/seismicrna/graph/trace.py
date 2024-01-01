@@ -143,8 +143,18 @@ def get_seq_line_trace(data: pd.Series):
                       y=data)
 
 
+def iter_seq_line_traces(data: pd.Series, *_, **__):
+    yield get_seq_line_trace(data)
+
+
+def _format_profile_struct(profile: str, struct: str):
+    return f"{profile}, {struct}"
+
+
 def get_roc_trace(fpr: pd.Series, tpr: pd.Series, profile: str, struct: str):
-    return go.Scatter(x=fpr, y=tpr, name=f"{profile}, {struct}")
+    return go.Scatter(x=fpr,
+                      y=tpr,
+                      name=_format_profile_struct(profile, struct))
 
 
 def iter_roc_traces(fprs: pd.DataFrame, tprs: pd.DataFrame, profile: str):
@@ -154,8 +164,16 @@ def iter_roc_traces(fprs: pd.DataFrame, tprs: pd.DataFrame, profile: str):
         yield get_roc_trace(fpr, tpr, profile, str(sf))
 
 
-def iter_seq_line_traces(data: pd.Series, *_, **__):
-    yield get_seq_line_trace(data)
+def get_rolling_auc_trace(auc: pd.Series, profile: str, struct: str):
+    return go.Scatter(x=auc.index.get_level_values(POS_NAME),
+                      y=auc,
+                      name=_format_profile_struct(profile, struct))
+
+
+def iter_rolling_auc_traces(aucs: pd.DataFrame, profile: str):
+    for struct, auc in aucs.items():
+        yield get_rolling_auc_trace(auc, profile, str(struct))
+
 
 ########################################################################
 #                                                                      #

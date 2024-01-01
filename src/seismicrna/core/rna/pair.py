@@ -3,7 +3,7 @@ from typing import Generator, Iterable
 
 import pandas as pd
 
-from ..seq import POS_INDEX, Section
+from ..seq import POS_INDEX, POS_NAME, Section
 
 logger = getLogger(__name__)
 
@@ -46,14 +46,14 @@ def dict_to_pairs(pair_dict: dict[int, int]):
         if a == b:
             raise ValueError(f"Base {a} is paired with itself")
         if a < b:
-            # Yield only the pairs in which at is 5' of to.
+            # Yield only the pairs in which "a" is 5' of "b".
             yield a, b
 
 
 def pairs_to_table(pairs: Iterable[tuple[int, int]], section: Section):
     """ Return a Series of every position in the section and the base to
     which it pairs, or 0 if it does not pair. """
-    table = pd.Series(0, index=section.range_int)
+    table = pd.Series(0, index=section.range)
     for a, b in pairs_to_dict(pairs).items():
         try:
             table.loc[a] = b
@@ -62,9 +62,16 @@ def pairs_to_table(pairs: Iterable[tuple[int, int]], section: Section):
     return table
 
 
+def table_to_dict(table: pd.Series):
+    """ Dictionary of the 5' and 3' position in each pair. """
+    # Select only the positions whose bases are paired.
+    pairs = table[table != 0]
+    return dict(zip(pairs.index.get_level_values(POS_NAME), pairs, strict=True))
+
+
 def table_to_pairs(table: pd.Series):
     """ Tuples of the 5' and 3' position in each pair. """
-    return dict_to_pairs(table[table != 0].to_dict())
+    return dict_to_pairs(table_to_dict(table))
 
 
 def renumber_pairs(pairs: Iterable[tuple[int, int]], offset: int):

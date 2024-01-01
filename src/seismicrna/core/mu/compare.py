@@ -10,7 +10,7 @@ import pandas as pd
 from .nan import auto_removes_nan
 from .scale import calc_rms, calc_ranks, normalize
 from ..arg import KEY_DETERM, KEY_PEARSON, KEY_NRMSD, KEY_SPEARMAN
-from ..seq import get_shared_index, get_windows
+from ..seq import get_shared_index, iter_windows
 
 
 @auto_removes_nan
@@ -192,9 +192,9 @@ def compare_windows(mus1: pd.Series,
     # Initialize an empty Series for the sliding comparison.
     values = pd.Series(np.nan, index=get_shared_index([mus1.index, mus2.index]))
     # Calculate the value of the comparison for each window.
-    for center, (win1, win2) in get_windows(mus1,
-                                            mus2,
-                                            size=size,
-                                            min_count=min_count):
+    for center, (win1, win2) in iter_windows(mus1,
+                                             mus2,
+                                             size=size,
+                                             min_count=min_count):
         values.loc[center] = method(win1, win2)
     return values

@@ -264,10 +264,10 @@ def window_to_margins(window: int):
     return margin5, margin3
 
 
-def get_windows(*series: pd.Series,
-                size: int,
-                min_count: int = 1,
-                include_nan: bool = False):
+def iter_windows(*series: pd.Series,
+                 size: int,
+                 min_count: int = 1,
+                 include_nan: bool = False):
     # Determine the index; the index of all series must match.
     index = get_shared_index((s.index for s in series), empty_ok=True)
     # Calculate the 5' and 3' margins.
