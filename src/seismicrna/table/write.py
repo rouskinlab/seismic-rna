@@ -19,7 +19,7 @@ from .calc import (Tabulator,
                    MaskTabulator,
                    ClustTabulator,
                    tabulate_loader)
-from ..clust.data import ClustMerger
+from ..cluster.data import ClustMerger
 from ..core import path
 from ..core.write import need_write
 from ..mask.data import MaskMerger

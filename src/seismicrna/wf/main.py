@@ -13,7 +13,7 @@ from .. import (demult as demultiplex_mod,
                 align as align_mod,
                 relate as relate_mod,
                 mask as mask_mod,
-                clust as cluster_mod,
+                cluster as cluster_mod,
                 table as table_mod,
                 fold as fold_mod,
                 export as export_mod)
@@ -89,7 +89,7 @@ def run(*,
         fastqx: tuple[str, ...],
         phred_enc: int,
         # Demultiplexing options
-        section_file:str,
+        section_file: str,
         demulti_overwrite: bool,
         demult_on: bool,
         parallel_demultiplexing: bool,
@@ -194,7 +194,6 @@ def run(*,
         pdf: bool):
     """ Run the entire workflow. """
     # Demultiplex
-    #print(f"sect file main: {sect_file}")
     if demult_on:
         for dms, dmi, dmm in demultiplex_mod.run(
                 fasta=fasta,

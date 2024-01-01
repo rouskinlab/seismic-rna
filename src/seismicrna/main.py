@@ -16,12 +16,12 @@ import os
 
 from click import Context, group, pass_context, version_option
 
-from . import (workflow,
+from . import (wf,
                demult,
                align,
                relate,
                mask,
-               clust,
+               cluster,
                table,
                fold,
                graph,
@@ -81,16 +81,16 @@ def cli(ctx: Context,
                             sort="time")
         else:
             # Run without profiling.
-            workflow.run(**kwargs)
+            wf.run(**kwargs)
 
 
 # Add all commands to the main CLI command group.
-for module in (workflow,
+for module in (wf,
                demult,
                align,
                relate,
                mask,
-               clust,
+               cluster,
                table,
                fold,
                graph,

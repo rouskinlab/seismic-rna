@@ -19,7 +19,7 @@ from .base import (COVER_REL,
                    R_ADJ_TITLE,
                    R_OBS_TITLE,
                    TABLE_RELS)
-from ..clust.data import ClustMerger
+from ..cluster.data import ClustMerger
 from ..core.batch import accum_fits
 from ..core.header import Header, make_header
 from ..core.mu import calc_f_obs_frame, calc_mu_adj_frame

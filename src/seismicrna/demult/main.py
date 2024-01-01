@@ -64,8 +64,7 @@ def run(sections_file: str,
         parallel_demultiplexing: bool = False,
         mismatch_tolerence: int = 0,
         demulti_overwrite: bool = False,
-        keep_temp: bool =True,
-        ):
+        keep_temp: bool = True):
     """ Split multiplexed FASTQ files by their barcodes. """
     fq_units = list(FastqUnit.from_paths(fastqx=list(map(Path, fastqx)),
                                          phred_enc=phred_enc))
