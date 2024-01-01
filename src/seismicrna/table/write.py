@@ -19,10 +19,10 @@ from .calc import (Tabulator,
                    MaskTabulator,
                    ClustTabulator,
                    tabulate_loader)
-from ..cluster.data import ClustMerger
+from ..cluster.data import ClustLinker
 from ..core import path
 from ..core.write import need_write
-from ..mask.data import MaskMerger
+from ..mask.data import MaskLinker
 from ..relate.data import RelateLoader
 
 logger = getLogger(__name__)
@@ -122,9 +122,9 @@ def infer_report_loader_type(report_file: Path):
     if path.RelateRepSeg.ptrn.match(report_file.name):
         return RelateLoader
     if path.MaskRepSeg.ptrn.match(report_file.name):
-        return MaskMerger
+        return MaskLinker
     if path.ClustRepSeg.ptrn.match(report_file.name):
-        return ClustMerger
+        return ClustLinker
     raise ValueError(f"Failed to infer loader type for {report_file}")
 
 

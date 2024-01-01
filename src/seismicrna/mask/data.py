@@ -4,8 +4,8 @@ from .batch import MaskMutsBatch, apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
 from ..core.data import (BatchedLoadedDataset,
-                         BatchedMergedDataset,
-                         MergedMutsDataset)
+                         BatchedLinkedDataset,
+                         LinkedMutsDataset)
 from ..core.report import CountMutsF, CountRefsF, MinMutGapF, PosKeptF
 from ..core.rel import RelPattern
 from ..relate.batch import RelateRefseqBatch
@@ -37,7 +37,7 @@ class MaskLoader(BatchedLoadedDataset):
                           self.report.get_field(CountRefsF))
 
 
-class MaskMerger(BatchedMergedDataset, MergedMutsDataset):
+class MaskLinker(BatchedLinkedDataset, LinkedMutsDataset):
     """ Merge mutation data with masked reads. """
 
     MASK_NAME = "mask"
@@ -68,7 +68,7 @@ class MaskMerger(BatchedMergedDataset, MergedMutsDataset):
         section.add_mask(self.MASK_NAME, self.data2.pos_kept, invert=True)
         return section
 
-    def _merge(self, batch1: RelateRefseqBatch, batch2: MaskBatchIO):
+    def _link(self, batch1: RelateRefseqBatch, batch2: MaskBatchIO):
         return apply_mask(batch1, batch2.read_nums, self.data2.pos_kept)
 
 ########################################################################

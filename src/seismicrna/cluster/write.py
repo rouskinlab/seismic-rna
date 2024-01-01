@@ -15,14 +15,14 @@ from .uniq import UniqReads
 from ..core.parallel import dispatch
 from ..core.types import get_max_uint
 from ..core.write import need_write
-from ..mask.data import MaskMerger
+from ..mask.data import MaskLinker
 
 logger = getLogger(__name__)
 
 SEED_DTYPE = np.uint32
 
 
-def write_batches(dataset: MaskMerger,
+def write_batches(dataset: MaskLinker,
                   ord_runs: dict[int, RunOrderResults],
                   brotli_level: int):
     """ Write the cluster memberships to batch files. """
@@ -149,7 +149,7 @@ def cluster(mask_report_file: Path,
             n_procs: int,
             force: bool):
     """ Run all processes of clustering reads from one filter. """
-    dataset = MaskMerger.load(mask_report_file)
+    dataset = MaskLinker.load(mask_report_file)
     path_kwargs = dict(top=dataset.top,
                        sample=dataset.sample,
                        ref=dataset.ref,

@@ -13,7 +13,7 @@ from ..core.header import format_clust_name
 from ..core.rna import parse_db_strings
 from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
-from ..mask.data import MaskMerger
+from ..mask.data import MaskLinker
 from ..mask.report import MaskReport
 from ..relate.data import RelateLoader
 from ..relate.report import RelateReport, NumReadsRelF
@@ -94,7 +94,7 @@ def get_sect_metadata(top: Path,
                       ref: str,
                       sect: str,
                       all_pos: bool):
-    dataset = MaskMerger.load(MaskReport.build_path(top=top,
+    dataset = MaskLinker.load(MaskReport.build_path(top=top,
                                                     sample=sample,
                                                     ref=ref,
                                                     sect=sect))

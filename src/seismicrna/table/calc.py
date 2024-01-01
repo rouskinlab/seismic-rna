@@ -19,13 +19,13 @@ from .base import (COVER_REL,
                    R_ADJ_TITLE,
                    R_OBS_TITLE,
                    TABLE_RELS)
-from ..cluster.data import ClustMerger
+from ..cluster.data import ClustLinker
 from ..core.batch import accum_fits
 from ..core.header import Header, make_header
 from ..core.mu import calc_f_obs_frame, calc_mu_adj_frame
 from ..core.rel import RelPattern, HalfRelPattern
 from ..core.seq import Section
-from ..mask.data import MaskMerger
+from ..mask.data import MaskLinker
 from ..relate.data import RelateLoader
 
 logger = getLogger(__name__)
@@ -65,7 +65,7 @@ class Tabulator(ABC):
                                    table.loc[:, MUTAT_REL].values)
         return table
 
-    def __init__(self, dataset: RelateLoader | MaskMerger | ClustMerger):
+    def __init__(self, dataset: RelateLoader | MaskLinker | ClustLinker):
         self.dataset = dataset
 
     @property
@@ -313,14 +313,14 @@ def adjust_counts(counts_obs: pd.DataFrame,
     return counts_adj, f_obs
 
 
-def tabulate_loader(dataset: RelateLoader | MaskMerger | ClustMerger):
+def tabulate_loader(dataset: RelateLoader | MaskLinker | ClustLinker):
     """ Return a new Dataset, choosing the subclass based on the type
     of the argument `dataset`. """
     if isinstance(dataset, RelateLoader):
         return RelateTabulator(dataset)
-    if isinstance(dataset, MaskMerger):
+    if isinstance(dataset, MaskLinker):
         return MaskTabulator(dataset)
-    if isinstance(dataset, ClustMerger):
+    if isinstance(dataset, ClustLinker):
         return ClustTabulator(dataset)
     raise TypeError(f"Invalid dataset type: {type(dataset).__name__}")
 

@@ -5,12 +5,12 @@ from .batch import ClustMutsBatch
 from .io import ClustBatchIO
 from .report import ClustReport
 from ..core.data import (BatchedLoadedDataset,
-                         BatchedMergedDataset,
-                         MergedMutsDataset)
+                         BatchedLinkedDataset,
+                         LinkedMutsDataset)
 from ..core.header import index_orders_clusts
 from ..core.report import NumClustsF
 from ..mask.batch import MaskMutsBatch
-from ..mask.data import MaskMerger
+from ..mask.data import MaskLinker
 
 logger = getLogger(__name__)
 
@@ -36,7 +36,7 @@ class ClustLoader(BatchedLoadedDataset):
         return None
 
 
-class ClustMerger(BatchedMergedDataset, MergedMutsDataset):
+class ClustLinker(BatchedLinkedDataset, LinkedMutsDataset):
     """ Merge cluster responsibilities with mutation data. """
 
     @classmethod
@@ -45,7 +45,7 @@ class ClustMerger(BatchedMergedDataset, MergedMutsDataset):
 
     @classmethod
     def get_dataset1_type(cls):
-        return MaskMerger
+        return MaskLinker
 
     @classmethod
     def get_dataset2_type(cls):
@@ -71,7 +71,7 @@ class ClustMerger(BatchedMergedDataset, MergedMutsDataset):
     def clusters(self):
         return index_orders_clusts(self.max_order)
 
-    def _merge(self, batch1: MaskMutsBatch, batch2: ClustBatchIO):
+    def _link(self, batch1: MaskMutsBatch, batch2: ClustBatchIO):
         return self.get_data_type()(batch=batch1.batch,
                                     refseq=batch1.refseq,
                                     muts=batch1.muts,

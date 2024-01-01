@@ -8,7 +8,7 @@ import pandas as pd
 from ..core.batch import RefseqMutsBatch, get_length
 from ..core.rel import REL_TYPE, RelPattern
 from ..core.seq import Section
-from ..mask.data import MaskMerger
+from ..mask.data import MaskLinker
 
 BIT_VECTOR_NAME = "Bit Vector"
 
@@ -17,7 +17,7 @@ class UniqReads(object):
     """ Collection of bit vectors of unique reads. """
 
     @classmethod
-    def from_dataset(cls, dataset: MaskMerger):
+    def from_dataset(cls, dataset: MaskLinker):
         return cls(dataset.sample,
                    dataset.section,
                    dataset.min_mut_gap,

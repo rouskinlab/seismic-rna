@@ -277,7 +277,7 @@ class BatchedLoadedDataset(LoadedDataset[D, R], BatchedDataset[D], ABC):
             yield self.load_batch(batch)
 
 
-class Merger(Generic[S1, S2], ABC):
+class Linker(Generic[S1, S2], ABC):
 
     @classmethod
     @abstractmethod
@@ -299,9 +299,9 @@ class Merger(Generic[S1, S2], ABC):
                             f"data2, but got {type(data2).__name__}")
 
 
-class MergedDataset(Dataset[D], Merger[S1, S2], ABC):
+class LinkedDataset(Dataset[D], Linker[S1, S2], ABC):
     """ A Dataset created with a function that accepts two datasets and
-    returns a third "merged" dataset. """
+    returns a third "linked" dataset. """
 
     @classmethod
     def get_report_type(cls):
@@ -309,7 +309,7 @@ class MergedDataset(Dataset[D], Merger[S1, S2], ABC):
 
     @classmethod
     def load(cls, report_file: Path):
-        """ Create a new MergedDataset from a report file. """
+        """ Create a new LinkedDataset from a report file. """
         data1_type = cls.get_dataset1_type()
         data1 = data1_type.load(convert_path(report_file,
                                              cls.get_report_type(),
@@ -347,7 +347,7 @@ class MergedDataset(Dataset[D], Merger[S1, S2], ABC):
         return self.data1.refseq
 
 
-class MergedMutsDataset(MergedDataset[D, S1, S2], MutsDataset, ABC):
+class LinkedMutsDataset(LinkedDataset[D, S1, S2], MutsDataset, ABC):
 
     @property
     def end5(self):
@@ -362,24 +362,24 @@ class MergedMutsDataset(MergedDataset[D, S1, S2], MutsDataset, ABC):
         return self.data2.sect
 
 
-class UnifiedMergedDataset(MergedDataset[D, S1, S2], UnifiedDataset[D], ABC):
+class UnifiedLinkedDataset(LinkedDataset[D, S1, S2], UnifiedDataset[D], ABC):
     """ Linked unified dataset. """
 
     @classmethod
     @abstractmethod
-    def _merge(cls, data1, data2) -> D:
-        """ Merge the data in the two datasets. """
+    def _link(cls, data1, data2) -> D:
+        """ Link the data in the two datasets. """
 
     def _get_data(self):
-        return self._merge(self.data1, self.data2)
+        return self._link(self.data1, self.data2)
 
 
-class BatchedMergedDataset(MergedDataset[D, S1, S2], BatchedDataset[D], ABC):
-    """ Merged batched dataset. """
+class BatchedLinkedDataset(LinkedDataset[D, S1, S2], BatchedDataset[D], ABC):
+    """ Linked batched dataset. """
 
     @abstractmethod
-    def _merge(self, batch1, batch2) -> D:
-        """ Merge corresponding batches of data. """
+    def _link(self, batch1, batch2) -> D:
+        """ Link corresponding batches of data. """
 
     @property
     def num_batches(self):
@@ -391,7 +391,7 @@ class BatchedMergedDataset(MergedDataset[D, S1, S2], BatchedDataset[D], ABC):
                                   strict=True):
             if batch1.batch != batch2.batch:
                 raise ValueError(f"Batch numbers differ: {batch1} and {batch2}")
-            yield self._merge(batch1, batch2)
+            yield self._link(batch1, batch2)
 
 
 def load_data(report_files: Iterable[Path], loader_type: type[LoadedDataset]):
