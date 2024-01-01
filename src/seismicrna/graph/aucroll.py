@@ -31,7 +31,7 @@ class RollingAUCGraph(StructOneTableGraph, RollingGraph):
 
     @property
     def y_title(self):
-        return f"AUC-ROC"
+        return "AUC-ROC"
 
     @cached_property
     def data(self):

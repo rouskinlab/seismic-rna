@@ -52,12 +52,17 @@ def _compute_fpr_tpr(paired: pd.Series):
     n_total = paired.size
     # Compute the cumulative number of paired bases at each threshold.
     paired_cumsum = np.hstack([[0], np.cumsum(paired)])
-    # Count the paired positions.
-    n_paired = paired_cumsum[-1]
+    # Count the paired and unpaired positions.
+    n_paired = int(paired_cumsum[-1])
+    n_unpaired = n_total - n_paired
     # Get the false positive rate: (paired and reactive) / paired.
-    fpr = 1. - paired_cumsum / n_paired
+    fpr = (1. - paired_cumsum / n_paired
+           if n_paired > 0
+           else np.full(n_total + 1, np.nan))
     # Get the true positive rate: (unpaired and reactive) / unpaired.
-    tpr = 1. - (np.arange(n_total + 1) - paired_cumsum) / (n_total - n_paired)
+    tpr = (1. - (np.arange(n_total + 1) - paired_cumsum) / n_unpaired
+           if n_unpaired > 0
+           else np.full(n_total + 1, np.nan))
     # Traditionally, false positive rate is plotted on the x-axis and
     # true positive rate on the y-axis of an ROC curve.
     return fpr, tpr
