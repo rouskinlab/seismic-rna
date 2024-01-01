@@ -509,6 +509,7 @@ def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_end, fasta,
             )
 
     else:
+        print(f"input csv: {input_csv}")
         df = pd.read_csv(input_csv)
 
         # fasta_dict=make_dict_from_fasta(fasta)
@@ -1050,7 +1051,7 @@ def demultiplex_run(refs_file_csv, demulti_workspace, report_folder, fq_unit: Fa
     mixed_fastq1, mixed_fastq2 = (fq_unit.paths.values())  # only works if the FASTQ has paired-end reads in two separate files
     mixed_fastq1=str(mixed_fastq1)
     mixed_fastq2=str(mixed_fastq2)
-
+    print(f"csv: {refs_file_csv}")
     report_folder+="/"
     """
     makes dictionary of sequence objects

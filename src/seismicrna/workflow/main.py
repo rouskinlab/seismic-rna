@@ -89,7 +89,7 @@ def run(*,
         fastqx: tuple[str, ...],
         phred_enc: int,
         # Demultiplexing options
-        refs_file,
+        section_file:str,
         demulti_overwrite: bool,
         demult_on: bool,
         parallel_demultiplexing: bool,
@@ -194,10 +194,11 @@ def run(*,
         pdf: bool):
     """ Run the entire workflow. """
     # Demultiplex
+    #print(f"sect file main: {sect_file}")
     if demult_on:
         for dms, dmi, dmm in demultiplex_mod.run(
                 fasta=fasta,
-                refs_file=refs_file,
+                sections_file=sections_file,
                 out_dir=out_dir,
                 temp_dir=temp_dir,
                 demulti_overwrite=demulti_overwrite,
