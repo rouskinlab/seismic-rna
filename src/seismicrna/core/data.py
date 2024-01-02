@@ -1,10 +1,8 @@
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Generator, Generic, Iterable, TypeVar
+from typing import Generic, Iterable, TypeVar
 
 from . import path
 from .batch import list_batch_nums
@@ -32,16 +30,12 @@ logger = getLogger(__name__)
 
 
 class Dataset(Generic[D], ABC):
-    """ Base class for a dataset.
-
-    The purpose of the Dataset class is to load a dataset, which may or
-    may not be split over multiple batches, each batch in one file.
-    """
+    """ Handle to a dataset comprising batches of data. """
 
     @classmethod
     @abstractmethod
-    def get_data_type(cls) -> type[D]:
-        """ Type of the data for this dataset. """
+    def get_batch_type(cls) -> type[D]:
+        """ Type of the batch for this dataset. """
 
     @property
     @abstractmethod
@@ -89,23 +83,20 @@ class Dataset(Generic[D], ABC):
         return list_batch_nums(self.num_batches)
 
     @abstractmethod
-    def _iter_batches(self) -> Generator[D, None, None]:
-        """ Yield each batch. """
+    def get_batch(self, batch_num: int) -> D:
+        """ Get a specific batch of data. """
 
     def iter_batches(self):
         """ Yield each batch. """
-        for batch in self._iter_batches():
-            # Verify the type of the batch before yielding it.
-            if not isinstance(batch, self.get_data_type()):
-                raise TypeError(f"Expected {self.get_data_type().__name__}, "
-                                f"but got {type(batch).__name__}")
-            yield batch
+        for batch_num in self.batch_nums:
+            yield self.get_batch(batch_num)
 
     def __str__(self):
         return f"{type(self).__name__} for sample {repr(self.sample)}"
 
 
 class MutsDataset(Dataset[D], ABC):
+    """ Dataset with explicit mutational data. """
 
     @property
     @abstractmethod
@@ -137,6 +128,11 @@ class Loader(Generic[R], ABC):
 
 class LoadedDataset(Dataset[D], Loader[R], ABC):
     """ Dataset created by loading directly from a Report. """
+
+    @classmethod
+    def get_btype_name(cls):
+        """ Name of the type of batch for this Loader. """
+        return cls.get_batch_type().btype()
 
     @classmethod
     def load(cls, report_file: Path):
@@ -176,11 +172,6 @@ class LoadedDataset(Dataset[D], Loader[R], ABC):
     def sect(self):
         return self.report.get_field(SectF)
 
-    @classmethod
-    def get_btype_name(cls):
-        """ Name of the type of batch for this Loader. """
-        return cls.get_data_type().btype()
-
     @cached_property
     def num_batches(self):
         return self.report.get_field(NumBatchF)
@@ -188,25 +179,20 @@ class LoadedDataset(Dataset[D], Loader[R], ABC):
     def get_batch_path(self, batch: int):
         """ Get the path to a batch of a specific number. """
         fields = self.report.path_fields(self.top,
-                                         self.get_data_type().auto_fields())
-        return self.get_data_type().build_path(batch=batch, **fields)
+                                         self.get_batch_type().auto_fields())
+        return self.get_batch_type().build_path(batch=batch, **fields)
 
     def report_checksum(self, batch: int):
         """ Get the checksum of a specific batch from the report. """
         return self.report.get_field(ChecksumsF)[self.get_btype_name()][batch]
 
-    def load_batch(self, batch: int):
-        """ Load a specific batch of data. """
-        loaded_batch = self.get_data_type().load(self.get_batch_path(batch),
-                                                 self.report_checksum(batch))
-        if loaded_batch.batch != batch:
-            raise ValueError(f"Expected batch to have number {batch}, "
-                             f"but got {loaded_batch.batch}")
-        return loaded_batch
-
-    def _iter_batches(self):
-        for batch in self.batch_nums:
-            yield self.load_batch(batch)
+    def get_batch(self, batch_num: int):
+        batch = self.get_batch_type().load(self.get_batch_path(batch_num),
+                                           self.report_checksum(batch_num))
+        if batch.batch != batch_num:
+            raise ValueError(f"Expected batch to have number {batch_num}, "
+                             f"but got {batch.batch}")
+        return batch
 
 
 class LoadedMutsDataset(LoadedDataset[D, R], MutsDataset, ABC):
@@ -325,13 +311,9 @@ class LinkedDataset(Dataset[D], Linker[S1, S2], ABC):
     def num_batches(self):
         return self._get_data_attr("num_batches")
 
-    def _iter_batches(self):
-        for batch1, batch2 in zip(self.data1.iter_batches(),
-                                  self.data2.iter_batches(),
-                                  strict=True):
-            if batch1.batch != batch2.batch:
-                raise ValueError(f"Batch numbers differ: {batch1} and {batch2}")
-            yield self._link(batch1, batch2)
+    def get_batch(self, batch_num: int):
+        return self._link(self.data1.get_batch(batch_num),
+                          self.data2.get_batch(batch_num))
 
 
 class LinkedMutsDataset(LinkedDataset[D, S1, S2], MutsDataset, ABC):
@@ -347,6 +329,104 @@ class LinkedMutsDataset(LinkedDataset[D, S1, S2], MutsDataset, ABC):
     @property
     def sect(self):
         return self.data2.sect
+
+
+class PooledDataset(Dataset[D], ABC):
+    """ Dataset made of one or more other datasets (all the same type)
+    with the same top-level directory, reference, and section (but not
+    necessarily the same sample) pooled together. """
+
+    @classmethod
+    @abstractmethod
+    def get_dataset_type(cls) -> type[Dataset[D]]:
+        """ Type of the datasets that are pooled together. """
+
+    @classmethod
+    def get_batch_type(cls):
+        return cls.get_dataset_type().get_batch_type()
+
+    def __init__(self, sample: str, datasets: Iterable[Dataset[D]]):
+        self._sample = sample
+        self._datasets = list()
+        for dataset in datasets:
+            if not isinstance(dataset, self.get_dataset_type()):
+                raise TypeError(f"{type(self).__name__} expected each dataset "
+                                f"to be {self.get_dataset_type().__name__}, "
+                                f"but got {type(dataset).__name__}")
+            self._datasets.append(dataset)
+        if not self._datasets:
+            raise ValueError(f"{type(self).__name__} got no datasets")
+
+    def _list_dataset_attr(self, name: str):
+        """ Get a list of an attribute for each dataset. """
+        return [getattr(dataset, name) for dataset in self._datasets]
+
+    def _get_common_attr(self, name: str):
+        """ Get a common attribute among datasets. """
+        attrs = list(set(self._list_dataset_attr(name)))
+        if len(attrs) != 1:
+            raise ValueError(f"{type(self).__name__} got multiple values for "
+                             f"attribute {repr(name)}: {attrs}")
+        return attrs[0]
+
+    @property
+    def top(self):
+        return self._get_common_attr("top")
+
+    @property
+    def sample(self):
+        return self._sample
+
+    @cached_property
+    def samples(self) -> list[str]:
+        """ Name of the sample for each dataset in the pool. """
+        return self._list_dataset_attr("sample")
+
+    @property
+    def ref(self):
+        return self._get_common_attr("ref")
+
+    @property
+    def end5(self):
+        return self._get_common_attr("end5")
+
+    @property
+    def end3(self):
+        return self._get_common_attr("end3")
+
+    @property
+    def sect(self):
+        return self._get_common_attr("sect")
+
+    @property
+    def pattern(self):
+        return self._get_common_attr("pattern")
+
+    @cached_property
+    def nums_batches(self) -> list[int]:
+        """ Number of batches in each dataset in the pool. """
+        return self._list_dataset_attr("num_batches")
+
+    @cached_property
+    def num_batches(self):
+        return sum(self.nums_batches)
+
+    def _translate_batch_num(self, batch_num: int):
+        """ Translate a batch number into the numbers of the dataset and
+        of the batch within the dataset. """
+        dataset_batch_num = batch_num
+        for dataset_num, num_batches in enumerate(self.nums_batches):
+            if dataset_batch_num < 0:
+                raise ValueError(f"Invalid batch number: {dataset_batch_num}")
+            if dataset_batch_num < num_batches:
+                return dataset_num, dataset_batch_num
+            dataset_batch_num -= num_batches
+        raise ValueError(f"Batch {batch_num} is invalid for {self} with "
+                         f"{self.num_batches} batches")
+
+    def get_batch(self, batch_num: int):
+        dataset_num, dataset_batch_num = self._translate_batch_num(batch_num)
+        return self._datasets[dataset_num].get_batch(dataset_batch_num)
 
 
 def load_data(report_files: Iterable[Path], loader_type: type[LoadedDataset]):

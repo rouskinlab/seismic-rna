@@ -1,14 +1,14 @@
 from .batch import RelateRefseqBatch
 from .io import RelateBatchIO
 from .report import RelateReport
-from ..core.data import LoadedMutsDataset
+from ..core.data import LoadedMutsDataset, PooledDataset
 
 
 class RelateLoader(LoadedMutsDataset):
     """ Load batches of relation vectors. """
 
     @classmethod
-    def get_data_type(cls):
+    def get_batch_type(cls):
         return RelateBatchIO
 
     @classmethod
@@ -19,8 +19,8 @@ class RelateLoader(LoadedMutsDataset):
     def pattern(self):
         return None
 
-    def load_batch(self, batch: int):
-        relate_batch = super().load_batch(batch)
+    def get_batch(self, batch: int):
+        relate_batch = super().get_batch(batch)
         # Add the reference sequence to the batch.
         if relate_batch.max_pos != len(self.refseq):
             raise ValueError(f"Reference sequence is {len(self.refseq)} nt, "
@@ -34,11 +34,12 @@ class RelateLoader(LoadedMutsDataset):
                                  end3s=relate_batch.end3s,
                                  sanitize=False)
 
-    def iter_batches(self):
-        # Skip the type validation in the iter_batches() method of the
-        # superclass because self.load_batch() returns an instance of
-        # RelateRefseqBatch, which differs from self.get_data_type().
-        yield from self._iter_batches()
+
+class PooledRelateLoader(PooledDataset):
+
+    @classmethod
+    def get_dataset_type(cls):
+        return RelateLoader
 
 ########################################################################
 #                                                                      #

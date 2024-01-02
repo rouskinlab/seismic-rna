@@ -21,7 +21,7 @@ class ClustLoader(LoadedDataset):
         return ClustReport
 
     @classmethod
-    def get_data_type(cls):
+    def get_batch_type(cls):
         return ClustBatchIO
 
     @cached_property
@@ -38,7 +38,7 @@ class ClustLinker(LinkedMutsDataset):
     """ Merge cluster responsibilities with mutation data. """
 
     @classmethod
-    def get_data_type(cls):
+    def get_batch_type(cls):
         return ClustMutsBatch
 
     @classmethod
@@ -70,15 +70,15 @@ class ClustLinker(LinkedMutsDataset):
         return index_orders_clusts(self.max_order)
 
     def _link(self, batch1: MaskMutsBatch, batch2: ClustBatchIO):
-        return self.get_data_type()(batch=batch1.batch,
-                                    refseq=batch1.refseq,
-                                    muts=batch1.muts,
-                                    end5s=batch1.end5s,
-                                    mid5s=batch1.mid5s,
-                                    mid3s=batch1.mid3s,
-                                    end3s=batch1.end3s,
-                                    resps=batch2.resps,
-                                    sanitize=False)
+        return self.get_batch_type()(batch=batch1.batch,
+                                     refseq=batch1.refseq,
+                                     muts=batch1.muts,
+                                     end5s=batch1.end5s,
+                                     mid5s=batch1.mid5s,
+                                     mid3s=batch1.mid3s,
+                                     end3s=batch1.end3s,
+                                     resps=batch2.resps,
+                                     sanitize=False)
 
 ########################################################################
 #                                                                      #

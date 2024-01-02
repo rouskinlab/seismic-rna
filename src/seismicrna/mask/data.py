@@ -18,7 +18,7 @@ class MaskLoader(LoadedDataset):
         return MaskReport
 
     @classmethod
-    def get_data_type(cls):
+    def get_batch_type(cls):
         return MaskBatchIO
 
     @property
@@ -41,7 +41,7 @@ class MaskLinker(LinkedMutsDataset):
     MASK_NAME = "mask"
 
     @classmethod
-    def get_data_type(cls):
+    def get_batch_type(cls):
         return MaskMutsBatch
 
     @classmethod
