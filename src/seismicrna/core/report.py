@@ -1,23 +1,19 @@
 from __future__ import annotations
 
 import json
-import re
 import sys
 from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import cache
 from inspect import getmembers
 from logging import getLogger
-from math import isclose, isnan
-from numbers import Integral
 from pathlib import Path
-from typing import Any, Hashable, Callable, Iterable
+from typing import Any, Hashable, Callable
 
 import numpy as np
+from click import Option
 
-from . import path
-from .arg import (cli_defaults,
-                  opt_phred_enc,
+from .arg import (opt_phred_enc,
                   opt_fastqc,
                   opt_cutadapt,
                   opt_cut_q1,
@@ -68,22 +64,17 @@ logger = getLogger(__name__)
 # Field class
 
 class Field(object):
-    __slots__ = ["key",
-                 "title",
-                 "dtype",
-                 "iconv",
-                 "oconv",
-                 "check_val",
-                 "check_rep_val"]
+    """ Field of a report. """
+
+    __slots__ = "key", "title", "dtype", "default", "iconv", "oconv"
 
     def __init__(self,
                  key: str,
                  title: str,
-                 dtype: type, *,
+                 dtype: type,
+                 default: Any | None = None, *,
                  iconv: Callable[[Any], Any] | None = None,
-                 oconv: Callable[[Any], Any] | None = None,
-                 check_val: Callable[[Any], bool] | None = None,
-                 check_rep_val: Callable[[Report, Any], bool] | None = None):
+                 oconv: Callable[[Any], Any] | None = None):
         """
         Parameters
         ----------
@@ -94,48 +85,43 @@ class Field(object):
             Title by which the field is identified in the report file.
         dtype: type
             Data type of the field
+        default: Any
+            Default value of the field
         iconv: Callable[[Any], Any] | None = None
             Convert an input value to the right type for instantiation.
             If omitted, just cast the value to the proper data type.
         oconv: Callable[[Any], Any] | None = None
             Convert an output value to the right type for exporting.
             If omitted, export the value with no change.
-        check_val: Callable[[Any], bool] | None = None
-            Validate the value of the field (after validating its type)
-            upon assigning the value to an attribute of a Report object.
-            Must accept one argument (the value) and return True if the
-            value is valid and False otherwise. If None, the value is
-            not validated -- only its data type.
-        check_rep_val: Callable[[Report, Any], bool] | None = None
-            Validate the value of the field (after validating its type)
-            upon assigning the value to an attribute of a Report object.
-            Must accept two arguments (the Report object and the value)
-            and return True if the value is valid and False otherwise.
-            If None, the value is not validated -- only its data type.
         """
         self.key = key
         self.title = title
         self.dtype = dtype
-        self.iconv = self.dtype if iconv is None else iconv
+        self.default = default
+        self.iconv = iconv if iconv is not None else self.dtype
         self.oconv = oconv
-        self.check_val = check_val
-        self.check_rep_val = check_rep_val
-
-    def validate(self, report: Report, value: Any):
-        # Validate the type.
-        if not isinstance(value, self.dtype):
-            raise TypeError(f"{self} expected value to be {self.dtype}, "
-                            f"but got {type(value)}")
-        # Validate the value.
-        if self.check_val is not None:
-            if not self.check_val(value):
-                raise ValueError(f"{self} got invalid value: {value}")
-        if self.check_rep_val is not None:
-            if not self.check_rep_val(report, value):
-                raise ValueError(f"{self} got invalid value: {value}")
 
     def __str__(self):
         return f"{type(self).__name__} {repr(self.title)} ({self.key})"
+
+
+class OptionField(Field):
+    """ Field based on a command line option. """
+
+    def __init__(self, option: Option, **kwargs):
+        """
+        Parameters
+        ----------
+        option: click.Option
+            Option from which to make the field.
+        **kwargs
+            Additional keyword arguments passed to `Field`.
+        """
+        super().__init__(option.name,
+                         option.help,
+                         option.type,
+                         option.default,
+                         **kwargs)
 
 
 # Field calculation functions
@@ -152,137 +138,6 @@ def calc_taken(report: Report):
     if minutes < 0.:
         raise ValueError(f"Time taken must be positive, but got {minutes} min")
     return minutes
-
-
-# Field value checking functions
-
-def agrees(num1: float, num2: float, precision: int | float):
-    """ Check if two floats agree within a given decimal precision. """
-    return isclose(num1, num2, abs_tol=10. ** -precision, rel_tol=0.)
-
-
-def nanagrees(num1: float, num2: float, precision: int | float):
-    """ Like agrees, but also return True if both floats are NaN. """
-    return (isnan(num1) and isnan(num2)) or agrees(num1, num2, precision)
-
-
-def check_name(name: str):
-    return bool(name) and not bool(set(name) - path.STR_CHARS_SET)
-
-
-def check_nonneg_int(num: int):
-    return isinstance(num, Integral) and num >= 0
-
-
-def check_pos_int(num: int):
-    return isinstance(num, Integral) and num > 0
-
-
-def check_array_ints(arr: np.ndarray):
-    return isinstance(arr, np.ndarray) and issubclass(arr.dtype.type, Integral)
-
-
-def check_array_pos_ints(arr: np.ndarray):
-    return check_array_ints(arr) and np.all(arr > 0)
-
-
-def check_dict_vals_nonneg_ints(mapping: dict[Any, int]):
-    return isinstance(mapping, dict) and all(map(check_nonneg_int,
-                                                 mapping.values()))
-
-
-def check_nonneg_float(num: float):
-    return isinstance(num, float) and num >= 0.
-
-
-def check_nannonneg_float(num: float):
-    return isinstance(num, float) and num >= 0. or isnan(num)
-
-
-def check_float(num: float):
-    return isinstance(num, float) and not isnan(num)
-
-
-def check_pos_float(num: float):
-    return isinstance(num, float) and num > 0.
-
-
-def check_probability(probability: float):
-    return isinstance(probability, float) and 0. <= probability <= 1.
-
-
-def check_nanprobability(probability: float):
-    return isinstance(probability, float) and (0. <= probability <= 1.
-                                               or isnan(probability))
-
-
-def check_percentage(percentage: float):
-    return isinstance(percentage, float) and 0. <= percentage <= 100.
-
-
-def check_nanpercentage(percentage: float):
-    return isinstance(percentage, float) and (0. <= percentage <= 100.
-                                              or isnan(percentage))
-
-
-def check_checksums_btype(checksums: list[str]):
-    checksum_pattern = re.compile("^[0-9A-Fa-f]{32}$")
-    return (isinstance(checksums, list)
-            and all(isinstance(checksum, str) for checksum in checksums)
-            and all(map(checksum_pattern.match, checksums)))
-
-
-def check_checksums(checksums: dict[str, list[str]]):
-    return (isinstance(checksums, dict)
-            and all(isinstance(btype, str) for btype in checksums.keys())
-            and all(map(check_checksums_btype, checksums.values())))
-
-
-def check_time_ended(report: Report, ended: datetime):
-    return (isinstance(ended, datetime)
-            and ended >= report.get_field(TimeBeganF))
-
-
-def check_ints_range(ints: Iterable[int]):
-    if not all(isinstance(num, int) for num in ints):
-        return False
-    ints_sort = sorted(ints)
-    return ints_sort == list(range(ints_sort[0], ints_sort[-1] + 1))
-
-
-def check_cluster_dict(cdict: dict[int, Any]):
-    return (isinstance(cdict, dict)
-            and check_ints_range(cdict.keys())
-            and all(map(check_pos_int, cdict.keys())))
-
-
-def check_clusts_list_nonneg_int(lis: dict[int, list[int]]):
-    return (check_cluster_dict(lis)
-            and all(isinstance(li, list) for li in lis.values())
-            and all(all(map(check_nonneg_int, li)) for li in lis.values()))
-
-
-def check_clusts_floats(floats: dict[int, float]):
-    return (check_cluster_dict(floats)
-            and all(map(check_float, floats.values())))
-
-
-def check_clusts_list_floats(lfs: dict[int, list[float]]):
-    return (check_cluster_dict(lfs)
-            and all(isinstance(lf, list) for lf in lfs.values())
-            and all(all(map(check_float, lf)) for lf in lfs.values()))
-
-
-def check_list_str(lstr: list[str]):
-    return isinstance(lstr, list) and all(isinstance(x, str) for x in lstr)
-
-
-def check_dir(d: Path):
-    return isinstance(d, Path) and d.is_dir()
-
-
-def check_file(f: Path):
-    return isinstance(f, Path) and f.is_file()
 
 
 # Field definitions
@@ -370,136 +225,86 @@ def oconv_datetime(dtime: datetime):
     return dtime.strftime(DATETIME_FORMAT)
 
 
-# General
-VersionF = Field("version",
-                 "Version of SEISMIC-RNA",
-                 str,
-                 check_val=check_name)
-BranchesF = Field("branches",
-                  "Branches",
-                  list,
-                  check_val=check_list_str)
-SampleF = Field("sample",
-                "Name of Sample",
-                str,
-                check_val=check_name)
-RefF = Field("ref",
-             "Name of Reference",
-             str,
-             check_val=check_name)
-SectF = Field("sect",
-              "Name of Section",
-              str,
-              check_val=check_name)
-End5F = Field("end5",
-              "5' end of Section",
-              int,
-              check_val=check_pos_int)
-End3F = Field("end3",
-              "3' end of Section",
-              int,
-              check_val=check_pos_int)
-TimeBeganF = Field("began",
-                   "Time Began",
-                   datetime,
-                   iconv=iconv_datetime,
-                   oconv=oconv_datetime)
-TimeEndedF = Field("ended",
-                   "Time Ended",
-                   datetime,
-                   iconv=iconv_datetime,
-                   oconv=oconv_datetime,
-                   check_rep_val=check_time_ended)
-TimeTakenF = Field("taken",
-                   "Time Taken (minutes)",
-                   float,
+# General fields
+
+VersionF = Field("version", "Version of SEISMIC-RNA", str, __version__)
+BranchesF = Field("branches", "Branches", list, list())
+SampleF = Field("sample", "Name of Sample", str)
+RefF = Field("ref", "Name of Reference", str)
+SectF = Field("sect", "Name of Section", str)
+End5F = Field("end5", "5' end of Section", int)
+End3F = Field("end3", "3' end of Section", int)
+MinReadsF = OptionField(opt_min_reads)
+TimeBeganF = Field("began", "Time Began", datetime,
+                   iconv=iconv_datetime, oconv=oconv_datetime)
+TimeEndedF = Field("ended", "Time Ended", datetime,
+                   iconv=iconv_datetime, oconv=oconv_datetime)
+TimeTakenF = Field("taken", "Time Taken (minutes)", float, calc_taken,
                    oconv=get_oconv_float(TIME_TAKEN_PRECISION))
 
-# Alignment
+# Align fields
+
 IsDemultF = Field("demultiplexed", "Use demultiplexed mode", bool)
 IsPairedEndF = Field("paired_end", "Use paired-end mode", bool)
-PhredEncF = Field("phred_enc", opt_phred_enc.help, int)
-UseFastqcF = Field("fastqc", opt_fastqc.help, bool)
-UseCutadaptF = Field("cut", opt_cutadapt.help, bool)
-CutadaptQ1 = Field("cut_q1", opt_cut_q1.help, int, check_val=check_nonneg_int)
-CutadaptQ2 = Field("cut_q2", opt_cut_q2.help, int, check_val=check_nonneg_int)
-CutadaptG1 = Field("cut_g1", opt_cut_g1.help, list, check_val=check_list_str)
-CutadaptA1 = Field("cut_a1", opt_cut_a1.help, list, check_val=check_list_str)
-CutadaptG2 = Field("cut_g2", opt_cut_g2.help, list, check_val=check_list_str)
-CutadaptA2 = Field("cut_a2", opt_cut_a2.help, list, check_val=check_list_str)
-CutadaptOverlap = Field("cut_o", opt_cut_o.help, int, check_val=check_nonneg_int)
-CutadaptErrors = Field("cut_e", opt_cut_e.help, float, check_val=check_probability)
-CutadaptIndels = Field("cut_indels", opt_cut_indels.help, bool)
-CutadaptNextSeq = Field("cut_nextseq", opt_cut_nextseq.help, bool)
-CutadaptNoTrimmed = Field("cut_discard_trimmed", opt_cut_discard_trimmed.help, bool)
-CutadaptNoUntrimmed = Field("cut_discard_untrimmed", opt_cut_discard_untrimmed.help, bool)
-CutadaptMinLength = Field("cut_m", opt_cut_m.help, int, check_val=check_nonneg_int)
-Bowtie2Local = Field("bt2_local", opt_bt2_local.help, bool)
-Bowtie2Discord = Field("bt2_discordant", opt_bt2_discordant.help, bool)
-Bowtie2Dovetail = Field("bt2_dovetail", opt_bt2_dovetail.help, bool)
-Bowtie2Contain = Field("bt2_contain", opt_bt2_contain.help, bool)
-Bowtie2Mixed = Field("bt2_mixed", opt_bt2_mixed.help, bool)
-Bowtie2Un = Field("bt2_un", opt_bt2_un.help, bool)
+PhredEncF = OptionField(opt_phred_enc)
+UseFastqcF = OptionField(opt_fastqc)
+UseCutadaptF = OptionField(opt_cutadapt)
+CutadaptQ1 = OptionField(opt_cut_q1)
+CutadaptQ2 = OptionField(opt_cut_q2)
+CutadaptG1 = OptionField(opt_cut_g1)
+CutadaptA1 = OptionField(opt_cut_a1)
+CutadaptG2 = OptionField(opt_cut_g2)
+CutadaptA2 = OptionField(opt_cut_a2)
+CutadaptOverlap = OptionField(opt_cut_o)
+CutadaptErrors = OptionField(opt_cut_e)
+CutadaptIndels = OptionField(opt_cut_indels)
+CutadaptNextSeq = OptionField(opt_cut_nextseq)
+CutadaptNoTrimmed = OptionField(opt_cut_discard_trimmed)
+CutadaptNoUntrimmed = OptionField(opt_cut_discard_untrimmed)
+CutadaptMinLength = OptionField(opt_cut_m)
+Bowtie2Local = OptionField(opt_bt2_local)
+Bowtie2Discord = OptionField(opt_bt2_discordant)
+Bowtie2Dovetail = OptionField(opt_bt2_dovetail)
+Bowtie2Contain = OptionField(opt_bt2_contain)
+Bowtie2Mixed = OptionField(opt_bt2_mixed)
+Bowtie2Un = OptionField(opt_bt2_un)
 Bowtie2ScoreMin = Field("bt2_score_min",
                         "Minimum score for a valid alignment with Bowtie2",
                         str)
-Bowtie2MinLength = Field("bt2_i", opt_bt2_i.help, int, check_val=check_nonneg_int)
-Bowtie2MaxLength = Field("bt2_x", opt_bt2_x.help, int, check_val=check_nonneg_int)
-Bowtie2GBar = Field("bt2_gbar", opt_bt2_gbar.help, int, check_val=check_nonneg_int)
-Bowtie2SeedLength = Field("bt2_l", opt_bt2_l.help, int, check_val=check_nonneg_int)
-Bowtie2SeedInterval = Field("bt2_s", opt_bt2_s.help, str)
-Bowtie2ExtTries = Field("bt2_d", opt_bt2_d.help, int, check_val=check_nonneg_int)
-Bowtie2Reseed = Field("bt2_r", opt_bt2_r.help, int, check_val=check_nonneg_int)
-Bowtie2Dpad = Field("bt2_dpad", opt_bt2_dpad.help, int, check_val=check_nonneg_int)
-Bowtie2Orient = Field("bt2_orient", opt_bt2_orient.help, str)
-MinMapQualF = Field("min_mapq",
-                    opt_min_mapq.help,
-                    int,
-                    check_val=check_nonneg_int)
-ReadsInitF = Field("reads_init",
-                   "Number of reads initially",
-                   int,
-                   check_val=check_nonneg_int)
-ReadsTrimF = Field("reads_trim",
-                   "Number of reads after trimming",
-                   int,
-                   check_val=check_nonneg_int)
-ReadsAlignF = Field("reads_align",
-                    "Number of reads after alignment",
-                    dict,
-                    iconv=iconv_dict_str_int,
-                    check_val=check_dict_vals_nonneg_ints)
+Bowtie2MinLength = OptionField(opt_bt2_i)
+Bowtie2MaxLength = OptionField(opt_bt2_x)
+Bowtie2GBar = OptionField(opt_bt2_gbar)
+Bowtie2SeedLength = OptionField(opt_bt2_l)
+Bowtie2SeedInterval = OptionField(opt_bt2_s)
+Bowtie2ExtTries = OptionField(opt_bt2_d)
+Bowtie2Reseed = OptionField(opt_bt2_r)
+Bowtie2Dpad = OptionField(opt_bt2_dpad)
+Bowtie2Orient = OptionField(opt_bt2_orient)
+MinMapQualF = OptionField(opt_min_mapq)
+ReadsInitF = Field("reads_init", "Number of reads initially", int)
+ReadsTrimF = Field("reads_trim", "Number of reads after trimming", int)
+ReadsAlignF = Field("reads_align", "Number of reads after alignment", dict,
+                    iconv=iconv_dict_str_int)
 ReadsDedupF = Field("reads_filter",
                     "Number of reads after filtering",
                     dict,
-                    iconv=iconv_dict_str_int,
-                    check_val=check_dict_vals_nonneg_ints)
+                    iconv=iconv_dict_str_int)
 ReadsRefs = Field("reads_refs",
                   "Number of reads aligned by reference",
                   dict,
-                  iconv=iconv_dict_str_int,
-                  check_val=check_dict_vals_nonneg_ints)
-MinReadsF = Field("min_reads", opt_min_reads.help, int, check_val=check_nonneg_int)
-CramOutF = Field("cram", opt_cram.help, bool)
+                  iconv=iconv_dict_str_int)
+CramOutF = Field("cram", opt_cram, bool)
 
-# Relation vector generation
-NumReadsRelF = Field("n_reads_rel",
-                     "Number of Reads",
-                     int,
-                     check_val=check_nonneg_int)
-NumBatchF = Field("n_batches",
-                  "Number of Batches",
-                  int,
-                  check_val=check_nonneg_int)
-ChecksumsF = Field("checksums",
-                   "MD5 Checksums of Batches",
-                   dict,
-                   check_val=check_checksums)
+# Relate fields
+NumReadsRelF = Field("n_reads_rel", "Number of Reads", int)
+NumBatchF = Field("n_batches", "Number of Batches", int)
+ChecksumsF = Field("checksums", "MD5 Checksums of Batches", dict)
 RefseqChecksumF = Field("refseq_checksum",
                         "MD5 Checksum of Reference Sequence File",
                         str)
 
-# Mutation calling
+# Mask fields
+PooledSamplesF = Field("pooled_samples", "Pooled Samples", list, list())
 CountMutsF = Field("count_muts",
                    "Count the Following as Mutations",
                    HalfRelPattern,
@@ -510,255 +315,172 @@ CountRefsF = Field("count_refs",
                    HalfRelPattern,
                    iconv=HalfRelPattern.from_report_format,
                    oconv=HalfRelPattern.to_report_format)
-
-# Positional filtering
 ExclPolyAF = Field("exclude_polya",
                    "Exclude Poly(A) Sequences of at Least This Length (nt)",
-                   int,
-                   check_val=check_nonneg_int)
+                   int)
 ExclGUF = Field("exclude_gu", "Exclude G/U Bases", bool)
 ExclUserPosF = Field("exclude_pos",
                      "Exclude User-Defined Positions",
                      np.ndarray,
                      iconv=iconv_array_int,
-                     oconv=oconv_array_int,
-                     check_val=check_array_pos_ints)
-
-# Bit vector filtering
+                     oconv=oconv_array_int)
 MinInfoPosF = Field("min_ninfo_pos",
                     "Minimum Number of Informative Reads per Position",
-                    int,
-                    check_val=check_nonneg_int)
+                    int)
 MinMutPosF = Field("min_fmut_pos",
                    "Minimum Fraction of Mutations per Position",
                    float,
-                   oconv=get_oconv_float(),
-                   check_val=check_probability)
+                   oconv=get_oconv_float())
 MaxMutPosF = Field("max_fmut_pos",
                    "Maximum Fraction of Mutations per Position",
                    float,
-                   oconv=get_oconv_float(),
-                   check_val=check_probability)
+                   oconv=get_oconv_float())
 MinMutGapF = Field("min_mut_gap",
                    "Minimum Gap Between Mutations (nt)",
-                   int,
-                   check_val=check_nonneg_int)
+                   int)
 MinInfoReadF = Field("min_finfo_read",
                      "Minimum Fraction of Informative Positions per Read",
                      float,
-                     oconv=get_oconv_float(),
-                     check_val=check_probability)
+                     oconv=get_oconv_float())
 MaxMutReadF = Field("max_fmut_read",
                     "Maximum Fraction of Mutations per Read",
                     float,
-                    oconv=get_oconv_float(),
-                    check_val=check_probability)
+                    oconv=get_oconv_float())
 PosInitF = Field("pos_init",
                  "Positions Initially Given",
                  np.ndarray,
                  iconv=iconv_array_int,
-                 oconv=oconv_array_int,
-                 check_val=check_array_pos_ints)
+                 oconv=oconv_array_int)
 PosCutPolyAF = Field("pos_polya",
                      "Positions Cut -- Poly(A) Sequence",
                      np.ndarray,
                      iconv=iconv_array_int,
-                     oconv=oconv_array_int,
-                     check_val=check_array_pos_ints)
+                     oconv=oconv_array_int)
 PosCutGUF = Field("pos_gu",
                   "Positions Cut -- G/U Base",
                   np.ndarray,
                   iconv=iconv_array_int,
-                  oconv=oconv_array_int,
-                  check_val=check_array_pos_ints)
+                  oconv=oconv_array_int)
 PosCutUserF = Field("pos_user",
                     "Positions Cut -- User-Specified",
                     np.ndarray,
                     iconv=iconv_array_int,
-                    oconv=oconv_array_int,
-                    check_val=check_array_pos_ints)
+                    oconv=oconv_array_int)
 PosCutLoInfoF = Field("pos_min_ninfo",
                       "Positions Cut -- Too Few Informative Reads",
                       np.ndarray,
                       iconv=iconv_array_int,
-                      oconv=oconv_array_int,
-                      check_val=check_array_pos_ints)
+                      oconv=oconv_array_int)
 PosCutLoMutF = Field("pos_min_fmut",
                      "Positions Cut -- Too Few Mutations",
                      np.ndarray,
                      iconv=iconv_array_int,
-                     oconv=oconv_array_int,
-                     check_val=check_array_pos_ints)
+                     oconv=oconv_array_int)
 PosCutHiMutF = Field("pos_max_fmut",
                      "Positions Cut -- Too Many Mutations",
                      np.ndarray,
                      iconv=iconv_array_int,
-                     oconv=oconv_array_int,
-                     check_val=check_array_pos_ints)
+                     oconv=oconv_array_int)
 PosKeptF = Field("pos_kept",
                  "Positions Ultimately Kept",
                  np.ndarray,
                  iconv=iconv_array_int,
-                 oconv=oconv_array_int,
-                 check_val=check_array_pos_ints)
+                 oconv=oconv_array_int)
 NumPosInitF = Field("n_pos_init",
                     "Number of Positions Initially Given",
-                    int,
-                    check_val=check_nonneg_int)
+                    int)
 NumPosCutPolyAF = Field("n_pos_polya",
                         "Number of Positions Cut -- Poly(A) Sequence",
-                        int,
-                        check_val=check_nonneg_int)
+                        int)
 NumPosCutGUF = Field("n_pos_gu",
                      "Number of Positions Cut -- G/U Base",
-                     int,
-                     check_val=check_nonneg_int)
+                     int)
 NumPosCutUserF = Field("n_pos_user",
                        "Number of Positions Cut -- User-Specified",
-                       int,
-                       check_val=check_nonneg_int)
+                       int)
 NumPosCutLoInfoF = Field("n_pos_min_ninfo",
                          "Number of Positions Cut -- Too Few Informative Reads",
-                         int,
-                         check_val=check_nonneg_int)
+                         int)
 NumPosCutLoMutF = Field("n_pos_min_fmut",
                         "Number of Positions Cut -- Too Few Mutations",
-                        int,
-                        check_val=check_nonneg_int)
+                        int)
 NumPosCutHiMutF = Field("n_pos_max_fmut",
                         "Number of Positions Cut -- Too Many Mutations",
-                        int,
-                        check_val=check_nonneg_int)
+                        int)
 NumPosKeptF = Field("n_pos_kept",
                     "Number of Positions Ultimately Kept",
-                    int,
-                    check_val=check_nonneg_int)
+                    int)
 NumReadsInitF = Field("n_reads_init",
                       "Number of Reads Initially Given",
-                      int,
-                      check_val=check_nonneg_int)
+                      int)
 NumReadsLoInfoF = Field("n_reads_min_finfo",
                         "Number of Reads Cut -- Too Few Informative Positions",
-                        int,
-                        check_val=check_nonneg_int)
+                        int)
 NumReadsHiMutF = Field("n_reads_max_fmut",
                        "Number of Reads Cut -- Too Many Mutations",
-                       int,
-                       check_val=check_nonneg_int)
+                       int)
 NumReadsCloseMutF = Field("n_reads_min_gap",
                           "Number of Reads Cut -- Mutations Too Close Together",
-                          int,
-                          check_val=check_nonneg_int)
+                          int)
 NumReadsKeptF = Field("n_reads_kept",
                       "Number of Reads Ultimately Kept",
-                      int,
-                      check_val=check_nonneg_int)
+                      int)
 NumUniqReadKeptF = Field("n_uniq_reads",
                          "Number of Unique Bit Vectors",
-                         int,
-                         check_val=check_nonneg_int)
+                         int)
 
-# EM clustering
+# Cluster fields
+
 MinIterClustF = Field("min_iter",
                       "Minimum EM Iterations per Cluster",
-                      int,
-                      check_val=check_nonneg_int)
+                      int)
 MaxIterClustF = Field("max_iter",
                       "Maximum EM Iterations per Cluster",
-                      int,
-                      check_val=check_pos_int)
+                      int)
 ClustConvThreshF = Field("conv_thresh",
                          "Convergence Threshold for Log Likelihood",
                          float,
-                         oconv=get_oconv_float(),
-                         check_val=check_pos_float)
-MaxClustsF = Field("max_order",
-                   "Maximum Number of Clusters",
-                   int,
-                   check_val=check_pos_int)
-ClustNumRunsF = Field("num_runs",
-                      "Number of Independent EM Runs",
-                      int, check_val=check_pos_int)
-NumClustsF = Field("best_order",
-                   "Optimal Number of Clusters",
-                   int,
-                   check_val=check_pos_int)
-ClustsBicF = Field("bic",
-                   "Bayesian Information Criterion per Order",
-                   dict,
+                         oconv=get_oconv_float())
+MaxClustsF = Field("max_order", "Maximum Number of Clusters", int)
+ClustNumRunsF = Field("num_runs", "Number of Independent EM Runs", int)
+NumClustsF = Field("best_order", "Optimal Number of Clusters", int)
+ClustsBicF = Field("bic", "Bayesian Information Criterion per Order", dict,
                    iconv=iconv_int_keys,
-                   oconv=get_oconv_dict_float(),
-                   check_val=check_clusts_floats)
-ClustsConvF = Field("converged",
-                    "Iterations Until Convergence per Run",
-                    dict,
-                    iconv=iconv_int_keys,
-                    check_val=check_clusts_list_nonneg_int)
-ClustsLogLikesF = Field("log_likes",
-                        "Log Likelihood per Run",
-                        dict,
+                   oconv=get_oconv_dict_float())
+ClustsConvF = Field("converged", "Iterations Until Convergence per Run", dict,
+                    iconv=iconv_int_keys)
+ClustsLogLikesF = Field("log_likes", "Log Likelihood per Run", dict,
                         iconv=iconv_int_keys,
-                        oconv=get_oconv_dict_list_float(),
-                        check_val=check_clusts_list_floats)
-ClustsLikeMeanF = Field("log_like_mean",
-                        "Mean Log Likelihood per Order",
-                        dict,
+                        oconv=get_oconv_dict_list_float())
+ClustsLikeMeanF = Field("log_like_mean", "Mean Log Likelihood per Order", dict,
                         iconv=iconv_int_keys,
-                        oconv=get_oconv_dict_float(),
-                        check_val=check_clusts_floats)
+                        oconv=get_oconv_dict_float())
 ClustsLikeStdF = Field("log_like_std",
                        "Std. Dev. Log Likelihood per Order",
                        dict,
                        iconv=iconv_int_keys,
-                       oconv=get_oconv_dict_float(),
-                       check_val=check_clusts_floats)
+                       oconv=get_oconv_dict_float())
 ClustsVarInfoF = Field("var_info",
                        "Variation of Information per Order",
                        dict,
                        iconv=iconv_int_keys,
-                       oconv=get_oconv_dict_float(),
-                       check_val=check_clusts_floats)
+                       oconv=get_oconv_dict_float())
 
-# Folding
+# Fold fields
 
-ProfileF = Field("profile",
-                 "Name of Profile",
-                 str)
-
-Quantile = Field("quantile",
-                 opt_quantile.help,
-                 float,
-                 check_val=check_probability)
-
-FoldTempF = Field("fold_temp",
-                  opt_fold_temp.help,
-                  float,
-                  check_val=check_nonneg_float)
-
-FoldMaxDistF = Field("fold_md",
-                     opt_fold_md.help,
-                     int,
-                     check_val=check_nonneg_int)
-
-FoldMinFreeEnergyF = Field("fold_mfe",
-                           opt_fold_mfe.help,
-                           bool)
-
-FoldMaxStructsF = Field("fold_max",
-                        opt_fold_max.help,
-                        int,
-                        check_val=check_nonneg_int)
-
-FoldPercent = Field("fold_percent",
-                    opt_fold_percent.help,
-                    float,
-                    check_val=check_percentage)
+ProfileF = Field("profile", "Name of Profile", str)
+Quantile = OptionField(opt_quantile)
+FoldTempF = OptionField(opt_fold_temp)
+FoldMaxDistF = OptionField(opt_fold_md)
+FoldMinFreeEnergyF = OptionField(opt_fold_mfe)
+FoldMaxStructsF = OptionField(opt_fold_max)
+FoldPercent = OptionField(opt_fold_percent)
 
 
 # Field managing functions
 
 @cache
-def fields() -> list[Field]:
+def fields():
     return [member for _, member in getmembers(sys.modules[__name__])
             if isinstance(member, Field)]
 
@@ -773,20 +495,29 @@ def field_titles() -> dict[str, Field]:
     return {field.title: field for field in fields() if field.title}
 
 
-def lookup_key(key: str) -> Field:
+def lookup_key(key: str):
+    """ Get a field by its key. """
     try:
         return field_keys()[key]
     except KeyError:
         raise ValueError(f"Invalid report key: {repr(key)}")
 
 
-def lookup_title(title: str) -> Field:
+def lookup_title(title: str):
+    """ Get a field by its title. """
     if not title:
         raise ValueError("Got blank title for field")
     try:
         return field_titles()[title]
     except KeyError:
         raise ValueError(f"Invalid report field: {repr(title)}")
+
+
+def default_key(key: str):
+    """ Get the default value of a field by its key. """
+    if (default := lookup_key(key).default) is None:
+        raise ValueError(f"Field {repr(key)} has no default value")
+    return default
 
 
 # Report classes
@@ -802,19 +533,9 @@ class Report(FileIO, ABC):
 
     @classmethod
     @cache
-    def field_names(cls):
-        """ Names of all fields of the report. """
+    def field_keys(cls):
+        """ Keys of all fields of the report. """
         return [field.key for field in cls.fields()]
-
-    @classmethod
-    def default_report_fields(cls):
-        """ Default values of report fields. """
-        return dict(branches=list(), taken=calc_taken, version=__version__)
-
-    @classmethod
-    def autofill_report_fields(cls, **kwargs):
-        """ Add any missing fields if they have default values.  """
-        return cls.default_report_fields() | kwargs
 
     @classmethod
     def from_dict(cls, odata: dict[str, Any]):
@@ -847,33 +568,36 @@ class Report(FileIO, ABC):
                                  f"contents ({repr(value)}) of report {file}")
         return report
 
+    @classmethod
+    def _auto_default_fields(cls):
+        return [BranchesF, TimeTakenF, VersionF]
+
+    @classmethod
+    def _auto_init_kwargs(cls, **kwargs):
+        """ Automatic keyword arguments for __init__. """
+        return {field.key: field.default
+                for field in cls._auto_default_fields()} | kwargs
+
     def __init__(self, **kwargs: Any | Callable[[Report], Any]):
-        # Add any missing arguments if they have default values.
-        kwargs = self.autofill_report_fields(**kwargs)
-        for name in self.field_names():
+        kwargs = self._auto_init_kwargs(**kwargs)
+        for key in self.field_keys():
             # Try to get the value of the field from the report.
             try:
-                value = kwargs.pop(name)
+                value = kwargs.pop(key)
             except KeyError:
                 # If the report file is missing that field (e.g. because
                 # it came from a different version of SEISMIC-RNA), then
-                # if the field has a default value, use it and just log
-                # a warning (to make different versions compatible); if
-                # not, the versions are incompatible, so raise an error.
-                try:
-                    value = cli_defaults[name]
-                except KeyError:
-                    raise ValueError(f"Field {repr(name)} (with no default) "
-                                     f"is missing from {kwargs}")
-                else:
-                    logger.warning(f"Field {repr(name)} is missing: using "
-                                   f"default value {repr(value)}")
+                # for cross-version compatibility, use the default value
+                # of the field.
+                value = default_key(key)
+                logger.warning(f"Field {repr(key)} is missing: using its "
+                               f"default value {repr(value)}")
             if callable(value):
                 # If the value of the keyword argument is callable, then
                 # it must accept one argument -- self -- and return the
                 # value of the attribute.
                 value = value(self)
-            setattr(self, name, value)
+            setattr(self, key, value)
         if kwargs:
             # If the report file has extra fields (e.g. because it came
             # from a different version of SEISMIC-RNA), then just log a
@@ -889,14 +613,14 @@ class Report(FileIO, ABC):
             return getattr(self, field.key)
         except AttributeError:
             if missing_ok:
-                return
+                return None
             raise
 
     def to_dict(self):
         """ Return a dict of raw values of the fields, keyed by the
         titles of their fields. """
         odata = dict()
-        for key in self.field_names():
+        for key in self.field_keys():
             field = lookup_key(key)
             # Output only the fields with non-blank titles.
             value = self.get_field(field)
@@ -918,10 +642,10 @@ class Report(FileIO, ABC):
 
     def __setattr__(self, key: str, value: Any):
         """ Validate the attribute name and value before setting it. """
-        if key not in self.field_names():
+        if key not in self.field_keys():
             raise ValueError(
-                f"Invalid field for {type(self).__name__}: {repr(key)}")
-        lookup_key(key).validate(self, value)
+                f"Invalid field for {type(self).__name__}: {repr(key)}"
+            )
         super().__setattr__(key, value)
 
     def __eq__(self, other):
@@ -937,10 +661,6 @@ class RefseqReport(Report, RefIO, ABC):
     @abstractmethod
     def fields(cls):
         return [RefseqChecksumF] + super().fields()
-
-
-class UnifiedReport(Report, ABC):
-    """ Report with exactly one data file. """
 
 
 class BatchedReport(Report, ABC):
