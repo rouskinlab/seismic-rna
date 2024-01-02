@@ -78,6 +78,29 @@ class Dataset(Generic[D], ABC):
     def pattern(self) -> RelPattern | None:
         """ Pattern of mutations to count. """
 
+    @property
+    @abstractmethod
+    def num_batches(self) -> int:
+        """ Number of batches. """
+
+    @property
+    def batch_nums(self):
+        """ Numbers of the batches. """
+        return list_batch_nums(self.num_batches)
+
+    @abstractmethod
+    def _iter_batches(self) -> Generator[D, None, None]:
+        """ Yield each batch. """
+
+    def iter_batches(self):
+        """ Yield each batch. """
+        for batch in self._iter_batches():
+            # Verify the type of the batch before yielding it.
+            if not isinstance(batch, self.get_data_type()):
+                raise TypeError(f"Expected {self.get_data_type().__name__}, "
+                                f"but got {type(batch).__name__}")
+            yield batch
+
     def __str__(self):
         return f"{type(self).__name__} for sample {repr(self.sample)}"
 
@@ -102,50 +125,6 @@ class MutsDataset(Dataset[D], ABC):
                        end5=self.end5,
                        end3=self.end3,
                        name=self.sect)
-
-
-class UnifiedDataset(Dataset[D], ABC):
-    """ Dataset in one whole piece (exactly one file). """
-
-    @abstractmethod
-    def _get_data(self) -> D:
-        """ Get the data for this dataset. """
-
-    @cached_property
-    def data(self):
-        data = self._get_data()
-        # Verify the type of the data before returning it.
-        if not isinstance(data, self.get_data_type()):
-            raise TypeError(f"Expected {self.get_data_type()}, "
-                            f"but got {type(data).__name__}")
-        return data
-
-
-class BatchedDataset(Dataset[D], ABC):
-    """ Dataset split into batches (one file per batch). """
-
-    @property
-    @abstractmethod
-    def num_batches(self) -> int:
-        """ Number of batches. """
-
-    @property
-    def batch_nums(self):
-        """ Numbers of the batches. """
-        return list_batch_nums(self.num_batches)
-
-    @abstractmethod
-    def _iter_batches(self) -> Generator[D, None, None]:
-        """ Yield each batch. """
-
-    def iter_batches(self):
-        """ Yield each batch. """
-        for batch in self._iter_batches():
-            # Verify the type of the batch before yielding it.
-            if not isinstance(batch, self.get_data_type()):
-                raise TypeError(f"Expected {self.get_data_type().__name__}, "
-                                f"but got {type(batch).__name__}")
-            yield batch
 
 
 class Loader(Generic[R], ABC):
@@ -197,6 +176,38 @@ class LoadedDataset(Dataset[D], Loader[R], ABC):
     def sect(self):
         return self.report.get_field(SectF)
 
+    @classmethod
+    def get_btype_name(cls):
+        """ Name of the type of batch for this Loader. """
+        return cls.get_data_type().btype()
+
+    @cached_property
+    def num_batches(self):
+        return self.report.get_field(NumBatchF)
+
+    def get_batch_path(self, batch: int):
+        """ Get the path to a batch of a specific number. """
+        fields = self.report.path_fields(self.top,
+                                         self.get_data_type().auto_fields())
+        return self.get_data_type().build_path(batch=batch, **fields)
+
+    def report_checksum(self, batch: int):
+        """ Get the checksum of a specific batch from the report. """
+        return self.report.get_field(ChecksumsF)[self.get_btype_name()][batch]
+
+    def load_batch(self, batch: int):
+        """ Load a specific batch of data. """
+        loaded_batch = self.get_data_type().load(self.get_batch_path(batch),
+                                                 self.report_checksum(batch))
+        if loaded_batch.batch != batch:
+            raise ValueError(f"Expected batch to have number {batch}, "
+                             f"but got {loaded_batch.batch}")
+        return loaded_batch
+
+    def _iter_batches(self):
+        for batch in self.batch_nums:
+            yield self.load_batch(batch)
+
 
 class LoadedMutsDataset(LoadedDataset[D, R], MutsDataset, ABC):
 
@@ -235,46 +246,6 @@ class LoadedMutsDataset(LoadedDataset[D, R], MutsDataset, ABC):
         except AttributeError:
             return (FULL_NAME if self.end5 == 1 and self.end3 == self.reflen
                     else hyphenate_ends(self.end5, self.end3))
-
-
-class UnifiedLoadedDataset(LoadedDataset[D, R], UnifiedDataset[D], ABC):
-    """ Dataset loaded as one piece from a report. """
-
-
-class BatchedLoadedDataset(LoadedDataset[D, R], BatchedDataset[D], ABC):
-    """ Dataset loaded in batches from a report. """
-
-    @classmethod
-    def get_btype_name(cls):
-        """ Name of the type of batch for this Loader. """
-        return cls.get_data_type().btype()
-
-    @cached_property
-    def num_batches(self):
-        return self.report.get_field(NumBatchF)
-
-    def get_batch_path(self, batch: int):
-        """ Get the path to a batch of a specific number. """
-        fields = self.report.path_fields(self.top,
-                                         self.get_data_type().auto_fields())
-        return self.get_data_type().build_path(batch=batch, **fields)
-
-    def report_checksum(self, batch: int):
-        """ Get the checksum of a specific batch from the report. """
-        return self.report.get_field(ChecksumsF)[self.get_btype_name()][batch]
-
-    def load_batch(self, batch: int):
-        """ Load a specific batch of data. """
-        loaded_batch = self.get_data_type().load(self.get_batch_path(batch),
-                                                 self.report_checksum(batch))
-        if loaded_batch.batch != batch:
-            raise ValueError(f"Expected batch to have number {batch}, "
-                             f"but got {loaded_batch.batch}")
-        return loaded_batch
-
-    def _iter_batches(self):
-        for batch in self.batch_nums:
-            yield self.load_batch(batch)
 
 
 class Linker(Generic[S1, S2], ABC):
@@ -346,37 +317,6 @@ class LinkedDataset(Dataset[D], Linker[S1, S2], ABC):
     def refseq(self):
         return self.data1.refseq
 
-
-class LinkedMutsDataset(LinkedDataset[D, S1, S2], MutsDataset, ABC):
-
-    @property
-    def end5(self):
-        return self.data2.end5
-
-    @property
-    def end3(self):
-        return self.data2.end3
-
-    @property
-    def sect(self):
-        return self.data2.sect
-
-
-class UnifiedLinkedDataset(LinkedDataset[D, S1, S2], UnifiedDataset[D], ABC):
-    """ Linked unified dataset. """
-
-    @classmethod
-    @abstractmethod
-    def _link(cls, data1, data2) -> D:
-        """ Link the data in the two datasets. """
-
-    def _get_data(self):
-        return self._link(self.data1, self.data2)
-
-
-class BatchedLinkedDataset(LinkedDataset[D, S1, S2], BatchedDataset[D], ABC):
-    """ Linked batched dataset. """
-
     @abstractmethod
     def _link(self, batch1, batch2) -> D:
         """ Link corresponding batches of data. """
@@ -392,6 +332,21 @@ class BatchedLinkedDataset(LinkedDataset[D, S1, S2], BatchedDataset[D], ABC):
             if batch1.batch != batch2.batch:
                 raise ValueError(f"Batch numbers differ: {batch1} and {batch2}")
             yield self._link(batch1, batch2)
+
+
+class LinkedMutsDataset(LinkedDataset[D, S1, S2], MutsDataset, ABC):
+
+    @property
+    def end5(self):
+        return self.data2.end5
+
+    @property
+    def end3(self):
+        return self.data2.end3
+
+    @property
+    def sect(self):
+        return self.data2.sect
 
 
 def load_data(report_files: Iterable[Path], loader_type: type[LoadedDataset]):

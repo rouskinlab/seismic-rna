@@ -1,10 +1,10 @@
 from .batch import RelateRefseqBatch
 from .io import RelateBatchIO
 from .report import RelateReport
-from ..core.data import BatchedLoadedDataset, LoadedMutsDataset
+from ..core.data import LoadedMutsDataset
 
 
-class RelateLoader(BatchedLoadedDataset, LoadedMutsDataset):
+class RelateLoader(LoadedMutsDataset):
     """ Load batches of relation vectors. """
 
     @classmethod

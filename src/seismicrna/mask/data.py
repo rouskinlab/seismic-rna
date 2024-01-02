@@ -3,16 +3,14 @@ from functools import cached_property
 from .batch import MaskMutsBatch, apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
-from ..core.data import (BatchedLoadedDataset,
-                         BatchedLinkedDataset,
-                         LinkedMutsDataset)
+from ..core.data import LinkedMutsDataset, LoadedDataset
 from ..core.report import CountMutsF, CountRefsF, MinMutGapF, PosKeptF
 from ..core.rel import RelPattern
 from ..relate.batch import RelateRefseqBatch
 from ..relate.data import RelateLoader
 
 
-class MaskLoader(BatchedLoadedDataset):
+class MaskLoader(LoadedDataset):
     """ Load batches of masked relation vectors. """
 
     @classmethod
@@ -37,7 +35,7 @@ class MaskLoader(BatchedLoadedDataset):
                           self.report.get_field(CountRefsF))
 
 
-class MaskLinker(BatchedLinkedDataset, LinkedMutsDataset):
+class MaskLinker(LinkedMutsDataset):
     """ Merge mutation data with masked reads. """
 
     MASK_NAME = "mask"

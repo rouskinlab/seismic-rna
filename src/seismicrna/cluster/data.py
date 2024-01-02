@@ -4,9 +4,7 @@ from logging import getLogger
 from .batch import ClustMutsBatch
 from .io import ClustBatchIO
 from .report import ClustReport
-from ..core.data import (BatchedLoadedDataset,
-                         BatchedLinkedDataset,
-                         LinkedMutsDataset)
+from ..core.data import LoadedDataset, LinkedMutsDataset
 from ..core.header import index_orders_clusts
 from ..core.report import NumClustsF
 from ..mask.batch import MaskMutsBatch
@@ -15,7 +13,7 @@ from ..mask.data import MaskLinker
 logger = getLogger(__name__)
 
 
-class ClustLoader(BatchedLoadedDataset):
+class ClustLoader(LoadedDataset):
     """ Load clustering results. """
 
     @classmethod
@@ -36,7 +34,7 @@ class ClustLoader(BatchedLoadedDataset):
         return None
 
 
-class ClustLinker(BatchedLinkedDataset, LinkedMutsDataset):
+class ClustLinker(LinkedMutsDataset):
     """ Merge cluster responsibilities with mutation data. """
 
     @classmethod
