@@ -2,8 +2,8 @@
 Report Formats
 ========================================================================
 
-A report file is produced by the steps ``align``, ``relate``, ``mask``,
-and ``cluster`` and serves three purposes:
+A report file is produced by the steps ``align``, ``relate``, ``pool``,
+``mask``, and ``cluster`` and serves three purposes:
 
 - Record the parameters with which the step was run.
 - Summarize the results of the step.
@@ -18,6 +18,7 @@ read and widely supported by software.
 
     align
     relate
+    pool
     mask
     cluster
     fold

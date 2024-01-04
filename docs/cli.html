@@ -517,14 +517,20 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-P">
+<span id="cmdoption-seismic-wf-p"></span><span id="cmdoption-seismic-wf-pool"></span><span class="sig-name descname"><span class="pre">-P</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--pool</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;pool&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-P" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the sample made by pooling other samples</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-c">
 <span id="cmdoption-seismic-wf-coords"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--coords</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;coords&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-c" title="Permalink to this definition"></a></dt>
 <dd><p>Reference name and 5’/3’ ends of a section; ends are 1-indexed</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-p">
-<span id="cmdoption-seismic-wf-primers"></span><span class="sig-name descname"><span class="pre">-p</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--primers</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;primers&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-p" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-1">
+<span id="cmdoption-seismic-wf-primers"></span><span class="sig-name descname"><span class="pre">-p</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--primers</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;primers&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-1" title="Permalink to this definition"></a></dt>
 <dd><p>Reference name and forward/reverse primers for a section; for the reverse primer, use its actual sequence, not its reverse complement</p>
 </dd></dl>
 
@@ -610,12 +616,6 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-k">
 <span id="cmdoption-seismic-wf-max-clusters"></span><span class="sig-name descname"><span class="pre">-k</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--max-clusters</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_clusters&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-k" title="Permalink to this definition"></a></dt>
 <dd><p>Maximum number of clusters to attempt (0 to disable)</p>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-min-nmut-read">
-<span class="sig-name descname"><span class="pre">--min-nmut-read</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_nmut_read&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-min-nmut-read" title="Permalink to this definition"></a></dt>
-<dd><p>Minimum number of mutations in a read to use it for clustering</p>
 </dd></dl>
 
 <dl class="std option">
@@ -756,8 +756,8 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-1">
-<span id="cmdoption-seismic-wf-winmin"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--winmin</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;winmin&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-1" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-2">
+<span id="cmdoption-seismic-wf-winmin"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--winmin</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;winmin&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-2" title="Permalink to this definition"></a></dt>
 <dd><p>Minimum number of data to use a sliding window (otherwise NaN)</p>
 </dd></dl>
 
@@ -1442,12 +1442,6 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dt class="sig sig-object std" id="cmdoption-seismic-cluster-k">
 <span id="cmdoption-seismic-cluster-max-clusters"></span><span class="sig-name descname"><span class="pre">-k</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--max-clusters</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_clusters&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-cluster-k" title="Permalink to this definition"></a></dt>
 <dd><p>Maximum number of clusters to attempt (0 to disable)</p>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-cluster-min-nmut-read">
-<span class="sig-name descname"><span class="pre">--min-nmut-read</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_nmut_read&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-cluster-min-nmut-read" title="Permalink to this definition"></a></dt>
-<dd><p>Minimum number of mutations in a read to use it for clustering</p>
 </dd></dl>
 
 <dl class="std option">

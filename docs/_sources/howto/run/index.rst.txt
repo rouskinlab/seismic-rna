@@ -14,6 +14,7 @@ You can run the SEISMIC-RNA workflow in two ways:
     demult
     align
     relate
+    pool
     mask
     cluster
     table

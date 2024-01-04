@@ -66,6 +66,7 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.pool.html">seismicrna.pool package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html">seismicrna.relate package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.renumct.html">seismicrna.renumct package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.html">seismicrna.sim package</a></li>
@@ -212,28 +213,21 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.io.file.FileIO.normalize_fields">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">normalize_fields</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.io.file.FileIO.normalize_fields" title="Permalink to this definition"></a></dt>
-<dd><p>Given arbitrary fields and values, process those for this
-class of file, giving preference to auto-fields.</p>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.io.file.FileIO.parse_path">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parse_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.io.file.FileIO.parse_path" title="Permalink to this definition"></a></dt>
 <dd><p>Parse a file path to determine the field values.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.io.file.FileIO.path_field_names">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">path_field_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.io.file.FileIO.path_field_names" title="Permalink to this definition"></a></dt>
-<dd><p>Names of the fields of the path for the file type.</p>
+<dt class="sig sig-object py" id="seismicrna.core.io.file.FileIO.path_field_values">
+<span class="sig-name descname"><span class="pre">path_field_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">top</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.io.file.FileIO.path_field_values" title="Permalink to this definition"></a></dt>
+<dd><p>Path field values as a dict.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.io.file.FileIO.path_fields">
-<span class="sig-name descname"><span class="pre">path_fields</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">top</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.io.file.FileIO.path_fields" title="Permalink to this definition"></a></dt>
-<dd><p>Return the path fields as a dict.</p>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">path_fields</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.io.file.FileIO.path_fields" title="Permalink to this definition"></a></dt>
+<dd><p>Path fields for the file type.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -276,9 +270,27 @@ class of file, giving preference to auto-fields.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.core.io.file.convert_path">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.io.file.</span></span><span class="sig-name descname"><span class="pre">convert_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">type1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.io.file.FileIO" title="seismicrna.core.io.file.FileIO"><span class="pre">seismicrna.core.io.file.FileIO</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.io.file.FileIO" title="seismicrna.core.io.file.FileIO"><span class="pre">seismicrna.core.io.file.FileIO</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.io.file.convert_path" title="Permalink to this definition"></a></dt>
-<dd><p>Convert a path from that used by file type 1 to file type 2.</p>
+<dt class="sig sig-object py" id="seismicrna.core.io.file.recast_file_path">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.io.file.</span></span><span class="sig-name descname"><span class="pre">recast_file_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.io.file.FileIO" title="seismicrna.core.io.file.FileIO"><span class="pre">seismicrna.core.io.file.FileIO</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.io.file.FileIO" title="seismicrna.core.io.file.FileIO"><span class="pre">seismicrna.core.io.file.FileIO</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">override</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.io.file.recast_file_path" title="Permalink to this definition"></a></dt>
+<dd><p>Recast <cite>input_path</cite> from <cite>input_type</cite> to <cite>output_type</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>) – Input path from which to take the path fields.</p></li>
+<li><p><strong>input_type</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">type[FileIO]</span></code>) – Type of file to use to determine the fields in <cite>input_path</cite>.</p></li>
+<li><p><strong>output_type</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">type[FileIO]</span></code>) – Type of file to use for fitting the path fields and building a
+new path.</p></li>
+<li><p><strong>**override</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Any</span></code>) – Override fields in <cite>input_path</cite> (but not <cite>output_type</cite>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Path for file of <cite>output_type</cite> made from fields in <cite>input_path</cite>
+(as determined by the file of <cite>input_type</cite>).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <span class="target" id="module-seismicrna.core.io.seq"></span><dl class="py class">

@@ -1179,15 +1179,6 @@
 </li>
       </ul></li>
       <li>
-    --min-nmut-read
-
-      <ul>
-        <li><a href="cli.html#cmdoption-seismic-cluster-min-nmut-read">seismic-cluster command line option</a>
-</li>
-        <li><a href="cli.html#cmdoption-seismic-wf-min-nmut-read">seismic-wf command line option</a>
-</li>
-      </ul></li>
-      <li>
     --min-phred
 
       <ul>
@@ -1541,6 +1532,13 @@
 </li>
       </ul></li>
       <li>
+    --pool
+
+      <ul>
+        <li><a href="cli.html#cmdoption-seismic-wf-P">seismic-wf command line option</a>
+</li>
+      </ul></li>
+      <li>
     --primer-gap
 
       <ul>
@@ -1559,7 +1557,7 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-mask-p">seismic-mask command line option</a>
 </li>
-        <li><a href="cli.html#cmdoption-seismic-wf-p">seismic-wf command line option</a>
+        <li><a href="cli.html#cmdoption-seismic-wf-1">seismic-wf command line option</a>
 </li>
       </ul></li>
       <li>
@@ -1818,7 +1816,7 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-corroll-n">seismic-graph-corroll command line option</a>
 </li>
-        <li><a href="cli.html#cmdoption-seismic-wf-1">seismic-wf command line option</a>
+        <li><a href="cli.html#cmdoption-seismic-wf-2">seismic-wf command line option</a>
 </li>
       </ul></li>
       <li>
@@ -1878,7 +1876,7 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-graph-corroll-n">seismic-graph-corroll command line option</a>
 </li>
-        <li><a href="cli.html#cmdoption-seismic-wf-1">seismic-wf command line option</a>
+        <li><a href="cli.html#cmdoption-seismic-wf-2">seismic-wf command line option</a>
 </li>
       </ul></li>
       <li>
@@ -1915,6 +1913,13 @@
 </li>
       </ul></li>
       <li>
+    -P
+
+      <ul>
+        <li><a href="cli.html#cmdoption-seismic-wf-P">seismic-wf command line option</a>
+</li>
+      </ul></li>
+      <li>
     -p
 
       <ul>
@@ -1922,7 +1927,7 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-mask-p">seismic-mask command line option</a>
 </li>
-        <li><a href="cli.html#cmdoption-seismic-wf-p">seismic-wf command line option</a>
+        <li><a href="cli.html#cmdoption-seismic-wf-1">seismic-wf command line option</a>
 </li>
       </ul></li>
       <li>
@@ -2097,14 +2102,18 @@
 </li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.xna.XNA.__bool__">__bool__() (seismicrna.core.seq.xna.XNA method)</a>
 </li>
-      <li><a href="api/seismicrna.core.parallel.html#seismicrna.core.parallel.pool.Task.__call__">__call__() (seismicrna.core.parallel.pool.Task method)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadFunction.__call__">__call__() (seismicrna.core.data.LoadFunction method)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.core.parallel.html#seismicrna.core.parallel.pool.Task.__call__">(seismicrna.core.parallel.pool.Task method)</a>
 </li>
+      </ul></li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.xna.XNA.__eq__">__eq__() (seismicrna.core.seq.xna.XNA method)</a>
-</li>
-      <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.xna.XNA.__getitem__">__getitem__() (seismicrna.core.seq.xna.XNA method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.xna.XNA.__getitem__">__getitem__() (seismicrna.core.seq.xna.XNA method)</a>
+</li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.xna.XNA.__hash__">__hash__() (seismicrna.core.seq.xna.XNA method)</a>
 </li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.xna.XNA.__mul__">__mul__() (seismicrna.core.seq.xna.XNA method)</a>
@@ -2142,8 +2151,6 @@
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.Section.add_mask">add_mask() (seismicrna.core.seq.section.Section method)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.calc.adjust_counts">adjust_counts() (in module seismicrna.table.calc)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.agrees">agrees() (in module seismicrna.core.report)</a>
 </li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.write.align_samples">align_samples() (in module seismicrna.align.write)</a>
 </li>
@@ -2232,6 +2239,8 @@
 </li>
         <li><a href="api/seismicrna.mask.html#seismicrna.mask.report.MaskReport.auto_fields">(seismicrna.mask.report.MaskReport class method)</a>
 </li>
+        <li><a href="api/seismicrna.pool.html#seismicrna.pool.report.PoolReport.auto_fields">(seismicrna.pool.report.PoolReport class method)</a>
+</li>
         <li><a href="api/seismicrna.relate.html#seismicrna.relate.io.RelateIO.auto_fields">(seismicrna.relate.io.RelateIO class method)</a>
 </li>
       </ul></li>
@@ -2240,8 +2249,6 @@
       <li><a href="api/seismicrna.core.mu.html#seismicrna.core.mu.nan.auto_remove_nan">auto_remove_nan() (in module seismicrna.core.mu.nan)</a>
 </li>
       <li><a href="api/seismicrna.core.mu.html#seismicrna.core.mu.nan.auto_removes_nan">auto_removes_nan() (in module seismicrna.core.mu.nan)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.Report.autofill_report_fields">autofill_report_fields() (seismicrna.core.report.Report class method)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.base.AvgTable">AvgTable (class in seismicrna.table.base)</a>
 </li>
@@ -2253,19 +2260,13 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.BatchedDataset.batch_nums">batch_nums (seismicrna.core.data.BatchedDataset property)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.batch_nums">batch_nums (seismicrna.core.data.Dataset property)</a>
 </li>
       <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.read.ReadBatch.batch_read_index">batch_read_index (seismicrna.core.batch.read.ReadBatch property)</a>
 </li>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.uniq.batch_to_uniq_read_num">batch_to_uniq_read_num() (in module seismicrna.cluster.uniq)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.BatchedReport.batch_types">batch_types() (seismicrna.core.report.BatchedReport class method)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.BatchedDataset">BatchedDataset (class in seismicrna.core.data)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.BatchedLoadedDataset">BatchedLoadedDataset (class in seismicrna.core.data)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.BatchedMergedDataset">BatchedMergedDataset (class in seismicrna.core.data)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.BatchedRefseqReport">BatchedRefseqReport (class in seismicrna.core.report)</a>
 </li>
@@ -2283,12 +2284,12 @@
 </li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.fqunit.FastqUnit.BOWTIE2_FLAGS">BOWTIE2_FLAGS (seismicrna.align.fqunit.FastqUnit attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.align.html#seismicrna.align.fqunit.FastqUnit.bowtie2_inputs">bowtie2_inputs (seismicrna.align.fqunit.FastqUnit property)</a>
 </li>
       <li><a href="api/seismicrna.core.io.html#seismicrna.core.io.file.BrickleIO">BrickleIO (class in seismicrna.core.io.file)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.mu.tests.html#seismicrna.core.mu.tests.frame_test.broadcast_regex">broadcast_regex() (in module seismicrna.core.mu.tests.frame_test)</a>
 </li>
       <li><a href="api/seismicrna.core.mu.tests.html#seismicrna.core.mu.tests.frame_test.broadcastable">broadcastable() (in module seismicrna.core.mu.tests.frame_test)</a>
@@ -2373,71 +2374,23 @@
 </li>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.compare.calc_var_info_pqr">calc_var_info_pqr() (in module seismicrna.cluster.compare)</a>
 </li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.path.cast_file_path">cast_file_path() (in module seismicrna.core.path)</a>
+</li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.cgroup_table">cgroup_table() (in module seismicrna.graph.base)</a>
 </li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset">ChainedDataset (class in seismicrna.core.data)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedMutsDataset">ChainedMutsDataset (class in seismicrna.core.data)</a>
+</li>
       <li><a href="api/seismicrna.demult.html#seismicrna.demult.demultiplex.check_all_done">check_all_done() (in module seismicrna.demult.demultiplex)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_array_ints">check_array_ints() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_array_pos_ints">check_array_pos_ints() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_checksums">check_checksums() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_checksums_btype">check_checksums_btype() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_cluster_dict">check_cluster_dict() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_clusts_floats">check_clusts_floats() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_clusts_list_floats">check_clusts_list_floats() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_clusts_list_nonneg_int">check_clusts_list_nonneg_int() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_dict_vals_nonneg_ints">check_dict_vals_nonneg_ints() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_dir">check_dir() (in module seismicrna.core.report)</a>
 </li>
       <li><a href="api/seismicrna.demult.html#seismicrna.demult.demultiplex.check_done">check_done() (in module seismicrna.demult.demultiplex)</a>
 </li>
       <li><a href="api/seismicrna.demult.html#seismicrna.demult.demultiplex.super_fastq.check_exists">check_exists() (seismicrna.demult.demultiplex.super_fastq method)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_file">check_file() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_float">check_float() (in module seismicrna.core.report)</a>
-</li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.write.check_fqs_xams">check_fqs_xams() (in module seismicrna.align.write)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_ints_range">check_ints_range() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_list_str">check_list_str() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_name">check_name() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_nannonneg_float">check_nannonneg_float() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_nanpercentage">check_nanpercentage() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_nanprobability">check_nanprobability() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_nonneg_float">check_nonneg_float() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_nonneg_int">check_nonneg_int() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_percentage">check_percentage() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_pos_float">check_pos_float() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_pos_int">check_pos_int() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_probability">check_probability() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.Field.check_rep_val">check_rep_val (seismicrna.core.report.Field attribute)</a>
-</li>
       <li><a href="api/seismicrna.demult.html#seismicrna.demult.demultiplex.super_fastq.check_set">check_set() (seismicrna.demult.demultiplex.super_fastq method)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.check_time_ended">check_time_ended() (in module seismicrna.core.report)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.Field.check_val">check_val (seismicrna.core.report.Field attribute)</a>
 </li>
       <li><a href="api/seismicrna.mask.html#seismicrna.mask.write.RelMasker.CHECKSUM_KEY">CHECKSUM_KEY (seismicrna.mask.write.RelMasker attribute)</a>
 </li>
@@ -2467,7 +2420,11 @@
         <li><a href="api/seismicrna.core.html#seismicrna.core.header.RelHeader.clustered">(seismicrna.core.header.RelHeader class method)</a>
 </li>
       </ul></li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustMerger.clusters">clusters (seismicrna.cluster.data.ClustMerger property)</a>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClusterMutsDataset">ClusterMutsDataset (class in seismicrna.cluster.data)</a>
+</li>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClusterReadDataset">ClusterReadDataset (class in seismicrna.cluster.data)</a>
+</li>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClusterMutsDataset.clusters">clusters (seismicrna.cluster.data.ClusterMutsDataset property)</a>
 
       <ul>
         <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.em.EmClustering.clusters">(seismicrna.cluster.em.EmClustering property)</a>
@@ -2481,13 +2438,7 @@
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.header.ClustHeader">ClustHeader (class in seismicrna.core.header)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.io.ClustIO">ClustIO (class in seismicrna.cluster.io)</a>
-</li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustLoader">ClustLoader (class in seismicrna.cluster.data)</a>
-</li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustMerger">ClustMerger (class in seismicrna.cluster.data)</a>
 </li>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.batch.ClustMutsBatch">ClustMutsBatch (class in seismicrna.cluster.batch)</a>
 </li>
@@ -2505,6 +2456,8 @@
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.write.ClustReadTableWriter">ClustReadTableWriter (class in seismicrna.table.write)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.report.ClustReport">ClustReport (class in seismicrna.cluster.report)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.header.Header.clusts">clusts (seismicrna.core.header.Header property)</a>
@@ -2577,8 +2530,6 @@
 </li>
       <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.index.contiguous_mates">contiguous_mates() (in module seismicrna.core.batch.index)</a>
 </li>
-      <li><a href="api/seismicrna.core.io.html#seismicrna.core.io.file.convert_path">convert_path() (in module seismicrna.core.io.file)</a>
-</li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.Section.coord">coord (seismicrna.core.seq.section.Section property)</a>
 </li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.RefSections.count">count (seismicrna.core.seq.section.RefSections property)</a>
@@ -2643,11 +2594,9 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.UnifiedDataset.data">data (seismicrna.core.data.UnifiedDataset property)</a>
+      <li><a href="api/seismicrna.graph.html#seismicrna.graph.aucroll.RollingAUCGraph.data">data (seismicrna.graph.aucroll.RollingAUCGraph property)</a>
 
       <ul>
-        <li><a href="api/seismicrna.graph.html#seismicrna.graph.aucroll.RollingAUCGraph.data">(seismicrna.graph.aucroll.RollingAUCGraph property)</a>
-</li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphBase.data">(seismicrna.graph.base.GraphBase property)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.histrel.RelHistogramGraph.data">(seismicrna.graph.histrel.RelHistogramGraph property)</a>
@@ -2685,6 +2634,8 @@
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset">Dataset (class in seismicrna.core.data)</a>
 </li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.StrictLoadFunction.dataset_type">dataset_type (seismicrna.core.data.StrictLoadFunction property)</a>
+</li>
       <li><a href="api/seismicrna.core.ngs.html#seismicrna.core.ngs.phred.decode_phred">decode_phred() (in module seismicrna.core.ngs.phred)</a>
 </li>
       <li><a href="api/seismicrna.core.rel.html#seismicrna.core.rel.pattern.HalfRelPattern.decompile">decompile() (seismicrna.core.rel.pattern.HalfRelPattern class method)</a>
@@ -2697,12 +2648,18 @@
       </ul></li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.path.deduplicated">deduplicated() (in module seismicrna.core.path)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.Report.default_report_fields">default_report_fields() (seismicrna.core.report.Report class method)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.report.Field.default">default (seismicrna.core.report.Field attribute)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.report.OptionField.default">(seismicrna.core.report.OptionField attribute)</a>
 </li>
-      <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambrel.Indel.del_pos3">del_pos3 (seismicrna.relate.py.ambrel.Indel property)</a>
+      </ul></li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.report.default_key">default_key() (in module seismicrna.core.report)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambrel.Indel.del_pos3">del_pos3 (seismicrna.relate.py.ambrel.Indel property)</a>
+</li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambrel.Indel.del_pos5">del_pos5 (seismicrna.relate.py.ambrel.Indel property)</a>
 </li>
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.sam.XamViewer.delete_temp_sam">delete_temp_sam() (seismicrna.relate.sam.XamViewer method)</a>
@@ -2758,7 +2715,11 @@
       <li><a href="api/seismicrna.core.mu.unbias.tests.html#seismicrna.core.mu.unbias.tests.algo_test.drop_close_muts">drop_close_muts() (in module seismicrna.core.mu.unbias.tests.algo_test)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.Field.dtype">dtype (seismicrna.core.report.Field attribute)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.report.OptionField.dtype">(seismicrna.core.report.OptionField attribute)</a>
 </li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -2777,28 +2738,32 @@
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.logs.AnsiCode.end">end() (seismicrna.core.logs.AnsiCode class method)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.end3">end3 (seismicrna.core.data.Dataset property)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedMutsDataset.end3">end3 (seismicrna.core.data.ChainedMutsDataset property)</a>
 
       <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.end3">(seismicrna.core.data.Dataset property)</a>
+</li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.end3">(seismicrna.core.data.LoadedDataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedMutsDataset.end3">(seismicrna.core.data.LoadedMutsDataset property)</a>
 </li>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.MergedMutsDataset.end3">(seismicrna.core.data.MergedMutsDataset property)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.end3">(seismicrna.core.data.PooledDataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.rna.html#seismicrna.core.rna.base.RNASection.end3">(seismicrna.core.rna.base.RNASection property)</a>
 </li>
         <li><a href="api/seismicrna.table.html#seismicrna.table.base.PosTable.end3">(seismicrna.table.base.PosTable property)</a>
 </li>
       </ul></li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.end5">end5 (seismicrna.core.data.Dataset property)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedMutsDataset.end5">end5 (seismicrna.core.data.ChainedMutsDataset property)</a>
 
       <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.end5">(seismicrna.core.data.Dataset property)</a>
+</li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.end5">(seismicrna.core.data.LoadedDataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedMutsDataset.end5">(seismicrna.core.data.LoadedMutsDataset property)</a>
 </li>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.MergedMutsDataset.end5">(seismicrna.core.data.MergedMutsDataset property)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.end5">(seismicrna.core.data.PooledDataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.rna.html#seismicrna.core.rna.base.RNASection.end5">(seismicrna.core.rna.base.RNASection property)</a>
 </li>
@@ -2865,9 +2830,11 @@
 </li>
       </ul></li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.field_keys">field_keys() (in module seismicrna.core.report)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.report.Report.field_keys">(seismicrna.core.report.Report class method)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.Report.field_names">field_names() (seismicrna.core.report.Report class method)</a>
-</li>
+      </ul></li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.field_titles">field_titles() (in module seismicrna.core.report)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.fields">fields() (in module seismicrna.core.report)</a>
@@ -2892,6 +2859,8 @@
         <li><a href="api/seismicrna.fold.html#seismicrna.fold.report.FoldReport.fields">(seismicrna.fold.report.FoldReport class method)</a>
 </li>
         <li><a href="api/seismicrna.mask.html#seismicrna.mask.report.MaskReport.fields">(seismicrna.mask.report.MaskReport class method)</a>
+</li>
+        <li><a href="api/seismicrna.pool.html#seismicrna.pool.report.PoolReport.fields">(seismicrna.pool.report.PoolReport class method)</a>
 </li>
         <li><a href="api/seismicrna.relate.html#seismicrna.relate.report.RelateReport.fields">(seismicrna.relate.report.RelateReport class method)</a>
 </li>
@@ -2919,6 +2888,8 @@
 </li>
         <li><a href="api/seismicrna.mask.html#seismicrna.mask.report.MaskReport.file_seg_type">(seismicrna.mask.report.MaskReport class method)</a>
 </li>
+        <li><a href="api/seismicrna.pool.html#seismicrna.pool.report.PoolReport.file_seg_type">(seismicrna.pool.report.PoolReport class method)</a>
+</li>
         <li><a href="api/seismicrna.relate.html#seismicrna.relate.io.QnamesBatchIO.file_seg_type">(seismicrna.relate.io.QnamesBatchIO class method)</a>
 </li>
         <li><a href="api/seismicrna.relate.html#seismicrna.relate.io.RelateBatchIO.file_seg_type">(seismicrna.relate.io.RelateBatchIO class method)</a>
@@ -2944,10 +2915,10 @@
 </li>
       <li><a href="api/seismicrna.relate.aux.html#seismicrna.relate.aux.cigarop.find_cigar_op_pos">find_cigar_op_pos() (in module seismicrna.relate.aux.cigarop)</a>
 </li>
-      <li><a href="api/seismicrna.fold.html#seismicrna.fold.load.find_ct_files">find_ct_files() (in module seismicrna.fold.load)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/seismicrna.fold.html#seismicrna.fold.load.find_ct_files">find_ct_files() (in module seismicrna.fold.load)</a>
+</li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.path.find_files">find_files() (in module seismicrna.core.path)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.path.find_files_chain">find_files_chain() (in module seismicrna.core.path)</a>
@@ -3078,7 +3049,21 @@
 </li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.fqunit.get_args_count_fastq_reads">get_args_count_fastq_reads() (in module seismicrna.align.fqunit)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.BatchedLoadedDataset.get_batch_path">get_batch_path() (seismicrna.core.data.BatchedLoadedDataset method)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.get_batch">get_batch() (seismicrna.core.data.ChainedDataset method)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.get_batch">(seismicrna.core.data.Dataset method)</a>
+</li>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.get_batch">(seismicrna.core.data.LoadedDataset method)</a>
+</li>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.get_batch">(seismicrna.core.data.PooledDataset method)</a>
+</li>
+        <li><a href="api/seismicrna.relate.html#seismicrna.relate.data.RelateDataset.get_batch">(seismicrna.relate.data.RelateDataset method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.get_batch_checksum">get_batch_checksum() (seismicrna.core.data.LoadedDataset method)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.get_batch_path">get_batch_path() (seismicrna.core.data.LoadedDataset method)</a>
 </li>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.report.ClustReport.get_batch_seg">get_batch_seg() (seismicrna.cluster.report.ClustReport class method)</a>
 
@@ -3086,13 +3071,23 @@
         <li><a href="api/seismicrna.mask.html#seismicrna.mask.report.MaskReport.get_batch_seg">(seismicrna.mask.report.MaskReport class method)</a>
 </li>
       </ul></li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.BatchedReport.get_batch_type">get_batch_type() (seismicrna.core.report.BatchedReport class method)</a>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClusterReadDataset.get_batch_type">get_batch_type() (seismicrna.cluster.data.ClusterReadDataset class method)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.get_batch_type">(seismicrna.core.data.LoadedDataset class method)</a>
 </li>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.report.BatchedReport.get_batch_type">(seismicrna.core.report.BatchedReport class method)</a>
+</li>
+        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskReadDataset.get_batch_type">(seismicrna.mask.data.MaskReadDataset class method)</a>
+</li>
+        <li><a href="api/seismicrna.relate.html#seismicrna.relate.data.RelateDataset.get_batch_type">(seismicrna.relate.data.RelateDataset class method)</a>
+</li>
+      </ul></li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.hist.HistogramGraph.get_bounds">get_bounds() (seismicrna.graph.hist.HistogramGraph method)</a>
 </li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.xamops.get_bowtie2_index_paths">get_bowtie2_index_paths() (in module seismicrna.align.xamops)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.BatchedLoadedDataset.get_btype_name">get_btype_name() (seismicrna.core.data.BatchedLoadedDataset class method)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.get_btype_name">get_btype_name() (seismicrna.core.data.LoadedDataset class method)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.types.get_byte_dtype">get_byte_dtype() (in module seismicrna.core.types)</a>
 </li>
@@ -3142,34 +3137,32 @@
 </li>
       <li><a href="api/seismicrna.core.rna.html#seismicrna.core.rna.profile.RNAProfile.get_ct_file">get_ct_file() (seismicrna.core.rna.profile.RNAProfile method)</a>
 </li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustLoader.get_data_type">get_data_type() (seismicrna.cluster.data.ClustLoader class method)</a>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClusterMutsDataset.get_dataset1_load_func">get_dataset1_load_func() (seismicrna.cluster.data.ClusterMutsDataset class method)</a>
 
       <ul>
-        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustMerger.get_data_type">(seismicrna.cluster.data.ClustMerger class method)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.get_dataset1_load_func">(seismicrna.core.data.ChainedDataset class method)</a>
 </li>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.get_data_type">(seismicrna.core.data.Dataset class method)</a>
-</li>
-        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskLoader.get_data_type">(seismicrna.mask.data.MaskLoader class method)</a>
-</li>
-        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMerger.get_data_type">(seismicrna.mask.data.MaskMerger class method)</a>
-</li>
-        <li><a href="api/seismicrna.relate.html#seismicrna.relate.data.RelateLoader.get_data_type">(seismicrna.relate.data.RelateLoader class method)</a>
+        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMutsDataset.get_dataset1_load_func">(seismicrna.mask.data.MaskMutsDataset class method)</a>
 </li>
       </ul></li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustMerger.get_dataset1_type">get_dataset1_type() (seismicrna.cluster.data.ClustMerger class method)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.get_dataset1_report_file">get_dataset1_report_file() (seismicrna.core.data.ChainedDataset class method)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.get_dataset2_load_func">get_dataset2_load_func() (seismicrna.core.data.ChainedDataset class method)</a>
+</li>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClusterMutsDataset.get_dataset2_type">get_dataset2_type() (seismicrna.cluster.data.ClusterMutsDataset class method)</a>
 
       <ul>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Merger.get_dataset1_type">(seismicrna.core.data.Merger class method)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.get_dataset2_type">(seismicrna.core.data.ChainedDataset class method)</a>
 </li>
-        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMerger.get_dataset1_type">(seismicrna.mask.data.MaskMerger class method)</a>
+        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMutsDataset.get_dataset2_type">(seismicrna.mask.data.MaskMutsDataset class method)</a>
 </li>
       </ul></li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustMerger.get_dataset2_type">get_dataset2_type() (seismicrna.cluster.data.ClustMerger class method)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.get_dataset_load_func">get_dataset_load_func() (seismicrna.core.data.PooledDataset class method)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.get_dataset_type">get_dataset_type() (seismicrna.core.data.PooledDataset class method)</a>
 
       <ul>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Merger.get_dataset2_type">(seismicrna.core.data.Merger class method)</a>
-</li>
-        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMerger.get_dataset2_type">(seismicrna.mask.data.MaskMerger class method)</a>
+        <li><a href="api/seismicrna.pool.html#seismicrna.pool.data.PoolDataset.get_dataset_type">(seismicrna.pool.data.PoolDataset class method)</a>
 </li>
       </ul></li>
       <li><a href="api/seismicrna.core.rna.html#seismicrna.core.rna.profile.RNAProfile.get_db_file">get_db_file() (seismicrna.core.rna.profile.RNAProfile method)</a>
@@ -3191,6 +3184,8 @@
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.fasta.get_fasta_seq">get_fasta_seq() (in module seismicrna.core.seq.fasta)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.Report.get_field">get_field() (seismicrna.core.report.Report method)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.path.get_fields_in_seg_types">get_fields_in_seg_types() (in module seismicrna.core.path)</a>
 </li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.aucroll.RollingAUCWriter.get_graph">get_graph() (seismicrna.graph.aucroll.RollingAUCWriter method)</a>
 
@@ -3254,14 +3249,14 @@
         <li><a href="api/seismicrna.table.html#seismicrna.table.calc.Tabulator.get_null_value">(seismicrna.table.calc.Tabulator class method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.parallel.html#seismicrna.core.parallel.pool.get_num_parallel">get_num_parallel() (in module seismicrna.core.parallel.pool)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.get_oconv_array_float">get_oconv_array_float() (in module seismicrna.core.report)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.get_oconv_dict_float">get_oconv_dict_float() (in module seismicrna.core.report)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.get_oconv_dict_list_float">get_oconv_dict_list_float() (in module seismicrna.core.report)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.get_oconv_float">get_oconv_float() (in module seismicrna.core.report)</a>
@@ -3294,24 +3289,26 @@
 </li>
       <li><a href="api/seismicrna.export.html#seismicrna.export.web.get_ref_metadata">get_ref_metadata() (in module seismicrna.export.web)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedMutsDataset.get_refseq_type">get_refseq_type() (seismicrna.core.data.LoadedMutsDataset class method)</a>
-</li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.base.get_rel_name">get_rel_name() (in module seismicrna.table.base)</a>
 </li>
       <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.count.get_rels_per_pos">get_rels_per_pos() (in module seismicrna.core.batch.count)</a>
 </li>
       <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.count.get_rels_per_read">get_rels_per_read() (in module seismicrna.core.batch.count)</a>
 </li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustLoader.get_report_type">get_report_type() (seismicrna.cluster.data.ClustLoader class method)</a>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClusterReadDataset.get_report_type">get_report_type() (seismicrna.cluster.data.ClusterReadDataset class method)</a>
 
       <ul>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Loader.get_report_type">(seismicrna.core.data.Loader class method)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.get_report_type">(seismicrna.core.data.ChainedDataset class method)</a>
 </li>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.MergedDataset.get_report_type">(seismicrna.core.data.MergedDataset class method)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.get_report_type">(seismicrna.core.data.Dataset class method)</a>
 </li>
-        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskLoader.get_report_type">(seismicrna.mask.data.MaskLoader class method)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.get_report_type">(seismicrna.core.data.LoadedDataset class method)</a>
 </li>
-        <li><a href="api/seismicrna.relate.html#seismicrna.relate.data.RelateLoader.get_report_type">(seismicrna.relate.data.RelateLoader class method)</a>
+        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskReadDataset.get_report_type">(seismicrna.mask.data.MaskReadDataset class method)</a>
+</li>
+        <li><a href="api/seismicrna.pool.html#seismicrna.pool.data.PoolDataset.get_report_type">(seismicrna.pool.data.PoolDataset class method)</a>
+</li>
+        <li><a href="api/seismicrna.relate.html#seismicrna.relate.data.RelateDataset.get_report_type">(seismicrna.relate.data.RelateDataset class method)</a>
 </li>
       </ul></li>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.em.EmClustering.get_resps">get_resps() (seismicrna.cluster.em.EmClustering method)</a>
@@ -3325,6 +3322,8 @@
       <li><a href="api/seismicrna.export.html#seismicrna.export.web.get_sample_metadata">get_sample_metadata() (in module seismicrna.export.web)</a>
 </li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.fqunit.FastqUnit.get_sample_ref_exts">get_sample_ref_exts() (seismicrna.align.fqunit.FastqUnit method)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.get_sample_report_type">get_sample_report_type() (seismicrna.core.data.PooledDataset class method)</a>
 </li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.get_sect_coords_primers">get_sect_coords_primers() (in module seismicrna.core.seq.section)</a>
 </li>
@@ -3501,7 +3500,11 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.Field.iconv">iconv (seismicrna.core.report.Field attribute)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.report.OptionField.iconv">(seismicrna.core.report.OptionField attribute)</a>
 </li>
+      </ul></li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.iconv_array_float">iconv_array_float() (in module seismicrna.core.report)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.iconv_array_int">iconv_array_int() (in module seismicrna.core.report)</a>
@@ -3557,8 +3560,6 @@
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.sam.XamViewer.indexes">indexes (seismicrna.relate.sam.XamViewer property)</a>
 </li>
       <li><a href="api/seismicrna.relate.aux.html#seismicrna.relate.aux.infer.infer_read">infer_read() (in module seismicrna.relate.aux.infer)</a>
-</li>
-      <li><a href="api/seismicrna.table.html#seismicrna.table.write.infer_report_loader_type">infer_report_loader_type() (in module seismicrna.table.write)</a>
 </li>
       <li><a href="api/seismicrna.core.rna.html#seismicrna.core.rna.base.RNASection.init_args">init_args (seismicrna.core.rna.base.RNASection property)</a>
 
@@ -3627,12 +3628,8 @@
 </li>
       <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.index.iter_base_types">iter_base_types() (in module seismicrna.core.batch.index)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.BatchedDataset.iter_batches">iter_batches() (seismicrna.core.data.BatchedDataset method)</a>
-
-      <ul>
-        <li><a href="api/seismicrna.relate.html#seismicrna.relate.data.RelateLoader.iter_batches">(seismicrna.relate.data.RelateLoader method)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.iter_batches">iter_batches() (seismicrna.core.data.Dataset method)</a>
 </li>
-      </ul></li>
       <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.iter_cases">iter_cases() (seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel method)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.header.Header.iter_clust_indexes">iter_clust_indexes() (seismicrna.core.header.Header method)</a>
@@ -3708,7 +3705,11 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.Field.key">key (seismicrna.core.report.Field attribute)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.report.OptionField.key">(seismicrna.core.report.OptionField attribute)</a>
 </li>
+      </ul></li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.fqunit.FastqUnit.KEY_DINTER">KEY_DINTER (seismicrna.align.fqunit.FastqUnit attribute)</a>
 </li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.fqunit.FastqUnit.KEY_DMATED">KEY_DMATED (seismicrna.align.fqunit.FastqUnit attribute)</a>
@@ -3726,6 +3727,8 @@
       <li><a href="api/seismicrna.align.html#seismicrna.align.fqunit.FastqUnit.KEY_MATED">KEY_MATED (seismicrna.align.fqunit.FastqUnit attribute)</a>
 </li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.fqunit.FastqUnit.KEY_SINGLE">KEY_SINGLE (seismicrna.align.fqunit.FastqUnit attribute)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.report.key_to_title">key_to_title() (in module seismicrna.core.report)</a>
 </li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.fqunit.FastqUnit.kind">kind (seismicrna.align.fqunit.FastqUnit property)</a>
 </li>
@@ -3785,10 +3788,16 @@
 </li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphRunner.list_table_files">list_table_files() (seismicrna.graph.base.GraphRunner class method)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.load">load() (seismicrna.core.data.LoadedDataset class method)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.load">load() (seismicrna.core.data.ChainedDataset class method)</a>
 
       <ul>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.MergedDataset.load">(seismicrna.core.data.MergedDataset class method)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.load">(seismicrna.core.data.Dataset class method)</a>
+</li>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.load">(seismicrna.core.data.LoadedDataset class method)</a>
+</li>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.MutsDataset.load">(seismicrna.core.data.MutsDataset class method)</a>
+</li>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.load">(seismicrna.core.data.PooledDataset class method)</a>
 </li>
         <li><a href="api/seismicrna.core.io.html#seismicrna.core.io.file.BrickleIO.load">(seismicrna.core.io.file.BrickleIO class method)</a>
 </li>
@@ -3797,23 +3806,21 @@
         <li><a href="api/seismicrna.core.html#seismicrna.core.report.Report.load">(seismicrna.core.report.Report class method)</a>
 </li>
       </ul></li>
-      <li><a href="api/seismicrna.table.html#seismicrna.table.load.load_all_tables">load_all_tables() (in module seismicrna.table.load)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/seismicrna.table.html#seismicrna.table.load.load_all_tables">load_all_tables() (in module seismicrna.table.load)</a>
+</li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.load.load_any_table">load_any_table() (in module seismicrna.table.load)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.BatchedLoadedDataset.load_batch">load_batch() (seismicrna.core.data.BatchedLoadedDataset method)</a>
-
-      <ul>
-        <li><a href="api/seismicrna.relate.html#seismicrna.relate.data.RelateLoader.load_batch">(seismicrna.relate.data.RelateLoader method)</a>
-</li>
-      </ul></li>
       <li><a href="api/seismicrna.core.io.html#seismicrna.core.io.brickle.load_brickle">load_brickle() (in module seismicrna.core.io.brickle)</a>
 </li>
       <li><a href="api/seismicrna.fold.html#seismicrna.fold.load.load_ct_structs">load_ct_structs() (in module seismicrna.fold.load)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.load_data">load_data() (in module seismicrna.core.data)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.load_dataset1">load_dataset1() (seismicrna.core.data.ChainedDataset class method)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.load_dataset2">load_dataset2() (seismicrna.core.data.ChainedDataset class method)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.load_datasets">load_datasets() (in module seismicrna.core.data)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.load.load_pos_table">load_pos_table() (in module seismicrna.table.load)</a>
 </li>
@@ -3822,6 +3829,8 @@
       <li><a href="api/seismicrna.table.html#seismicrna.table.load.load_read_table">load_read_table() (in module seismicrna.table.load)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.load.load_read_tables">load_read_tables() (in module seismicrna.table.load)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.load_report">load_report() (seismicrna.core.data.Dataset class method)</a>
 </li>
       <li><a href="api/seismicrna.mask.html#seismicrna.mask.main.load_sections">load_sections() (in module seismicrna.mask.main)</a>
 </li>
@@ -3835,7 +3844,7 @@
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedMutsDataset">LoadedMutsDataset (class in seismicrna.core.data)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.Loader">Loader (class in seismicrna.core.data)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadFunction">LoadFunction (class in seismicrna.core.data)</a>
 </li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.SectionFinder.locate">locate() (seismicrna.core.seq.section.SectionFinder static method)</a>
 </li>
@@ -3869,6 +3878,8 @@
 </li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.make_path_subject">make_path_subject() (in module seismicrna.graph.base)</a>
 </li>
+      <li><a href="api/seismicrna.pool.html#seismicrna.pool.main.make_pool">make_pool() (in module seismicrna.pool.main)</a>
+</li>
       <li><a href="api/seismicrna.demult.html#seismicrna.demult.demultiplex.make_sequence_objects_from_csv">make_sequence_objects_from_csv() (in module seismicrna.demult.demultiplex)</a>
 </li>
       <li><a href="api/seismicrna.core.parallel.tests.html#seismicrna.core.parallel.tests.temp_test.make_temp">make_temp() (in module seismicrna.core.parallel.tests.temp_test)</a>
@@ -3891,7 +3902,7 @@
 </li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.Section.mask_gu">mask_gu() (seismicrna.core.seq.section.Section method)</a>
 </li>
-      <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMerger.MASK_NAME">MASK_NAME (seismicrna.mask.data.MaskMerger attribute)</a>
+      <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMutsDataset.MASK_NAME">MASK_NAME (seismicrna.mask.data.MaskMutsDataset attribute)</a>
 </li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.Section.mask_names">mask_names (seismicrna.core.seq.section.Section property)</a>
 </li>
@@ -3931,11 +3942,9 @@
 </li>
       <li><a href="api/seismicrna.mask.html#seismicrna.mask.io.MaskIO">MaskIO (class in seismicrna.mask.io)</a>
 </li>
-      <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskLoader">MaskLoader (class in seismicrna.mask.data)</a>
-</li>
-      <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMerger">MaskMerger (class in seismicrna.mask.data)</a>
-</li>
       <li><a href="api/seismicrna.mask.html#seismicrna.mask.batch.MaskMutsBatch">MaskMutsBatch (class in seismicrna.mask.batch)</a>
+</li>
+      <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMutsDataset">MaskMutsDataset (class in seismicrna.mask.data)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.base.MaskPosTable">MaskPosTable (class in seismicrna.table.base)</a>
 </li>
@@ -3944,6 +3953,8 @@
       <li><a href="api/seismicrna.table.html#seismicrna.table.write.MaskPosTableWriter">MaskPosTableWriter (class in seismicrna.table.write)</a>
 </li>
       <li><a href="api/seismicrna.mask.html#seismicrna.mask.batch.MaskReadBatch">MaskReadBatch (class in seismicrna.mask.batch)</a>
+</li>
+      <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskReadDataset">MaskReadDataset (class in seismicrna.mask.data)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.base.MaskReadTable">MaskReadTable (class in seismicrna.table.base)</a>
 </li>
@@ -3959,10 +3970,10 @@
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.path.Segment.match_longest_ext">match_longest_ext() (seismicrna.core.path.Segment method)</a>
 </li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustLoader.max_order">max_order (seismicrna.cluster.data.ClustLoader property)</a>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClusterMutsDataset.max_order">max_order (seismicrna.cluster.data.ClusterMutsDataset property)</a>
 
       <ul>
-        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustMerger.max_order">(seismicrna.cluster.data.ClustMerger property)</a>
+        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClusterReadDataset.max_order">(seismicrna.cluster.data.ClusterReadDataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.header.ClustHeader.max_order">(seismicrna.core.header.ClustHeader property)</a>
 </li>
@@ -4003,12 +4014,6 @@
 </li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.relate.merge_rels">merge_rels() (in module seismicrna.relate.py.relate)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.MergedDataset">MergedDataset (class in seismicrna.core.data)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.MergedMutsDataset">MergedMutsDataset (class in seismicrna.core.data)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.Merger">Merger (class in seismicrna.core.data)</a>
-</li>
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.write.mib_to_bytes">mib_to_bytes() (in module seismicrna.relate.write)</a>
 </li>
       <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.muts.MutsBatch.mid3s">mid3s (seismicrna.core.batch.muts.MutsBatch property)</a>
@@ -4017,12 +4022,12 @@
 </li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.relate.SamRead.MIN_FIELDS">MIN_FIELDS (seismicrna.relate.py.relate.SamRead attribute)</a>
 </li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustMerger.min_mut_gap">min_mut_gap (seismicrna.cluster.data.ClustMerger property)</a>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClusterMutsDataset.min_mut_gap">min_mut_gap (seismicrna.cluster.data.ClusterMutsDataset property)</a>
 
       <ul>
-        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskLoader.min_mut_gap">(seismicrna.mask.data.MaskLoader property)</a>
+        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMutsDataset.min_mut_gap">(seismicrna.mask.data.MaskMutsDataset property)</a>
 </li>
-        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMerger.min_mut_gap">(seismicrna.mask.data.MaskMerger property)</a>
+        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskReadDataset.min_mut_gap">(seismicrna.mask.data.MaskReadDataset property)</a>
 </li>
       </ul></li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.header.ClustHeader.min_order">min_order (seismicrna.core.header.ClustHeader property)</a>
@@ -4339,6 +4344,14 @@
 </li>
         <li><a href="api/seismicrna.mask.html#module-seismicrna.mask.write">seismicrna.mask.write</a>
 </li>
+        <li><a href="api/seismicrna.pool.html#module-seismicrna.pool">seismicrna.pool</a>
+</li>
+        <li><a href="api/seismicrna.pool.html#module-seismicrna.pool.data">seismicrna.pool.data</a>
+</li>
+        <li><a href="api/seismicrna.pool.html#module-seismicrna.pool.main">seismicrna.pool.main</a>
+</li>
+        <li><a href="api/seismicrna.pool.html#module-seismicrna.pool.report">seismicrna.pool.report</a>
+</li>
         <li><a href="api/seismicrna.relate.html#module-seismicrna.relate">seismicrna.relate</a>
 </li>
         <li><a href="api/seismicrna.relate.aux.html#module-seismicrna.relate.aux">seismicrna.relate.aux</a>
@@ -4480,8 +4493,6 @@
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.header.Header.names">names (seismicrna.core.header.Header property)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.nanagrees">nanagrees() (in module seismicrna.core.report)</a>
-</li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphBase.ncols">ncols (seismicrna.graph.base.GraphBase property)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.write.need_write">need_write() (in module seismicrna.core.write)</a>
@@ -4494,22 +4505,22 @@
 </li>
       <li><a href="api/seismicrna.core.mu.html#seismicrna.core.mu.scale.normalize">normalize() (in module seismicrna.core.mu.scale)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/seismicrna.core.io.html#seismicrna.core.io.file.FileIO.normalize_fields">normalize_fields() (seismicrna.core.io.file.FileIO class method)</a>
-</li>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.em.EmClustering.nreads_total">nreads_total (seismicrna.cluster.em.EmClustering property)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphBase.nrows">nrows (seismicrna.graph.base.GraphBase property)</a>
 </li>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.uniq.UniqReads.num_batches">num_batches (seismicrna.cluster.uniq.UniqReads property)</a>
 
       <ul>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.BatchedDataset.num_batches">(seismicrna.core.data.BatchedDataset property)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.num_batches">(seismicrna.core.data.ChainedDataset property)</a>
 </li>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.BatchedLoadedDataset.num_batches">(seismicrna.core.data.BatchedLoadedDataset property)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.num_batches">(seismicrna.core.data.Dataset property)</a>
 </li>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.BatchedMergedDataset.num_batches">(seismicrna.core.data.BatchedMergedDataset property)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.num_batches">(seismicrna.core.data.LoadedDataset property)</a>
+</li>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.num_batches">(seismicrna.core.data.PooledDataset property)</a>
 </li>
       </ul></li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.header.Header.num_levels">num_levels() (seismicrna.core.header.Header class method)</a>
@@ -4540,6 +4551,8 @@
 </li>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.uniq.UniqReads.num_uniq">num_uniq (seismicrna.cluster.uniq.UniqReads property)</a>
 </li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.nums_batches">nums_batches (seismicrna.core.data.PooledDataset property)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -4547,7 +4560,11 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.Field.oconv">oconv (seismicrna.core.report.Field attribute)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.report.OptionField.oconv">(seismicrna.core.report.OptionField attribute)</a>
 </li>
+      </ul></li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.oconv_array_int">oconv_array_int() (in module seismicrna.core.report)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.oconv_datetime">oconv_datetime() (in module seismicrna.core.report)</a>
@@ -4573,6 +4590,8 @@
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.sam.XamViewer.open_temp_sam">open_temp_sam() (seismicrna.relate.sam.XamViewer method)</a>
 </li>
       <li><a href="api/seismicrna.relate.aux.tests.html#seismicrna.relate.aux.tests.cigarop_test.TestCigarOp.ops">ops (seismicrna.relate.aux.tests.cigarop_test.TestCigarOp attribute)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.report.OptionField">OptionField (class in seismicrna.core.report)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.header.Header.orders">orders (seismicrna.core.header.Header property)</a>
 </li>
@@ -4648,6 +4667,8 @@
 </li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.fqunit.parse_stdout_count_fastq_reads">parse_stdout_count_fastq_reads() (in module seismicrna.align.fqunit)</a>
 </li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.path.parse_top_separate">parse_top_separate() (in module seismicrna.core.path)</a>
+</li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.version.parse_version">parse_version() (in module seismicrna.core.version)</a>
 </li>
       <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.muts.PartialMutsBatch">PartialMutsBatch (class in seismicrna.core.batch.muts)</a>
@@ -4660,16 +4681,20 @@
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.base.Table.path">path (seismicrna.table.base.Table property)</a>
 </li>
-      <li><a href="api/seismicrna.core.io.html#seismicrna.core.io.file.FileIO.path_field_names">path_field_names() (seismicrna.core.io.file.FileIO class method)</a>
+      <li><a href="api/seismicrna.core.io.html#seismicrna.core.io.file.FileIO.path_field_values">path_field_values() (seismicrna.core.io.file.FileIO method)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.base.Table.path_fields">path_fields (seismicrna.table.base.Table property)</a>
 </li>
-      <li><a href="api/seismicrna.core.io.html#seismicrna.core.io.file.FileIO.path_fields">path_fields() (seismicrna.core.io.file.FileIO method)</a>
+      <li><a href="api/seismicrna.core.io.html#seismicrna.core.io.file.FileIO.path_fields">path_fields() (seismicrna.core.io.file.FileIO class method)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.path.path_matches">path_matches() (in module seismicrna.core.path)</a>
 </li>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.report.ClustReport.path_segs">path_segs() (seismicrna.cluster.report.ClustReport class method)</a>
 
       <ul>
         <li><a href="api/seismicrna.mask.html#seismicrna.mask.report.MaskReport.path_segs">(seismicrna.mask.report.MaskReport class method)</a>
+</li>
+        <li><a href="api/seismicrna.pool.html#seismicrna.pool.report.PoolReport.path_segs">(seismicrna.pool.report.PoolReport class method)</a>
 </li>
         <li><a href="api/seismicrna.table.html#seismicrna.table.base.FreqTable.path_segs">(seismicrna.table.base.FreqTable class method)</a>
 </li>
@@ -4694,26 +4719,28 @@
 </li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.twotable.TwoTableGraph.path_subject2">path_subject2 (seismicrna.graph.twotable.TwoTableGraph property)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.html#seismicrna.core.path.PathError">PathError</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.html#seismicrna.core.path.PathTypeError">PathTypeError</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.path.PathValueError">PathValueError</a>
 </li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustLoader.pattern">pattern (seismicrna.cluster.data.ClustLoader property)</a>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClusterMutsDataset.pattern">pattern (seismicrna.cluster.data.ClusterMutsDataset property)</a>
 
       <ul>
-        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustMerger.pattern">(seismicrna.cluster.data.ClustMerger property)</a>
+        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClusterReadDataset.pattern">(seismicrna.cluster.data.ClusterReadDataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.pattern">(seismicrna.core.data.Dataset property)</a>
 </li>
-        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskLoader.pattern">(seismicrna.mask.data.MaskLoader property)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.pattern">(seismicrna.core.data.PooledDataset property)</a>
 </li>
-        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMerger.pattern">(seismicrna.mask.data.MaskMerger property)</a>
+        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMutsDataset.pattern">(seismicrna.mask.data.MaskMutsDataset property)</a>
 </li>
-        <li><a href="api/seismicrna.relate.html#seismicrna.relate.data.RelateLoader.pattern">(seismicrna.relate.data.RelateLoader property)</a>
+        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskReadDataset.pattern">(seismicrna.mask.data.MaskReadDataset property)</a>
+</li>
+        <li><a href="api/seismicrna.relate.html#seismicrna.relate.data.RelateDataset.pattern">(seismicrna.relate.data.RelateDataset property)</a>
 </li>
       </ul></li>
       <li><a href="api/seismicrna.mask.html#seismicrna.mask.write.RelMasker.PATTERN_KEY">PATTERN_KEY (seismicrna.mask.write.RelMasker attribute)</a>
@@ -4730,6 +4757,14 @@
       </ul></li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.xna.XNA.picto">picto (seismicrna.core.seq.xna.XNA property)</a>
 </li>
+      <li><a href="api/seismicrna.pool.html#seismicrna.pool.data.PoolDataset">PoolDataset (class in seismicrna.pool.data)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset">PooledDataset (class in seismicrna.core.data)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledMutsDataset">PooledMutsDataset (class in seismicrna.core.data)</a>
+</li>
+      <li><a href="api/seismicrna.pool.html#seismicrna.pool.report.PoolReport">PoolReport (class in seismicrna.pool.report)</a>
+</li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.relate.SamRead.pos">pos (seismicrna.relate.py.relate.SamRead attribute)</a>
 </li>
       <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.muts.MutsBatch.pos_dtype">pos_dtype (seismicrna.core.batch.muts.MutsBatch property)</a>
@@ -4740,7 +4775,7 @@
 </li>
       <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.muts.RefseqMutsBatch.pos_index">pos_index (seismicrna.core.batch.muts.RefseqMutsBatch property)</a>
 </li>
-      <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskLoader.pos_kept">pos_kept (seismicrna.mask.data.MaskLoader property)</a>
+      <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskReadDataset.pos_kept">pos_kept (seismicrna.mask.data.MaskReadDataset property)</a>
 
       <ul>
         <li><a href="api/seismicrna.mask.html#seismicrna.mask.write.RelMasker.pos_kept">(seismicrna.mask.write.RelMasker property)</a>
@@ -4918,16 +4953,20 @@
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.write.ReadTableWriter">ReadTableWriter (class in seismicrna.table.write)</a>
 </li>
+      <li><a href="api/seismicrna.core.io.html#seismicrna.core.io.file.recast_file_path">recast_file_path() (in module seismicrna.core.io.file)</a>
+</li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.logs.AnsiCode.RED">RED (seismicrna.core.logs.AnsiCode attribute)</a>
 </li>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.uniq.UniqReads.ref">ref (seismicrna.cluster.uniq.UniqReads property)</a>
 
       <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.ref">(seismicrna.core.data.ChainedDataset property)</a>
+</li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.ref">(seismicrna.core.data.Dataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.ref">(seismicrna.core.data.LoadedDataset property)</a>
 </li>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.MergedDataset.ref">(seismicrna.core.data.MergedDataset property)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.ref">(seismicrna.core.data.PooledDataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.rna.html#seismicrna.core.rna.base.RNASection.ref">(seismicrna.core.rna.base.RNASection property)</a>
 </li>
@@ -4974,12 +5013,14 @@
 </li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.RefSections">RefSections (class in seismicrna.core.seq.section)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedMutsDataset.refseq">refseq (seismicrna.core.data.LoadedMutsDataset property)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.refseq">refseq (seismicrna.core.data.ChainedDataset property)</a>
 
       <ul>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.MergedDataset.refseq">(seismicrna.core.data.MergedDataset property)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedMutsDataset.refseq">(seismicrna.core.data.LoadedMutsDataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.MutsDataset.refseq">(seismicrna.core.data.MutsDataset property)</a>
+</li>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledMutsDataset.refseq">(seismicrna.core.data.PooledMutsDataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.io.html#seismicrna.core.io.seq.RefseqIO.refseq">(seismicrna.core.io.seq.RefseqIO property)</a>
 </li>
@@ -5020,11 +5061,11 @@
 </li>
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.io.RelateBatchIO">RelateBatchIO (class in seismicrna.relate.io)</a>
 </li>
+      <li><a href="api/seismicrna.relate.html#seismicrna.relate.data.RelateDataset">RelateDataset (class in seismicrna.relate.data)</a>
+</li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.error.RelateError">RelateError</a>
 </li>
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.io.RelateIO">RelateIO (class in seismicrna.relate.io)</a>
-</li>
-      <li><a href="api/seismicrna.relate.html#seismicrna.relate.data.RelateLoader">RelateLoader (class in seismicrna.relate.data)</a>
 </li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.error.RelateNotImplementedError">RelateNotImplementedError</a>
 </li>
@@ -5106,7 +5147,9 @@
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.Report">Report (class in seismicrna.core.report)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.BatchedLoadedDataset.report_checksum">report_checksum() (seismicrna.core.data.BatchedLoadedDataset method)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadFunction.report_path_auto_fields">report_path_auto_fields (seismicrna.core.data.LoadFunction property)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadFunction.report_path_seg_types">report_path_seg_types (seismicrna.core.data.LoadFunction property)</a>
 </li>
       <li><a href="api/seismicrna.core.extern.html#seismicrna.core.extern.depend.require_dependency">require_dependency() (in module seismicrna.core.extern.depend)</a>
 </li>
@@ -5197,6 +5240,8 @@
 </li>
         <li><a href="api/seismicrna.mask.html#seismicrna.mask.main.run">(in module seismicrna.mask.main)</a>
 </li>
+        <li><a href="api/seismicrna.pool.html#seismicrna.pool.main.run">(in module seismicrna.pool.main)</a>
+</li>
         <li><a href="api/seismicrna.relate.html#seismicrna.relate.main.run">(in module seismicrna.relate.main)</a>
 </li>
         <li><a href="api/seismicrna.renumct.html#seismicrna.renumct.main.run">(in module seismicrna.renumct.main)</a>
@@ -5246,12 +5291,14 @@
 </li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.relate.SamFlag">SamFlag (class in seismicrna.relate.py.relate)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.sample">sample (seismicrna.core.data.Dataset property)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.sample">sample (seismicrna.core.data.ChainedDataset property)</a>
 
       <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.sample">(seismicrna.core.data.Dataset property)</a>
+</li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.sample">(seismicrna.core.data.LoadedDataset property)</a>
 </li>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.MergedDataset.sample">(seismicrna.core.data.MergedDataset property)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.sample">(seismicrna.core.data.PooledDataset property)</a>
 </li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphBase.sample">(seismicrna.graph.base.GraphBase property)</a>
 </li>
@@ -5275,6 +5322,8 @@
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.twotable.TwoTableGraph.sample1">sample1 (seismicrna.graph.twotable.TwoTableGraph property)</a>
 </li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.twotable.TwoTableGraph.sample2">sample2 (seismicrna.graph.twotable.TwoTableGraph property)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.samples">samples (seismicrna.core.data.PooledDataset property)</a>
 </li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.relate.SamRead">SamRead (class in seismicrna.relate.py.relate)</a>
 </li>
@@ -5304,14 +5353,16 @@
 </li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.relate.SamFlag.second">second (seismicrna.relate.py.relate.SamFlag attribute)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.sect">sect (seismicrna.core.data.Dataset property)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedMutsDataset.sect">sect (seismicrna.core.data.ChainedMutsDataset property)</a>
 
       <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.sect">(seismicrna.core.data.Dataset property)</a>
+</li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.sect">(seismicrna.core.data.LoadedDataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedMutsDataset.sect">(seismicrna.core.data.LoadedMutsDataset property)</a>
 </li>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.MergedMutsDataset.sect">(seismicrna.core.data.MergedMutsDataset property)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.sect">(seismicrna.core.data.PooledDataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.rna.html#seismicrna.core.rna.base.RNASection.sect">(seismicrna.core.rna.base.RNASection property)</a>
 </li>
@@ -5332,14 +5383,14 @@
 </li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.Section">Section (class in seismicrna.core.seq.section)</a>
 </li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClustMerger.section">section (seismicrna.cluster.data.ClustMerger property)</a>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.data.ClusterMutsDataset.section">section (seismicrna.cluster.data.ClusterMutsDataset property)</a>
 
       <ul>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.MutsDataset.section">(seismicrna.core.data.MutsDataset property)</a>
 </li>
         <li><a href="api/seismicrna.core.rna.html#seismicrna.core.rna.struct.Rna2dStemLoop.section">(seismicrna.core.rna.struct.Rna2dStemLoop property)</a>
 </li>
-        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMerger.section">(seismicrna.mask.data.MaskMerger property)</a>
+        <li><a href="api/seismicrna.mask.html#seismicrna.mask.data.MaskMutsDataset.section">(seismicrna.mask.data.MaskMutsDataset property)</a>
 </li>
         <li><a href="api/seismicrna.table.html#seismicrna.table.base.PosTable.section">(seismicrna.table.base.PosTable property)</a>
 </li>
@@ -5597,8 +5648,6 @@
         <li><a href="cli.html#cmdoption-seismic-cluster-max-procs">--max-procs</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-cluster-min-em-iter">--min-em-iter</a>
-</li>
-        <li><a href="cli.html#cmdoption-seismic-cluster-min-nmut-read">--min-nmut-read</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-cluster-force">--no-force</a>
 </li>
@@ -6488,8 +6537,6 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-min-ninfo-pos">--min-ninfo-pos</a>
 </li>
-        <li><a href="cli.html#cmdoption-seismic-wf-min-nmut-read">--min-nmut-read</a>
-</li>
         <li><a href="cli.html#cmdoption-seismic-wf-min-phred">--min-phred</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-N">--min-reads</a>
@@ -6530,9 +6577,11 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-phred-enc">--phred-enc</a>
 </li>
+        <li><a href="cli.html#cmdoption-seismic-wf-P">--pool</a>
+</li>
         <li><a href="cli.html#cmdoption-seismic-wf-primer-gap">--primer-gap</a>
 </li>
-        <li><a href="cli.html#cmdoption-seismic-wf-p">--primers</a>
+        <li><a href="cli.html#cmdoption-seismic-wf-1">--primers</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-qc-extract">--qc-extract</a>
 </li>
@@ -6560,7 +6609,7 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-w">--window</a>
 </li>
-        <li><a href="cli.html#cmdoption-seismic-wf-1">--winmin</a>
+        <li><a href="cli.html#cmdoption-seismic-wf-2">--winmin</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-c">-c</a>
 </li>
@@ -6570,11 +6619,13 @@
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-N">-N</a>
 </li>
-        <li><a href="cli.html#cmdoption-seismic-wf-1">-n</a>
+        <li><a href="cli.html#cmdoption-seismic-wf-2">-n</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-o">-o</a>
 </li>
-        <li><a href="cli.html#cmdoption-seismic-wf-p">-p</a>
+        <li><a href="cli.html#cmdoption-seismic-wf-P">-P</a>
+</li>
+        <li><a href="cli.html#cmdoption-seismic-wf-1">-p</a>
 </li>
         <li><a href="cli.html#cmdoption-seismic-wf-q">-q</a>
 </li>
@@ -7658,6 +7709,34 @@
 </li>
       </ul></li>
       <li>
+    seismicrna.pool
+
+      <ul>
+        <li><a href="api/seismicrna.pool.html#module-seismicrna.pool">module</a>
+</li>
+      </ul></li>
+      <li>
+    seismicrna.pool.data
+
+      <ul>
+        <li><a href="api/seismicrna.pool.html#module-seismicrna.pool.data">module</a>
+</li>
+      </ul></li>
+      <li>
+    seismicrna.pool.main
+
+      <ul>
+        <li><a href="api/seismicrna.pool.html#module-seismicrna.pool.main">module</a>
+</li>
+      </ul></li>
+      <li>
+    seismicrna.pool.report
+
+      <ul>
+        <li><a href="api/seismicrna.pool.html#module-seismicrna.pool.report">module</a>
+</li>
+      </ul></li>
+      <li>
     seismicrna.relate
 
       <ul>
@@ -8027,6 +8106,8 @@
       <li><a href="api/seismicrna.core.mu.html#seismicrna.core.mu.scale.standardize">standardize() (in module seismicrna.core.mu.scale)</a>
 </li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambrel.Indel.step_del_pos">step_del_pos() (seismicrna.relate.py.ambrel.Indel method)</a>
+</li>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.StrictLoadFunction">StrictLoadFunction (class in seismicrna.core.data)</a>
 </li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.onestruct.StructOneTableGraph.struct_sect">struct_sect (seismicrna.graph.onestruct.StructOneTableGraph property)</a>
 </li>
@@ -8844,10 +8925,10 @@
 </li>
       <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.xna_test.TestXNA.test_not_equal_dna_str">test_not_equal_dna_str() (seismicrna.core.seq.tests.xna_test.TestXNA method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.xna_test.TestXNA.test_not_equal_rna_str">test_not_equal_rna_str() (seismicrna.core.seq.tests.xna_test.TestXNA method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.rel.tests.html#seismicrna.core.rel.tests.code_test.TestConstants.test_np_type">test_np_type() (seismicrna.core.rel.tests.code_test.TestConstants method)</a>
 </li>
       <li><a href="api/seismicrna.core.tests.html#seismicrna.core.tests.header_test.TestClustHeader.test_num_levels">test_num_levels() (seismicrna.core.tests.header_test.TestClustHeader method)</a>
@@ -9573,6 +9654,8 @@
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.Field.title">title (seismicrna.core.report.Field attribute)</a>
 
       <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.report.OptionField.title">(seismicrna.core.report.OptionField attribute)</a>
+</li>
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphBase.title">(seismicrna.graph.base.GraphBase property)</a>
 </li>
       </ul></li>
@@ -9602,12 +9685,14 @@
 </li>
       <li><a href="api/seismicrna.core.rna.html#seismicrna.core.rna.profile.RNAProfile.to_varna_color_file">to_varna_color_file() (seismicrna.core.rna.profile.RNAProfile method)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.top">top (seismicrna.core.data.Dataset property)</a>
+      <li><a href="api/seismicrna.core.html#seismicrna.core.data.ChainedDataset.top">top (seismicrna.core.data.ChainedDataset property)</a>
 
       <ul>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.top">(seismicrna.core.data.Dataset property)</a>
+</li>
         <li><a href="api/seismicrna.core.html#seismicrna.core.data.LoadedDataset.top">(seismicrna.core.data.LoadedDataset property)</a>
 </li>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.data.MergedDataset.top">(seismicrna.core.data.MergedDataset property)</a>
+        <li><a href="api/seismicrna.core.html#seismicrna.core.data.PooledDataset.top">(seismicrna.core.data.PooledDataset property)</a>
 </li>
         <li><a href="api/seismicrna.table.html#seismicrna.table.base.Table.top">(seismicrna.table.base.Table property)</a>
 </li>
@@ -9654,26 +9739,18 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.html#seismicrna.core.logs.AnsiCode.ULINE">ULINE (seismicrna.core.logs.AnsiCode attribute)</a>
 </li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.UnifiedDataset">UnifiedDataset (class in seismicrna.core.data)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.UnifiedLoadedDataset">UnifiedLoadedDataset (class in seismicrna.core.data)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.UnifiedMergedDataset">UnifiedMergedDataset (class in seismicrna.core.data)</a>
-</li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.report.UnifiedReport">UnifiedReport (class in seismicrna.core.report)</a>
-</li>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.uniq.uniq_reads_to_mutations">uniq_reads_to_mutations() (in module seismicrna.cluster.uniq)</a>
 </li>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.uniq.UniqReads">UniqReads (class in seismicrna.cluster.uniq)</a>
 </li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphRunner.universal_input_params">universal_input_params() (seismicrna.graph.base.GraphRunner class method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphRunner.universal_output_params">universal_output_params() (seismicrna.graph.base.GraphRunner class method)</a>
 </li>
       <li><a href="api/seismicrna.core.parallel.tests.html#seismicrna.core.parallel.tests.temp_test.unlock">unlock() (in module seismicrna.core.parallel.tests.temp_test)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.Section.unmasked">unmasked (seismicrna.core.seq.section.Section property)</a>
 
       <ul>
@@ -9701,11 +9778,7 @@
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.fasta.valid_fasta_seqname">valid_fasta_seqname() (in module seismicrna.core.seq.fasta)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.path.Field.validate">validate() (seismicrna.core.path.Field method)</a>
-
-      <ul>
-        <li><a href="api/seismicrna.core.html#seismicrna.core.report.Field.validate">(seismicrna.core.report.Field method)</a>
 </li>
-      </ul></li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.path.validate_int">validate_int() (in module seismicrna.core.path)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.header.validate_order_clust">validate_order_clust() (in module seismicrna.core.header)</a>
@@ -9734,8 +9807,6 @@
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.twotable.TwoTableRunner.var_params">(seismicrna.graph.twotable.TwoTableRunner class method)</a>
 </li>
       </ul></li>
-      <li><a href="api/seismicrna.core.html#seismicrna.core.data.Merger.verify_data_types">verify_data_types() (seismicrna.core.data.Merger class method)</a>
-</li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.verify_index_names">verify_index_names() (in module seismicrna.core.seq.section)</a>
 </li>
       <li><a href="api/seismicrna.core.ngs.html#seismicrna.core.ngs.xam.view_xam_cmd">view_xam_cmd() (in module seismicrna.core.ngs.xam)</a>

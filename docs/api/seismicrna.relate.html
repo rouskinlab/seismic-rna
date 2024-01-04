@@ -20,7 +20,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="seismicrna.relate.aux package" href="seismicrna.relate.aux.html" />
-    <link rel="prev" title="seismicrna.mask package" href="seismicrna.mask.html" /> 
+    <link rel="prev" title="seismicrna.pool package" href="seismicrna.pool.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -62,6 +62,7 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.pool.html">seismicrna.pool package</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">seismicrna.relate package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#subpackages">Subpackages</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-seismicrna.relate.batch">Submodules</a></li>
@@ -190,37 +191,31 @@
 </dd></dl>
 
 <span class="target" id="module-seismicrna.relate.data"></span><dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.relate.data.RelateLoader">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.data.</span></span><span class="sig-name descname"><span class="pre">RelateLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">seismicrna.core.data.R</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateLoader" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="seismicrna.core.html#seismicrna.core.data.BatchedLoadedDataset" title="seismicrna.core.data.BatchedLoadedDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.BatchedLoadedDataset</span></code></a>, <a class="reference internal" href="seismicrna.core.html#seismicrna.core.data.LoadedMutsDataset" title="seismicrna.core.data.LoadedMutsDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.LoadedMutsDataset</span></code></a></p>
-<p>Load batches of relation vectors.</p>
+<dt class="sig sig-object py" id="seismicrna.relate.data.RelateDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.data.</span></span><span class="sig-name descname"><span class="pre">RelateDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.html#seismicrna.core.report.BatchedReport" title="seismicrna.core.report.BatchedReport"><span class="pre">seismicrna.core.report.BatchedReport</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">top</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="seismicrna.core.html#seismicrna.core.data.LoadedMutsDataset" title="seismicrna.core.data.LoadedMutsDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.LoadedMutsDataset</span></code></a></p>
+<p>Dataset from the Relate step.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.relate.data.RelateLoader.get_data_type">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_data_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateLoader.get_data_type" title="Permalink to this definition"></a></dt>
-<dd><p>Type of the data for this dataset.</p>
+<dt class="sig sig-object py" id="seismicrna.relate.data.RelateDataset.get_batch">
+<span class="sig-name descname"><span class="pre">get_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateDataset.get_batch" title="Permalink to this definition"></a></dt>
+<dd><p>Get a specific batch of data.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.relate.data.RelateLoader.get_report_type">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_report_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateLoader.get_report_type" title="Permalink to this definition"></a></dt>
-<dd><p>Type of the report for this loader.</p>
+<dt class="sig sig-object py" id="seismicrna.relate.data.RelateDataset.get_batch_type">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_batch_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateDataset.get_batch_type" title="Permalink to this definition"></a></dt>
+<dd><p>Type of batch.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.relate.data.RelateLoader.iter_batches">
-<span class="sig-name descname"><span class="pre">iter_batches</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateLoader.iter_batches" title="Permalink to this definition"></a></dt>
-<dd><p>Yield each batch.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.relate.data.RelateLoader.load_batch">
-<span class="sig-name descname"><span class="pre">load_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateLoader.load_batch" title="Permalink to this definition"></a></dt>
-<dd><p>Load a specific batch of data.</p>
+<dt class="sig sig-object py" id="seismicrna.relate.data.RelateDataset.get_report_type">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_report_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.data.RelateDataset.get_report_type" title="Permalink to this definition"></a></dt>
+<dd><p>Type of report.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.relate.data.RelateLoader.pattern">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pattern</span></span><a class="headerlink" href="#seismicrna.relate.data.RelateLoader.pattern" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.relate.data.RelateDataset.pattern">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pattern</span></span><a class="headerlink" href="#seismicrna.relate.data.RelateDataset.pattern" title="Permalink to this definition"></a></dt>
 <dd><p>Pattern of mutations to count.</p>
 </dd></dl>
 
@@ -490,7 +485,7 @@ and the number of vectors.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="seismicrna.mask.html" class="btn btn-neutral float-left" title="seismicrna.mask package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="seismicrna.pool.html" class="btn btn-neutral float-left" title="seismicrna.pool package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="seismicrna.relate.aux.html" class="btn btn-neutral float-right" title="seismicrna.relate.aux package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

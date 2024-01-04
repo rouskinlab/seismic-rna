@@ -37,7 +37,7 @@ params = [
 
 @command(CMD_POOL, params=params)
 def cli(*args, pool: str, **kwargs):
-    """ Pool samples from the Relate step. """
+    """ Combine samples from the Relate step. """
     if not pool:
         logger.warning(f"{repr(CMD_POOL)} expected a name via --pool, but got "
                        f"{repr(pool)}; defaulting to {repr(DEFAULT_POOL)}")
@@ -53,7 +53,7 @@ def run(input_path: tuple[str, ...], *,
         parallel: bool,
         # Effort
         force: bool) -> list[Path]:
-    """ Pool samples from the Relate step. """
+    """ Combine samples from the Relate step. """
     if not pool:
         # Exit immediately if no pool name was given.
         return list()
