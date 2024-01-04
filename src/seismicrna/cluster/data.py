@@ -4,16 +4,18 @@ from logging import getLogger
 from .batch import ClustMutsBatch
 from .io import ClustBatchIO
 from .report import ClustReport
-from ..core.data import LoadedDataset, LinkedMutsDataset
+from ..core.data import ChainedMutsDataset, LoadedDataset, LoadFunction
 from ..core.header import index_orders_clusts
 from ..core.report import NumClustsF
 from ..mask.batch import MaskMutsBatch
-from ..mask.data import MaskLinker
+from ..mask.data import MaskMutsDataset
 
 logger = getLogger(__name__)
 
+load_mask_dataset = LoadFunction(MaskMutsDataset)
 
-class ClustLoader(LoadedDataset):
+
+class ClusterReadDataset(LoadedDataset):
     """ Load clustering results. """
 
     @classmethod
@@ -34,24 +36,20 @@ class ClustLoader(LoadedDataset):
         return None
 
 
-class ClustLinker(LinkedMutsDataset):
+class ClusterMutsDataset(ChainedMutsDataset):
     """ Merge cluster responsibilities with mutation data. """
 
     @classmethod
-    def get_batch_type(cls):
-        return ClustMutsBatch
-
-    @classmethod
-    def get_dataset1_type(cls):
-        return MaskLinker
+    def get_dataset1_load_func(cls):
+        return load_mask_dataset
 
     @classmethod
     def get_dataset2_type(cls):
-        return ClustLoader
+        return ClusterReadDataset
 
     @property
     def min_mut_gap(self):
-        return self.data1.min_mut_gap
+        return getattr(self.data1, "min_mut_gap")
 
     @property
     def pattern(self):
@@ -63,22 +61,22 @@ class ClustLinker(LinkedMutsDataset):
 
     @cached_property
     def max_order(self):
-        return self.data2.max_order
+        return getattr(self.data2, "max_order")
 
     @cached_property
     def clusters(self):
         return index_orders_clusts(self.max_order)
 
-    def _link(self, batch1: MaskMutsBatch, batch2: ClustBatchIO):
-        return self.get_batch_type()(batch=batch1.batch,
-                                     refseq=batch1.refseq,
-                                     muts=batch1.muts,
-                                     end5s=batch1.end5s,
-                                     mid5s=batch1.mid5s,
-                                     mid3s=batch1.mid3s,
-                                     end3s=batch1.end3s,
-                                     resps=batch2.resps,
-                                     sanitize=False)
+    def _chain(self, batch1: MaskMutsBatch, batch2: ClustBatchIO):
+        return ClustMutsBatch(batch=batch1.batch,
+                              refseq=batch1.refseq,
+                              muts=batch1.muts,
+                              end5s=batch1.end5s,
+                              mid5s=batch1.mid5s,
+                              mid3s=batch1.mid3s,
+                              end3s=batch1.end3s,
+                              resps=batch2.resps,
+                              sanitize=False)
 
 ########################################################################
 #                                                                      #

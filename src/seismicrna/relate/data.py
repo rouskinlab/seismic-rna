@@ -1,11 +1,11 @@
 from .batch import RelateRefseqBatch
 from .io import RelateBatchIO
 from .report import RelateReport
-from ..core.data import LoadedMutsDataset, PooledDataset
+from ..core.data import LoadedMutsDataset
 
 
-class RelateLoader(LoadedMutsDataset):
-    """ Load batches of relation vectors. """
+class RelateDataset(LoadedMutsDataset):
+    """ Dataset from the Relate step. """
 
     @classmethod
     def get_batch_type(cls):
@@ -22,24 +22,15 @@ class RelateLoader(LoadedMutsDataset):
     def get_batch(self, batch: int):
         relate_batch = super().get_batch(batch)
         # Add the reference sequence to the batch.
-        if relate_batch.max_pos != len(self.refseq):
+        if (batch_nt := getattr(relate_batch, "max_pos")) != len(self.refseq):
             raise ValueError(f"Reference sequence is {len(self.refseq)} nt, "
-                             f"but {relate_batch} has {relate_batch.max_pos}")
-        return RelateRefseqBatch(refseq=self.refseq,
-                                 batch=relate_batch.batch,
-                                 muts=relate_batch.muts,
-                                 end5s=relate_batch.end5s,
-                                 mid5s=relate_batch.mid5s,
-                                 mid3s=relate_batch.mid3s,
-                                 end3s=relate_batch.end3s,
-                                 sanitize=False)
-
-
-class PooledRelateLoader(PooledDataset):
-
-    @classmethod
-    def get_dataset_type(cls):
-        return RelateLoader
+                             f"but {relate_batch} has {batch_nt} nt")
+        # Add the other attributes to the batch.
+        kwargs = {
+            key: getattr(relate_batch, key)
+            for key in ["batch", "muts", "end5s", "mid5s", "mid3s", "end3s"]
+        }
+        return RelateRefseqBatch(refseq=self.refseq, sanitize=False, **kwargs)
 
 ########################################################################
 #                                                                      #

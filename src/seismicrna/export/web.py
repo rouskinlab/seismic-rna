@@ -13,9 +13,9 @@ from ..core.header import format_clust_name
 from ..core.rna import parse_db_strings
 from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
-from ..mask.data import MaskLinker
+from ..mask.data import MaskMutsDataset
 from ..mask.report import MaskReport
-from ..relate.data import RelateLoader
+from ..relate.data import RelateDataset
 from ..relate.report import RelateReport, NumReadsRelF
 from ..table.base import (COVER_REL,
                           INFOR_REL,
@@ -78,9 +78,9 @@ def get_ref_metadata(top: Path,
                      sample: str,
                      ref: str,
                      refs_metadata: dict[str, dict]):
-    dataset = RelateLoader.load(RelateReport.build_path(top=top,
-                                                        sample=sample,
-                                                        ref=ref))
+    dataset = RelateDataset.load(RelateReport.build_path(top=top,
+                                                         sample=sample,
+                                                         ref=ref))
     ref_metadata = {REF_SEQ: str(dataset.refseq),
                     REF_NUM_ALIGN: dataset.report.get_field(NumReadsRelF)}
     return format_metadata(combine_metadata(ref_metadata,
@@ -94,10 +94,10 @@ def get_sect_metadata(top: Path,
                       ref: str,
                       sect: str,
                       all_pos: bool):
-    dataset = MaskLinker.load(MaskReport.build_path(top=top,
-                                                    sample=sample,
-                                                    ref=ref,
-                                                    sect=sect))
+    dataset = MaskMutsDataset.load(MaskReport.build_path(top=top,
+                                                         sample=sample,
+                                                         ref=ref,
+                                                         sect=sect))
     positions = (dataset.section.range_int if all_pos
                  else dataset.section.unmasked_int)
     sect_metadata = {SECT_END5: dataset.end5,

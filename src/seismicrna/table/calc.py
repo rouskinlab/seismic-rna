@@ -19,14 +19,15 @@ from .base import (COVER_REL,
                    R_ADJ_TITLE,
                    R_OBS_TITLE,
                    TABLE_RELS)
-from ..cluster.data import ClustLinker
+from ..cluster.data import ClusterMutsDataset
 from ..core.batch import accum_fits
 from ..core.header import Header, make_header
 from ..core.mu import calc_f_obs_frame, calc_mu_adj_frame
 from ..core.rel import RelPattern, HalfRelPattern
 from ..core.seq import Section
-from ..mask.data import MaskLinker
-from ..relate.data import RelateLoader
+from ..mask.data import MaskMutsDataset
+from ..pool.data import PoolDataset
+from ..relate.data import RelateDataset
 
 logger = getLogger(__name__)
 
@@ -65,7 +66,7 @@ class Tabulator(ABC):
                                    table.loc[:, MUTAT_REL].values)
         return table
 
-    def __init__(self, dataset: RelateLoader | MaskLinker | ClustLinker):
+    def __init__(self, dataset: RelateDataset | MaskMutsDataset | ClusterMutsDataset):
         self.dataset = dataset
 
     @property
@@ -313,14 +314,17 @@ def adjust_counts(counts_obs: pd.DataFrame,
     return counts_adj, f_obs
 
 
-def tabulate_loader(dataset: RelateLoader | MaskLinker | ClustLinker):
+def tabulate_loader(dataset: (RelateDataset
+                              | PoolDataset
+                              | MaskMutsDataset
+                              | ClusterMutsDataset)):
     """ Return a new Dataset, choosing the subclass based on the type
     of the argument `dataset`. """
-    if isinstance(dataset, RelateLoader):
+    if isinstance(dataset, (RelateDataset, PoolDataset)):
         return RelateTabulator(dataset)
-    if isinstance(dataset, MaskLinker):
+    if isinstance(dataset, MaskMutsDataset):
         return MaskTabulator(dataset)
-    if isinstance(dataset, ClustLinker):
+    if isinstance(dataset, ClusterMutsDataset):
         return ClustTabulator(dataset)
     raise TypeError(f"Invalid dataset type: {type(dataset).__name__}")
 

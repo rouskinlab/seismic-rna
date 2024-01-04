@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from functools import cached_property
 from logging import getLogger
@@ -39,10 +37,9 @@ class FileIO(ABC):
         return cls.dir_seg_types() + (cls.file_seg_type(),)
 
     @classmethod
-    def path_field_names(cls):
-        """ Names of the fields of the path for the file type. """
-        return tuple(field for segment in cls.seg_types()
-                     for field in segment.field_types)
+    def path_fields(cls):
+        """ Path fields for the file type. """
+        return path.get_fields_in_seg_types(*cls.seg_types())
 
     @classmethod
     def auto_fields(cls) -> dict[str, Any]:
@@ -55,8 +52,7 @@ class FileIO(ABC):
     @classmethod
     def parse_path(cls, file: Path):
         """ Parse a file path to determine the field values. """
-        fields = path.parse(file, *cls.seg_types())
-        return fields.pop(path.TOP), fields
+        return path.parse_top_separate(file, *cls.seg_types())
 
     @classmethod
     def build_path(cls, **path_fields):
@@ -64,33 +60,28 @@ class FileIO(ABC):
         return path.buildpar(*cls.seg_types(),
                              **(cls.auto_fields() | path_fields))
 
-    @classmethod
-    def normalize_fields(cls, **fields):
-        """ Given arbitrary fields and values, process those for this
-        class of file, giving preference to auto-fields. """
-        return {field: cls.auto_fields().get(field, fields[field])
-                for field in cls.path_field_names()}
-
-    def path_fields(self, top: Path | None = None, exclude: Iterable[str] = ()):
-        """ Return the path fields as a dict. """
+    def path_field_values(self,
+                          top: Path | None = None,
+                          exclude: Iterable[str] = ()):
+        """ Path field values as a dict. """
         fields = {path.TOP: top} if top else dict()
         fields.update({field: (getattr(self, field) if hasattr(self, field)
                                else self.auto_fields()[field])
-                       for field in self.path_field_names()})
+                       for field in self.path_fields()})
         for field in exclude:
             fields.pop(field, None)
         return fields
 
     def get_path(self, top: Path):
         """ Return the file path. """
-        return self.build_path(**self.path_fields(top))
+        return self.build_path(**self.path_field_values(top))
 
     @abstractmethod
     def save(self, top: Path, **kwargs):
         """ Save the object to a file. """
 
     def __str__(self):
-        return f"{type(self).__name__}: {self.path_fields()}"
+        return f"{type(self).__name__}: {self.path_field_values()}"
 
 
 class RefIO(FileIO, ABC):
@@ -147,14 +138,34 @@ class BrickleIO(FileIO, ABC):
         self.__dict__.update(state)
 
 
-def convert_path(file: Path, type1: type[FileIO], type2: type[FileIO]):
-    """ Convert a path from that used by file type 1 to file type 2. """
-    # Extract the fields from the path using file type 1.
-    top, fields = type1.parse_path(file)
-    # Normalize the fields to comply with file type 2.
-    norm_fields = type2.normalize_fields(**fields)
-    # Generate a new path for file type 2 from the normalized fields.
-    return type2.build_path(top=top, **norm_fields)
+def recast_file_path(input_path: Path,
+                     input_type: type[FileIO],
+                     output_type: type[FileIO],
+                     **override: Any):
+    """ Recast `input_path` from `input_type` to `output_type`.
+
+    Parameters
+    ----------
+    input_path: Path
+        Input path from which to take the path fields.
+    input_type: type[FileIO]
+        Type of file to use to determine the fields in `input_path`.
+    output_type: type[FileIO]
+        Type of file to use for fitting the path fields and building a
+        new path.
+    **override: Any
+        Override fields in `input_path` (but not `output_type`).
+
+    Returns
+    -------
+    Path
+        Path for file of `output_type` made from fields in `input_path`
+        (as determined by the file of `input_type`).
+    """
+    return path.cast_file_path(input_path,
+                               input_type.seg_types(),
+                               output_type.seg_types(),
+                               **(override | output_type.auto_fields()))
 
 ########################################################################
 #                                                                      #

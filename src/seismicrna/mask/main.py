@@ -1,11 +1,13 @@
+from collections import defaultdict
+from itertools import chain, product
 from logging import getLogger
 from pathlib import Path
 from typing import Iterable
 
 from click import command
 
+from .data import load_relate_pool_dataset
 from .write import mask_section
-from ..core import path
 from ..core.arg import (CMD_MASK,
                         docdef,
                         arg_input_path,
@@ -28,10 +30,9 @@ from ..core.arg import (CMD_MASK,
                         opt_max_procs,
                         opt_parallel,
                         opt_force)
-from ..core.data import load_data
+from ..core.data import load_datasets
 from ..core.parallel import dispatch
 from ..core.seq import DNA, RefSections
-from ..relate.data import RelateLoader
 
 logger = getLogger(__name__)
 
@@ -100,17 +101,18 @@ def run(input_path: tuple[str, ...], *,
         # Effort
         force: bool) -> list[Path]:
     """ Define mutations and sections to filter reads and positions. """
-    # Load all relation vector datasets and get the sections for each.
-    datasets, sections = load_sections(map(Path, input_path),
+    # Load all Relate datasets and get the sections for each.
+    datasets, sections = load_sections(input_path,
                                        coords=coords,
                                        primers=primers,
                                        primer_gap=primer_gap,
                                        sections_file=(Path(sections_file)
                                                       if sections_file
                                                       else None))
-    # List the relation datasets and their sections.
-    args = [(dataset, section) for dataset in datasets
-            for section in sections.list(dataset.ref)]
+    # List the datasets and their sections.
+    args = [(dataset, section)
+            for ref, ref_datasets in datasets.items()
+            for dataset, section in product(ref_datasets, sections.list(ref))]
     # Define the keyword arguments.
     kwargs = dict(count_del=count_del,
                   count_ins=count_ins,
@@ -135,16 +137,19 @@ def run(input_path: tuple[str, ...], *,
     return list(map(Path, reports))
 
 
-def load_sections(report_files: Iterable[Path],
+def load_sections(input_path: Iterable[str | Path],
                   coords: Iterable[tuple[str, int, int]],
                   primers: Iterable[tuple[str, DNA, DNA]],
                   primer_gap: int,
                   sections_file: Path | None = None):
     """ Open sections of relate reports. """
-    datasets = list(load_data(path.find_files_chain(report_files,
-                                                    [path.RelateRepSeg]),
-                              RelateLoader))
-    sections = RefSections({(loader.ref, loader.refseq) for loader in datasets},
+    # Load all datasets, grouped by their reference names.
+    datasets = defaultdict(list)
+    for dataset in load_datasets(input_path, load_relate_pool_dataset):
+        datasets[dataset.ref].append(dataset)
+    # Determine the sections for each reference in the datasets.
+    sections = RefSections({(loader.ref, loader.refseq)
+                            for loader in chain(*datasets.values())},
                            coords=coords,
                            primers=primers,
                            primer_gap=primer_gap,

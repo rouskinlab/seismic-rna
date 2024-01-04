@@ -8,6 +8,7 @@ import pandas as pd
 
 from .compare import RunOrderResults, find_best_order, sort_replicate_runs
 from .csv import write_log_counts, write_mus, write_props
+from .data import load_mask_dataset
 from .em import EmClustering
 from .io import ClustBatchIO
 from .report import ClustReport
@@ -15,14 +16,14 @@ from .uniq import UniqReads
 from ..core.parallel import dispatch
 from ..core.types import get_max_uint
 from ..core.write import need_write
-from ..mask.data import MaskLinker
+from ..mask.data import MaskMutsDataset
 
 logger = getLogger(__name__)
 
 SEED_DTYPE = np.uint32
 
 
-def write_batches(dataset: MaskLinker,
+def write_batches(dataset: MaskMutsDataset,
                   ord_runs: dict[int, RunOrderResults],
                   brotli_level: int):
     """ Write the cluster memberships to batch files. """
@@ -141,7 +142,6 @@ def run_max_order(uniq_reads: UniqReads,
 def cluster(mask_report_file: Path,
             max_order: int,
             n_runs: int, *,
-            min_muts: int,
             min_iter: int,
             max_iter: int,
             conv_thresh: float,
@@ -149,7 +149,7 @@ def cluster(mask_report_file: Path,
             n_procs: int,
             force: bool):
     """ Run all processes of clustering reads from one filter. """
-    dataset = MaskLinker.load(mask_report_file)
+    dataset = load_mask_dataset(mask_report_file)
     path_kwargs = dict(top=dataset.top,
                        sample=dataset.sample,
                        ref=dataset.ref,
@@ -171,8 +171,6 @@ def cluster(mask_report_file: Path,
                                 conv_thresh=conv_thresh,
                                 n_procs=n_procs,
                                 top=dataset.top)
-        logger.info(
-            f"Ended clustering {dataset}: {find_best_order(results)} clusters")
         # Output the observed and expected counts for every best run.
         write_log_counts(results, **path_kwargs)
         # Output the cluster memberships in batches of reads.
@@ -188,7 +186,10 @@ def cluster(mask_report_file: Path,
                                            checksums=checksums,
                                            began=began,
                                            ended=ended)
-        report.save(top=dataset.top, force=True)
+        report.save(dataset.top, force=force)
+        logger.info(
+            f"Ended clustering {dataset}: {find_best_order(results)} clusters"
+        )
     return cluster_report_file
 
 ########################################################################

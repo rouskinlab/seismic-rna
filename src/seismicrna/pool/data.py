@@ -1,32 +1,18 @@
-"""
-
-Command Core Module
-
-========================================================================
-
-Define the names of the commands.
-
-------------------------------------------------------------------------
-
-"""
+from .report import PoolReport
+from ..core.data import PooledMutsDataset
+from ..relate.data import RelateDataset
 
 
-CMD_WORKFLOW = "wf"
-CMD_DEMULT = "demult"
-CMD_QC = "qc"
-CMD_ALIGN = "align"
-CMD_REL = "relate"
-CMD_POOL = "pool"
-CMD_MASK = "mask"
-CMD_CLUST = "cluster"
-CMD_TABLE = "table"
-CMD_FOLD = "fold"
-CMD_GRAPH = "graph"
-CMD_EXPORT = "export"
-CMD_CLEANFA = "+cleanfa"
-CMD_RENUMCT = "+renumct"
-CMD_SIM = "+sim"
-CMD_TEST = "+test"
+class PoolDataset(PooledMutsDataset):
+    """ Load pooled batches of relation vectors. """
+
+    @classmethod
+    def get_report_type(cls):
+        return PoolReport
+
+    @classmethod
+    def get_dataset_type(cls):
+        return RelateDataset
 
 ########################################################################
 #                                                                      #

@@ -503,7 +503,7 @@ opt_min_mapq = Option(
 opt_cram = Option(
     ("--cram/--bam",),
     type=bool,
-    default=True,
+    default=False,
     help="Compress alignment maps using CRAM format"
 )
 
@@ -562,6 +562,13 @@ opt_brotli_level = Option(
 )
 
 # Mask
+
+opt_pool = Option(
+    ("--pool", "-P"),
+    type=str,
+    default="",
+    help="Name of the sample made by pooling other samples"
+)
 
 opt_count_del = Option(
     ("--count-del/--discount-del",),
@@ -656,7 +663,8 @@ opt_max_fmut_pos = Option(
     help="Maximum mutation fraction at a position to use it"
 )
 
-# Clustering options
+# Cluster options
+
 opt_max_clusters = Option(
     ("--max-clusters", "-k"),
     type=int,
@@ -690,13 +698,6 @@ opt_em_thresh = Option(
     type=float,
     default=0.01,
     help="Maximum change in log likelihood for convergence"
-)
-
-opt_min_nmut_read = Option(
-    ("--min-nmut-read",),
-    type=int,
-    default=0,
-    help="Minimum number of mutations in a read to use it for clustering"
 )
 
 # Table options

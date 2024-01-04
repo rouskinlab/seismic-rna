@@ -18,7 +18,8 @@ from ..core.io import DEFAULT_BROTLI_LEVEL
 from ..core.rel import RelPattern
 from ..core.seq import Section, index_to_pos
 from ..core.write import need_write
-from ..relate.data import RelateLoader
+from ..pool.data import PoolDataset
+from ..relate.data import RelateDataset
 
 logger = getLogger(__name__)
 
@@ -37,7 +38,7 @@ class RelMasker(object):
     CHECKSUM_KEY = MaskReport.get_batch_type().btype()
 
     def __init__(self,
-                 dataset: RelateLoader,
+                 dataset: RelateDataset | PoolDataset,
                  section: Section,
                  pattern: RelPattern, *,
                  exclude_polya: int = 0,
@@ -52,7 +53,7 @@ class RelMasker(object):
         """
         Parameters
         ----------
-        dataset: RelateLoader
+        dataset: RelateDataset | PoolDataset
             Relation vector loader
         section: Section
             The section over which to mask
@@ -69,20 +70,20 @@ class RelMasker(object):
         min_mut_gap: int = 0
             Filter out reads with any two mutations separated by fewer
             than `min_mut_gap` positions. Adjacent mutations have a
-            gap of 0. If 0, keep all. Must be in [0, length_of_section).
+            gap of 0. If 0, keep all. Must be ≥ 0, < length_of_section.
         min_finfo_read: float = 0.0
             Filter out reads with less than this fraction of informative
-            bases (i.e. match or mutation). If 0.0, keep all. Must be in
-            [0, 1].
+            bases (i.e. match or mutation). If 0.0, keep all. Must be
+            ≥ 0, ≤ 1.
         max_fmut_read: float = 1.0
             Filter out reads with more than this fraction of mutated
-            bases. If 1.0, keep all. Must be in [0, 1].
+            bases. If 1.0, keep all. Must be ≥ 0, ≤ 1.
         min_ninfo_pos: int = 0
             Filter out positions with less than this number of informative
             bases. Must be ≥ 0.
         max_fmut_pos: float = 1.0
             Filter out positions with more than this fraction of mutated
-            reads. Must be in [0, 1].
+            reads. Must be ≥ 0, ≤ 1.
         """
         # Set the general parameters.
         self.dataset = dataset
@@ -106,11 +107,13 @@ class RelMasker(object):
         # Set the parameters for filtering positions.
         if not min_ninfo_pos >= 0:
             raise ValueError(
-                f"min_ninfo_pos must be ≥ 0, but got {min_ninfo_pos}")
+                f"min_ninfo_pos must be ≥ 0, but got {min_ninfo_pos}"
+            )
         self.min_ninfo_pos = min_ninfo_pos
         if not 0. <= max_fmut_pos <= 1.:
             raise ValueError(
-                f"max_fmut_pos must be in [0, 1], but got {max_fmut_pos}")
+                f"max_fmut_pos Must be ≥ 0, ≤ 1, but got {max_fmut_pos}"
+            )
         self.max_fmut_pos = max_fmut_pos
         # Set the parameters for saving files.
         self.top = dataset.top
@@ -178,7 +181,7 @@ class RelMasker(object):
     def _filter_min_finfo_read(self, batch: RefseqMutsBatch):
         """ Filter out reads with too few informative positions. """
         if not 0. <= self.min_finfo_read <= 1.:
-            raise ValueError(f"min_finfo_read must be in [0, 1], but got "
+            raise ValueError(f"min_finfo_read Must be ≥ 0, ≤ 1, but got "
                              f"{self.min_finfo_read}")
         if self.min_finfo_read == 0.:
             # All reads have sufficiently many informative positions.
@@ -198,7 +201,7 @@ class RelMasker(object):
     def _filter_max_fmut_read(self, batch: RefseqMutsBatch):
         """ Filter out reads with too many mutations. """
         if not 0. <= self.max_fmut_read <= 1.:
-            raise ValueError(f"max_fmut_read must be in [0, 1], but got "
+            raise ValueError(f"max_fmut_read Must be ≥ 0, ≤ 1, but got "
                              f"{self.max_fmut_read}")
         if self.max_fmut_read == 1.:
             # All reads have sufficiently few mutations.
@@ -341,7 +344,7 @@ class RelMasker(object):
         return f"Mask {self.dataset} over {self.section} with {self.pattern}"
 
 
-def mask_section(dataset: RelateLoader,
+def mask_section(dataset: RelateDataset | PoolDataset,
                  section: Section,
                  count_del: bool,
                  count_ins: bool,
@@ -361,7 +364,7 @@ def mask_section(dataset: RelateLoader,
         masker.mask()
         ended = datetime.now()
         report = masker.create_report(began, ended)
-        report.save(dataset.top, force=True)
+        report.save(dataset.top, force=force)
     return report_file
 
 ########################################################################

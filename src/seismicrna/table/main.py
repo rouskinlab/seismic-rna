@@ -1,10 +1,10 @@
 from itertools import chain
 from logging import getLogger
-from pathlib import Path
 
 from click import command
 
-from .write import write
+from .write import load_cluster_dataset, write
+from ..cluster.data import load_mask_dataset
 from ..core import path
 from ..core.arg import (CMD_TABLE,
                         docdef,
@@ -16,6 +16,7 @@ from ..core.arg import (CMD_TABLE,
                         opt_parallel,
                         opt_force)
 from ..core.parallel import as_list_of_tuples, dispatch
+from ..mask.data import load_relate_pool_dataset
 
 logger = getLogger(__name__)
 
@@ -43,14 +44,19 @@ def run(input_path: tuple[str, ...], *,
         max_procs: int,
         parallel: bool):
     """ Count mutations for each read and position; output tables. """
-    report_files = list(map(Path, input_path))
-    relate_reports = path.find_files_chain(report_files, [path.RelateRepSeg])
+    relate_reports = path.find_files_chain(
+        input_path, load_relate_pool_dataset.report_path_seg_types
+    )
     if relate_reports:
         logger.debug(f"Found relate report files: {relate_reports}")
-    mask_reports = path.find_files_chain(report_files, [path.MaskRepSeg])
+    mask_reports = path.find_files_chain(
+        input_path, load_mask_dataset.report_path_seg_types
+    )
     if mask_reports:
         logger.debug(f"Found mask report files: {mask_reports}")
-    clust_reports = path.find_files_chain(report_files, [path.ClustRepSeg])
+    clust_reports = path.find_files_chain(
+        input_path, load_cluster_dataset.report_path_seg_types
+    )
     if clust_reports:
         logger.debug(f"Found cluster report files: {clust_reports}")
     tasks = as_list_of_tuples(chain(relate_reports,

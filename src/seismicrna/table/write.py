@@ -19,11 +19,12 @@ from .calc import (Tabulator,
                    MaskTabulator,
                    ClustTabulator,
                    tabulate_loader)
-from ..cluster.data import ClustLinker
-from ..core import path
+from ..cluster.data import ClusterMutsDataset
+from ..core.data import LoadFunction
 from ..core.write import need_write
-from ..mask.data import MaskLinker
-from ..relate.data import RelateLoader
+from ..mask.data import MaskMutsDataset
+from ..pool.data import PoolDataset
+from ..relate.data import RelateDataset
 
 logger = getLogger(__name__)
 
@@ -117,17 +118,6 @@ class ClustFreqTableWriter(TableWriter, ClustFreqTable):
 
 # Helper Functions #####################################################
 
-def infer_report_loader_type(report_file: Path):
-    """ Given a report file path, infer the type of Loader it needs. """
-    if path.RelateRepSeg.ptrn.match(report_file.name):
-        return RelateLoader
-    if path.MaskRepSeg.ptrn.match(report_file.name):
-        return MaskLinker
-    if path.ClustRepSeg.ptrn.match(report_file.name):
-        return ClustLinker
-    raise ValueError(f"Failed to infer loader type for {report_file}")
-
-
 def get_tabulator_writer_types(tabulator: Tabulator):
     if isinstance(tabulator, RelateTabulator):
         return RelPosTableWriter, RelReadTableWriter
@@ -157,14 +147,20 @@ def get_tabulator_writers(tabulator: AvgTabulator | ClustTabulator, *,
             raise TypeError(f"Invalid writer type: {writer_type.__name__}")
 
 
+load_cluster_dataset = LoadFunction(ClusterMutsDataset)
+
+load_any_dataset = LoadFunction(RelateDataset,
+                                PoolDataset,
+                                MaskMutsDataset,
+                                ClusterMutsDataset)
+
+
 def write(report_file: Path, *, force: bool, **kwargs):
     """ Helper function to write a table from a report file. """
-    # Determine the needed type of report loader.
-    report_loader_type = infer_report_loader_type(report_file)
-    # Load the report.
-    report_loader = report_loader_type.load(report_file)
-    # Create the tabulator for the report's data.
-    tabulator = tabulate_loader(report_loader)
+    # Load the dataset.
+    dataset = load_any_dataset(report_file)
+    # Create the tabulator for the dataset.
+    tabulator = tabulate_loader(dataset)
     # For each table associated with this tabulator, create the table,
     # write it, and return the path to the table output file.
     return [table.write(force)

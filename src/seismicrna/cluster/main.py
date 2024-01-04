@@ -3,13 +3,13 @@ from pathlib import Path
 
 from click import command
 
+from .data import load_mask_dataset
 from .write import cluster
 from ..core import path
 from ..core.arg import (CMD_CLUST,
                         docdef,
                         arg_input_path,
                         opt_max_clusters,
-                        opt_min_nmut_read,
                         opt_em_runs,
                         opt_em_thresh,
                         opt_min_em_iter,
@@ -29,7 +29,6 @@ params = [
     arg_input_path,
     # Clustering options
     opt_max_clusters,
-    opt_min_nmut_read,
     opt_em_runs,
     opt_em_thresh,
     opt_min_em_iter,
@@ -52,8 +51,8 @@ def cli(*args, max_clusters: int, **kwargs):
     # override the default max_clusters == 0 (which disables clustering)
     # by setting it to 2 (the minimum non-trivial order of clustering).
     if max_clusters <= 0:
-        logger.warning(f"Command '{CMD_CLUST}' got a maximum clustering "
-                       f"order of {max_clusters}: setting to {DEFAULT_ORDER}")
+        logger.warning(f"{repr(CMD_CLUST)} expected --max-clusters to be ≥ 1, "
+                       f"but got {max_clusters}; defaulting to {DEFAULT_ORDER}")
         max_clusters = DEFAULT_ORDER
     return run(*args, max_clusters=max_clusters, **kwargs)
 
@@ -62,7 +61,6 @@ def cli(*args, max_clusters: int, **kwargs):
 def run(input_path: tuple[str, ...], *,
         max_clusters: int,
         em_runs: int,
-        min_nmut_read: int,
         min_em_iter: int,
         max_em_iter: int,
         em_thresh: float,
@@ -74,15 +72,17 @@ def run(input_path: tuple[str, ...], *,
     if max_clusters == 0:
         # Exit immediately if the maximum number of clusters is 0.
         return list()
-    # Run clustering on each set of called mutations.
-    files = path.find_files_chain(map(Path, input_path), [path.MaskRepSeg])
+    # Find the mask report files.
+    report_files = path.find_files_chain(
+        input_path, load_mask_dataset.report_path_seg_types
+    )
+    # Cluster each mask dataset.
     return dispatch(cluster,
                     max_procs,
                     parallel,
-                    args=as_list_of_tuples(files),
+                    args=as_list_of_tuples(report_files),
                     kwargs=dict(max_order=max_clusters,
                                 n_runs=em_runs,
-                                min_muts=min_nmut_read,
                                 min_iter=min_em_iter,
                                 max_iter=max_em_iter,
                                 conv_thresh=em_thresh,

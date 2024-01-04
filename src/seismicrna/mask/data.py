@@ -1,16 +1,19 @@
 from functools import cached_property
 
-from .batch import MaskMutsBatch, apply_mask
+from .batch import apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
-from ..core.data import LinkedMutsDataset, LoadedDataset
-from ..core.report import CountMutsF, CountRefsF, MinMutGapF, PosKeptF
+from ..core.data import ChainedMutsDataset, LoadedDataset, LoadFunction
 from ..core.rel import RelPattern
+from ..core.report import CountMutsF, CountRefsF, MinMutGapF, PosKeptF
+from ..pool.data import PoolDataset
 from ..relate.batch import RelateRefseqBatch
-from ..relate.data import RelateLoader
+from ..relate.data import RelateDataset
+
+load_relate_pool_dataset = LoadFunction(RelateDataset, PoolDataset)
 
 
-class MaskLoader(LoadedDataset):
+class MaskReadDataset(LoadedDataset):
     """ Load batches of masked relation vectors. """
 
     @classmethod
@@ -35,26 +38,22 @@ class MaskLoader(LoadedDataset):
                           self.report.get_field(CountRefsF))
 
 
-class MaskLinker(LinkedMutsDataset):
-    """ Merge mutation data with masked reads. """
+class MaskMutsDataset(ChainedMutsDataset):
+    """ Chain mutation data with masked reads. """
 
     MASK_NAME = "mask"
 
     @classmethod
-    def get_batch_type(cls):
-        return MaskMutsBatch
-
-    @classmethod
-    def get_dataset1_type(cls):
-        return RelateLoader
+    def get_dataset1_load_func(cls):
+        return load_relate_pool_dataset
 
     @classmethod
     def get_dataset2_type(cls):
-        return MaskLoader
+        return MaskReadDataset
 
     @property
     def min_mut_gap(self):
-        return self.data2.min_mut_gap
+        return getattr(self.data2, "min_mut_gap")
 
     @property
     def pattern(self):
@@ -63,11 +62,15 @@ class MaskLinker(LinkedMutsDataset):
     @cached_property
     def section(self):
         section = super().section
-        section.add_mask(self.MASK_NAME, self.data2.pos_kept, invert=True)
+        section.add_mask(self.MASK_NAME,
+                         getattr(self.data2, "pos_kept"),
+                         invert=True)
         return section
 
-    def _link(self, batch1: RelateRefseqBatch, batch2: MaskBatchIO):
-        return apply_mask(batch1, batch2.read_nums, self.data2.pos_kept)
+    def _chain(self, batch1: RelateRefseqBatch, batch2: MaskBatchIO):
+        return apply_mask(batch1,
+                          batch2.read_nums,
+                          getattr(self.data2, "pos_kept"))
 
 ########################################################################
 #                                                                      #

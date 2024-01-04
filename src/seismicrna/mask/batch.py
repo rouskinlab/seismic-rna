@@ -27,7 +27,7 @@ class MaskMutsBatch(MaskReadBatch, RefseqMutsBatch, PartialMutsBatch, ABC):
 def apply_mask(batch: RefseqMutsBatch,
                reads: Iterable[int] | None = None,
                positions: Iterable[int] | None = None):
-    # Determine masked read numbers.
+    # Determine masked read numbers.
     masked_reads = (np.setdiff1d(batch.read_nums, reads)
                     if reads is not None
                     else None)

@@ -200,7 +200,8 @@ def sanitize(path: str | pl.Path, strict: bool = False):
 def validate_str(txt: str):
     if not isinstance(txt, str):
         raise PathTypeError(
-            f"Expected {str.__name__}, but got {type(txt).__name__}")
+            f"Expected {str.__name__}, but got {type(txt).__name__}"
+        )
     if not txt:
         raise PathValueError(f"Empty string: {repr(txt)}")
     if illegal := "".join(sorted(set(txt) - STR_CHARS_SET)):
@@ -210,7 +211,8 @@ def validate_str(txt: str):
 def validate_top(top: pl.Path):
     if not isinstance(top, pl.Path):
         raise PathTypeError(
-            f"Expected {Path.__name__}, but got {type(top).__name__}")
+            f"Expected {Path.__name__}, but got {type(top).__name__}"
+        )
     if not top.parent.is_dir():
         raise PathValueError(f"Not a directory: {top.parent}")
     if top.is_file():
@@ -466,7 +468,7 @@ DmFastqSeg = Segment("dm-fastq", {REF: NameField, EXT: FastqExt})
 DmFastq1Seg = Segment("dm-fastq1", {REF: NameField, EXT: Fastq1Ext})
 DmFastq2Seg = Segment("dm-fastq2", {REF: NameField, EXT: Fastq2Ext})
 
-# Alignment
+# Align
 XamSeg = Segment("xam", {REF: NameField, EXT: XamExt})
 AlignSampleRepSeg = Segment("align-samp-rep",
                             {EXT: ReportExt},
@@ -475,7 +477,7 @@ AlignRefRepSeg = Segment("align-ref-rep",
                          {REF: NameField, EXT: ReportExt},
                          frmt="{ref}__align-report{ext}")
 
-# Relation Vectors
+# Relate
 RefseqFileSeg = Segment("refseq-file", {EXT: RefseqFileExt}, frmt="refseq{ext}")
 QnamesBatSeg = Segment("name-bat",
                        {BATCH: IntField, EXT: BatchExt},
@@ -485,13 +487,13 @@ RelateBatSeg = Segment("rel-bat",
                        frmt="relate-batch-{batch}{ext}")
 RelateRepSeg = Segment("rel-rep", {EXT: ReportExt}, frmt="relate-report{ext}")
 
-# Masking
+# Mask
 MaskBatSeg = Segment("mask-bat",
                      {BATCH: IntField, EXT: BatchExt},
                      frmt="mask-batch-{batch}{ext}")
 MaskRepSeg = Segment("mask-rep", {EXT: ReportExt}, frmt="mask-report{ext}")
 
-# Clustering
+# Cluster
 ClustTabSeg = Segment("clust-tab", {TABLE: ClustTabField,
                                     NCLUST: IntField,
                                     RUN: IntField,
@@ -503,7 +505,7 @@ ClustBatSeg = Segment("clust-bat",
                       frmt="cluster-batch-{batch}{ext}")
 ClustRepSeg = Segment("clust-rep", {EXT: ReportExt}, frmt="cluster-report{ext}")
 
-# Tabulation
+# Table
 PosTableSeg = Segment("pos-table",
                       {TABLE: PosTableField, EXT: PosTableExt},
                       frmt="{table}-per-pos{ext}")
@@ -514,7 +516,7 @@ FreqTableSeg = Segment("freq-table",
                        {TABLE: FreqTableField, EXT: FreqTableExt},
                        frmt="{table}-freq{ext}")
 
-# Folding
+# Fold
 FoldRepSeg = Segment("fold-rep",
                      {PROFILE: NameField, EXT: ReportExt},
                      frmt="{profile}__fold-report{ext}")
@@ -667,6 +669,13 @@ def buildpar(*segment_types: Segment, **field_values: Any):
 
 # Path parsing routines
 
+def get_fields_in_seg_types(*segment_types: Segment) -> dict[str, Field]:
+    """ Get all fields among the given segment types. """
+    return {field_name: field
+            for segment_type in segment_types
+            for field_name, field in segment_type.field_types.items()}
+
+
 def deduplicated(paths: Iterable[str | pl.Path]):
     """ Yield the non-redundant paths. """
     seen = set()
@@ -684,8 +693,41 @@ def parse(path: str | pl.Path, /, *segment_types: Segment):
     return create_path_type(*segment_types).parse(path)
 
 
+def parse_top_separate(path: str | pl.Path, /, *segment_types: Segment):
+    """ Return the fields of a path, and the `top` field separately. """
+    fields = parse(path, *segment_types)
+    return fields.pop(TOP), fields
+
+
+def path_matches(path: str | pl.Path, segments: Sequence[Segment]):
+    """ Check if a path matches a sequence of path segments.
+
+    Parameters
+    ----------
+    path: str | pathlib.Path
+        Path of the file/directory.
+    segments: Sequence[Segment]
+        Sequence of path segments to check if the file matches.
+
+    Returns
+    -------
+    bool
+        Whether the path matches any given sequence of path segments.
+    """
+    # Parsing the path will succeed if and only if it matches the
+    # sequence of path segments.
+    try:
+        parse(path, *segments)
+    except PathError:
+        # The path does not match this sequence of path segments.
+        return False
+    else:
+        # The path matches this sequence of path segments.
+        return True
+
+
 def find_files(path: str | pl.Path, segments: Sequence[Segment]):
-    """ Yield all files that match a given sequence of path segments.
+    """ Yield all files that match a sequence of path segments.
     The behavior depends on what `path` is:
 
     - If it is a file, then yield `path` if it matches the segments;
@@ -698,7 +740,7 @@ def find_files(path: str | pl.Path, segments: Sequence[Segment]):
     path: str | pathlib.Path
         Path of a file to check or a directory to search recursively.
     segments: Sequence[Segment]
-        Path segments to check if each file matches.
+        Sequence(s) of Path segments to check if each file matches.
 
     Returns
     -------
@@ -708,19 +750,13 @@ def find_files(path: str | pl.Path, segments: Sequence[Segment]):
     path = sanitize(path, strict=True)
     if path.is_dir():
         # Search the directory for files matching the segments.
-        logger.debug(f"Searching {path} and all of its subdirectories "
+        logger.debug(f"Searching {path} and any subdirectories "
                      f"for files matching {list(map(str, segments))}")
         yield from chain(*map(partial(find_files, segments=segments),
                               path.iterdir()))
     else:
-        # Assume that path is a file.
-        try:
-            # Determine if the file matches the segments.
-            parse(path, *segments)
-        except PathError:
-            # If not, then skip it.
-            pass
-        else:
+        # Assume the path is a file; check if it matches the segments.
+        if path_matches(path, segments):
             # If so, then yield it.
             logger.debug(f"File {path} matches {list(map(str, segments))}")
             yield path
@@ -734,6 +770,44 @@ def find_files_chain(paths: Iterable[str | pl.Path],
             yield from find_files(path, segments)
         except Exception as error:
             logger.error(f"Failed search for {path}: {error}")
+
+
+# Path transformation routines
+
+
+def cast_file_path(input_path: pl.Path,
+                   input_segments: Sequence[Segment],
+                   output_segments: Sequence[Segment],
+                   **override: Any):
+    """ Cast `input_path` made of `input_segments` to a new path made of
+    `output_segments`.
+
+    Parameters
+    ----------
+    input_path: pathlib.Path
+        Input path from which to take the path fields.
+    input_segments: Sequence[Segment]
+        Path segments to use to determine the fields in `input_path`.
+    output_segments: Sequence[Segment]
+        Path segments to use to determine the fields in `output_path`.
+    **override: Any
+        Override and supplement the fields in `input_path`.
+
+    Returns
+    -------
+    pathlib.Path
+        Path for file of `output_type` made from fields in `input_path`
+        (as determined by the file of `input_type`).
+    """
+    # Extract the fields from the input path using the input segments.
+    top, fields = parse_top_separate(input_path, *input_segments)
+    # Override and supplement the fields in the input path.
+    fields |= override
+    # Normalize the fields to comply with the output segments.
+    fields = {field_name: fields[field_name]
+              for field_name in get_fields_in_seg_types(*output_segments)}
+    # Generate a new output path from the normalized fields.
+    return buildpar(*output_segments, top=top, **fields)
 
 
 def transpath(to_dir: str | pl.Path,

@@ -603,7 +603,7 @@ class Section(object):
         return renumbered
 
     def __str__(self):
-        return f"Section {self.ref_sect} ({self.hyphen}) {self.mask_names}"
+        return f"Section {self.ref_sect} ({self.hyphen})"
 
     def __eq__(self, other):
         if self is other:

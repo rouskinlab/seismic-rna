@@ -1,32 +1,37 @@
-"""
-
-Command Core Module
-
-========================================================================
-
-Define the names of the commands.
-
-------------------------------------------------------------------------
-
-"""
+from ..core import path
+from ..core.io import RefIO
+from ..core.report import (Report,
+                           SampleF,
+                           RefF,
+                           PooledSamplesF)
 
 
-CMD_WORKFLOW = "wf"
-CMD_DEMULT = "demult"
-CMD_QC = "qc"
-CMD_ALIGN = "align"
-CMD_REL = "relate"
-CMD_POOL = "pool"
-CMD_MASK = "mask"
-CMD_CLUST = "cluster"
-CMD_TABLE = "table"
-CMD_FOLD = "fold"
-CMD_GRAPH = "graph"
-CMD_EXPORT = "export"
-CMD_CLEANFA = "+cleanfa"
-CMD_RENUMCT = "+renumct"
-CMD_SIM = "+sim"
-CMD_TEST = "+test"
+class PoolReport(Report, RefIO):
+
+    @classmethod
+    def file_seg_type(cls):
+        return path.RelateRepSeg
+
+    @classmethod
+    def fields(cls):
+        return [
+            # Sample and reference.
+            SampleF,
+            RefF,
+            # Pooled samples.
+            PooledSamplesF,
+        ] + super().fields()
+
+    @classmethod
+    def path_segs(cls):
+        return (path.SampSeg,
+                path.CmdSeg,
+                path.RefSeg,
+                path.RelateRepSeg)
+
+    @classmethod
+    def auto_fields(cls):
+        return {**super().auto_fields(), path.CMD: path.CMD_REL_DIR}
 
 ########################################################################
 #                                                                      #

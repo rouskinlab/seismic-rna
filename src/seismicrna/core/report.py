@@ -281,6 +281,7 @@ Bowtie2Reseed = OptionField(opt_bt2_r)
 Bowtie2Dpad = OptionField(opt_bt2_dpad)
 Bowtie2Orient = OptionField(opt_bt2_orient)
 MinMapQualF = OptionField(opt_min_mapq)
+CramOutF = OptionField(opt_cram)
 ReadsInitF = Field("reads_init", "Number of reads initially", int)
 ReadsTrimF = Field("reads_trim", "Number of reads after trimming", int)
 ReadsAlignF = Field("reads_align", "Number of reads after alignment", dict,
@@ -293,7 +294,6 @@ ReadsRefs = Field("reads_refs",
                   "Number of reads aligned by reference",
                   dict,
                   iconv=iconv_dict_str_int)
-CramOutF = Field("cram", opt_cram, bool)
 
 # Relate fields
 NumReadsRelF = Field("n_reads_rel", "Number of Reads", int)
@@ -302,9 +302,9 @@ ChecksumsF = Field("checksums", "MD5 Checksums of Batches", dict)
 RefseqChecksumF = Field("refseq_checksum",
                         "MD5 Checksum of Reference Sequence File",
                         str)
+PooledSamplesF = Field("pooled_samples", "Pooled Samples", list)
 
 # Mask fields
-PooledSamplesF = Field("pooled_samples", "Pooled Samples", list, list())
 CountMutsF = Field("count_muts",
                    "Count the Following as Mutations",
                    HalfRelPattern,
@@ -513,10 +513,15 @@ def lookup_title(title: str):
         raise ValueError(f"Invalid report field: {repr(title)}")
 
 
+def key_to_title(key: str):
+    """ Map a field's key to its title. """
+    return lookup_key(key).title
+
+
 def default_key(key: str):
     """ Get the default value of a field by its key. """
     if (default := lookup_key(key).default) is None:
-        raise ValueError(f"Field {repr(key)} has no default value")
+        raise ValueError(f"Field {repr(key_to_title(key))} has no default")
     return default
 
 
@@ -561,7 +566,7 @@ class Report(FileIO, ABC):
         # Ensure that the path-related fields in the JSON data match the
         # actual path of the JSON file.
         top, path_fields = cls.parse_path(file)
-        for key, value in report.path_fields().items():
+        for key, value in report.path_field_values().items():
             if value != path_fields.get(key):
                 raise ValueError(f"Got different values for field {repr(key)} "
                                  f"in path ({repr(path_fields.get(key))}) and "
@@ -580,6 +585,7 @@ class Report(FileIO, ABC):
 
     def __init__(self, **kwargs: Any | Callable[[Report], Any]):
         kwargs = self._auto_init_kwargs(**kwargs)
+        defaulted = dict()
         for key in self.field_keys():
             # Try to get the value of the field from the report.
             try:
@@ -590,8 +596,7 @@ class Report(FileIO, ABC):
                 # for cross-version compatibility, use the default value
                 # of the field.
                 value = default_key(key)
-                logger.warning(f"Field {repr(key)} is missing: using its "
-                               f"default value {repr(value)}")
+                defaulted[key_to_title(key)] = value
             if callable(value):
                 # If the value of the keyword argument is callable, then
                 # it must accept one argument -- self -- and return the
@@ -605,6 +610,12 @@ class Report(FileIO, ABC):
             # versions compatible).
             logger.warning(f"Got extra fields for {type(self).__name__}: "
                            f"{list(kwargs)}")
+        if defaulted:
+            # If the report file was missing keyword arguments that have
+            # default values, AND if parsing the report file succeeded,
+            # then warn about the default values.
+            logger.warning(f"Missing fields for {type(self).__name__} "
+                           f"and using defaults: {defaulted}")
 
     def get_field(self, field: Field, missing_ok: bool = False):
         """ Return the value of a field of the report using the field
