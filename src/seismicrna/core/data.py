@@ -101,6 +101,11 @@ class Dataset(ABC):
         for batch_num in self.batch_nums:
             yield self.get_batch(batch_num)
 
+    @cached_property
+    def num_reads(self):
+        """ Number of reads in the dataset. """
+        return sum(batch.num_reads for batch in self.iter_batches())
+
     def __str__(self):
         return f"{type(self).__name__} for sample {repr(self.sample)}"
 

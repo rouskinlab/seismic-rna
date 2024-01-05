@@ -13,10 +13,9 @@ from ..core.header import format_clust_name
 from ..core.rna import parse_db_strings
 from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
-from ..mask.data import MaskMutsDataset
+from ..mask.data import MaskMutsDataset, load_relate_pool_dataset
 from ..mask.report import MaskReport
-from ..relate.data import RelateDataset
-from ..relate.report import RelateReport, NumReadsRelF
+from ..relate.report import RelateReport
 from ..table.base import (COVER_REL,
                           INFOR_REL,
                           SUBST_REL,
@@ -78,11 +77,11 @@ def get_ref_metadata(top: Path,
                      sample: str,
                      ref: str,
                      refs_metadata: dict[str, dict]):
-    dataset = RelateDataset.load(RelateReport.build_path(top=top,
-                                                         sample=sample,
-                                                         ref=ref))
+    dataset = load_relate_pool_dataset(RelateReport.build_path(top=top,
+                                                               sample=sample,
+                                                               ref=ref))
     ref_metadata = {REF_SEQ: str(dataset.refseq),
-                    REF_NUM_ALIGN: dataset.report.get_field(NumReadsRelF)}
+                    REF_NUM_ALIGN: dataset.num_reads}
     return format_metadata(combine_metadata(ref_metadata,
                                             refs_metadata,
                                             ref,

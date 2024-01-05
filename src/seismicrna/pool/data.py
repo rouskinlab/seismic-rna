@@ -1,5 +1,6 @@
 from .report import PoolReport
 from ..core.data import PooledMutsDataset
+from ..core.report import NumReadsRelF
 from ..relate.data import RelateDataset
 
 
