@@ -37,10 +37,7 @@ class RollingCorrelationGraph(TwoTableMergedGraph, RollingGraph):
 
     @cached_property
     def predicate(self):
-        return "_".join(
-            [super().predicate,
-             "-".join(map(str, [self._metric, self._size, self._min_count]))]
-        )
+        return "_".join([super().predicate, self._metric])
 
     @cached_property
     def details(self):
