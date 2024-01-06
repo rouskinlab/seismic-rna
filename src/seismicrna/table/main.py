@@ -3,8 +3,7 @@ from logging import getLogger
 
 from click import command
 
-from .write import load_cluster_dataset, write
-from ..cluster.data import load_mask_dataset
+from .write import write
 from ..core import path
 from ..core.arg import (CMD_TABLE,
                         docdef,
@@ -16,7 +15,9 @@ from ..core.arg import (CMD_TABLE,
                         opt_parallel,
                         opt_force)
 from ..core.parallel import as_list_of_tuples, dispatch
-from ..mask.data import load_relate_pool_dataset
+from ..cluster.data import load_cluster_dataset
+from ..mask.data import load_mask_dataset
+from ..pool.data import load_relate_pool_dataset
 
 logger = getLogger(__name__)
 

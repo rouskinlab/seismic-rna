@@ -8,11 +8,9 @@ from ..core.data import ChainedMutsDataset, LoadedDataset, LoadFunction
 from ..core.header import index_orders_clusts
 from ..core.report import NumClustsF
 from ..mask.batch import MaskMutsBatch
-from ..mask.data import MaskMutsDataset
+from ..mask.data import load_mask_dataset
 
 logger = getLogger(__name__)
-
-load_mask_dataset = LoadFunction(MaskMutsDataset)
 
 
 class ClusterReadDataset(LoadedDataset):
@@ -77,6 +75,9 @@ class ClusterMutsDataset(ChainedMutsDataset):
                               end3s=batch1.end3s,
                               resps=batch2.resps,
                               sanitize=False)
+
+
+load_cluster_dataset = LoadFunction(ClusterMutsDataset)
 
 ########################################################################
 #                                                                      #

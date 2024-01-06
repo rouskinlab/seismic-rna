@@ -32,7 +32,7 @@ from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
 from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
 from ..core.rna import RNAProfile
 from ..core.seq import DNA, RefSections, RefSeqs, Section
-from ..mask.data import load_relate_pool_dataset
+from ..pool.data import load_relate_pool_dataset
 from ..relate.report import RelateReport
 from ..table.base import MaskPosTable, ClustPosTable
 from ..table.load import load_pos_tables

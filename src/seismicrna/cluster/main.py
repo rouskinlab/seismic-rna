@@ -3,7 +3,6 @@ from pathlib import Path
 
 from click import command
 
-from .data import load_mask_dataset
 from .write import cluster
 from ..core import path
 from ..core.arg import (CMD_CLUST,
@@ -19,6 +18,7 @@ from ..core.arg import (CMD_CLUST,
                         opt_max_procs,
                         opt_force)
 from ..core.parallel import as_list_of_tuples, dispatch
+from ..mask.data import load_mask_dataset
 
 logger = getLogger(__name__)
 

@@ -6,10 +6,7 @@ from typing import Any, Callable, Iterable
 
 from . import path
 from .batch import MutsBatch, ReadBatch, list_batch_nums
-from .io import (MutsBatchIO,
-                 ReadBatchIO,
-                 RefseqIO,
-                 recast_file_path)
+from .io import MutsBatchIO, ReadBatchIO, RefseqIO
 from .rel import RelPattern
 from .report import (SampleF,
                      RefF,
@@ -327,18 +324,8 @@ class PooledDataset(Dataset, ABC):
 
     @classmethod
     @abstractmethod
-    def get_dataset_type(cls) -> type[Dataset | MutsDataset]:
-        """ Type of the datasets that are pooled together. """
-
-    @classmethod
-    def get_dataset_load_func(cls):
-        """ Function to load each dataset in the pool. """
-        return StrictLoadFunction(cls.get_dataset_type())
-
-    @classmethod
-    def get_sample_report_type(cls):
-        """ Type of report for each sample (not for the whole pool). """
-        return cls.get_dataset_type().get_report_type()
+    def get_dataset_load_func(cls) -> LoadFunction:
+        """ Function to load a dataset in the pool. """
 
     @classmethod
     def load(cls, report_file: Path):
@@ -347,11 +334,14 @@ class PooledDataset(Dataset, ABC):
         sample = report.get_field(SampleF)
         pooled_samples = report.get_field(PooledSamplesF)
         # Determine the report file for each sample in the pool.
-        sample_report_files = [recast_file_path(report_file,
-                                                cls.get_report_type(),
-                                                cls.get_sample_report_type(),
-                                                sample=sample)
-                               for sample in pooled_samples]
+        load_func = cls.get_dataset_load_func()
+        sample_report_files = [path.cast_file_path(
+            report_file,
+            cls.get_report_type().seg_types(),
+            load_func.report_path_seg_types,
+            **load_func.report_path_auto_fields,
+            sample=sample
+        ) for sample in pooled_samples]
         # Create the pooled dataset from the sample datasets.
         return cls(sample, map(cls.get_dataset_load_func(),
                                sample_report_files))
@@ -361,11 +351,6 @@ class PooledDataset(Dataset, ABC):
         self._datasets = list(datasets)
         if not self._datasets:
             raise ValueError(f"{type(self).__name__} got no datasets")
-        for dataset in self._datasets:
-            if not isinstance(dataset, self.get_dataset_type()):
-                raise TypeError(f"{type(self).__name__} expected each dataset "
-                                f"to be {self.get_dataset_type().__name__}, "
-                                f"but got {type(dataset).__name__}")
 
     def _list_dataset_attr(self, name: str):
         """ Get a list of an attribute for each dataset. """
@@ -481,11 +466,12 @@ class ChainedDataset(Dataset, ABC):
     def get_dataset1_report_file(cls, dataset2_report_file: Path):
         """ Given the report file for Dataset 2, determine the report
         file for Dataset 1. """
+        load_func = cls.get_dataset1_load_func()
         return path.cast_file_path(
             dataset2_report_file,
             cls.get_report_type().seg_types(),
-            cls.get_dataset1_load_func().report_path_seg_types,
-            **cls.get_dataset1_load_func().report_path_auto_fields
+            load_func.report_path_seg_types,
+            **load_func.report_path_auto_fields
         )
 
     @classmethod

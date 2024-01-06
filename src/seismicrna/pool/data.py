@@ -1,6 +1,5 @@
 from .report import PoolReport
-from ..core.data import PooledMutsDataset
-from ..core.report import NumReadsRelF
+from ..core.data import LoadFunction, PooledMutsDataset
 from ..relate.data import RelateDataset
 
 
@@ -12,8 +11,11 @@ class PoolDataset(PooledMutsDataset):
         return PoolReport
 
     @classmethod
-    def get_dataset_type(cls):
-        return RelateDataset
+    def get_dataset_load_func(cls):
+        return load_relate_pool_dataset
+
+
+load_relate_pool_dataset = LoadFunction(RelateDataset, PoolDataset)
 
 ########################################################################
 #                                                                      #

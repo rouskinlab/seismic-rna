@@ -66,7 +66,10 @@ class Tabulator(ABC):
                                    table.loc[:, MUTAT_REL].values)
         return table
 
-    def __init__(self, dataset: RelateDataset | MaskMutsDataset | ClusterMutsDataset):
+    def __init__(self, dataset: (RelateDataset
+                                 | PoolDataset
+                                 | MaskMutsDataset
+                                 | ClusterMutsDataset)):
         self.dataset = dataset
 
     @property

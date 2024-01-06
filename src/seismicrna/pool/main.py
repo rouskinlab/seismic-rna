@@ -6,7 +6,7 @@ from typing import Iterable
 
 from click import command
 
-from .data import PoolDataset
+from .data import PoolDataset, load_relate_pool_dataset
 from .report import PoolReport
 from ..core.arg import (CMD_POOL,
                         docdef,
@@ -59,9 +59,15 @@ def run(input_path: tuple[str, ...], *,
         return list()
     # Group the datasets by output directory and reference name.
     pools = defaultdict(list)
-    for dataset in load_datasets(input_path,
-                                 PoolDataset.get_dataset_load_func()):
-        pools[dataset.top, dataset.ref].append(dataset.sample)
+    for dataset in load_datasets(input_path, load_relate_pool_dataset):
+        # Check whether the dataset was pooled.
+        if isinstance(dataset, PoolDataset):
+            # If so, then use all samples in the pool.
+            samples = dataset.samples
+        else:
+            # Otherwise, use just the sample of the dataset.
+            samples = [dataset.sample]
+        pools[dataset.top, dataset.ref].extend(samples)
     # Make each pool of samples.
     return dispatch(make_pool,
                     max_procs=max_procs,
@@ -100,11 +106,9 @@ def make_pool(out_dir: Path,
     began = datetime.now()
     # Deduplicate and sort the samples.
     sample_counts = Counter(samples)
-    if dups := sorted(sample
-                      for sample, count in sample_counts.items()
-                      if count > 1):
-        logger.warning(f"Pool {repr(name)} for output directory {out_dir}, "
-                       f"reference {repr(ref)} got duplicate samples: {dups}")
+    if max(sample_counts.values()) > 1:
+        logger.warning(f"Pool {repr(name)} with reference {repr(ref)} in "
+                       f"{out_dir} got duplicate samples: {sample_counts}")
     samples = sorted(sample_counts)
     # Determine the output report file.
     report_file = PoolReport.build_path(top=out_dir, sample=name, ref=ref)

@@ -13,8 +13,9 @@ from ..core.header import format_clust_name
 from ..core.rna import parse_db_strings
 from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
-from ..mask.data import MaskMutsDataset, load_relate_pool_dataset
+from ..mask.data import MaskMutsDataset
 from ..mask.report import MaskReport
+from ..pool.data import load_relate_pool_dataset
 from ..relate.report import RelateReport
 from ..table.base import (COVER_REL,
                           INFOR_REL,

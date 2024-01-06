@@ -6,7 +6,6 @@ from typing import Iterable
 
 from click import command
 
-from .data import load_relate_pool_dataset
 from .write import mask_section
 from ..core.arg import (CMD_MASK,
                         docdef,
@@ -33,6 +32,7 @@ from ..core.arg import (CMD_MASK,
 from ..core.data import load_datasets
 from ..core.parallel import dispatch
 from ..core.seq import DNA, RefSections
+from ..pool.data import load_relate_pool_dataset
 
 logger = getLogger(__name__)
 

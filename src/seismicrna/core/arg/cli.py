@@ -824,7 +824,7 @@ opt_use_ratio = Option(
 opt_window = Option(
     ("--window", "-w"),
     type=int,
-    default=31,
+    default=45,
     help="Size of the sliding window, in nucleotides"
 )
 

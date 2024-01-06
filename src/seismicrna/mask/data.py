@@ -6,11 +6,8 @@ from .report import MaskReport
 from ..core.data import ChainedMutsDataset, LoadedDataset, LoadFunction
 from ..core.rel import RelPattern
 from ..core.report import CountMutsF, CountRefsF, MinMutGapF, PosKeptF
-from ..pool.data import PoolDataset
+from ..pool.data import load_relate_pool_dataset
 from ..relate.batch import RelateRefseqBatch
-from ..relate.data import RelateDataset
-
-load_relate_pool_dataset = LoadFunction(RelateDataset, PoolDataset)
 
 
 class MaskReadDataset(LoadedDataset):
@@ -71,6 +68,9 @@ class MaskMutsDataset(ChainedMutsDataset):
         return apply_mask(batch1,
                           batch2.read_nums,
                           getattr(self.data2, "pos_kept"))
+
+
+load_mask_dataset = LoadFunction(MaskMutsDataset)
 
 ########################################################################
 #                                                                      #

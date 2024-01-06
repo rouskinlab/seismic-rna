@@ -147,8 +147,6 @@ def get_tabulator_writers(tabulator: AvgTabulator | ClustTabulator, *,
             raise TypeError(f"Invalid writer type: {writer_type.__name__}")
 
 
-load_cluster_dataset = LoadFunction(ClusterMutsDataset)
-
 load_any_dataset = LoadFunction(RelateDataset,
                                 PoolDataset,
                                 MaskMutsDataset,

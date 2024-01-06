@@ -8,7 +8,6 @@ import pandas as pd
 
 from .compare import RunOrderResults, find_best_order, sort_replicate_runs
 from .csv import write_log_counts, write_mus, write_props
-from .data import load_mask_dataset
 from .em import EmClustering
 from .io import ClustBatchIO
 from .report import ClustReport
@@ -16,7 +15,7 @@ from .uniq import UniqReads
 from ..core.parallel import dispatch
 from ..core.types import get_max_uint
 from ..core.write import need_write
-from ..mask.data import MaskMutsDataset
+from ..mask.data import MaskMutsDataset, load_mask_dataset
 
 logger = getLogger(__name__)
 
