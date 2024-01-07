@@ -846,10 +846,18 @@ opt_metric = Option(
           f"{repr(KEY_DETERM)} = coefficient of determination (R²)")
 )
 
-opt_structs = Option(
-    ("--structs",),
+opt_struct_file = Option(
+    ("--struct-file",),
     type=click.Path(exists=True, dir_okay=False),
-    help="CT file of structures against which to compare mutational profiles"
+    help="CT file of structures, against which to compare mutational profiles"
+)
+
+opt_struct_sect = Option(
+    ("--struct-sect",),
+    type=str,
+    default="",
+    help="Section of RNA that was folded, against which to compare mutational "
+         "profiles (ignored if blank or if using --struct-file)"
 )
 
 opt_hist_bins = Option(

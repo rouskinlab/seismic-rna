@@ -1,45 +1,68 @@
 from abc import ABC
 from functools import cached_property
+from logging import getLogger
 from pathlib import Path
 
 from .onetable import OneTableGraph, OneTableRunner
 from .rel import OneRelGraph
 from ..core import path
-from ..core.arg import opt_structs
+from ..core.arg import opt_struct_file, opt_struct_sect
 from ..core.rna import RNAState, from_ct
+
+logger = getLogger(__name__)
 
 
 class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
     """ Graph of data from one Table applied to RNA structure(s). """
 
-    def __init__(self, *, structs: Path | None = None, **kwargs):
+    def __init__(self, *, struct_file: Path | None, struct_sect: str, **kwargs):
         super().__init__(**kwargs)
-        self.structs_file = structs
-
-    @cached_property
-    def _struct_fields(self):
-        """ Get the fields of the structure. """
-        if self.structs_file is not None:
-            fields = path.parse(self.structs_file,
+        if struct_file is not None:
+            # Use a given CT file of an RNA structure, and determine the
+            # structure section name from the file path.
+            self._struct_file = struct_file
+            fields = path.parse(self._struct_file,
                                 path.RefSeg,
                                 path.SectSeg,
                                 path.ConnectTableSeg)
-            return fields[path.REF], fields[path.SECT]
-        return super().ref, self.sect
+            ref = fields[path.REF]
+            if ref != self.ref:
+                raise ValueError(f"Reference names differ in CT file ({ref}) "
+                                 f"and table file ({self.ref})")
+            self.struct_sect = fields[path.SECT]
+            if struct_sect and struct_sect != self.struct_sect:
+                logger.warning(f"Structure section names differ in CT file "
+                               f"({self.struct_sect}) and given struct_sect "
+                               f"argument ({struct_sect}); using the former")
+        else:
+            # Use the given structure section name if one was given,
+            # otherwise default to the section from which the data came.
+            self.struct_sect = struct_sect if struct_sect else self.sect
+            # The structure file will vary by RNA profile, so leave it
+            # blank for now.
+            self._struct_file = None
 
-    @property
-    def ref(self):
-        ref, _ = self._struct_fields
-        if ref != super().ref:
-            raise ValueError(f"Reference names differ between CT file ({ref}) "
-                             f"and table file ({super().ref})")
-        return ref
+    def get_path_fields(self):
+        fields = super().get_path_fields()
+        # Replace the section with the structure section.
+        fields[path.SECT] = self.struct_sect
+        return fields
 
-    @property
-    def struct_sect(self):
-        """ Section of the reference that the structure model spans. """
-        _, sect = self._struct_fields
-        return sect
+    def _get_struct_file(self, profile: str):
+        """ Get the path of the CT file of RNA structures for a specific
+        RNA profile. """
+        if self._struct_file is not None:
+            # Use the given structure file for every profile.
+            return self._struct_file
+        # Determine the path of the structure file from the profile.
+        return path.build(*path.CT_FILE_SEGS,
+                          top=self.top,
+                          sample=self.sample,
+                          cmd=path.CMD_FOLD_DIR,
+                          ref=self.ref,
+                          sect=self.struct_sect,
+                          profile=profile,
+                          ext=path.CT_EXT)
 
     @cached_property
     def path_subject(self):
@@ -65,18 +88,20 @@ class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
     def iter_states(self):
         """ Yield each RNAState. """
         for profile in self.iter_profiles():
-            ct_file = (self.structs_file
-                       if self.structs_file is not None
-                       else profile.get_ct_file(self.top))
-            for struct in from_ct(ct_file):
-                yield RNAState.from_struct_profile(struct, profile)
+            ct_file = self._get_struct_file(profile.profile)
+            try:
+                for struct in from_ct(ct_file):
+                    yield RNAState.from_struct_profile(struct, profile)
+            except FileNotFoundError:
+                logger.error(f"Structure file {ct_file} does not exist; please "
+                             f"obtain the file, e.g. using seismic fold")
 
 
 class StructOneTableRunner(OneTableRunner, ABC):
 
     @classmethod
     def var_params(cls):
-        return super().var_params() + [opt_structs]
+        return super().var_params() + [opt_struct_file, opt_struct_sect]
 
 ########################################################################
 #                                                                      #
