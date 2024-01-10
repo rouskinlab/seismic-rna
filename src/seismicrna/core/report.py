@@ -568,9 +568,9 @@ class Report(FileIO, ABC):
         top, path_fields = cls.parse_path(file)
         for key, value in report.path_field_values().items():
             if value != path_fields.get(key):
-                raise ValueError(f"Got different values for field {repr(key)} "
-                                 f"in path ({repr(path_fields.get(key))}) and "
-                                 f"contents ({repr(value)}) of report {file}")
+                raise ValueError(f"Got different values for {repr(key)} "
+                                      f"in path ({repr(path_fields.get(key))}) "
+                                      f"and contents ({repr(value)}) of {file}")
         return report
 
     @classmethod

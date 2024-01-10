@@ -99,3 +99,18 @@ in both the report files for ``sample-A`` and ``pool-1``.
 
 If you get this warning, then you should check your Pool report file to ensure
 it contains all the samples you want and none that you don't.
+
+Cannot overwrite a RelateReport with a PoolReport ... would cause data loss
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This error means that you attempted to create a pooled sample with the same name
+as an existing non-pooled sample while using ``--force``, e.g. ::
+
+    seismic pool --force -P sample-A out
+
+if `out/sample-A` already exists.
+
+Doing so would overwrite the Relate report for the original, non-pooled sample,
+making the sample unusable (unless you reran ``seismic relate`` on that sample).
+To prevent data loss, the Pool step refuses to overwrite Relate reports, even
+with ``--force``.

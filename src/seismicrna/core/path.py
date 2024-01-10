@@ -775,10 +775,10 @@ def find_files_chain(paths: Iterable[str | pl.Path],
 # Path transformation routines
 
 
-def cast_file_path(input_path: pl.Path,
-                   input_segments: Sequence[Segment],
-                   output_segments: Sequence[Segment],
-                   **override: Any):
+def cast_path(input_path: pl.Path,
+              input_segments: Sequence[Segment],
+              output_segments: Sequence[Segment],
+              **override: Any):
     """ Cast `input_path` made of `input_segments` to a new path made of
     `output_segments`.
 
@@ -796,8 +796,8 @@ def cast_file_path(input_path: pl.Path,
     Returns
     -------
     pathlib.Path
-        Path for file of `output_type` made from fields in `input_path`
-        (as determined by the file of `input_type`).
+        Path comprising `output_segments` made of fields in `input_path`
+        (as determined by `input_segments`).
     """
     # Extract the fields from the input path using the input segments.
     top, fields = parse_top_separate(input_path, *input_segments)
@@ -807,7 +807,7 @@ def cast_file_path(input_path: pl.Path,
     fields = {field_name: fields[field_name]
               for field_name in get_fields_in_seg_types(*output_segments)}
     # Generate a new output path from the normalized fields.
-    return buildpar(*output_segments, top=top, **fields)
+    return build(*output_segments, top=top, **fields)
 
 
 def transpath(to_dir: str | pl.Path,

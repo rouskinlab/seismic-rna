@@ -162,10 +162,10 @@ def recast_file_path(input_path: Path,
         Path for file of `output_type` made from fields in `input_path`
         (as determined by the file of `input_type`).
     """
-    return path.cast_file_path(input_path,
-                               input_type.seg_types(),
-                               output_type.seg_types(),
-                               **(override | output_type.auto_fields()))
+    return path.cast_path(input_path,
+                          input_type.seg_types(),
+                          output_type.seg_types(),
+                          **(override | output_type.auto_fields()))
 
 ########################################################################
 #                                                                      #

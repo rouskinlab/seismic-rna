@@ -180,8 +180,13 @@ class LoadFunction(object):
             try:
                 # Return the first dataset type that works.
                 return dataset_type.load(report_file)
+            except FileNotFoundError:
+                # Re-raise FileNotFoundError because, if the report file
+                # does not exist, then no dataset type can load it.
+                raise
             except Exception as error:
-                # If one type fails, then record the error silently.
+                # If a type fails for any reason but FileNotFoundError,
+                # then record the error silently.
                 errors[dataset_type.__name__] = error
         # If all dataset types failed, then raise an error.
         errmsg = "\n".join(f"{type_name}: {error}"
@@ -192,21 +197,6 @@ class LoadFunction(object):
         names = ", ".join(dataset_type.__name__
                           for dataset_type in self._dataset_types)
         return f"{type(self).__name__}({names})"
-
-
-class StrictLoadFunction(LoadFunction):
-    """ Function to load exactly one type of dataset. """
-
-    def __init__(self, dataset_type: type[Dataset | MutsDataset], /):
-        super().__init__(dataset_type)
-
-    @property
-    def dataset_type(self):
-        """ Type of Dataset to load. """
-        if len(self._dataset_types) != 1:
-            raise ValueError(f"{self} expected exactly one type of Dataset, "
-                             f"but got {self._dataset_types}")
-        return self._dataset_types[0]
 
 
 class LoadedDataset(Dataset, ABC):
@@ -335,7 +325,7 @@ class PooledDataset(Dataset, ABC):
         pooled_samples = report.get_field(PooledSamplesF)
         # Determine the report file for each sample in the pool.
         load_func = cls.get_dataset_load_func()
-        sample_report_files = [path.cast_file_path(
+        sample_report_files = [path.cast_path(
             report_file,
             cls.get_report_type().seg_types(),
             load_func.report_path_seg_types,
@@ -455,7 +445,7 @@ class ChainedDataset(Dataset, ABC):
     @classmethod
     def get_dataset2_load_func(cls):
         """ Function to load Dataset 2. """
-        return StrictLoadFunction(cls.get_dataset2_type())
+        return LoadFunction(cls.get_dataset2_type())
 
     @classmethod
     def get_report_type(cls):
@@ -467,7 +457,7 @@ class ChainedDataset(Dataset, ABC):
         """ Given the report file for Dataset 2, determine the report
         file for Dataset 1. """
         load_func = cls.get_dataset1_load_func()
-        return path.cast_file_path(
+        return path.cast_path(
             dataset2_report_file,
             cls.get_report_type().seg_types(),
             load_func.report_path_seg_types,

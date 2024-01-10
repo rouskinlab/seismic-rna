@@ -18,6 +18,7 @@ from ..core.arg import (CMD_POOL,
 from ..core.data import load_datasets
 from ..core.parallel import dispatch
 from ..core.write import need_write
+from ..relate.report import RelateReport
 
 logger = getLogger(__name__)
 
@@ -113,6 +114,20 @@ def make_pool(out_dir: Path,
     # Determine the output report file.
     report_file = PoolReport.build_path(top=out_dir, sample=name, ref=ref)
     if need_write(report_file, force):
+        # Confirm that, if the output report file exists, then it does
+        # not contain a RelateReport.
+        try:
+            RelateReport.load(report_file)
+        except (FileNotFoundError, ValueError):
+            # The report file does not already exist or does not contain
+            # a RelateReport, which is fine.
+            pass
+        else:
+            # The report file exists and contains a RelateReport, which
+            # would result in data loss if overwritten.
+            raise TypeError(f"Cannot overwrite a {RelateReport.__name__} with "
+                            f"a {PoolReport.__name__} in {report_file}: would "
+                            f"cause data loss")
         logger.info(f"Began pooling samples {samples} into {repr(name)} with "
                     f"reference {repr(ref)} in output directory {out_dir}")
         ended = datetime.now()
