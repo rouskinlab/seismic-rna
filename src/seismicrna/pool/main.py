@@ -114,20 +114,31 @@ def make_pool(out_dir: Path,
     # Determine the output report file.
     report_file = PoolReport.build_path(top=out_dir, sample=name, ref=ref)
     if need_write(report_file, force):
-        # Confirm that, if the output report file exists, then it does
-        # not contain a RelateReport.
-        try:
-            RelateReport.load(report_file)
-        except (FileNotFoundError, ValueError):
-            # The report file does not already exist or does not contain
-            # a RelateReport, which is fine.
-            pass
-        else:
-            # The report file exists and contains a RelateReport, which
-            # would result in data loss if overwritten.
-            raise TypeError(f"Cannot overwrite a {RelateReport.__name__} with "
-                            f"a {PoolReport.__name__} in {report_file}: would "
-                            f"cause data loss")
+        # Because Relate and Pool report files have the same name, it
+        # would be possible to overwrite a Relate report with a Pool
+        # report, rendering the Relate dataset unusable; prevent this.
+        if report_file.is_file():
+            # Check if the report file contains a Relate report.
+            try:
+                RelateReport.load(report_file)
+            except ValueError:
+                has_relate = False
+            else:
+                has_relate = True
+            if has_relate:
+                has_pool = False
+            else:
+                # Check if the report file contains a Pool report.
+                try:
+                    PoolReport.load(report_file)
+                except ValueError:
+                    has_pool = False
+                else:
+                    has_pool = True
+            if has_relate or not has_pool:
+                raise TypeError(f"Cannot overwrite {RelateReport.__name__} "
+                                f"with {PoolReport.__name__} in {report_file}: "
+                                f"would cause data loss")
         logger.info(f"Began pooling samples {samples} into {repr(name)} with "
                     f"reference {repr(ref)} in output directory {out_dir}")
         ended = datetime.now()
