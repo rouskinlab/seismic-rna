@@ -220,10 +220,13 @@ def dispatch(funcs: list[Callable] | Callable,
         results = [result for result in results if result is not None]
         n_pass = len(results)
         n_fail = n_tasks - n_pass
-        logger.info(
-            f"Tasks passed: {n_pass: >6d} ({100 * n_pass / n_tasks: >5.1f} %)")
-        logger.info(
-            f"Tasks failed: {n_fail: >6d} ({100 * n_fail / n_tasks: >5.1f} %)")
+        if n_fail:
+            p_fail = n_fail / n_tasks * 100.
+            logger.warning(
+                f"{n_fail} of {n_tasks} ({round(p_fail, 1)} %) task(s) failed"
+            )
+        else:
+            logger.info(f"All {n_tasks} task(s) completed successfully")
     return results
 
 
