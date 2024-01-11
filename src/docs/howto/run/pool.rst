@@ -100,7 +100,7 @@ in both the report files for ``sample-A`` and ``pool-1``.
 If you get this warning, then you should check your Pool report file to ensure
 it contains all the samples you want and none that you don't.
 
-Cannot overwrite RelateReport with PoolReport ... would cause data loss
+Cannot overwrite ... would cause data loss
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This error means that you attempted to create a pooled sample with the same name

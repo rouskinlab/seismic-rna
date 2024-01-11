@@ -118,27 +118,24 @@ def make_pool(out_dir: Path,
         # would be possible to overwrite a Relate report with a Pool
         # report, rendering the Relate dataset unusable; prevent this.
         if report_file.is_file():
-            # Check if the report file contains a Relate report.
+            # Check whether the report file contains a Relate report.
             try:
                 RelateReport.load(report_file)
             except ValueError:
-                has_relate = False
+                # The report file does not contain a Relate report.
+                pass
             else:
-                has_relate = True
-            if has_relate:
-                has_pool = False
-            else:
-                # Check if the report file contains a Pool report.
-                try:
-                    PoolReport.load(report_file)
-                except ValueError:
-                    has_pool = False
-                else:
-                    has_pool = True
-            if has_relate or not has_pool:
+                # The report file contains a Relate report.
                 raise TypeError(f"Cannot overwrite {RelateReport.__name__} "
-                                f"with {PoolReport.__name__} in {report_file}: "
+                                f"in {report_file} with {PoolReport.__name__}: "
                                 f"would cause data loss")
+            # Check whether the report file contains a Pool report.
+            try:
+                PoolReport.load(report_file)
+            except ValueError:
+                # The report file does not contain a Pool report.
+                raise TypeError(f"Cannot overwrite {report_file} with "
+                                f"{PoolReport.__name__}: would cause data loss")
         logger.info(f"Began pooling samples {samples} into {repr(name)} with "
                     f"reference {repr(ref)} in output directory {out_dir}")
         ended = datetime.now()
