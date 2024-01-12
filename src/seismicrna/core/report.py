@@ -449,13 +449,15 @@ ClustsLogLikesF = Field("log_likes", "Log Likelihood per Run", dict,
                         iconv=iconv_int_keys,
                         oconv=get_oconv_dict_list_float())
 ClustsRMSDsF = Field("clusts_rmsds",
-                     "Mean NRMSD Between Runs",
+                     "NRMSD Between Runs",
                      dict,
+                     dict(),
                      iconv=iconv_int_keys,
                      oconv=get_oconv_dict_list_float())
 ClustsMeanRsF = Field("clusts_meanr",
-                      "Mean Correlation Between Runs",
+                      "Correlation Between Runs",
                       dict,
+                      dict(),
                       iconv=iconv_int_keys,
                       oconv=get_oconv_dict_list_float())
 ClustsBicF = Field("bic", "Bayesian Information Criterion per Order", dict,
@@ -550,9 +552,13 @@ class Report(FileIO, ABC):
         idata = dict()
         for title, value in odata.items():
             # Get the field corresponding to the title.
-            field = lookup_title(title)
-            # Cast the value to the input type and key it by the field.
-            idata[field.key] = field.iconv(value)
+            try:
+                field = lookup_title(title)
+            except ValueError as error:
+                logger.warning(error)
+            else:
+                # Cast the value to the input type; key it by the field.
+                idata[field.key] = field.iconv(value)
         # Instantiate and return a new Report from the values.
         return cls(**idata)
 
