@@ -16,9 +16,8 @@ from ..core.report import (BatchedReport,
                            ClustConvThreshF,
                            ClustsConvF,
                            ClustsLogLikesF,
-                           ClustsLikeMeanF,
-                           ClustsLikeStdF,
-                           ClustsVarInfoF,
+                           ClustsRMSDsF,
+                           ClustsMeanRsF,
                            ClustsBicF,
                            NumClustsF)
 
@@ -50,9 +49,8 @@ class ClustReport(BatchedReport, ClustIO):
             # Clustering results.
             ClustsConvF,
             ClustsLogLikesF,
-            ClustsLikeMeanF,
-            ClustsLikeStdF,
-            ClustsVarInfoF,
+            ClustsRMSDsF,
+            ClustsMeanRsF,
             ClustsBicF,
             NumClustsF,
         ] + super().fields()
@@ -75,7 +73,7 @@ class ClustReport(BatchedReport, ClustIO):
 
     @classmethod
     def from_clusters(cls,
-                      ord_runs: dict[int, RunOrderResults],
+                      orders: list[RunOrderResults],
                       uniq_reads: UniqReads,
                       max_order: int,
                       num_runs: int, *,
@@ -98,19 +96,12 @@ class ClustReport(BatchedReport, ClustIO):
                    conv_thresh=conv_thresh,
                    checksums={ClustBatchIO.btype(): checksums},
                    n_batches=len(checksums),
-                   converged={order: runs.converged
-                              for order, runs in ord_runs.items()},
-                   log_likes={order: runs.log_likes
-                              for order, runs in ord_runs.items()},
-                   log_like_mean={order: runs.log_like_mean
-                                  for order, runs in ord_runs.items()},
-                   log_like_std={order: runs.log_like_std
-                                 for order, runs in ord_runs.items()},
-                   var_info={order: runs.var_info
-                             for order, runs in ord_runs.items()},
-                   bic={order: runs.best.bic
-                        for order, runs in ord_runs.items()},
-                   best_order=find_best_order(ord_runs),
+                   converged={runs.order: runs.converged for runs in orders},
+                   log_likes={runs.order: runs.log_likes for runs in orders},
+                   clusts_rmsds={runs.order: runs.rmsds for runs in orders},
+                   clusts_meanr={runs.order: runs.meanr for runs in orders},
+                   bic={runs.order: runs.best.bic for runs in orders},
+                   best_order=find_best_order(orders),
                    began=began,
                    ended=ended)
 

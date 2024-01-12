@@ -443,28 +443,25 @@ ClustConvThreshF = Field("conv_thresh",
                          oconv=get_oconv_float())
 MaxClustsF = Field("max_order", "Maximum Number of Clusters", int)
 ClustNumRunsF = Field("num_runs", "Number of Independent EM Runs", int)
-NumClustsF = Field("best_order", "Optimal Number of Clusters", int)
-ClustsBicF = Field("bic", "Bayesian Information Criterion per Order", dict,
-                   iconv=iconv_int_keys,
-                   oconv=get_oconv_dict_float())
 ClustsConvF = Field("converged", "Iterations Until Convergence per Run", dict,
                     iconv=iconv_int_keys)
 ClustsLogLikesF = Field("log_likes", "Log Likelihood per Run", dict,
                         iconv=iconv_int_keys,
                         oconv=get_oconv_dict_list_float())
-ClustsLikeMeanF = Field("log_like_mean", "Mean Log Likelihood per Order", dict,
-                        iconv=iconv_int_keys,
-                        oconv=get_oconv_dict_float())
-ClustsLikeStdF = Field("log_like_std",
-                       "Std. Dev. Log Likelihood per Order",
-                       dict,
-                       iconv=iconv_int_keys,
-                       oconv=get_oconv_dict_float())
-ClustsVarInfoF = Field("var_info",
-                       "Variation of Information per Order",
-                       dict,
-                       iconv=iconv_int_keys,
-                       oconv=get_oconv_dict_float())
+ClustsRMSDsF = Field("clusts_rmsds",
+                     "Mean NRMSD Between Runs",
+                     dict,
+                     iconv=iconv_int_keys,
+                     oconv=get_oconv_dict_list_float())
+ClustsMeanRsF = Field("clusts_meanr",
+                      "Mean Correlation Between Runs",
+                      dict,
+                      iconv=iconv_int_keys,
+                      oconv=get_oconv_dict_list_float())
+ClustsBicF = Field("bic", "Bayesian Information Criterion per Order", dict,
+                   iconv=iconv_int_keys,
+                   oconv=get_oconv_dict_float())
+NumClustsF = Field("best_order", "Optimal Number of Clusters", int)
 
 # Fold fields
 
@@ -569,8 +566,8 @@ class Report(FileIO, ABC):
         for key, value in report.path_field_values().items():
             if value != path_fields.get(key):
                 raise ValueError(f"Got different values for {repr(key)} "
-                                      f"in path ({repr(path_fields.get(key))}) "
-                                      f"and contents ({repr(value)}) of {file}")
+                                 f"in path ({repr(path_fields.get(key))}) "
+                                 f"and contents ({repr(value)}) of {file}")
         return report
 
     @classmethod

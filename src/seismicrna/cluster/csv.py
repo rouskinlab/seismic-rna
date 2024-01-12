@@ -71,7 +71,7 @@ def get_count_path(top: Path, sample: str, ref: str, sect: str):
                          ext=path.CSVZIP_EXT)
 
 
-def write_log_counts(ord_runs: dict[int, RunOrderResults],
+def write_log_counts(ord_runs: list[RunOrderResults],
                      top: Path,
                      sample: str,
                      ref: str,

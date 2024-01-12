@@ -16,8 +16,8 @@ from ..seq import get_shared_index, iter_windows
 @auto_removes_nan
 def calc_nrmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
                mus2: np.ndarray | pd.Series | pd.DataFrame):
-    """ Calculate the root-mean-square deviation (NRMSD) between two
-    groups of mutation rates, ignoring NaNs.
+    """ Calculate the normalized root-mean-square deviation (NRMSD) of
+    two groups of mutation rates, ignoring NaNs.
 
     Parameters
     ----------
@@ -31,7 +31,7 @@ def calc_nrmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
     Returns
     -------
     np.ndarray | pd.Series | pd.DataFrame
-        Standardized mutation rates.
+        Normalized root-mean-square deviation (NRMSD)
     """
     # Normalize the mutation rates so the maximum of each group is 1.
     mus1 = normalize(mus1, 1.)

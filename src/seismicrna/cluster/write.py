@@ -6,7 +6,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .compare import RunOrderResults, find_best_order, sort_replicate_runs
+from .compare import (RunOrderResults,
+                      find_best_order,
+                      orders_list_to_dict,
+                      sort_replicate_runs)
 from .csv import write_log_counts, write_mus, write_props
 from .em import EmClustering
 from .io import ClustBatchIO
@@ -23,13 +26,14 @@ SEED_DTYPE = np.uint32
 
 
 def write_batches(dataset: MaskMutsDataset,
-                  ord_runs: dict[int, RunOrderResults],
+                  orders: list[RunOrderResults],
                   brotli_level: int):
     """ Write the cluster memberships to batch files. """
     checksums = list()
-    best_order = find_best_order(ord_runs)
+    best_order = find_best_order(orders)
+    runs = orders_list_to_dict(orders)
     for batch_num in dataset.batch_nums:
-        resps = pd.concat((ord_runs[order].best.get_resps(batch_num)
+        resps = pd.concat((runs[order].best.get_resps(batch_num)
                            for order in range(1, best_order + 1)),
                           axis=1)
         batch = ClustBatchIO(sample=dataset.sample,
@@ -135,7 +139,7 @@ def run_max_order(uniq_reads: UniqReads,
                             f"(order {order - 1}) to {best_bic} "
                             f"(order {order}): stopping")
                 break
-    return results
+    return list(results.values())
 
 
 def cluster(mask_report_file: Path,
