@@ -14,6 +14,37 @@ from ..seq import get_shared_index, iter_windows
 
 
 @auto_removes_nan
+def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
+              mus2: np.ndarray | pd.Series | pd.DataFrame):
+    """ Calculate the root-mean-square deviation (RMSD) of two groups of
+    mutation rates, ignoring NaNs.
+
+    Parameters
+    ----------
+    mus1: np.ndarray | pd.Series | pd.DataFrame
+        First group of mutation rates; can contain multiple sets as the
+        columns of a multidimensional array or DataFrame.
+    mus2: np.ndarray | pd.Series | pd.DataFrame
+        Second group of mutation rates; can contain multiple sets as the
+        columns of a multidimensional array or DataFrame.
+
+    Returns
+    -------
+    np.ndarray | pd.Series | pd.DataFrame
+        Root-mean-square deviation (RMSD)
+    """
+    # Compute the root-mean-square mutation rate for each group.
+    rms1 = calc_rms(mus1)
+    rms2 = calc_rms(mus2)
+    # Standardize the mutation rates so that the root-mean-square of
+    # each group is 1, and then compute the difference.
+    diff = mus1 / rms1 - mus2 / rms2
+    # Compute the root-mean-square difference and restore the original
+    # scale by multiplying by the geometric mean of the root-mean-square
+    # mutation rates.
+    return np.sqrt(np.mean(np.square(diff), axis=0) * (rms1 * rms2))
+
+
 def calc_nrmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
                mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the normalized root-mean-square deviation (NRMSD) of
@@ -34,18 +65,7 @@ def calc_nrmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
         Normalized root-mean-square deviation (NRMSD)
     """
     # Normalize the mutation rates so the maximum of each group is 1.
-    mus1 = normalize(mus1, 1.)
-    mus2 = normalize(mus2, 1.)
-    # Compute the root-mean-square mutation rate for each group.
-    rms1 = calc_rms(mus1)
-    rms2 = calc_rms(mus2)
-    # Standardize the mutation rates so that the root-mean-square of
-    # each group is 1, and then compute the difference.
-    diff = mus1 / rms1 - mus2 / rms2
-    # Compute the root-mean-square difference and restore the original
-    # scale by multiplying by the geometric mean of the root-mean-square
-    # mutation rates.
-    return np.sqrt(np.mean(np.square(diff), axis=0) * (rms1 * rms2))
+    return calc_rmsd(normalize(mus1, 1.), normalize(mus2, 1.))
 
 
 @auto_removes_nan

@@ -431,12 +431,8 @@ NumUniqReadKeptF = Field("n_uniq_reads",
 
 # Cluster fields
 
-MinIterClustF = Field("min_iter",
-                      "Minimum EM Iterations per Cluster",
-                      int)
-MaxIterClustF = Field("max_iter",
-                      "Maximum EM Iterations per Cluster",
-                      int)
+MinIterClustF = Field("min_iter", "Minimum EM Iterations per Cluster", int)
+MaxIterClustF = Field("max_iter", "Maximum EM Iterations per Cluster", int)
 ClustConvThreshF = Field("conv_thresh",
                          "Convergence Threshold for Log Likelihood",
                          float,
@@ -448,16 +444,10 @@ ClustsConvF = Field("converged", "Iterations Until Convergence per Run", dict,
 ClustsLogLikesF = Field("log_likes", "Log Likelihood per Run", dict,
                         iconv=iconv_int_keys,
                         oconv=get_oconv_dict_list_float())
-ClustsRMSDsF = Field("clusts_rmsds",
-                     "NRMSD Between Runs",
-                     dict,
-                     dict(),
+ClustsRMSDsF = Field("clusts_rmsds", "NRMSD from Run 0", dict, dict(),
                      iconv=iconv_int_keys,
                      oconv=get_oconv_dict_list_float())
-ClustsMeanRsF = Field("clusts_meanr",
-                      "Correlation Between Runs",
-                      dict,
-                      dict(),
+ClustsMeanRsF = Field("clusts_meanr", "Correlation with Run 0", dict, dict(),
                       iconv=iconv_int_keys,
                       oconv=get_oconv_dict_list_float())
 ClustsBicF = Field("bic", "Bayesian Information Criterion per Order", dict,

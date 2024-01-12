@@ -17,7 +17,7 @@ import pandas as pd
 from .em import EmClustering
 from .names import EXP_NAME, OBS_NAME
 from ..core.header import ORDER_NAME
-from ..core.mu import calc_nrmsd, calc_pearson
+from ..core.mu import calc_rmsd, calc_nrmsd, calc_pearson
 
 EXP_COUNT_PRECISION = 3  # Number of digits to round expected log counts
 NON_CONVERGED = -1  # Number indicating a run did not converge
@@ -57,12 +57,10 @@ class RunOrderResults(object):
                           for run in runs]
         # List of log likelihoods for each run.
         self.log_likes = [run.log_like for run in runs]
-        # Root-mean-square deviations between adjacent runs.
-        self.rmsds = [calc_rms_nrmsd(runs[i], runs[i + 1])
-                      for i in range(len(runs) - 1)]
-        # Correlations between adjacent runs.
-        self.meanr = [calc_mean_pearson(runs[i], runs[i + 1])
-                      for i in range(len(runs) - 1)]
+        # Root-mean-square deviations between each run and the first.
+        self.rmsds = [calc_rms_nrmsd(run, runs[0]) for run in runs]
+        # Correlations between each run and the first.
+        self.meanr = [calc_mean_pearson(run, runs[0]) for run in runs]
         # Run with the best (smallest) BIC.
         self.best = runs[0]
 
@@ -131,6 +129,11 @@ def _compare_groups(func: Callable, mus1: np.ndarray, mus2: np.ndarray):
                      for cluster1 in range(n1)])
 
 
+def calc_rmsd_groups(mus1: np.ndarray, mus2: np.ndarray):
+    """ Calculate the RMSD of each pair of clusters in two groups. """
+    return _compare_groups(calc_rmsd, mus1, mus2)
+
+
 def calc_nrmsd_groups(mus1: np.ndarray, mus2: np.ndarray):
     """ Calculate the NRMSD of each pair of clusters in two groups. """
     return _compare_groups(calc_nrmsd, mus1, mus2)
@@ -144,8 +147,8 @@ def calc_pearson_groups(mus1: np.ndarray, mus2: np.ndarray):
 
 def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
     """ Optimally assign clusters from two groups to each other. """
-    # Make a cost matrix for assigning clusters using the MSD.
-    costs = np.square(calc_nrmsd_groups(mus1, mus2))
+    # Make a cost matrix for assigning clusters using the RMSD.
+    costs = np.square(calc_rmsd_groups(mus1, mus2))
     n, m = costs.shape
     if n != m:
         raise ValueError(f"Got different numbers of clusters in groups 1 ({n}) "
@@ -158,12 +161,12 @@ def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
     # when n is no more than 5 or 6, which is almost always true.
     best_assignment = list()
     min_cost = None
-    for columns in permutations(range(n)):
-        assignment = [(i, columns[i]) for i in range(n)]
-        cost = sum(costs[i, j] for i, j in assignment)
+    rows = list(range(n))
+    for columns in permutations(rows):
+        cost = np.sum(costs[rows, columns])
         if min_cost is None or cost < min_cost:
             min_cost = float(cost)
-            best_assignment = assignment
+            best_assignment = list(zip(rows, columns))
     return best_assignment
 
 
