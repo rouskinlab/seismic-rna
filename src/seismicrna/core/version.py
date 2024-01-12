@@ -6,7 +6,7 @@ from logging import getLogger
 
 logger = getLogger(__name__)
 
-__version__ = "0.11.4"
+__version__ = "0.11.5"
 
 VERSION_DELIM = "."
 
