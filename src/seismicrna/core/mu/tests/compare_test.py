@@ -78,7 +78,7 @@ class TestCalcNRMSD(ut.TestCase):
         self.assertIsInstance(nrmsd, np.ndarray)
         self.assertEqual(nrmsd.shape, (2,))
         self.assertTrue(np.allclose(nrmsd, [72. ** -0.5,
-                                           (2. / 3.) ** 0.5]))
+                                            (2. / 3.) ** 0.5]))
 
     def test_series(self):
         x = pd.Series([np.nan, 0.4, 0.1, 0.3, 0.8])
@@ -106,7 +106,7 @@ class TestCalcNRMSD(ut.TestCase):
         self.assertIsInstance(nrmsd, pd.Series)
         self.assertEqual(nrmsd.shape, (2,))
         self.assertTrue(np.allclose(nrmsd, [72. ** -0.5,
-                                           (2. / 3.) ** 0.5]))
+                                            (2. / 3.) ** 0.5]))
         self.assertTrue(nrmsd.index.equals(x.columns))
 
 

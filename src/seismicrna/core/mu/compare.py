@@ -45,6 +45,7 @@ def calc_rmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
     return np.sqrt(np.mean(np.square(diff), axis=0) * (rms1 * rms2))
 
 
+@auto_removes_nan
 def calc_nrmsd(mus1: np.ndarray | pd.Series | pd.DataFrame,
                mus2: np.ndarray | pd.Series | pd.DataFrame):
     """ Calculate the normalized root-mean-square deviation (NRMSD) of
