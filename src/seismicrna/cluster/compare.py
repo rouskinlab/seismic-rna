@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 from .em import EmClustering
-from .names import EXP_NAME, OBS_NAME
+from .names import LOG_EXP_NAME, LOG_OBS_NAME
 from ..core.header import ORDER_NAME
 from ..core.mu import calc_rmsd, calc_nrmsd, calc_pearson
 
@@ -64,41 +64,32 @@ class RunOrderResults(object):
         # Run with the best (smallest) BIC.
         self.best = runs[0]
 
-
-def orders_list_to_dict(orders: list[RunOrderResults]):
-    """ Return a dict of the RunOrderResults keyed by their orders. """
-    runs_per_order = dict()
-    for runs in orders:
-        if runs.order in runs_per_order:
-            raise ValueError(f"Duplicate order: {runs.order}")
-        runs_per_order[runs.order] = runs
-    for order in range(1, max(runs_per_order) + 1):
-        if order not in runs_per_order:
-            raise ValueError(f"Missing order: {order}")
-    return runs_per_order
+    @property
+    def bic(self):
+        """ BIC of the best run. """
+        return self.best.bic
 
 
 def get_common_best_run_attr(orders: list[RunOrderResults], attr: str):
     """ Get an attribute of the best clustering run from every order,
     and confirm that `key(attribute)` is identical for all orders. """
-    # Start by getting the attribute from order 1, which always exists.
-    value = getattr(orders_list_to_dict(orders)[1].best, attr)
+    # Start by getting the attribute from the first order.
+    value = getattr(orders[0].best, attr)
     # Verify that the best run from every other order has an equal value
     # of that attribute.
-    if any(getattr(order.best, attr) != value
-           for order in orders if order.order != 1):
+    if any(getattr(order.best, attr) != value for order in orders[1:]):
         raise ValueError(f"Found more than 1 value for attribute {repr(attr)} "
-                         f"among EM clustering runs {orders}")
+                         f"among orders {orders}")
     return value
 
 
 def find_best_order(orders: list[RunOrderResults]) -> int:
     """ Find the number of clusters with the best (smallest) BIC. """
-    return sorted(orders, key=lambda runs: runs.best.bic)[0].order
+    return sorted(orders, key=lambda runs: runs.bic)[0].order
 
 
 def format_exp_count_col(order: int):
-    return f"{EXP_NAME}, {ORDER_NAME} {order}"
+    return f"{LOG_EXP_NAME}, {ORDER_NAME} {order}"
 
 
 def get_log_exp_obs_counts(orders: list[RunOrderResults]):
@@ -113,10 +104,9 @@ def get_log_exp_obs_counts(orders: list[RunOrderResults]):
                 pd.Series(runs.best.logn_exp, index=log_obs.index))
                for runs in orders)
     # Assemble all log counts into one DataFrame.
-    log_counts = pd.DataFrame.from_dict({OBS_NAME: log_obs, **dict(log_exp)})
-    # Sort the data by expected count at order 1, then round it.
-    return log_counts.sort_values(by=[format_exp_count_col(order=1)],
-                                  ascending=False).round(EXP_COUNT_PRECISION)
+    log_counts = pd.DataFrame.from_dict({LOG_OBS_NAME: log_obs} | dict(log_exp))
+    # Round the log counts.
+    return log_counts.round(EXP_COUNT_PRECISION)
 
 
 def _compare_groups(func: Callable, mus1: np.ndarray, mus2: np.ndarray):
@@ -158,7 +148,7 @@ def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
     # While other algorithms (e.g. the Jonker-Volgenant algorithm) solve
     # the assignment problem in O(n³) time, and this naive approach runs
     # in O(n!) time, the latter is simpler and still sufficiently fast
-    # when n is no more than 5 or 6, which is almost always true.
+    # when n is no more than about 6, which is almost always true.
     best_assignment = list()
     min_cost = None
     rows = list(range(n))

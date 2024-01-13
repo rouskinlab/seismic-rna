@@ -100,7 +100,7 @@ class ClustReport(BatchedReport, ClustIO):
                    log_likes={runs.order: runs.log_likes for runs in orders},
                    clusts_rmsds={runs.order: runs.rmsds for runs in orders},
                    clusts_meanr={runs.order: runs.meanr for runs in orders},
-                   bic={runs.order: runs.best.bic for runs in orders},
+                   bic={runs.order: runs.bic for runs in orders},
                    best_order=find_best_order(orders),
                    began=began,
                    ended=ended)

@@ -4,6 +4,7 @@ from logging import getLogger
 import numpy as np
 import pandas as pd
 
+from .names import ADJ_NAME, OBS_NAME
 from .uniq import UniqReads
 from ..core.header import index_order_clusts
 from ..core.mu import calc_f_obs_numpy, calc_mu_adj_numpy, calc_prop_adj_numpy
@@ -12,13 +13,6 @@ logger = getLogger(__name__)
 
 LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
 FIRST_ITER = 1  # number of the first iteration
-
-# Names
-OBSERVED = "Observed"
-ADJUSTED = "Adjusted"
-BITVECTOR = "Bit Vector"
-LOGOBS = "Log Observed"
-LOGEXP = "Log Expected"
 
 
 def calc_bic(n_params: int,
@@ -385,7 +379,7 @@ class EmClustering(object):
         """ Real and observed log proportion of each cluster. """
         return pd.DataFrame(np.vstack([self.prop_obs, self.prop_adj]).T,
                             index=self.clusters,
-                            columns=[OBSERVED, ADJUSTED])
+                            columns=[OBS_NAME, ADJ_NAME])
 
     def get_mus(self):
         """ Log mutation rate at each position for each cluster. """

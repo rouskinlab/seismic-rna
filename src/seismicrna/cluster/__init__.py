@@ -1,3 +1,4 @@
+from . import update
 from .main import cli, run, params
 
 ########################################################################

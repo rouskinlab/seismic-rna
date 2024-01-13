@@ -11,6 +11,7 @@ import logging
 import os
 
 import click
+import numpy as np
 from click import Argument, Choice, Option, Parameter, Path
 
 from ..io import DEFAULT_BROTLI_LEVEL
@@ -696,7 +697,7 @@ opt_max_em_iter = Option(
 opt_em_thresh = Option(
     ("--em-thresh",),
     type=float,
-    default=0.01,
+    default=np.log(2.),
     help="Maximum change in log likelihood for convergence"
 )
 

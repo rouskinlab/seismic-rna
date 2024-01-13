@@ -5,12 +5,11 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
+from .names import BIT_VECTOR_NAME
 from ..core.batch import RefseqMutsBatch, get_length
 from ..core.rel import REL_TYPE, RelPattern
 from ..core.seq import Section
 from ..mask.data import MaskMutsDataset
-
-BIT_VECTOR_NAME = "Bit Vector"
 
 
 class UniqReads(object):
@@ -90,7 +89,9 @@ class UniqReads(object):
             # Add ord('0') to transform every 0 into b'0' and every 1
             # into # b'1', and convert each row (bit vector) into a
             # bytes object of b'0' and b'1' characters.
-            names = np.apply_along_axis(np.ndarray.tobytes, 1, chars + ord('0'))
+            names = np.char.decode(
+                np.apply_along_axis(np.ndarray.tobytes, 1, chars + ord('0'))
+            )
         else:
             # If there are no unique bit vectors, then apply_along_axis
             # will fail, so set names to an empty list.

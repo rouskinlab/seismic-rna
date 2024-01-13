@@ -5,7 +5,7 @@ from click import command
 
 from .write import cluster
 from ..core import path
-from ..core.arg import (CMD_CLUST,
+from ..core.arg import (CMD_CLUSTER,
                         docdef,
                         arg_input_path,
                         opt_max_clusters,
@@ -23,38 +23,6 @@ from ..mask.data import load_mask_dataset
 logger = getLogger(__name__)
 
 DEFAULT_ORDER = 2
-
-params = [
-    # Input files
-    arg_input_path,
-    # Clustering options
-    opt_max_clusters,
-    opt_em_runs,
-    opt_em_thresh,
-    opt_min_em_iter,
-    opt_max_em_iter,
-    # Compression
-    opt_brotli_level,
-    # Parallelization
-    opt_max_procs,
-    opt_parallel,
-    # Effort
-    opt_force,
-]
-
-
-@command(CMD_CLUST, params=params)
-def cli(*args, max_clusters: int, **kwargs):
-    """ Infer alternative structures by clustering reads' mutations. """
-    # When cluster is called via the command "cluster" (instead of via
-    # the run() function), assume that clustering is intentional. Thus,
-    # override the default max_clusters == 0 (which disables clustering)
-    # by setting it to 2 (the minimum non-trivial order of clustering).
-    if max_clusters <= 0:
-        logger.warning(f"{repr(CMD_CLUST)} expected --max-clusters to be ≥ 1, "
-                       f"but got {max_clusters}; defaulting to {DEFAULT_ORDER}")
-        max_clusters = DEFAULT_ORDER
-    return run(*args, max_clusters=max_clusters, **kwargs)
 
 
 @docdef.auto()
@@ -80,6 +48,7 @@ def run(input_path: tuple[str, ...], *,
     return dispatch(cluster,
                     max_procs,
                     parallel,
+                    pass_n_procs=True,
                     args=as_list_of_tuples(report_files),
                     kwargs=dict(max_order=max_clusters,
                                 n_runs=em_runs,
@@ -88,6 +57,39 @@ def run(input_path: tuple[str, ...], *,
                                 conv_thresh=em_thresh,
                                 brotli_level=brotli_level,
                                 force=force))
+
+
+params = [
+    # Input files
+    arg_input_path,
+    # Clustering options
+    opt_max_clusters,
+    opt_em_runs,
+    opt_em_thresh,
+    opt_min_em_iter,
+    opt_max_em_iter,
+    # Compression
+    opt_brotli_level,
+    # Parallelization
+    opt_max_procs,
+    opt_parallel,
+    # Effort
+    opt_force,
+]
+
+
+@command(CMD_CLUSTER, params=params)
+def cli(*args, max_clusters: int, **kwargs):
+    """ Infer alternative structures by clustering reads' mutations. """
+    # When cluster is called via the command "cluster" (instead of via
+    # the run() function), assume that clustering is intentional. Thus,
+    # override the default max_clusters == 0 (which disables clustering)
+    # by setting it to 2 (the minimum non-trivial order of clustering).
+    if max_clusters <= 0:
+        logger.warning(f"{repr(CMD_CLUSTER)} expected --max-clusters to be ≥ 1, "
+                       f"but got {max_clusters}; defaulting to {DEFAULT_ORDER}")
+        max_clusters = DEFAULT_ORDER
+    return run(*args, max_clusters=max_clusters, **kwargs)
 
 ########################################################################
 #                                                                      #

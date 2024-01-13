@@ -4,48 +4,23 @@ from math import inf
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 
-from .compare import (RunOrderResults,
-                      find_best_order,
-                      orders_list_to_dict,
-                      sort_replicate_runs)
+from .compare import RunOrderResults, find_best_order, sort_replicate_runs
 from .csv import write_log_counts, write_mus, write_props
 from .em import EmClustering
-from .io import ClustBatchIO
 from .report import ClustReport
+from .save import write_batches
 from .uniq import UniqReads
+from ..core.io import recast_file_path
 from ..core.parallel import dispatch
 from ..core.types import get_max_uint
 from ..core.write import need_write
-from ..mask.data import MaskMutsDataset, load_mask_dataset
+from ..mask.data import load_mask_dataset
+from ..mask.report import MaskReport
 
 logger = getLogger(__name__)
 
 SEED_DTYPE = np.uint32
-
-
-def write_batches(dataset: MaskMutsDataset,
-                  orders: list[RunOrderResults],
-                  brotli_level: int):
-    """ Write the cluster memberships to batch files. """
-    checksums = list()
-    best_order = find_best_order(orders)
-    runs = orders_list_to_dict(orders)
-    for batch_num in dataset.batch_nums:
-        resps = pd.concat((runs[order].best.get_resps(batch_num)
-                           for order in range(1, best_order + 1)),
-                          axis=1)
-        batch = ClustBatchIO(sample=dataset.sample,
-                             ref=dataset.ref,
-                             sect=dataset.sect,
-                             batch=batch_num,
-                             resps=resps)
-        _, checksum = batch.save(top=dataset.top,
-                                 brotli_level=brotli_level,
-                                 force=True)
-        checksums.append(checksum)
-    return checksums
 
 
 def run_order(uniq_reads: UniqReads,
@@ -78,33 +53,27 @@ def run_order(uniq_reads: UniqReads,
     return sort_replicate_runs(replicates)
 
 
-def run_max_order(uniq_reads: UniqReads,
-                  max_order: int,
-                  n_runs: int, *,
-                  min_iter: int,
-                  max_iter: int,
-                  conv_thresh: float,
-                  n_procs: int,
-                  top: Path):
-    """
-    Find the optimal order (i.e. number of clusters) for EM, up to max_order.
-    """
+def run_orders(uniq_reads: UniqReads,
+               min_order: int,
+               max_order: int,
+               n_runs: int,
+               prev_bic: float | None, *,
+               min_iter: int,
+               max_iter: int,
+               conv_thresh: float,
+               n_procs: int,
+               top: Path):
+    """ Find the optimal order, from min_order to max_order. """
     if n_runs < 1:
-        logger.warning(f"Number of EM runs must be ≥ 1: setting to 1")
+        logger.warning(f"Number of runs must be ≥ 1: setting to 1")
         n_runs = 1
-    logger.info(f"Began clustering {uniq_reads} up to order {max_order} "
-                f"with {n_runs} runs per order")
     path_kwargs = dict(top=top,
                        sample=uniq_reads.sample,
                        ref=uniq_reads.ref,
                        sect=uniq_reads.section.name)
-    # For each order, keep the best run and a summary of all runs.
-    results = dict()
-    # Run clustering for each number of clusters, up to max_clusters.
-    while len(results) < max_order:
-        # Determine the current order for clustering.
-        order = len(results) + 1
-        # Run EM clustering n_runs times with different starting points.
+    # Run clustering for each order from min_order to max_order.
+    for order in range(min_order, max_order + 1):
+        # Cluster n_runs times with different starting points.
         runs = run_order(uniq_reads,
                          order,
                          n_runs=(n_runs if order > 1 else 1),
@@ -118,28 +87,50 @@ def run_max_order(uniq_reads: UniqReads,
             write_mus(run, rank=rank, **path_kwargs)
             write_props(run, rank=rank, **path_kwargs)
         # Compute a summary of all runs.
-        results[order] = RunOrderResults(runs)
-        # Compare the BIC for this order to lower orders, if order > 1.
-        best_bic = results[order].best.bic
-        logger.debug(f"The best BIC with {order} cluster(s) is {best_bic}")
-        if order > 1:
-            prev_bic = results[order - 1].best.bic
+        orders = RunOrderResults(runs)
+        # Compare the BIC for this order to lower orders, if any.
+        best_bic = orders.bic
+        logger.debug(f"The best BIC with order {order} is {best_bic}")
+        if prev_bic is not None:
             # Check if the best BIC is better (smaller) than the best
-            # BIC from clustering with one cluster fewer.
+            # BIC from the previous order.
             if best_bic < prev_bic:
-                # If the best BIC is < the previous best BIC, then the
-                # current model is the best.
+                # If the best BIC is < the previous best BIC, then this
+                # order is better than the previous.
                 logger.debug(f"The BIC decreased from {prev_bic} "
                              f"(order {order - 1}) to {best_bic} "
                              f"(order {order})")
             else:
-                # If the best BIC is ≥ than the previous best BIC, then
-                # this model is worse than the previous model. Stop.
+                # If the best BIC is ≥ the previous best BIC, then this
+                # order is worse than the previous: stop.
                 logger.info(f"The BIC failed to decrease from {prev_bic} "
                             f"(order {order - 1}) to {best_bic} "
                             f"(order {order}): stopping")
                 break
-    return list(results.values())
+        # Record the best BIC for comparison with the next order.
+        prev_bic = best_bic
+        yield orders
+
+
+def run_max_order(uniq_reads: UniqReads,
+                  max_order: int,
+                  n_runs: int, *,
+                  min_iter: int,
+                  max_iter: int,
+                  conv_thresh: float,
+                  n_procs: int,
+                  top: Path):
+    """ Find the optimal order, from 1 to max_order. """
+    yield from run_orders(uniq_reads,
+                          min_order=1,
+                          max_order=max_order,
+                          n_runs=n_runs,
+                          prev_bic=None,
+                          min_iter=min_iter,
+                          max_iter=max_iter,
+                          conv_thresh=conv_thresh,
+                          n_procs=n_procs,
+                          top=top)
 
 
 def cluster(mask_report_file: Path,
@@ -151,35 +142,37 @@ def cluster(mask_report_file: Path,
             brotli_level: int,
             n_procs: int,
             force: bool):
-    """ Run all processes of clustering reads from one filter. """
-    dataset = load_mask_dataset(mask_report_file)
-    path_kwargs = dict(top=dataset.top,
-                       sample=dataset.sample,
-                       ref=dataset.ref,
-                       sect=dataset.sect)
-    # Check if the clustering report file already exists.
-    cluster_report_file = ClustReport.build_path(**path_kwargs)
+    """ Cluster unique reads from one mask dataset. """
+    # Check if the cluster report file already exists.
+    cluster_report_file = recast_file_path(mask_report_file,
+                                           MaskReport,
+                                           ClustReport)
     if need_write(cluster_report_file, force):
         began = datetime.now()
-        logger.info(f"Began clustering {dataset} up to order {max_order} "
-                    f"cluster(s) and {n_runs} independent run(s) per order")
-        # Get the unique reads.
+        logger.info(f"Began clustering {mask_report_file} up to order "
+                    f"{max_order}, with {n_runs} run(s) per order")
+        # Load the unique reads.
+        dataset = load_mask_dataset(mask_report_file)
         uniq_reads = UniqReads.from_dataset(dataset)
-        # Run EM clustering for every number of clusters.
-        results = run_max_order(uniq_reads,
-                                max_order,
-                                n_runs,
-                                min_iter=min_iter,
-                                max_iter=max_iter,
-                                conv_thresh=conv_thresh,
-                                n_procs=n_procs,
-                                top=dataset.top)
+        # Run clustering for every order.
+        orders = list(run_max_order(uniq_reads,
+                                    max_order,
+                                    n_runs,
+                                    min_iter=min_iter,
+                                    max_iter=max_iter,
+                                    conv_thresh=conv_thresh,
+                                    n_procs=n_procs,
+                                    top=dataset.top))
         # Output the observed and expected counts for every best run.
-        write_log_counts(results, **path_kwargs)
+        write_log_counts(orders,
+                         top=dataset.top,
+                         sample=dataset.sample,
+                         ref=dataset.ref,
+                         sect=dataset.sect)
         # Output the cluster memberships in batches of reads.
-        checksums = write_batches(dataset, results, brotli_level)
+        checksums = write_batches(dataset, orders, brotli_level)
         ended = datetime.now()
-        report = ClustReport.from_clusters(results,
+        report = ClustReport.from_clusters(orders,
                                            uniq_reads,
                                            max_order,
                                            n_runs,
@@ -190,9 +183,8 @@ def cluster(mask_report_file: Path,
                                            began=began,
                                            ended=ended)
         report.save(dataset.top, force=force)
-        logger.info(
-            f"Ended clustering {dataset}: {find_best_order(results)} clusters"
-        )
+        order = find_best_order(orders)
+        logger.info(f"Ended clustering {mask_report_file} to order {order}")
     return cluster_report_file
 
 ########################################################################

@@ -131,13 +131,20 @@ class OptionField(Field):
 # But this implementation could cause confusion because no one Report
 # class can work with all these methods.
 
-def calc_taken(report: Report):
+
+def calc_dt_minutes(began: datetime, ended: datetime):
     """ Calculate the time taken in minutes. """
-    delta = report.get_field(TimeEndedF) - report.get_field(TimeBeganF)
+    delta = ended - began
     minutes = (delta.seconds + 1e-6 * delta.microseconds) / 60.
     if minutes < 0.:
         raise ValueError(f"Time taken must be positive, but got {minutes} min")
     return minutes
+
+
+def calc_taken(report: Report):
+    """ Calculate the time taken in minutes. """
+    return calc_dt_minutes(report.get_field(TimeBeganF),
+                           report.get_field(TimeEndedF))
 
 
 # Field definitions

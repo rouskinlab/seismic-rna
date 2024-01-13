@@ -101,6 +101,7 @@ for module in (wf,
                cleanfa,
                renumct):
     cli.add_command(module.cli)
+cli.add_command(cluster.update.cli)
 
 ########################################################################
 #                                                                      #
