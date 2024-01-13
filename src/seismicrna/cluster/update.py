@@ -13,7 +13,7 @@ from .save import update_batches
 from .uniq import UniqReads
 from .write import run_orders
 from ..core import path
-from ..core.arg import (CMD_CLUSTUP,
+from ..core.arg import (CMD_ADDCLUST,
                         docdef,
                         arg_input_path,
                         opt_max_clusters,
@@ -195,7 +195,7 @@ params = [
 ]
 
 
-@command(CMD_CLUSTUP, params=params)
+@command(CMD_ADDCLUST, params=params)
 def cli(*args, **kwargs):
     """ Add more clusters to a dataset that was already clustered. """
     return run(*args, **kwargs)
