@@ -192,9 +192,6 @@ def run(input_path: tuple[str, ...], *,
         max_procs: int,
         parallel: bool) -> list[Path]:
     """ Add more clusters to a dataset that was already clustered. """
-    if max_clusters == 0:
-        # Exit immediately if the maximum number of clusters is 0.
-        return list()
     # Find the cluster report files.
     report_files = path.find_files_chain(
         input_path, load_cluster_dataset.report_path_seg_types
