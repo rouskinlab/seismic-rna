@@ -1,6 +1,7 @@
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
+from shutil import rmtree
 
 from click import command
 
@@ -17,11 +18,13 @@ from ..core.arg import (CMD_ADDCLUST,
                         docdef,
                         arg_input_path,
                         opt_max_clusters,
+                        opt_temp_dir,
+                        opt_keep_temp,
                         opt_brotli_level,
                         opt_parallel,
                         opt_max_procs)
-from ..core.io import recast_file_path
-from ..core.parallel import as_list_of_tuples, dispatch
+from ..core.io import make_temp_backup, recast_file_path, restore_temp_backup
+from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
 from ..core.report import (calc_dt_minutes,
                            Field,
                            TimeBeganF,
@@ -60,6 +63,8 @@ def update_field(report: ClustReport,
 
 def add_orders(cluster_report_file: Path,
                max_order: int, *,
+               temp_dir: Path,
+               keep_temp: bool,
                brotli_level: int,
                n_procs: int):
     """ Add orders to an existing report and dataset. """
@@ -84,83 +89,105 @@ def add_orders(cluster_report_file: Path,
                                                           ClustReport,
                                                           MaskReport))
         uniq_reads = UniqReads.from_dataset(mask_dataset)
-        # Run clustering for every new order.
-        orders = list(run_orders(uniq_reads,
-                                 original_max_order + 1,
-                                 max_order,
-                                 n_runs,
-                                 prev_bic=prev_bic,
-                                 min_iter=min_iter,
-                                 max_iter=max_iter,
-                                 conv_thresh=conv_thresh,
-                                 n_procs=n_procs,
-                                 top=mask_dataset.top))
-        if orders:
-            best_order = find_best_order(orders)
-            # Update the observed and expected counts for each best run.
-            try:
+        # Make a temporary backup of the original results.
+        backup_dir = make_temp_backup(cluster_report_file.parent,
+                                      mask_dataset.top,
+                                      temp_dir)
+        try:
+            # Run clustering for every new order.
+            orders = list(run_orders(uniq_reads,
+                                     original_max_order + 1,
+                                     max_order,
+                                     n_runs,
+                                     prev_bic=prev_bic,
+                                     min_iter=min_iter,
+                                     max_iter=max_iter,
+                                     conv_thresh=conv_thresh,
+                                     n_procs=n_procs,
+                                     top=mask_dataset.top))
+            if orders:
+                best_order = find_best_order(orders)
+                # Update the expected counts for each best run.
                 update_log_counts(orders,
                                   top=mask_dataset.top,
                                   sample=mask_dataset.sample,
                                   ref=mask_dataset.ref,
                                   sect=mask_dataset.sect)
-            except Exception as error:
-                logger.error(f"Failed to update counts: {error}")
-            # Output the cluster memberships in batches of reads.
-            cluster_dataset = load_cluster_dataset(cluster_report_file)
-            checksums = update_batches(cluster_dataset, orders, brotli_level)
-            ended = datetime.now()
-            new_report = ClustReport(
-                sample=cluster_dataset.sample,
-                ref=cluster_dataset.ref,
-                sect=cluster_dataset.sect,
-                n_uniq_reads=uniq_reads.num_uniq,
-                max_order=max_order,
-                num_runs=n_runs,
-                min_iter=min_iter,
-                max_iter=max_iter,
-                conv_thresh=conv_thresh,
-                checksums={ClustBatchIO.btype(): checksums},
-                n_batches=len(checksums),
-                converged=update_field(original_report,
-                                       ClustsConvF,
-                                       orders,
-                                       "converged"),
-                log_likes=update_field(original_report,
-                                       ClustsLogLikesF,
-                                       orders,
-                                       "log_likes"),
-                clusts_rmsds=update_field(original_report,
-                                          ClustsRMSDsF,
-                                          orders,
-                                          "rmsds"),
-                clusts_meanr=update_field(original_report,
-                                          ClustsMeanRsF,
-                                          orders,
-                                          "meanr"),
-                bic=update_field(original_report,
-                                 ClustsBicF,
-                                 orders,
-                                 "bic"),
-                best_order=best_order,
-                began=original_began,
-                ended=ended,
-                taken=taken + calc_dt_minutes(new_began, ended),
+                # Output the cluster memberships in batches of reads.
+                cluster_dataset = load_cluster_dataset(cluster_report_file)
+                checksums = update_batches(cluster_dataset,
+                                           orders,
+                                           brotli_level)
+                ended = datetime.now()
+                new_report = ClustReport(
+                    sample=cluster_dataset.sample,
+                    ref=cluster_dataset.ref,
+                    sect=cluster_dataset.sect,
+                    n_uniq_reads=uniq_reads.num_uniq,
+                    max_order=max_order,
+                    num_runs=n_runs,
+                    min_iter=min_iter,
+                    max_iter=max_iter,
+                    conv_thresh=conv_thresh,
+                    checksums={ClustBatchIO.btype(): checksums},
+                    n_batches=len(checksums),
+                    converged=update_field(original_report,
+                                           ClustsConvF,
+                                           orders,
+                                           "converged"),
+                    log_likes=update_field(original_report,
+                                           ClustsLogLikesF,
+                                           orders,
+                                           "log_likes"),
+                    clusts_rmsds=update_field(original_report,
+                                              ClustsRMSDsF,
+                                              orders,
+                                              "rmsds"),
+                    clusts_meanr=update_field(original_report,
+                                              ClustsMeanRsF,
+                                              orders,
+                                              "meanr"),
+                    bic=update_field(original_report,
+                                     ClustsBicF,
+                                     orders,
+                                     "bic"),
+                    best_order=best_order,
+                    began=original_began,
+                    ended=ended,
+                    taken=taken + calc_dt_minutes(new_began, ended),
+                )
+                new_report.save(cluster_dataset.top, force=True)
+            else:
+                best_order = original_best_order
+            n_new = best_order - original_best_order
+            logger.info(
+                f"Ended adding {n_new} cluster(s) to {cluster_report_file}"
             )
-            new_report.save(cluster_dataset.top, force=True)
-        else:
-            best_order = original_best_order
-        n_new = best_order - original_best_order
-        logger.info(f"Ended adding {n_new} cluster(s) to {cluster_report_file}")
+        except Exception:
+            # If any error happens, then restore the original results
+            # (as if this function never ran) and re-raise the error.
+            restore_temp_backup(cluster_report_file.parent,
+                                mask_dataset.top,
+                                temp_dir)
+            raise
+        finally:
+            # Always delete the backup unless keep_temp is True.
+            if not keep_temp:
+                rmtree(backup_dir, ignore_errors=True)
+                logger.info(f"Deleted backup of {cluster_report_file.parent} "
+                            f"in {backup_dir}")
     else:
         logger.warning(f"New maximum order ({max_order}) is not greater than "
                        f"original ({original_max_order}): nothing to update")
     return cluster_report_file
 
 
+@lock_temp_dir
 @docdef.auto()
 def run(input_path: tuple[str, ...], *,
         max_clusters: int,
+        temp_dir: str,
+        keep_temp: bool,
         brotli_level: int,
         max_procs: int,
         parallel: bool) -> list[Path]:
@@ -179,7 +206,9 @@ def run(input_path: tuple[str, ...], *,
                     pass_n_procs=True,
                     args=as_list_of_tuples(report_files),
                     kwargs=dict(max_order=max_clusters,
-                                brotli_level=brotli_level))
+                                brotli_level=brotli_level,
+                                temp_dir=Path(temp_dir),
+                                keep_temp=keep_temp))
 
 
 params = [
@@ -187,6 +216,9 @@ params = [
     arg_input_path,
     # Clustering options
     opt_max_clusters,
+    # Backup
+    opt_temp_dir,
+    opt_keep_temp,
     # Compression
     opt_brotli_level,
     # Parallelization

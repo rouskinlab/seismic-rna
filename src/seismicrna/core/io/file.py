@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
+from shutil import copy2, copytree, move, rmtree
 from typing import Any, Iterable
 
 from .brickle import load_brickle, save_brickle
@@ -166,6 +167,48 @@ def recast_file_path(input_path: Path,
                           input_type.seg_types(),
                           output_type.seg_types(),
                           **(override | output_type.auto_fields()))
+
+
+def make_temp_backup(source_path: str | Path,
+                     out_dir: str | Path,
+                     temp_dir: str | Path):
+    """ Make a temporary backup of `source_path` in `temp_dir`. """
+    # Determine the path of the backup.
+    backup_path = path.transpath(temp_dir, out_dir, source_path)
+    # Copy the source files to the backup.
+    if source_path.is_dir():
+        if backup_path.exists():
+            rmtree(backup_path)
+            logger.debug(f"Deleted existing backup in {backup_path}")
+        copytree(source_path, backup_path)
+        logger.debug(f"Copied directory {source_path} to {backup_path}")
+    else:
+        backup_path.parent.mkdir(parents=True, exist_ok=True)
+        copy2(source_path, backup_path)
+        logger.debug(f"Copied file {source_path} to {backup_path}")
+    logger.info(f"Backed up {source_path} to {backup_path}")
+    return backup_path
+
+
+def restore_temp_backup(source_path: str | Path,
+                        out_dir: str | Path,
+                        temp_dir: str | Path):
+    """ Restore the original files from a temporary backup. """
+    # Determine the path of the backup.
+    backup_path = path.transpath(temp_dir, out_dir, source_path)
+    # Replace the source files with the backup.
+    if backup_path.is_dir():
+        if source_path.exists():
+            rmtree(source_path)
+            logger.debug(f"Deleted original source in {source_path}")
+        move(backup_path, source_path.parent)
+        logger.debug(f"Moved directory {backup_path} to {source_path}")
+    else:
+        source_path.parent.mkdir(parents=True, exist_ok=True)
+        move(backup_path, source_path)
+        logger.debug(f"Moved file {backup_path} to {source_path}")
+    logger.info(f"Restored {source_path} from backup in {backup_path}")
+    return backup_path
 
 ########################################################################
 #                                                                      #

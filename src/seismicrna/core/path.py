@@ -688,8 +688,7 @@ def deduplicated(paths: Iterable[str | pl.Path]):
 
 
 def parse(path: str | pl.Path, /, *segment_types: Segment):
-    """ Return the fields of a path given as a `str` based on the
-    segment types. """
+    """ Return the fields of a path based on the segment types. """
     return create_path_type(*segment_types).parse(path)
 
 
@@ -814,10 +813,10 @@ def transpath(to_dir: str | pl.Path,
               from_dir: str | pl.Path,
               path: str | pl.Path,
               strict: bool = False):
-    """ Return the path that would result by moving `path` from `indir`
-    to `outdir` (but do not actually move the path on the file system).
-    This function does not require that any of the given paths exist
-    unless `strict` is True.
+    """ Return the path that would be produced by moving `path` from
+    `from_dir` to `to_dir` (but do not actually move the path on the
+    file system). This function does not require that any of the given
+    paths exist, unless `strict` is True.
 
     Parameters
     ----------
@@ -851,10 +850,10 @@ def transpath(to_dir: str | pl.Path,
 def transpaths(to_dir: str | pl.Path,
                *paths: str | pl.Path,
                strict: bool = False):
-    """ Return all paths that would result by moving the paths in `path`
-    from their longest common sub-path to `outdir` (but do not actually
-    move the paths on the file system). This function does not require
-    that any of the given paths exist unless `strict` is True.
+    """ Return all paths that would be produced by moving all paths in
+    `paths` from their longest common sub-path to `to_dir` (but do not
+    actually move the paths on the file system). This function does not
+    require that any of the given paths exist, unless `strict` is True.
 
     Parameters
     ----------

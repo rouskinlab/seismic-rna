@@ -35,37 +35,6 @@ from ..core.parallel import lock_temp_dir
 
 logger = getLogger(__name__)
 
-# Parameters for command line interface
-params = [
-    # Input files
-    arg_fasta,
-    arg_input_path,
-    # Output directories
-    opt_out_dir,
-    opt_temp_dir,
-    # SAM options
-    opt_min_mapq,
-    opt_phred_enc,
-    opt_min_phred,
-    # Relate options
-    opt_min_reads,
-    opt_batch_size,
-    opt_ambrel,
-    opt_brotli_level,
-    # Parallelization
-    opt_max_procs,
-    opt_parallel,
-    # File generation
-    opt_force,
-    opt_keep_temp,
-]
-
-
-@command(CMD_REL, params=params)
-def cli(**kwargs):
-    """ Compute relationships between references and aligned reads. """
-    return run(**kwargs)
-
 
 @lock_temp_dir
 @docdef.auto()
@@ -102,6 +71,38 @@ def run(fasta: str,
                      brotli_level=brotli_level,
                      force=force,
                      keep_temp=keep_temp)
+
+
+# Parameters for command line interface
+params = [
+    # Input files
+    arg_fasta,
+    arg_input_path,
+    # Output directories
+    opt_out_dir,
+    opt_temp_dir,
+    # SAM options
+    opt_min_mapq,
+    opt_phred_enc,
+    opt_min_phred,
+    # Relate options
+    opt_min_reads,
+    opt_batch_size,
+    opt_ambrel,
+    opt_brotli_level,
+    # Parallelization
+    opt_max_procs,
+    opt_parallel,
+    # File generation
+    opt_force,
+    opt_keep_temp,
+]
+
+
+@command(CMD_REL, params=params)
+def cli(**kwargs):
+    """ Compute relationships between references and aligned reads. """
+    return run(**kwargs)
 
 ########################################################################
 #                                                                      #
