@@ -64,7 +64,19 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.cluster.save
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.cluster.uniq
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.cluster.update
    :members:
    :undoc-members:
    :show-inheritance:

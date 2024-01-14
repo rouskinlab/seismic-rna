@@ -12,4 +12,5 @@ How To
     normalize
     parallel
     logging
+    addclust
     cleanfa

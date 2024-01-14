@@ -26,6 +26,8 @@ To cluster all masked relation vectors in ``{out}``, you can use the command ::
 Cluster: Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. _cluster_max:
+
 Cluster setting: Maximum number of clusters
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -56,6 +58,10 @@ This process continues until one of two limits is reached:
     number of clusters you specified (field "Maximum Number of Clusters") and
     the number that yielded the best BIC (field "Optimal Number of Clusters"),
     which is less than or equal to the maximum you specified.
+
+.. note::
+    If you decide after clustering that you wanted to run clustering with more
+    clusters, then use the tool ``+addclust`` (see :doc:`../addclust`).
 
 Cluster setting: Expectation-maximization iterations
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -174,6 +180,11 @@ In your cluster report:
 
 Cluster: Troubleshoot and optimize
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Run Cluster with more clusters, without repeating the work already done
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The tool ``+addclust`` exists for this purpose: see :doc:`../addclust`.
 
 Cluster takes too long to finish
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

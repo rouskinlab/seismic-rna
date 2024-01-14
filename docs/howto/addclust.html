@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Clusters to an Already-Clustered Dataset &mdash; seismic-rna  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../_static/favicon-32x32.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Clean FASTA Files" href="cleanfa.html" />
+    <link rel="prev" title="Log Messages" href="logging.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            seismic-rna
+              <img src="../_static/logo-200.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about/index.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whatdoes/index.html">What it Does</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/index.html">Install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../steps/index.html">Step-By-Step</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How To</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="run/index.html">Run SEISMIC-RNA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="graph/index.html">Graph Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inputs.html">List Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sections.html">Define Sections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="normalize.html">Normalize Mutation Rates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallel.html">Parallelize Tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html">Log Messages</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Add Clusters to an Already-Clustered Dataset</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#background-about-adding-clusters">Background about adding clusters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#purpose-of-adding-clusters">Purpose of adding clusters</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#how-to-add-clusters-to-a-cluster-dataset">How to add clusters to a Cluster dataset</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#command-line-for-adding-clusters">Command line for adding clusters</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="cleanfa.html">Clean FASTA Files</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">Commands, Arguments, Options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/seismicrna.html">seismicrna package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../formats/index.html">File Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/index.html">Data Structures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algos/index.html">Algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../issues.html">Bugs and Requests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../writeme.html">How to Write this Manual</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">seismic-rna</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">How To</a></li>
+      <li class="breadcrumb-item active">Add Clusters to an Already-Clustered Dataset</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/howto/addclust.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="add-clusters-to-an-already-clustered-dataset">
+<h1>Add Clusters to an Already-Clustered Dataset<a class="headerlink" href="#add-clusters-to-an-already-clustered-dataset" title="Permalink to this headline"></a></h1>
+<section id="background-about-adding-clusters">
+<h2>Background about adding clusters<a class="headerlink" href="#background-about-adding-clusters" title="Permalink to this headline"></a></h2>
+<section id="purpose-of-adding-clusters">
+<h3>Purpose of adding clusters<a class="headerlink" href="#purpose-of-adding-clusters" title="Permalink to this headline"></a></h3>
+<p>After running the Cluster step, you may want to continue clustering using more
+clusters.
+You could accomplish this by simply rerunning the Cluster step using a larger
+<code class="docutils literal notranslate"><span class="pre">--max-clusters</span></code> (<code class="docutils literal notranslate"><span class="pre">-k</span></code>).
+But since Cluster always begins with 1 cluster, you would need to repeat all the
+clusters that you had already run before being able to add more clusters, which
+would waste your computer resources.
+The Add Clusters tool lets you keep your existing clustering results and merely
+append more clusters, which is faster and more efficient.</p>
+</section>
+</section>
+<section id="how-to-add-clusters-to-a-cluster-dataset">
+<h2>How to add clusters to a Cluster dataset<a class="headerlink" href="#how-to-add-clusters-to-a-cluster-dataset" title="Permalink to this headline"></a></h2>
+<section id="command-line-for-adding-clusters">
+<h3>Command line for adding clusters<a class="headerlink" href="#command-line-for-adding-clusters" title="Permalink to this headline"></a></h3>
+<p>Suppose you have already run clustering with a maximum of 2 clusters (<code class="docutils literal notranslate"><span class="pre">-k</span> <span class="pre">2</span></code>)
+on a dataset:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">cluster</span> <span class="o">-</span><span class="n">k</span> <span class="mi">2</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">sample</span><span class="p">}</span><span class="o">/</span><span class="n">mask</span><span class="o">/</span><span class="p">{</span><span class="n">ref</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">sect</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>To add more clusters, use <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">+addclust</span></code> with the new maximum number of
+clusters (e.g. 4) and the Cluster report as the input file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="o">+</span><span class="n">addclust</span> <span class="o">-</span><span class="n">k</span> <span class="mi">4</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">sample</span><span class="p">}</span><span class="o">/</span><span class="n">cluster</span><span class="o">/</span><span class="p">{</span><span class="n">ref</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">sect</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>This command will resume clustering with one more than the maximum number of
+existing clusters (in this case, the previous maximum was 2, so <code class="docutils literal notranslate"><span class="pre">+addclust</span></code>
+will begin at 3).
+The maximum number of clusters follows the same rules as in <code class="docutils literal notranslate"><span class="pre">cluster</span></code> (see
+<a class="reference internal" href="run/cluster.html#cluster-max"><span class="std std-ref">Cluster setting: Maximum number of clusters</span></a> for more information).
+You do not need to specify any other settings for clustering, such as the number
+of runs or the threshold for convergence: <code class="docutils literal notranslate"><span class="pre">+addclust</span></code> automatically uses the
+same settings that you used originally in <code class="docutils literal notranslate"><span class="pre">cluster</span></code>.</p>
+<p>You can give any number of Cluster report files as inputs for Add Clusters.
+See <a class="reference internal" href="inputs.html"><span class="doc">List Input Files</span></a> for ways to list multiple files.</p>
+<p>The only new files produced are <code class="docutils literal notranslate"><span class="pre">mus</span></code> and <code class="docutils literal notranslate"><span class="pre">props</span></code> files for each additional
+clustering run.
+The Cluster report file, the batch files, and the counts file are all updated
+in-place, as if you had run <code class="docutils literal notranslate"><span class="pre">cluster</span></code> the first time with the new <code class="docutils literal notranslate"><span class="pre">-k</span></code>.
+Because updating in-place means that there is a risk of data loss if any error
+occurs during writing, the original files are all first backed up in a temporary
+directory, which you can specify with <code class="docutils literal notranslate"><span class="pre">--temp-dir</span></code> (<code class="docutils literal notranslate"><span class="pre">-t</span></code>).
+In case of a fatal error while updating the files, the original files will all
+be restored from the backup, as if you had never run <code class="docutils literal notranslate"><span class="pre">+addclust</span></code>.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="logging.html" class="btn btn-neutral float-left" title="Log Messages" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cleanfa.html" class="btn btn-neutral float-right" title="Clean FASTA Files" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, the Rouskin Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

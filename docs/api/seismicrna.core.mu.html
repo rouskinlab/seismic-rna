@@ -20,7 +20,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="seismicrna.core.mu.tests package" href="seismicrna.core.mu.tests.html" />
-    <link rel="prev" title="seismicrna.core.io package" href="seismicrna.core.io.html" /> 
+    <link rel="prev" title="seismicrna.core.io.tests package" href="seismicrna.core.io.tests.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -164,8 +164,8 @@ columns of a multidimensional array or DataFrame.</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.mu.compare.calc_nrmsd">
 <span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.compare.</span></span><span class="sig-name descname"><span class="pre">calc_nrmsd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mus1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mus2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.compare.calc_nrmsd" title="Permalink to this definition"></a></dt>
-<dd><p>Calculate the root-mean-square deviation (NRMSD) between two
-groups of mutation rates, ignoring NaNs.</p>
+<dd><p>Calculate the normalized root-mean-square deviation (NRMSD) of
+two groups of mutation rates, ignoring NaNs.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -176,7 +176,7 @@ columns of a multidimensional array or DataFrame.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Standardized mutation rates.</p>
+<dd class="field-even"><p>Normalized root-mean-square deviation (NRMSD)</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span> <span class="pre">|</span> <span class="pre">pd.Series</span> <span class="pre">|</span> <span class="pre">pd.DataFrame</span></code></p>
@@ -203,6 +203,29 @@ columns of a multidimensional array or DataFrame.</p></li>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span> <span class="pre">|</span> <span class="pre">np.ndarray</span> <span class="pre">|</span> <span class="pre">pd.Series</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.mu.compare.calc_rmsd">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.compare.</span></span><span class="sig-name descname"><span class="pre">calc_rmsd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mus1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mus2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.compare.calc_rmsd" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate the root-mean-square deviation (RMSD) of two groups of
+mutation rates, ignoring NaNs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mus1</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span> <span class="pre">|</span> <span class="pre">pd.Series</span> <span class="pre">|</span> <span class="pre">pd.DataFrame</span></code>) – First group of mutation rates; can contain multiple sets as the
+columns of a multidimensional array or DataFrame.</p></li>
+<li><p><strong>mus2</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span> <span class="pre">|</span> <span class="pre">pd.Series</span> <span class="pre">|</span> <span class="pre">pd.DataFrame</span></code>) – Second group of mutation rates; can contain multiple sets as the
+columns of a multidimensional array or DataFrame.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Root-mean-square deviation (RMSD)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span> <span class="pre">|</span> <span class="pre">pd.Series</span> <span class="pre">|</span> <span class="pre">pd.DataFrame</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -634,7 +657,7 @@ columns of a multidimensional array or DataFrame.</p></li>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="seismicrna.core.io.html" class="btn btn-neutral float-left" title="seismicrna.core.io package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="seismicrna.core.io.tests.html" class="btn btn-neutral float-left" title="seismicrna.core.io.tests package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="seismicrna.core.mu.tests.html" class="btn btn-neutral float-right" title="seismicrna.core.mu.tests package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

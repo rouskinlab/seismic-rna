@@ -76,6 +76,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../normalize.html">Normalize Mutation Rates</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../parallel.html">Parallelize Tasks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../logging.html">Log Messages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../addclust.html">Add Clusters to an Already-Clustered Dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../cleanfa.html">Clean FASTA Files</a></li>
 </ul>
 </li>
@@ -138,7 +139,7 @@ reference <code class="docutils literal notranslate"><span class="pre">ref-1</sp
 <section id="cluster-settings">
 <h2>Cluster: Settings<a class="headerlink" href="#cluster-settings" title="Permalink to this headline"></a></h2>
 <section id="cluster-setting-maximum-number-of-clusters">
-<h3>Cluster setting: Maximum number of clusters<a class="headerlink" href="#cluster-setting-maximum-number-of-clusters" title="Permalink to this headline"></a></h3>
+<span id="cluster-max"></span><h3>Cluster setting: Maximum number of clusters<a class="headerlink" href="#cluster-setting-maximum-number-of-clusters" title="Permalink to this headline"></a></h3>
 <p>To infer alternative RNA structures, SEISMIC-RNA uses an optimized version of
 our original DREEM algorithm [<a class="reference external" href="https://doi.org/10.1038/s41586-020-2253-5">Tomezsko et al. (2020)</a>], which is based on
 <a class="reference external" href="https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm">expectation-maximization</a> (EM).
@@ -166,6 +167,11 @@ The report (see <a class="reference internal" href="../../formats/report/cluster
 number of clusters you specified (field “Maximum Number of Clusters”) and
 the number that yielded the best BIC (field “Optimal Number of Clusters”),
 which is less than or equal to the maximum you specified.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you decide after clustering that you wanted to run clustering with more
+clusters, then use the tool <code class="docutils literal notranslate"><span class="pre">+addclust</span></code> (see <a class="reference internal" href="../addclust.html"><span class="doc">Add Clusters to an Already-Clustered Dataset</span></a>).</p>
 </div>
 </section>
 <section id="cluster-setting-expectation-maximization-iterations">
@@ -278,6 +284,10 @@ of finding the global optimum.</p></li>
 </section>
 <section id="cluster-troubleshoot-and-optimize">
 <h2>Cluster: Troubleshoot and optimize<a class="headerlink" href="#cluster-troubleshoot-and-optimize" title="Permalink to this headline"></a></h2>
+<section id="run-cluster-with-more-clusters-without-repeating-the-work-already-done">
+<h3>Run Cluster with more clusters, without repeating the work already done<a class="headerlink" href="#run-cluster-with-more-clusters-without-repeating-the-work-already-done" title="Permalink to this headline"></a></h3>
+<p>The tool <code class="docutils literal notranslate"><span class="pre">+addclust</span></code> exists for this purpose: see <a class="reference internal" href="../addclust.html"><span class="doc">Add Clusters to an Already-Clustered Dataset</span></a>.</p>
+</section>
 <section id="cluster-takes-too-long-to-finish">
 <h3>Cluster takes too long to finish<a class="headerlink" href="#cluster-takes-too-long-to-finish" title="Permalink to this headline"></a></h3>
 <ul class="simple">
