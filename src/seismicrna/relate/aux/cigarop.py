@@ -4,7 +4,9 @@ from ..py.cigar import (CIG_ALIGN,
                         CIG_DELET,
                         CIG_INSRT,
                         CIG_SCLIP,
-                        parse_cigar)
+                        parse_cigar,
+                        op_consumes_read,
+                        op_consumes_ref)
 
 
 class CigarOp(object):
@@ -31,18 +33,10 @@ class CigarOp(object):
         return f"{self._len}{self._op}"
 
 
-def count_cigar_muts(cigar_string: str):
-    """ Return the total number of mutations in a CIGAR string. """
-    mutation_types = CIG_SUBST, CIG_DELET, CIG_INSRT
-    return sum(olen for op, olen in parse_cigar(cigar_string)
-               if op in mutation_types)
-
-
 def find_cigar_op_pos(cigar_string: str, find_op: str):
     """ Yield the position in the read of every base with a particular
     type of operation specified by a CIGAR string. """
-    consume_read = CIG_ALIGN, CIG_MATCH, CIG_SUBST, CIG_INSRT
-    if find_op in consume_read:
+    if op_consumes_read(find_op):
         # Only these operations correspond to positions in the read.
         pos = 1
         # Check each CIGAR operation, starting at position 1.
@@ -51,9 +45,36 @@ def find_cigar_op_pos(cigar_string: str, find_op: str):
                 # If the operation matches the code, then yield the position
                 # of every base consumed by that operation.
                 yield from range(pos, pos := (pos + olen))
-            elif op in consume_read:
+            elif op_consumes_read(op):
                 # Advance the position by the length of the operation.
                 pos += olen
+
+
+def op_is_mutation(op: str):
+    """ Whether the CIGAR operation is a mutation. """
+    if op == CIG_SUBST or op == CIG_DELET or op == CIG_INSRT:
+        return True
+    if op == CIG_ALIGN or op == CIG_MATCH or op == CIG_SCLIP:
+        return False
+    raise ValueError(f"Invalid CIGAR operation: {repr(op)}")
+
+
+def count_cigar_read(cigar_string: str):
+    """ Count the read positions consumed by a CIGAR string. """
+    return sum(olen for op, olen in parse_cigar(cigar_string)
+               if op_consumes_read(op))
+
+
+def count_cigar_ref(cigar_string: str):
+    """ Count the reference positions consumed by a CIGAR string. """
+    return sum(olen for op, olen in parse_cigar(cigar_string)
+               if op_consumes_ref(op))
+
+
+def count_cigar_muts(cigar_string: str):
+    """ Count the mutations in a CIGAR string. """
+    return sum(olen for op, olen in parse_cigar(cigar_string)
+               if op_is_mutation(op))
 
 ########################################################################
 #                                                                      #

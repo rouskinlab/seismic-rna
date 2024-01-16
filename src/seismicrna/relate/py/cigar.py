@@ -2,12 +2,12 @@ import re
 
 
 # CIGAR string operation codes
-CIG_ALIGN = 'M'  # alignment match
-CIG_MATCH = '='  # sequence match
-CIG_SUBST = 'X'  # substitution
-CIG_DELET = 'D'  # deletion
-CIG_INSRT = 'I'  # insertion
-CIG_SCLIP = 'S'  # soft clipping
+CIG_ALIGN = "M"  # alignment match
+CIG_MATCH = "="  # sequence match
+CIG_SUBST = "X"  # substitution
+CIG_DELET = "D"  # deletion
+CIG_INSRT = "I"  # insertion
+CIG_SCLIP = "S"  # soft clipping
 
 # Regular expression pattern that matches a single CIGAR operation
 # (length ≥ 1 and operation code, defined above)
@@ -71,17 +71,29 @@ def parse_cigar(cigar_string: str):
     # Confirm that all bytes in the CIGAR string were matched by the
     # regular expression.
     if num_chars_matched != len(cigar_string):
-        raise ValueError(f"Invalid CIGAR: '{cigar_string}'")
+        raise ValueError(f"Invalid CIGAR string: {repr(cigar_string)}")
 
 
-def op_consumes_ref(op: bytes) -> bool:
-    """ Return whether the CIGAR operation consumes the reference. """
-    return op != CIG_INSRT and op != CIG_SCLIP
+def op_consumes_ref(op: str):
+    """ Whether the CIGAR operation consumes the reference. """
+    if op == CIG_ALIGN or op == CIG_MATCH or op == CIG_SUBST or op == CIG_DELET:
+        return True
+    if op == CIG_INSRT or op == CIG_SCLIP:
+        return False
+    raise ValueError(f"Invalid CIGAR operation: {repr(op)}")
 
 
-def op_consumes_read(op: bytes) -> bool:
-    """ Return whether the CIGAR operation consumes the read. """
-    return op != CIG_DELET
+def op_consumes_read(op: str):
+    """ Whether the CIGAR operation consumes the read. """
+    if op == CIG_DELET:
+        return False
+    if (op == CIG_ALIGN
+            or op == CIG_MATCH
+            or op == CIG_SUBST
+            or op == CIG_INSRT
+            or op == CIG_SCLIP):
+        return True
+    raise ValueError(f"Invalid CIGAR operation: {repr(op)}")
 
 ########################################################################
 #                                                                      #

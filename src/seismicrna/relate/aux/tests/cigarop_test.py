@@ -1,13 +1,15 @@
 import string
 import unittest as ut
 
-from ...py.cigar import (CIG_ALIGN,
-                         CIG_MATCH,
-                         CIG_SUBST,
-                         CIG_DELET,
-                         CIG_INSRT,
-                         CIG_SCLIP)
-from ..cigarop import CigarOp, count_cigar_muts, find_cigar_op_pos
+from seismicrna.relate.py.cigar import (CIG_ALIGN,
+                                        CIG_MATCH,
+                                        CIG_SUBST,
+                                        CIG_DELET,
+                                        CIG_INSRT,
+                                        CIG_SCLIP)
+from seismicrna.relate.aux.cigarop import (CigarOp,
+                                           count_cigar_muts,
+                                           find_cigar_op_pos)
 
 
 class TestCigarOp(ut.TestCase):
@@ -67,31 +69,29 @@ class TestFindCigarOpPos(ut.TestCase):
 
     def test_cigar_m_aln_valid(self):
         """ Find aligned positions in a CIGAR string with M codes. """
-        self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
-                                                CIG_ALIGN)),
-                         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-                          15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 28, 29,
-                          30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
-                          42, 43, 44, 45, 46, 47, 48, 49, 52, 53, 54, 55,
-                          56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67,
-                          68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
-                          80, 81, 82, 84, 85, 86, 87, 88, 89, 90, 91, 92,
-                          93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103,
-                          104, 105, 106, 107, 108])
+        self.assertEqual(
+            list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M", CIG_ALIGN)),
+            [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+             26, 27, 28, 29, 30, 31, 32, 33, 37, 38, 39, 40, 41, 42, 43, 44,
+             45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 61, 62,
+             63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
+             79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 93, 94, 95,
+             96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+             110, 111, 112, 113, 114, 115, 116, 117]
+        )
 
     def test_cigar_xeq_mat_valid(self):
         """ Find matches in a CIGAR string with =/X codes. """
-        self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
-                                                CIG_MATCH)),
-                         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-                          15, 16, 17, 18, 19, 20, 21, 22, 23, 28, 29, 30,
-                          31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,
-                          43, 44, 45, 46, 47, 48, 49, 52, 53, 54, 55, 56,
-                          57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68,
-                          69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
-                          81, 82, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93,
-                          94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104,
-                          105, 106, 107, 108])
+        self.assertEqual(
+            list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=", CIG_MATCH)),
+            [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+             26, 27, 28, 29, 30, 31, 32, 37, 38, 39, 40, 41, 42, 43, 44, 45,
+             46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 61, 62, 63,
+             64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+             80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 93, 94, 95, 96,
+             97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
+             111, 112, 113, 114, 115, 116, 117]
+        )
 
     def test_cigar_m_mat_valid(self):
         """ Find matches in a CIGAR string with M codes. """
@@ -103,7 +103,7 @@ class TestFindCigarOpPos(ut.TestCase):
         """ Find substitutions in a CIGAR string with =/X codes. """
         self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
                                                 CIG_SUBST)),
-                         [24])
+                         [33])
 
     def test_cigar_m_sub_valid(self):
         """ Find substitutions in a CIGAR string with M codes. """
@@ -127,25 +127,29 @@ class TestFindCigarOpPos(ut.TestCase):
         """ Find insertions in a CIGAR string with =/X codes. """
         self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
                                                 CIG_INSRT)),
-                         [25, 26, 27, 50, 51, 83])
+                         [34, 35, 36, 59, 60, 92])
 
     def test_cigar_m_ins_valid(self):
         """ Find insertions in a CIGAR string with M codes. """
         self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
                                                 CIG_INSRT)),
-                         [25, 26, 27, 50, 51, 83])
+                         [34, 35, 36, 59, 60, 92])
 
     def test_cigar_xeq_scl_valid(self):
         """ Find soft clippings in a CIGAR string with =/X codes. """
         self.assertEqual(list(find_cigar_op_pos("9S23=1X3I13=1D9=2I31=1I25=",
                                                 CIG_SCLIP)),
-                         [])
+                         [1, 2, 3, 4, 5, 6, 7, 8, 9])
 
     def test_cigar_m_scl_valid(self):
         """ Find soft clippings in a CIGAR string with M codes. """
         self.assertEqual(list(find_cigar_op_pos("9S24M3I13M1D9M2I31M1I25M",
                                                 CIG_SCLIP)),
-                         [])
+                         [1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+
+if __name__ == "__main__":
+    ut.main()
 
 ########################################################################
 #                                                                      #
