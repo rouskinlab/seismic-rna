@@ -1,4 +1,4 @@
-from . import update
+from . import addclust, delclust
 from .main import cli, run, params
 
 ########################################################################

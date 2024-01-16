@@ -1,14 +1,11 @@
-from functools import partial
 from logging import getLogger
 from pathlib import Path
 from typing import Callable
 
-import numpy as np
 import pandas as pd
 
 from .compare import RunOrderResults, get_log_exp_obs_counts
 from .em import EmClustering
-from .names import BIT_VECTOR_NAME, LOG_OBS_NAME
 from ..core import path
 
 logger = getLogger(__name__)
@@ -53,13 +50,36 @@ def write_single_run_table(run: EmClustering,
     return file
 
 
-write_props = partial(write_single_run_table,
-                      output_func=EmClustering.get_props,
-                      table=path.CLUST_PROP_RUN_TABLE)
+def write_props(run: EmClustering,
+                top: Path,
+                sample: str,
+                ref: str,
+                sect: str,
+                rank: int):
+    return write_single_run_table(run,
+                                  top,
+                                  sample,
+                                  ref,
+                                  sect,
+                                  rank,
+                                  output_func=EmClustering.get_props,
+                                  table=path.CLUST_PROP_RUN_TABLE)
 
-write_mus = partial(write_single_run_table,
-                    output_func=EmClustering.get_mus,
-                    table=path.CLUST_MUS_RUN_TABLE)
+
+def write_mus(run: EmClustering,
+              top: Path,
+              sample: str,
+              ref: str,
+              sect: str,
+              rank: int):
+    return write_single_run_table(run,
+                                  top,
+                                  sample,
+                                  ref,
+                                  sect,
+                                  rank,
+                                  output_func=EmClustering.get_mus,
+                                  table=path.CLUST_MUS_RUN_TABLE)
 
 
 def get_count_path(top: Path, sample: str, ref: str, sect: str):
@@ -85,37 +105,6 @@ def write_log_counts(orders: list[RunOrderResults],
     # Build the path for the output file.
     file = get_count_path(top, sample, ref, sect)
     # Write the log counts to the file.
-    log_counts.to_csv(file)
-    return file
-
-
-def update_log_counts(orders: list[RunOrderResults],
-                      top: Path,
-                      sample: str,
-                      ref: str,
-                      sect: str):
-    """ Update the expected log counts of unique bit vectors. """
-    # Compute the log expected counts of the new orders.
-    new_log_counts = get_log_exp_obs_counts(orders).sort_index()
-    new_log_obs = new_log_counts.pop(LOG_OBS_NAME)
-    # Build the path for the output file.
-    file = get_count_path(top, sample, ref, sect)
-    # Load the existing counts.
-    original_log_counts = pd.read_csv(file, index_col=BIT_VECTOR_NAME)
-    # Ensure the index and log observed counts match.
-    if not new_log_counts.index.equals(original_log_counts.index):
-        raise ValueError("Bit vectors differ between original "
-                         f"({original_log_counts.index}) and new "
-                         f"({new_log_counts.index}) orders")
-    if not np.allclose(new_log_obs, original_log_counts[LOG_OBS_NAME]):
-        raise ValueError("Log observed counts differ between original "
-                         f"({original_log_counts[LOG_OBS_NAME]}) and new "
-                         f"({new_log_obs}) orders")
-    # Merge the original and new log counts.
-    log_counts = pd.concat([original_log_counts, new_log_counts],
-                           axis=1,
-                           verify_integrity=True)
-    # Write the updated log counts to the file.
     log_counts.to_csv(file)
     return file
 

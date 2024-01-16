@@ -8,6 +8,7 @@ Collect and compare the results from independent runs of EM clustering.
 
 from __future__ import annotations
 
+import re
 from itertools import permutations
 from typing import Callable
 
@@ -90,6 +91,13 @@ def find_best_order(orders: list[RunOrderResults]) -> int:
 
 def format_exp_count_col(order: int):
     return f"{LOG_EXP_NAME}, {ORDER_NAME} {order}"
+
+
+def parse_exp_count_col(col: str):
+    if not (match := re.match(f"^{LOG_EXP_NAME}, {ORDER_NAME} ([0-9]+)$", col)):
+        raise ValueError(f"Invalid expected count column: {repr(col)}")
+    order, = match.groups()
+    return int(order)
 
 
 def get_log_exp_obs_counts(orders: list[RunOrderResults]):
