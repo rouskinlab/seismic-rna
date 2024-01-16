@@ -51,6 +51,8 @@ def update_log_counts(best_order: int,
                       ref: str,
                       sect: str):
     """ Update the expected log counts of unique bit vectors. """
+    if best_order < 1:
+        raise ValueError(f"Best order must be ≥ 1, but got {best_order}")
     # Build the path for the output file.
     file = get_count_path(top, sample, ref, sect)
     # Load the existing counts.
@@ -70,6 +72,8 @@ def update_batches(dataset: ClusterMutsDataset,
                    best_order: int,
                    brotli_level: int):
     """ Update the cluster memberships in batches. """
+    if best_order < 1:
+        raise ValueError(f"Best order must be ≥ 1, but got {best_order}")
     orders = np.arange(1, best_order + 1)
     checksums = list()
     for original_batch in dataset.iter_batches():
@@ -87,6 +91,8 @@ def update_batches(dataset: ClusterMutsDataset,
 
 def update_field(report: ClustReport, field: Field, best_order: int):
     """ Delete clusters from a field of a report. """
+    if best_order < 1:
+        raise ValueError(f"Best order must be ≥ 1, but got {best_order}")
     original = report.get_field(field)
     if not isinstance(original, dict):
         raise TypeError(f"Expected dict, but got {type(original).__name__}")
@@ -100,6 +106,8 @@ def update_report(original_report: ClustReport,
                   began: datetime,
                   ended: datetime,
                   top: Path):
+    if max_order < 1:
+        raise ValueError(f"Maximum order must be ≥ 1, but got {max_order}")
     new_report = ClustReport(
         sample=original_report.sample,
         ref=original_report.ref,
@@ -141,6 +149,8 @@ def del_orders(report_file: Path,
                max_order: int, *,
                brotli_level: int):
     """ Delete orders from an existing report and dataset. """
+    if max_order < 1:
+        raise ValueError(f"Maximum order must be ≥ 1, but got {max_order}")
     # Load the original cluster report.
     report = ClustReport.load(report_file)
     original_max_order = report.get_field(MaxClustsF)
@@ -188,6 +198,9 @@ def run(input_path: tuple[str, ...], *,
         max_procs: int,
         parallel: bool) -> list[Path]:
     """ Delete clusters from a dataset that was already clustered. """
+    if max_clusters < 1:
+        logger.warning(f"Maximum order must be ≥ 1, but got {max_clusters}")
+        return list()
     # Find the cluster report files.
     report_files = path.find_files_chain(
         input_path, load_cluster_dataset.report_path_seg_types
