@@ -154,7 +154,19 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.relate.aux.cigarop.count_cigar_muts">
 <span class="sig-prename descclassname"><span class="pre">seismicrna.relate.aux.cigarop.</span></span><span class="sig-name descname"><span class="pre">count_cigar_muts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cigar_string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.aux.cigarop.count_cigar_muts" title="Permalink to this definition"></a></dt>
-<dd><p>Return the total number of mutations in a CIGAR string.</p>
+<dd><p>Count the mutations in a CIGAR string.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.aux.cigarop.count_cigar_read">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.aux.cigarop.</span></span><span class="sig-name descname"><span class="pre">count_cigar_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cigar_string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.aux.cigarop.count_cigar_read" title="Permalink to this definition"></a></dt>
+<dd><p>Count the read positions consumed by a CIGAR string.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.aux.cigarop.count_cigar_ref">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.aux.cigarop.</span></span><span class="sig-name descname"><span class="pre">count_cigar_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cigar_string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.aux.cigarop.count_cigar_ref" title="Permalink to this definition"></a></dt>
+<dd><p>Count the reference positions consumed by a CIGAR string.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -162,6 +174,12 @@
 <span class="sig-prename descclassname"><span class="pre">seismicrna.relate.aux.cigarop.</span></span><span class="sig-name descname"><span class="pre">find_cigar_op_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cigar_string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">find_op</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.aux.cigarop.find_cigar_op_pos" title="Permalink to this definition"></a></dt>
 <dd><p>Yield the position in the read of every base with a particular
 type of operation specified by a CIGAR string.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.relate.aux.cigarop.op_is_mutation">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.relate.aux.cigarop.</span></span><span class="sig-name descname"><span class="pre">op_is_mutation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.aux.cigarop.op_is_mutation" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the CIGAR operation is a mutation.</p>
 </dd></dl>
 
 <span class="target" id="module-seismicrna.relate.aux.human"></span><dl class="py function">

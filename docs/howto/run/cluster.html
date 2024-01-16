@@ -71,13 +71,13 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../graph/index.html">Graph Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adjclust.html">Add/Delete Orders to/from an Already-Clustered Dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cleanfa.html">Clean FASTA Files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../inputs.html">List Input Files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../sections.html">Define Sections</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../normalize.html">Normalize Mutation Rates</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../parallel.html">Parallelize Tasks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../logging.html">Log Messages</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../addclust.html">Add Clusters to an Already-Clustered Dataset</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../cleanfa.html">Clean FASTA Files</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../cli.html">Commands, Arguments, Options</a></li>
@@ -138,40 +138,39 @@ reference <code class="docutils literal notranslate"><span class="pre">ref-1</sp
 </section>
 <section id="cluster-settings">
 <h2>Cluster: Settings<a class="headerlink" href="#cluster-settings" title="Permalink to this headline"></a></h2>
-<section id="cluster-setting-maximum-number-of-clusters">
-<span id="cluster-max"></span><h3>Cluster setting: Maximum number of clusters<a class="headerlink" href="#cluster-setting-maximum-number-of-clusters" title="Permalink to this headline"></a></h3>
+<section id="cluster-setting-maximum-order-number-of-clusters">
+<span id="cluster-max"></span><h3>Cluster setting: Maximum order (number of clusters)<a class="headerlink" href="#cluster-setting-maximum-order-number-of-clusters" title="Permalink to this headline"></a></h3>
 <p>To infer alternative RNA structures, SEISMIC-RNA uses an optimized version of
-our original DREEM algorithm [<a class="reference external" href="https://doi.org/10.1038/s41586-020-2253-5">Tomezsko et al. (2020)</a>], which is based on
+our original DREEM algorithm [<a class="reference external" href="https://doi.org/10.1038/s41586-020-2253-5">Tomezsko et al. (2020)</a>], which is a type of
 <a class="reference external" href="https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm">expectation-maximization</a> (EM).
-The EM algorithm needs to know the number of structural states before it runs;
-however, the number of states is unknown before the algorithm runs, creating a
-<a class="reference external" href="https://en.wikipedia.org/wiki/Chicken_or_the_egg">chicken-and-egg problem</a>.</p>
-<p>SEISMIC-RNA solves this problem by first running the EM algorithm assuming there
-is 1 structural state, then running it again with 2 states, then 3, and so on.
-This process continues until one of two limits is reached:</p>
+All EM algorithms need the order of clustering (i.e. number of clusters) to be
+prespecified; however, the optimal order is unknown before the algorithm runs,
+creating a <a class="reference external" href="https://en.wikipedia.org/wiki/Chicken_or_the_egg">chicken-and-egg problem</a>.</p>
+<p>SEISMIC-RNA solves this problem by first running the EM algorithm at order 1,
+then order 2, then 3, and so on until one of two limits is reached:</p>
 <ul class="simple">
-<li><p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Bayesian_information_criterion">Bayesian information criterion</a> (BIC) worsens upon increasing the number
-of clusters.</p></li>
-<li><p>The maximum number of clusters is reached.
+<li><p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Bayesian_information_criterion">Bayesian information criterion</a> (BIC) worsens upon increasing the order.</p></li>
+<li><p>The maximum order is reached.
 You can set this limit using <code class="docutils literal notranslate"><span class="pre">--max-clusters</span></code> (<code class="docutils literal notranslate"><span class="pre">-k</span></code>).
 If you run the entire workflow using <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code> (see <a class="reference internal" href="wf.html"><span class="doc">Workflow: Run all steps</span></a>), then
-the maximum number of clusters defaults to 0 (so clustering is not run).
+the maximum order defaults to 0 (which disables clustering).
 If you run the Cluster step individually using <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">cluster</span></code>, then the
-maxmimum number of clusters defaults to 2 (the minimum non-trivial number).</p></li>
+maxmimum order defaults to 2 (the minimum non-trivial number).</p></li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If the BIC score gets worse before reaching the maximum number of clusters,
-then SEISMIC-RNA will stop.
+<p>If the BIC score worsens (increases) before reaching the maximum order,
+then clustering will stop.
 The report (see <a class="reference internal" href="../../formats/report/cluster.html"><span class="doc">Cluster Report</span></a>) records the maximum
-number of clusters you specified (field “Maximum Number of Clusters”) and
-the number that yielded the best BIC (field “Optimal Number of Clusters”),
-which is less than or equal to the maximum you specified.</p>
+order you specified (field “Maximum Number of Clusters”) and the order that
+yielded the best BIC (field “Optimal Number of Clusters”), which is always
+less than or equal to the maximum order you specified.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If you decide after clustering that you wanted to run clustering with more
-clusters, then use the tool <code class="docutils literal notranslate"><span class="pre">+addclust</span></code> (see <a class="reference internal" href="../addclust.html"><span class="doc">Add Clusters to an Already-Clustered Dataset</span></a>).</p>
+<p>If you realize after clustering that it would have been better to have run
+clustering with a higher/lower maximum order, then you can edit the results
+using <code class="docutils literal notranslate"><span class="pre">+addclust</span></code>/<code class="docutils literal notranslate"><span class="pre">+delclust</span></code> (see <a class="reference internal" href="../adjclust.html"><span class="doc">Add/Delete Orders to/from an Already-Clustered Dataset</span></a>).</p>
 </div>
 </section>
 <section id="cluster-setting-expectation-maximization-iterations">
@@ -271,30 +270,32 @@ SEISMIC-RNA thus runs multiple trajectories from different starting points; if
 the trajectories converge to the same solution, then that solution is likely
 (but still not necessarily) the global optimum.
 You must check if your trajectories converged to the same solution by checking
-the Log Likelihood per Run in the report.
-For each number of clusters (i.e. clustering order), the runs are sorted from
-largest (best) to smallest (worst) log likelihood, with run 0 being the best.
-At minimum, the log likelihood of run 1 should differ from run 0 by ≤ 1 unit.
-Ideally, several more runs will also differ from run 0 by ≤ 1 unit.
+the fields “NRMSD from Run 0” and “Correlation with Run 0” in the report.
+If all runs converged to identical solutions, then every NRMSD would be 0 and
+every Correlation would be 1.
+Generally, the runs are sufficiently reproducible if runs 1 and 2 have NRMSDs
+less than 0.1 and Correlations greater than 0.95 with respect to run 0.
 If not, then there you have no evidence that run 0 is the global optimum for
 that number of clusters, so it would be best to rerun clustering using more
-independent runs (e.g. 12 instead of the default 6) to increase the chances
-of finding the global optimum.</p></li>
+independent runs to increase the chances of finding the global optimum.</p></li>
 </ul>
 </section>
 <section id="cluster-troubleshoot-and-optimize">
 <h2>Cluster: Troubleshoot and optimize<a class="headerlink" href="#cluster-troubleshoot-and-optimize" title="Permalink to this headline"></a></h2>
-<section id="run-cluster-with-more-clusters-without-repeating-the-work-already-done">
-<h3>Run Cluster with more clusters, without repeating the work already done<a class="headerlink" href="#run-cluster-with-more-clusters-without-repeating-the-work-already-done" title="Permalink to this headline"></a></h3>
-<p>The tool <code class="docutils literal notranslate"><span class="pre">+addclust</span></code> exists for this purpose: see <a class="reference internal" href="../addclust.html"><span class="doc">Add Clusters to an Already-Clustered Dataset</span></a>.</p>
+<section id="run-cluster-with-higher-orders-without-repeating-the-work-already-done">
+<h3>Run Cluster with higher orders, without repeating the work already done<a class="headerlink" href="#run-cluster-with-higher-orders-without-repeating-the-work-already-done" title="Permalink to this headline"></a></h3>
+<p>The tool <code class="docutils literal notranslate"><span class="pre">+addclust</span></code> exists for this purpose: see <a class="reference internal" href="../adjclust.html#addclust"><span class="std std-ref">Command line for adding orders</span></a>.</p>
+</section>
+<section id="delete-unnecessary-higher-orders-without-repeating-the-work-already-done">
+<h3>Delete unnecessary higher orders, without repeating the work already done<a class="headerlink" href="#delete-unnecessary-higher-orders-without-repeating-the-work-already-done" title="Permalink to this headline"></a></h3>
+<p>The tool <code class="docutils literal notranslate"><span class="pre">+delclust</span></code> exists for this purpose: see <a class="reference internal" href="../adjclust.html#delclust"><span class="std std-ref">Command line for deleting orders</span></a>.</p>
 </section>
 <section id="cluster-takes-too-long-to-finish">
 <h3>Cluster takes too long to finish<a class="headerlink" href="#cluster-takes-too-long-to-finish" title="Permalink to this headline"></a></h3>
 <ul class="simple">
 <li><p>Adjust the settings of <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">cluster</span></code>:</p>
 <ul>
-<li><p>Increase the threshold for convergence (<code class="docutils literal notranslate"><span class="pre">--em-thresh</span></code>) from 0.01 (e.g. to
-0.05).
+<li><p>Increase the threshold for convergence (<code class="docutils literal notranslate"><span class="pre">--em-thresh</span></code>).
 Larger thresholds will make clustering converge in fewer iterations at the
 cost of making the runs end at more variable solutions.
 Check the Log Likelihood per Run field to verify that clustering is finding

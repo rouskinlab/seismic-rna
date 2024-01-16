@@ -7,10 +7,10 @@ How To
 
     run/index
     graph/index
+    adjclust
+    cleanfa
     inputs
     sections
     normalize
     parallel
     logging
-    addclust
-    cleanfa

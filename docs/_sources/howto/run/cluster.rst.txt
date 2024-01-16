@@ -28,40 +28,39 @@ Cluster: Settings
 
 .. _cluster_max:
 
-Cluster setting: Maximum number of clusters
+Cluster setting: Maximum order (number of clusters)
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 To infer alternative RNA structures, SEISMIC-RNA uses an optimized version of
-our original DREEM algorithm [`Tomezsko et al. (2020)`_], which is based on
+our original DREEM algorithm [`Tomezsko et al. (2020)`_], which is a type of
 `expectation-maximization`_ (EM).
-The EM algorithm needs to know the number of structural states before it runs;
-however, the number of states is unknown before the algorithm runs, creating a
-`chicken-and-egg problem`_.
+All EM algorithms need the order of clustering (i.e. number of clusters) to be
+prespecified; however, the optimal order is unknown before the algorithm runs,
+creating a `chicken-and-egg problem`_.
 
-SEISMIC-RNA solves this problem by first running the EM algorithm assuming there
-is 1 structural state, then running it again with 2 states, then 3, and so on.
-This process continues until one of two limits is reached:
+SEISMIC-RNA solves this problem by first running the EM algorithm at order 1,
+then order 2, then 3, and so on until one of two limits is reached:
 
-- The `Bayesian information criterion`_ (BIC) worsens upon increasing the number
-  of clusters.
-- The maximum number of clusters is reached.
+- The `Bayesian information criterion`_ (BIC) worsens upon increasing the order.
+- The maximum order is reached.
   You can set this limit using ``--max-clusters`` (``-k``).
   If you run the entire workflow using ``seismic wf`` (see :doc:`./wf`), then
-  the maximum number of clusters defaults to 0 (so clustering is not run).
+  the maximum order defaults to 0 (which disables clustering).
   If you run the Cluster step individually using ``seismic cluster``, then the
-  maxmimum number of clusters defaults to 2 (the minimum non-trivial number).
+  maxmimum order defaults to 2 (the minimum non-trivial number).
 
 .. note::
-    If the BIC score gets worse before reaching the maximum number of clusters,
-    then SEISMIC-RNA will stop.
+    If the BIC score worsens (increases) before reaching the maximum order,
+    then clustering will stop.
     The report (see :doc:`../../formats/report/cluster`) records the maximum
-    number of clusters you specified (field "Maximum Number of Clusters") and
-    the number that yielded the best BIC (field "Optimal Number of Clusters"),
-    which is less than or equal to the maximum you specified.
+    order you specified (field "Maximum Number of Clusters") and the order that
+    yielded the best BIC (field "Optimal Number of Clusters"), which is always
+    less than or equal to the maximum order you specified.
 
 .. note::
-    If you decide after clustering that you wanted to run clustering with more
-    clusters, then use the tool ``+addclust`` (see :doc:`../addclust`).
+    If you realize after clustering that it would have been better to have run
+    clustering with a higher/lower maximum order, then you can edit the results
+    using ``+addclust``/``+delclust`` (see :doc:`../adjclust`).
 
 Cluster setting: Expectation-maximization iterations
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -168,31 +167,34 @@ In your cluster report:
   the trajectories converge to the same solution, then that solution is likely
   (but still not necessarily) the global optimum.
   You must check if your trajectories converged to the same solution by checking
-  the Log Likelihood per Run in the report.
-  For each number of clusters (i.e. clustering order), the runs are sorted from
-  largest (best) to smallest (worst) log likelihood, with run 0 being the best.
-  At minimum, the log likelihood of run 1 should differ from run 0 by ≤ 1 unit.
-  Ideally, several more runs will also differ from run 0 by ≤ 1 unit.
+  the fields "NRMSD from Run 0" and "Correlation with Run 0" in the report.
+  If all runs converged to identical solutions, then every NRMSD would be 0 and
+  every Correlation would be 1.
+  Generally, the runs are sufficiently reproducible if runs 1 and 2 have NRMSDs
+  less than 0.1 and Correlations greater than 0.95 with respect to run 0.
   If not, then there you have no evidence that run 0 is the global optimum for
   that number of clusters, so it would be best to rerun clustering using more
-  independent runs (e.g. 12 instead of the default 6) to increase the chances
-  of finding the global optimum.
+  independent runs to increase the chances of finding the global optimum.
 
 Cluster: Troubleshoot and optimize
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Run Cluster with more clusters, without repeating the work already done
+Run Cluster with higher orders, without repeating the work already done
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The tool ``+addclust`` exists for this purpose: see :doc:`../addclust`.
+The tool ``+addclust`` exists for this purpose: see :ref:`addclust`.
+
+Delete unnecessary higher orders, without repeating the work already done
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The tool ``+delclust`` exists for this purpose: see :ref:`delclust`.
 
 Cluster takes too long to finish
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 - Adjust the settings of ``seismic cluster``:
 
-  - Increase the threshold for convergence (``--em-thresh``) from 0.01 (e.g. to
-    0.05).
+  - Increase the threshold for convergence (``--em-thresh``).
     Larger thresholds will make clustering converge in fewer iterations at the
     cost of making the runs end at more variable solutions.
     Check the Log Likelihood per Run field to verify that clustering is finding

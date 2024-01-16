@@ -10,6 +10,12 @@ Submodules
 ----------
 
 
+.. automodule:: seismicrna.cluster.addclust
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.cluster.batch
    :members:
    :undoc-members:
@@ -29,6 +35,12 @@ Submodules
 
 
 .. automodule:: seismicrna.cluster.data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.cluster.delclust
    :members:
    :undoc-members:
    :show-inheritance:
@@ -71,12 +83,6 @@ Submodules
 
 
 .. automodule:: seismicrna.cluster.uniq
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-.. automodule:: seismicrna.cluster.update
    :members:
    :undoc-members:
    :show-inheritance:

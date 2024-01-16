@@ -2159,7 +2159,7 @@
 </li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.Section.add_mask">add_mask() (seismicrna.core.seq.section.Section method)</a>
 </li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.update.add_orders">add_orders() (in module seismicrna.cluster.update)</a>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.addclust.add_orders">add_orders() (in module seismicrna.cluster.addclust)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.calc.adjust_counts">adjust_counts() (in module seismicrna.table.calc)</a>
 </li>
@@ -2479,10 +2479,10 @@
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.load.ClustReadTableLoader">ClustReadTableLoader (class in seismicrna.table.load)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.table.html#seismicrna.table.write.ClustReadTableWriter">ClustReadTableWriter (class in seismicrna.table.write)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.report.ClustReport">ClustReport (class in seismicrna.cluster.report)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.header.Header.clusts">clusts (seismicrna.core.header.Header property)</a>
@@ -2564,6 +2564,10 @@
       <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.index.count_base_types">count_base_types() (in module seismicrna.core.batch.index)</a>
 </li>
       <li><a href="api/seismicrna.relate.aux.html#seismicrna.relate.aux.cigarop.count_cigar_muts">count_cigar_muts() (in module seismicrna.relate.aux.cigarop)</a>
+</li>
+      <li><a href="api/seismicrna.relate.aux.html#seismicrna.relate.aux.cigarop.count_cigar_read">count_cigar_read() (in module seismicrna.relate.aux.cigarop)</a>
+</li>
+      <li><a href="api/seismicrna.relate.aux.html#seismicrna.relate.aux.cigarop.count_cigar_ref">count_cigar_ref() (in module seismicrna.relate.aux.cigarop)</a>
 </li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.fqunit.count_fastq_reads">count_fastq_reads() (in module seismicrna.align.fqunit)</a>
 </li>
@@ -2679,10 +2683,12 @@
       </ul></li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.default_key">default_key() (in module seismicrna.core.report)</a>
 </li>
-      <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambrel.Indel.del_pos3">del_pos3 (seismicrna.relate.py.ambrel.Indel property)</a>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.delclust.del_orders">del_orders() (in module seismicrna.cluster.delclust)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambrel.Indel.del_pos3">del_pos3 (seismicrna.relate.py.ambrel.Indel property)</a>
+</li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambrel.Indel.del_pos5">del_pos5 (seismicrna.relate.py.ambrel.Indel property)</a>
 </li>
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.sam.XamViewer.delete_temp_sam">delete_temp_sam() (seismicrna.relate.sam.XamViewer method)</a>
@@ -4107,6 +4113,8 @@
 </li>
         <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster">seismicrna.cluster</a>
 </li>
+        <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.addclust">seismicrna.cluster.addclust</a>
+</li>
         <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.batch">seismicrna.cluster.batch</a>
 </li>
         <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.compare">seismicrna.cluster.compare</a>
@@ -4114,6 +4122,8 @@
         <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.csv">seismicrna.cluster.csv</a>
 </li>
         <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.data">seismicrna.cluster.data</a>
+</li>
+        <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.delclust">seismicrna.cluster.delclust</a>
 </li>
         <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.em">seismicrna.cluster.em</a>
 </li>
@@ -4128,8 +4138,6 @@
         <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.save">seismicrna.cluster.save</a>
 </li>
         <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.uniq">seismicrna.cluster.uniq</a>
-</li>
-        <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.update">seismicrna.cluster.update</a>
 </li>
         <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.write">seismicrna.cluster.write</a>
 </li>
@@ -4626,6 +4634,8 @@
 </li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.cigar.op_consumes_ref">op_consumes_ref() (in module seismicrna.relate.py.cigar)</a>
 </li>
+      <li><a href="api/seismicrna.relate.aux.html#seismicrna.relate.aux.cigarop.op_is_mutation">op_is_mutation() (in module seismicrna.relate.aux.cigarop)</a>
+</li>
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.sam.XamViewer.open_temp_sam">open_temp_sam() (seismicrna.relate.sam.XamViewer method)</a>
 </li>
       <li><a href="api/seismicrna.relate.aux.tests.html#seismicrna.relate.aux.tests.cigarop_test.TestCigarOp.ops">ops (seismicrna.relate.aux.tests.cigarop_test.TestCigarOp attribute)</a>
@@ -4683,6 +4693,8 @@
       <li><a href="api/seismicrna.core.rna.html#seismicrna.core.rna.db.parse_db_strings">parse_db_strings() (in module seismicrna.core.rna.db)</a>
 </li>
       <li><a href="api/seismicrna.fold.html#seismicrna.fold.rnastructure.parse_energy">parse_energy() (in module seismicrna.fold.rnastructure)</a>
+</li>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.compare.parse_exp_count_col">parse_exp_count_col() (in module seismicrna.cluster.compare)</a>
 </li>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.fasta.parse_fasta">parse_fasta() (in module seismicrna.core.seq.fasta)</a>
 </li>
@@ -5269,9 +5281,11 @@
       <ul>
         <li><a href="api/seismicrna.cleanfa.html#seismicrna.cleanfa.main.run">(in module seismicrna.cleanfa.main)</a>
 </li>
-        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.main.run">(in module seismicrna.cluster.main)</a>
+        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.addclust.run">(in module seismicrna.cluster.addclust)</a>
 </li>
-        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.update.run">(in module seismicrna.cluster.update)</a>
+        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.delclust.run">(in module seismicrna.cluster.delclust)</a>
+</li>
+        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.main.run">(in module seismicrna.cluster.main)</a>
 </li>
         <li><a href="api/seismicrna.demult.html#seismicrna.demult.main.run">(in module seismicrna.demult.main)</a>
 </li>
@@ -6825,6 +6839,13 @@
 </li>
       </ul></li>
       <li>
+    seismicrna.cluster.addclust
+
+      <ul>
+        <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.addclust">module</a>
+</li>
+      </ul></li>
+      <li>
     seismicrna.cluster.batch
 
       <ul>
@@ -6850,6 +6871,13 @@
 
       <ul>
         <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.data">module</a>
+</li>
+      </ul></li>
+      <li>
+    seismicrna.cluster.delclust
+
+      <ul>
+        <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.delclust">module</a>
 </li>
       </ul></li>
       <li>
@@ -6899,13 +6927,6 @@
 
       <ul>
         <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.uniq">module</a>
-</li>
-      </ul></li>
-      <li>
-    seismicrna.cluster.update
-
-      <ul>
-        <li><a href="api/seismicrna.cluster.html#module-seismicrna.cluster.update">module</a>
 </li>
       </ul></li>
       <li>
@@ -9840,26 +9861,44 @@
         <li><a href="api/seismicrna.table.html#seismicrna.table.base.PosTable.unmasked">(seismicrna.table.base.PosTable property)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.Section.unmasked_bool">unmasked_bool (seismicrna.core.seq.section.Section property)</a>
 
       <ul>
         <li><a href="api/seismicrna.table.html#seismicrna.table.base.PosTable.unmasked_bool">(seismicrna.table.base.PosTable property)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.Section.unmasked_int">unmasked_int (seismicrna.core.seq.section.Section property)</a>
 
       <ul>
         <li><a href="api/seismicrna.table.html#seismicrna.table.base.PosTable.unmasked_int">(seismicrna.table.base.PosTable property)</a>
 </li>
       </ul></li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.save.update_batches">update_batches() (in module seismicrna.cluster.save)</a>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.addclust.update_batches">update_batches() (in module seismicrna.cluster.addclust)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.delclust.update_batches">(in module seismicrna.cluster.delclust)</a>
 </li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.update.update_field">update_field() (in module seismicrna.cluster.update)</a>
+      </ul></li>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.addclust.update_field">update_field() (in module seismicrna.cluster.addclust)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.delclust.update_field">(in module seismicrna.cluster.delclust)</a>
 </li>
-      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.csv.update_log_counts">update_log_counts() (in module seismicrna.cluster.csv)</a>
+      </ul></li>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.addclust.update_log_counts">update_log_counts() (in module seismicrna.cluster.addclust)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.delclust.update_log_counts">(in module seismicrna.cluster.delclust)</a>
 </li>
+      </ul></li>
+      <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.addclust.update_report">update_report() (in module seismicrna.cluster.addclust)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.cluster.html#seismicrna.cluster.delclust.update_report">(in module seismicrna.cluster.delclust)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
