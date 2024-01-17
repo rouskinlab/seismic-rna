@@ -10,7 +10,7 @@ from .pair import (find_root_pairs,
                    renumber_pairs,
                    table_to_pairs)
 from .base import RNASection
-from ..seq import POS_NAME, intersection
+from ..seq import POS_NAME, intersect
 
 IDX_FIELD = "Index"
 BASE_FIELD = "Base"
@@ -24,7 +24,7 @@ class Rna2dPart(object):
 
     def __init__(self, *sections: RNASection, **kwargs):
         super().__init__(**kwargs)
-        if inter := intersection(*[section.section for section in sections]):
+        if inter := intersect(*[section.section for section in sections]):
             raise ValueError(f"Sections intersect: {inter}")
         self.sections = sections
 

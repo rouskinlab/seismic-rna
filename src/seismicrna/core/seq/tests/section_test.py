@@ -14,7 +14,8 @@ from seismicrna.core.seq.section import (BASE_NAME,
                                          hyphenate_ends,
                                          index_to_pos,
                                          index_to_seq,
-                                         intersection,
+                                         intersect,
+                                         unite,
                                          seq_pos_to_index,
                                          window_to_margins)
 from seismicrna.core.seq.xna import DNA
@@ -781,34 +782,34 @@ class TestSubsection(ut.TestCase):
         self.assertEqual(subsection.name, f"{end5}-{end3}")
 
 
-class TestIntersection(ut.TestCase):
+class TestIntersect(ut.TestCase):
 
     def test_empty_invalid(self):
         self.assertRaisesRegex(ValueError,
                                "Cannot intersect zero sections",
-                               intersection)
+                               intersect)
 
     def test_one_full(self):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
         section = Section("myref", seq)
-        inter = intersection(section)
+        inter = intersect(section)
         self.assertIsNot(inter, section)
         self.assertEqual(inter, section)
 
     def test_one_full_named(self):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
         section = Section("myref", seq)
-        inter = intersection(section, name="myintersection")
+        inter = intersect(section, name="myintersection")
         self.assertEqual(inter.seq, section.seq)
         self.assertEqual(inter.end5, section.end5)
         self.assertEqual(inter.end3, section.end3)
         self.assertTrue(inter.full)
-        self.assertEqual(inter.name, f"myintersection")
+        self.assertEqual(inter.name, "myintersection")
 
     def test_one_slice(self):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
         section = Section("myref", seq, end5=13, end3=33)
-        inter = intersection(section)
+        inter = intersect(section)
         self.assertIsNot(inter, section)
         self.assertEqual(inter, section)
 
@@ -816,7 +817,7 @@ class TestIntersection(ut.TestCase):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
         section1 = Section("myref", seq)
         section2 = Section("myref", seq)
-        inter = intersection(section1, section2)
+        inter = intersect(section1, section2)
         self.assertIsNot(inter, section1)
         self.assertIsNot(inter, section2)
         self.assertEqual(inter, section1)
@@ -827,7 +828,7 @@ class TestIntersection(ut.TestCase):
         end5, end3 = 15, 30
         section1 = Section("myref", seq, end5=end5)
         section2 = Section("myref", seq, end3=end3)
-        inter = intersection(section1, section2)
+        inter = intersect(section1, section2)
         self.assertEqual(inter.seq, seq[end5 - 1: end3])
         self.assertEqual(inter.end5, end5)
         self.assertEqual(inter.end3, end3)
@@ -835,9 +836,9 @@ class TestIntersection(ut.TestCase):
 
     def test_two_disjoint(self):
         seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
-        section1 = Section("myref", seq, end5=6, end3=17)
+        section1 = Section("myref", seq, end5=6, end3=14)
         section2 = Section("myref", seq, end5=19, end3=35)
-        inter = intersection(section1, section2)
+        inter = intersect(section1, section2)
         self.assertEqual(inter.seq, DNA(""))
         self.assertEqual(inter.end5, 19)
         self.assertEqual(inter.end3, 18)
@@ -849,11 +850,197 @@ class TestIntersection(ut.TestCase):
         section1 = Section("myref", seq, end5=end5)
         section2 = Section("myref", seq, end3=end3)
         section3 = Section("myref", seq, end5=(end5 - 2), end3=(end3 + 2))
-        inter = intersection(section1, section2, section3)
+        inter = intersect(section1, section2, section3)
         self.assertEqual(inter.seq, seq[end5 - 1: end3])
         self.assertEqual(inter.end5, end5)
         self.assertEqual(inter.end3, end3)
         self.assertEqual(inter.name, f"{end5}-{end3}")
+
+    def test_one_masked(self):
+        seq = DNA.random(30)
+        section = Section("myref", seq)
+        section.add_mask("mask1", [19, 13, 26])
+        inter = intersect(section)
+        self.assertEqual(inter.masked_int.tolist(), [13, 19, 26])
+
+    def test_two_masked(self):
+        seq = DNA.random(30)
+        section1 = Section("myref", seq, end5=3, end3=21)
+        section2 = Section("myref", seq, end5=9, end3=28)
+        section1.add_mask("mask1", [5, 6, 7, 8, 9, 10, 20])
+        section2.add_mask("mask2", [10, 15, 20, 25])
+        inter = intersect(section1, section2)
+        self.assertEqual(inter.end5, 9)
+        self.assertEqual(inter.end3, 21)
+        self.assertEqual(inter.masked_int.tolist(), [9, 10, 15, 20])
+
+    def test_diff_refs(self):
+        seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCT")
+        section1 = Section("ref1", seq)
+        section2 = Section("ref2", seq)
+        self.assertRaisesRegex(ValueError,
+                               "Expected exactly one reference",
+                               intersect,
+                               section1,
+                               section2)
+
+    def test_diff_seqs(self):
+        seq1 = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCT")
+        seq2 = DNA("CATTCTCGTAGTCAACTATCGCGTCTCTCT")
+        section1 = Section("myref", seq1)
+        section2 = Section("myref", seq2)
+        self.assertRaisesRegex(ValueError,
+                               "Expected exactly one sequence",
+                               intersect,
+                               section1,
+                               section2)
+        section1 = Section("myref", seq1, end3=10)
+        section2 = Section("myref", seq2, end3=10)
+        self.assertEqual(intersect(section1, section2).seq,
+                         DNA("CATTCTCGTA"))
+
+
+class TestUnite(ut.TestCase):
+
+    def test_empty_invalid(self):
+        self.assertRaisesRegex(ValueError,
+                               "Cannot unite zero sections",
+                               unite)
+
+    def test_one_full(self):
+        seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
+        section = Section("myref", seq)
+        union = unite(section)
+        self.assertIsNot(union, section)
+        self.assertEqual(union, section)
+
+    def test_one_full_named(self):
+        seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
+        section = Section("myref", seq)
+        union = unite(section, name="myunion")
+        self.assertEqual(union.seq, section.seq)
+        self.assertEqual(union.end5, section.end5)
+        self.assertEqual(union.end3, section.end3)
+        self.assertTrue(union.full)
+        self.assertEqual(union.name, "myunion")
+
+    def test_one_slice(self):
+        seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
+        section = Section("myref", seq, end5=13, end3=33)
+        union = unite(section)
+        self.assertIsNot(union, section)
+        self.assertEqual(union, section)
+
+    def test_two_full(self):
+        seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
+        section1 = Section("myref", seq)
+        section2 = Section("myref", seq)
+        union = unite(section1, section2)
+        self.assertIsNot(union, section1)
+        self.assertIsNot(union, section2)
+        self.assertEqual(union, section1)
+        self.assertEqual(union, section2)
+
+    def test_two_overlapping(self):
+        seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
+        section1 = Section("myref", seq, end5=12, end3=31)
+        section2 = Section("myref", seq, end5=4, end3=23)
+        union = unite(section1, section2)
+        self.assertEqual(union.seq, seq[4 - 1: 31])
+        self.assertEqual(union.end5, 4)
+        self.assertEqual(union.end3, 31)
+        self.assertEqual(union.name, "4-31")
+        self.assertEqual(union.unmasked_int.tolist(),
+                         list(range(4, 31 + 1)))
+
+    def test_two_overlapping_refseq(self):
+        seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
+        section1 = Section("myref", seq, end5=12, end3=31)
+        section2 = Section("myref", seq, end5=4, end3=23)
+        self.assertEqual(unite(section1, section2, refseq=seq),
+                         unite(section1, section2))
+
+    def test_two_disjoint(self):
+        seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
+        section1 = Section("myref", seq, end5=23, end3=31)
+        section2 = Section("myref", seq, end5=4, end3=12)
+        union = unite(section1, section2)
+        self.assertEqual(union.seq, DNA("TCTCGTAGTNNNNNNNNNNGTCTCTCTA"))
+        self.assertEqual(union.end5, 4)
+        self.assertEqual(union.end3, 31)
+        self.assertEqual(union.name, f"4-31")
+        self.assertEqual(union.unmasked_int.tolist(),
+                         list(range(4, 12 + 1)) + list(range(23, 31 + 1)))
+
+    def test_two_disjoint_refseq(self):
+        seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
+        section1 = Section("myref", seq, end5=23, end3=31)
+        section2 = Section("myref", seq, end5=4, end3=12)
+        union = unite(section1, section2, refseq=seq)
+        self.assertEqual(union.seq, seq[4 - 1: 31])
+        self.assertEqual(union.end5, 4)
+        self.assertEqual(union.end3, 31)
+        self.assertEqual(union.name, f"4-31")
+        self.assertEqual(union.unmasked_int.tolist(),
+                         list(range(4, 12 + 1)) + list(range(23, 31 + 1)))
+
+    def test_two_disjoint_wrong_refseq(self):
+        seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTACTCTT")
+        section1 = Section("myref", seq, end5=23, end3=31)
+        section2 = Section("myref", seq, end5=4, end3=12)
+        union = unite(section1,
+                      section2,
+                      refseq=DNA("CATTCTCGTAGTCAACTATCGCGTCTCTCTACTCTT"))
+        self.assertEqual(union.seq, DNA("TCTCGTAGTCAACTATCGCGTCTCTCTA"))
+        self.assertRaisesRegex(ValueError,
+                               "Expected exactly one sequence",
+                               unite,
+                               section1,
+                               section2,
+                               refseq=DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCTGCTCTT"))
+
+    def test_one_masked(self):
+        seq = DNA.random(30)
+        section = Section("myref", seq)
+        section.add_mask("mask1", [19, 13, 26])
+        union = unite(section)
+        self.assertEqual(union.masked_int.tolist(), [13, 19, 26])
+
+    def test_two_masked(self):
+        seq = DNA.random(30)
+        section1 = Section("myref", seq, end5=3, end3=21)
+        section2 = Section("myref", seq, end5=9, end3=28)
+        section1.add_mask("mask1", [5, 6, 7, 8, 9, 10, 20])
+        section2.add_mask("mask2", [10, 15, 20, 25])
+        union = unite(section1, section2)
+        self.assertEqual(union.end5, 3)
+        self.assertEqual(union.end3, 28)
+        self.assertEqual(union.masked_int.tolist(), [5, 6, 7, 8, 10, 20, 25])
+
+    def test_diff_refs(self):
+        seq = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCT")
+        section1 = Section("ref1", seq)
+        section2 = Section("ref2", seq)
+        self.assertRaisesRegex(ValueError,
+                               "Expected exactly one reference",
+                               unite,
+                               section1,
+                               section2)
+
+    def test_diff_seqs(self):
+        seq1 = DNA("CATTCTCGTAGTCAACTTTCGCGTCTCTCT")
+        seq2 = DNA("CATTCTCGTAGTCAACTATCGCGTCTCTCT")
+        section1 = Section("myref", seq1)
+        section2 = Section("myref", seq2)
+        self.assertRaisesRegex(ValueError,
+                               "Sequences differ",
+                               unite,
+                               section1,
+                               section2)
+        section1 = Section("myref", seq1, end3=10)
+        section2 = Section("myref", seq2, end3=10)
+        self.assertEqual(unite(section1, section2).seq,
+                         DNA("CATTCTCGTA"))
 
 
 class TestIndexToPos(ut.TestCase):

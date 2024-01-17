@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from .refs import RefSeqs
-from .xna import BASEA, BASEC, DNA
+from .xna import BASEA, BASEC, BASEN, DNA
 
 logger = getLogger(__name__)
 
@@ -632,8 +632,21 @@ class Section(object):
         return not self == other
 
 
-def intersection(*sections: Section, name: str | None = None):
-    """ Return the intersection of sections. """
+def intersect(*sections: Section, name: str | None = None):
+    """ Intersect one or more sections.
+
+    Parameters
+    ----------
+    *sections: Section
+        Sections to intersect.
+    name: str | None = None
+        Name for the section to return.
+
+    Returns
+    -------
+    Section
+        Intersection of all given sections.
+    """
     if not sections:
         raise ValueError("Cannot intersect zero sections")
     # Confirm that all reference names match.
@@ -664,7 +677,90 @@ def intersection(*sections: Section, name: str | None = None):
         end3 = None
     else:
         seq5 = end5
-    return Section(ref, seq, seq5=seq5, end5=end5, end3=end3, name=name)
+    # Create the intersection.
+    intersection = Section(ref, seq, seq5=seq5, end5=end5, end3=end3, name=name)
+    # Keep a position only if unmasked in all sections; equivalently,
+    # mask a position if masked in any section.
+    masked = sections[0].masked_int
+    for section in sections[1:]:
+        masked = np.union1d(section.masked_int, masked)
+    # The masked positions must be limited to those in the intersection.
+    masked = np.intersect1d(masked, intersection.range_int, assume_unique=True)
+    if masked.size > 0:
+        intersection.add_mask("intersection", masked)
+    return intersection
+
+
+def unite(*sections: Section,
+          name: str | None = None,
+          refseq: DNA | None = None):
+    """ Unite one or more sections.
+
+    Parameters
+    ----------
+    *sections: Section
+        Sections to intersect.
+    name: str | None = None
+        Name for the section to return.
+    refseq: DNA | None = None
+        Reference sequence (optional) for filling any gaps in the union
+        of the sections. If given, then it must match every section at
+        the corresponding positions. If omitted, then any positions not
+        covered by at least one section will be filled with N.
+
+    Returns
+    -------
+    Section
+        Union of all given sections.
+    """
+    if not sections:
+        raise ValueError("Cannot unite zero sections")
+    # Confirm that all reference names match.
+    refs = list(set(section.ref for section in sections))
+    if len(refs) != 1:
+        raise ValueError(f"Expected exactly one reference, but got {refs}")
+    ref = refs[0]
+    # Compute the 5' and 3' coordinates of the union.
+    end5 = min(section.end5 for section in sections)
+    end3 = max(section.end3 for section in sections)
+    # Determine the coverage and sequence of the union.
+    if refseq is not None:
+        # Create a section from the given reference sequence.
+        refsect = Section(ref, refseq, end5=end5, end3=end3)
+        # Verify that every section matches the reference sequence.
+        for s in sections:
+            # This will succeed only if the sequences match.
+            intersect(s, refsect)
+        seq = refsect.seq
+    else:
+        # Determine a consensus sequence by overlapping the sections.
+        seq_array = pd.Series(BASEN, index=np.arange(end5, end3 + 1))
+        for s in sections:
+            # Verify that the section matches the sequence.
+            if np.any((s.seq.array != seq_array.loc[s.end5: s.end3])
+                      & (seq_array.loc[s.end5: s.end3] != BASEN)):
+                seq = DNA("".join(seq_array.loc[s.end5: s.end3]))
+                raise ValueError(f"Sequences differ: {s.seq} ≠ {seq}")
+            # Fill in the sequence based on the section.
+            seq_array.loc[s.end5: s.end3] = s.seq.array
+        seq = DNA("".join(seq_array))
+    if all(section.full for section in sections):
+        # If all sections are full-length, then also make the union
+        # full-length.
+        seq5 = 1
+        end5 = None
+        end3 = None
+    else:
+        seq5 = end5
+    # Create the union.
+    union = Section(ref, seq, seq5=seq5, end5=end5, end3=end3, name=name)
+    # Keep a position only if unmasked in at least one section.
+    unmasked = sections[0].unmasked_int
+    for s in sections[1:]:
+        unmasked = np.union1d(s.unmasked_int, unmasked)
+    if unmasked.size < union.size:
+        union.add_mask("union", unmasked, invert=True)
+    return union
 
 
 class SectionFinder(Section):
