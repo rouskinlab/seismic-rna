@@ -699,7 +699,7 @@ def unite(*sections: Section,
     Parameters
     ----------
     *sections: Section
-        Sections to intersect.
+        Sections to unite.
     name: str | None = None
         Name for the section to return.
     refseq: DNA | None = None

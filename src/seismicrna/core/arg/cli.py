@@ -562,7 +562,7 @@ opt_brotli_level = Option(
     help="Compression level for brotli (0 - 11)"
 )
 
-# Mask
+# Pool
 
 opt_pool = Option(
     ("--pool", "-P"),
@@ -570,6 +570,8 @@ opt_pool = Option(
     default="",
     help="Name of the sample made by pooling other samples"
 )
+
+# Mask
 
 opt_count_del = Option(
     ("--count-del/--discount-del",),
@@ -699,6 +701,21 @@ opt_em_thresh = Option(
     type=float,
     default=np.log(2.),
     help="Maximum change in log likelihood for convergence"
+)
+
+# Join options
+
+opt_joined = Option(
+    ("--joined", "-J"),
+    type=str,
+    default="",
+    help="Name of the section made by joining other sections"
+)
+
+opt_join_clusts = Option(
+    ("--join-clusts", "-j"),
+    type=Path(dir_okay=False, exists=True),
+    help="CSV file of clusters to join"
 )
 
 # Table options
@@ -925,15 +942,13 @@ opt_export = Option(
 
 opt_samples_meta = Option(
     ("--samples-meta", "-S"),
-    type=Path(dir_okay=False),
-    default="",
+    type=Path(dir_okay=False, exists=True),
     help="CSV file of metadata for each sample"
 )
 
 opt_refs_meta = Option(
     ("--refs-meta", "-R"),
-    type=Path(dir_okay=False),
-    default="",
+    type=Path(dir_okay=False, exists=True),
     help="CSV file of metadata for each reference"
 )
 

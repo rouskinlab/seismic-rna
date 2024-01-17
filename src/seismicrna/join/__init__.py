@@ -1,35 +1,4 @@
-"""
-
-Command Core Module
-
-========================================================================
-
-Define the names of the commands.
-
-------------------------------------------------------------------------
-
-"""
-
-
-CMD_WORKFLOW = "wf"
-CMD_DEMULT = "demult"
-CMD_QC = "qc"
-CMD_ALIGN = "align"
-CMD_REL = "relate"
-CMD_POOL = "pool"
-CMD_MASK = "mask"
-CMD_CLUSTER = "cluster"
-CMD_ADDCLUST = "+addclust"
-CMD_DELCLUST = "+delclust"
-CMD_JOIN = "join"
-CMD_TABLE = "table"
-CMD_FOLD = "fold"
-CMD_GRAPH = "graph"
-CMD_EXPORT = "export"
-CMD_CLEANFA = "+cleanfa"
-CMD_RENUMCT = "+renumct"
-CMD_SIM = "+sim"
-CMD_TEST = "+test"
+from .main import cli, run, params
 
 ########################################################################
 #                                                                      #

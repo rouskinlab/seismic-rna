@@ -19,7 +19,7 @@ from .report import (SampleF,
                      PooledSamplesF,
                      Report,
                      BatchedReport)
-from .seq import FULL_NAME, DNA, Section, hyphenate_ends
+from .seq import FULL_NAME, DNA, Section, hyphenate_ends, unite
 
 logger = getLogger(__name__)
 
@@ -309,13 +309,54 @@ class LoadedMutsDataset(LoadedDataset, MutsDataset, ABC):
                     else hyphenate_ends(self.end5, self.end3))
 
 
-class PooledDataset(Dataset, ABC):
-    """ Datasets of the same type pooled from multiple samples. """
+class MergedDataset(Dataset, ABC):
+    """ Dataset made by merging one or more constituent datasets. """
 
     @classmethod
     @abstractmethod
     def get_dataset_load_func(cls) -> LoadFunction:
-        """ Function to load a dataset in the pool. """
+        """ Function to load one constituent dataset. """
+
+    def __init__(self, datasets: Iterable[Dataset]):
+        self._datasets = list(datasets)
+        if not self._datasets:
+            raise ValueError(f"{type(self).__name__} got no datasets")
+
+    def _list_dataset_attr(self, name: str):
+        """ Get a list of an attribute for each dataset. """
+        return [getattr(dataset, name) for dataset in self._datasets]
+
+    def _get_common_attr(self, name: str):
+        """ Get a common attribute among datasets. """
+        attrs = sorted(set(self._list_dataset_attr(name)))
+        if len(attrs) != 1:
+            raise ValueError(f"{type(self).__name__} expected exactly 1 value "
+                             f"for attribute {repr(name)}, but got {attrs}")
+        return attrs[0]
+
+    @property
+    def top(self):
+        return self._get_common_attr("top")
+
+    @property
+    def ref(self):
+        return self._get_common_attr("ref")
+
+    @property
+    def pattern(self):
+        return self._get_common_attr("pattern")
+
+
+class MergedMutsDataset(MergedDataset, MutsDataset, ABC):
+    """ MergedDataset with explicit mutational data. """
+
+    @cached_property
+    def refseq(self):
+        return self._get_common_attr("refseq")
+
+
+class PooledDataset(MergedDataset, ABC):
+    """ Datasets of the same type pooled from multiple samples. """
 
     @classmethod
     def load(cls, report_file: Path):
@@ -338,25 +379,7 @@ class PooledDataset(Dataset, ABC):
 
     def __init__(self, sample: str, datasets: Iterable[Dataset]):
         self._sample = sample
-        self._datasets = list(datasets)
-        if not self._datasets:
-            raise ValueError(f"{type(self).__name__} got no datasets")
-
-    def _list_dataset_attr(self, name: str):
-        """ Get a list of an attribute for each dataset. """
-        return [getattr(dataset, name) for dataset in self._datasets]
-
-    def _get_common_attr(self, name: str):
-        """ Get a common attribute among datasets. """
-        attrs = list(set(self._list_dataset_attr(name)))
-        if len(attrs) != 1:
-            raise ValueError(f"{type(self).__name__} expected exactly 1 value "
-                             f"for attribute {repr(name)}, but got {attrs}")
-        return attrs[0]
-
-    @property
-    def top(self):
-        return self._get_common_attr("top")
+        super().__init__(datasets)
 
     @property
     def sample(self):
@@ -366,10 +389,6 @@ class PooledDataset(Dataset, ABC):
     def samples(self) -> list[str]:
         """ Name of the sample for each dataset in the pool. """
         return self._list_dataset_attr("sample")
-
-    @property
-    def ref(self):
-        return self._get_common_attr("ref")
 
     @property
     def end5(self):
@@ -382,10 +401,6 @@ class PooledDataset(Dataset, ABC):
     @property
     def sect(self):
         return self._get_common_attr("sect")
-
-    @property
-    def pattern(self):
-        return self._get_common_attr("pattern")
 
     @cached_property
     def nums_batches(self) -> list[int]:
@@ -420,12 +435,73 @@ class PooledDataset(Dataset, ABC):
         return batch
 
 
-class PooledMutsDataset(PooledDataset, MutsDataset, ABC):
+class PooledMutsDataset(PooledDataset, MergedMutsDataset, ABC):
     """ PooledDataset with explicit mutational data. """
 
+
+class JoinedDataset(MergedDataset, ABC):
+    """ Dataset joining multiple sections from the same sample. """
+
+    @classmethod
+    def load(cls, report_file: Path):
+        # Determine the sample name and pooled samples from the report.
+        report = cls.load_report(report_file)
+        sample = report.get_field(SampleF)
+        pooled_samples = report.get_field(PooledSamplesF)
+        # Determine the report file for each sample in the pool.
+        load_func = cls.get_dataset_load_func()
+        sample_report_files = [path.cast_path(
+            report_file,
+            cls.get_report_type().seg_types(),
+            load_func.report_path_seg_types,
+            **load_func.report_path_auto_fields,
+            sample=sample
+        ) for sample in pooled_samples]
+        # Create the pooled dataset from the sample datasets.
+        return cls(sample, map(cls.get_dataset_load_func(),
+                               sample_report_files))
+
+    def __init__(self, sect: str, datasets: Iterable[Dataset]):
+        self._sect = sect
+        super().__init__(datasets)
+
+    @property
+    def sample(self):
+        return self._get_common_attr("sample")
+
     @cached_property
-    def refseq(self):
-        return self._get_common_attr("refseq")
+    def samples(self) -> list[str]:
+        """ Name of the sample for each dataset in the pool. """
+        return self._list_dataset_attr("sample")
+
+    @property
+    def end5(self):
+        return min(self._list_dataset_attr("end5"))
+
+    @property
+    def end3(self):
+        return max(self._list_dataset_attr("end3"))
+
+    @property
+    def sect(self):
+        return self._sect
+
+    @cached_property
+    def num_batches(self):
+        return self._get_common_attr("num_batches")
+
+
+class JoinedMutsDataset(JoinedDataset, MergedMutsDataset, ABC):
+    """ JoinedDataset with explicit mutational data. """
+
+    @cached_property
+    def section(self):
+        section = unite(*self._list_dataset_attr("section"), refseq=self.refseq)
+        if (s := (section.end5, section.end3)) != (e := (self.end5, self.end3)):
+            raise ValueError(
+                f"Expected section to have coordinates {e}, but got {s}"
+            )
+        return section
 
 
 class ChainedDataset(Dataset, ABC):
