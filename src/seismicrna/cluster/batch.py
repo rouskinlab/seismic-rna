@@ -5,7 +5,7 @@ import pandas as pd
 from ..core.batch import PartialMutsBatch, PartialReadBatch, RefseqMutsBatch
 
 
-class ClustReadBatch(PartialReadBatch):
+class ClusterReadBatch(PartialReadBatch):
 
     def __init__(self, *, resps: pd.DataFrame, **kwargs):
         self.resps = resps
@@ -20,7 +20,7 @@ class ClustReadBatch(PartialReadBatch):
         return self.resps.index.values
 
 
-class ClustMutsBatch(ClustReadBatch, PartialMutsBatch, RefseqMutsBatch):
+class ClusterMutsBatch(ClusterReadBatch, PartialMutsBatch, RefseqMutsBatch):
 
     @property
     def read_weights(self):

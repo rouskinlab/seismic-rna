@@ -10,9 +10,9 @@ from .compare import format_exp_count_col
 from .csv import get_count_path
 from .data import ClusterMutsDataset
 from .data import load_cluster_dataset
-from .io import ClustBatchIO
+from .io import ClusterBatchIO
 from .names import BIT_VECTOR_NAME, LOG_OBS_NAME
-from .report import ClustReport
+from .report import ClusterReport
 from ..core import path
 from ..core.arg import (CMD_DELCLUST,
                         docdef,
@@ -42,7 +42,7 @@ from ..core.report import (calc_dt_minutes,
 
 logger = getLogger(__name__)
 
-BTYPE = ClustBatchIO.btype()
+BTYPE = ClusterBatchIO.btype()
 
 
 def update_log_counts(best_order: int,
@@ -77,11 +77,11 @@ def update_batches(dataset: ClusterMutsDataset,
     orders = np.arange(1, best_order + 1)
     checksums = list()
     for original_batch in dataset.iter_batches():
-        new_batch = ClustBatchIO(sample=dataset.sample,
-                                 ref=dataset.ref,
-                                 sect=dataset.sect,
-                                 batch=original_batch.batch,
-                                 resps=original_batch.resps.loc[:, orders])
+        new_batch = ClusterBatchIO(sample=dataset.sample,
+                                   ref=dataset.ref,
+                                   sect=dataset.sect,
+                                   batch=original_batch.batch,
+                                   resps=original_batch.resps.loc[:, orders])
         _, checksum = new_batch.save(top=dataset.top,
                                      brotli_level=brotli_level,
                                      force=True)
@@ -89,7 +89,7 @@ def update_batches(dataset: ClusterMutsDataset,
     return checksums
 
 
-def update_field(report: ClustReport, field: Field, best_order: int):
+def update_field(report: ClusterReport, field: Field, best_order: int):
     """ Delete clusters from a field of a report. """
     if best_order < 1:
         raise ValueError(f"Best order must be ≥ 1, but got {best_order}")
@@ -99,7 +99,7 @@ def update_field(report: ClustReport, field: Field, best_order: int):
     return {order: original[order] for order in range(1, best_order + 1)}
 
 
-def update_report(original_report: ClustReport,
+def update_report(original_report: ClusterReport,
                   max_order: int,
                   best_order: int,
                   checksums: list[str],
@@ -108,7 +108,7 @@ def update_report(original_report: ClustReport,
                   top: Path):
     if max_order < 1:
         raise ValueError(f"Maximum order must be ≥ 1, but got {max_order}")
-    new_report = ClustReport(
+    new_report = ClusterReport(
         sample=original_report.sample,
         ref=original_report.ref,
         sect=original_report.sect,
@@ -152,7 +152,7 @@ def del_orders(report_file: Path,
     if max_order < 1:
         raise ValueError(f"Maximum order must be ≥ 1, but got {max_order}")
     # Load the original cluster report.
-    report = ClustReport.load(report_file)
+    report = ClusterReport.load(report_file)
     original_max_order = report.get_field(MaxClustsF)
     if max_order < original_max_order:
         began = datetime.now()

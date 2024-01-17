@@ -6,8 +6,8 @@ from typing import Iterable
 
 from click import command
 
-from .data import PoolDataset, load_relate_pool_dataset
-from .report import PoolReport
+from .data import JoinDataset, load_mask_cluster_dataset
+from .report import JoinReport
 from ..core.arg import (CMD_JOIN,
                         docdef,
                         arg_input_path,
@@ -112,7 +112,7 @@ def make_pool(out_dir: Path,
                        f"{out_dir} got duplicate samples: {sample_counts}")
     samples = sorted(sample_counts)
     # Determine the output report file.
-    report_file = PoolReport.build_path(top=out_dir, sample=name, ref=ref)
+    report_file = JoinReport.build_path(top=out_dir, sample=name, ref=ref)
     if need_write(report_file, force):
         # Because Relate and Pool report files have the same name, it
         # would be possible to overwrite a Relate report with a Pool
@@ -127,19 +127,19 @@ def make_pool(out_dir: Path,
             else:
                 # The report file contains a Relate report.
                 raise TypeError(f"Cannot overwrite {RelateReport.__name__} "
-                                f"in {report_file} with {PoolReport.__name__}: "
+                                f"in {report_file} with {JoinReport.__name__}: "
                                 f"would cause data loss")
             # Check whether the report file contains a Pool report.
             try:
-                PoolReport.load(report_file)
+                JoinReport.load(report_file)
             except ValueError:
                 # The report file does not contain a Pool report.
                 raise TypeError(f"Cannot overwrite {report_file} with "
-                                f"{PoolReport.__name__}: would cause data loss")
+                                f"{JoinReport.__name__}: would cause data loss")
         logger.info(f"Began pooling samples {samples} into {repr(name)} with "
                     f"reference {repr(ref)} in output directory {out_dir}")
         ended = datetime.now()
-        report = PoolReport(sample=name,
+        report = JoinReport(sample=name,
                             ref=ref,
                             pooled_samples=samples,
                             began=began,

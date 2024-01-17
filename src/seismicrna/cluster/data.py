@@ -1,9 +1,9 @@
 from functools import cached_property
 from logging import getLogger
 
-from .batch import ClustMutsBatch
-from .io import ClustBatchIO
-from .report import ClustReport
+from .batch import ClusterMutsBatch
+from .io import ClusterBatchIO
+from .report import ClusterReport
 from ..core.data import ChainedMutsDataset, LoadedDataset, LoadFunction
 from ..core.header import index_orders_clusts
 from ..core.report import NumClustsF
@@ -18,11 +18,11 @@ class ClusterReadDataset(LoadedDataset):
 
     @classmethod
     def get_report_type(cls):
-        return ClustReport
+        return ClusterReport
 
     @classmethod
     def get_batch_type(cls):
-        return ClustBatchIO
+        return ClusterBatchIO
 
     @cached_property
     def max_order(self):
@@ -65,16 +65,16 @@ class ClusterMutsDataset(ChainedMutsDataset):
     def clusters(self):
         return index_orders_clusts(self.max_order)
 
-    def _chain(self, batch1: MaskMutsBatch, batch2: ClustBatchIO):
-        return ClustMutsBatch(batch=batch1.batch,
-                              refseq=batch1.refseq,
-                              muts=batch1.muts,
-                              end5s=batch1.end5s,
-                              mid5s=batch1.mid5s,
-                              mid3s=batch1.mid3s,
-                              end3s=batch1.end3s,
-                              resps=batch2.resps,
-                              sanitize=False)
+    def _chain(self, batch1: MaskMutsBatch, batch2: ClusterBatchIO):
+        return ClusterMutsBatch(batch=batch1.batch,
+                                refseq=batch1.refseq,
+                                muts=batch1.muts,
+                                end5s=batch1.end5s,
+                                mid5s=batch1.mid5s,
+                                mid3s=batch1.mid3s,
+                                end3s=batch1.end3s,
+                                resps=batch2.resps,
+                                sanitize=False)
 
 
 load_cluster_dataset = LoadFunction(ClusterMutsDataset)

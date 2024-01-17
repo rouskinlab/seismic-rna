@@ -6,7 +6,7 @@ from ..core.report import (Report,
                            PooledSamplesF)
 
 
-class PoolReport(Report, RefIO):
+class JoinReport(Report, RefIO):
 
     @classmethod
     def file_seg_type(cls):

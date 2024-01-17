@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from . import path
-from .batch import MutsBatch, ReadBatch, list_batch_nums
+from .batch import MutsBatch, ReadBatch, PartialReadBatch, list_batch_nums
 from .io import MutsBatchIO, ReadBatchIO, RefseqIO
 from .rel import RelPattern
 from .report import (SampleF,
@@ -90,7 +90,8 @@ class Dataset(ABC):
         return list_batch_nums(self.num_batches)
 
     @abstractmethod
-    def get_batch(self, batch_num: int) -> ReadBatch | MutsBatch:
+    def get_batch(self, batch_num: int
+                  ) -> ReadBatch | MutsBatch | PartialReadBatch:
         """ Get a specific batch of data. """
 
     def iter_batches(self):
@@ -489,6 +490,15 @@ class JoinedDataset(MergedDataset, ABC):
     @cached_property
     def num_batches(self):
         return self._get_common_attr("num_batches")
+
+    @abstractmethod
+    def _join(self, batches: Iterable[PartialReadBatch]) -> PartialReadBatch:
+        """ Join corresponding batches of data. """
+
+    def get_batch(self, batch_num: int):
+        # Join the batch with that number from every dataset.
+        return self._join(dataset.get_batch(batch_num)
+                          for dataset in self._datasets)
 
 
 class JoinedMutsDataset(JoinedDataset, MergedMutsDataset, ABC):

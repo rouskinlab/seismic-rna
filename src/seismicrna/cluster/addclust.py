@@ -11,9 +11,9 @@ from .compare import find_best_order
 from .csv import get_count_path
 from .data import ClusterMutsDataset
 from .data import load_cluster_dataset
-from .io import ClustBatchIO
+from .io import ClusterBatchIO
 from .names import BIT_VECTOR_NAME, LOG_OBS_NAME
-from .report import ClustReport
+from .report import ClusterReport
 from .uniq import UniqReads
 from .write import run_orders
 from ..core import path
@@ -48,7 +48,7 @@ from ..mask.report import MaskReport
 
 logger = getLogger(__name__)
 
-BTYPE = ClustBatchIO.btype()
+BTYPE = ClusterBatchIO.btype()
 
 
 def update_log_counts(new_orders: list[RunOrderResults],
@@ -93,11 +93,11 @@ def update_batches(dataset: ClusterMutsDataset,
                                            for runs in new_orders],
                           axis=1,
                           verify_integrity=True)
-        batch = ClustBatchIO(sample=dataset.sample,
-                             ref=dataset.ref,
-                             sect=dataset.sect,
-                             batch=batch.batch,
-                             resps=resps)
+        batch = ClusterBatchIO(sample=dataset.sample,
+                               ref=dataset.ref,
+                               sect=dataset.sect,
+                               batch=batch.batch,
+                               resps=resps)
         _, checksum = batch.save(top=dataset.top,
                                  brotli_level=brotli_level,
                                  force=True)
@@ -105,7 +105,7 @@ def update_batches(dataset: ClusterMutsDataset,
     return checksums
 
 
-def update_field(report: ClustReport,
+def update_field(report: ClusterReport,
                  field: Field,
                  new_orders: list[RunOrderResults],
                  attr: str):
@@ -120,7 +120,7 @@ def update_field(report: ClustReport,
     return original | new
 
 
-def update_report(original_report: ClustReport,
+def update_report(original_report: ClusterReport,
                   max_order: int,
                   best_order: int,
                   new_orders: list[RunOrderResults],
@@ -128,7 +128,7 @@ def update_report(original_report: ClustReport,
                   began: datetime,
                   ended: datetime,
                   top: Path):
-    new_report = ClustReport(
+    new_report = ClusterReport(
         sample=original_report.sample,
         ref=original_report.ref,
         sect=original_report.sect,
@@ -176,7 +176,7 @@ def add_orders(report_file: Path,
                n_procs: int):
     """ Add orders to an existing report and dataset. """
     # Load the original cluster report.
-    report = ClustReport.load(report_file)
+    report = ClusterReport.load(report_file)
     original_max_order = report.get_field(MaxClustsF)
     if max_order > original_max_order:
         began = datetime.now()
@@ -184,7 +184,7 @@ def add_orders(report_file: Path,
             f"Began adding clusters to {report_file} up to order {max_order}"
         )
         dataset = load_mask_dataset(recast_file_path(report_file,
-                                                     ClustReport,
+                                                     ClusterReport,
                                                      MaskReport))
         original_best_order = report.get_field(NumClustsF)
         if original_best_order == original_max_order:

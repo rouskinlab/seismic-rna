@@ -8,7 +8,7 @@ import numpy as np
 from .compare import RunOrderResults, find_best_order, sort_replicate_runs
 from .csv import write_log_counts, write_mus, write_props
 from .em import EmClustering
-from .report import ClustReport
+from .report import ClusterReport
 from .save import write_batches
 from .uniq import UniqReads
 from ..core.io import recast_file_path
@@ -146,7 +146,7 @@ def cluster(mask_report_file: Path,
     # Check if the cluster report file already exists.
     cluster_report_file = recast_file_path(mask_report_file,
                                            MaskReport,
-                                           ClustReport)
+                                           ClusterReport)
     if need_write(cluster_report_file, force):
         began = datetime.now()
         logger.info(f"Began clustering {mask_report_file} up to order "
@@ -172,16 +172,16 @@ def cluster(mask_report_file: Path,
         # Output the cluster memberships in batches of reads.
         checksums = write_batches(dataset, orders, brotli_level)
         ended = datetime.now()
-        report = ClustReport.from_clusters(orders,
-                                           uniq_reads,
-                                           max_order,
-                                           n_runs,
-                                           min_iter=min_iter,
-                                           max_iter=max_iter,
-                                           conv_thresh=conv_thresh,
-                                           checksums=checksums,
-                                           began=began,
-                                           ended=ended)
+        report = ClusterReport.from_clusters(orders,
+                                             uniq_reads,
+                                             max_order,
+                                             n_runs,
+                                             min_iter=min_iter,
+                                             max_iter=max_iter,
+                                             conv_thresh=conv_thresh,
+                                             checksums=checksums,
+                                             began=began,
+                                             ended=ended)
         report.save(dataset.top, force=force)
         order = find_best_order(orders)
         logger.info(f"Ended clustering {mask_report_file} to order {order}")
