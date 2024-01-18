@@ -35,7 +35,8 @@ def join_sections(out_dir: Path,
                   sample: str,
                   ref: str,
                   sects: Iterable[str],
-                  clusts: dict[str, dict[int, dict[int, int]]], *,
+                  clustered: bool, *,
+                  clusts: dict[str, dict[int, dict[int, int]]],
                   force: bool):
     """ Join one or more sections.
 
@@ -51,9 +52,12 @@ def join_sections(out_dir: Path,
         Name of the reference.
     sects: Iterable[str]
         Names of the sections being joined.
+    clustered: bool
+        Whether the dataset is clustered.
     clusts: dict[str, dict[int, dict[int, int]]]
         For each section, for each order, the cluster from the original
-        section to use as the cluster in the joined section.
+        section to use as the cluster in the joined section; ignored if
+        `clustered` is False.
     force: bool
         Force the report to be written, even if it exists.
 
@@ -75,7 +79,7 @@ def join_sections(out_dir: Path,
                          sect=name,
                          joined_sections=sects)
     # Determine whether the dataset is clustered.
-    if clusts:
+    if clustered:
         report_kwargs |= dict(joined_clusters=clusts)
         join_type = JoinClusterReport
         part_type = ClusterReport
@@ -154,25 +158,33 @@ def run(input_path: tuple[str, ...], *,
             else:
                 # Otherwise, use just the section of the dataset.
                 sects = [dataset.sect]
-            # Check whether the dataset was clustered.
             joins[(dataset.top,
                    dataset.sample,
                    dataset.ref,
                    clustered)].extend(sects)
+            # If clustered, then check if the corresponding Mask dataset
+            # has been joined.
+            mask_report_file = MaskReport.build_path(top=dataset.top,
+                                                     sample=dataset.sample,
+                                                     ref=dataset.ref,
+                                                     sect=joined)
+            if not mask_report_file.is_file():
+                # If not, then also join the Mask dataset.
+                mask_joins = joins[(dataset.top,
+                                    dataset.sample,
+                                    dataset.ref,
+                                    False)]
+                mask_joins.extend([sect for sect in sects
+                                   if sect not in mask_joins])
     # Make each joined section.
     return dispatch(join_sections,
                     max_procs=max_procs,
                     parallel=parallel,
                     pass_n_procs=False,
-                    args=[(out_dir,
-                           joined,
-                           sample,
-                           ref,
-                           sects,
-                           clusts if clustered else dict())
+                    args=[(out_dir, joined, sample, ref, sects, clustered)
                           for (out_dir, sample, ref, clustered), sects
                           in joins.items()],
-                    kwargs=dict(force=force))
+                    kwargs=dict(clusts=clusts, force=force))
 
 
 params = [

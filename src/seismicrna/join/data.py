@@ -11,7 +11,7 @@ from ..cluster.data import ClusterReadDataset, ClusterMutsDataset
 from ..core.data import LoadFunction, JoinedDataset, ChainedMutsDataset
 from ..core.header import (ClustHeader,
                            index_orders_clusts,
-list_clusts,
+                           list_clusts,
                            list_orders)
 from ..mask.batch import MaskReadBatch
 from ..mask.data import MaskReadDataset, MaskMutsDataset
@@ -94,7 +94,7 @@ class JoinClusterReadDataset(JoinedDataset):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self._clusts is None:
+        if not self._clusts:
             self._clusts = {sect: {order: {clust: clust
                                            for clust in list_clusts(order)}
                                    for order in list_orders(self.max_order)}
