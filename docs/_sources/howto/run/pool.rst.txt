@@ -1,5 +1,5 @@
 
-Pool: Combine samples from the Relate step
+Pool: Merge samples (vertically) from the Relate step
 --------------------------------------------------------------------------------
 
 Pool: Input files
@@ -9,19 +9,19 @@ Pool input file: Relate/Pool report
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 You can give any number of Relate report files as inputs for the Pool step.
-You can also give Pool report files, to combine samples that were themselves
-made by pooling other samples.
+You can also give Pool report files, to pool samples that were themselves made
+by pooling other samples.
 See :doc:`../inputs` for ways to list multiple files.
 
 .. note::
     SEISMIC-RNA will not double-count any of your original samples, even if they
     appear in multiple report files you are pooling.
-    It will just issue a warning if it finds any samples given multiple times.
+    It will just log a warning if it finds any samples given multiple times.
 
 Relate and Pool reports will be pooled only if they share both
 
-- the reference
 - the top-level output directory, i.e. ``--out-dir`` (``-o``)
+- the reference
 
 For each pair of these two attributes, SEISMIC-RNA will produce a pooled sample
 from all Relate/Pool reports with those attributes.
@@ -43,8 +43,8 @@ get two new Pool reports representing the pooled samples:
   ``{out}/sample-1/relate/ref-2/relate-report.json`` and
   ``{out}/sample-2/relate/ref-2/relate-report.json``
 
-To pool all valid combinations of Relate reports in ``{out}`` into samples named
-``{pooled}``, you can use the command::
+To pool all valid combinations of Relate/Pool reports in ``{out}`` into samples
+named ``{pooled}``, you can use the command::
 
     seismic pool -P {pooled} {out}
 
@@ -100,7 +100,7 @@ in both the report files for ``sample-A`` and ``pool-1``.
 If you get this warning, then you should check your Pool report file to ensure
 it contains all the samples you want and none that you don't.
 
-Cannot overwrite ... would cause data loss
+Overwriting ... would cause data loss
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This error means that you attempted to create a pooled sample with the same name
@@ -108,7 +108,7 @@ as an existing non-pooled sample while using ``--force``, e.g. ::
 
     seismic pool --force -P sample-A out
 
-if `out/sample-A` already exists.
+if ``out/sample-A`` already exists.
 
 Doing so would overwrite the Relate report for the original, non-pooled sample,
 making the sample unusable (unless you reran ``seismic relate`` on that sample).

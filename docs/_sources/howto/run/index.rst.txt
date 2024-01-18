@@ -17,6 +17,7 @@ You can run the SEISMIC-RNA workflow in two ways:
     pool
     mask
     cluster
+    join
     table
     fold
     graph

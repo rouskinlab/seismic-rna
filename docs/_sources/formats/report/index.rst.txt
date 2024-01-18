@@ -3,7 +3,7 @@ Report Formats
 ========================================================================
 
 A report file is produced by the steps ``align``, ``relate``, ``pool``,
-``mask``, and ``cluster`` and serves three purposes:
+``mask``, ``cluster``, ``join``, and ``fold`` and serves three purposes:
 
 - Record the parameters with which the step was run.
 - Summarize the results of the step.
@@ -21,6 +21,7 @@ read and widely supported by software.
     pool
     mask
     cluster
+    join
     fold
 
 .. _JSON format: https://en.wikipedia.org/wiki/JSON

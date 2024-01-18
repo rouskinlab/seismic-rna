@@ -16,3 +16,4 @@ An example in CSV format is given for each type of metadata file.
     samples
     refs
     sections
+    joined

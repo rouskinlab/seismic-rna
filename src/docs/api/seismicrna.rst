@@ -20,6 +20,7 @@ Subpackages
    seismicrna.export
    seismicrna.fold
    seismicrna.graph
+   seismicrna.join
    seismicrna.mask
    seismicrna.pool
    seismicrna.relate

@@ -65,6 +65,7 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.join.html">seismicrna.join package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.pool.html">seismicrna.pool package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html">seismicrna.relate package</a></li>
@@ -356,7 +357,7 @@ file for Dataset 1.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.data.Dataset.get_batch">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="seismicrna.core.batch.html#seismicrna.core.batch.read.ReadBatch" title="seismicrna.core.batch.read.ReadBatch"><span class="pre">seismicrna.core.batch.read.ReadBatch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="seismicrna.core.batch.html#seismicrna.core.batch.muts.MutsBatch" title="seismicrna.core.batch.muts.MutsBatch"><span class="pre">seismicrna.core.batch.muts.MutsBatch</span></a></span></span><a class="headerlink" href="#seismicrna.core.data.Dataset.get_batch" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="seismicrna.core.batch.html#seismicrna.core.batch.read.ReadBatch" title="seismicrna.core.batch.read.ReadBatch"><span class="pre">seismicrna.core.batch.read.ReadBatch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="seismicrna.core.batch.html#seismicrna.core.batch.muts.MutsBatch" title="seismicrna.core.batch.muts.MutsBatch"><span class="pre">seismicrna.core.batch.muts.MutsBatch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="seismicrna.core.batch.html#seismicrna.core.batch.read.PartialReadBatch" title="seismicrna.core.batch.read.PartialReadBatch"><span class="pre">seismicrna.core.batch.read.PartialReadBatch</span></a></span></span><a class="headerlink" href="#seismicrna.core.data.Dataset.get_batch" title="Permalink to this definition"></a></dt>
 <dd><p>Get a specific batch of data.</p>
 </dd></dl>
 
@@ -424,6 +425,67 @@ file for Dataset 1.</p>
 <dt class="sig sig-object py" id="seismicrna.core.data.Dataset.top">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">top</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></em><a class="headerlink" href="#seismicrna.core.data.Dataset.top" title="Permalink to this definition"></a></dt>
 <dd><p>Top-level directory of the dataset.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.data.JoinedDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.data.</span></span><span class="sig-name descname"><span class="pre">JoinedDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sect</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">clusts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">datasets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.data.Dataset" title="seismicrna.core.data.Dataset"><span class="pre">seismicrna.core.data.Dataset</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.data.JoinedDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.core.data.MergedDataset" title="seismicrna.core.data.MergedDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.MergedDataset</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<p>Dataset joining multiple sections from the same sample.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.data.JoinedDataset.end3">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">end3</span></span><a class="headerlink" href="#seismicrna.core.data.JoinedDataset.end3" title="Permalink to this definition"></a></dt>
+<dd><p>3’ end of the section.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.data.JoinedDataset.end5">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">end5</span></span><a class="headerlink" href="#seismicrna.core.data.JoinedDataset.end5" title="Permalink to this definition"></a></dt>
+<dd><p>5’ end of the section.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.data.JoinedDataset.get_batch">
+<span class="sig-name descname"><span class="pre">get_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.data.JoinedDataset.get_batch" title="Permalink to this definition"></a></dt>
+<dd><p>Get a specific batch of data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.data.JoinedDataset.load">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.data.JoinedDataset.load" title="Permalink to this definition"></a></dt>
+<dd><p>Load a dataset from a report file.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.data.JoinedDataset.num_batches">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_batches</span></span><a class="headerlink" href="#seismicrna.core.data.JoinedDataset.num_batches" title="Permalink to this definition"></a></dt>
+<dd><p>Number of batches.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.data.JoinedDataset.sample">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sample</span></span><a class="headerlink" href="#seismicrna.core.data.JoinedDataset.sample" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the sample.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.data.JoinedDataset.samples">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#seismicrna.core.data.JoinedDataset.samples" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the sample for each dataset in the pool.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.data.JoinedDataset.sect">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sect</span></span><a class="headerlink" href="#seismicrna.core.data.JoinedDataset.sect" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the section.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.data.JoinedDataset.sects">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sects</span></span><a class="headerlink" href="#seismicrna.core.data.JoinedDataset.sects" title="Permalink to this definition"></a></dt>
+<dd><p>Names of all joined sections.</p>
 </dd></dl>
 
 </dd></dl>
@@ -575,6 +637,50 @@ file for Dataset 1.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.data.MergedDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.data.</span></span><span class="sig-name descname"><span class="pre">MergedDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">datasets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.data.Dataset" title="seismicrna.core.data.Dataset"><span class="pre">seismicrna.core.data.Dataset</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.data.MergedDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.core.data.Dataset" title="seismicrna.core.data.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.Dataset</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<p>Dataset made by merging one or more constituent datasets.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.data.MergedDataset.get_dataset_load_func">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_dataset_load_func</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#seismicrna.core.data.LoadFunction" title="seismicrna.core.data.LoadFunction"><span class="pre">seismicrna.core.data.LoadFunction</span></a></span></span><a class="headerlink" href="#seismicrna.core.data.MergedDataset.get_dataset_load_func" title="Permalink to this definition"></a></dt>
+<dd><p>Function to load one constituent dataset.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.data.MergedDataset.pattern">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pattern</span></span><a class="headerlink" href="#seismicrna.core.data.MergedDataset.pattern" title="Permalink to this definition"></a></dt>
+<dd><p>Pattern of mutations to count.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.data.MergedDataset.ref">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ref</span></span><a class="headerlink" href="#seismicrna.core.data.MergedDataset.ref" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the reference.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.data.MergedDataset.top">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">top</span></span><a class="headerlink" href="#seismicrna.core.data.MergedDataset.top" title="Permalink to this definition"></a></dt>
+<dd><p>Top-level directory of the dataset.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.data.MergedMutsDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.data.</span></span><span class="sig-name descname"><span class="pre">MergedMutsDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">datasets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.data.Dataset" title="seismicrna.core.data.Dataset"><span class="pre">seismicrna.core.data.Dataset</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.data.MergedMutsDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.core.data.MergedDataset" title="seismicrna.core.data.MergedDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.MergedDataset</span></code></a>, <a class="reference internal" href="#seismicrna.core.data.MutsDataset" title="seismicrna.core.data.MutsDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.MutsDataset</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<p>MergedDataset with explicit mutational data.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.data.MergedMutsDataset.refseq">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">refseq</span></span><a class="headerlink" href="#seismicrna.core.data.MergedMutsDataset.refseq" title="Permalink to this definition"></a></dt>
+<dd><p>Sequence of the reference.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.data.MutsDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.data.</span></span><span class="sig-name descname"><span class="pre">MutsDataset</span></span><a class="headerlink" href="#seismicrna.core.data.MutsDataset" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.core.data.Dataset" title="seismicrna.core.data.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.Dataset</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
@@ -608,7 +714,7 @@ file for Dataset 1.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.data.PooledDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.data.</span></span><span class="sig-name descname"><span class="pre">PooledDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">datasets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.data.Dataset" title="seismicrna.core.data.Dataset"><span class="pre">seismicrna.core.data.Dataset</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.data.PooledDataset" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#seismicrna.core.data.Dataset" title="seismicrna.core.data.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.Dataset</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.core.data.MergedDataset" title="seismicrna.core.data.MergedDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.MergedDataset</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
 <p>Datasets of the same type pooled from multiple samples.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.core.data.PooledDataset.end3">
@@ -626,12 +732,6 @@ file for Dataset 1.</p>
 <dt class="sig sig-object py" id="seismicrna.core.data.PooledDataset.get_batch">
 <span class="sig-name descname"><span class="pre">get_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.data.PooledDataset.get_batch" title="Permalink to this definition"></a></dt>
 <dd><p>Get a specific batch of data.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.data.PooledDataset.get_dataset_load_func">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_dataset_load_func</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#seismicrna.core.data.LoadFunction" title="seismicrna.core.data.LoadFunction"><span class="pre">seismicrna.core.data.LoadFunction</span></a></span></span><a class="headerlink" href="#seismicrna.core.data.PooledDataset.get_dataset_load_func" title="Permalink to this definition"></a></dt>
-<dd><p>Function to load a dataset in the pool.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -653,18 +753,6 @@ file for Dataset 1.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.core.data.PooledDataset.pattern">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pattern</span></span><a class="headerlink" href="#seismicrna.core.data.PooledDataset.pattern" title="Permalink to this definition"></a></dt>
-<dd><p>Pattern of mutations to count.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.core.data.PooledDataset.ref">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ref</span></span><a class="headerlink" href="#seismicrna.core.data.PooledDataset.ref" title="Permalink to this definition"></a></dt>
-<dd><p>Name of the reference.</p>
-</dd></dl>
-
-<dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.core.data.PooledDataset.sample">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sample</span></span><a class="headerlink" href="#seismicrna.core.data.PooledDataset.sample" title="Permalink to this definition"></a></dt>
 <dd><p>Name of the sample.</p>
@@ -673,7 +761,7 @@ file for Dataset 1.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.core.data.PooledDataset.samples">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#seismicrna.core.data.PooledDataset.samples" title="Permalink to this definition"></a></dt>
-<dd><p>Name of the sample for each dataset in the pool.</p>
+<dd><p>Names of all samples in the pool.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -682,25 +770,13 @@ file for Dataset 1.</p>
 <dd><p>Name of the section.</p>
 </dd></dl>
 
-<dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.core.data.PooledDataset.top">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">top</span></span><a class="headerlink" href="#seismicrna.core.data.PooledDataset.top" title="Permalink to this definition"></a></dt>
-<dd><p>Top-level directory of the dataset.</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.data.PooledMutsDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.data.</span></span><span class="sig-name descname"><span class="pre">PooledMutsDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">datasets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.data.Dataset" title="seismicrna.core.data.Dataset"><span class="pre">seismicrna.core.data.Dataset</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.data.PooledMutsDataset" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#seismicrna.core.data.PooledDataset" title="seismicrna.core.data.PooledDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.PooledDataset</span></code></a>, <a class="reference internal" href="#seismicrna.core.data.MutsDataset" title="seismicrna.core.data.MutsDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.MutsDataset</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#seismicrna.core.data.PooledDataset" title="seismicrna.core.data.PooledDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.PooledDataset</span></code></a>, <a class="reference internal" href="#seismicrna.core.data.MergedMutsDataset" title="seismicrna.core.data.MergedMutsDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.core.data.MergedMutsDataset</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
 <p>PooledDataset with explicit mutational data.</p>
-<dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.core.data.PooledMutsDataset.refseq">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">refseq</span></span><a class="headerlink" href="#seismicrna.core.data.PooledMutsDataset.refseq" title="Permalink to this definition"></a></dt>
-<dd><p>Sequence of the reference.</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py function">
@@ -1929,6 +2005,11 @@ titles of their fields.</p>
 <dd></dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.report.iconv_dict_str_dict_int_dict_int_int">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.report.</span></span><span class="sig-name descname"><span class="pre">iconv_dict_str_dict_int_dict_int_int</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mapping</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#seismicrna.core.report.iconv_dict_str_dict_int_dict_int_int" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.report.iconv_dict_str_int">
 <span class="sig-prename descclassname"><span class="pre">seismicrna.core.report.</span></span><span class="sig-name descname"><span class="pre">iconv_dict_str_int</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mapping</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#seismicrna.core.report.iconv_dict_str_int" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
@@ -2023,12 +2104,12 @@ titles of their fields.</p>
 <span class="target" id="module-seismicrna.core.version"></span><p>Version information for SEISMIC-RNA</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.version.format_version">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.version.</span></span><span class="sig-name descname"><span class="pre">format_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">major</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.version.format_version" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.version.</span></span><span class="sig-name descname"><span class="pre">format_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">major</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">13</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.version.format_version" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.version.parse_version">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.version.</span></span><span class="sig-name descname"><span class="pre">parse_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'0.12.2'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.version.parse_version" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.version.</span></span><span class="sig-name descname"><span class="pre">parse_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'0.13.0'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.version.parse_version" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <span class="target" id="module-seismicrna.core.write"></span><dl class="py function">

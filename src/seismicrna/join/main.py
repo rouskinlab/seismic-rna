@@ -135,7 +135,7 @@ def run(input_path: tuple[str, ...], *,
         parallel: bool,
         # Effort
         force: bool) -> list[Path]:
-    """ Join sections (horizontally) from the Mask or Cluster step. """
+    """ Merge sections (horizontally) from the Mask or Cluster step. """
     if not joined:
         # Exit immediately if no joined name was given.
         return list()
@@ -202,7 +202,7 @@ params = [
 
 @command(CMD_JOIN, params=params)
 def cli(*args, joined: str, **kwargs):
-    """ Join sections (horizontally) from the Mask or Cluster step. """
+    """ Merge sections (horizontally) from the Mask or Cluster step. """
     if not joined:
         logger.warning(f"{CMD_JOIN} expected a name via --joined, but got "
                        f"{repr(joined)}; defaulting to {repr(DEFAULT_JOIN)}")

@@ -643,6 +643,18 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-J">
+<span id="cmdoption-seismic-wf-j"></span><span id="cmdoption-seismic-wf-joined"></span><span class="sig-name descname"><span class="pre">-J</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--joined</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;joined&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-J" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the section made by joining other sections</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-2">
+<span id="cmdoption-seismic-wf-join-clusts"></span><span class="sig-name descname"><span class="pre">-j</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--join-clusts</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;join_clusts&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-2" title="Permalink to this definition"></a></dt>
+<dd><p>CSV file of clusters to join</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-table-pos">
 <span id="cmdoption-seismic-wf-no-table-pos"></span><span class="sig-name descname"><span class="pre">--table-pos</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-table-pos</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-table-pos" title="Permalink to this definition"></a></dt>
 <dd><p>Tabulate per position</p>
@@ -750,14 +762,26 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-struct-file">
+<span class="sig-name descname"><span class="pre">--struct-file</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;struct_file&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-struct-file" title="Permalink to this definition"></a></dt>
+<dd><p>CT file of structures, against which to compare mutational profiles</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-struct-sect">
+<span class="sig-name descname"><span class="pre">--struct-sect</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;struct_sect&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-struct-sect" title="Permalink to this definition"></a></dt>
+<dd><p>Section of RNA that was folded, against which to compare mutational profiles (ignored if blank or if using –struct-file)</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-w">
 <span id="cmdoption-seismic-wf-window"></span><span class="sig-name descname"><span class="pre">-w</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--window</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;window&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-w" title="Permalink to this definition"></a></dt>
 <dd><p>Size of the sliding window, in nucleotides</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-2">
-<span id="cmdoption-seismic-wf-winmin"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--winmin</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;winmin&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-2" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-3">
+<span id="cmdoption-seismic-wf-winmin"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--winmin</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;winmin&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-3" title="Permalink to this definition"></a></dt>
 <dd><p>Minimum number of data to use a sliding window (otherwise NaN)</p>
 </dd></dl>
 

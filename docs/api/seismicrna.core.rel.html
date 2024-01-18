@@ -65,6 +65,7 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.join.html">seismicrna.join package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.pool.html">seismicrna.pool package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html">seismicrna.relate package</a></li>
@@ -126,12 +127,17 @@
 </section>
 <section id="module-seismicrna.core.rel.code">
 <span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.core.rel.code" title="Permalink to this headline"></a></h2>
-<span class="target" id="module-seismicrna.core.rel.pattern"></span><p>Core – Bit Caller Module</p>
+<span class="target" id="module-seismicrna.core.rel.pattern"></span><p>Core – Pattern Module</p>
 <hr class="docutils" />
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.rel.pattern.HalfRelPattern">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.rel.pattern.</span></span><span class="sig-name descname"><span class="pre">HalfRelPattern</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">codes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rel.pattern.HalfRelPattern" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="seismicrna.core.rel.pattern.HalfRelPattern.a">
+<span class="sig-name descname"><span class="pre">a</span></span><a class="headerlink" href="#seismicrna.core.rel.pattern.HalfRelPattern.a" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.rel.pattern.HalfRelPattern.allc">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">allc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rel.pattern.HalfRelPattern.allc" title="Permalink to this definition"></a></dt>
@@ -177,6 +183,11 @@ the fancy format. Otherwise, raise ValueError.</p>
 <li><p>‘cd’ means a C in the reference is deleted in the read</p></li>
 </ul>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="seismicrna.core.rel.pattern.HalfRelPattern.c">
+<span class="sig-name descname"><span class="pre">c</span></span><a class="headerlink" href="#seismicrna.core.rel.pattern.HalfRelPattern.c" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.core.rel.pattern.HalfRelPattern.codes">
@@ -249,6 +260,11 @@ either plain or fancy format (except case-insensitive).</p></li>
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_report_format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mut_codes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rel.pattern.HalfRelPattern.from_report_format" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="seismicrna.core.rel.pattern.HalfRelPattern.g">
+<span class="sig-name descname"><span class="pre">g</span></span><a class="headerlink" href="#seismicrna.core.rel.pattern.HalfRelPattern.g" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.rel.pattern.HalfRelPattern.intersect">
 <span class="sig-name descname"><span class="pre">intersect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#seismicrna.core.rel.pattern.HalfRelPattern" title="seismicrna.core.rel.pattern.HalfRelPattern"><span class="pre">seismicrna.core.rel.pattern.HalfRelPattern</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rel.pattern.HalfRelPattern.intersect" title="Permalink to this definition"></a></dt>
@@ -271,6 +287,11 @@ either plain or fancy format (except case-insensitive).</p></li>
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">none</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rel.pattern.HalfRelPattern.none" title="Permalink to this definition"></a></dt>
 <dd><p>Fits nothing.</p>
 </dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.core.rel.pattern.HalfRelPattern.patterns">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">patterns</span></span><a class="headerlink" href="#seismicrna.core.rel.pattern.HalfRelPattern.patterns" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="seismicrna.core.rel.pattern.HalfRelPattern.ptrn_fancy">
@@ -297,6 +318,11 @@ either plain or fancy format (except case-insensitive).</p></li>
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">refs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rel.pattern.HalfRelPattern.refs" title="Permalink to this definition"></a></dt>
 <dd><p>Fits every match.</p>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="seismicrna.core.rel.pattern.HalfRelPattern.t">
+<span class="sig-name descname"><span class="pre">t</span></span><a class="headerlink" href="#seismicrna.core.rel.pattern.HalfRelPattern.t" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.rel.pattern.HalfRelPattern.to_report_format">
@@ -338,6 +364,16 @@ mutations are to be counted, with optional ones to discount.</p>
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">muts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.rel.pattern.RelPattern.muts" title="Permalink to this definition"></a></dt>
 <dd><p>Fits every mutation.</p>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="seismicrna.core.rel.pattern.RelPattern.nos">
+<span class="sig-name descname"><span class="pre">nos</span></span><a class="headerlink" href="#seismicrna.core.rel.pattern.RelPattern.nos" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="seismicrna.core.rel.pattern.RelPattern.yes">
+<span class="sig-name descname"><span class="pre">yes</span></span><a class="headerlink" href="#seismicrna.core.rel.pattern.RelPattern.yes" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
