@@ -175,6 +175,15 @@ def iconv_dict_str_int(mapping: dict[Any, Any]) -> dict[str, int]:
     return {str(key): int(value) for key, value in mapping.items()}
 
 
+def iconv_dict_str_dict_int_dict_int_int(
+        mapping: dict[Any, dict[Any, dict[Any, Any]]]
+) -> dict[str, dict[int, dict[int, int]]]:
+    return {str(key1): {int(key2): {int(key3): int(val3)
+                                    for key3, val3 in val2.items()}
+                        for key2, val2 in val1.items()}
+            for key1, val1 in mapping.items()}
+
+
 @cache
 def get_oconv_float(precision: int = DECIMAL_PRECISION):
     def oconv_float(num: float):
@@ -468,7 +477,8 @@ NumClustsF = Field("best_order", "Optimal Number of Clusters", int)
 # Join fields
 
 JoinedSectionsF = Field("joined_sections", "Joined Sections", list)
-JoinedClustersF = Field("joined_clusters", "Joined Clusters", dict)
+JoinedClustersF = Field("joined_clusters", "Joined Clusters", dict,
+                        iconv=iconv_dict_str_dict_int_dict_int_int)
 
 # Fold fields
 

@@ -142,7 +142,8 @@ class JoinClusterReadDataset(JoinedDataset):
             if resps is None:
                 resps = self._sect_resps(sect, batch.resps)
             else:
-                resps += self._sect_resps(sect, batch.resps)
+                resps = resps.add(self._sect_resps(sect, batch.resps),
+                                  fill_value=0.)
         if batch_num is None:
             raise ValueError("No batches were given to join")
         return ClusterReadBatch(batch=batch_num,

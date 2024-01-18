@@ -223,7 +223,7 @@ def dispatch(funcs: list[Callable] | Callable,
         if n_fail:
             p_fail = n_fail / n_tasks * 100.
             logger.warning(
-                f"{n_fail} of {n_tasks} ({round(p_fail, 1)} %) task(s) failed"
+                f"Failed {n_fail} of {n_tasks} task(s) ({round(p_fail, 1)} %)"
             )
         else:
             logger.info(f"All {n_tasks} task(s) completed successfully")
