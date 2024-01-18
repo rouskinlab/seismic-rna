@@ -6,8 +6,11 @@ from typing import Iterable
 
 from click import command
 
-from .data import JoinMaskMutsDataset
-from .report import JoinMaskReport
+from .clusts import parse_join_clusts_file
+from .data import JoinMutsDataset, JoinMaskMutsDataset, JoinClusterMutsDataset
+from .report import JoinMaskReport, JoinClusterReport
+from ..cluster.data import ClusterMutsDataset
+from ..cluster.report import ClusterReport
 from ..core.arg import (CMD_JOIN,
                         docdef,
                         arg_input_path,
@@ -31,7 +34,8 @@ def join_sections(out_dir: Path,
                   name: str,
                   sample: str,
                   ref: str,
-                  sects: Iterable[str], *,
+                  sects: Iterable[str],
+                  clusts: dict[str, dict[int, dict[int, int]]], *,
                   force: bool):
     """ Join one or more sections.
 
@@ -47,6 +51,9 @@ def join_sections(out_dir: Path,
         Name of the reference.
     sects: Iterable[str]
         Names of the sections being joined.
+    clusts: dict[str, dict[int, dict[int, int]]]
+        For each section, for each order, the cluster from the original
+        section to use as the cluster in the joined section.
     force: bool
         Force the report to be written, even if it exists.
 
@@ -63,44 +70,51 @@ def join_sections(out_dir: Path,
                        f"reference {repr(ref)} in {out_dir} got duplicate "
                        f"sections: {sect_counts}")
     sects = sorted(sect_counts)
+    report_kwargs = dict(sample=sample,
+                         ref=ref,
+                         sect=name,
+                         joined_sections=sects)
+    # Determine whether the dataset is clustered.
+    if clusts:
+        report_kwargs |= dict(joined_clusters=clusts)
+        join_type = JoinClusterReport
+        part_type = ClusterReport
+    else:
+        join_type = JoinMaskReport
+        part_type = MaskReport
     # Determine the output report file.
-    report_file = JoinMaskReport.build_path(top=out_dir,
-                                            sample=sample,
-                                            ref=ref,
-                                            sect=name)
+    report_file = join_type.build_path(top=out_dir,
+                                       sample=sample,
+                                       ref=ref,
+                                       sect=name)
     if need_write(report_file, force):
         # Because Mask and Join report files have the same name, it
         # would be possible to overwrite a Mask report with a Join
         # report, rendering the Mask dataset unusable; prevent this.
         if report_file.is_file():
-            # Check whether the report file contains a Mask report.
+            # Check if the report file contains a Mask/Cluster report.
             try:
-                MaskReport.load(report_file)
+                part_type.load(report_file)
             except ValueError:
-                # The report file does not contain a Mask report.
+                # The file does not contain a Mask/Cluster report.
                 pass
             else:
-                # The report file contains a Mask report.
-                raise TypeError(f"Overwriting {MaskReport.__name__} in "
-                                f"{report_file} with {JoinMaskReport.__name__} "
+                # The file contains a Mask/Cluster report.
+                raise TypeError(f"Overwriting {part_type.__name__} in "
+                                f"{report_file} with {join_type.__name__} "
                                 f"would cause data loss")
             # Check whether the report file contains a Join report.
             try:
-                JoinMaskReport.load(report_file)
+                join_type.load(report_file)
             except ValueError:
                 # The report file does not contain a Pool report.
                 raise TypeError(f"Overwriting {report_file} with "
-                                f"{JoinMaskReport.__name__} would cause data loss")
+                                f"{join_type.__name__} would cause data loss")
         logger.info(f"Began joining sections {sects} into {repr(name)} with "
                     f"sample {repr(sample)}, reference {repr(ref)} in output "
                     f"directory {out_dir}")
         ended = datetime.now()
-        report = JoinMaskReport(sample=sample,
-                                ref=ref,
-                                sect=name,
-                                joined_sections=sects,
-                                began=began,
-                                ended=ended)
+        report = join_type(**report_kwargs, began=began, ended=ended)
         report.save(out_dir, force=force)
         logger.info(f"Ended joining sections {sects} into {repr(name)} with "
                     f"sample {repr(sample)}, reference {repr(ref)} in output "
@@ -111,7 +125,7 @@ def join_sections(out_dir: Path,
 @docdef.auto()
 def run(input_path: tuple[str, ...], *,
         joined: str,
-        join_clusts: dict,
+        join_clusts: str | None,
         # Parallelization
         max_procs: int,
         parallel: bool,
@@ -121,26 +135,42 @@ def run(input_path: tuple[str, ...], *,
     if not joined:
         # Exit immediately if no joined name was given.
         return list()
+    if join_clusts is not None:
+        clusts = parse_join_clusts_file(join_clusts)
+    else:
+        clusts = dict()
     # Group the datasets by output directory, sample, and reference.
     joins = defaultdict(list)
-    for dataset in load_datasets(input_path,
-                                 LoadFunction(MaskMutsDataset,
-                                              JoinMaskMutsDataset)):
-        # Check whether the dataset was joined.
-        if isinstance(dataset, JoinMaskMutsDataset):
-            # If so, then use all joined sections.
-            sects = dataset.sects
-        else:
-            # Otherwise, use just the section of the dataset.
-            sects = [dataset.sect]
-        joins[dataset.top, dataset.sample, dataset.ref].extend(sects)
+    load_funcs = {False: LoadFunction(MaskMutsDataset,
+                                      JoinMaskMutsDataset),
+                  True: LoadFunction(ClusterMutsDataset,
+                                     JoinClusterMutsDataset)}
+    for clustered, load_func in load_funcs.items():
+        for dataset in load_datasets(input_path, load_func):
+            # Check whether the dataset was joined.
+            if isinstance(dataset, JoinMutsDataset):
+                # If so, then use all joined sections.
+                sects = dataset.sects
+            else:
+                # Otherwise, use just the section of the dataset.
+                sects = [dataset.sect]
+            # Check whether the dataset was clustered.
+            joins[(dataset.top,
+                   dataset.sample,
+                   dataset.ref,
+                   clustered)].extend(sects)
     # Make each joined section.
     return dispatch(join_sections,
                     max_procs=max_procs,
                     parallel=parallel,
                     pass_n_procs=False,
-                    args=[(out_dir, joined, sample, ref, sects)
-                          for (out_dir, sample, ref), sects
+                    args=[(out_dir,
+                           joined,
+                           sample,
+                           ref,
+                           sects,
+                           clusts if clustered else dict())
+                          for (out_dir, sample, ref, clustered), sects
                           in joins.items()],
                     kwargs=dict(force=force))
 

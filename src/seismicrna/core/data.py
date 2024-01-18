@@ -18,6 +18,7 @@ from .report import (SampleF,
                      RefseqChecksumF,
                      PooledSamplesF,
                      JoinedSectionsF,
+                     JoinedClustersF,
                      Report,
                      BatchedReport)
 from .seq import FULL_NAME, DNA, Section, hyphenate_ends
@@ -451,6 +452,7 @@ class JoinedDataset(MergedDataset, ABC):
         report = cls.load_report(report_file)
         sect = report.get_field(SectF)
         joined_sects = report.get_field(JoinedSectionsF)
+        clusts = report.get_field(JoinedClustersF, missing_ok=True)
         # Determine the report file for each joined section.
         load_func = cls.get_dataset_load_func()
         section_report_files = [path.cast_path(
@@ -461,11 +463,15 @@ class JoinedDataset(MergedDataset, ABC):
             sect=sect
         ) for sect in joined_sects]
         # Create the joined dataset from the section datasets.
-        return cls(sect, map(cls.get_dataset_load_func(),
-                             section_report_files))
+        return cls(sect, clusts, map(cls.get_dataset_load_func(),
+                                     section_report_files))
 
-    def __init__(self, sect: str, datasets: Iterable[Dataset]):
+    def __init__(self,
+                 sect: str,
+                 clusts: dict | None,
+                 datasets: Iterable[Dataset]):
         self._sect = sect
+        self._clusts = clusts
         super().__init__(datasets)
 
     @cached_property
@@ -499,12 +505,13 @@ class JoinedDataset(MergedDataset, ABC):
         return self._get_common_attr("num_batches")
 
     @abstractmethod
-    def _join(self, batches: Iterable[PartialReadBatch]) -> PartialReadBatch:
+    def _join(self, batches: Iterable[tuple[str, PartialReadBatch]]
+              ) -> PartialReadBatch:
         """ Join corresponding batches of data. """
 
     def get_batch(self, batch_num: int):
         # Join the batch with that number from every dataset.
-        return self._join(dataset.get_batch(batch_num)
+        return self._join((dataset.sect, dataset.get_batch(batch_num))
                           for dataset in self._datasets)
 
 

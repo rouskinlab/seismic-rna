@@ -22,7 +22,7 @@ from .calc import (Tabulator,
 from ..cluster.data import ClusterMutsDataset
 from ..core.data import LoadFunction
 from ..core.write import need_write
-from ..join.data import JoinMaskMutsDataset
+from ..join.data import JoinMaskMutsDataset, JoinClusterMutsDataset
 from ..mask.data import MaskMutsDataset
 from ..pool.data import PoolDataset
 from ..relate.data import RelateDataset
@@ -148,12 +148,12 @@ def get_tabulator_writers(tabulator: AvgTabulator | ClustTabulator, *,
             raise TypeError(f"Invalid writer type: {writer_type.__name__}")
 
 
-load_any_dataset = LoadFunction(RelateDataset,
-                                PoolDataset,
-                                MaskMutsDataset,
-                                ClusterMutsDataset,
-                                # FIXME: JoinClusterMutsDataset,
-                                JoinMaskMutsDataset)
+load_any_dataset = LoadFunction(#RelateDataset,
+                                #PoolDataset,
+                                #MaskMutsDataset,
+                                #JoinMaskMutsDataset,
+                                #ClusterMutsDataset,
+                                JoinClusterMutsDataset)
 
 
 def write(report_file: Path, *, force: bool, **kwargs):
