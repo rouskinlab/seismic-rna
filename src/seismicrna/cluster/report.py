@@ -56,20 +56,8 @@ class ClusterReport(BatchedReport, ClusterIO):
         ] + super().fields()
 
     @classmethod
-    def path_segs(cls):
-        return (path.SampSeg,
-                path.CmdSeg,
-                path.RefSeg,
-                path.SectSeg,
-                path.ClustRepSeg)
-
-    @classmethod
     def auto_fields(cls):
         return {**super().auto_fields(), path.CMD: path.CMD_CLUST_DIR}
-
-    @classmethod
-    def get_batch_seg(cls):
-        return path.ClustBatSeg
 
     @classmethod
     def from_clusters(cls,

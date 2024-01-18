@@ -309,6 +309,9 @@ ChecksumsF = Field("checksums", "MD5 Checksums of Batches", dict)
 RefseqChecksumF = Field("refseq_checksum",
                         "MD5 Checksum of Reference Sequence File",
                         str)
+
+# Pool fields
+
 PooledSamplesF = Field("pooled_samples", "Pooled Samples", list)
 
 # Mask fields
@@ -461,6 +464,11 @@ ClustsBicF = Field("bic", "Bayesian Information Criterion per Order", dict,
                    iconv=iconv_int_keys,
                    oconv=get_oconv_dict_float())
 NumClustsF = Field("best_order", "Optimal Number of Clusters", int)
+
+# Join fields
+
+JoinedSectionsF = Field("joined_sections", "Joined Sections", list)
+JoinedClustersF = Field("joined_clusters", "Joined Clusters", dict)
 
 # Fold fields
 

@@ -17,9 +17,10 @@ from .report import (SampleF,
                      ChecksumsF,
                      RefseqChecksumF,
                      PooledSamplesF,
+                     JoinedSectionsF,
                      Report,
                      BatchedReport)
-from .seq import FULL_NAME, DNA, Section, hyphenate_ends, unite
+from .seq import FULL_NAME, DNA, Section, hyphenate_ends
 
 logger = getLogger(__name__)
 
@@ -329,21 +330,21 @@ class MergedDataset(Dataset, ABC):
 
     def _get_common_attr(self, name: str):
         """ Get a common attribute among datasets. """
-        attrs = sorted(set(self._list_dataset_attr(name)))
+        attrs = list(set(self._list_dataset_attr(name)))
         if len(attrs) != 1:
             raise ValueError(f"{type(self).__name__} expected exactly 1 value "
                              f"for attribute {repr(name)}, but got {attrs}")
         return attrs[0]
 
-    @property
+    @cached_property
     def top(self):
         return self._get_common_attr("top")
 
-    @property
+    @cached_property
     def ref(self):
         return self._get_common_attr("ref")
 
-    @property
+    @cached_property
     def pattern(self):
         return self._get_common_attr("pattern")
 
@@ -388,18 +389,18 @@ class PooledDataset(MergedDataset, ABC):
 
     @cached_property
     def samples(self) -> list[str]:
-        """ Name of the sample for each dataset in the pool. """
+        """ Names of all samples in the pool. """
         return self._list_dataset_attr("sample")
 
-    @property
+    @cached_property
     def end5(self):
         return self._get_common_attr("end5")
 
-    @property
+    @cached_property
     def end3(self):
         return self._get_common_attr("end3")
 
-    @property
+    @cached_property
     def sect(self):
         return self._get_common_attr("sect")
 
@@ -445,28 +446,29 @@ class JoinedDataset(MergedDataset, ABC):
 
     @classmethod
     def load(cls, report_file: Path):
-        # Determine the sample name and pooled samples from the report.
+        # Determine the name of the joined section and the individual
+        # sections from the report.
         report = cls.load_report(report_file)
-        sample = report.get_field(SampleF)
-        pooled_samples = report.get_field(PooledSamplesF)
-        # Determine the report file for each sample in the pool.
+        sect = report.get_field(SectF)
+        joined_sects = report.get_field(JoinedSectionsF)
+        # Determine the report file for each joined section.
         load_func = cls.get_dataset_load_func()
-        sample_report_files = [path.cast_path(
+        section_report_files = [path.cast_path(
             report_file,
             cls.get_report_type().seg_types(),
             load_func.report_path_seg_types,
             **load_func.report_path_auto_fields,
-            sample=sample
-        ) for sample in pooled_samples]
-        # Create the pooled dataset from the sample datasets.
-        return cls(sample, map(cls.get_dataset_load_func(),
-                               sample_report_files))
+            sect=sect
+        ) for sect in joined_sects]
+        # Create the joined dataset from the section datasets.
+        return cls(sect, map(cls.get_dataset_load_func(),
+                             section_report_files))
 
     def __init__(self, sect: str, datasets: Iterable[Dataset]):
         self._sect = sect
         super().__init__(datasets)
 
-    @property
+    @cached_property
     def sample(self):
         return self._get_common_attr("sample")
 
@@ -475,17 +477,22 @@ class JoinedDataset(MergedDataset, ABC):
         """ Name of the sample for each dataset in the pool. """
         return self._list_dataset_attr("sample")
 
-    @property
+    @cached_property
     def end5(self):
         return min(self._list_dataset_attr("end5"))
 
-    @property
+    @cached_property
     def end3(self):
         return max(self._list_dataset_attr("end3"))
 
     @property
     def sect(self):
         return self._sect
+
+    @cached_property
+    def sects(self):
+        """ Names of all joined sections. """
+        return self._list_dataset_attr("sect")
 
     @cached_property
     def num_batches(self):
@@ -499,19 +506,6 @@ class JoinedDataset(MergedDataset, ABC):
         # Join the batch with that number from every dataset.
         return self._join(dataset.get_batch(batch_num)
                           for dataset in self._datasets)
-
-
-class JoinedMutsDataset(JoinedDataset, MergedMutsDataset, ABC):
-    """ JoinedDataset with explicit mutational data. """
-
-    @cached_property
-    def section(self):
-        section = unite(*self._list_dataset_attr("section"), refseq=self.refseq)
-        if (s := (section.end5, section.end3)) != (e := (self.end5, self.end3)):
-            raise ValueError(
-                f"Expected section to have coordinates {e}, but got {s}"
-            )
-        return section
 
 
 class ChainedDataset(Dataset, ABC):

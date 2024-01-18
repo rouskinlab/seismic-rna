@@ -91,20 +91,8 @@ class MaskReport(BatchedReport, MaskIO):
         ] + super().fields()
 
     @classmethod
-    def path_segs(cls):
-        return (path.SampSeg,
-                path.CmdSeg,
-                path.RefSeg,
-                path.SectSeg,
-                path.MaskRepSeg)
-
-    @classmethod
     def auto_fields(cls):
         return {**super().auto_fields(), path.CMD: path.CMD_MASK_DIR}
-
-    @classmethod
-    def get_batch_seg(cls):
-        return path.MaskBatSeg
 
 ########################################################################
 #                                                                      #

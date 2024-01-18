@@ -1,30 +1,40 @@
-from abc import ABC
+from functools import cached_property
 from typing import Iterable
 
 import numpy as np
-import pandas as pd
 
-from .report import JoinReport
-from ..cluster.batch import ClusterReadBatch
-from ..cluster.data import ClusterReadDataset
-from ..core.data import LoadFunction, JoinedMutsDataset
+from .report import JoinMaskReport
+from ..core.data import LoadFunction, JoinedDataset
 from ..mask.batch import MaskReadBatch
-from ..mask.data import MaskReadDataset
+from ..mask.data import MaskReadDataset, MaskMutsDataset
 
 
-class JoinDataset(JoinedMutsDataset, ABC):
-    """ Mask or Cluster batches joined together. """
+class JoinMaskReadDataset(JoinedDataset):
 
     @classmethod
     def get_report_type(cls):
-        return JoinReport
+        return JoinMaskReport
 
     @classmethod
     def get_dataset_load_func(cls):
-        return load_mask_cluster_dataset
+        return LoadFunction(MaskReadDataset)
 
+    @cached_property
+    def min_mut_gap(self):
+        return self._get_common_attr("min_mut_gap")
 
-class JoinMaskDataset(JoinDataset):
+    @cached_property
+    def pos_kept(self):
+        # Take the union of all positions kept among all datasets.
+        pos_kept = None
+        for data_pos in self._list_dataset_attr("pos_kept"):
+            if pos_kept is not None:
+                pos_kept = np.union1d(pos_kept, data_pos)
+            else:
+                pos_kept = data_pos
+        if pos_kept is None:
+            raise ValueError("Got no datasets to determine positions kept")
+        return pos_kept
 
     def _join(self, batches: Iterable[MaskReadBatch]):
         batch_num = None
@@ -43,27 +53,18 @@ class JoinMaskDataset(JoinDataset):
         return MaskReadBatch(batch=batch_num, read_nums=read_nums)
 
 
-class JoinClusterDataset(JoinDataset):
+class JoinMaskMutsDataset(MaskMutsDataset):
 
-    def _join(self, batches: Iterable[ClusterReadBatch]):
-        batch_num = None
-        resps = None
-        for batch in batches:
-            if batch_num is None:
-                batch_num = batch.batch
-            elif batch.batch != batch_num:
-                raise ValueError(
-                    f"Inconsistent batch number: {batch_num} ≠ {batch.batch}"
-                )
-            if resps is None:
-                resps = batch.resps
-            else:
-                # FIXME: use the cluster linkage table to join clusters.
-                resps = pd.concat([resps, batch.resps])
-        return ClusterReadBatch(batch=batch_num, resps=resps)
+    @classmethod
+    def get_dataset2_type(cls):
+        return JoinMaskReadDataset
+
+    @property
+    def sects(self):
+        return getattr(self.data2, "sects")
 
 
-load_mask_cluster_dataset = LoadFunction(MaskReadDataset, ClusterReadDataset)
+load_mask_join_data = LoadFunction(MaskMutsDataset, JoinMaskMutsDataset)
 
 ########################################################################
 #                                                                      #

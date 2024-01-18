@@ -1,16 +1,18 @@
 from ..core import path
-from ..core.io import RefIO
+from ..core.io import SectIO
 from ..core.report import (Report,
                            SampleF,
                            RefF,
-                           PooledSamplesF)
+                           SectF,
+                           JoinedSectionsF,
+                           JoinedClustersF)
 
 
-class JoinReport(Report, RefIO):
+class JoinMaskReport(Report, SectIO):
 
     @classmethod
     def file_seg_type(cls):
-        return path.RelateRepSeg
+        return path.MaskRepSeg
 
     @classmethod
     def fields(cls):
@@ -18,20 +20,37 @@ class JoinReport(Report, RefIO):
             # Sample and reference.
             SampleF,
             RefF,
-            # Pooled samples.
-            PooledSamplesF,
+            SectF,
+            # Joined data.
+            JoinedSectionsF,
         ] + super().fields()
 
     @classmethod
-    def path_segs(cls):
-        return (path.SampSeg,
-                path.CmdSeg,
-                path.RefSeg,
-                path.RelateRepSeg)
+    def auto_fields(cls):
+        return {**super().auto_fields(), path.CMD: path.CMD_MASK_DIR}
+
+
+class JoinClusterReport(Report, SectIO):
+
+    @classmethod
+    def file_seg_type(cls):
+        return path.ClustRepSeg
+
+    @classmethod
+    def fields(cls):
+        return [
+            # Sample and reference.
+            SampleF,
+            RefF,
+            SectF,
+            # Joined data.
+            JoinedSectionsF,
+            JoinedClustersF,
+        ] + super().fields()
 
     @classmethod
     def auto_fields(cls):
-        return {**super().auto_fields(), path.CMD: path.CMD_REL_DIR}
+        return {**super().auto_fields(), path.CMD: path.CMD_CLUST_DIR}
 
 ########################################################################
 #                                                                      #

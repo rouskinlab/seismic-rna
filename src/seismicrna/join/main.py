@@ -6,96 +6,47 @@ from typing import Iterable
 
 from click import command
 
-from .data import JoinDataset, load_mask_cluster_dataset
-from .report import JoinReport
+from .data import JoinMaskMutsDataset
+from .report import JoinMaskReport
 from ..core.arg import (CMD_JOIN,
                         docdef,
                         arg_input_path,
-                        opt_pool,
+                        opt_joined,
+                        opt_join_clusts,
                         opt_max_procs,
                         opt_parallel,
                         opt_force)
-from ..core.data import load_datasets
+from ..core.data import LoadFunction, load_datasets
 from ..core.parallel import dispatch
 from ..core.write import need_write
-from ..relate.report import RelateReport
+from ..mask.data import MaskMutsDataset
+from ..mask.report import MaskReport
 
 logger = getLogger(__name__)
 
-DEFAULT_POOL = "pooled"
-
-params = [
-    arg_input_path,
-    # Pooling
-    opt_pool,
-    # Parallelization
-    opt_max_procs,
-    opt_parallel,
-    # Effort
-    opt_force,
-]
+DEFAULT_JOIN = "joined"
 
 
-@command(CMD_JOIN, params=params)
-def cli(*args, pool: str, **kwargs):
-    """ Combine samples from the Relate step. """
-    if not pool:
-        logger.warning(f"{repr(CMD_POOL)} expected a name via --pool, but got "
-                       f"{repr(pool)}; defaulting to {repr(DEFAULT_POOL)}")
-        pool = DEFAULT_POOL
-    return run(*args, pool=pool, **kwargs)
-
-
-@docdef.auto()
-def run(input_path: tuple[str, ...], *,
-        pool: str,
-        # Parallelization
-        max_procs: int,
-        parallel: bool,
-        # Effort
-        force: bool) -> list[Path]:
-    """ Combine samples from the Relate step. """
-    if not pool:
-        # Exit immediately if no pool name was given.
-        return list()
-    # Group the datasets by output directory and reference name.
-    pools = defaultdict(list)
-    for dataset in load_datasets(input_path, load_relate_pool_dataset):
-        # Check whether the dataset was pooled.
-        if isinstance(dataset, PoolDataset):
-            # If so, then use all samples in the pool.
-            samples = dataset.samples
-        else:
-            # Otherwise, use just the sample of the dataset.
-            samples = [dataset.sample]
-        pools[dataset.top, dataset.ref].extend(samples)
-    # Make each pool of samples.
-    return dispatch(make_pool,
-                    max_procs=max_procs,
-                    parallel=parallel,
-                    pass_n_procs=False,
-                    args=[(out_dir, pool, ref, samples)
-                          for (out_dir, ref), samples in pools.items()],
-                    kwargs=dict(force=force))
-
-
-def make_pool(out_dir: Path,
-              name: str,
-              ref: str,
-              samples: Iterable[str], *,
-              force: bool):
-    """ Combine one or more samples into a pooled sample.
+def join_sections(out_dir: Path,
+                  name: str,
+                  sample: str,
+                  ref: str,
+                  sects: Iterable[str], *,
+                  force: bool):
+    """ Join one or more sections.
 
     Parameters
     ----------
     out_dir: pathlib.Path
         Output directory.
     name: str
-        Name of the pool.
+        Name of the joined section.
+    sample: str
+        Name of the sample.
     ref: str
-        Name of the reference
-    samples: Iterable[str]
-        Names of the samples in the pool.
+        Name of the reference.
+    sects: Iterable[str]
+        Names of the sections being joined.
     force: bool
         Force the report to be written, even if it exists.
 
@@ -105,49 +56,116 @@ def make_pool(out_dir: Path,
         Path of the Pool report file.
     """
     began = datetime.now()
-    # Deduplicate and sort the samples.
-    sample_counts = Counter(samples)
-    if max(sample_counts.values()) > 1:
-        logger.warning(f"Pool {repr(name)} with reference {repr(ref)} in "
-                       f"{out_dir} got duplicate samples: {sample_counts}")
-    samples = sorted(sample_counts)
+    # Deduplicate and sort the sections.
+    sect_counts = Counter(sects)
+    if max(sect_counts.values()) > 1:
+        logger.warning(f"Joined section {repr(name)} of sample {repr(sample)}, "
+                       f"reference {repr(ref)} in {out_dir} got duplicate "
+                       f"sections: {sect_counts}")
+    sects = sorted(sect_counts)
     # Determine the output report file.
-    report_file = JoinReport.build_path(top=out_dir, sample=name, ref=ref)
+    report_file = JoinMaskReport.build_path(top=out_dir,
+                                            sample=sample,
+                                            ref=ref,
+                                            sect=name)
     if need_write(report_file, force):
-        # Because Relate and Pool report files have the same name, it
-        # would be possible to overwrite a Relate report with a Pool
-        # report, rendering the Relate dataset unusable; prevent this.
+        # Because Mask and Join report files have the same name, it
+        # would be possible to overwrite a Mask report with a Join
+        # report, rendering the Mask dataset unusable; prevent this.
         if report_file.is_file():
-            # Check whether the report file contains a Relate report.
+            # Check whether the report file contains a Mask report.
             try:
-                RelateReport.load(report_file)
+                MaskReport.load(report_file)
             except ValueError:
-                # The report file does not contain a Relate report.
+                # The report file does not contain a Mask report.
                 pass
             else:
-                # The report file contains a Relate report.
-                raise TypeError(f"Cannot overwrite {RelateReport.__name__} "
-                                f"in {report_file} with {JoinReport.__name__}: "
+                # The report file contains a Mask report.
+                raise TypeError(f"Overwriting {MaskReport.__name__} in "
+                                f"{report_file} with {JoinMaskReport.__name__} "
                                 f"would cause data loss")
-            # Check whether the report file contains a Pool report.
+            # Check whether the report file contains a Join report.
             try:
-                JoinReport.load(report_file)
+                JoinMaskReport.load(report_file)
             except ValueError:
                 # The report file does not contain a Pool report.
-                raise TypeError(f"Cannot overwrite {report_file} with "
-                                f"{JoinReport.__name__}: would cause data loss")
-        logger.info(f"Began pooling samples {samples} into {repr(name)} with "
-                    f"reference {repr(ref)} in output directory {out_dir}")
+                raise TypeError(f"Overwriting {report_file} with "
+                                f"{JoinMaskReport.__name__} would cause data loss")
+        logger.info(f"Began joining sections {sects} into {repr(name)} with "
+                    f"sample {repr(sample)}, reference {repr(ref)} in output "
+                    f"directory {out_dir}")
         ended = datetime.now()
-        report = JoinReport(sample=name,
-                            ref=ref,
-                            pooled_samples=samples,
-                            began=began,
-                            ended=ended)
+        report = JoinMaskReport(sample=sample,
+                                ref=ref,
+                                sect=name,
+                                joined_sections=sects,
+                                began=began,
+                                ended=ended)
         report.save(out_dir, force=force)
-        logger.info(f"Ended pooling samples {samples} into {repr(name)} with "
-                    f"reference {repr(ref)} in output directory {out_dir}")
+        logger.info(f"Ended joining sections {sects} into {repr(name)} with "
+                    f"sample {repr(sample)}, reference {repr(ref)} in output "
+                    f"directory {out_dir}")
     return report_file
+
+
+@docdef.auto()
+def run(input_path: tuple[str, ...], *,
+        joined: str,
+        join_clusts: dict,
+        # Parallelization
+        max_procs: int,
+        parallel: bool,
+        # Effort
+        force: bool) -> list[Path]:
+    """ Join sections (horizontally) from the Mask or Cluster step. """
+    if not joined:
+        # Exit immediately if no joined name was given.
+        return list()
+    # Group the datasets by output directory, sample, and reference.
+    joins = defaultdict(list)
+    for dataset in load_datasets(input_path,
+                                 LoadFunction(MaskMutsDataset,
+                                              JoinMaskMutsDataset)):
+        # Check whether the dataset was joined.
+        if isinstance(dataset, JoinMaskMutsDataset):
+            # If so, then use all joined sections.
+            sects = dataset.sects
+        else:
+            # Otherwise, use just the section of the dataset.
+            sects = [dataset.sect]
+        joins[dataset.top, dataset.sample, dataset.ref].extend(sects)
+    # Make each joined section.
+    return dispatch(join_sections,
+                    max_procs=max_procs,
+                    parallel=parallel,
+                    pass_n_procs=False,
+                    args=[(out_dir, joined, sample, ref, sects)
+                          for (out_dir, sample, ref), sects
+                          in joins.items()],
+                    kwargs=dict(force=force))
+
+
+params = [
+    arg_input_path,
+    # Joining
+    opt_joined,
+    opt_join_clusts,
+    # Parallelization
+    opt_max_procs,
+    opt_parallel,
+    # Effort
+    opt_force,
+]
+
+
+@command(CMD_JOIN, params=params)
+def cli(*args, joined: str, **kwargs):
+    """ Join sections (horizontally) from the Mask or Cluster step. """
+    if not joined:
+        logger.warning(f"{CMD_JOIN} expected a name via --joined, but got "
+                       f"{repr(joined)}; defaulting to {repr(DEFAULT_JOIN)}")
+        joined = DEFAULT_JOIN
+    return run(*args, joined=joined, **kwargs)
 
 ########################################################################
 #                                                                      #

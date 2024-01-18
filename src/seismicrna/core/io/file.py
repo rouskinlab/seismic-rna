@@ -25,7 +25,7 @@ class FileIO(ABC):
     @classmethod
     @abstractmethod
     def dir_seg_types(cls) -> tuple[path.Segment, ...]:
-        """ Type(s) of the directory segment(s) in the path. """
+        """ Types of the directory segments in the path. """
         return tuple()
 
     @classmethod
@@ -35,6 +35,7 @@ class FileIO(ABC):
 
     @classmethod
     def seg_types(cls):
+        """ Types of the segments in the path. """
         return cls.dir_seg_types() + (cls.file_seg_type(),)
 
     @classmethod
