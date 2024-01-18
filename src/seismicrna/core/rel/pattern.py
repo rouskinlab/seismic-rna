@@ -1,6 +1,6 @@
 """
 
-Core -- Bit Caller Module
+Core -- Pattern Module
 
 ========================================================================
 
@@ -9,7 +9,7 @@ Core -- Bit Caller Module
 from __future__ import annotations
 
 import re
-from functools import cache, cached_property
+from functools import cache
 from itertools import product
 from logging import getLogger
 from typing import Iterable
@@ -23,7 +23,7 @@ from .code import (MATCH,
                    SUB_G,
                    SUB_T,
                    REL_TYPE)
-from ..seq import DNA
+from ..seq import BASEA, BASEC, BASEG, BASET, DNA
 
 logger = getLogger(__name__)
 
@@ -33,6 +33,8 @@ READ_INS = "I"
 
 class HalfRelPattern(object):
     """ """
+
+    __slots__ = "a", "c", "g", "t"
 
     ref_bases = "".join(DNA.four())
     read_bases = "".join((ref_bases, READ_DEL, READ_INS))
@@ -227,9 +229,19 @@ class HalfRelPattern(object):
 
     def __init__(self, *codes: str):
         # Compile the codes into patterns.
-        self.patterns = self.compile(codes)
+        patterns = self.compile(codes)
+        self.a = patterns.pop(BASEA, 0)
+        self.c = patterns.pop(BASEC, 0)
+        self.g = patterns.pop(BASEG, 0)
+        self.t = patterns.pop(BASET, 0)
+        if patterns:
+            raise ValueError(f"Unexpected reference base(s): {patterns}")
 
-    @cached_property
+    @property
+    def patterns(self):
+        return {BASEA: self.a, BASEC: self.c, BASEG: self.g, BASET: self.t}
+
+    @property
     def codes(self):
         """ Return the codes of the relationships counted. """
         return list(self.decompile(self.patterns))
@@ -248,10 +260,20 @@ class HalfRelPattern(object):
         return self.__class__(*(set(self.codes) & set(other.codes)))
 
     def __str__(self):
-        return f"{type(self).__name__} {self.to_report_format()}"
+        return f"{type(self).__name__} {self.patterns}"
+
+    def __hash__(self):
+        return hash(tuple(getattr(self, x) for x in self.__slots__))
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.patterns == other.patterns
 
 
 class RelPattern(object):
+
+    __slots__ = "yes", "nos"
 
     @classmethod
     def from_counts(cls,
@@ -300,7 +322,15 @@ class RelPattern(object):
         return self.__class__(nos, yes) if invert else self.__class__(yes, nos)
 
     def __str__(self):
-        return f"{type(self).__name__}  ++ {self.yes}  -- {self.nos}"
+        return f"{type(self).__name__}  +[{self.yes}]  -[{self.nos}]"
+
+    def __hash__(self):
+        return hash(tuple(getattr(self, x) for x in self.__slots__))
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.yes == other.yes and self.nos == other.nos
 
 ########################################################################
 #                                                                      #
