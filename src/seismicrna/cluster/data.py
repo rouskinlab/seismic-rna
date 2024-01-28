@@ -2,7 +2,7 @@ from functools import cached_property
 from logging import getLogger
 
 from .batch import ClusterMutsBatch
-from .io import ClusterBatchIO
+from .io import ClustBatchIO
 from .report import ClusterReport
 from ..core.data import ChainedMutsDataset, LoadedDataset, LoadFunction
 from ..core.header import index_orders_clusts
@@ -22,7 +22,7 @@ class ClusterReadDataset(LoadedDataset):
 
     @classmethod
     def get_batch_type(cls):
-        return ClusterBatchIO
+        return ClustBatchIO
 
     @cached_property
     def max_order(self):
@@ -65,7 +65,7 @@ class ClusterMutsDataset(ChainedMutsDataset):
     def clusters(self):
         return index_orders_clusts(self.max_order)
 
-    def _chain(self, batch1: MaskMutsBatch, batch2: ClusterBatchIO):
+    def _chain(self, batch1: MaskMutsBatch, batch2: ClustBatchIO):
         return ClusterMutsBatch(batch=batch1.batch,
                                 refseq=batch1.refseq,
                                 muts=batch1.muts,

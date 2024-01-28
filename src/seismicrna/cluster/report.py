@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from .compare import RunOrderResults, find_best_order
-from .io import ClusterIO, ClusterBatchIO
+from .io import ClusterIO, ClustBatchIO
 from .uniq import UniqReads
 from ..core import path
 from ..core.report import (BatchedReport,
@@ -30,7 +30,7 @@ class ClusterReport(BatchedReport, ClusterIO):
 
     @classmethod
     def _batch_types(cls):
-        return ClusterBatchIO,
+        return ClustBatchIO,
 
     @classmethod
     def fields(cls):
@@ -82,7 +82,7 @@ class ClusterReport(BatchedReport, ClusterIO):
                    min_iter=min_iter,
                    max_iter=max_iter,
                    conv_thresh=conv_thresh,
-                   checksums={ClusterBatchIO.btype(): checksums},
+                   checksums={ClustBatchIO.btype(): checksums},
                    n_batches=len(checksums),
                    converged={runs.order: runs.converged for runs in orders},
                    log_likes={runs.order: runs.log_likes for runs in orders},

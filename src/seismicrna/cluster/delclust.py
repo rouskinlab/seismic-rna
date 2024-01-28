@@ -10,7 +10,7 @@ from .compare import format_exp_count_col
 from .csv import get_count_path
 from .data import ClusterMutsDataset
 from .data import load_cluster_dataset
-from .io import ClusterBatchIO
+from .io import ClustBatchIO
 from .names import BIT_VECTOR_NAME, LOG_OBS_NAME
 from .report import ClusterReport
 from ..core import path
@@ -42,7 +42,7 @@ from ..core.report import (calc_dt_minutes,
 
 logger = getLogger(__name__)
 
-BTYPE = ClusterBatchIO.btype()
+BTYPE = ClustBatchIO.btype()
 
 
 def update_log_counts(best_order: int,
@@ -77,7 +77,7 @@ def update_batches(dataset: ClusterMutsDataset,
     orders = np.arange(1, best_order + 1)
     checksums = list()
     for original_batch in dataset.iter_batches():
-        new_batch = ClusterBatchIO(sample=dataset.sample,
+        new_batch = ClustBatchIO(sample=dataset.sample,
                                    ref=dataset.ref,
                                    sect=dataset.sect,
                                    batch=original_batch.batch,

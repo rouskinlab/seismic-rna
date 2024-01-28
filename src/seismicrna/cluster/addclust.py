@@ -11,7 +11,7 @@ from .compare import find_best_order
 from .csv import get_count_path
 from .data import ClusterMutsDataset
 from .data import load_cluster_dataset
-from .io import ClusterBatchIO
+from .io import ClustBatchIO
 from .names import BIT_VECTOR_NAME, LOG_OBS_NAME
 from .report import ClusterReport
 from .uniq import UniqReads
@@ -48,7 +48,7 @@ from ..mask.report import MaskReport
 
 logger = getLogger(__name__)
 
-BTYPE = ClusterBatchIO.btype()
+BTYPE = ClustBatchIO.btype()
 
 
 def update_log_counts(new_orders: list[RunOrderResults],
@@ -93,7 +93,7 @@ def update_batches(dataset: ClusterMutsDataset,
                                            for runs in new_orders],
                           axis=1,
                           verify_integrity=True)
-        batch = ClusterBatchIO(sample=dataset.sample,
+        batch = ClustBatchIO(sample=dataset.sample,
                                ref=dataset.ref,
                                sect=dataset.sect,
                                batch=batch.batch,

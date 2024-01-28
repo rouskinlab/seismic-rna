@@ -12,7 +12,7 @@ class ClusterIO(SectIO, ABC):
         return super().auto_fields() | {path.CMD: path.CMD_CLUST_DIR}
 
 
-class ClusterBatchIO(ReadBatchIO, ClusterIO, ClusterReadBatch):
+class ClustBatchIO(ReadBatchIO, ClusterIO, ClusterReadBatch):
 
     @classmethod
     def file_seg_type(cls):
