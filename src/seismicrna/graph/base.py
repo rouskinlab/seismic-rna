@@ -50,15 +50,6 @@ ACTION_CLUST = "clustered"
 LINKER = "__and__"
 
 
-def _write_graph(writer: Callable[[Path], Any],
-                 file: Path,
-                 force: bool = False):
-    """ Write an image or raw data for a graph to a file. """
-    if need_write(file, force):
-        writer(file)
-    return file
-
-
 def make_index(header: Header, order: int | None, clust: int | None):
     """ Make an index for the rows or columns of a graph. """
     if header.max_order == 0:
@@ -354,21 +345,24 @@ class GraphBase(ABC):
 
     def write_csv(self, force: bool):
         """ Write the graph's source data to a CSV file. """
-        return _write_graph(self.data.to_csv,
-                            self.get_path(ext=path.CSV_EXT),
-                            force)
+        file = self.get_path(path.CSV_EXT)
+        if need_write(file, force):
+            self.data.to_csv(file)
+        return file
 
     def write_html(self, force: bool):
         """ Write the graph to an HTML file. """
-        return _write_graph(self.figure.write_html,
-                            self.get_path(ext=path.HTML_EXT),
-                            force)
+        file = self.get_path(path.HTML_EXT)
+        if need_write(file, force):
+            self.figure.write_html(file)
+        return file
 
     def write_pdf(self, force: bool):
         """ Write the graph to a PDF file. """
-        return _write_graph(self.figure.write_image,
-                            self.get_path(ext=path.PDF_EXT),
-                            force)
+        file = self.get_path(path.PDF_EXT)
+        if need_write(file, force):
+            self.figure.write_image(file)
+        return file
 
     def write(self, csv: bool, html: bool, pdf: bool, force: bool = False):
         """ Write the selected files. """
