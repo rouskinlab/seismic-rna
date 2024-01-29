@@ -82,8 +82,8 @@ and conversely, cluster 2 of the joined section to comprise
 - cluster 2 of section 2
 - cluster 1 of section 3
 
-You can specify the clusters to join using ``--join-clusts`` followed by a file
-of the clusters to join.
+You can specify the clusters to join using ``--join-clusts`` (``-j``) followed
+by a file of the clusters to join.
 See :doc:`../../formats/meta/joined` for more information on this file.
 
 Join: Output files
