@@ -1,7 +1,7 @@
 import pandas as pd
 
 from .compare import RunOrderResults
-from .io import ClustBatchIO
+from .io import ClusterBatchIO
 from ..mask.data import MaskMutsDataset
 
 
@@ -13,7 +13,7 @@ def write_batches(dataset: MaskMutsDataset,
     for batch_num in dataset.batch_nums:
         resps = pd.concat((runs.best.get_resps(batch_num) for runs in orders),
                           axis=1)
-        batch = ClustBatchIO(sample=dataset.sample,
+        batch = ClusterBatchIO(sample=dataset.sample,
                                ref=dataset.ref,
                                sect=dataset.sect,
                                batch=batch_num,
