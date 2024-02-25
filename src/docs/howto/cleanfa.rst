@@ -19,7 +19,6 @@ nucleotides and ``N``, such as the `IUPAC extended nucleotide codes`_.
 For details on the valid FASTA format for SEISMIC-RNA and the rationale
 behind it, see :doc:`../../formats/data/fasta`.
 
-
 Algorithm for cleaning FASTA files
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -37,7 +36,6 @@ The FASTA file cleaner of SEISMIC-RNA follows the following procedure:
   All remaining illegal characters that belong to the set of standard
   `IUPAC extended nucleotide codes`_ are replaced with ``N``.
   If any illegal characters remain after that, then an error is raised.
-
 
 How to clean FASTA files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -63,7 +61,6 @@ By default, this command will not overwrite existing FASTA files.
 To force overwriting, use the option ``--force``::
 
     seismic +cleanfa --force refs.fa
-
 
 Troubleshooting cleaning FASTA files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

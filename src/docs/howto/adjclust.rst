@@ -2,7 +2,7 @@
 Add/Delete Orders to/from an Already-Clustered Dataset
 --------------------------------------------------------------------------------
 
-Background about adjusting the order  clusters
+Background about adding/deleting orders of clusters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can use ``+addclust`` and ``+delclust`` to adjust the maximum number of

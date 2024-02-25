@@ -96,6 +96,21 @@ Extra Utilities
     For every extra utility (that is not part of the main workflow), the name
     begins with ``+``.
 
+.. _cli_listpos:
+
+.. click:: seismicrna.lists.listpos:cli
+    :prog: seismic +listpos
+
+.. _cli_addclust:
+
+.. click:: seismicrna.cluster.addclust:cli
+    :prog: seismic +addclust
+
+.. _cli_delclust:
+
+.. click:: seismicrna.cluster.delclust:cli
+    :prog: seismic +delclust
+
 .. _cli_cleanfa:
 
 .. click:: seismicrna.cleanfa:cli

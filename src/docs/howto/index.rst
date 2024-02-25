@@ -7,6 +7,7 @@ How To
 
     run/index
     graph/index
+    lists
     adjclust
     cleanfa
     inputs
