@@ -599,22 +599,20 @@ opt_exclude_polya = Option(
     ("--exclude-polya",),
     type=int,
     default=5,
-    help="Minimum length of poly(A) sequences to mask (0 to disable)"
+    help="Minimum length of poly(A) sequences to exclude (0 to include all)"
 )
 
 opt_exclude_gu = Option(
     ("--exclude-gu/--include-gu",),
     type=bool,
     default=True,
-    help="Mask G and U bases"
+    help="Exclude G and U bases"
 )
 
-opt_exclude_pos = Option(
-    ("--exclude-pos",),
-    type=(str, int),
-    default=(),
-    multiple=True,
-    help="Arbitrary positions to mask"
+opt_exclude_file = Option(
+    ("--exclude-file",),
+    type=Path(dir_okay=False, exists=True),
+    help="File of arbitrary positions to exclude"
 )
 
 opt_min_ncall_read = Option(

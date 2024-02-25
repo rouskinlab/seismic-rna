@@ -5,6 +5,7 @@ Mask -- Write Module
 from collections import defaultdict
 from datetime import datetime
 from logging import getLogger
+from pathlib import Path
 from typing import Iterable
 
 import numpy as np
@@ -16,7 +17,7 @@ from .report import MaskReport
 from ..core.batch import RefseqMutsBatch, accum_per_pos
 from ..core.io import DEFAULT_BROTLI_LEVEL
 from ..core.rel import RelPattern
-from ..core.seq import Section, index_to_pos
+from ..core.seq import FIELD_REF, POS_NAME, Section, index_to_pos
 from ..core.write import need_write
 from ..pool.data import PoolDataset
 from ..relate.data import RelateDataset
@@ -43,7 +44,7 @@ class RelMasker(object):
                  pattern: RelPattern, *,
                  exclude_polya: int = 0,
                  exclude_gu: bool = False,
-                 exclude_pos: Iterable[tuple[str, int]] = (),
+                 exclude_file: Path | None = None,
                  min_mut_gap: int = 0,
                  min_finfo_read: float = 0.,
                  max_fmut_read: float = 1.,
@@ -64,9 +65,8 @@ class RelMasker(object):
             If 0, exclude no bases. Must be ≥ 0.
         exclude_gu: bool = False
             Whether to exclude G and U bases.
-        exclude_pos: Iterable[tuple[str, int]] = ()
-            Additional, arbitrary positions to exclude. Each position
-            must be a tuple of (reference name, 1-indexed position).
+        exclude_file: Path | None = None
+            File of additional, arbitrary positions to exclude.
         min_mut_gap: int = 0
             Filter out reads with any two mutations separated by fewer
             than `min_mut_gap` positions. Adjacent mutations have a
@@ -96,9 +96,7 @@ class RelMasker(object):
         # Set the parameters for excluding positions from the section.
         self.exclude_polya = exclude_polya
         self.exclude_gu = exclude_gu
-        self.exclude_pos = np.array([pos for ref, pos in exclude_pos
-                                     if ref == self.dataset.ref],
-                                    dtype=int)
+        self.exclude_pos = self._get_exclude_pos(exclude_file)
         # Set the parameters for filtering reads.
         self.min_mut_gap = min_mut_gap
         self.min_finfo_read = min_finfo_read
@@ -177,6 +175,17 @@ class RelMasker(object):
     def n_batches(self):
         """ Number of batches of reads. """
         return len(self.checksums)
+
+    def _get_exclude_pos(self, exclude_file: Path | None):
+        """ Get the positions to exclude from a file. """
+        if exclude_file is not None:
+            exclude_pos = pd.read_csv(
+                exclude_file,
+                index_col=[FIELD_REF, POS_NAME]
+            ).loc[self.dataset.ref].index
+        else:
+            exclude_pos = list()
+        return np.asarray(exclude_pos, dtype=int)
 
     def _filter_min_finfo_read(self, batch: RefseqMutsBatch):
         """ Filter out reads with too few informative positions. """

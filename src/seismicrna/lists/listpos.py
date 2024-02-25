@@ -13,12 +13,10 @@ from ..core.arg import (CMD_LISTPOS,
                         opt_max_procs,
                         opt_parallel)
 from ..core.parallel import as_list_of_tuples, dispatch
-from ..core.seq import POS_NAME
+from ..core.seq import FIELD_REF, POS_NAME
 from ..core.write import need_write
 from ..table.base import MUTAT_REL, PosTable
 from ..table.load import find_pos_tables, load_pos_table
-
-REF_NAME = "Reference"
 
 
 def find_pos(table: PosTable,
@@ -46,7 +44,7 @@ def list_pos(table_file: Path, force: bool, **kwargs):
     if need_write(list_file, force):
         positions = pd.MultiIndex.from_product(
             [[table.ref], find_pos(table, **kwargs)],
-            names=[REF_NAME, POS_NAME]
+            names=[FIELD_REF, POS_NAME]
         )
         positions.to_frame(index=False).to_csv(list_file, index=False)
     return list_file
