@@ -410,10 +410,197 @@ class TestSectionInit(ut.TestCase):
                                end3=end3)
 
 
+class TestSectionEqual(ut.TestCase):
+
+    def test_equal_full(self):
+        seq = DNA.random(30)
+        section1 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           name="mysection")
+        section2 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           name="mysection")
+        self.assertEqual(section1, section2)
+
+    def test_equal_part(self):
+        seq = DNA.random(30)
+        section1 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           reflen=40,
+                           end5=14,
+                           end3=32,
+                           name="mysection")
+        section2 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           reflen=40,
+                           end5=14,
+                           end3=32,
+                           name="mysection")
+        self.assertEqual(section1, section2)
+
+    def test_equal_mask(self):
+        seq = DNA.random(30)
+        section1 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           name="mysection")
+        section1.add_mask("mask", [9])
+        section2 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           name="mysection")
+        section2.add_mask("mask", [9])
+        self.assertEqual(section1, section2)
+
+    def test_diff_ref(self):
+        seq = DNA.random(30)
+        section1 = Section(ref="ref1",
+                           seq=seq,
+                           seq5=7,
+                           reflen=40,
+                           end5=14,
+                           end3=32,
+                           name="mysection")
+        section2 = Section(ref="ref2",
+                           seq=seq,
+                           seq5=7,
+                           reflen=40,
+                           end5=14,
+                           end3=32,
+                           name="mysection")
+        self.assertNotEqual(section1, section2)
+
+    def test_diff_seq(self):
+        section1 = Section(ref="ref",
+                           seq=DNA.random(30),
+                           seq5=7,
+                           reflen=40,
+                           end5=14,
+                           end3=32,
+                           name="mysection")
+        section2 = Section(ref="ref",
+                           seq=DNA.random(30),
+                           seq5=7,
+                           reflen=40,
+                           end5=14,
+                           end3=32,
+                           name="mysection")
+        self.assertNotEqual(section1, section2)
+
+    def test_diff_seq5(self):
+        seq = DNA.random(30)
+        section1 = Section(ref="ref",
+                           seq=seq,
+                           seq5=2,
+                           name="mysection")
+        section2 = Section(ref="ref",
+                           seq=seq,
+                           seq5=3,
+                           name="mysection")
+        self.assertNotEqual(section1, section2)
+
+    def test_diff_end5(self):
+        seq = DNA.random(30)
+        section1 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           reflen=40,
+                           end5=14,
+                           end3=32,
+                           name="mysection")
+        section2 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           reflen=40,
+                           end5=15,
+                           end3=32,
+                           name="mysection")
+        self.assertNotEqual(section1, section2)
+
+    def test_diff_end3(self):
+        seq = DNA.random(30)
+        section1 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           reflen=40,
+                           end5=14,
+                           end3=32,
+                           name="mysection")
+        section2 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           reflen=40,
+                           end5=14,
+                           end3=33,
+                           name="mysection")
+        self.assertNotEqual(section1, section2)
+
+    def test_diff_name(self):
+        seq = DNA.random(30)
+        section1 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           reflen=40,
+                           end5=14,
+                           end3=32,
+                           name="mysection1")
+        section2 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           reflen=40,
+                           end5=14,
+                           end3=32,
+                           name="mysection2")
+        self.assertNotEqual(section1, section2)
+
+    def test_diff_full(self):
+        seq = DNA.random(30)
+        section1 = Section(ref="ref",
+                           seq=seq,
+                           reflen=40,
+                           name="mysection")
+        section2 = Section(ref="ref",
+                           seq=seq,
+                           name="mysection")
+        self.assertNotEqual(section1, section2)
+
+    def test_diff_mask_name(self):
+        seq = DNA.random(30)
+        section1 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           name="mysection")
+        section1.add_mask("mask1", [9])
+        section2 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           name="mysection")
+        section2.add_mask("mask2", [9])
+        self.assertNotEqual(section1, section2)
+
+    def test_diff_mask_pos(self):
+        seq = DNA.random(30)
+        section1 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           name="mysection")
+        section1.add_mask("mask", [9])
+        section2 = Section(ref="ref",
+                           seq=seq,
+                           seq5=7,
+                           name="mysection")
+        section2.add_mask("mask", [10])
+        self.assertNotEqual(section1, section2)
+
+
 class TestSectionLength(ut.TestCase):
 
     def test_full_lengths(self):
-        for length in [0, 20, 100]:
+        for length in [0, 1, 10, 100]:
             with self.subTest(length=length):
                 seq = DNA.random(length)
                 section = Section("myref", seq)
@@ -421,7 +608,7 @@ class TestSectionLength(ut.TestCase):
                 self.assertEqual(section.length, len(section.seq))
 
     def test_slice_lengths(self):
-        for length in [0, 20, 100]:
+        for length in [0, 1, 10, 100]:
             seq = DNA.random(length)
             for end5 in range(1, length + 1):
                 for end3 in range(end5 - 1, length + 1):
@@ -431,7 +618,7 @@ class TestSectionLength(ut.TestCase):
                         self.assertEqual(section.length, len(section.seq))
 
     def test_partial_lengths(self):
-        for length in [0, 20, 100]:
+        for length in [0, 1, 10, 100]:
             seq = DNA.random(length)
             for seq5 in range(1, length + 1):
                 for rlen in range(length + seq5 - 1, 2 * length + seq5 - 1):
@@ -477,6 +664,26 @@ class TestSectionRange(ut.TestCase):
         self.assertIsInstance(section.range_one, np.ndarray)
         self.assertIs(section.range_one.dtype, np.dtype('int64'))
         self.assertTrue(np.array_equal(section.range_one, expect))
+
+
+class TestSectionCopy(ut.TestCase):
+
+    def test_copy(self):
+        for length in [2, 10, 100]:
+            for reflen in [length, length + 1]:
+                for end5 in [1, 2]:
+                    for name in [None, "section"]:
+                        for masks in [{}, {"mask": [end5]}]:
+                            section = Section(ref="ref",
+                                              seq=DNA.random(length),
+                                              reflen=reflen,
+                                              end5=end5,
+                                              name=name)
+                            for mask, values in masks.items():
+                                section.add_mask(mask, values)
+                            copied = section.copy()
+                            self.assertIsNot(copied, section)
+                            self.assertEqual(copied, section)
 
 
 class TestSectionAddMask(ut.TestCase):

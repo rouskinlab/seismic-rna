@@ -384,8 +384,8 @@ class Section(object):
         else:
             self.end3 = seq3
         if self.end5 > self.end3 + 1:
-            raise ValueError(
-                f"Need end5 ≤ end3 + 1, but got {self.end5} > {self.end3 + 1}")
+            raise ValueError("Need end5 ≤ end3 + 1, "
+                             f"but got {self.end5} > {self.end3 + 1}")
         # Determine the sequence of the section and whether it is the
         # full reference sequence.
         self.seq = DNA(seq[self.end5 - seq5: self.end3 - (seq5 - 1)])
@@ -407,21 +407,21 @@ class Section(object):
         # Initialize an empty set of masks.
         self._masks: dict[str, np.ndarray] = dict()
 
-    @property
+    @cached_property
     def length(self):
         """ Length of the entire section. """
         return self.end3 - self.end5 + 1
 
-    @property
+    @cached_property
     def coord(self):
         """ Tuple of the 5' and 3' coordinates. """
         return self.end5, self.end3
 
-    @property
+    @cached_property
     def hyphen(self):
         return hyphenate_ends(self.end5, self.end3)
 
-    @property
+    @cached_property
     def ref_sect(self):
         return f"{self.ref}__{self.name}"
 
@@ -486,6 +486,20 @@ class Section(object):
     def size(self):
         """ Number of relevant positions in the section. """
         return self.length - self.masked_int.size
+
+    def copy(self):
+        """ Return an identical section. """
+        copied = self.__class__(ref=self.ref,
+                                seq=self.seq,
+                                seq5=self.end5,
+                                reflen=(self.length if self.full
+                                        else self.length + 1),
+                                end5=self.end5,
+                                end3=self.end3,
+                                name=self.name)
+        for name, masked in self._masks.items():
+            copied.add_mask(name, masked)
+        return copied
 
     def get_mask(self, name: str):
         """ Get the positions masked under the given name. """
