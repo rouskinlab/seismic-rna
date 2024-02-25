@@ -183,6 +183,15 @@ class RelMasker(object):
                 exclude_file,
                 index_col=[FIELD_REF, POS_NAME]
             ).loc[self.dataset.ref].index
+            # Check if any positions are out of bounds.
+            if below := exclude_pos[exclude_pos < 1].to_list():
+                raise ValueError(f"Got excluded positions < 1: {below}")
+            seqlen = len(self.dataset.refseq)
+            if above := exclude_pos[exclude_pos > seqlen].to_list():
+                raise ValueError(f"Got excluded positions < {seqlen}: {above}")
+            # Retain only the positions in the section.
+            exclude_pos = exclude_pos[(exclude_pos >= self.section.end5)
+                                      & (exclude_pos <= self.section.end3)]
         else:
             exclude_pos = list()
         return np.asarray(exclude_pos, dtype=int)
