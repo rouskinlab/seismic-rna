@@ -518,11 +518,6 @@ FreqTableSeg = Segment("freq-table",
                        {TABLE: FreqTableField, EXT: FreqTableExt},
                        frmt="{table}-freq{ext}")
 
-# List
-PosListSeg = Segment("pos-list",
-                     {EXT: PosTableExt},
-                     frmt="positions{ext}")
-
 # Fold
 FoldRepSeg = Segment("fold-rep",
                      {PROFILE: NameField, EXT: ReportExt},

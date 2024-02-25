@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 from click import command
 
-from ..core import path
+from .lists import get_list_path
 from ..core.arg import (CMD_LISTPOS,
                         docdef,
                         arg_input_path,
@@ -42,21 +42,14 @@ def find_pos(table: PosTable,
 def list_pos(table_file: Path, force: bool, **kwargs):
     """ List positions meeting specific criteria from the table. """
     table = load_pos_table(table_file)
-    positions_file = path.buildpar(*path.SECT_DIR_SEGS,
-                                   path.PosListSeg,
-                                   top=table.top,
-                                   sample=table.sample,
-                                   cmd=path.CMD_LIST_DIR,
-                                   ref=table.ref,
-                                   sect=table.sect,
-                                   ext=path.CSV_EXT)
-    if need_write(positions_file, force):
+    list_file = get_list_path(table)
+    if need_write(list_file, force):
         positions = pd.MultiIndex.from_product(
             [[table.ref], find_pos(table, **kwargs)],
             names=[REF_NAME, POS_NAME]
         )
-        positions.to_frame(index=False).to_csv(positions_file, index=False)
-    return positions_file
+        positions.to_frame(index=False).to_csv(list_file, index=False)
+    return list_file
 
 
 @docdef.auto()
