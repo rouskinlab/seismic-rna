@@ -492,8 +492,8 @@ class Section(object):
         copied = self.__class__(ref=self.ref,
                                 seq=self.seq,
                                 seq5=self.end5,
-                                reflen=(self.length if self.full
-                                        else self.length + 1),
+                                reflen=(self.end3 if self.full
+                                        else self.end3 + 1),
                                 end5=self.end5,
                                 end3=self.end3,
                                 name=self.name)
@@ -508,7 +508,7 @@ class Section(object):
     def add_mask(self,
                  name: str,
                  mask_pos: Iterable[int],
-                 invert: bool = False):
+                 complement: bool = False):
         """ Mask the integer positions in the array `mask_pos`.
 
         Parameters
@@ -517,9 +517,9 @@ class Section(object):
             Name of the mask.
         mask_pos: Iterable[int]
             Positions to mask (1-indexed).
-        invert: bool = False
-            If invert is False, then mask out the positions in mask_pos.
-            If True, then mask out all but the given positions.
+        complement: bool = False
+            If False, then remove the positions in mask_pos. Otherwise,
+            remove all but those positions.
         """
         if name in self._masks:
             raise ValueError(f"Mask {repr(name)} was already set")
@@ -529,7 +529,7 @@ class Section(object):
         if np.any(p < self.end5) or np.any(p > self.end3):
             out = p[np.logical_or(p < self.end5, p > self.end3)]
             raise ValueError(f"Got positions to mask outside of {self}: {out}")
-        if invert:
+        if complement:
             # Mask all positions except those listed.
             p = np.setdiff1d(self.range_int, p, assume_unique=True)
         # Record the positions that have not already been masked.
@@ -773,7 +773,7 @@ def unite(*sections: Section,
     for s in sections[1:]:
         unmasked = np.union1d(s.unmasked_int, unmasked)
     if unmasked.size < union.size:
-        union.add_mask("union", unmasked, invert=True)
+        union.add_mask("union", unmasked, complement=True)
     return union
 
 

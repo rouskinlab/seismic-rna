@@ -741,6 +741,15 @@ opt_table_clust = Option(
     help="Tabulate per cluster"
 )
 
+# List options
+
+opt_complement = Option(
+    ("--complement/--no-complement",),
+    type=bool,
+    default=False,
+    help="List the complement"
+)
+
 # Fold
 
 opt_fold = Option(

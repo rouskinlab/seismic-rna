@@ -719,7 +719,7 @@ class TestSectionAddMask(ut.TestCase):
         end5 = 17
         end3 = 26
         section = Section("myref", seq, seq5=seq5, end5=end5, end3=end3)
-        section.add_mask("mymask", [18, 20, 25], invert=True)
+        section.add_mask("mymask", [18, 20, 25], complement=True)
         self.assertEqual(list(section._masks.keys()), ["mymask"])
         self.assertTrue(np.array_equal(section._masks["mymask"],
                                        np.array([17, 19, 21, 22, 23, 24, 26])))

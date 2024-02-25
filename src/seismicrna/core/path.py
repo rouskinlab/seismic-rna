@@ -67,6 +67,7 @@ CMD_REL_DIR = "relate"
 CMD_MASK_DIR = "mask"
 CMD_CLUST_DIR = "cluster"
 CMD_TABLE_DIR = "table"
+CMD_LIST_DIR = "list"
 CMD_FOLD_DIR = "fold"
 CMD_GRAPH_DIR = "graph"
 
@@ -285,6 +286,7 @@ CmdField = Field(str, [CMD_QC_DIR,
                        CMD_MASK_DIR,
                        CMD_CLUST_DIR,
                        CMD_TABLE_DIR,
+                       CMD_LIST_DIR,
                        CMD_FOLD_DIR,
                        CMD_GRAPH_DIR])
 StepField = Field(str, STEPS)
@@ -515,6 +517,11 @@ ReadTableSeg = Segment("read-table",
 FreqTableSeg = Segment("freq-table",
                        {TABLE: FreqTableField, EXT: FreqTableExt},
                        frmt="{table}-freq{ext}")
+
+# List
+PosListSeg = Segment("pos-list",
+                     {EXT: PosTableExt},
+                     frmt="positions{ext}")
 
 # Fold
 FoldRepSeg = Segment("fold-rep",

@@ -25,6 +25,7 @@ from . import (wf,
                cluster,
                join,
                table,
+               lists,
                fold,
                graph,
                export,
@@ -105,6 +106,7 @@ for module in (wf,
     cli.add_command(module.cli)
 cli.add_command(cluster.addclust.cli)
 cli.add_command(cluster.delclust.cli)
+cli.add_command(lists.listpos.cli)
 
 ########################################################################
 #                                                                      #

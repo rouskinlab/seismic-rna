@@ -61,7 +61,7 @@ class MaskMutsDataset(ChainedMutsDataset):
         section = super().section
         section.add_mask(self.MASK_NAME,
                          getattr(self.data2, "pos_kept"),
-                         invert=True)
+                         complement=True)
         return section
 
     def _chain(self, batch1: RelateRefseqBatch, batch2: MaskBatchIO):

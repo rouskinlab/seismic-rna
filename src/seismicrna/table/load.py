@@ -124,7 +124,10 @@ READ_LOADS = RelReadTableLoader, MaskReadTableLoader, ClustReadTableLoader
 FREQ_LOADS = ClustFreqTableLoader,
 
 
-def load_table(types: Iterable[type[TableLoader]], table_file: Path):
+def load_table(types: Iterable[type[PosTableLoader
+                                    | ReadTableLoader
+                                    | ClustFreqTableLoader]],
+               table_file: Path):
     """ Load a Table of one of several types from a file. """
     for table_type in types:
         try:
@@ -140,11 +143,11 @@ def load_any_table(table_file: Path):
     return load_table([*POS_LOADS, *READ_LOADS, *FREQ_LOADS], table_file)
 
 
-def load_pos_table(table_file: Path):
+def load_pos_table(table_file: Path) -> PosTableLoader:
     return load_table(POS_LOADS, table_file)
 
 
-def load_read_table(table_file: Path):
+def load_read_table(table_file: Path) -> ReadTableLoader:
     return load_table(READ_LOADS, table_file)
 
 

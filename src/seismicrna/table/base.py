@@ -358,7 +358,7 @@ class PosTable(RelTypeTable, ABC):
                           end5=self.end5,
                           end3=self.end3,
                           name=self.sect)
-        section.add_mask(self.MASK, self.unmasked_int, invert=True)
+        section.add_mask(self.MASK, self.unmasked_int, complement=True)
         return section
 
     def _fetch_data(self,
