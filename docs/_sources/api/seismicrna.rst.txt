@@ -21,6 +21,7 @@ Subpackages
    seismicrna.fold
    seismicrna.graph
    seismicrna.join
+   seismicrna.lists
    seismicrna.mask
    seismicrna.pool
    seismicrna.relate

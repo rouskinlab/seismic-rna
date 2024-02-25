@@ -6,6 +6,7 @@ File Formats
 .. toctree::
     :maxdepth: 2
 
-    report/index
     data/index
+    list/index
     meta/index
+    report/index

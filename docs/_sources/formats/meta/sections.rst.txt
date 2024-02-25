@@ -14,13 +14,6 @@ and traceable to define the sections in a file than on the command line,
 using the option ``--sections-file`` (``-s``).
 The sections file additionally permits giving each section a name.
 
-Commands that use metadata for sections
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-- ``seismic wf``
-- ``seismic mask``
-- ``seismic fold``
-
 
 Fields of metadata for sections
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

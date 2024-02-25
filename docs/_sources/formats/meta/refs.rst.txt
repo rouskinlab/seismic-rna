@@ -7,14 +7,9 @@ About metadata for references
 
 Purpose of metadata for references
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 Define metadata about reference sequences, such as the coordinates at
 which barcodes are located.
-
-Commands that use metadata for references
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-- ``seismic export``
-
 
 Fields of metadata for references
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -32,7 +27,6 @@ Notes about metadata for references
 - Fields are case-sensitive and must be in the file's first line.
 - Additional fields with arbitrary names can be given.
   Their data types will be inferred as strings, integers, or floats.
-
 
 Example metadata for references
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

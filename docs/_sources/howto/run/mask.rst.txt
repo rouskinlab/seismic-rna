@@ -101,10 +101,8 @@ Exclude arbitary positions
 You can also exclude any arbitary positions from any reference sequence.
 A common reason to exclude a position is if the base is modified endogenously
 in a way that causes mutations during reverse transcription.
-To exclude an arbitrary position, use ``--exclude-pos`` followed by the name of
-the reference and the position to exclude.
-For example, ``--exclude-pos lititz 48`` would exclude positions 48 from the
-reference "lititz".
+To exclude an arbitrary position, use ``--exclude-file`` followed by a file of
+all positions to exclude, in :doc:`../../formats/list/listpos` format.
 
 Mask setting: Filter reads
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

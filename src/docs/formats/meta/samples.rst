@@ -12,11 +12,6 @@ Define metadata about samples, such as the cell line or buffer in which
 the RNA was probed, the type and concentration of the chemical probe,
 and the temperature during chemical probing.
 
-Commands that use metadata for samples
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-- ``seismic export``
-
 
 Fields of metadata for samples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

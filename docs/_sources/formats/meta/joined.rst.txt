@@ -40,12 +40,6 @@ joined cluster in the joined clusters metadata file.
     of ways to join those sections is *k*\ :sup:`n`.
 
 
-Commands that use metadata for sections
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-- ``seismic wf``
-- ``seismic join``
-
 Fields of metadata for joined clusters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
