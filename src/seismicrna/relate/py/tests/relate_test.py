@@ -1,11 +1,12 @@
 import unittest as ut
 
-from ..relate import find_rels_line
-from ...aux.iterread import iter_alignments
-from ....align.sim import as_sam
-from ....core.arg import opt_min_mapq
-from ....core.ngs import OK_QUAL
-from ....core.seq import DNA
+from seismicrna.core.rel import IRREC, MATCH, NOCOV
+from seismicrna.relate.py.relate import find_rels_line, _merge_rels
+from seismicrna.relate.aux.iterread import iter_alignments
+from seismicrna.align.sim import as_sam
+from seismicrna.core.arg import opt_min_mapq
+from seismicrna.core.ngs import OK_QUAL
+from seismicrna.core.seq import DNA
 
 
 class TestRelateRelateLineAmbrel(ut.TestCase):
@@ -48,19 +49,19 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
                                                                    max_ins,
                                                                    max_ins,
                                                                    max_ins):
-            name, end5_, mid5, mid3, end3_, rels_ = self.relate("ref",
-                                                                refseq,
-                                                                read,
-                                                                qual,
-                                                                self.MAPQ,
-                                                                cigar,
-                                                                end5)
             with self.subTest(refseq=refseq,
                               read=read,
                               qual=qual,
                               end5=end5,
                               cigar=cigar,
                               rels=rels):
+                name, end5_, mid5, mid3, end3_, rels_ = self.relate("ref",
+                                                                    refseq,
+                                                                    read,
+                                                                    qual,
+                                                                    self.MAPQ,
+                                                                    cigar,
+                                                                    end5)
                 self.assertEqual(end5_, end5)
                 self.assertEqual(mid5, end5)
                 self.assertEqual(mid3, end3)
@@ -84,6 +85,113 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
     def test_acgt_1ins(self):
         """ Test all possible reads with ≤ 1 insertion from ACGT. """
         self.iter_cases(DNA("ACGT"), 1)
+
+
+class TestMergeRels(ut.TestCase):
+
+    def test_empty(self):
+        result = _merge_rels(1, 10, {}, 1, 10, {})
+        expect = {}
+        self.assertEqual(result, expect)
+
+    def test_read1(self):
+        end51 = 1
+        end31 = 20
+        end52 = 11
+        end32 = 30
+        for pos in range(end51, end31 + 1):
+            for rel in range(MATCH + 1, NOCOV):
+                result = _merge_rels(end51, end31, {pos: rel}, end52, end32, {})
+                if end52 <= pos <= end32:
+                    # The relationship can be compensated by read 2.
+                    if rel & MATCH:
+                        # The match in read 2 compensated.
+                        expect = {}
+                    else:
+                        # The match in read 2 is irreconcilable.
+                        expect = {pos: IRREC}
+                else:
+                    # Read 2 cannot compensate.
+                    expect = {pos: rel}
+                self.assertEqual(result, expect)
+
+    def test_read2(self):
+        end51 = 1
+        end31 = 20
+        end52 = 11
+        end32 = 30
+        for pos in range(end52, end32 + 1):
+            for rel in range(MATCH + 1, NOCOV):
+                result = _merge_rels(end51, end31, {}, end52, end32, {pos: rel})
+                if end51 <= pos <= end31:
+                    # The relationship can be compensated by read 1.
+                    if rel & MATCH:
+                        # The match in read 1 compensated.
+                        expect = {}
+                    else:
+                        # The match in read 1 is irreconcilable.
+                        expect = {pos: IRREC}
+                else:
+                    # Read 1 cannot compensate.
+                    expect = {pos: rel}
+                self.assertEqual(result, expect)
+
+    def test_both_reads(self):
+        end51 = 1
+        end31 = 2
+        end52 = 2
+        end32 = 3
+        for pos1 in range(end51, end31 + 1):
+            for rel1 in range(MATCH + 1, NOCOV):
+                rels1 = {pos1: rel1}
+                for pos2 in range(end52, end32 + 1):
+                    for rel2 in range(MATCH + 1, NOCOV):
+                        rels2 = {pos2: rel2}
+                        with self.subTest(pos1=pos1, rel1=rel1,
+                                          pos2=pos2, rel2=rel2):
+                            result = _merge_rels(end51, end31, rels1,
+                                                 end52, end32, rels2)
+                            if pos1 == pos2:
+                                merged = rel1 & rel2
+                                if merged == MATCH:
+                                    expect = {}
+                                else:
+                                    expect = {pos1: merged}
+                            else:
+                                expect = dict()
+                                merged1 = rel1 & MATCH if end52 <= pos1 <= end32 else rel1
+                                if merged1 != MATCH:
+                                    expect[pos1] = merged1
+                                merged2 = rel2 & MATCH if end51 <= pos2 <= end31 else rel2
+                                if merged2 != MATCH:
+                                    expect[pos2] = merged2
+                            self.assertEqual(result, expect)
+
+    def test_both_blank(self):
+        end51 = 1
+        end31 = 2
+        end52 = 2
+        end32 = 3
+        for pos1 in range(end51, end31 + 1):
+            rels1 = {pos1: NOCOV}
+            for pos2 in range(end52, end32 + 1):
+                rels2 = {pos2: NOCOV}
+                with self.subTest(pos1=pos1, pos2=pos2):
+                    if end52 <= pos1 <= end32:
+                        error = pos2
+                    else:
+                        error = pos1
+                    self.assertRaisesRegex(
+                        ValueError,
+                        f"Cannot merge two blanks at position {error}",
+                        _merge_rels,
+                        end51, end31, rels1,
+                        end52, end32, rels2,
+                    )
+
+
+if __name__ == "__main__":
+    ut.main()
 
 ########################################################################
 #                                                                      #

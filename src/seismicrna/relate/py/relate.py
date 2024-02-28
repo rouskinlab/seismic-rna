@@ -48,6 +48,8 @@ class SamFlag(object):
 
 
 class SamRead(object):
+    """ One read in a SAM file. """
+
     # Define __slots__ to improve speed and memory performance.
     __slots__ = "qname", "flag", "rname", "pos", "mapq", "cigar", "seq", "qual"
 
@@ -74,10 +76,10 @@ class SamRead(object):
 
     def __str__(self):
         attrs = {attr: getattr(self, attr) for attr in self.__slots__[1:]}
-        return f"Read '{self.qname}' {attrs}"
+        return f"Read {repr(self.qname)} {attrs}"
 
 
-def find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambrel: bool):
+def _find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambrel: bool):
     """
     Find the relationships between a read and a reference.
 
@@ -223,7 +225,7 @@ def find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambrel: bool):
     return read.pos, ref_pos, dict(rels)
 
 
-def validate_read(read: SamRead, ref: str, min_mapq: int):
+def _validate_read(read: SamRead, ref: str, min_mapq: int):
     if read.rname != ref:
         raise ValueError(f"Read {repr(read.qname)} mapped to a reference named "
                          f"{repr(read.rname)} but is in an alignment map file "
@@ -233,36 +235,49 @@ def validate_read(read: SamRead, ref: str, min_mapq: int):
                          f"{read.mapq}, less than the minimum of {min_mapq}")
 
 
-def validate_pair(read1: SamRead, read2: SamRead):
+def _validate_pair(read1: SamRead, read2: SamRead):
     """ Ensure that reads 1 and 2 are compatible mates. """
     if not read1.flag.paired:
         raise RelateValueError(f"Read 1 ({read1.qname}) was not paired, "
-                               f"but read 2 ('{read2.qname}') was given")
+                               f"but read 2 ({read2.qname}) was given")
     if not read2.flag.paired:
         raise RelateValueError(f"Read 2 ({read2.qname}) was not paired, "
                                f"but read 1 ({read1.qname}) was given")
     if read1.qname != read2.qname:
-        raise RelateValueError(f"Reads 1 ({read1.qname}) and 2 "
-                               f"({read2.qname}) had different names")
+        raise RelateValueError(f"Got different names for reads "
+                               f"1 ({read1.qname}) and 2 ({read2.qname})")
     if not (read1.flag.first and read2.flag.second):
-        raise RelateValueError(f"Read '{read1.qname}' had mate 1 "
+        raise RelateValueError(f"Read {repr(read1.qname)} had mate 1 "
                                f"labeled {2 - read1.flag.first} and mate 2 "
                                f"labeled {1 + read2.flag.second}")
     if read1.flag.rev == read2.flag.rev:
-        raise RelateValueError(f"Read '{read1.qname}' had "
+        raise RelateValueError(f"Read {repr(read1.qname)} had "
                                "mates 1 and 2 facing the same way")
 
 
-def merge_ends(end51: int, end31: int, end52: int, end32: int):
+def _merge_ends(end51: int, end31: int, end52: int, end32: int):
     return (min(end51, end52),
             max(end51, end52),
             min(end31, end32),
             max(end31, end32))
 
 
-def merge_rels(rels1: dict[int, int], rels2: dict[int, int]):
-    return {ref_idx: rels1.get(ref_idx, NOCOV) & rels2.get(ref_idx, NOCOV)
-            for ref_idx in rels1 | rels2}
+def _merge_rels(end51: int,
+                end31: int,
+                rels1: dict[int, int],
+                end52: int,
+                end32: int,
+                rels2: dict[int, int]):
+    merged = dict()
+    for pos in rels1 | rels2:
+        rel1 = rels1.get(pos, MATCH if end51 <= pos <= end31 else NOCOV)
+        rel2 = rels2.get(pos, MATCH if end52 <= pos <= end32 else NOCOV)
+        rel = rel1 & rel2
+        if rel != MATCH:
+            if rel == NOCOV:
+                raise ValueError(f"Cannot merge two blanks at position {pos}")
+            merged[pos] = rel
+    return merged
 
 
 def find_rels_line(line1: str,
@@ -273,19 +288,18 @@ def find_rels_line(line1: str,
                    qmin: str,
                    ambrel: bool):
     read1 = SamRead(line1)
-    validate_read(read1, ref, min_mapq)
-    end5, end3, rels = find_rels_read(read1, refseq, qmin, ambrel)
+    _validate_read(read1, ref, min_mapq)
+    end5, end3, rels = _find_rels_read(read1, refseq, qmin, ambrel)
     if line2:
         read2 = SamRead(line2)
-        validate_read(read2, ref, min_mapq)
-        validate_pair(read1, read2)
-        end52, end32, rels2 = find_rels_read(read2, refseq, qmin, ambrel)
-        end5, mid5, mid3, end3 = merge_ends(end5, end3, end52, end32)
-        rels = merge_rels(rels, rels2)
+        _validate_read(read2, ref, min_mapq)
+        _validate_pair(read1, read2)
+        end52, end32, rels2 = _find_rels_read(read2, refseq, qmin, ambrel)
+        rels = _merge_rels(end5, end3, rels, end52, end32, rels2)
+        end5, mid5, mid3, end3 = _merge_ends(end5, end3, end52, end32)
     else:
         mid5, mid3 = end5, end3
     return read1.qname, end5, mid5, mid3, end3, rels
-
 
 ########################################################################
 #                                                                      #
