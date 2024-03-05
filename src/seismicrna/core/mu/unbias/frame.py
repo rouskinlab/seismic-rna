@@ -1,6 +1,6 @@
 import pandas as pd
 
-from .algo import calc_p_noclose_given_ends_numpy, calc_mu_adj_numpy, calc_prop_adj_numpy
+from .algo import calc_p_noclose_given_ends_numpy, calc_p_mut_p_ends_numpy, calc_prop_adj_numpy
 from ...seq import Section
 
 
@@ -65,7 +65,7 @@ def calc_mu_adj_frame(mu_obs: pd.DataFrame | pd.Series,
         Data frame of the adjusted mutation rates with the same index
         and columns as `mu_obs`.
     """
-    mu_adj = calc_mu_adj_numpy(_mus_to_matrix(mu_obs, section), min_gap)
+    mu_adj = calc_p_mut_p_ends_numpy(_mus_to_matrix(mu_obs, section), min_gap)
     if isinstance(mu_obs, pd.DataFrame):
         mu_adj_frame = pd.DataFrame(mu_adj, section.range, mu_obs.columns)
     elif isinstance(mu_obs, pd.Series):

@@ -7,7 +7,7 @@ import pandas as pd
 from .names import ADJ_NAME, OBS_NAME
 from .uniq import UniqReads
 from ..core.header import index_order_clusts
-from ..core.mu import calc_p_noclose_given_ends_numpy, calc_mu_adj_numpy, calc_prop_adj_numpy
+from ..core.mu import calc_p_noclose_given_ends_numpy, calc_p_mut_p_ends_numpy, calc_prop_adj_numpy
 
 logger = getLogger(__name__)
 
@@ -221,9 +221,9 @@ class EmClustering(object):
                            / self.nreads_obs)
         # Solve for the real mutation rates that are expected to yield
         # the observed mutation rates after considering read drop-out.
-        self.mus = calc_mu_adj_numpy(self.sparse_mus,
-                                     self.uniq_reads.min_mut_gap,
-                                     mus_guess)[self.unmasked]
+        self.mus = calc_p_mut_p_ends_numpy(self.sparse_mus,
+                                           self.uniq_reads.min_mut_gap,
+                                           mus_guess)[self.unmasked]
 
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """

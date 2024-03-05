@@ -5,7 +5,7 @@ import numpy as np
 
 from seismicrna.core.mu.unbias.algo import (_calc_p_noclose_given_ends,
                                             _calc_p_mut_given_span_noclose,
-                                            calc_mu_adj_numpy,
+                                            calc_p_mut_p_ends_numpy,
                                             calc_p_noclose_given_ends_numpy,
                                             _clip,
                                             logger as algo_logger)
@@ -495,7 +495,7 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
             for g in range(max_g + 1):
                 with self.subTest(k=k, g=g):
                     # Compute the adjusted mutation rates.
-                    mus_adj = calc_mu_adj_numpy(mus_obs, g)
+                    mus_adj = calc_p_mut_p_ends_numpy(mus_obs, g)
                     # Recompute the observed mutation rates.
                     mus_reobs = _calc_mu_obs(mus_adj, g)
                     # Compare observed and reobserved mutation rates.
@@ -520,12 +520,12 @@ class TestCalcMuAdjNumpy(ut.TestCase):
                     # Generate random observed mutation rates.
                     mus_obs = rng.random((n_pos, k)) * max_m
                     # Adjust all rates simultaneously.
-                    mus_adj_sim = calc_mu_adj_numpy(mus_obs, g)
+                    mus_adj_sim = calc_p_mut_p_ends_numpy(mus_obs, g)
                     # Adjust the rates of each cluster (i) separately.
                     mus_adj_sep = np.empty_like(mus_obs)
                     for i in range(k):
                         obs_i = mus_obs[:, i].reshape((n_pos, 1))
-                        adj_i = calc_mu_adj_numpy(obs_i, g).reshape(n_pos)
+                        adj_i = calc_p_mut_p_ends_numpy(obs_i, g).reshape(n_pos)
                         mus_adj_sep[:, i] = adj_i
                     # Compare the results.
                     self.assertTrue(np.allclose(mus_adj_sim, mus_adj_sep))
@@ -546,7 +546,7 @@ class TestCalcMuAdjNumpy(ut.TestCase):
                     # Compute the observed mutation rates.
                     mus_obs = _calc_mu_obs(mus, g)
                     # Adjust the observed mutation rates.
-                    mus_adj = calc_mu_adj_numpy(mus_obs, g)
+                    mus_adj = calc_p_mut_p_ends_numpy(mus_obs, g)
                     # Test if adjusted and initial mutation rates match.
                     self.assertTrue(np.allclose(mus_adj, mus))
 
