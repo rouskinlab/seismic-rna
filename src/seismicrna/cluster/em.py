@@ -7,7 +7,7 @@ import pandas as pd
 from .names import ADJ_NAME, OBS_NAME
 from .uniq import UniqReads
 from ..core.header import index_order_clusts
-from ..core.mu import calc_f_obs_numpy, calc_mu_adj_numpy, calc_prop_adj_numpy
+from ..core.mu import calc_p_noclose_given_ends_numpy, calc_mu_adj_numpy, calc_prop_adj_numpy
 
 logger = getLogger(__name__)
 
@@ -228,8 +228,8 @@ class EmClustering(object):
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
         # Update the log fraction observed of each cluster.
-        self.log_f_obs = np.log(calc_f_obs_numpy(self.sparse_mus,
-                                                 self.uniq_reads.min_mut_gap))
+        self.log_f_obs = np.log(calc_p_noclose_given_ends_numpy(self.sparse_mus,
+                                                                self.uniq_reads.min_mut_gap))
         # Compute the logs of the mutation and non-mutation rates.
         with np.errstate(divide="ignore"):
             # Suppress warnings about taking the log of zero, which is a

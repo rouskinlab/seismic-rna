@@ -1,31 +1,23 @@
-"""
-
-Tests for Mutation Rate Core Module
-
-========================================================================
-
-"""
-
 import unittest as ut
 from logging import Filter, LogRecord
 
 import numpy as np
 
-from seismicrna.core.mu.unbias.algo import (MAX_MU,
-                                            _calc_mu_obs,
+from seismicrna.core.mu.unbias.algo import (_calc_p_noclose_given_ends,
+                                            _calc_p_mut_given_span_noclose,
                                             calc_mu_adj_numpy,
-                                            calc_f_obs_numpy,
-                                            clip,
+                                            calc_p_noclose_given_ends_numpy,
+                                            _clip,
                                             logger as algo_logger)
 
 rng = np.random.default_rng()
 
 
-def has_close_muts(bitvec: np.ndarray, min_gap: int):
-    """ Return True if the bit vector has two mutations separated by
-    fewer than `min_gap` non-mutated bits, otherwise False. """
-    if bitvec.ndim != 1:
-        raise ValueError(f"bitvec must have 1 dimension, but got {bitvec.ndim}")
+def has_close_muts(read: np.ndarray, min_gap: int):
+    """ Return True if the read has two mutations separated by fewer
+    than `min_gap` non-mutated positions, otherwise False. """
+    if read.ndim != 1:
+        raise ValueError(f"read must have 1 dimension, but got {read.ndim}")
     if min_gap < 0:
         raise ValueError(f"min_gap must be ≥ 0, but got {min_gap}")
     if min_gap == 0:
@@ -36,7 +28,7 @@ def has_close_muts(bitvec: np.ndarray, min_gap: int):
     # (their distance) is < min_gap + 1, or ≤ min_gap. These distances
     # are computed as the differences (using np.diff) in the positions
     # of consecutive mutations (using np.flatnonzero).
-    dists = np.diff(np.flatnonzero(bitvec))
+    dists = np.diff(np.flatnonzero(read))
     return dists.size > 0 and np.min(dists) <= min_gap
 
 
@@ -56,7 +48,6 @@ def drop_close_muts(bitvecs: np.ndarray, min_gap: int):
 
 
 class TestHasCloseMuts(ut.TestCase):
-    """ Test function `has_close_muts`. """
 
     def test_no_muts(self):
         """ Test that a bit vector with no mutations returns False. """
@@ -118,7 +109,7 @@ class TestClip(ut.TestCase):
     """ Test function `mu.clip`. """
 
     def test_with_clip(self):
-        """ Test that values outside [0, MAX_MU] are clipped. """
+        """ Test that values outside [0, 1] are clipped. """
         n_pos = 64
         n_nan = 16
         min_scale = 1
@@ -130,7 +121,7 @@ class TestClip(ut.TestCase):
 
             def filter(self, rec: LogRecord):
                 """ Suppress warnings about invalid mutation rates. """
-                msg = f"Mutation rates outside [0, {MAX_MU}]"
+                msg = f"Mutation rates outside [0, 1]"
                 return not rec.msg.startswith(msg)
 
         for scale in range(min_scale, max_scale + 1):
@@ -148,107 +139,258 @@ class TestClip(ut.TestCase):
             algo_logger.addFilter(clip_filter := ClipFilter())
             try:
                 # Clip the mutation rates to the bounds.
-                clipped = clip(mus)
+                clipped = _clip(mus)
             finally:
                 # Re-enable the warnings for mu.clip().
                 algo_logger.removeFilter(clip_filter)
-            # Test that all clipped mutation rates are in [0, MAX_MU].
-            self.assertTrue(np.all(clipped >= 0.) and np.all(clipped <= MAX_MU))
+            # Test that all clipped mutation rates are in [0, 1].
+            self.assertTrue(np.all(clipped >= 0.) and np.all(clipped <= 1.))
             # Test that NaN values in mus become 0 values in clipped.
             self.assertEqual(np.count_nonzero(clipped[nan_indexes]), 0)
             self.assertFalse(np.any(np.isnan(clipped)))
             self.assertTrue(np.all(np.isnan(mus[nan_indexes])))
 
     def test_without_clip(self):
-        """ Test that values inside [0, MAX_MU] are not clipped. """
-        mus = rng.random(64, dtype=float) * MAX_MU
-        self.assertTrue(np.allclose(mus, clip(mus)))
+        """ Test that values inside [0, 1] are not clipped. """
+        mus = rng.random(64, dtype=float)
+        self.assertTrue(np.allclose(mus, _clip(mus)))
 
 
-class TestCalcFObsNumpy(ut.TestCase):
-    """ Test function `mu.calc_f_obs_numpy`. """
+class TestCalcPNoCloseGivenEnds(ut.TestCase):
 
-    @ut.skip("Takes a long time to run: burdensome while debugging other tests")
-    def test_obs_empirical(self):
+    def test_negative_min_gap(self):
+        for min_gap in range(-3, 0):
+            self.assertRaisesRegex(ValueError,
+                                   f"min_gap must be ≥ 0, but got {min_gap}",
+                                   _calc_p_noclose_given_ends,
+                                   rng.random((1, 1)),
+                                   min_gap)
+
+    def test_min_gap_0(self):
+        for npos in range(10):
+            with self.subTest(npos=npos):
+                d, w = _calc_p_noclose_given_ends(rng.random((npos, 1)), 0)
+                d_expect = np.ones((npos, npos, 1))
+                self.assertTrue(np.array_equal(d, d_expect))
+                w_expect = np.ones((1, npos + 1, 1))
+                self.assertTrue(np.array_equal(w, w_expect))
+
+    def test_length_0(self):
+        mu = np.zeros((0, 1))
+        for min_gap in range(4):
+            with self.subTest(min_gap=min_gap):
+                d, w = _calc_p_noclose_given_ends(mu, min_gap)
+                d_expect = np.ones((0, 0, 1))
+                self.assertTrue(np.array_equal(d, d_expect))
+                w_expect = np.ones((1, 1, 1))
+                self.assertTrue(np.array_equal(w, w_expect))
+
+    def test_length_1(self):
+        for x in [0., 0.01, 0.1, 1.]:
+            mu = np.array([[x]])
+            for min_gap in range(4):
+                with self.subTest(x=x, min_gap=min_gap):
+                    d, w = _calc_p_noclose_given_ends(mu, min_gap)
+                    d_expect = np.ones((1, 1, 1))
+                    self.assertTrue(np.array_equal(d, d_expect))
+                    w_expect = np.ones((1, 2, 1))
+                    self.assertTrue(np.array_equal(w, w_expect))
+
+    def _check_dw_1_cluster(self, d, w, d_expect, w_expect):
+        self.assertEqual(d.shape, d_expect.shape)
+        self.assertTrue(np.all(np.logical_or(np.isclose(d, d_expect),
+                                             np.isnan(d_expect))))
+        self.assertEqual(w.shape, w_expect.shape)
+        self.assertTrue(np.all(np.logical_or(np.isclose(w, w_expect),
+                                             np.isnan(w_expect))))
+
+    def test_length_2_min_gap_1(self):
+        mu = np.array([[0.1, 0.2]]).reshape((2, 1))
+        min_gap = 1
+        d_expect = np.array([
+            [1., 0.98],
+            [np.nan, 1.],
+        ]).reshape((2, 2, 1))
+        w_expect = np.array([
+            [1., 1., 1.],
+            [np.nan, 0.9, 0.8],
+        ]).reshape((2, 3, 1))
+        d, w = _calc_p_noclose_given_ends(mu, min_gap)
+        self._check_dw_1_cluster(d, w, d_expect, w_expect)
+
+    def test_length_3_min_gap_1(self):
+        mu = np.array([[0.1, 0.2, 0.3]]).reshape((3, 1))
+        min_gap = 1
+        d_expect = np.array([
+            [1., 0.98, 0.926],
+            [1., 1., 0.94],
+            [np.nan, 1., 1.],
+        ]).reshape((3, 3, 1))
+        w_expect = np.array([
+            [1., 1., 1., 1.],
+            [np.nan, 0.9, 0.8, 0.7],
+        ]).reshape((2, 4, 1))
+        d, w = _calc_p_noclose_given_ends(mu, min_gap)
+        self._check_dw_1_cluster(d, w, d_expect, w_expect)
+
+    def test_length_3_min_gap_2(self):
+        mu = np.array([[0.1, 0.2, 0.3]]).reshape((3, 1))
+        min_gap = 2
+        d_expect = np.array([
+            [1., 0.98, 0.902],
+            [1., 1., 0.94],
+            [1., 1., 1.],
+        ]).reshape((3, 3, 1))
+        w_expect = np.array([
+            [1., 1., 1., 1.],
+            [np.nan, 0.9, 0.8, 0.7],
+            [np.nan, np.nan, 0.72, 0.56],
+        ]).reshape((3, 4, 1))
+        d, w = _calc_p_noclose_given_ends(mu, min_gap)
+        self._check_dw_1_cluster(d, w, d_expect, w_expect)
+
+    def test_length_4_min_gap_1(self):
+        mu = np.array([[0.1, 0.2, 0.3, 0.4]]).reshape((4, 1))
+        min_gap = 1
+        d_expect = np.array([
+            [1., 0.98, 0.926, 0.83],
+            [1., 1., 0.94, 0.844],
+            [np.nan, 1., 1., 0.88],
+            [np.nan, np.nan, 1., 1.],
+        ]).reshape((4, 4, 1))
+        w_expect = np.array([
+            [1., 1., 1., 1., 1.],
+            [np.nan, 0.9, 0.8, 0.7, 0.6],
+        ]).reshape((2, 5, 1))
+        d, w = _calc_p_noclose_given_ends(mu, min_gap)
+        self._check_dw_1_cluster(d, w, d_expect, w_expect)
+
+    def test_length_4_min_gap_2(self):
+        mu = np.array([[0.1, 0.2, 0.3, 0.4]]).reshape((4, 1))
+        min_gap = 2
+        d_expect = np.array([
+            [1., 0.98, 0.902, 0.7652],
+            [1., 1., 0.94, 0.788],
+            [1., 1., 1., 0.88],
+            [np.nan, 1., 1., 1.],
+        ]).reshape((4, 4, 1))
+        w_expect = np.array([
+            [1., 1., 1., 1., 1.],
+            [np.nan, 0.9, 0.8, 0.7, 0.6],
+            [np.nan, np.nan, 0.72, 0.56, 0.42],
+        ]).reshape((3, 5, 1))
+        d, w = _calc_p_noclose_given_ends(mu, min_gap)
+        self._check_dw_1_cluster(d, w, d_expect, w_expect)
+
+    def test_length_4_min_gap_3(self):
+        mu = np.array([[0.1, 0.2, 0.3, 0.4]]).reshape((4, 1))
+        min_gap = 3
+        d_expect = np.array([
+            [1., 0.98, 0.902, 0.7428],
+            [1., 1., 0.94, 0.788],
+            [1., 1., 1., 0.88],
+            [1., 1., 1., 1.],
+        ]).reshape((4, 4, 1))
+        w_expect = np.array([
+            [1., 1., 1., 1., 1.],
+            [np.nan, 0.9, 0.8, 0.7, 0.6],
+            [np.nan, np.nan, 0.72, 0.56, 0.42],
+            [np.nan, np.nan, np.nan, 0.504, 0.336],
+        ]).reshape((4, 5, 1))
+        d, w = _calc_p_noclose_given_ends(mu, min_gap)
+        self._check_dw_1_cluster(d, w, d_expect, w_expect)
+
+    def test_clusters(self):
+        for ncls in range(4):
+            for npos in range(5):
+                for min_gap in range(npos):
+                    with self.subTest(npos=npos, ncls=ncls, min_gap=min_gap):
+                        mu = rng.random((npos, ncls))
+                        d, w = _calc_p_noclose_given_ends(mu, min_gap)
+                        self.assertEqual(d.shape, (npos, npos, ncls))
+                        self.assertEqual(w.shape, (min_gap + 1, npos + 1, ncls))
+                        for k in range(ncls):
+                            mu_k = mu[:, k].reshape((npos, 1))
+                            d_k, w_k = _calc_p_noclose_given_ends(mu_k, min_gap)
+                            self.assertEqual(d_k.shape,
+                                             (npos, npos, 1))
+                            self.assertEqual(w_k.shape,
+                                             (min_gap + 1, npos + 1, 1))
+                            self.assertTrue(np.allclose(np.triu(d[:, :, k]),
+                                                        np.triu(d_k[:, :, 0])))
+                            self.assertTrue(np.allclose(np.triu(w[:, :, k]),
+                                                        np.triu(w_k[:, :, 0])))
+
+
+class TestCalcPNoCloseGivenEndsNumPy(ut.TestCase):
+
+    # @ut.skip("Takes a long time to run: burdensome while debugging other tests")
+    def test_simulated(self):
         """ Test that this function accurately predicts the fraction of
         bit vectors without mutations that are too close. """
         n_pos = 16
         min_m, max_m = 0.01, 0.1
-        # Choose the number of vectors to simulate as follows:
-        # The number of bit vectors with mutations that are too close
-        # follows a binomial distribution, whose std. dev. is
-        # sqrt(p * (1 - p) * n).
-        # The proportion of bit vectors is the above divided by n:
+        # Choose the number of reads to simulate as follows:
+        # The number of reads with mutations that are too close follows
+        # a binomial distribution with std. dev. sqrt(p * (1 - p) * n).
+        # The proportion of reads is the above divided by n:
         # sqrt(p * (1 - p) / n).
         # Choosing a tolerance of 3 std. dev. around the mean yields
         # 3 * sqrt(p * (1 - p) / n) ≤ tol
-        # Solving for n (the number of vectors) gives
+        # Solving for n (the number of reads) gives
         # n ≥ p * (1 - p) / (tol / 3)^2 = p * (1 - p) * (2 / tol)^2
         nstdev = 3.  # number of standard deviations on each side
         tol = 5.e-4  # absolute tolerance for np.isclose
-        n_vec = round(max_m * (1. - max_m) * (nstdev / tol) ** 2)
+        n_reads = round(max_m * (1. - max_m) * (nstdev / tol) ** 2)
         # Choose random mutation rates.
         mus = min_m + rng.random(n_pos) * (max_m - min_m)
-        # Test each minimum gap between mutations (g).
-        for g in [0, 3, n_pos]:
-            with self.subTest(g=g):
-                # Generate random bit vectors with the expected mutation
-                # rates and determine how many have mutations too close.
-                n_close = sum(has_close_muts(np.less(rng.random(n_pos), mus), g)
-                              for _ in range(n_vec))
-                # Find the simulated observed fraction of bit vectors.
-                f_obs_sim = 1. - n_close / n_vec
-                # Predict the observed fraction.
-                f_obs_prd = calc_f_obs_numpy(mus, g)
+        # Generate random reads from the mutation rates.
+        reads = np.less(rng.random((n_reads, n_pos)), mus)
+        # Compute the mutation rates after simulating.
+        mus_sim = np.mean(reads, axis=0)
+        # Test each minimum gap between mutations (min_gap).
+        for min_gap in [0, 3, n_pos]:
+            with self.subTest(min_gap=min_gap):
+                # Determine how many reads have mutations too close.
+                n_close = sum(has_close_muts(reads[i], min_gap)
+                              for i in range(n_reads))
+                # Find the observed fraction of reads in the simulation.
+                p_noclose_simulation = 1. - n_close / n_reads
+                # Calculate the theoretical observed fraction.
+                p_noclose_theory = calc_p_noclose_given_ends_numpy(mus_sim,
+                                                                   min_gap)
                 # Compare the empirical and predicted mutation rates.
-                self.assertTrue(np.isclose(f_obs_sim, f_obs_prd,
-                                           atol=tol, rtol=0.))
-
-    def test_f_multiplex(self):
-        """ Test that running 1 - 5 clusters simultaneously produces the
-        same results as running each cluster separately. """
-        n_pos = 16
-        max_k = 5
-        max_g = 4
-        max_m = 0.2
-        # Test each number of clusters (k).
-        for k in range(max_k + 1):
-            # Test each minimum gap between mutations (g).
-            for g in range(max_g + 1):
-                with self.subTest(k=k, g=g):
-                    # Generate random real mutation rates.
-                    mus = rng.random((n_pos, k)) * max_m
-                    # Compute the observed fractions simultaneously.
-                    f_obs_sim = calc_f_obs_numpy(mus, g)
-                    # Compute the fractions separately.
-                    f_obs_sep = np.empty_like(f_obs_sim)
-                    for i in range(k):
-                        f_obs_sep[i] = calc_f_obs_numpy(mus[:, i], g)
-                    # Compare the results.
-                    self.assertTrue(np.allclose(f_obs_sim, f_obs_sep))
+                self.assertTrue(np.isclose(p_noclose_simulation,
+                                           p_noclose_theory[0, -1],
+                                           atol=tol,
+                                           rtol=0.))
 
     def test_1_dim(self):
-        """ Test that giving a 1D array returns a float. """
+        """ Test that giving a 1D array returns a 2D array. """
         max_n = 5
         max_g = 4
         for n_pos in range(max_n + 1):
             for gap in range(max_g + 1):
-                self.assertIsInstance(calc_f_obs_numpy(np.zeros((n_pos,)), gap),
-                                      float)
+                p_noclose_given_ends = calc_p_noclose_given_ends_numpy(
+                    rng.random(n_pos), gap
+                )
+                self.assertIsInstance(p_noclose_given_ends, np.ndarray)
+                self.assertEqual(p_noclose_given_ends.shape, (n_pos, n_pos))
 
     def test_2_dim(self):
-        """ Test that giving a 2D array returns a 1D array with a value
-        for each cluster. """
+        """ Test that giving a 2D array returns a 3D array. """
         max_n = 5
         max_c = 5
         max_g = 4
         for n_pos in range(max_n + 1):
             for n_clust in range(max_c + 1):
                 for gap in range(max_g + 1):
-                    f_obs = calc_f_obs_numpy(np.zeros((n_pos, n_clust)), gap)
-                    self.assertIsInstance(f_obs, np.ndarray)
-                    self.assertEqual(f_obs.ndim, 1)
-                    self.assertEqual(f_obs.shape, (n_clust,))
+                    p_noclose_given_ends = calc_p_noclose_given_ends_numpy(
+                        rng.random((n_pos, n_clust)), gap
+                    )
+                    self.assertIsInstance(p_noclose_given_ends, np.ndarray)
+                    self.assertEqual(p_noclose_given_ends.shape,
+                                     (n_pos, n_pos, n_clust))
 
     def test_invalid_dim(self):
         """ Test that other dimensionalities raise an error. """
@@ -256,57 +398,63 @@ class TestCalcFObsNumpy(ut.TestCase):
             if n_dim == 1 or n_dim == 2:
                 # Skip the dimensions that are valid.
                 continue
-            err_msg = f"Expected 1 or 2 dimensions, but got {n_dim}"
+            err_msg = ("Expected p_mut_given_span to have 1 or 2 dimensions, "
+                       f"but got {n_dim}")
             for size in range(5):
                 dims = (size,) * n_dim
                 for gap in range(5):
-                    self.assertRaisesRegex(ValueError, err_msg,
-                                           calc_f_obs_numpy,
-                                           np.zeros(dims), gap)
+                    self.assertRaisesRegex(ValueError,
+                                           err_msg,
+                                           calc_p_noclose_given_ends_numpy,
+                                           rng.random(dims),
+                                           gap)
 
 
-class TestCalcMuObs(ut.TestCase):
-    """ Test function `mu._calc_mu_obs`. """
+class TestCalcPMutGivenSpanNoClose(ut.TestCase):
 
-    @ut.skip("Takes a long time to run: burdensome while debugging other tests")
-    def test_obs_empirical(self):
-        """ Test that this function accurately predicts the mutation
-        rates that are actually observed when simulated bit vectors are
-        filtered to remove mutations that are too close. """
+    # @ut.skip("Takes a long time to run: burdensome while debugging other tests")
+    def test_simulated(self):
         n_pos = 10
         min_m, max_m = 0.01, 0.1
-        # Choose the number of vectors to simulate as follows:
-        # The number of mutations at each position in the simulated bit
-        # vectors follows a binomial distribution, whose std. dev. is
-        # sqrt(p * (1 - p) * n).
-        # The proportion of mutations is the above divided by n:
+        # Choose the number of reads to simulate as follows:
+        # The number of reads with mutations that are too close follows
+        # a binomial distribution with std. dev. sqrt(p * (1 - p) * n).
+        # The proportion of reads is the above divided by n:
         # sqrt(p * (1 - p) / n).
         # Choosing a tolerance of 3 std. dev. around the mean yields
         # 3 * sqrt(p * (1 - p) / n) ≤ tol
-        # Solving for n (the number of vectors) gives
+        # Solving for n (the number of reads) gives
         # n ≥ p * (1 - p) / (tol / 3)^2 = p * (1 - p) * (2 / tol)^2
         nstdev = 3.  # number of standard deviations on each side
-        tol = 5.e-4  # absolute tolerance for np.allclose
-        n_vec = round(max_m * (1. - max_m) * (nstdev / tol) ** 2)
+        tol = 5.e-4  # absolute tolerance for np.isclose
+        n_reads = round(max_m * (1. - max_m) * (nstdev / tol) ** 2)
         # Generate random real mutation rates.
         mus = min_m + rng.random(n_pos) * (max_m - min_m)
-        # Generate random bit vectors with the expected mutation rates.
-        bvecs = None
-        while bvecs is None or not np.allclose(np.mean(bvecs, axis=0), mus,
-                                               atol=tol, rtol=0.):
-            bvecs = np.less(rng.random((n_vec, n_pos)), mus)
-        # Test each minimum gap between mutations (g).
-        for g in [0, 3, n_pos]:
-            with self.subTest(g=g):
-                # Drop bit vectors with mutations too close.
-                bvecs_g = drop_close_muts(bvecs, g)
-                # Compute the empirically observed mutation rates.
-                mus_obs_emp = np.mean(bvecs_g, axis=0)
-                # Predict the observed mutation rates with calc_mu_obs.
-                mus_obs_prd = _calc_mu_obs(mus.reshape((-1, 1)), g).reshape(-1)
+        # Generate random reads from the mutation rates.
+        reads = np.less(rng.random((n_reads, n_pos)), mus)
+        # Compute the mutation rates after simulating.
+        mus_sim = np.mean(reads, axis=0).reshape((-1, 1))
+        # Assume every read is full length.
+        p_ends = np.zeros((n_pos, n_pos))
+        p_ends[0, -1] = 1.
+        # Test each minimum gap between mutations (min_gap).
+        for min_gap in [0, 3, n_pos]:
+            with self.subTest(min_gap=min_gap):
+                # Drop reads with mutations too close.
+                reads_gap = drop_close_muts(reads, min_gap)
+                # Compute the mutation rates given no close mutations.
+                mus_noclose = np.mean(reads_gap, axis=0)
+                # Calculate the theoretical observed mutation rates.
+                mus_theory = _calc_p_mut_given_span_noclose(
+                    mus_sim,
+                    p_ends,
+                    *_calc_p_noclose_given_ends(mus_sim, min_gap)
+                ).reshape(-1)
                 # Compare the empirical and predicted mutation rates.
-                self.assertTrue(np.allclose(mus_obs_emp, mus_obs_prd,
-                                            atol=tol, rtol=0.))
+                self.assertTrue(np.allclose(mus_noclose,
+                                            mus_theory,
+                                            atol=tol,
+                                            rtol=0.))
 
     def test_mu_multiplex(self):
         """ Test that running 1 - 5 clusters simultaneously produces the

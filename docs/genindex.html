@@ -3069,8 +3069,6 @@
 </li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.relate.find_rels_line">find_rels_line() (in module seismicrna.relate.py.relate)</a>
 </li>
-      <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.relate.find_rels_read">find_rels_read() (in module seismicrna.relate.py.relate)</a>
-</li>
       <li><a href="api/seismicrna.core.rna.html#seismicrna.core.rna.pair.find_root_pairs">find_root_pairs() (in module seismicrna.core.rna.pair)</a>
 </li>
       <li><a href="api/seismicrna.table.html#seismicrna.table.load.find_tables">find_tables() (in module seismicrna.table.load)</a>
@@ -4204,13 +4202,9 @@
         <li><a href="api/seismicrna.core.batch.html#seismicrna.core.batch.read.ReadBatch.max_read">(seismicrna.core.batch.read.ReadBatch property)</a>
 </li>
       </ul></li>
-      <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.relate.merge_ends">merge_ends() (in module seismicrna.relate.py.relate)</a>
-</li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.write.merge_nondemult_fqs">merge_nondemult_fqs() (in module seismicrna.align.write)</a>
 </li>
       <li><a href="api/seismicrna.core.arg.html#seismicrna.core.arg.cli.merge_params">merge_params() (in module seismicrna.core.arg.cli)</a>
-</li>
-      <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.relate.merge_rels">merge_rels() (in module seismicrna.relate.py.relate)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.data.MergedDataset">MergedDataset (class in seismicrna.core.data)</a>
 </li>
@@ -8851,6 +8845,10 @@
         <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.xna_test.TestRNA.test_bool">(seismicrna.core.seq.tests.xna_test.TestRNA method)</a>
 </li>
       </ul></li>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestMergeRels.test_both_blank">test_both_blank() (seismicrna.relate.py.tests.relate_test.TestMergeRels method)</a>
+</li>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestMergeRels.test_both_reads">test_both_reads() (seismicrna.relate.py.tests.relate_test.TestMergeRels method)</a>
+</li>
       <li><a href="api/seismicrna.relate.aux.tests.html#seismicrna.relate.aux.tests.iterrel_test.TestIterRelvecsQ53.test_c">test_c() (seismicrna.relate.aux.tests.iterrel_test.TestIterRelvecsQ53 method)</a>
 </li>
       <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.cigar_test.TestParseCigar.test_cigar_align_valid">test_cigar_align_valid() (seismicrna.relate.py.tests.cigar_test.TestParseCigar method)</a>
@@ -9017,6 +9015,8 @@
         <li><a href="api/seismicrna.core.mu.tests.html#seismicrna.core.mu.tests.nan_test.TestRemovesNaNs.test_empty">(seismicrna.core.mu.tests.nan_test.TestRemovesNaNs method)</a>
 </li>
         <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.section_test.TestGetWindows.test_empty">(seismicrna.core.seq.tests.section_test.TestGetWindows method)</a>
+</li>
+        <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestMergeRels.test_empty">(seismicrna.relate.py.tests.relate_test.TestMergeRels method)</a>
 </li>
       </ul></li>
       <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.section_test.TestIntersect.test_empty_invalid">test_empty_invalid() (seismicrna.core.seq.tests.section_test.TestIntersect method)</a>
@@ -9560,6 +9560,10 @@
       <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.section_test.TestSectionRange.test_range_int">test_range_int() (seismicrna.core.seq.tests.section_test.TestSectionRange method)</a>
 </li>
       <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.section_test.TestSectionRange.test_range_one">test_range_one() (seismicrna.core.seq.tests.section_test.TestSectionRange method)</a>
+</li>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestMergeRels.test_read1">test_read1() (seismicrna.relate.py.tests.relate_test.TestMergeRels method)</a>
+</li>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestMergeRels.test_read2">test_read2() (seismicrna.relate.py.tests.relate_test.TestMergeRels method)</a>
 </li>
       <li><a href="api/seismicrna.core.mu.tests.html#seismicrna.core.mu.tests.frame_test.TestAutoReframe.test_reduce_0">test_reduce_0() (seismicrna.core.mu.tests.frame_test.TestAutoReframe method)</a>
 </li>
@@ -10117,6 +10121,8 @@
 </li>
       <li><a href="api/seismicrna.core.io.tests.html#seismicrna.core.io.tests.file_test.TestMakeTempBackup">TestMakeTempBackup (class in seismicrna.core.io.tests.file_test)</a>
 </li>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestMergeRels">TestMergeRels (class in seismicrna.relate.py.tests.relate_test)</a>
+</li>
       <li><a href="api/seismicrna.core.mu.tests.html#seismicrna.core.mu.tests.nan_test.TestNoNaN">TestNoNaN (class in seismicrna.core.mu.tests.nan_test)</a>
 </li>
       <li><a href="api/seismicrna.core.mu.tests.html#seismicrna.core.mu.tests.scale_test.TestNormalize">TestNormalize (class in seismicrna.core.mu.tests.scale_test)</a>
@@ -10347,16 +10353,10 @@
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.header.validate_order_clust">validate_order_clust() (in module seismicrna.core.header)</a>
 </li>
-      <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.relate.validate_pair">validate_pair() (in module seismicrna.relate.py.relate)</a>
-</li>
-      <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.relate.validate_read">validate_read() (in module seismicrna.relate.py.relate)</a>
-</li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.path.validate_str">validate_str() (in module seismicrna.core.path)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.path.validate_top">validate_top() (in module seismicrna.core.path)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.aucroll.RollingAUCRunner.var_params">var_params() (seismicrna.graph.aucroll.RollingAUCRunner class method)</a>
 
       <ul>
@@ -10371,6 +10371,8 @@
         <li><a href="api/seismicrna.graph.html#seismicrna.graph.twotable.TwoTableRunner.var_params">(seismicrna.graph.twotable.TwoTableRunner class method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.seq.html#seismicrna.core.seq.section.verify_index_names">verify_index_names() (in module seismicrna.core.seq.section)</a>
 </li>
       <li><a href="api/seismicrna.core.ngs.html#seismicrna.core.ngs.xam.view_xam_cmd">view_xam_cmd() (in module seismicrna.core.ngs.xam)</a>

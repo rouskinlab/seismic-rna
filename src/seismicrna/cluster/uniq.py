@@ -122,20 +122,15 @@ class UniqReads(object):
         return f"{type(self).__name__} of {self.sample} over {self.section}"
 
 
-def uniq_reads_to_mutations(uniq_reads: Iterable[tuple],
+def uniq_reads_to_mutations(uniq_reads: Iterable[tuple[tuple, tuple]],
                             pos_nums: Iterable[int]):
     """ Map each position to the numbers of the unique reads that are
     mutated at the position. """
     mutations = defaultdict(list)
-    for uniq_read_num, read_muts_pos in enumerate(uniq_reads):
+    for uniq_read_num, (read_ends, read_muts_pos) in enumerate(uniq_reads):
         for pos in read_muts_pos:
             mutations[pos].append(uniq_read_num)
     return [np.array(mutations[pos], dtype=int) for pos in pos_nums]
-
-
-def count_uniq_reads(uniq_read_nums: Iterable[list]):
-    """ Count the occurrances of each unique value in the original. """
-    return np.array(list(map(len, uniq_read_nums)))
 
 
 def batch_to_uniq_read_num(read_nums_per_batch: list[np.ndarray],
@@ -156,6 +151,11 @@ def batch_to_uniq_read_num(read_nums_per_batch: list[np.ndarray],
     return batch_to_uniq
 
 
+def count_uniq_reads(uniq_read_nums: Iterable[list]):
+    """ Count the occurrances of each unique value in the original. """
+    return np.array(list(map(len, uniq_read_nums)))
+
+
 def get_uniq_reads(pos_nums: Iterable[int],
                    pattern: RelPattern,
                    batches: Iterable[RefseqMutsBatch]):
@@ -164,10 +164,11 @@ def get_uniq_reads(pos_nums: Iterable[int],
     for batch_num, batch in enumerate(batches):
         if batch.batch != batch_num:
             raise ValueError(
-                f"Batch {batch} is not in order (expected {batch_num})")
+                f"Batch {batch} is not in order (expected {batch_num})"
+            )
         read_nums_per_batch.append(batch.read_nums)
-        for read_num, (e, m) in batch.iter_reads(pattern):
-            uniq_reads[m].append((batch_num, read_num))
+        for read_num, read_key in batch.iter_reads(pattern):
+            uniq_reads[read_key].append((batch_num, read_num))
     muts_per_pos = uniq_reads_to_mutations(uniq_reads, pos_nums)
     batch_to_uniq = batch_to_uniq_read_num(read_nums_per_batch,
                                            uniq_reads.values())

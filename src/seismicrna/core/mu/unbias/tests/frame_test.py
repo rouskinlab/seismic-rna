@@ -3,7 +3,7 @@ import unittest as ut
 import numpy as np
 import pandas as pd
 
-from seismicrna.core.mu import (calc_f_obs_numpy,
+from seismicrna.core.mu import (calc_p_noclose_given_ends_numpy,
                                 calc_mu_adj_numpy,
                                 calc_f_obs_frame,
                                 calc_mu_adj_frame)
@@ -59,7 +59,7 @@ class TestCalcDataFrame(ut.TestCase):
                         # Run calc_f_obs_df.
                         f_obs_df = calc_f_obs_frame(mus_adj_df, section, gap)
                         # Run calc_f_obs_numpy.
-                        f_obs_np = calc_f_obs_numpy(mus_adj_np, gap)
+                        f_obs_np = calc_p_noclose_given_ends_numpy(mus_adj_np, gap)
                         # Compare the results.
                         self.assertIsInstance(f_obs_df, pd.Series)
                         self.assertTrue(np.allclose(f_obs_df.values,
@@ -112,7 +112,7 @@ class TestCalcSeries(ut.TestCase):
                                                     section,
                                                     gap)
                     # Run calc_f_obs_numpy.
-                    f_obs_np = calc_f_obs_numpy(mus_adj_np, gap)
+                    f_obs_np = calc_p_noclose_given_ends_numpy(mus_adj_np, gap)
                     # Compare the results.
                     self.assertIsInstance(f_obs_series, float)
                     self.assertIsInstance(f_obs_np, float)

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from .algo import calc_f_obs_numpy, calc_mu_adj_numpy, calc_prop_adj_numpy
+from .algo import calc_p_noclose_given_ends_numpy, calc_mu_adj_numpy, calc_prop_adj_numpy
 from ...seq import Section
 
 
@@ -33,7 +33,7 @@ def calc_f_obs_frame(mu_adj: pd.DataFrame | pd.Series,
         For each cluster, the fraction of all bit vectors coming from
         that cluster that would be observed.
     """
-    f_obs = calc_f_obs_numpy(_mus_to_matrix(mu_adj, section), min_gap)
+    f_obs = calc_p_noclose_given_ends_numpy(_mus_to_matrix(mu_adj, section), min_gap)
     if isinstance(mu_adj, pd.DataFrame):
         return pd.Series(f_obs, index=mu_adj.columns)
     elif isinstance(mu_adj, pd.Series):

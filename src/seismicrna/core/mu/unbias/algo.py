@@ -81,12 +81,8 @@ import numpy as np
 
 logger = getLogger(__name__)
 
-# Maximum allowed mutation rate.
-EPSILON = 1.e-6
-MAX_MU = 1. - EPSILON
 
-
-def clip(mus: np.ndarray):
+def _clip(mus: np.ndarray):
     """ Check if any mutation rates are < 0, ≥ 1, or NaN. If so, then
     fill any NaN values with 0 and clip all values to [0, 1). """
     if mus.size == 0:
@@ -94,192 +90,265 @@ def clip(mus: np.ndarray):
         return mus
     mu_min = np.min(mus)
     mu_max = np.max(mus)
-    if mu_min < 0. or mu_max > MAX_MU or np.isnan(mu_min) or np.isnan(mu_max):
-        clipped = np.clip(np.nan_to_num(mus), 0., MAX_MU)
-        logger.warning(f"Mutation rates outside [0, {MAX_MU}]:\n"
+    if mu_min < 0. or mu_max > 1. or np.isnan(mu_min) or np.isnan(mu_max):
+        clipped = np.clip(np.nan_to_num(mus), 0., 1.)
+        logger.warning(f"Mutation rates outside [0, 1]:\n"
                        f"{mus[np.nonzero(mus != clipped)]}")
         return clipped
     return mus
 
 
-def _calc_obs(mu_adj: np.ndarray, min_gap: int):
-    """ Calculate the probability that a bit vector generated randomly
-    from the given mutation rates would not have any mutations closer
-    than `min_gap`. Note that `mus` is transposed relative
-    to all other uses, so that its shape is (positions x clusters).
-    Transposition makes the indexing easier because this function uses
-    the positions as the primary axis and clusters as secondary.
+def _calc_p_noclose_given_ends(p_mut_given_span: np.ndarray, min_gap: int):
+    """ Given underlying mutation rates (`p_mut_given_span`), calculate
+    the probability that a read starting at position (a) and ending at
+    position (b) would have no two mutations too close (i.e. separated
+    by fewer than `min_gap` non-mutated positions), for each combination
+    of (a) and (b) such that 1 ≤ a ≤ b ≤ L (in biological coordinates)
+    or 0 ≤ a ≤ b < L (in Python coordinates).
 
     Parameters
     ----------
-    mu_adj: ndarray
-        A (positions x clusters) array of the adjusted mutation rates,
-        i.e. corrected for the observer bias.
+    p_mut_given_span: ndarray
+        A 2D (positions x clusters) array of the underlying mutation
+        rates, i.e. the probability that a read has a mutation at
+        position (j) given that it contains position (j).
     min_gap: int
         Minimum number of non-mutated bases between two mutations;
         must be ≥ 0.
 
     Returns
     -------
-    tuple[ndarray, ndarray]
-        - A 1D array of the probability for each cluster that, given the
-          real mutation rates for each position in each cluster, a
-          randomly generated bit vector coming from the cluster would
-          have no two mutations closer than `min_gap` positions.
-        - A 2D (positions x clusters) array of the mutation rates that
-          would be observed given the real mutation rates and the
-          minimum gap between two mutations.
+    tuple[np.ndarray, np.ndarray]
+    - A 3D (positions x positions x clusters) array of the probability
+      that a random read starting at position (a) (row) and ending at
+      position (b) (column) would have no two mutations too close.
+    - A 3D (window x positions x clusters) array of the probability that
+      (window) consecutive bases, ending at position (position), would
+      have zero mutations at all.
     """
+    # Find and validate the dimensions.
     if min_gap < 0:
         raise ValueError(f"min_gap must be ≥ 0, but got {min_gap}")
-    # Determine the number of positions and clusters.
-    dims = mu_adj.shape
-    npos, ncls = dims
-    # The number of non-mutated bases next to a mutated base cannot
-    # exceed the total number of positions minus one.
+    npos, ncls = p_mut_given_span.shape
     if min_gap >= npos:
-        min_gap = npos - 1
-    if min_gap == 0 or npos == 0 or ncls == 0:
-        # No mutations can be too close, so all observed probabilities
-        # are 1.0 and the observed mutation rates equal the real rates.
-        return np.ones(ncls), mu_adj.copy()
-    # Compute the adjusted non-mutation rates (nu = 1 - mu).
-    nu_adj = 1. - mu_adj
-    # Verify that all positions mutate with probabilty < 1.
-    if np.count_nonzero(nu_adj) < nu_adj.size:
-        raise ValueError(f"Got mutation rates of 1.0 in {mu_adj}")
-    # Compute the cumulative sums of the log non-mutation rates.
-    # Sum logarithms instead of multiply for better numerical stability.
-    # The cumulative sums are split into three sections:
-    end1begin2 = 1 + min_gap
-    end2begin3 = end1begin2 + npos
-    # - log_nu_cumsum[0: 1 + min_gap]
-    #   all 0.0
-    log_nu_cumsum = np.zeros((end2begin3 + min_gap, ncls), dtype=float)
-    # - log_nu_cumsum[1 + min_gap: 1 + min_gap + npos]
-    #   cumulative sums of log non-mutation rates
-    log_nu_cumsum[end1begin2: end2begin3] = np.cumsum(np.log(nu_adj), axis=0)
-    # - log_nu_cumsum[1 + min_gap + npos: 1 + min_gap + npos + min_gap]
-    #   all equal to final cumulative sum, log_nu_cumsum[min_gap + npos]
-    log_nu_cumsum[end2begin3:] = log_nu_cumsum[end2begin3 - 1]
-    # For each window of (min_gap) positions, find the probability that
-    # the window has no mutations, assuming mutations are independent.
-    # The log probability is the sum over the window, which equals the
-    # cumulative sum at the end of the window minus the cumulative sum
-    # one index before the beginning of the window. Then apply np.exp().
-    # The dimensions of nu_win are (1 + npos + min_gap, ncls).
-    nu_win = np.exp(log_nu_cumsum[min_gap:] - log_nu_cumsum[: end2begin3])
-    # For each position (j) in the sequence, calculate the probability
-    # f_obs[j] that no two mutations are too close, given that no two
-    # mutations after position (j) are too close.
-    # Equivalently, it is the probability that no two mutations from the
-    # beginning of the sequence up to position (j) are too close:
-    # If position (j) is mutated, then no two mutations up to (j) are
-    # too close iff none of the previous (min_gap) positions are mutated
-    # (P = pj_qwin[j]) and no two mutations before that window are too
-    # close (P = f_obs[j - (1 + min_gap)]).
-    # If position (j) is not mutated (P = nu_adj[j]), then no two
-    # mutations from the beginning up to (j) are too close iff no two
-    # mutations up to (j - 1) are too close (P = f_obs[j - 1]).
-    # Combining these two situations gives this recurrence relation:
-    # f_obs[j] = (pj_qwin[j] * f_obs[j - (1 + min_gap)]
-    #                + nu_adj[j] * f_obs[j - 1])
-    # The initial condition is f_obs[0] = 1.0 because there are
-    # certainly no two mutations that are too close within the first
-    # one position in the sequence.
-    f_obs_prev = np.ones(dims, dtype=float)
-    f_obs_next = np.ones(dims, dtype=float)
-    # Keep track of the probabilities that none of the (min_gap) bases
-    # preceding (following) base (j) are mutated and that there are no
-    # mutations within (min_gap) positions before (after) those bases.
-    f_obs_win_prev = np.ones(dims, dtype=float)
-    f_obs_win_next = np.ones(dims, dtype=float)
-    # This recurrence relation has no simple closed-form solution, and
-    # likely no closed-form solution at all, so compute it iteratively:
-    for jp in range(1, npos):
-        # Probability that none of the preceding (min_gap) bases are
-        # mutated and no mutations before them are too close.
-        f_obs_win_prev[jp] = (nu_win[jp] *
-                              f_obs_prev[(jp - end1begin2) % npos])
-        # Probability that no two mutations from the beginning to (jp)
+        # The number of non-mutated bases next to a mutated base cannot
+        # exceed the total number of positions minus one.
+        min_gap = max(npos - 1, 0)
+    inc_gap = min_gap + 1
+    if min_gap == 0:
+        # The code below will break if min_gap == 0, so return here.
+        return np.ones((npos, npos, ncls)), np.ones((inc_gap, npos + 1, ncls))
+    # Compute product of the non-mutation rates over each window ranging
+    # in size from 0 to min_gap; element [g, j, k] is the product of all
+    # non-mutation rates from position (j - g) to (j - 1) for cluster k.
+    p_nomut_window = np.empty((inc_gap, npos + 1, ncls))
+    # For window size 0, every window represents 0 positions, so the
+    # product over the window is the multiplicative identity element: 1.
+    p_nomut_window[0] = 1.
+    # For window size 1, every window represents exactly 1 position, so
+    # the product over the window is just the non-mutation rate of the
+    # corresponding position.
+    p_nomut_window[1, 1:] = 1. - p_mut_given_span
+    # For each window size from 2 to min_gap, calculate the probability
+    # of there being no mutations in each window of that size.
+    for size in range(2, p_nomut_window.shape[0]):
+        shift = size - 1
+        p_nomut_window[size, size:] = (p_nomut_window[1, size:]
+                                       * p_nomut_window[shift, shift: -1])
+    # For each pair of positions (i, j), find the probability that a
+    # random bit vector from (i) to (j), inclusive, would have no two
+    # mutations closer than min_gap positions: p_noclose_given_ends[i, j].
+    p_noclose_given_ends = np.empty((npos, npos, ncls))
+    # First, fill the main diagonal and (min_gap) sub-diagonals with 1
+    # because length-1 reads cannot have two mutations too close.
+    diag_indexes = np.arange(npos)
+    p_noclose_given_ends[diag_indexes, diag_indexes] = 1.
+    for size in range(1, inc_gap):
+        p_noclose_given_ends[diag_indexes[size:], diag_indexes[:-size]] = 1.
+    # The probabilities follow a recurrence relation that is assumed to
+    # have no closed-form solution but can be computed via a loop that
+    # fills p_noclose_given_ends one column (j) at a time.
+    window_indexes = np.minimum(np.arange(npos, 0, -1), min_gap)
+    for j in range(1, npos):
+        # If position (j) is mutated (probability = p_mut_given_pos[j]),
+        # then no two mutations from (i) to (j) are too close iff none
+        # of the previous (min_gap) positions, i.e. (j - min_gap) to
+        # (j - 1), are mutated (probability = p_nomut_window[j]); and if
+        # no two mutations from (i) to (j - (min_gap + 1)) are too close
+        # (probability = p_noclose_given_ends[i, j - (min_gap + 1)]).
+        p_noclose_given_ends_mutj = (
+                p_nomut_window[window_indexes[(npos - j):], j]
+                * p_noclose_given_ends[:j, max(j - inc_gap, 0)]
+        )
+        # Otherwise, no two mutations from (i) to (j) are too close iff
+        # the same is true from positions (i) to (j - 1) (probability
+        # = p_noclose_given_ends[i, j - 1]).
+        p_noclose_given_ends_nomutj = p_noclose_given_ends[:j, j - 1]
+        # The probability that no two mutations from (i) to (j) are too
+        # close is the weighted sum of these mutually exclusive events.
+        p_noclose_given_ends[:j, j] = (
+                p_noclose_given_ends_mutj * p_mut_given_span[j]
+                + p_noclose_given_ends_nomutj * p_nomut_window[1, j + 1]
+        )
+    return p_noclose_given_ends, p_nomut_window
+
+
+def calc_p_noclose_given_ends_numpy(p_mut_given_span: np.ndarray, min_gap: int):
+    """ Given underlying mutation rates (`p_mut_given_span`), calculate
+    the probability that a read starting at position (a) and ending at
+    position (b) would have no two mutations too close (i.e. separated
+    by fewer than `min_gap` non-mutated positions), for each combination
+    of (a) and (b) such that 1 ≤ a ≤ b ≤ L (in biological coordinates)
+    or 0 ≤ a ≤ b < L (in Python coordinates).
+
+    Parameters
+    ----------
+    p_mut_given_span: ndarray
+        A 2D (positions x clusters) array of the underlying mutation
+        rates, i.e. the probability that a read has a mutation at
+        position (j) given that it contains position (j).
+    min_gap: int
+        Minimum number of non-mutated bases between two mutations;
+        must be ≥ 0.
+
+    Returns
+    -------
+    np.ndarray
+        A 3D (positions x positions x clusters) array of the probability
+        that a random read starting at position (a) (row) and ending at
+        position (b) (column) would have no two mutations too close.
+    """
+    if p_mut_given_span.ndim == 2:
+        return _calc_p_noclose_given_ends(_clip(p_mut_given_span), min_gap)[0]
+    if p_mut_given_span.ndim == 1:
+        return calc_p_noclose_given_ends_numpy(
+            p_mut_given_span.reshape((-1, 1)), min_gap
+        ).reshape((p_mut_given_span.size, p_mut_given_span.size))
+    raise ValueError("Expected p_mut_given_span to have 1 or 2 dimensions, "
+                     f"but got {p_mut_given_span.ndim}")
+
+
+def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
+                                   p_ends: np.ndarray,
+                                   p_noclose_given_ends: np.ndarray,
+                                   p_nomut_window: np.ndarray):
+    # Find and validate the dimensions.
+    npos, ncls = p_mut_given_span.shape
+    if p_ends.shape != (npos, npos):
+        raise ValueError(f"Expected p_ends to be shaped ({npos, npos}), "
+                         f"but got {p_ends.shape}")
+    if p_noclose_given_ends.shape != (npos, npos, ncls):
+        raise ValueError(
+            f"Expected p_noclose_given_ends to be shaped {npos, npos, ncls}, "
+            f"but got {p_noclose_given_ends.shape}"
+        )
+    inc_gap = p_nomut_window.shape[0]
+    if p_nomut_window.shape != (inc_gap, npos + 1, ncls):
+        raise ValueError(
+            f"Expected p_nomut_window to be shaped {inc_gap, npos + 1, ncls}, "
+            f"but got {p_nomut_window.shape}"
+        )
+    min_gap = inc_gap - 1
+    if min_gap < 0:
+        raise ValueError(f"min_gap must be ≥ 0, but got {min_gap}")
+    if min_gap == 0:
+        # If min_gap == 0, then no mutations can be too close, so return
+        # the original mutation rates.
+        return p_mut_given_span
+    # Cache the sum of each row and column of the probabilities that no
+    # two mutations are too close, weighted by the end distributions.
+    p_noclose_and_ends_rows = np.empty_like(p_mut_given_span)
+    p_noclose_and_ends_rows[-1] = 0.
+    p_noclose_and_ends_cols = np.empty_like(p_mut_given_span)
+    p_noclose_and_ends_cols[-1] = 0.
+    for j in range(npos):
+        j_prev = j - 1
+        p_noclose_and_ends_rows[j] = (
+                p_ends[j, j:] @ p_noclose_given_ends[j, j:]
+                + p_noclose_and_ends_rows[j_prev]
+        )
+        p_noclose_and_ends_cols[j] = (
+                p_ends[:j, j_prev] @ p_noclose_given_ends[:j, j_prev]
+                + p_noclose_and_ends_cols[j_prev]
+        )
+    # Cache index values for repeated slicing.
+    range_indexes = np.arange(npos)
+    window_indexes = np.minimum(range_indexes, min_gap)
+    # Compute the mutation rates given no two mutations are too close
+    # one position (j) at a time.
+    p_mut_given_span_noclose = np.empty_like(p_mut_given_span)
+    for j in range(npos):
+        # Numbers of rows and columns of the submatrix for position (j).
+        nrows = j + 1
+        ncols = npos - j
+        # Probability of no close mutations from (a) to (j - inc_gap).
+        row_indexes = range_indexes[:nrows]
+        p_noclose_5 = p_noclose_given_ends[
+            row_indexes, np.maximum(row_indexes, j - inc_gap)
+        ]
+        # Probability of no mutations from (j - min_gap) to (j - 1).
+        p_nomut_window5 = p_nomut_window[
+            window_indexes[j::-1], j
+        ]
+        # Probability of no mutations from (j + 1) to (j + min_gap).
+        window3_indexes = window_indexes[:ncols]
+        p_nomut_window3 = p_nomut_window[
+            window3_indexes, window3_indexes + nrows
+        ]
+        # Probability of no close mutations from (j + inc_gap) to (b).
+        col_indexes = range_indexes[-ncols:]
+        p_noclose_3 = p_noclose_given_ends[
+            np.minimum(col_indexes, j + inc_gap), col_indexes
+        ]
+        # Probability of no close mutations in a read with a mutation
+        # at position (j): weighted sum over all such reads.
+        p_noclose_given_span_mut = np.einsum("ak,bk,ab->k",
+                                             p_noclose_5 * p_nomut_window5,
+                                             p_noclose_3 * p_nomut_window3,
+                                             p_ends[:nrows, -ncols:])
+        # Probability of no close mutations in a read that contains
+        # position (j): weighted sum over all such reads.
+        p_noclose_given_span = (p_noclose_and_ends_rows[j]
+                                - p_noclose_and_ends_cols[j])
+        # Probability of a mutation at position (j) given no mutations
         # are too close.
-        f_obs_prev[jp] = (mu_adj[jp] * f_obs_win_prev[jp] +
-                          nu_adj[jp] * f_obs_prev[jp - 1])
-    for jn in range(npos - 2, -1, -1):
-        # Probability that none of the following (min_gap) bases are
-        # mutated and no mutations after them are too close.
-        f_obs_win_next[jn] = (nu_win[jn + end1begin2] *
-                              f_obs_next[(jn + end1begin2) % npos])
-        # Probability that no two mutations from (jn) to the end are too
-        # close.
-        f_obs_next[jn] = (mu_adj[jn] * f_obs_win_next[jn] +
-                          nu_adj[jn] * f_obs_next[jn + 1])
-    # The probability that a randomly generated bit vector has no two
-    # mutations that are too close is the probability that no two
-    # mutations are too close after and including the first position.
-    f_obs = f_obs_next[0]
-    # For each position (j), calculate the observed mutation rates given
-    # the real mutation rates.
-    # Start by calculating the joint probability that a bit vector is
-    # observed (i.e. has no mutations that are too close together) and
-    # position (j) is mutated: the product of the probabilities that
-    # - position (j) is mutated: p_adj[j]
-    # - no bases within (min_gap) positions before (j) are mutated and
-    #   no two mutations before them are too close: f_obs_win_prev[j]
-    # - no bases within (min_gap) positions after (j) are mutated and no
-    #   two mutations after them are too close: f_obs_win_next[j]
-    # Then compute the conditional probability that position (j) is
-    # mutated, given that the bit vector has no two mutations that are
-    # too close, by dividing the joint probability by the probability
-    # that no two mutations are too close: f_obs.
-    mu_obs = mu_adj * f_obs_win_prev * f_obs_win_next / f_obs
-    return f_obs, mu_obs
+        p_mut_given_span_noclose[j] = (p_mut_given_span[j]
+                                       * (p_noclose_given_span_mut
+                                          / p_noclose_given_span))
+    return p_mut_given_span_noclose
 
 
-def _calc_f_obs_clipped(mus_adj: np.ndarray, min_gap: int):
-    """ Return a 1D array of the probability for each cluster that,
-    given the real mutation rates for each position in each cluster, a
-    randomly generated bit vector coming from the cluster would have no
-    two mutations closer than min_gap positions. """
-    return _calc_obs(mus_adj, min_gap)[0]
+def _calc_p_ends_given_noclose(p_ends: np.ndarray,
+                               p_noclose_given_ends: np.ndarray):
+    # Find and validate the dimensions.
+    npos = p_ends.shape[0]
+    if p_ends.shape != (npos, npos):
+        raise ValueError(f"Expected p_ends to be shaped ({npos, npos}), "
+                         f"but got {p_ends.shape}")
+    ncls = p_noclose_given_ends.shape[-1]
+    if p_noclose_given_ends.shape != (npos, npos, ncls):
+        raise ValueError(
+            f"Expected p_noclose_given_ends to be shaped {npos, npos, ncls}, "
+            f"but got {p_noclose_given_ends.shape}"
+        )
+    # Compute the unnormalized probability of each coordinate given no
+    # two mutations are too close.
+    p_ends_given_noclose = (p_noclose_given_ends
+                            * p_ends.reshape((npos, npos, 1)))
+    # Normalize the sum of all probabilities to 1 for each cluster.
+    return p_ends_given_noclose / p_ends_given_noclose.sum(axis=(0, 1))
 
 
-def calc_f_obs_numpy(mus_adj: np.ndarray, min_gap: int):
-    """ Return a 1D array of the probability for each cluster that,
-    given the real mutation rates for each position in each cluster, a
-    randomly generated bit vector coming from the cluster would have no
-    two mutations closer than min_gap positions. """
-    if mus_adj.ndim == 2:
-        return _calc_f_obs_clipped(clip(mus_adj), min_gap)
-    if mus_adj.ndim == 1:
-        return float(np.squeeze(calc_f_obs_numpy(mus_adj.reshape((-1, 1)),
-                                                 min_gap),
-                                axis=0))
-    raise ValueError(f"Expected 1 or 2 dimensions, but got {mus_adj.ndim}")
-
-
-def _calc_mu_obs(mus_adj: np.ndarray, min_gap: int):
-    """ A 2D (positions x clusters) array of the mutation rates that
-    would be observed given the real mutation rates and the minimum gap
-    between two mutations. """
-    return _calc_obs(clip(mus_adj), min_gap)[1]
-
-
-def _diff_adj_obs(mus_adj: np.ndarray, mus_obs: np.ndarray, min_gap: int):
+def _objective(x: np.ndarray,
+               min_gap: int,
+               p_mut_given_span_noclose: np.ndarray,
+               p_ends_given_noclose: np.ndarray):
     """ Compute the difference between the mutation rates that would be
     observed if `mus_adj` were the real mutation rates (including
     unobserved reads), and the actual observed mutation rates.
 
     Parameters
     ----------
-    mus_adj: ndarray
-        A (positions x clusters) array of the current guesses of each
-        cluster's real mutation rates.
-    mus_obs: ndarray
-        A (positions x clusters) array of the actual observed mutation
-        rates, from the weighted average over all bit vectors.
-    min_gap: int
-        Minimum permitted gap between two mutations.
 
     Returns
     -------
@@ -287,11 +356,32 @@ def _diff_adj_obs(mus_adj: np.ndarray, mus_obs: np.ndarray, min_gap: int):
         A (positions x clusters) array of the difference between each
         expected-to-be-observed and each actual observed mutation rate.
     """
-    return _calc_mu_obs(mus_adj, min_gap) - mus_obs
+    # Extract the arguments.
+    p_mut_given_span = x[0]
+    p_ends = x[1:]
+    #
+    p_noclose_given_ends, p_nomut_window = _calc_p_noclose_given_ends(
+        p_mut_given_span, min_gap
+    )
+    error = np.empty_like(x)
+    #
+    error[0] = (_calc_p_mut_given_span_noclose(p_mut_given_span,
+                                               p_ends,
+                                               p_noclose_given_ends,
+                                               p_nomut_window)
+                - p_mut_given_span_noclose)
+    #
+    error[1:] = (_calc_p_ends_given_noclose(p_ends,
+                                            p_noclose_given_ends)
+                 - p_ends_given_noclose)
+    return error
 
 
-def calc_mu_adj_numpy(mus_obs: np.ndarray, min_gap: int,
-                      mus_guess: np.ndarray | None = None,
+def calc_mu_adj_numpy(p_mut_given_span_noclose: np.ndarray,
+                      p_ends_noclose: np.ndarray,
+                      min_gap: int,
+                      p_mut_given_span_guess: np.ndarray | None = None,
+                      p_ends_guess: np.ndarray | None = None,
                       f_tol: float = 5e-1,
                       f_rtol: float = 5e-1,
                       x_tol: float = 1e-4,
@@ -330,7 +420,7 @@ def calc_mu_adj_numpy(mus_obs: np.ndarray, min_gap: int,
     # Import scipy here instead of at the top of this module because
     # its import is slow enough to impact global startup time.
     from scipy.optimize import newton_krylov
-    if mus_obs.ndim == 1:
+    if p_mut_given_span_noclose.ndim == 1:
         # Expand the mutation rates from a vector into a matrix with one
         # column (cluster), calculate, and squeeze back into a vector.
         return np.squeeze(calc_mu_adj_numpy(mus_obs.reshape(-1, 1), min_gap),
@@ -338,8 +428,6 @@ def calc_mu_adj_numpy(mus_obs: np.ndarray, min_gap: int,
     if mus_obs.ndim != 2:
         # Only matrices (positions x clusters) are supported hereafter.
         raise ValueError(f"Expected 1 or 2 dimensions, but got {mus_obs.ndim}")
-    # Clip any invalid mutation rates.
-    mus_obs = clip(mus_obs)
     if mus_obs.size == 0:
         # If the array is empty, then there are no real mutation rates.
         return mus_obs
@@ -351,8 +439,6 @@ def calc_mu_adj_numpy(mus_obs: np.ndarray, min_gap: int,
         if mus_guess.shape != mus_obs.shape:
             raise ValueError(f"Dimensions of mus_guess {mus_guess.shape} and "
                              f"mus_obs {mus_obs.shape} differed")
-        # Clip any invalid guessed mutation rates.
-        mus_guess = clip(mus_guess)
     # Solve for the "real" mutation rates that yield minimal difference
     # between the mutation rates that would be expected to be observed
     # given the real mutation rates (i.e. when reads with mutations too
@@ -360,14 +446,14 @@ def calc_mu_adj_numpy(mus_obs: np.ndarray, min_gap: int,
     # observed mutation rates. Use Newton's method, which finds the
     # parameters of a function that make it evaluate to zero, with the
     # Krylov approximation of the Jacobian, which improves performance.
-    return clip(newton_krylov(lambda mus_iter: _diff_adj_obs(mus_iter,
-                                                             mus_obs,
-                                                             min_gap),
-                              mus_guess,
-                              f_tol=f_tol,
-                              f_rtol=f_rtol,
-                              x_tol=x_tol,
-                              x_rtol=x_rtol))
+    return _clip(newton_krylov(lambda mus_iter: _objective(mus_iter,
+                                                           mus_obs,
+                                                           min_gap),
+                               mus_guess,
+                               f_tol=f_tol,
+                               f_rtol=f_rtol,
+                               x_tol=x_tol,
+                               x_rtol=x_rtol))
 
 
 def calc_prop_adj_numpy(prop_obs: np.ndarray, f_obs: np.ndarray):

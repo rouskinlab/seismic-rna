@@ -193,11 +193,11 @@ function in this module performs normalization and then sets any value
 greater than 1.0 to 1.0.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.mu.unbias.algo.calc_f_obs_numpy">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.unbias.algo.</span></span><span class="sig-name descname"><span class="pre">calc_f_obs_numpy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mus_adj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.algo.calc_f_obs_numpy" title="Permalink to this definition"></a></dt>
-<dd><p>Return a 1D array of the probability for each cluster that,
-given the real mutation rates for each position in each cluster, a
-randomly generated bit vector coming from the cluster would have no
-two mutations closer than min_gap positions.</p>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.unbias.algo.</span></span><span class="sig-name descname"><span class="pre">calc_f_obs_numpy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu_adj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.unbias.algo.calc_f_obs_numpy" title="Permalink to this definition"></a></dt>
+<dd><p>3D (positions x positions x clusters) array of the probability
+that, given real mutation rates for each position in each cluster, a
+random bit vector from the row position to the column position would
+have no two mutations closer than min_gap positions.</p>
 </dd></dl>
 
 <dl class="py function">
