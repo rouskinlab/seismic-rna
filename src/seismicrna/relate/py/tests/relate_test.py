@@ -1,7 +1,7 @@
 import unittest as ut
 
 from seismicrna.core.rel import IRREC, MATCH, NOCOV
-from seismicrna.relate.py.relate import find_rels_line, _merge_rels
+from seismicrna.relate.py.relate import find_rels_line, _merge_rels, SamRead
 from seismicrna.relate.aux.iterread import iter_alignments
 from seismicrna.align.sim import as_sam
 from seismicrna.core.arg import opt_min_mapq
@@ -41,7 +41,8 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
                               refseq,
                               opt_min_mapq.default,
                               OK_QUAL,
-                              True)
+                              True,
+                              False)
 
     def iter_cases(self, refseq: DNA, max_ins: int = 2):
         """ Iterate through every test case. """
@@ -89,9 +90,17 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
 
 class TestMergeRels(ut.TestCase):
 
+
     def test_empty(self):
-        result = _merge_rels(1, 10, {}, 1, 10, {})
-        expect = {}
+        sam_read = SamRead("read-name\t"
+                           "147\tref-seq\t189\t36\t42M5S\t=\t10\t-240\tGGGAT"
+                           "TGTTCATGGTGCATTTCACGCTACTCGTTCCTTTCGAACGAG\tCCCCCCCCCC"
+                           "CC;CCCCCC;CCCCCCCCC;CCCCCCCCCCCCCCCCC\tAS:i:84\tXN:i:0"
+                           "\tXM:i:0\tXO:i:0\tXG:i:0\tYS:i:66\tYT:Z:CP\tMD:Z:42\tN"
+                           "M:i:0")
+        overhangs = False
+        result = _merge_rels(1, 10, {}, 1, 10, {}, overhangs, sam_read)
+        expect = ({}, (1, 1, 10, 10))
         self.assertEqual(result, expect)
 
     def test_read1(self):
@@ -99,20 +108,29 @@ class TestMergeRels(ut.TestCase):
         end31 = 20
         end52 = 11
         end32 = 30
+        sam_read = SamRead("read-name\t"
+                           "147\tref-seq\t189\t36\t42M5S\t=\t10\t-240\tGGGAT"
+                           "TGTTCATGGTGCATTTCACGCTACTCGTTCCTTTCGAACGAG\tCCCCCCCCCC"
+                           "CC;CCCCCC;CCCCCCCCC;CCCCCCCCCCCCCCCCC\tAS:i:84\tXN:i:0"
+                           "\tXM:i:0\tXO:i:0\tXG:i:0\tYS:i:66\tYT:Z:CP\tMD:Z:42\tN"
+                           "M:i:0")
+        overhangs = False
         for pos in range(end51, end31 + 1):
             for rel in range(MATCH + 1, NOCOV):
-                result = _merge_rels(end51, end31, {pos: rel}, end52, end32, {})
+                result = _merge_rels(end51, end31, {pos: rel},
+                                     end52, end32, {},
+                                     overhangs, sam_read)
                 if end52 <= pos <= end32:
                     # The relationship can be compensated by read 2.
                     if rel & MATCH:
                         # The match in read 2 compensated.
-                        expect = {}
+                        expect = ({}, (1, 11, 20, 30))
                     else:
                         # The match in read 2 is irreconcilable.
-                        expect = {pos: IRREC}
+                        expect = ({pos: IRREC}, (1, 11, 20, 30))
                 else:
                     # Read 2 cannot compensate.
-                    expect = {pos: rel}
+                    expect = ({pos: rel}, (1, 11, 20, 30))
                 self.assertEqual(result, expect)
 
     def test_read2(self):
@@ -120,20 +138,29 @@ class TestMergeRels(ut.TestCase):
         end31 = 20
         end52 = 11
         end32 = 30
+        sam_read = SamRead("read-name\t"
+                           "147\tref-seq\t189\t36\t42M5S\t=\t10\t-240\tGGGAT"
+                           "TGTTCATGGTGCATTTCACGCTACTCGTTCCTTTCGAACGAG\tCCCCCCCCCC"
+                           "CC;CCCCCC;CCCCCCCCC;CCCCCCCCCCCCCCCCC\tAS:i:84\tXN:i:0"
+                           "\tXM:i:0\tXO:i:0\tXG:i:0\tYS:i:66\tYT:Z:CP\tMD:Z:42\tN"
+                           "M:i:0")
+        overhangs = False
         for pos in range(end52, end32 + 1):
             for rel in range(MATCH + 1, NOCOV):
-                result = _merge_rels(end51, end31, {}, end52, end32, {pos: rel})
+                result = _merge_rels(end51, end31, {},
+                                     end52, end32, {pos: rel},
+                                     overhangs, sam_read)
                 if end51 <= pos <= end31:
                     # The relationship can be compensated by read 1.
                     if rel & MATCH:
                         # The match in read 1 compensated.
-                        expect = {}
+                        expect = ({}, (1, 11, 20, 30))
                     else:
                         # The match in read 1 is irreconcilable.
-                        expect = {pos: IRREC}
+                        expect = ({pos: IRREC},  (1, 11, 20, 30))
                 else:
                     # Read 1 cannot compensate.
-                    expect = {pos: rel}
+                    expect = ({pos: rel},  (1, 11, 20, 30))
                 self.assertEqual(result, expect)
 
     def test_both_reads(self):
@@ -141,6 +168,13 @@ class TestMergeRels(ut.TestCase):
         end31 = 2
         end52 = 2
         end32 = 3
+        sam_read = SamRead("read-name\t"
+                           "147\tref-seq\t189\t36\t42M5S\t=\t10\t-240\tGGGAT"
+                           "TGTTCATGGTGCATTTCACGCTACTCGTTCCTTTCGAACGAG\tCCCCCCCCCC"
+                           "CC;CCCCCC;CCCCCCCCC;CCCCCCCCCCCCCCCCC\tAS:i:84\tXN:i:0"
+                           "\tXM:i:0\tXO:i:0\tXG:i:0\tYS:i:66\tYT:Z:CP\tMD:Z:42\tN"
+                           "M:i:0")
+        overhangs = False
         for pos1 in range(end51, end31 + 1):
             for rel1 in range(MATCH + 1, NOCOV):
                 rels1 = {pos1: rel1}
@@ -150,21 +184,22 @@ class TestMergeRels(ut.TestCase):
                         with self.subTest(pos1=pos1, rel1=rel1,
                                           pos2=pos2, rel2=rel2):
                             result = _merge_rels(end51, end31, rels1,
-                                                 end52, end32, rels2)
+                                                 end52, end32, rels2,
+                                                 overhangs, sam_read)
                             if pos1 == pos2:
                                 merged = rel1 & rel2
                                 if merged == MATCH:
-                                    expect = {}
+                                    expect = ({}, (1, 2, 2, 3))
                                 else:
-                                    expect = {pos1: merged}
+                                    expect = ({pos1: merged}, (1, 2, 2, 3))
                             else:
-                                expect = dict()
+                                expect = (dict(), (1, 2, 2, 3))
                                 merged1 = rel1 & MATCH if end52 <= pos1 <= end32 else rel1
                                 if merged1 != MATCH:
-                                    expect[pos1] = merged1
+                                    expect[0][pos1] = merged1
                                 merged2 = rel2 & MATCH if end51 <= pos2 <= end31 else rel2
                                 if merged2 != MATCH:
-                                    expect[pos2] = merged2
+                                    expect[0][pos2] = merged2
                             self.assertEqual(result, expect)
 
     def test_both_blank(self):
@@ -172,6 +207,13 @@ class TestMergeRels(ut.TestCase):
         end31 = 2
         end52 = 2
         end32 = 3
+        sam_read = SamRead("read-name\t"
+                           "147\tref-seq\t189\t36\t42M5S\t=\t10\t-240\tGGGAT"
+                           "TGTTCATGGTGCATTTCACGCTACTCGTTCCTTTCGAACGAG\tCCCCCCCCCC"
+                           "CC;CCCCCC;CCCCCCCCC;CCCCCCCCCCCCCCCCC\tAS:i:84\tXN:i:0"
+                           "\tXM:i:0\tXO:i:0\tXG:i:0\tYS:i:66\tYT:Z:CP\tMD:Z:42\tN"
+                           "M:i:0")
+        overhangs = False
         for pos1 in range(end51, end31 + 1):
             rels1 = {pos1: NOCOV}
             for pos2 in range(end52, end32 + 1):
@@ -187,6 +229,7 @@ class TestMergeRels(ut.TestCase):
                         _merge_rels,
                         end51, end31, rels1,
                         end52, end32, rels2,
+                        overhangs, sam_read
                     )
 
 

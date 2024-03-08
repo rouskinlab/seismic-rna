@@ -561,6 +561,13 @@ opt_brotli_level = Option(
     help="Compression level for brotli (0 - 11)"
 )
 
+opt_overhangs = Option(
+    ("--overhangs/--no-overhangs",),
+    type=bool,
+    default=True,
+    help="Compute relationships for bases in a read that extend beyond its mate"
+)
+
 # Pool
 
 opt_pool = Option(

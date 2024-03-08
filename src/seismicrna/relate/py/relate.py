@@ -254,11 +254,24 @@ def _validate_pair(read1: SamRead, read2: SamRead):
                                "mates 1 and 2 facing the same way")
 
 
-def _merge_ends(end51: int, end31: int, end52: int, end32: int):
-    return (min(end51, end52),
-            max(end51, end52),
-            min(end31, end32),
-            max(end31, end32))
+def _merge_ends(end51: int,
+                end31: int,
+                end52: int,
+                end32: int,
+                overhangs: bool,
+                read2: SamRead):
+    if not overhangs:
+        end5, end3 = (end51, end32) if read2.flag.rev else (end52, end31)
+        mid5, mid3 = ((max(end5, end52),
+                      min(end3, end31)) if read2.flag.rev
+                                        else (max(end5, end51),
+                                              min(end3, end32)))
+    else:
+        end5, mid5, mid3, end3  = (min(end51, end52),
+                                   max(end51, end52),
+                                   min(end31, end32),
+                                   max(end31, end32))
+    return end5, mid5, mid3, end3
 
 
 def _merge_rels(end51: int,
@@ -266,9 +279,14 @@ def _merge_rels(end51: int,
                 rels1: dict[int, int],
                 end52: int,
                 end32: int,
-                rels2: dict[int, int]):
+                rels2: dict[int, int],
+                overhangs: bool,
+                read2: SamRead):
     merged = dict()
-    for pos in rels1 | rels2:
+    end5, mid5, mid3, end3 = _merge_ends(end51, end31, end52,
+                                         end32, overhangs, read2)
+    valid_pos = [pos for pos in rels1 | rels2 if end5 <= pos <= end3]
+    for pos in valid_pos:
         rel1 = rels1.get(pos, MATCH if end51 <= pos <= end31 else NOCOV)
         rel2 = rels2.get(pos, MATCH if end52 <= pos <= end32 else NOCOV)
         rel = rel1 & rel2
@@ -276,7 +294,7 @@ def _merge_rels(end51: int,
             if rel == NOCOV:
                 raise ValueError(f"Cannot merge two blanks at position {pos}")
             merged[pos] = rel
-    return merged
+    return merged, (end5, mid5, mid3, end3)
 
 
 def find_rels_line(line1: str,
@@ -285,7 +303,8 @@ def find_rels_line(line1: str,
                    refseq: DNA,
                    min_mapq: int,
                    qmin: str,
-                   ambrel: bool):
+                   ambrel: bool,
+                   overhangs: bool):
     read1 = SamRead(line1)
     _validate_read(read1, ref, min_mapq)
     end5, end3, rels = _find_rels_read(read1, refseq, qmin, ambrel)
@@ -294,8 +313,9 @@ def find_rels_line(line1: str,
         _validate_read(read2, ref, min_mapq)
         _validate_pair(read1, read2)
         end52, end32, rels2 = _find_rels_read(read2, refseq, qmin, ambrel)
-        rels = _merge_rels(end5, end3, rels, end52, end32, rels2)
-        end5, mid5, mid3, end3 = _merge_ends(end5, end3, end52, end32)
+        rels, (end5, mid5, mid3, end3) = _merge_rels(end5, end3, rels, end52,
+                                                     end32, rels2, overhangs,
+                                                     read2)
     else:
         mid5, mid3 = end5, end3
     return read1.qname, end5, mid5, mid3, end3, rels
