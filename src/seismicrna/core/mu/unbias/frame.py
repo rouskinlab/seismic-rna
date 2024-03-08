@@ -1,6 +1,6 @@
 import pandas as pd
 
-from .algo import calc_p_noclose_given_ends_numpy, calc_p_mut_p_ends_numpy, calc_prop_adj_numpy
+from .algo import calc_p_noclose_given_ends_numpy, calc_prop_adj_numpy
 from ...seq import Section
 
 

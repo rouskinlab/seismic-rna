@@ -82,26 +82,140 @@ import numpy as np
 logger = getLogger(__name__)
 
 
-def _clip(p_mut: np.ndarray):
-    """ Check if any mutation rates are < 0, ≥ 1, or NaN. If so, then
-    fill any NaN values with 0 and clip all values to [0, 1). """
-    return np.clip(np.nan_to_num(p_mut), 0., 1.)
+def _clip(x: np.ndarray):
+    """ Fill NaN with 0, infinity with 1, and restrict all values to the
+    interval [0, 1].
+
+    Parameters
+    ----------
+    x: np.ndarray
+        Values to fill and clip.
+
+    Returns
+    -------
+    np.ndarray
+        Array of the same shape as `x` with all values ≥ 0 and ≤ 1.
+    """
+    return np.clip(np.nan_to_num(x), 0., 1.)
 
 
-def _normalize(p_ends: np.ndarray):
-    if p_ends.ndim == 2:
-        # Handle the 2-dimensional case.
-        return _normalize(np.expand_dims(p_ends, 2))[:, :, 0]
-    p_ends = _clip(p_ends)
-    if p_ends.size == 0:
-        # There is nothing to normalize.
-        return p_ends
-    # Divide by the sum over both positional axes.
-    npos, _, ncls = p_ends.shape
-    p_sums = np.zeros(ncls)
-    for j in range(npos):
-        p_sums += np.sum(p_ends[j, j:], axis=0)
-    return p_ends / p_sums
+def _triu_sum(a: np.ndarray):
+    """ Calculate the sum over the upper triangle(s) of array `a`.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function does no validation.
+
+    Assumptions
+    -----------
+    -   `a` has at least 2 dimensions.
+    -   The first two dimensions of `a` have equal length.
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array whose upper triangle to sum.
+
+    Returns
+    -------
+    np.ndarray
+        Sum of the upper triangle(s), with the same shape as the third
+        and subsequent dimensions of `a`.
+    """
+    sums = np.zeros(a.shape[2:])
+    # Sum over axes 0 and 1.
+    for j in range(a.shape[0]):
+        sums += a[j, j:].sum(axis=0)
+    return sums
+
+
+def _triu_norm(a: np.ndarray):
+    """ Normalize the upper triangle of array `a` to sum to 1.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function does no validation.
+
+    Assumptions
+    -----------
+    -   `a` has at least 2 dimensions.
+    -   The first two dimensions of `a` have equal length.
+    -   The elements of the upper triangle of `a` do not sum to 0.
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array to normalize.
+
+    Returns
+    -------
+    np.ndarray
+        Array of the same shape as `a` but scaled so that the
+    """
+    # Divide by the sum over axes 0 and 1.
+    return a / _triu_sum(a)
+
+
+def _triu_div(numer: np.ndarray, denom: np.ndarray):
+    """ Divide the upper triangles of `numer` and `denom`.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function does no validation.
+
+    Assumptions
+    -----------
+    -   `numer` has at least 2 dimensions.
+    -   The first two dimensions of `numer` have equal length.
+    -   `denom` has the same first 2 dimensions as `numer`.
+    -   `numer` and `denom` can be broadcast to each other.
+    -   No value in the upper triangle of `denom` is 0.
+
+    Parameters
+    ----------
+    numer: np.ndarray
+        Numerator of division.
+    denom: np.ndarray
+        Denominator of division.
+
+    Returns
+    -------
+    np.ndarray
+        Quotient of the upper triangles; values below the main diagonal
+        are undefined.
+    """
+    quotient = np.empty(np.broadcast_shapes(numer.shape, denom.shape))
+    for j in range(numer.shape[0]):
+        quotient[j, j:] = numer[j, j:] / denom[j, j:]
+    return quotient
+
+
+def _triu_allclose(a: np.ndarray, b: np.ndarray):
+    """ Return whether the upper triangles of `a` and `b` are all close.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function does no validation.
+
+    Assumptions
+    -----------
+    -   `a` and `b` both have at least 2 dimensions.
+    -   The first and second dimensions of `a` are equal.
+    -   The first and second dimensions of `b` are equal.
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array 1.
+    b: np.ndarray
+        Array 2.
+
+    Returns
+    -------
+    bool
+        Whether all elements of the upper triangles of `a` and `b` are
+        close using the function `np.allclose`.
+    """
+    for j in range(a.shape[0]):
+        if not np.allclose(a[j, j:], b[j, j:], atol=1.e-6, rtol=1.e-3):
+            return False
+    return True
 
 
 def _adjust_min_gap(num_pos: int, min_gap: int):
@@ -247,46 +361,6 @@ def _calc_p_noclose_given_ends(p_mut_given_span: np.ndarray,
     return p_noclose_given_ends
 
 
-def calc_p_noclose_given_ends_numpy(p_mut_given_span: np.ndarray, min_gap: int):
-    """ Given underlying mutation rates (`p_mut_given_span`), calculate
-    the probability that a read starting at position (a) and ending at
-    position (b) would have no two mutations too close (i.e. separated
-    by fewer than `min_gap` non-mutated positions), for each combination
-    of (a) and (b) such that 1 ≤ a ≤ b ≤ L (in biological coordinates)
-    or 0 ≤ a ≤ b < L (in Python coordinates).
-
-    Parameters
-    ----------
-    p_mut_given_span: ndarray
-        A 2D (positions x clusters) array of the underlying mutation
-        rates, i.e. the probability that a read has a mutation at
-        position (j) given that it contains position (j).
-    min_gap: int
-        Minimum number of non-mutated bases between two mutations;
-        must be ≥ 0.
-
-    Returns
-    -------
-    np.ndarray
-        3D (positions x positions x clusters) array of the probability
-        that a random read starting at position (a) (row) and ending at
-        position (b) (column) would have no two mutations too close.
-    """
-    if min_gap < 0:
-        raise ValueError(f"min_gap must be ≥ 0, but got {min_gap}")
-    if p_mut_given_span.ndim == 2:
-        p_mut_given_span = _clip(p_mut_given_span)
-        return _calc_p_noclose_given_ends(p_mut_given_span,
-                                          _calc_p_nomut_window(p_mut_given_span,
-                                                               min_gap))
-    if p_mut_given_span.ndim == 1:
-        return calc_p_noclose_given_ends_numpy(
-            p_mut_given_span.reshape((-1, 1)), min_gap
-        ).reshape((p_mut_given_span.size, p_mut_given_span.size))
-    raise ValueError("p_mut_given_span must have 1 or 2 dimensions, "
-                     f"but got {p_mut_given_span.ndim}")
-
-
 def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
                                    p_ends: np.ndarray,
                                    p_noclose_given_ends: np.ndarray,
@@ -375,359 +449,267 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
     return p_mut_given_span_noclose
 
 
-def _calc_p_mut_given_span_noclose_from_params(p_mut_given_span: np.ndarray,
-                                               p_ends: np.ndarray,
-                                               min_gap: int):
+def _calc_p_mut_given_span(p_mut_given_span_noclose: np.ndarray,
+                           min_gap: int,
+                           p_ends: np.ndarray,
+                           init_p_mut_given_span: np.ndarray, *,
+                           f_tol: float = 5e-1,
+                           f_rtol: float = 5e-1,
+                           x_tol: float = 1e-4,
+                           x_rtol: float = 5e-1):
     """
     """
-    p_nomut_window = _calc_p_nomut_window(p_mut_given_span, min_gap)
-    p_noclose_given_ends = _calc_p_noclose_given_ends(p_mut_given_span,
-                                                      p_nomut_window)
-    return _calc_p_mut_given_span_noclose(p_mut_given_span,
-                                          p_ends,
-                                          p_noclose_given_ends,
-                                          p_nomut_window)
-
-
-def _calc_p_ends_given_noclose(p_ends: np.ndarray,
-                               p_noclose_given_ends: np.ndarray):
-    # Find and validate the dimensions.
-    npos = p_ends.shape[0]
-    if p_ends.shape != (npos, npos):
-        raise ValueError(f"Expected p_ends to be shaped ({npos, npos}), "
-                         f"but got {p_ends.shape}")
-    ncls = p_noclose_given_ends.shape[-1]
-    if p_noclose_given_ends.shape != (npos, npos, ncls):
-        raise ValueError(
-            f"Expected p_noclose_given_ends to be shaped {npos, npos, ncls}, "
-            f"but got {p_noclose_given_ends.shape}"
-        )
-    # Compute and normalize the probability of each coordinate given no
-    # two mutations are too close.
-    return _normalize(p_noclose_given_ends * np.expand_dims(p_ends, 2))
-
-
-def _stack2d_p_mut_p_ends(p_mut_given_span: np.ndarray,
-                          p_ends: np.ndarray):
-    npos, ncls = p_mut_given_span.shape
-    stacked = np.empty((npos, npos + ncls))
-    stacked[:, :ncls] = p_mut_given_span
-    stacked[:, ncls:] = p_ends
-    return stacked
-
-
-def _unstack2d_p_mut_p_ends(stacked: np.ndarray):
-    npos, ncol = stacked.shape
-    ncls = ncol - npos
-    p_mut_given_span = stacked[:, :ncls]
-    p_ends = stacked[:, ncls:]
-    return p_mut_given_span, p_ends
-
-
-def _stack3d_p_mut_p_ends(p_mut_given_span: np.ndarray,
-                          p_ends: np.ndarray):
-    npos, ncls = p_mut_given_span.shape
-    stacked = np.empty((npos + 1, npos, ncls))
-    stacked[0] = p_mut_given_span
-    stacked[1:] = p_ends
-    return stacked
-
-
-def _unstack3d_p_mut_p_ends(stacked: np.ndarray):
-    p_mut_given_span = stacked[0]
-    p_ends = stacked[1:]
-    return p_mut_given_span, p_ends
-
-
-def _objective(p_mut_p_ends: np.ndarray,
-               min_gap: int,
-               p_mut_given_span_noclose: np.ndarray,
-               p_ends_given_noclose: np.ndarray):
-    """
-    """
-    # Extract the arguments.
-    p_mut_given_span, p_ends = _unstack2d_p_mut_p_ends(p_mut_p_ends)
-    #
-    p_nomut_window = _calc_p_nomut_window(p_mut_given_span, min_gap)
-    p_noclose_given_ends = _calc_p_noclose_given_ends(
-        p_mut_given_span, p_nomut_window
-    )
-    #
-
-    #
-    p_mut_given_span_noclose_error = _calc_p_mut_given_span_noclose(
-        p_mut_given_span,
-        p_ends,
-        p_noclose_given_ends,
-        p_nomut_window
-    ) - p_mut_given_span_noclose
-    #
-    p_ends_given_noclose_error = _calc_p_ends_given_noclose(
-        p_ends, p_noclose_given_ends
-    ) - p_ends_given_noclose
-    objective = _stack3d_p_mut_p_ends(p_mut_given_span_noclose_error,
-                                      p_ends_given_noclose_error)
-    print("Objective:", np.sum(np.square(objective)))
-    return objective
-
-
-def _objective_p_ends(p_ends: np.ndarray,
-                      min_gap: int,
-                      p_mut_given_span: np.ndarray,
-                      p_ends_given_noclose: np.ndarray):
-    """
-    """
-    p_nomut_window = _calc_p_nomut_window(p_mut_given_span, min_gap)
-    p_noclose_given_ends = _calc_p_noclose_given_ends(p_mut_given_span,
-                                                      p_nomut_window)
-    #
-    return _calc_p_ends_given_noclose(
-        p_ends, p_noclose_given_ends
-    ) - p_ends_given_noclose
-
-
-def calc_p_mut_p_ends_numpy(p_mut_given_span_noclose: np.ndarray,
-                            p_ends_noclose: np.ndarray,
-                            min_gap: int,
-                            proportions: np.ndarray | None = None,
-                            p_mut_given_span_guess: np.ndarray | None = None,
-                            p_ends_guess: np.ndarray | None = None, *,
-                            f_tol: float = 5e-1,
-                            f_rtol: float = 5e-1,
-                            x_tol: float = 1e-4,
-                            x_rtol: float = 5e-1):
-    """ Given observed mutation rates `mus_obs` (which do not include
-    any reads that dropped out because they had mutations closer than
-    `min_gap` nt apart), estimate the real mutation rates that include
-    these unobserved reads.
-
-    Parameters
-    ----------
-    mus_obs: ndarray
-        A (positions x clusters) array of the observed mutation rates,
-        which do not include unobserved reads that dropped out.
-    min_gap: int
-        Minimum permitted gap between two mutations.
-    mus_guess: ndarray
-        Initial guess of the real mutation rates. If given, must be the
-        same shape as mus_obs. If omitted, defaults to mus_obs, which is
-        usually close to the optimal value.
-    f_tol: float = 5e-1
-        Absolute tolerance in residual.
-    f_rtol: float = 5e-1
-        Relative tolerance in residual.
-    x_tol: float = 1e-4
-        Absolute tolerance in step.
-    x_rtol: float = 5e-1
-        Relative tolerance in step.
-
-    Returns
-    -------
-    ndarray
-        A (positions x clusters) array of the real mutation rates that
-        would be expected to yield the observed mutation rates.
-    """
-    # Import scipy here instead of at the top of this module because
-    # its import is slow enough to impact global startup time.
-    from scipy.optimize import newton_krylov
     # Validate the dimensionality of the arguments.
     if p_mut_given_span_noclose.ndim == 1:
         # If p_mut_given_span_noclose has 1 dimension, then convert it
         # to 2 dimensions, calculate, and convert back to 1 dimension.
-        p_mut_given_span, p_ends = calc_p_mut_p_ends_numpy(
-            np.expand_dims(p_mut_given_span_noclose, 1),
-            p_ends_noclose,
-            min_gap,
-            proportions,
-            p_mut_given_span_guess,
-            p_ends_guess,
-            f_tol=f_tol,
-            f_rtol=f_rtol,
-            x_tol=x_tol,
-            x_rtol=x_rtol,
-        )
-        return p_mut_given_span[:, 0], p_ends
-    elif p_mut_given_span_noclose.ndim != 2:
-        raise ValueError(f"p_mut_given_span_noclose must have 1-2 dimensions, "
-                         f"but got {p_mut_given_span_noclose.ndim}")
-    if p_ends_noclose.ndim == 2:
-        # If p_mut_given_span_noclose has 1 dimension, then convert it
-        # to 2 dimensions, calculate, and convert back to 1 dimension.
-        return calc_p_mut_p_ends_numpy(
-            p_mut_given_span_noclose,
-            np.expand_dims(p_ends_noclose, 2),
-            min_gap,
-            proportions,
-            p_mut_given_span_guess,
-            p_ends_guess,
-            f_tol=f_tol,
-            f_rtol=f_rtol,
-            x_tol=x_tol,
-            x_rtol=x_rtol,
-        )
-    elif p_ends_noclose.ndim != 3:
-        raise ValueError(f"p_ends_noclose must have 2-3 dimensions, "
-                         f"but got {p_ends_noclose.ndim}")
-    # Validate the dimensions of the arguments.
-    npos, ncls = p_mut_given_span_noclose.shape
-    if p_ends_noclose.shape != (npos, npos, ncls):
-        raise ValueError("The dimensions of p_ends_noclose must be (positions "
-                         f"x positions x clusters) {npos, npos, ncls}, "
-                         f"but got {p_ends_noclose.shape}")
-    if proportions is not None and proportions.shape != (ncls,):
-        raise ValueError("If given, proportions must have dimensions "
-                         f"{ncls,}, but got {proportions.shape}")
-    if (p_mut_given_span_guess is not None
-            and (p_mut_given_span_guess.shape != (npos, ncls))):
-        raise ValueError("If given, p_mut_given_span_guess must have "
-                         "the same dimensions as p_mut_given_span_noclose, "
-                         f"but got {p_mut_given_span_guess.shape} "
-                         f"(≠ {p_mut_given_span_noclose.shape})")
-    if p_ends_guess is not None and p_ends_guess.shape != (npos, npos):
-        raise ValueError("If given, p_ends_guess must have "
-                         "the same dimensions as p_ends_noclose, "
-                         f"but got {p_ends_guess.shape} "
-                         f"(≠ {p_ends_noclose.shape})")
-    # Validate and normalize the values.
-    if min_gap < 0:
-        raise ValueError(f"min_gap must be ≥ 0, but got {min_gap}")
-    min_gap = _adjust_min_gap(npos, min_gap)
-    p_mut_given_span_noclose = _clip(p_mut_given_span_noclose)
-    p_ends_noclose = _normalize(p_ends_noclose)
-    if min_gap == 0:
-        # No two mutations can be too close.
-        return p_mut_given_span_noclose, p_ends_noclose
-    # Determine the initial guess of the real mutation rates.
-    if p_mut_given_span_guess is None or p_ends_guess is None:
-        # If either guess is missing, then use the argument values.
-        initial = _stack2d_p_mut_p_ends(p_mut_given_span_noclose,
-                                        np.average(p_ends_noclose,
-                                                   axis=2,
-                                                   weights=proportions))
-        if p_mut_given_span_guess is not None:
-            logger.warning("Got guess for p_mut_given_span but not p_ends")
-        if p_ends_guess is not None:
-            logger.warning("Got guess for p_ends but not p_mut_given_span")
-    else:
-        # Use the explicit initial guess.
-        initial = _stack2d_p_mut_p_ends(_clip(p_mut_given_span_guess),
-                                        _normalize(p_ends_guess))
-    # Solve for the "real" mutation rates that yield minimal difference
-    # between the mutation rates that would be expected to be observed
-    # given the real mutation rates (i.e. when reads with mutations too
-    # close are removed from the real mutation rates) and the actual
-    # observed mutation rates. Use Newton's method, which finds the
-    # parameters of a function that make it evaluate to zero, with the
-    # Krylov approximation of the Jacobian, which improves performance.
-    p_mut_given_span, p_ends = _unstack2d_p_mut_p_ends(newton_krylov(
-        lambda p_mut_p_ends: _objective(p_mut_p_ends,
-                                        min_gap,
-                                        p_mut_given_span_noclose,
-                                        p_ends_noclose),
-        initial,
-        f_tol=f_tol,
-        f_rtol=f_rtol,
-        x_tol=x_tol,
-        x_rtol=x_rtol,
-    ))
-    return _clip(p_mut_given_span), _normalize(p_ends)
-
-
-def calc_p_mut_given_span(p_mut_given_span_noclose: np.ndarray,
-                          min_gap: int,
-                          p_ends: np.ndarray,
-                          initial: np.ndarray | None = None, *,
-                          f_tol: float = 5e-1,
-                          f_rtol: float = 5e-1,
-                          x_tol: float = 1e-4,
-                          x_rtol: float = 5e-1):
-    """ Given observed mutation rates `mus_obs` (which do not include
-    any reads that dropped out because they had mutations closer than
-    `min_gap` nt apart), estimate the real mutation rates that include
-    these unobserved reads.
-
-    Parameters
-    ----------
-    mus_obs: ndarray
-        A (positions x clusters) array of the observed mutation rates,
-        which do not include unobserved reads that dropped out.
-    min_gap: int
-        Minimum permitted gap between two mutations.
-    mus_guess: ndarray
-        Initial guess of the real mutation rates. If given, must be the
-        same shape as mus_obs. If omitted, defaults to mus_obs, which is
-        usually close to the optimal value.
-    f_tol: float = 5e-1
-        Absolute tolerance in residual.
-    f_rtol: float = 5e-1
-        Relative tolerance in residual.
-    x_tol: float = 1e-4
-        Absolute tolerance in step.
-    x_rtol: float = 5e-1
-        Relative tolerance in step.
-
-    Returns
-    -------
-    ndarray
-        A (positions x clusters) array of the real mutation rates that
-        would be expected to yield the observed mutation rates.
-    """
-    # Import scipy here instead of at the top of this module because
-    # its import is slow enough to impact global startup time.
-    from scipy.optimize import newton_krylov
-    # Validate the dimensionality of the arguments.
-    if p_mut_given_span_noclose.ndim == 1:
-        # If p_mut_given_span_noclose has 1 dimension, then convert it
-        # to 2 dimensions, calculate, and convert back to 1 dimension.
-        return calc_p_mut_given_span(
+        return _calc_p_mut_given_span(
             np.expand_dims(p_mut_given_span_noclose, 1),
             min_gap,
             p_ends,
-            initial,
+            init_p_mut_given_span,
             f_tol=f_tol,
             f_rtol=f_rtol,
             x_tol=x_tol,
             x_rtol=x_rtol,
         )[:, 0]
-    elif p_mut_given_span_noclose.ndim != 2:
-        raise ValueError(f"p_mut_given_span_noclose must have 1-2 dimensions, "
-                         f"but got {p_mut_given_span_noclose.ndim}")
-    # Validate the dimensions of the arguments.
-    if initial is None:
-        # If no initial value is given, then use the mutation rate among
-        # reads with no two mutations too close.
-        initial = p_mut_given_span_noclose
-    elif initial.shape != p_mut_given_span_noclose.shape:
-        raise ValueError("If given, initial must have the same dimensions as "
-                         f"p_mut_given_span_noclose, but got {initial.shape} "
-                         f"≠ {p_mut_given_span_noclose.shape}")
-    # Validate and normalize the values.
-    if min_gap < 0:
-        raise ValueError(f"min_gap must be ≥ 0, but got {min_gap}")
-    min_gap = _adjust_min_gap(p_mut_given_span_noclose.shape[0], min_gap)
-    p_mut_given_span_noclose = _clip(p_mut_given_span_noclose)
-    p_ends = _normalize(p_ends)
+    npos, ncls = p_mut_given_span_noclose.shape
+    min_gap = _adjust_min_gap(npos, min_gap)
     if min_gap == 0:
         # No two mutations can be too close.
         return p_mut_given_span_noclose
 
-    # Find the mutation rates including reads with two mutations too
-    # close by using the Newton-Krylov method to make the difference
-    # between the observed and the theoretical mutation rates equal 0.
+    # Use the Newton-Krylov method to solve for the total mutation rates
+    # (including reads with two mutations too close) that result in zero
+    # difference between theoretically observed and actually observed
+    # mutation rates.
 
     def objective(p_mut_given_span: np.ndarray):
-        return _calc_p_mut_given_span_noclose_from_params(
-            p_mut_given_span,
-            p_ends,
-            min_gap
-        ) - p_mut_given_span_noclose
+        p_nomut_window = _calc_p_nomut_window(p_mut_given_span, min_gap)
+        p_noclose_given_ends = _calc_p_noclose_given_ends(p_mut_given_span,
+                                                          p_nomut_window)
+        return _calc_p_mut_given_span_noclose(p_mut_given_span,
+                                              p_ends,
+                                              p_noclose_given_ends,
+                                              p_nomut_window)
+
+    # Import scipy here instead of at the top of this module because
+    # its import is slow enough to impact global startup time.
+    from scipy.optimize import newton_krylov
 
     return _clip(newton_krylov(objective,
-                               initial,
+                               init_p_mut_given_span,
                                f_tol=f_tol,
                                f_rtol=f_rtol,
                                x_tol=x_tol,
                                x_rtol=x_rtol))
+
+
+def _calc_p_ends(p_ends_given_noclose: np.ndarray,
+                 min_gap: int,
+                 p_mut_given_span: np.ndarray):
+    """ Calculate the proportion of total reads with each pair of 5' and
+    3' coordinates.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function does no validation.
+
+    Assumptions
+    -----------
+    -   `p_ends_given_noclose` has 3 dimensions:
+        (positions x positions x clusters)
+    -   Every value in the upper triangle of `p_ends_given_noclose` is
+        ≥ 0 and ≤ 1; no values below the main diagonal are used.
+    -   The upper triangle of `p_ends_given_noclose` sums to 1.
+    -   `min_gap` is a non-negative integer.
+    -   `p_mut_given_span` has 2 dimensions:
+        (positions x clusters)
+    -   Every value in `p_mut_given_span` is ≥ 0 and ≤ 1.
+    -   There is at least 1 cluster.
+
+    Parameters
+    ----------
+    p_ends_given_noclose: np.ndarray
+        3D (positions x positions x clusters) array of the proportion of
+        observed reads in each cluster beginning at the row position and
+        ending at the column position.
+    min_gap: int
+        Minimum number of non-mutated bases between two mutations.
+    p_mut_given_span: np.ndarray
+        2D (positions x clusters) array of the total mutation rate at
+        each position in each cluster.
+
+    Returns
+    -------
+    np.ndarray
+        3D (positions x positions x clusters) array of the proportion of
+        reads beginning at the row position and ending at the column
+        position, based on each cluster. Each cluster should yield the
+        same proportions, within rounding error; however, the function
+        that receives the return value is responsible for verifying.
+    """
+    # Validate the dimensionality of the arguments.
+    if p_ends_given_noclose.ndim == 2:
+        # If p_ends_given_noclose has 2 dimensions, then promote it to
+        # 3 dimensions first.
+        return _calc_p_ends(np.expand_dims(p_ends_given_noclose, 2),
+                            min_gap,
+                            p_mut_given_span)
+    npos, _, ncls = p_ends_given_noclose.shape
+    min_gap = _adjust_min_gap(npos, min_gap)
+    # Proceed based on the minimum gap between mutations.
+    if min_gap > 0:
+        # Calculate the probability that a read with each pair of end
+        # coordinates would have no two mutations too close.
+        p_nomut_window = _calc_p_nomut_window(p_mut_given_span, min_gap)
+        p_noclose_given_ends = _calc_p_noclose_given_ends(p_mut_given_span,
+                                                          p_nomut_window)
+        # Calculate the proportion of total reads that would have each
+        # pair of end coordinates.
+        p_ends = _triu_norm(_triu_div(p_ends_given_noclose,
+                                      p_noclose_given_ends))
+        # Validate the dimensions of the proportions.
+        if p_ends.shape != p_ends_given_noclose.shape:
+            raise ValueError(
+                f"The dimensions of p_ends {p_ends.shape} differ from those "
+                f"of p_ends_given_noclose {p_ends_given_noclose.shape}"
+            )
+    else:
+        # No two mutations can be too close.
+        p_ends = p_ends_given_noclose
+    # Confirm every cluster gave the same distribution of coordinates.
+    p_ends_cluster_1 = p_ends[:, :, 0]
+    for k in range(1, ncls):
+        if not _triu_allclose(p_ends[:, :, k], p_ends_cluster_1):
+            print(p_ends)
+            raise ValueError("The distributions of end coordinates differ "
+                             f"between clusters 1 and {k + 1}")
+    return p_ends_cluster_1
+
+
+def calc_p_noclose_given_ends_numpy(p_mut_given_span: np.ndarray, min_gap: int):
+    """ Given underlying mutation rates (`p_mut_given_span`), calculate
+    the probability that a read starting at position (a) and ending at
+    position (b) would have no two mutations too close (i.e. separated
+    by fewer than `min_gap` non-mutated positions), for each combination
+    of (a) and (b) such that 1 ≤ a ≤ b ≤ L (in biological coordinates)
+    or 0 ≤ a ≤ b < L (in Python coordinates).
+
+    Parameters
+    ----------
+    p_mut_given_span: ndarray
+        A 2D (positions x clusters) array of the underlying mutation
+        rates, i.e. the probability that a read has a mutation at
+        position (j) given that it contains position (j).
+    min_gap: int
+        Minimum number of non-mutated bases between two mutations;
+        must be ≥ 0.
+
+    Returns
+    -------
+    np.ndarray
+        3D (positions x positions x clusters) array of the probability
+        that a random read starting at position (a) (row) and ending at
+        position (b) (column) would have no two mutations too close.
+    """
+    if min_gap < 0:
+        raise ValueError(f"min_gap must be ≥ 0, but got {min_gap}")
+    if p_mut_given_span.ndim == 2:
+        p_mut_given_span = _clip(p_mut_given_span)
+        return _calc_p_noclose_given_ends(p_mut_given_span,
+                                          _calc_p_nomut_window(p_mut_given_span,
+                                                               min_gap))
+    if p_mut_given_span.ndim == 1:
+        return calc_p_noclose_given_ends_numpy(
+            p_mut_given_span.reshape((-1, 1)), min_gap
+        ).reshape((p_mut_given_span.size, p_mut_given_span.size))
+    raise ValueError("p_mut_given_span must have 1 or 2 dimensions, "
+                     f"but got {p_mut_given_span.ndim}")
+
+
+def calc_p_mut_p_ends_numpy(p_mut_given_span_noclose: np.ndarray,
+                            p_ends_given_noclose: np.ndarray,
+                            min_gap: int,
+                            guess_p_mut_given_span: np.ndarray | None = None,
+                            guess_p_ends: np.ndarray | None = None, *,
+                            prenormalize: bool = True,
+                            max_iter: int = 100,
+                            convergence_thresh: float = 1.e-4,
+                            **kwargs):
+    """
+    """
+    # Validate the dimensions of the arrays.
+    npos, ncls = p_mut_given_span_noclose.shape
+    if ncls == 0:
+        raise ValueError("p_mut_given_span_noclose contains 0 clusters")
+    if p_ends_given_noclose.shape != (npos, npos, ncls):
+        raise ValueError(
+            "p_ends_given_noclose must have dimensions (positions x positions "
+            f"x clusters), but got {p_ends_given_noclose.shape} "
+            f"(≠ {npos, npos, ncls})"
+        )
+    # Normalize the values.
+    min_gap = _adjust_min_gap(npos, min_gap)
+    if prenormalize:
+        p_mut_given_span_noclose = _clip(p_mut_given_span_noclose)
+        p_ends_given_noclose = _triu_norm(_clip(p_ends_given_noclose))
+    # Determine the initial guess for the mutation rates.
+    if guess_p_mut_given_span is None:
+        # If no initial guess was given, then use the mutation rates of
+        # the observed reads.
+        guess_p_mut_given_span = p_mut_given_span_noclose
+    elif guess_p_mut_given_span.shape != p_mut_given_span_noclose.shape:
+        raise ValueError(
+            "If given, guess_p_mut_given_span must have the same dimensions as "
+            f"p_mut_given_span_noclose, but got {guess_p_mut_given_span.shape} "
+            f"≠ {p_mut_given_span_noclose.shape}"
+        )
+    elif prenormalize:
+        # Ensure the initial mutation rates are clipped.
+        guess_p_mut_given_span = _clip(guess_p_mut_given_span)
+    # Determine the initial guess for the read coordinate distribution.
+    if guess_p_ends is None:
+        # If no initial guess was given, then use the coordinates of
+        # the observed reads.
+        if ncls == 1:
+            guess_p_ends = p_ends_given_noclose[:, :, 0]
+        else:
+            guess_p_ends = p_ends_given_noclose.mean(axis=2)
+    elif guess_p_ends.shape != (npos, npos):
+        raise ValueError(
+            "If given, guess_p_ends must have dimensions (positions x "
+            f"positions), but got {guess_p_ends.shape} ≠ {npos, npos}"
+        )
+    elif prenormalize:
+        # Ensure the initial coordinate distributions are normalized.
+        guess_p_ends = _triu_norm(_clip(guess_p_ends))
+    # Iteratively update the mutation rates and read coordinates.
+    for i in range(max_iter):
+        print("Iteration", i)
+        # Update the mutation rates using the read coordinates.
+        next_p_mut_given_span = _calc_p_mut_given_span(p_mut_given_span_noclose,
+                                                       min_gap,
+                                                       guess_p_ends,
+                                                       guess_p_mut_given_span,
+                                                       **kwargs)
+        # Compute the RMSD change in mutation rates.
+        rmsd_p_mut_given_span = np.sqrt(np.mean(np.square(
+            next_p_mut_given_span - guess_p_mut_given_span
+        )))
+        # Update init_p_mut_given_span for the next iteration.
+        guess_p_mut_given_span = next_p_mut_given_span
+        # Check for convergence using the RMSD change.
+        if rmsd_p_mut_given_span <= convergence_thresh:
+            break
+        # Update the distribution of read end coordinates using the
+        # mutation rates.
+        guess_p_ends = _calc_p_ends(p_ends_given_noclose,
+                                    min_gap,
+                                    guess_p_mut_given_span)
+    else:
+        logger.warning("Mutation rates and distribution of read coordinates "
+                       f"failed to converge in {max_iter} iterations.")
+    return guess_p_mut_given_span, guess_p_ends
 
 
 def calc_prop_adj_numpy(prop_obs: np.ndarray, f_obs: np.ndarray):
