@@ -514,8 +514,9 @@ def _calc_p_mut_given_span(p_mut_given_span_noclose: np.ndarray,
 
 
 def _calc_p_ends(p_ends_given_noclose: np.ndarray,
-                 min_gap: int,
-                 p_mut_given_span: np.ndarray):
+                 p_noclose_given_ends: np.ndarray,
+                 p_mut_given_span: np.ndarray,
+                 p_clust: np.ndarray):
     """ Calculate the proportion of total reads with each pair of 5' and
     3' coordinates.
 
@@ -537,11 +538,15 @@ def _calc_p_ends(p_ends_given_noclose: np.ndarray,
         3D (positions x positions x clusters) array of the proportion of
         observed reads in each cluster beginning at the row position and
         ending at the column position.
-    min_gap: int
-        Minimum number of non-mutated bases between two mutations.
+    p_noclose_given_ends: np.ndarray
+        3D (positions x positions x clusters) array of the pobabilities
+        that a read with 5' and 3' coordinates corresponding to the row
+        and column would have no two mutations too close.
     p_mut_given_span: np.ndarray
         2D (positions x clusters) array of the total mutation rate at
         each position in each cluster.
+    p_clust: np.ndarray
+        1D (clusters) array of the proportion of each cluster.
 
     Returns
     -------
@@ -555,44 +560,63 @@ def _calc_p_ends(p_ends_given_noclose: np.ndarray,
         # If p_ends_given_noclose has 2 dimensions, then promote it to
         # 3 dimensions first.
         return _calc_p_ends(np.expand_dims(p_ends_given_noclose, 2),
-                            min_gap,
-                            p_mut_given_span)
+                            p_noclose_given_ends,
+                            p_mut_given_span,
+                            p_clust)
     npos, ncls = p_mut_given_span.shape
+    if ncls == 0:
+        raise ValueError(f"Expected ≥ 1 cluster(s), but got {ncls}")
     if p_ends_given_noclose.shape != (npos, npos, ncls):
         raise ValueError(
             f"p_ends_given_noclose must have dimensions "
             f"(positions x positions x clusters) {npos, npos, ncls}, "
             f"but got {p_ends_given_noclose.shape}"
         )
-    min_gap = _adjust_min_gap(npos, min_gap)
-    # Proceed based on the minimum gap between mutations.
-    if min_gap > 0:
-        # Calculate the probability that a read with each pair of end
-        # coordinates would have no two mutations too close.
-        p_nomut_window = _calc_p_nomut_window(p_mut_given_span, min_gap)
-        p_noclose_given_ends = _calc_p_noclose_given_ends(p_mut_given_span,
-                                                          p_nomut_window)
-        # Calculate the proportion of total reads that would have each
-        # pair of end coordinates.
-        p_ends = _triu_norm(_triu_div(p_ends_given_noclose,
-                                      p_noclose_given_ends))
-        # Validate the dimensions of the proportions.
-        if p_ends.shape != p_ends_given_noclose.shape:
-            raise ValueError(
-                f"The dimensions of p_ends {p_ends.shape} differ from those "
-                f"of p_ends_given_noclose {p_ends_given_noclose.shape}"
-            )
-    else:
-        # No two mutations can be too close.
-        p_ends = p_ends_given_noclose
-    # Confirm every cluster gave the same distribution of coordinates.
-    p_ends_cluster_1 = p_ends[:, :, 0]
-    for k in range(1, ncls):
-        if not _triu_allclose(p_ends[:, :, k], p_ends_cluster_1, rtol=0.1):
-            print(np.triu((p_ends[:, :, k] / p_ends_cluster_1)))
-            raise ValueError("The distributions of end coordinates differ "
-                             f"between clusters 1 and {k + 1}")
-    return p_ends_cluster_1
+    # Calculate the proportion of total reads that would have each
+    # pair of end coordinates.
+    p_ends = _triu_norm(_triu_div(p_ends_given_noclose,
+                                  p_noclose_given_ends))
+    # Validate the dimensions of the proportions.
+    if p_ends.shape != p_ends_given_noclose.shape:
+        raise ValueError(
+            f"The dimensions of p_ends {p_ends.shape} differ from those "
+            f"of p_ends_given_noclose {p_ends_given_noclose.shape}"
+        )
+    # Return a consensus distribution among all clusters.
+    if ncls == 1:
+        return p_ends[:, :, 0]
+    return np.average(p_ends, axis=2, weights=p_clust)
+
+
+def _calc_p_clust(p_clust_given_noclose: np.ndarray,
+                  p_ends: np.ndarray,
+                  p_noclose_given_ends: np.ndarray):
+    # Validate the dimensionality of the arguments.
+    ncls, = p_clust_given_noclose.shape
+    npos, _ = p_ends.shape
+    if p_ends.shape != (npos, npos):
+        raise ValueError("p_ends must have dimensions (positions x positions), "
+                         f"but got {p_ends.shape}")
+    if p_noclose_given_ends.shape != (npos, npos, ncls):
+        raise ValueError(
+            f"p_noclose_given_ends must have dimensions "
+            f"(positions x positions x clusters) {npos, npos, ncls}, "
+            f"but got {p_noclose_given_ends.shape}"
+        )
+    # Compute the weighted sum of the probabilities that reads from each
+    # cluster would have no two mutations too close.
+    p_noclose = _triu_sum(np.expand_dims(p_ends, 2) * p_noclose_given_ends)
+    # Adjust the cluster proportions given no mutations are too close.
+    p_clust = p_clust_given_noclose / p_noclose
+    # Normalize the proportions to sum to 1.
+    p_clust /= np.sum(p_clust)
+    # Validate the dimensions of the proportions.
+    if p_clust.shape != p_clust_given_noclose.shape:
+        raise ValueError(
+            f"The dimensions of p_clust {p_clust.shape} differ from those "
+            f"of p_clust_given_noclose {p_clust_given_noclose.shape}"
+        )
+    return p_clust
 
 
 def calc_p_noclose_given_ends_numpy(p_mut_given_span: np.ndarray, min_gap: int):
@@ -637,9 +661,11 @@ def calc_p_noclose_given_ends_numpy(p_mut_given_span: np.ndarray, min_gap: int):
 
 def calc_p_mut_p_ends_numpy(p_mut_given_span_noclose: np.ndarray,
                             p_ends_given_noclose: np.ndarray,
+                            p_clust_given_noclose: np.ndarray,
                             min_gap: int,
                             guess_p_mut_given_span: np.ndarray | None = None,
-                            guess_p_ends: np.ndarray | None = None, *,
+                            guess_p_ends: np.ndarray | None = None,
+                            guess_p_clust: np.ndarray | None = None, *,
                             prenormalize: bool = True,
                             max_iter: int = 100,
                             convergence_thresh: float = 1.e-4,
@@ -654,13 +680,20 @@ def calc_p_mut_p_ends_numpy(p_mut_given_span_noclose: np.ndarray,
         raise ValueError(
             "p_ends_given_noclose must have dimensions (positions x positions "
             f"x clusters), but got {p_ends_given_noclose.shape} "
-            f"(≠ {npos, npos, ncls})"
+            f"≠ {npos, npos, ncls}"
+        )
+    if p_clust_given_noclose.shape != (ncls,):
+        raise ValueError(
+            "p_clust_given_noclose must have dimensions (clusters), "
+            f"but got {p_ends_given_noclose.shape} ≠ {ncls,}"
         )
     # Normalize the values.
     min_gap = _adjust_min_gap(npos, min_gap)
     if prenormalize:
         p_mut_given_span_noclose = _clip(p_mut_given_span_noclose)
         p_ends_given_noclose = _triu_norm(_clip(p_ends_given_noclose))
+        p_clust_given_noclose = (p_clust_given_noclose
+                                 / np.sum(p_clust_given_noclose))
     # Determine the initial guess for the mutation rates.
     if guess_p_mut_given_span is None:
         # If no initial guess was given, then use the mutation rates of
@@ -675,6 +708,20 @@ def calc_p_mut_p_ends_numpy(p_mut_given_span_noclose: np.ndarray,
     elif prenormalize:
         # Ensure the initial mutation rates are clipped.
         guess_p_mut_given_span = _clip(guess_p_mut_given_span)
+    # Determine the initial guess for the cluster proportions.
+    if guess_p_clust is None:
+        # If no initial guess was given, then use the proportions of the
+        # observed reads.
+        guess_p_clust = p_clust_given_noclose
+    elif guess_p_clust.shape != p_clust_given_noclose.shape:
+        raise ValueError(
+            "If given, guess_p_clust must have the same dimensions as "
+            f"p_clust_given_noclose, but got {guess_p_clust.shape} "
+            f"≠ {p_clust_given_noclose.shape}"
+        )
+    elif prenormalize:
+        # Ensure the initial cluster proportions sum to 1.
+        guess_p_clust = guess_p_clust / np.sum(guess_p_clust)
     # Determine the initial guess for the read coordinate distribution.
     if guess_p_ends is None:
         # If no initial guess was given, then use the coordinates of
@@ -682,7 +729,9 @@ def calc_p_mut_p_ends_numpy(p_mut_given_span_noclose: np.ndarray,
         if ncls == 1:
             guess_p_ends = p_ends_given_noclose[:, :, 0]
         else:
-            guess_p_ends = p_ends_given_noclose.mean(axis=2)
+            guess_p_ends = np.average(p_ends_given_noclose,
+                                      axis=2,
+                                      weights=guess_p_clust)
     elif guess_p_ends.shape != (npos, npos):
         raise ValueError(
             "If given, guess_p_ends must have dimensions (positions x "
@@ -704,20 +753,30 @@ def calc_p_mut_p_ends_numpy(p_mut_given_span_noclose: np.ndarray,
         rmsd_p_mut_given_span = np.sqrt(np.mean(np.square(
             next_p_mut_given_span - guess_p_mut_given_span
         )))
-        # Update init_p_mut_given_span for the next iteration.
+        # Update guess_p_mut_given_span for the next iteration.
         guess_p_mut_given_span = next_p_mut_given_span
         # Check for convergence using the RMSD change.
         if rmsd_p_mut_given_span <= convergence_thresh:
             break
-        # Update the distribution of read end coordinates using the
-        # mutation rates.
+        # Compute the probability that reads with each end coordinates
+        # would have no two mutations too close.
+        p_noclose_given_ends = _calc_p_noclose_given_ends(
+            guess_p_mut_given_span,
+            _calc_p_nomut_window(guess_p_mut_given_span, min_gap)
+        )
+        # Update the distribution of read end coordinates and clusters
+        # using the mutation rates.
         guess_p_ends = _calc_p_ends(p_ends_given_noclose,
-                                    min_gap,
-                                    guess_p_mut_given_span)
+                                    p_noclose_given_ends,
+                                    guess_p_mut_given_span,
+                                    guess_p_clust)
+        guess_p_clust = _calc_p_clust(p_clust_given_noclose,
+                                      guess_p_ends,
+                                      p_noclose_given_ends)
     else:
         logger.warning("Mutation rates and distribution of read coordinates "
                        f"failed to converge in {max_iter} iterations.")
-    return guess_p_mut_given_span, guess_p_ends
+    return guess_p_mut_given_span, guess_p_ends, guess_p_clust
 
 
 def calc_prop_adj_numpy(prop_obs: np.ndarray, f_obs: np.ndarray):

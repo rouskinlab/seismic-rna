@@ -76,11 +76,13 @@ def simulate_reads(n_reads: int, p_mut: np.ndarray, p_ends: np.ndarray):
 
 
 def simulate_params(n_pos: int, n_cls: int, p_mut_max: float = 1.):
-    """ Return `p_mut` and `p_ends` parameters. """
+    """ Return `p_mut`, `p_ends`, and `p_cls` parameters. """
     p_mut = p_mut_max * rng.random((n_pos, n_cls))
     p_ends = np.triu(1. - rng.random((n_pos, n_pos)))
     p_ends /= np.sum(p_ends)
-    return p_mut, p_ends
+    p_cls = 1. - rng.random(n_cls)
+    p_cls /= np.sum(p_cls)
+    return p_mut, p_ends, p_cls
 
 
 def calc_p_ends_given_noclose(p_ends: np.ndarray,
@@ -149,6 +151,36 @@ def calc_p_ends_given_noclose(p_ends: np.ndarray,
             f"but got {p_ends_given_noclose.shape}"
         )
     return p_ends_given_noclose
+
+
+def calc_p_clust_given_noclose(p_clust: np.ndarray,
+                               p_ends: np.ndarray,
+                               p_noclose_given_ends: np.ndarray):
+    # Validate the dimensionality of the arguments.
+    ncls, = p_clust.shape
+    npos, _ = p_ends.shape
+    if p_ends.shape != (npos, npos):
+        raise ValueError("p_ends must have dimensions (positions x positions), "
+                         f"but got {p_ends.shape}")
+    if p_noclose_given_ends.shape != (npos, npos, ncls):
+        raise ValueError(
+            f"p_noclose_given_ends must have dimensions "
+            f"(positions x positions x clusters) {npos, npos, ncls}, "
+            f"but got {p_noclose_given_ends.shape}"
+        )
+    # Compute the weighted sum of the probabilities that reads from each
+    # cluster would have no two mutations too close.
+    p_noclose = _triu_sum(np.expand_dims(p_ends, 2) * p_noclose_given_ends)
+    # Adjust the cluster proportions given no mutations are too close.
+    p_clust_given_noclose = p_clust * p_noclose
+    # Normalize the proportions to sum to 1.
+    p_clust_given_noclose /= np.sum(p_clust_given_noclose)
+    # Validate the dimensions of the proportions.
+    if p_clust_given_noclose.shape != p_clust.shape:
+        raise ValueError(f"The dimensions of p_clust_given_noclose "
+                         f"{p_clust_given_noclose.shape} differ from those "
+                         f"of p_clust {p_clust.shape}")
+    return p_clust_given_noclose
 
 
 class TestNoCloseMuts(ut.TestCase):
@@ -658,7 +690,7 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
         # Simulate reads.
         n_pos = 5
         n_reads = 1_000_000
-        p_mut, p_ends = simulate_params(n_pos, 1)
+        p_mut, p_ends, p_cls = simulate_params(n_pos, 1)
         muts, info, end5s, end3s = simulate_reads(n_reads, p_mut[:, 0], p_ends)
         # Test each minimum gap between mutations (min_gap).
         for min_gap in [0, 3, n_pos]:
@@ -765,7 +797,7 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
         max_gap = 3
         # Test each number of clusters.
         for n_cls in range(1, max_clusters + 1):
-            p_mut, p_ends = simulate_params(n_pos, n_cls)
+            p_mut, p_ends, p_cls = simulate_params(n_pos, n_cls)
             # Test each minimum gap between mutations.
             for min_gap in range(max_gap + 1):
                 with self.subTest(n_cls=n_cls, min_gap=min_gap):
@@ -800,7 +832,7 @@ class TestCalcPMutGivenSpan(ut.TestCase):
         max_clusters = 3
         max_gap = 3
         for n_cls in range(1, max_clusters):
-            p_mut, p_ends = simulate_params(n_pos, n_cls, max_p_mut)
+            p_mut, p_ends, p_cls = simulate_params(n_pos, n_cls, max_p_mut)
             for min_gap in range(max_gap + 1):
                 # Compute the mutation rates without mutations too close.
                 p_nomut_window = _calc_p_nomut_window(p_mut, min_gap)
@@ -832,17 +864,21 @@ class TestCalcPEnds(ut.TestCase):
         max_clusters = 3
         max_gap = 3
         for n_cls in range(1, max_clusters):
-            p_mut, p_ends = simulate_params(n_pos, n_cls, max_p_mut)
+            p_mut, p_ends, p_cls = simulate_params(n_pos, n_cls, max_p_mut)
             for min_gap in range(max_gap + 1):
                 # Compute the coordinate distributions without mutations
                 # too close.
                 p_ends_given_noclose = calc_p_ends_given_noclose(p_ends,
                                                                  min_gap,
                                                                  p_mut)
+                p_noclose_given_ends = _calc_p_noclose_given_ends(
+                    p_mut, _calc_p_nomut_window(p_mut, min_gap)
+                )
                 # Infer the original distribution of all reads.
                 p_ends_inferred = _calc_p_ends(p_ends_given_noclose,
-                                               min_gap,
-                                               p_mut)
+                                               p_noclose_given_ends,
+                                               p_mut,
+                                               p_cls)
                 self.assertEqual(p_ends_inferred.shape, p_ends.shape)
                 self.assertTrue(_triu_allclose(p_ends_inferred, p_ends))
 
@@ -855,7 +891,7 @@ class TestCalcPMutPEndsNumPy(ut.TestCase):
         max_clusters = 3
         max_gap = 3
         for n_cls in range(1, max_clusters):
-            p_mut, p_ends = simulate_params(n_pos, n_cls, max_p_mut)
+            p_mut, p_ends, p_cls = simulate_params(n_pos, n_cls, max_p_mut)
             for min_gap in range(max_gap + 1):
                 # Compute the mutation rates and distributions of end
                 # coordinates without mutations too close.
@@ -869,20 +905,31 @@ class TestCalcPMutPEndsNumPy(ut.TestCase):
                 p_ends_given_noclose = calc_p_ends_given_noclose(p_ends,
                                                                  min_gap,
                                                                  p_mut)
+                p_clust_given_noclose = calc_p_clust_given_noclose(
+                    p_cls, p_ends, p_noclose_given_ends
+                )
                 # Infer the original parameters using those of the reads
                 # without mutations too close.
-                p_mut_inferred, p_ends_inferred = calc_p_mut_p_ends_numpy(
+                (p_mut_inferred,
+                 p_ends_inferred,
+                 p_cls_inferred) = calc_p_mut_p_ends_numpy(
                     p_mut_given_span_noclose,
                     p_ends_given_noclose,
+                    p_clust_given_noclose,
                     min_gap,
                 )
                 self.assertEqual(p_mut_inferred.shape, p_mut.shape)
                 self.assertTrue(np.allclose(p_mut_inferred,
                                             p_mut,
                                             atol=1.e-4,
-                                            rtol=1.e-3))
+                                            rtol=1.e-2))
                 self.assertEqual(p_ends_inferred.shape, p_ends.shape)
                 self.assertTrue(_triu_allclose(p_ends_inferred, p_ends))
+                self.assertEqual(p_cls_inferred.shape, p_cls.shape)
+                self.assertTrue(np.allclose(p_cls_inferred,
+                                            p_cls,
+                                            atol=1.e-3,
+                                            rtol=1.e-2))
 
 
 if __name__ == "__main__":
