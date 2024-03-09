@@ -86,7 +86,7 @@ def simulate_params(n_pos: int, n_cls: int, p_mut_max: float = 1.):
 
 
 def calc_p_ends_given_noclose(p_ends: np.ndarray,
-                              min_gap: int,
+                              p_noclose_given_ends: np.ndarray,
                               p_mut_given_span: np.ndarray):
     """ Calculate the proportion of reads with no two mutations too
     close with each pair of 5' and 3' coordinates.
@@ -109,8 +109,10 @@ def calc_p_ends_given_noclose(p_ends: np.ndarray,
         2D (positions x clusters) array of the proportion of total reads
         in each cluster beginning at the row position and ending at the
         column position.
-    min_gap: int
-        Minimum number of non-mutated bases between two mutations.
+    p_noclose_given_ends: np.ndarray
+        3D (positions x positions x clusters) array of the pobabilities
+        that a read with 5' and 3' coordinates corresponding to the row
+        and column would have no two mutations too close.
     p_mut_given_span: np.ndarray
         2D (positions x clusters) array of the total mutation rate at
         each position in each cluster.
@@ -127,26 +129,20 @@ def calc_p_ends_given_noclose(p_ends: np.ndarray,
     if p_ends.shape != (npos, npos):
         raise ValueError("p_ends must have dimensions (positions x positions), "
                          f"but got {p_ends.shape}")
-    min_gap = _adjust_min_gap(npos, min_gap)
-    # Proceed based on the minimum gap between mutations.
-    if min_gap > 0:
-        # Calculate the probability that a read with each pair of end
-        # coordinates would have no two mutations too close.
-        p_nomut_window = _calc_p_nomut_window(p_mut_given_span, min_gap)
-        p_noclose_given_ends = _calc_p_noclose_given_ends(p_mut_given_span,
-                                                          p_nomut_window)
-        # Calculate the proportion of total reads that would have each
-        # pair of end coordinates.
-        p_ends_given_noclose = _triu_norm(np.expand_dims(p_ends, 2)
-                                          * p_noclose_given_ends)
-    else:
-        # No two mutations can be too close.
-        p_ends_given_noclose = np.broadcast_to(np.expand_dims(p_ends, 2),
-                                               (npos, npos, ncls))
+    if p_noclose_given_ends.shape != (npos, npos, ncls):
+        raise ValueError(
+            f"p_noclose_given_ends must have dimensions "
+            f"(positions x positions x clusters) {npos, npos, ncls}, "
+            f"but got {p_noclose_given_ends.shape}"
+        )
+    # Calculate the proportion of total reads that would have each
+    # pair of end coordinates.
+    p_ends_given_noclose = _triu_norm(np.expand_dims(p_ends, 2)
+                                      * p_noclose_given_ends)
     # Validate the dimensions of the proportions.
     if p_ends_given_noclose.shape != (npos, npos, ncls):
         raise ValueError(
-            f"p_ends_given_noclose must have dimensions "
+            "p_ends_given_noclose must have dimensions "
             f"(positions x positions x clusters) {npos, npos, ncls}, "
             f"but got {p_ends_given_noclose.shape}"
         )
@@ -741,7 +737,9 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                 # Compute the theoretical proportion of reads aligning
                 # to each pair of 5' and 3' coordinates.
                 p_ends_given_noclose_theory = calc_p_ends_given_noclose(
-                    p_ends, min_gap, p_mut
+                    p_ends,
+                    np.expand_dims(p_noclose_given_ends_theory, 2),
+                    p_mut
                 ).reshape((n_pos, n_pos))
                 # Compare to the simulated proportion of reads aligning
                 # to each pair of coordinates.
@@ -868,11 +866,11 @@ class TestCalcPEnds(ut.TestCase):
             for min_gap in range(max_gap + 1):
                 # Compute the coordinate distributions without mutations
                 # too close.
-                p_ends_given_noclose = calc_p_ends_given_noclose(p_ends,
-                                                                 min_gap,
-                                                                 p_mut)
                 p_noclose_given_ends = _calc_p_noclose_given_ends(
                     p_mut, _calc_p_nomut_window(p_mut, min_gap)
+                )
+                p_ends_given_noclose = calc_p_ends_given_noclose(
+                    p_ends, p_noclose_given_ends, p_mut
                 )
                 # Infer the original distribution of all reads.
                 p_ends_inferred = _calc_p_ends(p_ends_given_noclose,
@@ -902,9 +900,9 @@ class TestCalcPMutPEndsNumPy(ut.TestCase):
                 p_mut_given_span_noclose = _calc_p_mut_given_span_noclose(
                     p_mut, p_ends, p_noclose_given_ends, p_nomut_window
                 )
-                p_ends_given_noclose = calc_p_ends_given_noclose(p_ends,
-                                                                 min_gap,
-                                                                 p_mut)
+                p_ends_given_noclose = calc_p_ends_given_noclose(
+                    p_ends, p_noclose_given_ends, p_mut
+                )
                 p_clust_given_noclose = calc_p_clust_given_noclose(
                     p_cls, p_ends, p_noclose_given_ends
                 )

@@ -521,16 +521,13 @@ def _calc_p_ends(p_ends_given_noclose: np.ndarray,
     3' coordinates.
 
     This function is meant to be called by another function that has
-    validated the arguments; hence, this function does no validation.
+    validated the arguments; hence, this function makes assumptions:
 
-    Assumptions
-    -----------
     -   Every value in the upper triangle of `p_ends_given_noclose` is
         ≥ 0 and ≤ 1; no values below the main diagonal are used.
     -   The upper triangle of `p_ends_given_noclose` sums to 1.
     -   `min_gap` is a non-negative integer.
     -   Every value in `p_mut_given_span` is ≥ 0 and ≤ 1.
-    -   There is at least 1 cluster.
 
     Parameters
     ----------
@@ -572,6 +569,15 @@ def _calc_p_ends(p_ends_given_noclose: np.ndarray,
             f"(positions x positions x clusters) {npos, npos, ncls}, "
             f"but got {p_ends_given_noclose.shape}"
         )
+    if p_noclose_given_ends.shape != (npos, npos, ncls):
+        raise ValueError(
+            f"p_noclose_given_ends must have dimensions "
+            f"(positions x positions x clusters) {npos, npos, ncls}, "
+            f"but got {p_noclose_given_ends.shape}"
+        )
+    if p_clust.shape != (ncls,):
+        raise ValueError("p_clust must have dimensions (clusters), "
+                         f"but got {p_clust.shape} ≠ {ncls,}")
     # Calculate the proportion of total reads that would have each
     # pair of end coordinates.
     p_ends = _triu_norm(_triu_div(p_ends_given_noclose,
@@ -742,7 +748,6 @@ def calc_p_mut_p_ends_numpy(p_mut_given_span_noclose: np.ndarray,
         guess_p_ends = _triu_norm(_clip(guess_p_ends))
     # Iteratively update the mutation rates and read coordinates.
     for i in range(max_iter):
-        print("Iteration", i)
         # Update the mutation rates using the read coordinates.
         next_p_mut_given_span = _calc_p_mut_given_span(p_mut_given_span_noclose,
                                                        min_gap,
