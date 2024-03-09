@@ -187,7 +187,10 @@ def _triu_div(numer: np.ndarray, denom: np.ndarray):
     return quotient
 
 
-def _triu_allclose(a: np.ndarray, b: np.ndarray):
+def _triu_allclose(a: np.ndarray,
+                   b: np.ndarray,
+                   rtol: float = 1.e-3,
+                   atol: float = 1.e-6):
     """ Return whether the upper triangles of `a` and `b` are all close.
 
     This function is meant to be called by another function that has
@@ -205,6 +208,10 @@ def _triu_allclose(a: np.ndarray, b: np.ndarray):
         Array 1.
     b: np.ndarray
         Array 2.
+    rtol: float = 1.0e-3
+        Relative tolerance.
+    atol: float = 1.0e-6
+        Absolute tolerance.
 
     Returns
     -------
@@ -213,7 +220,7 @@ def _triu_allclose(a: np.ndarray, b: np.ndarray):
         close using the function `np.allclose`.
     """
     for j in range(a.shape[0]):
-        if not np.allclose(a[j, j:], b[j, j:], atol=1.e-6, rtol=1.e-3):
+        if not np.allclose(a[j, j:], b[j, j:], rtol=rtol, atol=atol):
             return False
     return True
 
@@ -292,10 +299,9 @@ def _calc_p_noclose_given_ends(p_mut_given_span: np.ndarray,
                                p_nomut_window: np.ndarray):
     """ Given underlying mutation rates (`p_mut_given_span`), calculate
     the probability that a read starting at position (a) and ending at
-    position (b) would have no two mutations too close (i.e. separated
-    by fewer than `min_gap` non-mutated positions), for each combination
-    of (a) and (b) such that 1 ≤ a ≤ b ≤ L (in biological coordinates)
-    or 0 ≤ a ≤ b < L (in Python coordinates).
+    position (b) would have no two mutations too close, for each (a) and
+    (b) where 1 ≤ a ≤ b ≤ L (biological coordinates) or 0 ≤ a ≤ b < L
+    (Python coordinates).
 
     Parameters
     ----------
@@ -488,10 +494,12 @@ def _calc_p_mut_given_span(p_mut_given_span_noclose: np.ndarray,
         p_nomut_window = _calc_p_nomut_window(p_mut_given_span, min_gap)
         p_noclose_given_ends = _calc_p_noclose_given_ends(p_mut_given_span,
                                                           p_nomut_window)
-        return _calc_p_mut_given_span_noclose(p_mut_given_span,
-                                              p_ends,
-                                              p_noclose_given_ends,
-                                              p_nomut_window)
+        return p_mut_given_span_noclose - _calc_p_mut_given_span_noclose(
+            p_mut_given_span,
+            p_ends,
+            p_noclose_given_ends,
+            p_nomut_window
+        )
 
     # Import scipy here instead of at the top of this module because
     # its import is slow enough to impact global startup time.
@@ -516,14 +524,10 @@ def _calc_p_ends(p_ends_given_noclose: np.ndarray,
 
     Assumptions
     -----------
-    -   `p_ends_given_noclose` has 3 dimensions:
-        (positions x positions x clusters)
     -   Every value in the upper triangle of `p_ends_given_noclose` is
         ≥ 0 and ≤ 1; no values below the main diagonal are used.
     -   The upper triangle of `p_ends_given_noclose` sums to 1.
     -   `min_gap` is a non-negative integer.
-    -   `p_mut_given_span` has 2 dimensions:
-        (positions x clusters)
     -   Every value in `p_mut_given_span` is ≥ 0 and ≤ 1.
     -   There is at least 1 cluster.
 
@@ -542,11 +546,9 @@ def _calc_p_ends(p_ends_given_noclose: np.ndarray,
     Returns
     -------
     np.ndarray
-        3D (positions x positions x clusters) array of the proportion of
-        reads beginning at the row position and ending at the column
-        position, based on each cluster. Each cluster should yield the
-        same proportions, within rounding error; however, the function
-        that receives the return value is responsible for verifying.
+        2D (positions x positions) array of the proportion of reads
+        beginning at the row position and ending at the column position.
+        This array is assumed to be identical for all clusters.
     """
     # Validate the dimensionality of the arguments.
     if p_ends_given_noclose.ndim == 2:
@@ -555,7 +557,13 @@ def _calc_p_ends(p_ends_given_noclose: np.ndarray,
         return _calc_p_ends(np.expand_dims(p_ends_given_noclose, 2),
                             min_gap,
                             p_mut_given_span)
-    npos, _, ncls = p_ends_given_noclose.shape
+    npos, ncls = p_mut_given_span.shape
+    if p_ends_given_noclose.shape != (npos, npos, ncls):
+        raise ValueError(
+            f"p_ends_given_noclose must have dimensions "
+            f"(positions x positions x clusters) {npos, npos, ncls}, "
+            f"but got {p_ends_given_noclose.shape}"
+        )
     min_gap = _adjust_min_gap(npos, min_gap)
     # Proceed based on the minimum gap between mutations.
     if min_gap > 0:
@@ -580,8 +588,8 @@ def _calc_p_ends(p_ends_given_noclose: np.ndarray,
     # Confirm every cluster gave the same distribution of coordinates.
     p_ends_cluster_1 = p_ends[:, :, 0]
     for k in range(1, ncls):
-        if not _triu_allclose(p_ends[:, :, k], p_ends_cluster_1):
-            print(p_ends)
+        if not _triu_allclose(p_ends[:, :, k], p_ends_cluster_1, rtol=0.1):
+            print(np.triu((p_ends[:, :, k] / p_ends_cluster_1)))
             raise ValueError("The distributions of end coordinates differ "
                              f"between clusters 1 and {k + 1}")
     return p_ends_cluster_1

@@ -5,9 +5,11 @@ import numpy as np
 
 from seismicrna.core.mu.unbias.algo import (_calc_p_noclose_given_ends,
                                             _calc_p_mut_given_span_noclose,
-                                            calc_p_mut_p_ends_numpy,
                                             calc_p_noclose_given_ends_numpy,
+                                            calc_p_mut_p_ends_numpy,
                                             _calc_p_nomut_window,
+                                            _calc_p_mut_given_span,
+                                            _calc_p_ends,
                                             _clip,
                                             _adjust_min_gap,
                                             _triu_sum,
@@ -74,11 +76,79 @@ def simulate_reads(n_reads: int, p_mut: np.ndarray, p_ends: np.ndarray):
 
 
 def simulate_params(n_pos: int, n_cls: int, p_mut_max: float = 1.):
-    """ Return `p_mut` and `p_ends` parameters for `simulate_reads`. """
+    """ Return `p_mut` and `p_ends` parameters. """
     p_mut = p_mut_max * rng.random((n_pos, n_cls))
     p_ends = np.triu(1. - rng.random((n_pos, n_pos)))
     p_ends /= np.sum(p_ends)
     return p_mut, p_ends
+
+
+def calc_p_ends_given_noclose(p_ends: np.ndarray,
+                              min_gap: int,
+                              p_mut_given_span: np.ndarray):
+    """ Calculate the proportion of reads with no two mutations too
+    close with each pair of 5' and 3' coordinates.
+
+    Assumptions
+    -----------
+    -   `p_ends` has 2 dimensions: (positions x clusters)
+    -   Every value in the upper triangle of `p_ends` is ≥ 0 and ≤ 1;
+        no values below the main diagonal are used.
+    -   The upper triangle of `p_ends` sums to 1.
+    -   `min_gap` is a non-negative integer.
+    -   `p_mut_given_span` has 2 dimensions:
+        (positions x clusters)
+    -   Every value in `p_mut_given_span` is ≥ 0 and ≤ 1.
+    -   There is at least 1 cluster.
+
+    Parameters
+    ----------
+    p_ends: np.ndarray
+        2D (positions x clusters) array of the proportion of total reads
+        in each cluster beginning at the row position and ending at the
+        column position.
+    min_gap: int
+        Minimum number of non-mutated bases between two mutations.
+    p_mut_given_span: np.ndarray
+        2D (positions x clusters) array of the total mutation rate at
+        each position in each cluster.
+
+    Returns
+    -------
+    np.ndarray
+        3D (positions x positions x clusters) array of the proportion of
+        reads without mutations too close, beginning at the row position
+        and ending at the column position, in each cluster.
+    """
+    # Validate the dimensionality of the arguments.
+    npos, ncls = p_mut_given_span.shape
+    if p_ends.shape != (npos, npos):
+        raise ValueError("p_ends must have dimensions (positions x positions), "
+                         f"but got {p_ends.shape}")
+    min_gap = _adjust_min_gap(npos, min_gap)
+    # Proceed based on the minimum gap between mutations.
+    if min_gap > 0:
+        # Calculate the probability that a read with each pair of end
+        # coordinates would have no two mutations too close.
+        p_nomut_window = _calc_p_nomut_window(p_mut_given_span, min_gap)
+        p_noclose_given_ends = _calc_p_noclose_given_ends(p_mut_given_span,
+                                                          p_nomut_window)
+        # Calculate the proportion of total reads that would have each
+        # pair of end coordinates.
+        p_ends_given_noclose = _triu_norm(np.expand_dims(p_ends, 2)
+                                          * p_noclose_given_ends)
+    else:
+        # No two mutations can be too close.
+        p_ends_given_noclose = np.broadcast_to(np.expand_dims(p_ends, 2),
+                                               (npos, npos, ncls))
+    # Validate the dimensions of the proportions.
+    if p_ends_given_noclose.shape != (npos, npos, ncls):
+        raise ValueError(
+            f"p_ends_given_noclose must have dimensions "
+            f"(positions x positions x clusters) {npos, npos, ncls}, "
+            f"but got {p_ends_given_noclose.shape}"
+        )
+    return p_ends_given_noclose
 
 
 class TestNoCloseMuts(ut.TestCase):
@@ -580,16 +650,15 @@ class TestCalcPNoCloseGivenEndsNumPy(ut.TestCase):
                                            gap)
 
 
-class TestBiasCalculation(ut.TestCase):
+class TestCalcPMutGivenSpanNoClose(ut.TestCase):
 
     def test_simulated(self):
         from scipy.stats import binom
         confidence = 0.9999
         # Simulate reads.
-        n_pos = 6
-        p_mut_max = 1.0
+        n_pos = 5
         n_reads = 1_000_000
-        p_mut, p_ends = simulate_params(n_pos, 1, p_mut_max)
+        p_mut, p_ends = simulate_params(n_pos, 1)
         muts, info, end5s, end3s = simulate_reads(n_reads, p_mut[:, 0], p_ends)
         # Test each minimum gap between mutations (min_gap).
         for min_gap in [0, 3, n_pos]:
@@ -637,6 +706,33 @@ class TestBiasCalculation(ut.TestCase):
                                                     inter_lo / n_expect)
                             self.assertLessEqual(p_noclose_given_ends_sim,
                                                  inter_up / n_expect)
+                # Compute the theoretical proportion of reads aligning
+                # to each pair of 5' and 3' coordinates.
+                p_ends_given_noclose_theory = calc_p_ends_given_noclose(
+                    p_ends, min_gap, p_mut
+                ).reshape((n_pos, n_pos))
+                # Compare to the simulated proportion of reads aligning
+                # to each pair of coordinates.
+                p_noclose = _triu_sum(p_noclose_given_ends_theory * p_ends)
+                n_expect = np.round(p_ends_given_noclose_theory
+                                    * (p_noclose * n_reads))
+                inter_lo, inter_up = binom.interval(confidence,
+                                                    n_expect,
+                                                    p_ends_given_noclose_theory)
+                inter_lo = _triu_div(inter_lo, n_expect)
+                inter_up = _triu_div(inter_up, n_expect)
+                end5s_noclose = end5s[noclose]
+                end3s_noclose = end3s[noclose]
+                for end5 in range(n_pos):
+                    for end3 in range(end5, n_pos):
+                        p_ends_given_noclose_sim = np.mean(np.logical_and(
+                            end5s_noclose == end5,
+                            end3s_noclose == end3
+                        ))
+                        self.assertGreaterEqual(p_ends_given_noclose_sim,
+                                                inter_lo[end5, end3])
+                        self.assertLessEqual(p_ends_given_noclose_sim,
+                                             inter_up[end5, end3])
                 # Compute the expected coverage at each position.
                 n_expect = np.zeros(n_pos, dtype=int)
                 for end5 in range(n_pos):
@@ -663,99 +759,130 @@ class TestBiasCalculation(ut.TestCase):
                 self.assertTrue(np.all(p_mut_given_noclose_sim
                                        <= inter_up / n_expect))
 
-
-class TestCalcPMutGivenSpanNoClose(ut.TestCase):
-
-    def test_mu_multiplex(self):
+    def test_clusters(self):
         n_pos = 16
-        max_k = 5
-        max_g = 4
-        max_m = 0.2
-        # Test each number of clusters (k).
-        for k in range(max_k + 1):
-            # Test each minimum gap between mutations (g).
-            for g in range(max_g + 1):
-                with self.subTest(k=k, g=g):
-                    # Generate random real mutation rates.
-                    mus = rng.random((n_pos, k)) * max_m
-                    # Adjust all rates simultaneously.
-                    mus_obs_sim = _calc_mu_obs(mus, g)
-                    # Adjust the rates of each cluster (i) separately.
-                    mus_obs_sep = np.empty_like(mus_obs_sim)
-                    for i in range(k):
-                        mus_i = mus[:, i].reshape((n_pos, 1))
-                        mus_obs_i = _calc_mu_obs(mus_i, g).reshape(n_pos)
-                        mus_obs_sep[:, i] = mus_obs_i
-                    # Compare the results.
-                    self.assertTrue(np.allclose(mus_obs_sim, mus_obs_sep))
+        max_clusters = 3
+        max_gap = 3
+        # Test each number of clusters.
+        for n_cls in range(1, max_clusters + 1):
+            p_mut, p_ends = simulate_params(n_pos, n_cls)
+            # Test each minimum gap between mutations.
+            for min_gap in range(max_gap + 1):
+                with self.subTest(n_cls=n_cls, min_gap=min_gap):
+                    # Compute the mutation rates with no two mutations
+                    # too close for all clusters simultaneously.
+                    p_nomut_window = _calc_p_nomut_window(p_mut, min_gap)
+                    p_noclose_given_ends = _calc_p_noclose_given_ends(
+                        p_mut, p_nomut_window
+                    )
+                    p_mut_given_span_noclose = _calc_p_mut_given_span_noclose(
+                        p_mut, p_ends, p_noclose_given_ends, p_nomut_window
+                    )
+                    # Compare to computing each cluster individually.
+                    for k in range(n_cls):
+                        self.assertTrue(np.allclose(
+                            p_mut_given_span_noclose[:, k],
+                            _calc_p_mut_given_span_noclose(
+                                p_mut[:, [k]],
+                                p_ends,
+                                p_noclose_given_ends[:, :, [k]],
+                                p_nomut_window[:, :, [k]],
+                            ).reshape(n_pos)
+                        ))
 
-    def test_inv_calc_mu_adj(self):
+
+class TestCalcPMutGivenSpan(ut.TestCase):
+
+    def test_invert(self):
+        """ Test the inverse of `_calc_p_mut_given_span_noclose`. """
         n_pos = 16
-        max_k = 5
-        max_g = 4
-        max_m = 0.1
-        # Test each number of clusters (k).
-        for k in range(max_k + 1):
-            # Generate random observed mutation rates.
-            mus_obs = rng.random((n_pos, k)) * max_m
-            # Test each minimum gap between mutations (g).
-            for g in range(max_g + 1):
-                with self.subTest(k=k, g=g):
-                    # Compute the adjusted mutation rates.
-                    mus_adj = calc_p_mut_p_ends_numpy(mus_obs, g)
-                    # Recompute the observed mutation rates.
-                    mus_reobs = _calc_mu_obs(mus_adj, g)
-                    # Compare observed and reobserved mutation rates.
-                    self.assertTrue(np.allclose(mus_obs, mus_reobs))
+        max_p_mut = 0.5
+        max_clusters = 3
+        max_gap = 3
+        for n_cls in range(1, max_clusters):
+            p_mut, p_ends = simulate_params(n_pos, n_cls, max_p_mut)
+            for min_gap in range(max_gap + 1):
+                # Compute the mutation rates without mutations too close.
+                p_nomut_window = _calc_p_nomut_window(p_mut, min_gap)
+                p_noclose_given_ends = _calc_p_noclose_given_ends(
+                    p_mut, p_nomut_window
+                )
+                p_mut_given_span_noclose = _calc_p_mut_given_span_noclose(
+                    p_mut, p_ends, p_noclose_given_ends, p_nomut_window
+                )
+                p_mut_given_span = _calc_p_mut_given_span(
+                    p_mut_given_span_noclose,
+                    min_gap,
+                    p_ends,
+                    p_mut_given_span_noclose,
+                )
+                self.assertEqual(p_mut_given_span.shape, p_mut.shape)
+                self.assertTrue(np.allclose(p_mut_given_span,
+                                            p_mut,
+                                            atol=1.e-4,
+                                            rtol=1.e-3))
 
 
-class TestCalcMuAdjNumpy(ut.TestCase):
-    """ Test function `mu.calc_mu_adj_numpy`. """
+class TestCalcPEnds(ut.TestCase):
 
-    def test_mu_multiplex(self):
-        """ Test that running 1 - 5 clusters simultaneously produces the
-        same results as running each cluster separately. """
+    def test_invert(self):
+        """ Test the inverse of `calc_p_ends_given_noclose`. """
         n_pos = 16
-        max_k = 5
-        max_g = 4
-        max_m = 0.1
-        # Test each number of clusters (k).
-        for k in range(max_k + 1):
-            # Test each minimum gap between mutations (g).
-            for g in range(max_g + 1):
-                with self.subTest(k=k, g=g):
-                    # Generate random observed mutation rates.
-                    mus_obs = rng.random((n_pos, k)) * max_m
-                    # Adjust all rates simultaneously.
-                    mus_adj_sim = calc_p_mut_p_ends_numpy(mus_obs, g)
-                    # Adjust the rates of each cluster (i) separately.
-                    mus_adj_sep = np.empty_like(mus_obs)
-                    for i in range(k):
-                        obs_i = mus_obs[:, i].reshape((n_pos, 1))
-                        adj_i = calc_p_mut_p_ends_numpy(obs_i, g).reshape(n_pos)
-                        mus_adj_sep[:, i] = adj_i
-                    # Compare the results.
-                    self.assertTrue(np.allclose(mus_adj_sim, mus_adj_sep))
+        max_p_mut = 0.5
+        max_clusters = 3
+        max_gap = 3
+        for n_cls in range(1, max_clusters):
+            p_mut, p_ends = simulate_params(n_pos, n_cls, max_p_mut)
+            for min_gap in range(max_gap + 1):
+                # Compute the coordinate distributions without mutations
+                # too close.
+                p_ends_given_noclose = calc_p_ends_given_noclose(p_ends,
+                                                                 min_gap,
+                                                                 p_mut)
+                # Infer the original distribution of all reads.
+                p_ends_inferred = _calc_p_ends(p_ends_given_noclose,
+                                               min_gap,
+                                               p_mut)
+                self.assertEqual(p_ends_inferred.shape, p_ends.shape)
+                self.assertTrue(_triu_allclose(p_ends_inferred, p_ends))
 
-    def test_inv_calc_mu_obs(self):
-        """ Test that this function inverts `mu._calc_mu_obs`. """
+
+class TestCalcPMutPEndsNumPy(ut.TestCase):
+
+    def test_infer(self):
         n_pos = 16
-        max_k = 5
-        max_g = 4
-        max_m = 0.2
-        # Test each number of clusters (k).
-        for k in range(max_k + 1):
-            # Generate random real mutation rates.
-            mus = rng.random((n_pos, k)) * max_m
-            # Test each minimum gap between mutations (g).
-            for g in range(max_g + 1):
-                with self.subTest(k=k, g=g):
-                    # Compute the observed mutation rates.
-                    mus_obs = _calc_mu_obs(mus, g)
-                    # Adjust the observed mutation rates.
-                    mus_adj = calc_p_mut_p_ends_numpy(mus_obs, g)
-                    # Test if adjusted and initial mutation rates match.
-                    self.assertTrue(np.allclose(mus_adj, mus))
+        max_p_mut = 0.5
+        max_clusters = 3
+        max_gap = 3
+        for n_cls in range(1, max_clusters):
+            p_mut, p_ends = simulate_params(n_pos, n_cls, max_p_mut)
+            for min_gap in range(max_gap + 1):
+                # Compute the mutation rates and distributions of end
+                # coordinates without mutations too close.
+                p_nomut_window = _calc_p_nomut_window(p_mut, min_gap)
+                p_noclose_given_ends = _calc_p_noclose_given_ends(
+                    p_mut, p_nomut_window
+                )
+                p_mut_given_span_noclose = _calc_p_mut_given_span_noclose(
+                    p_mut, p_ends, p_noclose_given_ends, p_nomut_window
+                )
+                p_ends_given_noclose = calc_p_ends_given_noclose(p_ends,
+                                                                 min_gap,
+                                                                 p_mut)
+                # Infer the original parameters using those of the reads
+                # without mutations too close.
+                p_mut_inferred, p_ends_inferred = calc_p_mut_p_ends_numpy(
+                    p_mut_given_span_noclose,
+                    p_ends_given_noclose,
+                    min_gap,
+                )
+                self.assertEqual(p_mut_inferred.shape, p_mut.shape)
+                self.assertTrue(np.allclose(p_mut_inferred,
+                                            p_mut,
+                                            atol=1.e-4,
+                                            rtol=1.e-3))
+                self.assertEqual(p_ends_inferred.shape, p_ends.shape)
+                self.assertTrue(_triu_allclose(p_ends_inferred, p_ends))
 
 
 if __name__ == "__main__":
