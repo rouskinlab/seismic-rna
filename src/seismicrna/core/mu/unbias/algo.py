@@ -187,11 +187,43 @@ def _triu_div(numer: np.ndarray, denom: np.ndarray):
     return quotient
 
 
+def _triu_dot(a: np.ndarray, b: np.ndarray):
+    """ Dot product of `a` and `b`.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function does no validation.
+
+    Assumptions
+    -----------
+    -   `a` and `b` both have at least 2 dimensions.
+    -   The first and second dimensions of `a` are equal.
+    -   The first and second dimensions of `b` are equal.
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array 1.
+    b: np.ndarray
+        Array 2.
+
+    Returns
+    -------
+    bool
+        Whether all elements of the upper triangles of `a` and `b` are
+        close using the function `np.allclose`.
+    """
+    dot = np.zeros(np.broadcast_shapes(a.shape, b.shape)[2:])
+    # Dot product over axes 0 and 1.
+    for j in range(a.shape[0]):
+        dot += np.sum(a[j, j:] * b[j, j:], axis=0)
+    return dot
+
+
 def _triu_allclose(a: np.ndarray,
                    b: np.ndarray,
                    rtol: float = 1.e-3,
                    atol: float = 1.e-6):
-    """ Return whether the upper triangles of `a` and `b` are all close.
+    """ Whether the upper triangles of `a` and `b` are all close.
 
     This function is meant to be called by another function that has
     validated the arguments; hence, this function does no validation.
@@ -611,7 +643,7 @@ def _calc_p_clust(p_clust_given_noclose: np.ndarray,
         )
     # Compute the weighted sum of the probabilities that reads from each
     # cluster would have no two mutations too close.
-    p_noclose = _triu_sum(np.expand_dims(p_ends, 2) * p_noclose_given_ends)
+    p_noclose = _triu_dot(np.expand_dims(p_ends, 2), p_noclose_given_ends)
     # Adjust the cluster proportions given no mutations are too close.
     p_clust = p_clust_given_noclose / p_noclose
     # Normalize the proportions to sum to 1.

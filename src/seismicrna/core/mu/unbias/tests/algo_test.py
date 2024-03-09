@@ -14,6 +14,7 @@ from seismicrna.core.mu.unbias.algo import (_calc_p_noclose_given_ends,
                                             _adjust_min_gap,
                                             _triu_sum,
                                             _triu_norm,
+                                            _triu_dot,
                                             _triu_div,
                                             _triu_allclose)
 
@@ -284,6 +285,37 @@ class TestTriuAllClose(ut.TestCase):
         for npos in range(2, 4):
             a = rng.random((npos, npos))
             self.assertFalse(_triu_allclose(a, np.tril(a)))
+
+
+class TestTriuDot(ut.TestCase):
+
+    def test_1x1(self):
+        a = np.array([[2.]])
+        b = np.array([[4.]])
+        expect = np.array(8.)
+        self.assertTrue(np.array_equal(_triu_dot(a, b), expect))
+
+    def test_1x1x1(self):
+        a = np.array([[[2.]]])
+        b = np.array([[[4.]]])
+        expect = np.array([8.])
+        self.assertTrue(np.array_equal(_triu_dot(a, b), expect))
+
+    def test_2x2(self):
+        a = np.array([[2., 3.],
+                      [5., 7.]])
+        b = np.array([[4., 8.],
+                      [16., 32.]])
+        expect = np.array(256.)
+        self.assertTrue(np.array_equal(_triu_dot(a, b), expect))
+
+    def test_2x2x2(self):
+        a = np.array([[[2., 20.], [3., 30.]],
+                      [[5., 50.], [7., 70.]]])
+        b = np.array([[[4., 40.], [8., 80.]],
+                      [[16., 160.], [32., 320.]]])
+        expect = np.array([256., 25600.])
+        self.assertTrue(np.array_equal(_triu_dot(a, b), expect))
 
 
 class TestTriuDiv(ut.TestCase):
