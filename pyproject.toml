@@ -26,6 +26,7 @@ dependencies = [
     "fastqsplitter>=1.2",
     "matplotlib>=3.6",
     "numpy>=1.23",
+    "numba>=0.59",
     "pandas>=1.5",
     "plotly>=5.11",
     "pyyaml>=6.0",
