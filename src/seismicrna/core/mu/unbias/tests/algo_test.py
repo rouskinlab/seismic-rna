@@ -718,7 +718,8 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
         # Simulate reads.
         n_pos = 5
         n_reads = 1_000_000
-        p_mut, p_ends, p_cls = simulate_params(n_pos, 1)
+        p_mut_max = 0.5
+        p_mut, p_ends, p_cls = simulate_params(n_pos, 1, p_mut_max)
         muts, info, end5s, end3s = simulate_reads(n_reads, p_mut[:, 0], p_ends)
         # Test each minimum gap between mutations (min_gap).
         for min_gap in [0, 3, n_pos]:

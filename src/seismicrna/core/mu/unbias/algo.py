@@ -78,10 +78,12 @@ greater than 1.0 to 1.0.
 from logging import getLogger
 
 import numpy as np
+from numba import jit
 
 logger = getLogger(__name__)
 
 
+@jit()
 def _clip(x: np.ndarray):
     """ Fill NaN with 0, infinity with 1, and restrict all values to the
     interval [0, 1].
@@ -99,6 +101,7 @@ def _clip(x: np.ndarray):
     return np.clip(np.nan_to_num(x), 0., 1.)
 
 
+@jit()
 def _triu_sum(a: np.ndarray):
     """ Calculate the sum over the upper triangle(s) of array `a`.
 
@@ -128,6 +131,7 @@ def _triu_sum(a: np.ndarray):
     return sums
 
 
+@jit()
 def _triu_norm(a: np.ndarray):
     """ Normalize the upper triangle of array `a` to sum to 1.
 
@@ -154,6 +158,7 @@ def _triu_norm(a: np.ndarray):
     return a / _triu_sum(a)
 
 
+@jit()
 def _triu_div(numer: np.ndarray, denom: np.ndarray):
     """ Divide the upper triangles of `numer` and `denom`.
 
@@ -187,6 +192,7 @@ def _triu_div(numer: np.ndarray, denom: np.ndarray):
     return quotient
 
 
+@jit()
 def _triu_dot(a: np.ndarray, b: np.ndarray):
     """ Dot product of `a` and `b`.
 
@@ -219,6 +225,7 @@ def _triu_dot(a: np.ndarray, b: np.ndarray):
     return dot
 
 
+@jit()
 def _triu_allclose(a: np.ndarray,
                    b: np.ndarray,
                    rtol: float = 1.e-3,
@@ -257,6 +264,7 @@ def _triu_allclose(a: np.ndarray,
     return True
 
 
+@jit()
 def _adjust_min_gap(num_pos: int, min_gap: int):
     """ Given the number of positions (`npos`) and the desired minimum
     gap between mutations (`min_gap`), find the minimum gap between
@@ -278,6 +286,7 @@ def _adjust_min_gap(num_pos: int, min_gap: int):
     return max(min(min_gap, num_pos - 1), 0)
 
 
+@jit()
 def _calc_p_nomut_window(p_mut_given_span: np.ndarray, min_gap: int):
     """ Given underlying mutation rates (`p_mut_given_span`), find the
     probability of no mutations in each window of size 0 to `min_gap`.
@@ -327,6 +336,7 @@ def _calc_p_nomut_window(p_mut_given_span: np.ndarray, min_gap: int):
     return p_nomut_window
 
 
+@jit()
 def _calc_p_noclose_given_ends(p_mut_given_span: np.ndarray,
                                p_nomut_window: np.ndarray):
     """ Given underlying mutation rates (`p_mut_given_span`), calculate
@@ -364,13 +374,7 @@ def _calc_p_noclose_given_ends(p_mut_given_span: np.ndarray,
     # For each pair of positions (i, j), find the probability that a
     # random bit vector from (i) to (j), inclusive, would have no two
     # mutations closer than min_gap positions: p_noclose_given_ends[i, j].
-    p_noclose_given_ends = np.empty((npos, npos, ncls))
-    # First, fill the main diagonal and (min_gap) sub-diagonals with 1
-    # because length-1 reads cannot have two mutations too close.
-    diag_indexes = np.arange(npos)
-    p_noclose_given_ends[diag_indexes, diag_indexes] = 1.
-    for size in range(1, inc_gap):
-        p_noclose_given_ends[diag_indexes[size:], diag_indexes[:-size]] = 1.
+    p_noclose_given_ends = np.ones((npos, npos, ncls))
     # The probabilities follow a recurrence relation that is assumed to
     # have no closed-form solution but can be computed via a loop that
     # fills p_noclose_given_ends one column (j) at a time.
@@ -399,26 +403,14 @@ def _calc_p_noclose_given_ends(p_mut_given_span: np.ndarray,
     return p_noclose_given_ends
 
 
+@jit()
 def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
                                    p_ends: np.ndarray,
                                    p_noclose_given_ends: np.ndarray,
                                    p_nomut_window: np.ndarray):
-    # Find and validate the dimensions.
+    # Find the dimensions.
     npos, ncls = p_mut_given_span.shape
-    if p_ends.shape != (npos, npos):
-        raise ValueError(f"Expected p_ends to be shaped {npos, npos}, "
-                         f"but got {p_ends.shape}")
-    if p_noclose_given_ends.shape != (npos, npos, ncls):
-        raise ValueError(
-            f"Expected p_noclose_given_ends to be shaped {npos, npos, ncls}, "
-            f"but got {p_noclose_given_ends.shape}"
-        )
     inc_gap = p_nomut_window.shape[0]
-    if p_nomut_window.shape != (inc_gap, npos + 1, ncls):
-        raise ValueError(
-            f"Expected p_nomut_window to be shaped {inc_gap, npos + 1, ncls}, "
-            f"but got {p_nomut_window.shape}"
-        )
     min_gap = inc_gap - 1
     if min_gap == 0:
         # If min_gap == 0, then no mutations can be too close, so return
@@ -440,50 +432,52 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
                 p_ends[:j, j_prev] @ p_noclose_given_ends[:j, j_prev]
                 + p_noclose_and_ends_cols[j_prev]
         )
-    # Cache index values for repeated slicing.
-    range_indexes = np.arange(npos)
-    window_indexes = np.minimum(range_indexes, min_gap)
+    # Compute the probability that a read would have no two mutations
+    # too close given that it contained each position.
+    p_noclose_given_span = p_noclose_and_ends_rows - p_noclose_and_ends_cols
     # Compute the mutation rates given no two mutations are too close
     # one position (j) at a time.
-    p_mut_given_span_noclose = np.empty_like(p_mut_given_span)
+    p_mut_given_span_noclose = p_mut_given_span / p_noclose_given_span
     for j in range(npos):
-        # Numbers of rows and columns of the submatrix for position (j).
         nrows = j + 1
         ncols = npos - j
-        # Probability of no close mutations from (a) to (j - inc_gap).
-        row_indexes = range_indexes[:nrows]
-        p_noclose_5 = p_noclose_given_ends[
-            row_indexes, np.maximum(row_indexes, j - inc_gap)
-        ]
-        # Probability of no mutations from (j - min_gap) to (j - 1).
-        p_nomut_window5 = p_nomut_window[
-            window_indexes[j::-1], j
-        ]
-        # Probability of no mutations from (j + 1) to (j + min_gap).
-        window3_indexes = window_indexes[:ncols]
-        p_nomut_window3 = p_nomut_window[
-            window3_indexes, window3_indexes + nrows
-        ]
-        # Probability of no close mutations from (j + inc_gap) to (b).
-        col_indexes = range_indexes[-ncols:]
-        p_noclose_3 = p_noclose_given_ends[
-            np.minimum(col_indexes, j + inc_gap), col_indexes
-        ]
-        # Probability of no close mutations in a read with a mutation
-        # at position (j): weighted sum over all such reads.
-        p_noclose_given_span_mut = np.einsum("ak,bk,ab->k",
-                                             p_noclose_5 * p_nomut_window5,
-                                             p_noclose_3 * p_nomut_window3,
-                                             p_ends[:nrows, -ncols:])
-        # Probability of no close mutations in a read that contains
-        # position (j): weighted sum over all such reads.
-        p_noclose_given_span = (p_noclose_and_ends_rows[j]
-                                - p_noclose_and_ends_cols[j])
-        # Probability of a mutation at position (j) given no mutations
-        # are too close.
-        p_mut_given_span_noclose[j] = (p_mut_given_span[j]
-                                       * (p_noclose_given_span_mut
-                                          / p_noclose_given_span))
+        # For each starting position (a), calculate the probability of
+        # no two mutations too close from (a) to (j).
+        p_noclose_a = np.empty((ncls, nrows))
+        for a in range(nrows):
+            # Number of bases 5' of (j) that must have no mutations:
+            # the smallest of (min_gap) and (j - a).
+            nomut = min(min_gap, j - a)
+            # Probability of no close mutations, (a) to (j - nomut - 1):
+            #   p_noclose_given_ends[a, max(j - nomut - 1, a)]
+            # Probability of no mutations over the (nomut)-sized window
+            # from (j - nomut) to (j - 1):
+            #   p_nomut_window[nomut, j]
+            # Probability of no close mutations from (a) to (j).
+            p_noclose_a[:, a] = (p_noclose_given_ends[a, max(j - nomut - 1, a)]
+                                 * p_nomut_window[nomut, j])
+        # For each ending position (b), calculate the probability of
+        # no two mutations too close from (j) to (b).
+        p_noclose_b = np.empty((ncls, ncols))
+        for b in range(j, npos):
+            # Number of bases 3' of (j) that must have no mutations:
+            # the smallest of (min_gap) and (b - j).
+            nomut = min(min_gap, b - j)
+            # Probability of no mutations over the (nomut)-sized window
+            # from (j + 1) to (j + nomut):
+            #   p_nomut_window[nomut, j + nomut + 1]
+            # Probability of no close mutations, (j + nomut + 1) to (b):
+            #   p_noclose_given_ends[min(j + nomut + 1, b), b]
+            # Probability of no close mutations from (j) to (b).
+            p_noclose_b[:, b - j] = (p_nomut_window[nomut, j + nomut + 1]
+                                     * p_noclose_given_ends[min(j + nomut + 1, b), b])
+        # The probability that a read has a mutation at position (j)
+        # given that it has no two mutations too close is the weighted
+        # sum of such probabilities for all (a) and (b).
+        for k in range(ncls):
+            p_mut_given_span_noclose[j, k] *= (p_noclose_a[k]
+                                               @ p_ends[:nrows, -ncols:]
+                                               @ p_noclose_b[k])
     return p_mut_given_span_noclose
 
 
