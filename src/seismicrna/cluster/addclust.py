@@ -89,8 +89,8 @@ def update_batches(dataset: ClusterMutsDataset,
     checksums = list()
     for batch in dataset.iter_batches():
         # Merge the original responsibilities with the new ones.
-        resps = pd.concat([batch.resps] + [runs.best.get_resps(batch.batch)
-                                           for runs in new_orders],
+        resps = pd.concat([batch.membership] + [runs.best.get_members(batch.batch)
+                                                for runs in new_orders],
                           axis=1,
                           verify_integrity=True)
         batch = ClusterBatchIO(sample=dataset.sample,

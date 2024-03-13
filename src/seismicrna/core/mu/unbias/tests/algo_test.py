@@ -6,7 +6,8 @@ import numpy as np
 from seismicrna.core.mu.unbias.algo import (_calc_p_noclose_given_ends,
                                             _calc_p_mut_given_span_noclose,
                                             calc_p_noclose_given_ends_numpy,
-                                            calc_p_mut_p_ends_numpy,
+                                            calc_params_numpy,
+_calc_spanning_sum,
                                             _calc_p_nomut_window,
                                             _calc_p_mut_given_span,
                                             _calc_p_ends,
@@ -710,13 +711,44 @@ class TestCalcPNoCloseGivenEndsNumPy(ut.TestCase):
                                            gap)
 
 
+class CalcSpanningSum(ut.TestCase):
+
+    @staticmethod
+    def calc_spanning_sum_slow(array: np.ndarray):
+        spanning_sum = np.empty(array.shape[1:])
+        for j in range(array.shape[0]):
+            spanning_sum[j] = np.sum(array[:(j + 1), j:], axis=(0, 1))
+        return spanning_sum
+
+    def test_2d(self):
+        for n in range(5):
+            with self.subTest(n=n):
+                array = rng.random((n, n))
+                fast_sum = _calc_spanning_sum(array)
+                slow_sum = self.calc_spanning_sum_slow(array)
+                self.assertEqual(fast_sum.shape, (n,))
+                self.assertEqual(slow_sum.shape, (n,))
+                self.assertTrue(np.allclose(fast_sum, slow_sum))
+
+    def test_3d(self):
+        for n in range(5):
+            for k in range(3):
+                with self.subTest(n=n, k=k):
+                    array = rng.random((n, n, k))
+                    fast_sum = _calc_spanning_sum(array)
+                    slow_sum = self.calc_spanning_sum_slow(array)
+                    self.assertEqual(fast_sum.shape, (n, k))
+                    self.assertEqual(slow_sum.shape, (n, k))
+                    self.assertTrue(np.allclose(fast_sum, slow_sum))
+
+
 class TestCalcPMutGivenSpanNoClose(ut.TestCase):
 
     def test_simulated(self):
         from scipy.stats import binom
-        confidence = 0.9999
+        confidence = 0.9995
         # Simulate reads.
-        n_pos = 5
+        n_pos = 6
         n_reads = 1_000_000
         p_mut_max = 0.5
         p_mut, p_ends, p_cls = simulate_params(n_pos, 1, p_mut_max)
@@ -943,7 +975,7 @@ class TestCalcPMutPEndsNumPy(ut.TestCase):
                 # without mutations too close.
                 (p_mut_inferred,
                  p_ends_inferred,
-                 p_cls_inferred) = calc_p_mut_p_ends_numpy(
+                 p_cls_inferred) = calc_params_numpy(
                     p_mut_given_span_noclose,
                     p_ends_given_noclose,
                     p_clust_given_noclose,

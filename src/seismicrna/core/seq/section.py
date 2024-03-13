@@ -457,7 +457,7 @@ class Section(object):
 
     @property
     def unmasked_int(self) -> np.ndarray:
-        """ Unmasked positions as integers. """
+        """ Unmasked positions as integers (1-indexed). """
         # Do not cache this method since self.unmasked_bool can change.
         return self.range_int[self.unmasked_bool]
 

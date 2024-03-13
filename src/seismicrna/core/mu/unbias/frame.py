@@ -1,6 +1,6 @@
 import pandas as pd
 
-from .algo import calc_p_noclose_given_ends_numpy, calc_prop_adj_numpy
+from .algo import calc_p_noclose_given_ends_numpy, calc_params_numpy
 from ...seq import Section
 
 
@@ -83,7 +83,7 @@ def calc_prop_adj_frame(prop_obs: pd.Series, f_obs: pd.Series):
         raise ValueError(f"Got different clusters for observed proportions of "
                          f"clusters {clusters} and fraction of reads observed "
                          f"in each cluster {f_obs.index}")
-    return pd.Series(calc_prop_adj_numpy(prop_obs.values, f_obs.values),
+    return pd.Series(calc_p_clust_numpy(prop_obs.values, f_obs.values),
                      index=clusters)
 
 ########################################################################

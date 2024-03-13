@@ -170,15 +170,15 @@ def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
 
 def calc_rms_nrmsd(run1: EmClustering, run2: EmClustering):
     """ Compute the root-mean-square NRMSD between the clusters. """
-    costs = np.square(calc_nrmsd_groups(run1.mus, run2.mus))
-    assignment = assign_clusterings(run1.mus, run2.mus)
+    costs = np.square(calc_nrmsd_groups(run1.p_mut, run2.p_mut))
+    assignment = assign_clusterings(run1.p_mut, run2.p_mut)
     return float(np.sqrt(np.mean([costs[i, j] for i, j in assignment])))
 
 
 def calc_mean_pearson(run1: EmClustering, run2: EmClustering):
     """ Compute the mean Pearson correlation between the clusters. """
-    correlations = calc_pearson_groups(run1.mus, run2.mus)
-    assignment = assign_clusterings(run1.mus, run2.mus)
+    correlations = calc_pearson_groups(run1.p_mut, run2.p_mut)
+    assignment = assign_clusterings(run1.p_mut, run2.p_mut)
     return float(np.mean([correlations[i, j] for i, j in assignment]))
 
 ########################################################################

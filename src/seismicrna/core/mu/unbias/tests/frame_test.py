@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from seismicrna.core.mu import (calc_p_noclose_given_ends_numpy,
-                                calc_p_mut_p_ends_numpy,
+                                calc_params_numpy,
                                 calc_f_obs_frame,
                                 calc_mu_adj_frame)
 from seismicrna.core.seq import DNA, Section, seq_pos_to_index
@@ -49,7 +49,7 @@ class TestCalcDataFrame(ut.TestCase):
                         # Run calc_mu_adj_df.
                         mus_adj_df = calc_mu_adj_frame(mus_obs_df, section, gap)
                         # Run calc_mu_adj_numpy.
-                        mus_adj_np = calc_p_mut_p_ends_numpy(mus_obs_np, gap)
+                        mus_adj_np = calc_params_numpy(mus_obs_np, gap)
                         # Compare the results.
                         self.assertIsInstance(mus_adj_df, pd.DataFrame)
                         self.assertTrue(np.allclose(mus_adj_df.values,
@@ -101,7 +101,7 @@ class TestCalcSeries(ut.TestCase):
                                                        section,
                                                        gap)
                     # Run calc_mu_adj_numpy.
-                    mus_adj_np = calc_p_mut_p_ends_numpy(mus_obs_np, gap)
+                    mus_adj_np = calc_params_numpy(mus_obs_np, gap)
                     # Compare the results.
                     self.assertIsInstance(mus_adj_series, pd.Series)
                     self.assertTrue(np.array_equal(mus_adj_series.values,
