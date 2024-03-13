@@ -47,6 +47,7 @@ from .arg import (opt_phred_enc,
                   opt_cram,
                   opt_min_reads,
                   opt_min_mapq,
+                  opt_overhangs,
                   opt_fold_temp,
                   opt_fold_md,
                   opt_fold_mfe,
@@ -318,6 +319,7 @@ ChecksumsF = Field("checksums", "MD5 Checksums of Batches", dict)
 RefseqChecksumF = Field("refseq_checksum",
                         "MD5 Checksum of Reference Sequence File",
                         str)
+OverhangsF = OptionField(opt_overhangs)
 
 # Pool fields
 
