@@ -261,6 +261,10 @@ def _merge_ends(end51: int,
                 overhangs: bool,
                 read2: SamRead):
     if not overhangs:
+        if ((read2.flag.rev and end51 > end32) or
+            (not read2.flag.rev and end31 < end52)):
+            raise ValueError(f"Mate orientation for {repr(read2.qname)} cannot"
+                             " be merged with --no-overhangs")
         end5, end3 = (end51, end32) if read2.flag.rev else (end52, end31)
         mid5, mid3 = ((max(end5, end52),
                       min(end3, end31)) if read2.flag.rev
