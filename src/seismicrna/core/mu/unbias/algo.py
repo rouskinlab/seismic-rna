@@ -683,7 +683,7 @@ def _calc_p_clust(p_clust_given_noclose: np.ndarray,
     return p_clust
 
 
-# @jit()
+@jit()
 def _calc_p_ends_given_noclose(npos: int,
                                end5s: np.ndarray,
                                end3s: np.ndarray,

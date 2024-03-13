@@ -143,7 +143,7 @@ class EmClustering(object):
     @cached_property
     def unmasked(self):
         """ Unmasked positions (0-indexed). """
-        return self.uniq_reads.section.unmasked_int - self.section_end5
+        return self.uniq_reads.section.unmasked_zero
 
     @cached_property
     def n_pos_total(self):
@@ -153,12 +153,12 @@ class EmClustering(object):
     @cached_property
     def end5s(self):
         """ 5' end coordinates (0-indexed). """
-        return self.uniq_reads.end5s - self.section_end5
+        return self.uniq_reads.end5s_zero
 
     @cached_property
     def end3s(self):
         """ 3' end coordinates (0-indexed). """
-        return self.uniq_reads.end3s - self.section_end5
+        return self.uniq_reads.end3s_zero
 
     @cached_property
     def clusters(self):
