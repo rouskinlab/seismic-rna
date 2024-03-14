@@ -28,7 +28,7 @@ def save_brickle(item: Any,
                            quality=brotli_level)
     with open(file, write_mode(force, binary=True)) as f:
         f.write(data)
-    logger.debug(f"Wrote {item} (brotli level {brotli_level}) to {file}")
+    logger.info(f"Wrote {item} (brotli level {brotli_level}) to {file}")
     checksum = digest_data(data)
     logger.debug(f"Computed MD5 checksum of {file}: {checksum}")
     return checksum

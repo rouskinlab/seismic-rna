@@ -14,7 +14,7 @@ from .count import (get_count_per_pos,
                     get_reads_per_pos,
                     get_rels_per_pos,
                     get_rels_per_read)
-from .index import iter_windows, sanitize_ends, sanitize_pos
+from .index import contiguous_mates, iter_windows, sanitize_ends, sanitize_pos
 from .read import ReadBatch, PartialReadBatch
 from ..rel import REL_TYPE, RelPattern
 from ..seq import BASE_NAME, DNA, seq_pos_to_index
@@ -79,6 +79,11 @@ class MutsBatch(ReadBatch, ABC):
     def read_weights(self) -> pd.DataFrame | None:
         """ Weights for each read when computing counts. """
         return None
+
+    @cached_property
+    def contiguous_mates(self):
+        """ Whether each read is made of contiguous mates. """
+        return contiguous_mates(self.mid5s, self.mid3s)
 
 
 class ReflenMutsBatch(MutsBatch, ABC):

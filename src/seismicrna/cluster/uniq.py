@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from .names import BIT_VECTOR_NAME
-from ..core.batch import RefseqMutsBatch, contiguous_mates, get_length
+from ..core.batch import RefseqMutsBatch, get_length
 from ..core.rel import RelPattern
 from ..core.seq import Section
 from ..mask.data import MaskMutsDataset
@@ -205,12 +205,11 @@ def get_uniq_reads(pos_nums: Iterable[int],
             raise ValueError(
                 f"Batch {batch} is not in order (expected {batch_num})"
             )
-        if discontig := batch.num_reads - np.sum(contiguous_mates(batch.mid5s,
-                                                                  batch.mid3s)):
+        if discontig := batch.num_reads - np.sum(batch.contiguous_mates):
             raise ValueError(
                 f"Batch {batch} has {discontig} discontiguous paired-end "
                 f"read(s), which cluster does not (yet) support. To remove "
-                f"discontiguous pairs, rerun mask with --no-discontig."
+                f"discontiguous pairs, rerun mask with --no-discontig-read"
             )
         # Record the number of reads in the batch.
         read_nums_per_batch.append(batch.read_nums)

@@ -14,8 +14,8 @@ import pandas as pd
 from .batch import apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
+from ..core.arg import docdef
 from ..core.batch import RefseqMutsBatch, accum_per_pos
-from ..core.io import DEFAULT_BROTLI_LEVEL
 from ..core.rel import RelPattern
 from ..core.seq import FIELD_REF, POS_NAME, Section, index_to_pos
 from ..core.write import need_write
@@ -30,6 +30,8 @@ class RelMasker(object):
 
     PATTERN_KEY = "pattern"
     MASK_READ_INIT = "read-init"
+    MASK_READ_DISCONTIG = "read-discontig"
+    MASK_READ_NCOV = "read-ncov"
     MASK_READ_FINFO = "read-finfo"
     MASK_READ_FMUT = "read-fmut"
     MASK_READ_GAP = "read-gap"
@@ -38,19 +40,22 @@ class RelMasker(object):
     MASK_POS_FMUT = "pos-fmut"
     CHECKSUM_KEY = MaskReport.get_batch_type().btype()
 
+    @docdef.auto()
     def __init__(self,
                  dataset: RelateDataset | PoolDataset,
                  section: Section,
                  pattern: RelPattern, *,
-                 exclude_polya: int = 0,
-                 exclude_gu: bool = False,
-                 exclude_file: Path | None = None,
-                 min_mut_gap: int = 0,
-                 min_finfo_read: float = 0.,
-                 max_fmut_read: float = 1.,
-                 min_ninfo_pos: int = 0,
-                 max_fmut_pos: float = 1.,
-                 brotli_level: int = DEFAULT_BROTLI_LEVEL):
+                 exclude_polya: int,
+                 exclude_gu: bool,
+                 exclude_file: Path | None,
+                 min_ncov_read: int,
+                 min_finfo_read: float,
+                 max_fmut_read: float,
+                 min_mut_gap: int,
+                 discontig_read: bool,
+                 min_ninfo_pos: int,
+                 max_fmut_pos: float,
+                 brotli_level: int):
         """
         Parameters
         ----------
@@ -60,30 +65,6 @@ class RelMasker(object):
             The section over which to mask
         pattern: RelPattern
             Relationship pattern
-        exclude_polya: int = 0
-            Exclude stretches of consecutive A bases at least this long.
-            If 0, exclude no bases. Must be ≥ 0.
-        exclude_gu: bool = False
-            Whether to exclude G and U bases.
-        exclude_file: Path | None = None
-            File of additional, arbitrary positions to exclude.
-        min_mut_gap: int = 0
-            Filter out reads with any two mutations separated by fewer
-            than `min_mut_gap` positions. Adjacent mutations have a
-            gap of 0. If 0, keep all. Must be ≥ 0, < length_of_section.
-        min_finfo_read: float = 0.0
-            Filter out reads with less than this fraction of informative
-            bases (i.e. match or mutation). If 0.0, keep all. Must be
-            ≥ 0, ≤ 1.
-        max_fmut_read: float = 1.0
-            Filter out reads with more than this fraction of mutated
-            bases. If 1.0, keep all. Must be ≥ 0, ≤ 1.
-        min_ninfo_pos: int = 0
-            Filter out positions with less than this number of informative
-            bases. Must be ≥ 0.
-        max_fmut_pos: float = 1.0
-            Filter out positions with more than this fraction of mutated
-            reads. Must be ≥ 0, ≤ 1.
         """
         # Set the general parameters.
         self.dataset = dataset
@@ -98,6 +79,8 @@ class RelMasker(object):
         self.exclude_gu = exclude_gu
         self.exclude_pos = self._get_exclude_pos(exclude_file)
         # Set the parameters for filtering reads.
+        self.discontig_read = discontig_read
+        self.min_ncov_read = min_ncov_read
         self.min_mut_gap = min_mut_gap
         self.min_finfo_read = min_finfo_read
         self.max_fmut_read = max_fmut_read
@@ -121,6 +104,14 @@ class RelMasker(object):
     @property
     def n_reads_init(self):
         return self._n_reads[self.MASK_READ_INIT]
+
+    @property
+    def n_reads_min_ncov(self):
+        return self._n_reads[self.MASK_READ_NCOV]
+
+    @property
+    def n_reads_discontig(self):
+        return self._n_reads[self.MASK_READ_DISCONTIG]
 
     @property
     def n_reads_min_finfo(self):
@@ -196,10 +187,35 @@ class RelMasker(object):
             exclude_pos = list()
         return np.asarray(exclude_pos, dtype=int)
 
+    def _filter_min_ncov_read(self, batch: RefseqMutsBatch):
+        """ Filter out reads with too few covered positions. """
+        if self.min_ncov_read < 1:
+            raise ValueError(f"min_ncov_read must be ≥ 1, but got "
+                             f"{self.min_ncov_read}")
+        # Find the reads with sufficiently many covered positions.
+        reads = batch.read_nums[batch.cover_per_read.values.sum(axis=1)
+                                >= self.min_ncov_read]
+        logger.debug(f"{self} kept {reads.size} reads with coverage "
+                     f"≥ {self.min_ncov_read} in {batch}")
+        # Return a new batch of only those reads.
+        return apply_mask(batch, reads)
+
+    def _filter_discontig_read(self, batch: RefseqMutsBatch):
+        """ Filter out reads with improper contiguity of mates. """
+        if self.discontig_read:
+            # Discontiguous reads are permitted.
+            return batch
+        # Find the reads with contiguous mates.
+        reads = batch.read_nums[batch.contiguous_mates]
+        logger.debug(f"{self} kept {reads.size} reads with coverage "
+                     f"≥ {self.min_ncov_read} in {batch}")
+        # Return a new batch of only those reads.
+        return apply_mask(batch, reads)
+
     def _filter_min_finfo_read(self, batch: RefseqMutsBatch):
         """ Filter out reads with too few informative positions. """
         if not 0. <= self.min_finfo_read <= 1.:
-            raise ValueError(f"min_finfo_read Must be ≥ 0, ≤ 1, but got "
+            raise ValueError(f"min_finfo_read must be ≥ 0, ≤ 1, but got "
                              f"{self.min_finfo_read}")
         if self.min_finfo_read == 0.:
             # All reads have sufficiently many informative positions.
@@ -208,8 +224,7 @@ class RelMasker(object):
             return batch
         # Find the reads with sufficiently many informative positions.
         info, muts = batch.count_per_read(self.pattern)
-        with np.errstate(invalid="ignore"):
-            finfo_read = info.values / self.pos_kept.size
+        finfo_read = info.values / batch.cover_per_read.values.sum(axis=1)
         reads = info.index[finfo_read >= self.min_finfo_read]
         logger.debug(f"{self} kept {reads.size} reads with informative "
                      f"fractions ≥ {self.min_finfo_read} in {batch}")
@@ -264,6 +279,12 @@ class RelMasker(object):
         # Keep only the unmasked positions.
         batch = apply_mask(batch, positions=self.pos_kept)
         self._n_reads[self.MASK_READ_INIT] += (n := batch.num_reads)
+        # Remove reads with too few covered positions.
+        batch = self._filter_min_ncov_read(batch)
+        self._n_reads[self.MASK_READ_NCOV] += (n - (n := batch.num_reads))
+        # Remove reads with improper contiguity.
+        batch = self._filter_discontig_read(batch)
+        self._n_reads[self.MASK_READ_DISCONTIG] += (n - (n := batch.num_reads))
         # Remove reads with too few informative positions.
         batch = self._filter_min_finfo_read(batch)
         self._n_reads[self.MASK_READ_FINFO] += (n - (n := batch.num_reads))
@@ -346,10 +367,14 @@ class RelMasker(object):
             pos_min_ninfo=self.pos_min_ninfo,
             pos_max_fmut=self.pos_max_fmut,
             pos_kept=self.pos_kept,
+            min_ncov_read=self.min_ncov_read,
             min_finfo_read=self.min_finfo_read,
             max_fmut_read=self.max_fmut_read,
             min_mut_gap=self.min_mut_gap,
+            discontig_read=self.discontig_read,
             n_reads_init=self.n_reads_init,
+            n_reads_min_ncov=self.n_reads_min_ncov,
+            n_reads_discontig=self.n_reads_discontig,
             n_reads_min_finfo=self.n_reads_min_finfo,
             n_reads_max_fmut=self.n_reads_max_fmut,
             n_reads_min_gap=self.n_reads_min_gap,

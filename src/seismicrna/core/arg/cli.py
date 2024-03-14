@@ -615,17 +615,24 @@ opt_exclude_file = Option(
     help="File of arbitrary positions to exclude"
 )
 
-opt_min_ncall_read = Option(
-    ("--min-ncall-read",),
+opt_discontig_read = Option(
+    ("--discontig-read/--no-discontig-read",),
+    type=bool,
+    default=True,
+    help="Include paired-end reads with discontiguous mates"
+)
+
+opt_min_ncov_read = Option(
+    ("--min-ncov-read",),
     type=int,
     default=1,
-    help="Minimum number of base calls in a read to keep it"
+    help="Minimum coverage of a read to keep it (nt)"
 )
 
 opt_min_finfo_read = Option(
     ("--min-finfo-read",),
     type=float,
-    default=0.0,
+    default=0.9,
     help="Minimum fraction of information in a read to keep it"
 )
 
@@ -634,13 +641,6 @@ opt_max_fmut_read = Option(
     type=float,
     default=0.1,
     help="Maximum fraction of mutations in a read to keep it"
-)
-
-opt_max_nmut_read = Option(
-    ("--max-nmut-read",),
-    type=int,
-    default=-1,
-    help="Maximum number of mutations in a read to keep it (-1 to disable)"
 )
 
 opt_min_mut_gap = Option(

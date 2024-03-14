@@ -148,7 +148,7 @@ def write_fasta(fasta: Path,
                 if name in names:
                     raise ValueError(f"Duplicate reference name: '{name}'")
                 f.write(format_fasta_record(name, seq, wrap))
-                logger.debug(f"Wrote reference '{name}' ({len(seq)} nt) "
+                logger.info(f"Wrote reference '{name}' ({len(seq)} nt) "
                              f"to {fasta}")
                 names.add(name)
             except Exception as error:
