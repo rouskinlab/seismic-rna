@@ -75,14 +75,16 @@ greater than 1.0 to 1.0.
 
 """
 
+import warnings
 from logging import getLogger
 
 import numpy as np
-from numba import jit
-
-NUMBA_DISABLE_PERFORMANCE_WARNINGS = 1
+from numba import jit, NumbaPerformanceWarning
 
 logger = getLogger(__name__)
+
+# Disable performance warnings from Numba.
+warnings.filterwarnings("ignore", category=NumbaPerformanceWarning)
 
 
 @jit()
@@ -101,6 +103,56 @@ def _clip(x: np.ndarray):
         Array of the same shape as `x` with all values ≥ 0 and ≤ 1.
     """
     return np.clip(np.nan_to_num(x), 0., 1.)
+
+
+@jit()
+def _triu_log(a: np.ndarray):
+    """ Calculate the logarithm of the upper triangle(s) of array `a`.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function makes assumptions:
+
+    -   `a` has at least 2 dimensions.
+    -   The first two dimensions of `a` have equal length.
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array of whose upper triangle to compute the logarithm.
+
+    Returns
+    -------
+    np.ndarray
+        Logarithm of the upper triangle(s) of `a`.
+    """
+    log = np.empty_like(a)
+    for j in range(a.shape[0]):
+        log[j, j:] = np.log(a[j, j:])
+    return log
+
+
+def triu_log(a: np.ndarray):
+    """ Calculate the logarithm of the upper triangle(s) of array `a`.
+    In the result, elements below the main diagonal are undefined.
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array (≥ 2 dimensions) of whose upper triangle to compute the
+        logarithm; the first 2 dimensions must have equal lengths.
+
+    Returns
+    -------
+    np.ndarray
+        Logarithm of the upper triangle(s) of `a`.
+    """
+    if a.ndim < 2:
+        raise ValueError(f"a must have ≥ 2 dimensions, but got {a.ndim}")
+    npos = a.shape[0]
+    if a.shape[:2] != (npos, npos):
+        raise ValueError("The first 2 dimensions of a must have equal lengths, "
+                         f"but got dimensions {a.shape}")
+    return _triu_log(a)
 
 
 @jit()

@@ -3,21 +3,22 @@ from itertools import product
 
 import numpy as np
 
-from seismicrna.core.mu.unbias.algo import (_calc_p_noclose_given_ends,
-                                            _calc_p_mut_given_span_noclose,
-                                            calc_p_noclose_given_ends_numpy,
-                                            calc_params_numpy,
-_calc_spanning_sum,
-                                            _calc_p_nomut_window,
-                                            _calc_p_mut_given_span,
-                                            _calc_p_ends,
-                                            _clip,
+from seismicrna.core.mu.unbias.algo import (_clip,
                                             _adjust_min_gap,
+                                            _triu_log,
                                             _triu_sum,
                                             _triu_norm,
                                             _triu_dot,
                                             _triu_div,
-                                            _triu_allclose)
+                                            _triu_allclose,
+                                            _calc_spanning_sum,
+                                            _calc_p_nomut_window,
+                                            _calc_p_noclose_given_ends,
+                                            _calc_p_mut_given_span_noclose,
+                                            _calc_p_mut_given_span,
+                                            _calc_p_ends,
+                                            calc_p_noclose_given_ends_numpy,
+                                            calc_params_numpy)
 
 rng = np.random.default_rng()
 
@@ -265,6 +266,30 @@ class TestClip(ut.TestCase):
         mus = rng.random(64, dtype=float)
         # All values are in [0, 1] and so should not be clipped.
         self.assertTrue(np.allclose(mus, _clip(mus)))
+
+
+class TestTriuLog(ut.TestCase):
+
+    def compare(self, result: np.ndarray, expect: np.ndarray):
+        self.assertEqual(result.shape, expect.shape)
+        self.assertTrue(np.all(np.logical_or(np.isclose(result, expect),
+                                             np.isnan(expect))))
+
+    def test_2d(self):
+        a = np.array([[1., 2.],
+                      [0., 3.]])
+        expect = np.array([[0., np.log(2.)],
+                           [np.nan, np.log(3.)]])
+        result = _triu_log(a)
+        self.compare(result, expect)
+
+    def test_3d(self):
+        a = np.array([[[1., 4.], [2., 5.]],
+                      [[0., 1.], [3., 6.]]])
+        expect = np.array([[[0., np.log(4.)], [np.log(2.), np.log(5.)]],
+                           [[np.nan, np.nan], [np.log(3.), np.log(6.)]]])
+        result = _triu_log(a)
+        self.compare(result, expect)
 
 
 class TestTriuAllClose(ut.TestCase):

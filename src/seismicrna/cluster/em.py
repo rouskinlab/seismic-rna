@@ -11,7 +11,8 @@ from ..core.header import index_order_clusts
 from ..core.mu import (calc_p_noclose_given_ends_numpy,
                        calc_p_ends_given_noclose,
                        calc_spanning_sum,
-                       calc_params_numpy)
+                       calc_params_numpy,
+                       triu_log)
 
 logger = getLogger(__name__)
 
@@ -291,7 +292,7 @@ class EmClustering(object):
         )
         # Update the log probability that a read with each pair of 5'/3'
         # end coordinates would have no two mutations too close.
-        self.logp_noclose = np.log(calc_p_noclose_given_ends_numpy(
+        self.logp_noclose = triu_log(calc_p_noclose_given_ends_numpy(
             self.p_mut, self.uniq_reads.min_mut_gap
         ))
 
@@ -317,8 +318,8 @@ class EmClustering(object):
         # dimensions and is no longer needed.
         # 2D (unique reads x clusters)
         self.membership = (logp_clust[np.newaxis, :]
-                           + (logp_ends[(self.end5s, self.end3s, np.newaxis)]
-                              - self.logp_noclose[(self.end5s, self.end3s)])
+                           + (logp_ends[self.end5s, self.end3s, np.newaxis]
+                              - self.logp_noclose[self.end5s, self.end3s])
                            + (logp_nomut_incl[self.end3s]
                               - logp_nomut_excl[self.end5s]))
         # For each unique read, compute the likelihood of observing it
