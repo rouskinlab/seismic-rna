@@ -67,7 +67,9 @@ class MaskMutsDataset(ChainedMutsDataset):
     def _chain(self, batch1: RelateRefseqBatch, batch2: MaskBatchIO):
         return apply_mask(batch1,
                           batch2.read_nums,
-                          getattr(self.data2, "pos_kept"))
+                          self.section.unmasked_int,
+                          clip5=self.section.end5,
+                          clip3=self.section.end3)
 
 
 load_mask_dataset = LoadFunction(MaskMutsDataset)

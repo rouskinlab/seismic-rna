@@ -8,7 +8,6 @@ from ..core.batch import (AllReadBatch,
                           ReflenMutsBatch,
                           RefseqMutsBatch,
                           get_length)
-from ..core.seq import POS_INDEX
 
 
 class QnamesBatch(AllReadBatch):
@@ -36,9 +35,7 @@ class RelateBatch(MutsBatch, AllReadBatch, ABC):
 
     @cached_property
     def pos_nums(self):
-        return np.arange(POS_INDEX,
-                         POS_INDEX + self.max_pos,
-                         dtype=self.pos_dtype)
+        return np.arange(1, self.max_pos + 1, dtype=self.pos_dtype)
 
 
 class RelateReflenBatch(RelateBatch, ReflenMutsBatch):

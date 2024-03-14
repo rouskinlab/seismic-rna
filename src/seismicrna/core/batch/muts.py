@@ -14,7 +14,7 @@ from .count import (get_count_per_pos,
                     get_reads_per_pos,
                     get_rels_per_pos,
                     get_rels_per_read)
-from .index import POS_INDEX, iter_windows, sanitize_ends, sanitize_pos
+from .index import iter_windows, sanitize_ends, sanitize_pos
 from .read import ReadBatch, PartialReadBatch
 from ..rel import REL_TYPE, RelPattern
 from ..seq import BASE_NAME, DNA, seq_pos_to_index
@@ -97,8 +97,8 @@ class RefseqMutsBatch(MutsBatch, ABC):
     """ Batch of mutational data with a known reference sequence. """
     
     def __init__(self, *, refseq: DNA, **kwargs):
-        super().__init__(**kwargs)
         self.refseq = refseq
+        super().__init__(**kwargs)
 
     @property
     def max_pos(self):
@@ -106,7 +106,7 @@ class RefseqMutsBatch(MutsBatch, ABC):
 
     @cached_property
     def pos_index(self):
-        return seq_pos_to_index(self.refseq, self.pos_nums, POS_INDEX)
+        return seq_pos_to_index(self.refseq, self.pos_nums, 1)
 
     @cached_property
     def count_base_types(self):

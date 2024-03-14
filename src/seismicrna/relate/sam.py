@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Callable, TextIO
 
 from ..core import path
-from ..core.batch import BATCH_INDEX
 from ..core.ngs import (SAM_DELIM,
                         count_total_reads,
                         run_view_xam,
@@ -166,7 +165,7 @@ class XamViewer(object):
         # has at least one line) times the number of mates per record.
         n_skip = (self.n_per_batch - 1) * (self.paired + 1)
         # Count the batches.
-        batch = BATCH_INDEX
+        batch = 0
         with self.open_temp_sam() as sam_file:
             # Current position in the SAM file.
             position = sam_file.tell()

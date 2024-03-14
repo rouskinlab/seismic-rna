@@ -6,6 +6,7 @@ import pandas as pd
 
 from .names import CLUST_PROP_NAME
 from .uniq import UniqReads
+from ..core.batch import get_length
 from ..core.header import index_order_clusts
 from ..core.mu import (calc_p_noclose_given_ends_numpy,
                        calc_p_ends_given_noclose,
@@ -145,10 +146,15 @@ class EmClustering(object):
         """ Unmasked positions (0-indexed). """
         return self.uniq_reads.section.unmasked_zero
 
-    @cached_property
+    @property
     def n_pos_total(self):
         """ Number of positions, including those masked. """
         return self.uniq_reads.section.length
+
+    @cached_property
+    def n_pos_unmasked(self):
+        """ Number of unmasked positions. """
+        return get_length(self.unmasked, "unmasked positions")
 
     @cached_property
     def end5s(self):
@@ -200,8 +206,8 @@ class EmClustering(object):
         # - the proportion of every pair of read end coordinates
         # The cluster memberships are latent variables, not parameters.
         # The degrees of freedom of the mutation rates equals the total
-        # number of positions times clusters.
-        df_mut = self.p_mut.size
+        # number of unmasked positions times clusters.
+        df_mut = self.n_pos_unmasked * self.order
         # The degrees of freedom of the coordinate proportions equals
         # the number of non-zero proportions (which are the only ones
         # that can be estimated) minus one because of the constraint
@@ -212,7 +218,7 @@ class EmClustering(object):
         # The degrees of freedom of the cluster proportions equals the
         # number of clusters minus one because of the constraint that
         # the proportions of all clusters must sum to 1.
-        df_clust = self.p_clust.size - 1
+        df_clust = self.order - 1
         # The number of parameters is the sum of the degrees of freedom.
         n_params = df_mut + df_ends + df_clust
         # The number of data points is the total number of reads.

@@ -1,18 +1,15 @@
 from collections import defaultdict
 from functools import cached_property
-from logging import getLogger
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
 from .names import BIT_VECTOR_NAME
-from ..core.batch import RefseqMutsBatch, get_length
+from ..core.batch import RefseqMutsBatch, contiguous_mates, get_length
 from ..core.rel import RelPattern
-from ..core.seq import Section, hyphenate_ends
+from ..core.seq import Section
 from ..mask.data import MaskMutsDataset
-
-logger = getLogger(__name__)
 
 
 class UniqReads(object):
@@ -25,9 +22,7 @@ class UniqReads(object):
                    dataset.min_mut_gap,
                    *get_uniq_reads(dataset.section.unmasked_int,
                                    dataset.pattern,
-                                   dataset.iter_batches(),
-                                   dataset.section.end5,
-                                   dataset.section.end3))
+                                   dataset.iter_batches()))
 
     def __init__(self,
                  sample: str,
@@ -202,10 +197,7 @@ def _count_uniq_reads(uniq_read_nums: Iterable[list]):
 
 def get_uniq_reads(pos_nums: Iterable[int],
                    pattern: RelPattern,
-                   batches: Iterable[RefseqMutsBatch],
-                   section_end5: int,
-                   section_end3: int):
-    section_ends = hyphenate_ends(section_end5, section_end3)
+                   batches: Iterable[RefseqMutsBatch]):
     uniq_reads = defaultdict(list)
     read_nums_per_batch = list()
     for batch_num, batch in enumerate(batches):
@@ -213,22 +205,25 @@ def get_uniq_reads(pos_nums: Iterable[int],
             raise ValueError(
                 f"Batch {batch} is not in order (expected {batch_num})"
             )
+        if discontig := batch.num_reads - np.sum(contiguous_mates(batch.mid5s,
+                                                                  batch.mid3s)):
+            raise ValueError(
+                f"Batch {batch} has {discontig} discontiguous paired-end "
+                f"read(s), which cluster does not (yet) support. To remove "
+                f"discontiguous pairs, rerun mask with --no-discontig."
+            )
+        # Record the number of reads in the batch.
         read_nums_per_batch.append(batch.read_nums)
+        # Find the reads with unique end coordinates and mutations.
         for (read_num,
              ((end5, mid5, mid3, end3),
               read_muts)) in batch.iter_reads(pattern):
-            # If the 5' and 3' coordinates are before/after the section,
-            # then clip them to the section.
-            end5 = max(end5, section_end5)
-            end3 = min(end3, section_end3)
-            # Confirm the read's 5' end is not after the section's 3' end
-            # and the read's 3' end is not before the section's 5' end.
-            if section_end5 <= end5 <= end3 <= section_end3:
-                uniq_reads[((end5, end3), read_muts)].append((batch_num,
-                                                              read_num))
-            else:
-                logger.warning(f"Skipped read {hyphenate_ends(end5, end3)} "
-                               f"for section {section_ends}")
+            # Key each read by its 5' and 3' end coordinates and by the
+            # positions at which it has mutations, so that non-unique
+            # reads map to the same key; record each read as a tuple of
+            # its batch number and its read number within its batch.
+            uniq_reads[((end5, end3), read_muts)].append((batch_num, read_num))
+    # Pre-process the unique reads to extract necessary information.
     reads_ends, muts_per_pos = _uniq_reads_to_ends_muts(uniq_reads,
                                                         pos_nums)
     batch_to_uniq = _batch_to_uniq_read_num(read_nums_per_batch,

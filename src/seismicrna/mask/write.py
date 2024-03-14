@@ -108,9 +108,9 @@ class RelMasker(object):
                 f"min_ninfo_pos must be ≥ 0, but got {min_ninfo_pos}"
             )
         self.min_ninfo_pos = min_ninfo_pos
-        if not 0. <= max_fmut_pos <= 1.:
+        if not 0. <= max_fmut_pos < 1.:
             raise ValueError(
-                f"max_fmut_pos Must be ≥ 0, ≤ 1, but got {max_fmut_pos}"
+                f"max_fmut_pos Must be ≥ 0, < 1, but got {max_fmut_pos}"
             )
         self.max_fmut_pos = max_fmut_pos
         # Set the parameters for saving files.
@@ -219,7 +219,7 @@ class RelMasker(object):
     def _filter_max_fmut_read(self, batch: RefseqMutsBatch):
         """ Filter out reads with too many mutations. """
         if not 0. <= self.max_fmut_read <= 1.:
-            raise ValueError(f"max_fmut_read Must be ≥ 0, ≤ 1, but got "
+            raise ValueError(f"max_fmut_read must be ≥ 0, ≤ 1, but got "
                              f"{self.max_fmut_read}")
         if self.max_fmut_read == 1.:
             # All reads have sufficiently few mutations.

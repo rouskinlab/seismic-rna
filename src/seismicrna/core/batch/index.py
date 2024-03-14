@@ -6,12 +6,7 @@ import pandas as pd
 from ..seq import BASE_NAME
 from ..types import fit_uint_type, get_uint_type, UINT_NBYTES
 
-# Whether numbers are 0-indexed or 1-indexed.
-BATCH_INDEX = 0
-POS_INDEX = 1
-
 # Missing identifiers.
-NO_POS = POS_INDEX - 1
 NO_READ = -1
 
 # Indexes of read and batch numbers.
@@ -22,7 +17,7 @@ RB_INDEX_NAMES = [BATCH_NUM, READ_NUM]
 
 def list_batch_nums(num_batches: int):
     """ List the batch numbers. """
-    return list(range(BATCH_INDEX, BATCH_INDEX + num_batches))
+    return list(range(num_batches))
 
 
 def get_length(array: np.ndarray, what: str = "array") -> int:
@@ -59,11 +54,12 @@ def get_inverse(target: np.ndarray, what: str = "array"):
 
 def ensure_same_length(arr1: np.ndarray,
                        arr2: np.ndarray,
-                       what1: str,
-                       what2: str):
+                       what1: str = "array1",
+                       what2: str = "array2"):
     if (len1 := get_length(arr1, what1)) != (len2 := get_length(arr2, what2)):
         raise ValueError(
-            f"Lengths differ between {what1} ({len1}) and {what2} ({len2})")
+            f"Lengths differ between {what1} ({len1}) and {what2} ({len2})"
+        )
     return len1
 
 
@@ -72,16 +68,36 @@ def ensure_order(array1: np.ndarray,
                  what1: str = "array1",
                  what2: str = "array2",
                  gt_eq: bool = False):
-    num_reads = ensure_same_length(array1, array2, what1, what2)
-    ineq_func, ineq_sign = (np.less, '<') if gt_eq else (np.greater, '>')
+    """ Ensure that `array1` is ≤ or ≥ `array2`, element-wise.
+
+    Parameters
+    ----------
+    array1: np.ndarray
+        Array 1 (same length as `array2`).
+    array2: np.ndarray
+        Array 2 (same length as `array1`).
+    what1: str = "array1"
+        What `array1` contains (only used for error messages).
+    what2: str = "array2"
+        What `array2` contains (only used for error messages).
+    gt_eq: bool = False
+        Ensure `array1 ≥ array2` if True, otherwise `array1 ≤ array2`.
+
+    Returns
+    -------
+    int
+        Shared length of `array1` and `array2`.
+    """
+    length = ensure_same_length(array1, array2, what1, what2)
+    ineq_func, ineq_sign = (np.less, "<") if gt_eq else (np.greater, ">")
     if np.any(is_err := ineq_func(array1, array2)):
-        index = pd.Index(np.arange(num_reads)[is_err], name=READ_NUM)
+        index = pd.Index(np.arange(length)[is_err], name=READ_NUM)
         errors = pd.DataFrame.from_dict({what1: pd.Series(array1[is_err],
                                                           index=index),
                                          what2: pd.Series(array2[is_err],
                                                           index=index)})
         raise ValueError(f"Got {what1} {ineq_sign} {what2}:\n{errors}")
-    return num_reads
+    return length
 
 
 def sanitize_values(values: Iterable[int],
@@ -116,11 +132,15 @@ def sanitize_values(values: Iterable[int],
 
 def sanitize_pos(positions: Iterable[int], seq_length: int):
     """ Validate and sort positions, and return them as an array. """
-    return sanitize_values(positions, POS_INDEX, seq_length, "positions")
+    return sanitize_values(positions, 1, seq_length, "positions")
 
 
 def contiguous_mates(mid5s: np.ndarray, mid3s: np.ndarray):
     """ Return whether the two mates form a contiguous read. """
+    ensure_same_length(mid5s,
+                       mid3s,
+                       "5' middle positions",
+                       "3' middle positions")
     return np.less_equal(mid5s, mid3s + 1)
 
 
@@ -136,9 +156,9 @@ def sanitize_ends(max_pos: int,
     end3s = np.asarray(end3s, pos_dtype)
     # Verify 5' end ≥ min position
     ensure_order(end5s,
-                 np.broadcast_to(POS_INDEX, end5s.shape),
+                 np.broadcast_to(1, end5s.shape),
                  "5' end positions",
-                 f"minimum position ({POS_INDEX})",
+                 f"minimum position (1)",
                  gt_eq=True)
     # Verify 5' end ≤ 5' mid
     ensure_order(end5s, mid5s, "5' end positions", "5' middle positions")

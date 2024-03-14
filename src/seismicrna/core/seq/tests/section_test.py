@@ -5,7 +5,6 @@ import pandas as pd
 
 from seismicrna.core.seq.section import (BASE_NAME,
                                          FULL_NAME,
-                                         POS_INDEX,
                                          POS_NAME,
                                          SEQ_INDEX_NAMES,
                                          Section,
@@ -25,10 +24,6 @@ class TestConstants(ut.TestCase):
 
     def test_full_name(self):
         self.assertEqual(FULL_NAME, "full")
-
-    def test_pos_index(self):
-        """ Test that sequence positions are 1-indexed. """
-        self.assertEqual(POS_INDEX, 1)
 
     def test_pos_name(self):
         self.assertEqual(POS_NAME, "Position")

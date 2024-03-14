@@ -12,16 +12,11 @@ from ..seq import POS_NAME, DNA
 def get_half_coverage_matrix(pos_nums: np.ndarray,
                              pos5s: np.ndarray,
                              pos3s: np.ndarray):
-    # Determine and validate the dimensions.
-    num_pos = get_length(pos_nums)
-    nreads = get_length(pos5s, "5' end positions")
-    # Reshape the positions and 5'/3' ends to row and column vectors.
-    pos_row = pos_nums.reshape((1, num_pos))
-    end5s_col = pos5s.reshape((nreads, 1))
-    end3s_col = pos3s.reshape((nreads, 1))
-    # Generate a boolean matrix where each element indicates whether
+    # Reshape the positions and 5'/3' ends to row and column vectors,
+    # then make a boolean matrix where each element indicates whether
     # the read (row) covers the position (column).
-    return np.logical_and(end5s_col <= pos_row, pos_row <= end3s_col)
+    return np.logical_and(pos5s[:, np.newaxis] <= pos_nums[np.newaxis, :],
+                          pos_nums[np.newaxis, :] <= pos3s[:, np.newaxis])
 
 
 def get_coverage_matrix(pos_index: pd.Index,

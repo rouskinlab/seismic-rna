@@ -6,7 +6,7 @@ import pandas as pd
 from .muts import RefseqMutsBatch
 from ..header import make_header
 from ..rel import RelPattern
-from ..seq import POS_INDEX, DNA, seq_pos_to_index
+from ..seq import DNA, seq_pos_to_index
 
 
 def _add_to_rel(added: pd.Series | pd.DataFrame, frame: pd.DataFrame, rel: str):
@@ -39,7 +39,7 @@ def accumulate(batches: Iterable[RefseqMutsBatch],
         num_reads = 0
     # Initialize the counts per position.
     if pos_nums is not None:
-        index_per_pos = seq_pos_to_index(refseq, pos_nums, POS_INDEX)
+        index_per_pos = seq_pos_to_index(refseq, pos_nums, 1)
         fits_per_pos = pd.DataFrame(dtype(0), index_per_pos, header.index)
         info_per_pos = (pd.DataFrame(dtype(0), index_per_pos, header.index)
                         if get_info else None)

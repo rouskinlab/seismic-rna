@@ -33,7 +33,6 @@ class SamFlag(object):
         flag: int
             The integer value of the SAM flag. For documentation, see
             https://samtools.github.io/hts-specs/
-
         """
         if not 0 <= flag <= MAX_FLAG:
             raise RelateValueError(f"Invalid flag: {repr(flag)}")
@@ -72,7 +71,7 @@ class SamRead(object):
         self.qual = fields[10]
         if len(self.seq) != len(self.qual):
             raise RelateValueError(f"Lengths of seq ({len(self.seq)}) and qual "
-                                   f"string {len(self.qual)} did not match.")
+                                   f"string {len(self.qual)} did not match")
 
     def __str__(self):
         attrs = {attr: getattr(self, attr) for attr in self.__slots__[1:]}

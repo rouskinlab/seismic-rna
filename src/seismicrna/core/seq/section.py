@@ -23,9 +23,6 @@ from .xna import BASEA, BASEC, BASEN, DNA
 
 logger = getLogger(__name__)
 
-# Positions are 1-indexed.
-POS_INDEX = 1
-
 # Names of the section index levels.
 POS_NAME = "Position"
 BASE_NAME = "Base"
@@ -803,7 +800,7 @@ class SectionFinder(Section):
     def __init__(self,
                  ref: str,
                  seq: DNA, *,
-                 seq5: int = POS_INDEX,
+                 seq5: int = 1,
                  end5: int | None = None,
                  end3: int | None = None,
                  fwd: DNA | None = None,
