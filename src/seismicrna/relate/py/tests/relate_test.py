@@ -1,7 +1,7 @@
 import unittest as ut
 
-from seismicrna.core.rel import IRREC, MATCH, NOCOV
-from seismicrna.relate.py.relate import find_rels_line, _merge_rels, SamRead
+from seismicrna.core.rel import IRREC, MATCH, NOCOV, SUB_G
+from seismicrna.relate.py.relate import find_rels_line, _merge_mates, SamRead
 from seismicrna.relate.aux.iterread import iter_alignments
 from seismicrna.align.sim import as_sam
 from seismicrna.core.arg import opt_min_mapq
@@ -88,18 +88,19 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
         self.iter_cases(DNA("ACGT"), 1)
 
 
-class TestMergeRels(ut.TestCase):
+class TestMergeMates(ut.TestCase):
 
+    SAM_READ = SamRead("read-name\t"
+                       "147\tref-seq\t189\t36\t42M5S\t=\t10\t-240\tGGGAT"
+                       "TGTTCATGGTGCATTTCACGCTACTCGTTCCTTTCGAACGAG\tCCCCCCCCCC"
+                       "CC;CCCCCC;CCCCCCCCC;CCCCCCCCCCCCCCCCC\tAS:i:84\tXN:i:0"
+                       "\tXM:i:0\tXO:i:0\tXG:i:0\tYS:i:66\tYT:Z:CP\tMD:Z:42\tN"
+                       "M:i:0")
+    OVERHANGS = True
 
     def test_empty(self):
-        sam_read = SamRead("read-name\t"
-                           "147\tref-seq\t189\t36\t42M5S\t=\t10\t-240\tGGGAT"
-                           "TGTTCATGGTGCATTTCACGCTACTCGTTCCTTTCGAACGAG\tCCCCCCCCCC"
-                           "CC;CCCCCC;CCCCCCCCC;CCCCCCCCCCCCCCCCC\tAS:i:84\tXN:i:0"
-                           "\tXM:i:0\tXO:i:0\tXG:i:0\tYS:i:66\tYT:Z:CP\tMD:Z:42\tN"
-                           "M:i:0")
-        overhangs = False
-        result = _merge_rels(1, 10, {}, 1, 10, {}, overhangs, sam_read)
+        result = _merge_mates(1, 10, {}, 1, 10, {}, TestMergeMates.OVERHANGS,
+                                                    TestMergeMates.SAM_READ)
         expect = ({}, (1, 1, 10, 10))
         self.assertEqual(result, expect)
 
@@ -108,18 +109,12 @@ class TestMergeRels(ut.TestCase):
         end31 = 20
         end52 = 11
         end32 = 30
-        sam_read = SamRead("read-name\t"
-                           "147\tref-seq\t189\t36\t42M5S\t=\t10\t-240\tGGGAT"
-                           "TGTTCATGGTGCATTTCACGCTACTCGTTCCTTTCGAACGAG\tCCCCCCCCCC"
-                           "CC;CCCCCC;CCCCCCCCC;CCCCCCCCCCCCCCCCC\tAS:i:84\tXN:i:0"
-                           "\tXM:i:0\tXO:i:0\tXG:i:0\tYS:i:66\tYT:Z:CP\tMD:Z:42\tN"
-                           "M:i:0")
-        overhangs = False
         for pos in range(end51, end31 + 1):
             for rel in range(MATCH + 1, NOCOV):
-                result = _merge_rels(end51, end31, {pos: rel},
+                result = _merge_mates(end51, end31, {pos: rel},
                                      end52, end32, {},
-                                     overhangs, sam_read)
+                                     TestMergeMates.OVERHANGS,
+                                     TestMergeMates.SAM_READ)
                 if end52 <= pos <= end32:
                     # The relationship can be compensated by read 2.
                     if rel & MATCH:
@@ -138,18 +133,12 @@ class TestMergeRels(ut.TestCase):
         end31 = 20
         end52 = 11
         end32 = 30
-        sam_read = SamRead("read-name\t"
-                           "147\tref-seq\t189\t36\t42M5S\t=\t10\t-240\tGGGAT"
-                           "TGTTCATGGTGCATTTCACGCTACTCGTTCCTTTCGAACGAG\tCCCCCCCCCC"
-                           "CC;CCCCCC;CCCCCCCCC;CCCCCCCCCCCCCCCCC\tAS:i:84\tXN:i:0"
-                           "\tXM:i:0\tXO:i:0\tXG:i:0\tYS:i:66\tYT:Z:CP\tMD:Z:42\tN"
-                           "M:i:0")
-        overhangs = False
         for pos in range(end52, end32 + 1):
             for rel in range(MATCH + 1, NOCOV):
-                result = _merge_rels(end51, end31, {},
+                result = _merge_mates(end51, end31, {},
                                      end52, end32, {pos: rel},
-                                     overhangs, sam_read)
+                                     TestMergeMates.OVERHANGS,
+                                     TestMergeMates.SAM_READ)
                 if end51 <= pos <= end31:
                     # The relationship can be compensated by read 1.
                     if rel & MATCH:
@@ -168,13 +157,6 @@ class TestMergeRels(ut.TestCase):
         end31 = 2
         end52 = 2
         end32 = 3
-        sam_read = SamRead("read-name\t"
-                           "147\tref-seq\t189\t36\t42M5S\t=\t10\t-240\tGGGAT"
-                           "TGTTCATGGTGCATTTCACGCTACTCGTTCCTTTCGAACGAG\tCCCCCCCCCC"
-                           "CC;CCCCCC;CCCCCCCCC;CCCCCCCCCCCCCCCCC\tAS:i:84\tXN:i:0"
-                           "\tXM:i:0\tXO:i:0\tXG:i:0\tYS:i:66\tYT:Z:CP\tMD:Z:42\tN"
-                           "M:i:0")
-        overhangs = False
         for pos1 in range(end51, end31 + 1):
             for rel1 in range(MATCH + 1, NOCOV):
                 rels1 = {pos1: rel1}
@@ -183,9 +165,10 @@ class TestMergeRels(ut.TestCase):
                         rels2 = {pos2: rel2}
                         with self.subTest(pos1=pos1, rel1=rel1,
                                           pos2=pos2, rel2=rel2):
-                            result = _merge_rels(end51, end31, rels1,
+                            result = _merge_mates(end51, end31, rels1,
                                                  end52, end32, rels2,
-                                                 overhangs, sam_read)
+                                                 TestMergeMates.OVERHANGS,
+                                                 TestMergeMates.SAM_READ)
                             if pos1 == pos2:
                                 merged = rel1 & rel2
                                 if merged == MATCH:
@@ -207,13 +190,6 @@ class TestMergeRels(ut.TestCase):
         end31 = 2
         end52 = 2
         end32 = 3
-        sam_read = SamRead("read-name\t"
-                           "147\tref-seq\t189\t36\t42M5S\t=\t10\t-240\tGGGAT"
-                           "TGTTCATGGTGCATTTCACGCTACTCGTTCCTTTCGAACGAG\tCCCCCCCCCC"
-                           "CC;CCCCCC;CCCCCCCCC;CCCCCCCCCCCCCCCCC\tAS:i:84\tXN:i:0"
-                           "\tXM:i:0\tXO:i:0\tXG:i:0\tYS:i:66\tYT:Z:CP\tMD:Z:42\tN"
-                           "M:i:0")
-        overhangs = False
         for pos1 in range(end51, end31 + 1):
             rels1 = {pos1: NOCOV}
             for pos2 in range(end52, end32 + 1):
@@ -226,11 +202,63 @@ class TestMergeRels(ut.TestCase):
                     self.assertRaisesRegex(
                         ValueError,
                         f"Cannot merge two blanks at position {error}",
-                        _merge_rels,
+                        _merge_mates,
                         end51, end31, rels1,
                         end52, end32, rels2,
-                        overhangs, sam_read
+                        TestMergeMates.OVERHANGS, TestMergeMates.SAM_READ
                     )
+
+    def test_overhangs(self):
+        sam_read = TestMergeMates.SAM_READ
+        rels1 = {pos: SUB_G for pos in range(1, 10)}
+        rels2 = {pos: SUB_G for pos in range(1, 10)}
+        for overhangs in [True, False]:
+            for rev_flag in [True, False]:
+                end51 = 1
+                end31 = 3
+                end52 = 4
+                end32 = 6
+                sam_read.flag.rev = rev_flag
+                while end31 <= 9:
+                    if ((sam_read.flag.rev and end51 > end32) or
+                        (not TestMergeMates.SAM_READ.flag.rev and end31 < end52)):
+                        self.assertRaisesRegex(ValueError,
+                                               "Mate orientation for"
+                                               f" {repr(sam_read.qname)} cannot"
+                                               " be merged with --no-overhangs")
+                    else:
+                        result = _merge_mates(end51,
+                                              end31,
+                                              rels1,
+                                              end52,
+                                              end32,
+                                              rels2,
+                                              overhangs,
+                                              sam_read)
+                        ends = (((end51,
+                                max(end51, end52),
+                                min(end32, end31),
+                                end32)
+                                if sam_read.flag.rev else
+                                (end52,
+                                 max(end52, end51),
+                                 min(end31, end32),
+                                 end31))
+                                if not overhangs else
+                                (min(end51, end52),
+                                 max(end51, end52),
+                                 min(end31, end32),
+                                 max(end31, end32)))
+                        rels = (({pos: SUB_G for pos in range(end51, end32+1)}
+                                 if sam_read.flag.rev else
+                                 {pos: SUB_G for pos in range(end52, end31+1)})
+                                if not overhangs else
+                                ({pos: SUB_G for pos in range(min(end51, end52),
+                                                              max(end31, end32)+1)}))
+                        expect = (rels, ends)
+                        self.assertEqual(result, expect)
+                    end51 += 1
+                    end31 += 1
 
 
 if __name__ == "__main__":
