@@ -284,12 +284,8 @@ def _merge_rels(end51: int,
                 end52: int,
                 end32: int,
                 rels2: dict[int, int],
-                overhangs: bool,
-                read2: SamRead):
-    merged = dict()
-    end5, mid5, mid3, end3 = _merge_ends(end51, end31, end52,
-                                         end32, overhangs, read2)
-    valid_pos = [pos for pos in rels1 | rels2 if end5 <= pos <= end3]
+                valid_pos: list):
+    merged_rels = dict()
     for pos in valid_pos:
         rel1 = rels1.get(pos, MATCH if end51 <= pos <= end31 else NOCOV)
         rel2 = rels2.get(pos, MATCH if end52 <= pos <= end32 else NOCOV)
@@ -297,9 +293,28 @@ def _merge_rels(end51: int,
         if rel != MATCH:
             if rel == NOCOV:
                 raise ValueError(f"Cannot merge two blanks at position {pos}")
-            merged[pos] = rel
-    return merged, (end5, mid5, mid3, end3)
+            merged_rels[pos] = rel
+    return merged_rels
 
+def _merge_mates(end51: int,
+                 end31: int,
+                 rels1: dict[int, int],
+                 end52: int,
+                 end32: int,
+                 rels2: dict[int, int],
+                 overhangs: bool,
+                 read2: SamRead):
+    end5, mid5, mid3, end3 = _merge_ends(end51, end31, end52,
+                                         end32, overhangs, read2)
+    valid_pos = [pos for pos in rels1 | rels2 if end5 <= pos <= end3]
+    rels = _merge_rels(end51,
+                       end31,
+                       rels1,
+                       end52,
+                       end32,
+                       rels2,
+                       valid_pos)
+    return rels, (end5, mid5, mid3, end3)
 
 def find_rels_line(line1: str,
                    line2: str,
@@ -317,7 +332,7 @@ def find_rels_line(line1: str,
         _validate_read(read2, ref, min_mapq)
         _validate_pair(read1, read2)
         end52, end32, rels2 = _find_rels_read(read2, refseq, qmin, ambrel)
-        rels, (end5, mid5, mid3, end3) = _merge_rels(end5, end3, rels, end52,
+        rels, (end5, mid5, mid3, end3) = _merge_mates(end5, end3, rels, end52,
                                                      end32, rels2, overhangs,
                                                      read2)
     else:
