@@ -300,11 +300,12 @@ class EmClustering(object):
         """ Run the Expectation step of the EM algorithm. """
         # Compute the logs of the parameters.
         with np.errstate(divide="ignore"):
-            # Suppress warnings about taking the log of zero.
+            # Suppress warnings about taking the log of zero, which is a
+            # valid mutation rate.
             logp_mut = np.log(self.p_mut)
-            logp_not = np.log(1. - self.p_mut)
-            logp_ends = np.log(self.p_ends)
-            logp_clust = np.log(self.p_clust)
+        logp_not = np.log(1. - self.p_mut)
+        logp_ends = triu_log(self.p_ends)
+        logp_clust = np.log(self.p_clust)
         # For each cluster, calculate the probability that a read up to
         # and including each position would have no mutations.
         logp_nomut_incl = np.cumsum(logp_not, axis=0)

@@ -20,9 +20,12 @@ from .base import (COVER_REL,
                    R_OBS_TITLE,
                    TABLE_RELS)
 from ..cluster.data import ClusterMutsDataset
-from ..core.batch import accum_fits
-from ..core.header import Header, make_header
-from ..core.mu import calc_f_obs_frame, calc_mu_adj_frame
+from ..core.batch import END5_COORD, END3_COORD, accum_fits
+from ..core.header import ORDER_NAME, Header, make_header
+from ..core.mu import (calc_p_ends_given_noclose,
+                       calc_p_noclose,
+                       calc_p_noclose_given_ends_frame,
+                       calc_params_frame)
 from ..core.rel import RelPattern, HalfRelPattern
 from ..core.seq import Section
 from ..mask.data import MaskMutsDataset
@@ -118,20 +121,54 @@ class Tabulator(ABC):
     @property
     def _num_reads(self):
         """ Raw number of reads. """
-        num_reads, per_pos, per_read = self._counts
+        num_reads, per_pos, per_read, end_counts = self._counts
         return num_reads
 
     @property
     def _counts_per_pos(self):
         """ Raw counts per position. """
-        num_reads, per_pos, per_read = self._counts
+        num_reads, per_pos, per_read, end_counts = self._counts
         return per_pos
 
     @property
     def _counts_per_read(self):
         """ Raw counts per read. """
-        num_reads, per_pos, per_read = self._counts
+        num_reads, per_pos, per_read, end_counts = self._counts
         return per_read
+
+    @property
+    def _end_counts(self):
+        """ Raw counts for each pair of end coordinates. """
+        num_reads, per_pos, per_read, end_counts = self._counts
+        return end_counts
+
+    @cached_property
+    def p_ends_given_noclose(self):
+        """ Probability of each end coordinate. """
+        # Ensure end_counts has 2 dimensions.
+        if self._end_counts.ndim == 1:
+            end_counts = self._end_counts.values[:, np.newaxis]
+        else:
+            end_counts = self._end_counts.values
+        return calc_p_ends_given_noclose(
+            self.section.length,
+            (self._end_counts.index.get_level_values(END5_COORD).values
+             - self.section.end5),
+            (self._end_counts.index.get_level_values(END3_COORD).values
+             - self.section.end5),
+            end_counts,
+        )
+
+    @cached_property
+    def p_clust_given_noclose(self):
+        """ Probability of each cluster. """
+        if isinstance(self._num_reads, pd.Series):
+            return (self._num_reads
+                    / self._num_reads.groupby(level=ORDER_NAME).sum())
+        if isinstance(self._num_reads, int):
+            return 1.
+        raise TypeError("Number of reads must be Series or int, "
+                        f"but got {type(self._num_reads).__name__}")
 
     @cached_property
     def table_per_pos(self):
@@ -160,6 +197,8 @@ class PartialTabulator(Tabulator, ABC):
     @cached_property
     def _adjusted(self):
         return adjust_counts(super().table_per_pos,
+                             self.p_ends_given_noclose,
+                             self.p_clust_given_noclose,
                              self.section,
                              self.dataset.min_mut_gap)
 
@@ -167,8 +206,8 @@ class PartialTabulator(Tabulator, ABC):
     def table_per_pos(self):
         # Count every type of relationship at each position, in the same
         # way as for the superclass, then adjust for observer bias.
-        counts_adj, f_obs = self._adjusted
-        return counts_adj
+        n_rels, n_ends, n_clust = self._adjusted
+        return n_rels
 
 
 class AvgTabulator(Tabulator, ABC):
@@ -200,8 +239,8 @@ class ClustTabulator(PartialTabulator, ABC):
     @cached_property
     def num_reads_adj(self):
         """ Adjusted number of reads in each cluster. """
-        counts_adj, f_obs = self._adjusted
-        return self.num_reads_obs / f_obs
+        n_rels, n_ends, n_clust = self._adjusted
+        return n_clust
 
     @cached_property
     def clust_header(self):
@@ -228,10 +267,6 @@ def _iter_mut_patterns():
     yield INSRT_REL, HalfRelPattern.from_counts(count_ins=True)
 
 
-def list_mut_patterns():
-    return list(_iter_mut_patterns())
-
-
 def _iter_patterns(mask: RelPattern | None = None):
     """ Yield a RelPattern for every type of relationship. """
     # Count everything except for no coverage.
@@ -241,7 +276,7 @@ def _iter_patterns(mask: RelPattern | None = None):
     # Count all types of mutations, relative to reference matches.
     yield MUTAT_REL, RelPattern.muts().intersect(mask)
     # Count each type of mutation, relative to reference matches.
-    for mut, pattern in list_mut_patterns():
+    for mut, pattern in _iter_mut_patterns():
         yield mut, RelPattern(pattern, HalfRelPattern.refs()).intersect(mask)
 
 
@@ -250,16 +285,17 @@ def all_patterns(mask: RelPattern | None = None):
     return dict(_iter_patterns(mask))
 
 
-def adjust_counts(counts_obs: pd.DataFrame,
+def adjust_counts(table_per_pos: pd.DataFrame,
+                  p_ends_given_noclose: np.ndarray,
+                  p_clust_given_noclose: pd.Series | float,
                   section: Section,
                   min_mut_gap: int):
-    """
-    Adjust the given table of masked/clustered bit counts per position
-    to correct for observer bias. The table is mutated in-place.
+    """ Adjust the given table of masked/clustered counts per position
+    to correct for observer bias.
 
     Parameters
     ----------
-    counts_obs: DataFrame
+    p_mut_given_span_noclose: DataFrame
         Counts of the bits for each type of relation (column) at each
         position (index) in the section of interest.
     section: Section
@@ -267,54 +303,75 @@ def adjust_counts(counts_obs: pd.DataFrame,
     min_mut_gap: int
         Minimum number of non-mutated bases permitted between mutations.
     """
-    # Initialize an empty DataFrame of the adjusted counts with the same
-    # index and columns as the observed counts.
-    counts_adj = pd.DataFrame(np.nan,
-                              index=counts_obs.index,
-                              columns=counts_obs.columns)
     # Compute the observed fraction of mutations at each position.
     with np.errstate(divide="ignore"):
         # Ignore division by zero, which is acceptable here because any
         # NaN values will be zeroed out subsequently.
-        fmuts_obs = counts_obs[MUTAT_REL] / counts_obs[INFOR_REL]
+        p_mut_given_span_noclose = (table_per_pos[MUTAT_REL]
+                                    / table_per_pos[INFOR_REL])
     # Fill any missing (NaN) values with zero.
-    fmuts_obs.fillna(0., inplace=True)
+    p_mut_given_span_noclose.fillna(0., inplace=True)
+    # Initialize an empty DataFrame of the adjusted counts with the same
+    # index and columns as the observed counts.
+    n_rels = pd.DataFrame(np.nan, table_per_pos.index, table_per_pos.columns)
     # Adjust the fraction of mutations to correct the observer bias.
-    fmuts_adj = calc_mu_adj_frame(fmuts_obs, section, min_mut_gap)
-    # Compute the fraction of all reads that would be observed.
-    f_obs = calc_f_obs_frame(fmuts_adj, section, min_mut_gap)
+    p_mut, p_ends, p_clust = calc_params_frame(section,
+                                               p_mut_given_span_noclose,
+                                               p_ends_given_noclose,
+                                               p_clust_given_noclose,
+                                               min_mut_gap)
+    # Compute the probability that a read from each cluster would have
+    # no two mutations too close.
+    p_noclose = calc_p_noclose(p_ends,
+                               calc_p_noclose_given_ends_frame(section,
+                                                               p_mut,
+                                                               min_mut_gap))
+    if isinstance(p_clust_given_noclose, pd.Series):
+        p_noclose = pd.Series(p_noclose, index=p_clust_given_noclose.index)
+    elif isinstance(p_clust_given_noclose, float):
+        if p_noclose.size > 1 or p_noclose.ndim > 1:
+            raise ValueError(f"p_noclose must be a scalar, but got {p_noclose}")
+        p_noclose = float(p_noclose[0] if p_noclose.ndim else p_noclose)
+    else:
+        raise TypeError("p_clust_given_noclose must be a Series or float, "
+                        f"but got {type(p_clust_given_noclose).__name__}")
     # Assume that the observance bias affects the counts of covered and
-    # informative bases equally, so that we can define f_obs as follows:
-    # f_obs := ninfo_obs / ninfo_adj
+    # informative bases equally, so p_noclose_given_ends is defined as:
+    # p_noclose_given_ends := ninfo_obs / n_info
     # from which we can estimate the informative bases after adjustment:
-    # ninfo_adj = ninfo_obs / f_obs
-    ninfo_adj = counts_obs.loc[:, INFOR_REL] / f_obs
-    counts_adj.loc[:, INFOR_REL] = ninfo_adj.values
-    counts_adj.loc[:, COVER_REL] = (counts_obs.loc[:, COVER_REL] / f_obs).values
+    # n_info = ninfo_obs / p_noclose_given_ends
+    n_info = table_per_pos[INFOR_REL] / p_noclose
+    n_rels.loc[:, INFOR_REL] = n_info.values
+    n_rels.loc[:, COVER_REL] = (table_per_pos[COVER_REL] / p_noclose).values
     # From the definition of the adjusted fraction of mutations:
-    # fmuts_adj := nmuts_adj / ninfo_adj
+    # p_mut := n_mut / n_info
     # we can also estimate the mutated bases after adjustment:
-    # nmuts_adj = fmuts_adj * ninfo_adj
-    nmuts_adj = fmuts_adj * ninfo_adj
-    counts_adj.loc[:, MUTAT_REL] = nmuts_adj.values
+    # n_mut = p_mut * n_info
+    n_mut = p_mut * n_info
+    n_rels.loc[:, MUTAT_REL] = n_mut.values
     # From the definition of informative bases:
-    # ninfo_adj := nrefs_adj + nmuts_adj
+    # n_info := n_ref + n_mut
     # we can estimate the matched bases after adjustment:
-    # nrefs_adj = ninfo_adj - nmuts_adj
-    nrefs_adj = ninfo_adj - nmuts_adj
-    counts_adj.loc[:, MATCH_REL] = nrefs_adj.values
-    # Compute the factor by which nmuts was adjusted for each position.
+    # n_ref = n_info - n_mut
+    n_ref = n_info - n_mut
+    n_rels.loc[:, MATCH_REL] = n_ref.values
+    # Compute the factor by which n_mut was scaled for each position.
     with np.errstate(divide="ignore"):
         # Division by 0 is possible if no mutations were observed at a
         # given position, resulting in a NaN value at that position.
-        adj_factor = nmuts_adj / counts_obs.loc[:, MUTAT_REL]
+        scale = n_mut / table_per_pos[MUTAT_REL]
     # Replace NaN values with 1 so that missing values do not propagate
     # during multiplication.
-    adj_factor = adj_factor.fillna(1.)
-    # Adjust every subtype of mutation by this factor.
+    scale = scale.fillna(1.)
+    # Scale every subtype of mutation by this factor.
     for mut in SUBMUTS:
-        counts_adj.loc[:, mut] = (counts_obs.loc[:, mut] * adj_factor).values
-    return counts_adj, f_obs
+        n_rels.loc[:, mut] = (table_per_pos[mut] * scale).values
+    # Calculate the count of each end coordinate and cluster.
+    n_ends = (p_ends[:, :, np.newaxis]
+              if isinstance(p_noclose, pd.Series)
+              else p_ends) / np.asarray(p_noclose)
+    n_clust = p_clust / p_noclose
+    return n_rels, n_ends, n_clust
 
 
 def tabulate_loader(dataset: (RelateDataset

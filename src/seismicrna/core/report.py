@@ -455,7 +455,7 @@ NumReadsKeptF = Field("n_reads_kept",
                       "Number of Reads Ultimately Kept",
                       int)
 NumUniqReadKeptF = Field("n_uniq_reads",
-                         "Number of Unique Bit Vectors",
+                         "Number of Unique Reads",
                          int)
 
 # Cluster fields

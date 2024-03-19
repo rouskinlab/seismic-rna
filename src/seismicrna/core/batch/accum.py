@@ -3,6 +3,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
+from .index import END_COORDS
 from .muts import RefseqMutsBatch
 from ..header import make_header
 from ..rel import RelPattern
@@ -28,20 +29,30 @@ def accumulate(batches: Iterable[RefseqMutsBatch],
                max_order: int = 0,
                pos_nums: np.ndarray | None = None,
                per_read: bool = True,
-               get_info: bool = True):
+               get_info: bool = True,
+               count_ends: bool = True):
     header = make_header(rels=list(patterns), max_order=max_order)
-    # Initialize the total read counts.
+    end_counts_index = pd.MultiIndex.from_tuples([], names=END_COORDS)
+    # Initialize the total read counts and end coordinate counts.
     if header.clustered():
         dtype = float
         num_reads = pd.Series(0, index=header.clusts)
+        end_counts = (pd.DataFrame(index=end_counts_index,
+                                   columns=header.clusts,
+                                   dtype=dtype)
+                      if count_ends else None)
     else:
         dtype = int
         num_reads = 0
+        end_counts = (pd.Series(index=end_counts_index,
+                                dtype=dtype)
+                      if count_ends else None)
+    zero = dtype(0)
     # Initialize the counts per position.
     if pos_nums is not None:
         index_per_pos = seq_pos_to_index(refseq, pos_nums, 1)
-        fits_per_pos = pd.DataFrame(dtype(0), index_per_pos, header.index)
-        info_per_pos = (pd.DataFrame(dtype(0), index_per_pos, header.index)
+        fits_per_pos = pd.DataFrame(zero, index_per_pos, header.index)
+        info_per_pos = (pd.DataFrame(zero, index_per_pos, header.index)
                         if get_info else None)
     else:
         fits_per_pos = None
@@ -64,13 +75,16 @@ def accumulate(batches: Iterable[RefseqMutsBatch],
                              f"differ from pos_nums ({pos_nums})")
         # Count the total number of reads in the batch.
         num_reads += batch.num_reads
+        # Count the end coordinates.
+        if end_counts is not None:
+            end_counts = end_counts.add(batch.end_counts, fill_value=0.)
         # Count the positions and/or reads matching each pattern.
         if fits_per_read_per_batch is not None:
-            fits_per_read_per_batch.append(pd.DataFrame(dtype(0),
+            fits_per_read_per_batch.append(pd.DataFrame(zero,
                                                         batch.batch_read_index,
                                                         header.index))
         if info_per_read_per_batch is not None:
-            info_per_read_per_batch.append(pd.DataFrame(dtype(0),
+            info_per_read_per_batch.append(pd.DataFrame(zero,
                                                         batch.batch_read_index,
                                                         header.index))
         for column, pattern in patterns.items():
@@ -86,7 +100,7 @@ def accumulate(batches: Iterable[RefseqMutsBatch],
                 fits_per_read_per_batch[-1].loc[:, column] = fpr.values
                 if info_per_read_per_batch is not None:
                     info_per_read_per_batch[-1].loc[:, column] = ipr.values
-        
+
     def get_data_per_read(data_per_read_per_batch: pd.DataFrame | None):
         if data_per_read_per_batch is not None:
             if data_per_read_per_batch:
@@ -99,23 +113,24 @@ def accumulate(batches: Iterable[RefseqMutsBatch],
             (fits_per_pos,
              info_per_pos),
             (get_data_per_read(fits_per_read_per_batch),
-             get_data_per_read(info_per_read_per_batch)))
+             get_data_per_read(info_per_read_per_batch)),
+            end_counts)
 
 
 def accum_per_pos(batches: Iterable[RefseqMutsBatch],
                   refseq: DNA,
                   pos_nums: np.ndarray,
                   patterns: dict[str, RelPattern],
-                  max_order: int = 0,
-                  ) -> tuple[int | pd.Series, pd.DataFrame, pd.DataFrame]:
+                  max_order: int = 0):
     """ Count reads with each relationship at each position in a section
     over multiple batches. """
-    num_reads, (fpp, ipp), (_, __) = accumulate(batches,
-                                                refseq,
-                                                patterns,
-                                                max_order=max_order,
-                                                pos_nums=pos_nums,
-                                                per_read=False)
+    num_reads, (fpp, ipp), (_, __), ___ = accumulate(batches,
+                                                     refseq,
+                                                     patterns,
+                                                     max_order=max_order,
+                                                     pos_nums=pos_nums,
+                                                     per_read=False,
+                                                     count_ends=False)
     return num_reads, fpp, ipp
 
 
@@ -123,16 +138,15 @@ def accum_fits(batches: Iterable[RefseqMutsBatch],
                refseq: DNA,
                pos_nums: np.ndarray,
                patterns: dict[str, RelPattern],
-               max_order: int = 0,
-               ) -> tuple[int | pd.Series, pd.DataFrame, pd.DataFrame]:
+               max_order: int = 0):
     """ Count positions and reads fitting each relationship. """
-    num_reads, (fpp, _), (fpr, __) = accumulate(batches,
-                                                refseq,
-                                                patterns,
-                                                max_order=max_order,
-                                                pos_nums=pos_nums,
-                                                get_info=False)
-    return num_reads, fpp, fpr
+    num_reads, (fpp, _), (fpr, __), ends = accumulate(batches,
+                                                      refseq,
+                                                      patterns,
+                                                      max_order=max_order,
+                                                      pos_nums=pos_nums,
+                                                      get_info=False)
+    return num_reads, fpp, fpr, ends
 
 ########################################################################
 #                                                                      #

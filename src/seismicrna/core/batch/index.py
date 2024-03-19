@@ -14,6 +14,11 @@ READ_NUM = "Read Number"
 BATCH_NUM = "Batch Number"
 RB_INDEX_NAMES = [BATCH_NUM, READ_NUM]
 
+# Indexes of read end coordinates.
+END5_COORD = "5' End"
+END3_COORD = "3' End"
+END_COORDS = [END5_COORD, END3_COORD]
+
 
 def list_batch_nums(num_batches: int):
     """ List the batch numbers. """
@@ -188,6 +193,12 @@ def sanitize_ends(max_pos: int,
         mid5s[is_contiguous] = end5s[is_contiguous]
         mid3s[is_contiguous] = end3s[is_contiguous]
     return end5s, mid5s, mid3s, end3s
+
+
+def stack_end_coords(end5s: np.ndarray, end3s: np.ndarray):
+    """ Return the 5' and 3' ends as one 2D array. """
+    ensure_same_length(end5s, end3s, "5' end coordinates", "3' end coordinates")
+    return np.stack([end5s, end3s], axis=1)
 
 
 def count_base_types(base_pos_index: pd.Index):

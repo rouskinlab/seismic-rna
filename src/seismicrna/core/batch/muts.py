@@ -6,7 +6,8 @@ from logging import getLogger
 import numpy as np
 import pandas as pd
 
-from .count import (get_count_per_pos,
+from .count import (count_end_coords,
+                    get_count_per_pos,
                     get_count_per_read,
                     get_coverage_matrix,
                     get_cover_per_pos,
@@ -85,6 +86,11 @@ class MutsBatch(ReadBatch, ABC):
         """ Whether each read is made of contiguous mates. """
         return contiguous_mates(self.mid5s, self.mid3s)
 
+    @cached_property
+    def end_counts(self):
+        """ Counts of end coordinates. """
+        return count_end_coords(self.end5s, self.end3s, self.read_weights)
+
 
 class ReflenMutsBatch(MutsBatch, ABC):
     """ Batch of mutational data with only a known reference length. """
@@ -100,7 +106,7 @@ class ReflenMutsBatch(MutsBatch, ABC):
 
 class RefseqMutsBatch(MutsBatch, ABC):
     """ Batch of mutational data with a known reference sequence. """
-    
+
     def __init__(self, *, refseq: DNA, **kwargs):
         self.refseq = refseq
         super().__init__(**kwargs)
@@ -182,8 +188,8 @@ class RefseqMutsBatch(MutsBatch, ABC):
                                   self.rels_per_read,
                                   self.read_weights)
 
-    def nonprox_muts(self, pattern: RelPattern, min_gap: int):
-        """ List the reads with non-proximal mutations. """
+    def reads_noclose_muts(self, pattern: RelPattern, min_gap: int):
+        """ List the reads with no two mutations too close. """
         if min_gap < 0:
             raise ValueError(f"min_gap must be ≥ 0, but got {min_gap}")
         if min_gap == 0:

@@ -242,7 +242,7 @@ def _triu_div(numer: np.ndarray, denom: np.ndarray):
 
 @jit()
 def _triu_dot(a: np.ndarray, b: np.ndarray):
-    """ Dot product of `a` and `b`.
+    """ Dot product of `a` and `b` over their first 2 dimensions.
 
     This function is meant to be called by another function that has
     validated the arguments; hence, this function makes assumptions:
@@ -260,9 +260,8 @@ def _triu_dot(a: np.ndarray, b: np.ndarray):
 
     Returns
     -------
-    bool
-        Whether all elements of the upper triangles of `a` and `b` are
-        close using the function `np.allclose`.
+    np.ndarray
+        Dot product of `a` and `b` over their first 2 dimensions.
     """
     dot = np.zeros(np.broadcast_shapes(a.shape, b.shape)[2:])
     # Dot product over axes 0 and 1.
@@ -704,6 +703,36 @@ def _calc_p_ends(p_ends_given_noclose: np.ndarray,
     return np.average(p_ends, axis=2, weights=p_clust)
 
 
+def calc_p_noclose(p_ends: np.ndarray,
+                   p_noclose_given_ends: np.ndarray):
+    """ Probability that a read would have no two mutations too close.
+
+    Parameters
+    ----------
+    p_ends: np.ndarray
+    p_noclose_given_ends: np.ndarray
+
+    Returns
+    -------
+
+    """
+    # Validate the dimensionality of the arguments.
+    npos, _ = p_ends.shape
+    if p_ends.shape != (npos, npos):
+        raise ValueError("p_ends must have dimensions (positions x positions), "
+                         f"but got {p_ends.shape}")
+    ncls = p_noclose_given_ends.shape[2]
+    if p_noclose_given_ends.shape != (npos, npos, ncls):
+        raise ValueError(
+            f"p_noclose_given_ends must have dimensions "
+            f"(positions x positions x clusters) {npos, npos, ncls}, "
+            f"but got {p_noclose_given_ends.shape}"
+        )
+    # Compute the weighted sum of the probabilities that reads from each
+    # cluster would have no two mutations too close.
+    return _triu_dot(np.expand_dims(p_ends, 2), p_noclose_given_ends)
+
+
 def _calc_p_clust(p_clust_given_noclose: np.ndarray,
                   p_ends: np.ndarray,
                   p_noclose_given_ends: np.ndarray):
@@ -721,7 +750,7 @@ def _calc_p_clust(p_clust_given_noclose: np.ndarray,
         )
     # Compute the weighted sum of the probabilities that reads from each
     # cluster would have no two mutations too close.
-    p_noclose = _triu_dot(np.expand_dims(p_ends, 2), p_noclose_given_ends)
+    p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends)
     # Adjust the cluster proportions given no mutations are too close.
     p_clust = p_clust_given_noclose / p_noclose
     # Normalize the proportions to sum to 1.
@@ -770,7 +799,7 @@ def _calc_p_ends_given_noclose(npos: int,
     -------
     np.ndarray
         Fraction of reads with each 5' (row) and 3' (column) coordinate:
-        2D array (positions x positions)
+        3D array (positions x positions x clusters)
     """
     nreads, ncls = weights.shape
     p_ends = np.zeros((npos, npos, ncls))
@@ -914,7 +943,7 @@ def calc_params_numpy(p_mut_given_span_noclose: np.ndarray,
     if p_clust_given_noclose.shape != (ncls,):
         raise ValueError(
             "p_clust_given_noclose must have dimensions (clusters), "
-            f"but got {p_ends_given_noclose.shape} ≠ {ncls,}"
+            f"but got {p_clust_given_noclose.shape} ≠ {ncls,}"
         )
     # Normalize the values.
     min_gap = _adjust_min_gap(npos, min_gap)
@@ -1011,7 +1040,7 @@ def calc_params_numpy(p_mut_given_span_noclose: np.ndarray,
 def calc_p_ends_given_noclose(npos: int,
                               end5s: np.ndarray,
                               end3s: np.ndarray,
-                              weights: np.ndarray,
+                              weights: np.ndarray | None = None,
                               check_values: bool = True):
     """ Calculate the proportion of each pair of 5'/3' end coordinates
     in `end5s` and `end3s`, optionally weighted by `weights`.
@@ -1034,23 +1063,40 @@ def calc_p_ends_given_noclose(npos: int,
     -------
     np.ndarray
         Fraction of reads with each 5' (row) and 3' (column) coordinate:
-        2D array (positions x positions)
+        3D array (positions x positions x clusters)
     """
     # Validate the dimensions.
+    if weights is None:
+        # Assume all reads are equally likely and there is one cluster.
+        return calc_p_ends_given_noclose(npos,
+                                         end5s,
+                                         end3s,
+                                         weights=np.ones_like(end5s),
+                                         check_values=check_values)
+    if weights.ndim == 1:
+        # There is one cluster: return a 2D array for that cluster.
+        return calc_p_ends_given_noclose(npos,
+                                         end5s,
+                                         end3s,
+                                         weights=weights[:, np.newaxis],
+                                         check_values=check_values)[:, :, 0]
+    if weights.ndim != 2:
+        raise ValueError("weights must have 1 or 2 dimensions, "
+                         f"but got {weights.ndim} {weights.shape}")
+    nreads, ncls = weights.shape
     if npos < 0:
         raise ValueError(f"Number of positions must be ≥ 0, but got {npos}")
-    nreads, ncls = weights.shape
     if nreads == 0:
         raise ValueError(f"Number of reads must be > 0, but got {nreads}")
     if ncls == 0:
         raise ValueError(f"Number of clusters must be ≥ 1, but got {ncls}")
     if end5s.shape != (nreads,):
         raise ValueError(
-            f"end5s must have shape {nreads,}, but got {end5s.shape}"
+            f"end5s must have dimensions {nreads,}, but got {end5s.shape}"
         )
     if end3s.shape != (nreads,):
         raise ValueError(
-            f"end3s must have shape {nreads,}, but got {end3s.shape}"
+            f"end3s must have dimensions {nreads,}, but got {end3s.shape}"
         )
     if check_values:
         # Validate the values.

@@ -5,7 +5,7 @@ import pandas as pd
 
 from seismicrna.core.mu import (calc_p_noclose_given_ends_numpy,
                                 calc_params_numpy,
-                                calc_f_obs_frame,
+                                calc_p_noclose_given_ends_frame,
                                 calc_mu_adj_frame)
 from seismicrna.core.seq import DNA, Section, seq_pos_to_index
 
@@ -57,7 +57,7 @@ class TestCalcDataFrame(ut.TestCase):
                         self.assertTrue(index.equals(mus_adj_df.index))
                         self.assertTrue(clusters.equals(mus_adj_df.columns))
                         # Run calc_f_obs_df.
-                        f_obs_df = calc_f_obs_frame(mus_adj_df, section, gap)
+                        f_obs_df = calc_p_noclose_given_ends_frame(mus_adj_df, section, gap)
                         # Run calc_f_obs_numpy.
                         f_obs_np = calc_p_noclose_given_ends_numpy(mus_adj_np, gap)
                         # Compare the results.
@@ -108,9 +108,9 @@ class TestCalcSeries(ut.TestCase):
                                                    mus_adj_np[pos]))
                     self.assertTrue(index.equals(mus_adj_series.index))
                     # Run calc_f_obs_series.
-                    f_obs_series = calc_f_obs_frame(mus_adj_series,
-                                                    section,
-                                                    gap)
+                    f_obs_series = calc_p_noclose_given_ends_frame(mus_adj_series,
+                                                                   section,
+                                                                   gap)
                     # Run calc_f_obs_numpy.
                     f_obs_np = calc_p_noclose_given_ends_numpy(mus_adj_np, gap)
                     # Compare the results.

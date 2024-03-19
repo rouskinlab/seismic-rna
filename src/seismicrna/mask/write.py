@@ -261,7 +261,7 @@ class RelMasker(object):
             logger.debug(f"{self} skipped filtering reads with pairs of "
                          f"mutations too close in {batch}")
             return batch
-        reads = batch.nonprox_muts(self.pattern, self.min_mut_gap)
+        reads = batch.reads_noclose_muts(self.pattern, self.min_mut_gap)
         logger.debug(f"{self} kept {reads.size} reads with no two mutations "
                      f"separated by < {self.min_mut_gap} nt in {batch}")
         return apply_mask(batch, reads)
