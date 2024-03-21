@@ -3,26 +3,26 @@ from itertools import product
 
 import numpy as np
 
-from seismicrna.core.mu.unbias.algo import (_clip,
-                                            _normalize,
-                                            _adjust_min_gap,
-                                            _triu_log,
-                                            _triu_sum,
-                                            _triu_norm,
-                                            _triu_dot,
-                                            _triu_div,
-                                            _triu_allclose,
-                                            _calc_spanning_sum,
-                                            _calc_p_nomut_window,
-                                            _calc_p_noclose_given_ends,
-                                            _calc_p_mut_given_span_noclose,
-                                            _calc_p_mut_given_span,
-                                            _calc_p_ends,
-                                            _calc_p_ends_given_noclose,
-                                            _calc_p_clust,
-                                            calc_p_noclose,
-                                            calc_p_noclose_given_ends_numpy,
-                                            calc_params_numpy)
+from seismicrna.core.mu.unbias import (_clip,
+                                       _normalize,
+                                       _adjust_min_gap,
+                                       _triu_log,
+                                       _triu_sum,
+                                       _triu_norm,
+                                       _triu_dot,
+                                       _triu_div,
+                                       _triu_allclose,
+                                       _calc_spanning_sum,
+                                       _calc_p_nomut_window,
+                                       _calc_p_noclose_given_ends,
+                                       _calc_p_mut_given_span_noclose,
+                                       _calc_p_mut_given_span,
+                                       _calc_p_ends,
+                                       _calc_p_ends_given_noclose,
+                                       _calc_p_clust,
+                                       calc_p_noclose,
+                                       calc_p_noclose_given_ends_numpy,
+                                       calc_params_numpy)
 
 rng = np.random.default_rng(seed=28)
 
