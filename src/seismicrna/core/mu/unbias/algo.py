@@ -77,6 +77,7 @@ greater than 1.0 to 1.0.
 
 import warnings
 from logging import getLogger
+from typing import Iterable
 
 import numpy as np
 from numba import jit, NumbaPerformanceWarning
@@ -103,6 +104,18 @@ def _clip(x: np.ndarray):
         Array of the same shape as `x` with all values ≥ 0 and ≤ 1.
     """
     return np.clip(np.nan_to_num(x), 0., 1.)
+
+
+@jit()
+def _normalize(x: np.ndarray):
+    """ Normalize the values to sum to 1, or if they sum to 0, then
+    return an array with the same value for each element. """
+    x_sum = np.sum(x)
+    if x_sum == 0.:
+        if x.size == 0:
+            return np.ones_like(x)
+        return np.full_like(x, 1. / x.size)
+    return x / x_sum
 
 
 @jit()
@@ -665,7 +678,7 @@ def _calc_p_ends(p_ends_given_noclose: np.ndarray,
     if p_ends_given_noclose.ndim == 2:
         # If p_ends_given_noclose has 2 dimensions, then promote it to
         # 3 dimensions first.
-        return _calc_p_ends(np.expand_dims(p_ends_given_noclose, 2),
+        return _calc_p_ends(p_ends_given_noclose[:, :, np.newaxis],
                             p_noclose_given_ends,
                             p_mut_given_span,
                             p_clust)
@@ -705,107 +718,34 @@ def _calc_p_ends(p_ends_given_noclose: np.ndarray,
 
 def calc_p_noclose(p_ends: np.ndarray,
                    p_noclose_given_ends: np.ndarray):
-    """ Probability that a read would have no two mutations too close.
-
-    Parameters
-    ----------
-    p_ends: np.ndarray
-    p_noclose_given_ends: np.ndarray
-
-    Returns
-    -------
-
-    """
     # Validate the dimensionality of the arguments.
-    npos, _ = p_ends.shape
-    if p_ends.shape != (npos, npos):
+    if p_ends.ndim != 2 or (npos := p_ends.shape[0]) != p_ends.shape[1]:
         raise ValueError("p_ends must have dimensions (positions x positions), "
                          f"but got {p_ends.shape}")
-    ncls = p_noclose_given_ends.shape[2]
-    if p_noclose_given_ends.shape != (npos, npos, ncls):
-        raise ValueError(
-            f"p_noclose_given_ends must have dimensions "
-            f"(positions x positions x clusters) {npos, npos, ncls}, "
-            f"but got {p_noclose_given_ends.shape}"
-        )
+    if (p_noclose_given_ends.ndim != 3
+            or p_noclose_given_ends.shape[:2] != (npos, npos)):
+        raise ValueError(f"p_noclose_given_ends must have dimensions "
+                         f"(positions x positions x clusters), "
+                         f"but got {p_noclose_given_ends.shape}")
     # Compute the weighted sum of the probabilities that reads from each
     # cluster would have no two mutations too close.
-    return _triu_dot(np.expand_dims(p_ends, 2), p_noclose_given_ends)
+    return _triu_dot(p_ends[:, :, np.newaxis], p_noclose_given_ends)
 
 
 def _calc_p_clust(p_clust_given_noclose: np.ndarray,
-                  p_ends: np.ndarray,
-                  p_noclose_given_ends: np.ndarray):
-    # Validate the dimensionality of the arguments.
-    ncls, = p_clust_given_noclose.shape
-    npos, _ = p_ends.shape
-    if p_ends.shape != (npos, npos):
-        raise ValueError("p_ends must have dimensions (positions x positions), "
-                         f"but got {p_ends.shape}")
-    if p_noclose_given_ends.shape != (npos, npos, ncls):
+                  p_noclose: np.ndarray):
+    """ Proportion of each cluster. """
+    # Validate the dimensions.
+    if p_clust_given_noclose.ndim != 1:
+        raise ValueError("p_clust_given_noclose must have 1 dimension, "
+                         f"but got {p_clust_given_noclose.ndim}")
+    if p_clust_given_noclose.shape != p_noclose.shape:
         raise ValueError(
-            f"p_noclose_given_ends must have dimensions "
-            f"(positions x positions x clusters) {npos, npos, ncls}, "
-            f"but got {p_noclose_given_ends.shape}"
+            "p_clust_given_noclose and p_noclose must have equal dimensions, "
+            f"but got {p_clust_given_noclose.shape} ≠ {p_noclose.shape}"
         )
-    # Compute the weighted sum of the probabilities that reads from each
-    # cluster would have no two mutations too close.
-    p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends)
-    # Adjust the cluster proportions given no mutations are too close.
-    p_clust = p_clust_given_noclose / p_noclose
-    # Normalize the proportions to sum to 1.
-    p_clust /= np.sum(p_clust)
-    # Validate the dimensions of the proportions.
-    if p_clust.shape != p_clust_given_noclose.shape:
-        raise ValueError(
-            f"The dimensions of p_clust {p_clust.shape} differ from those "
-            f"of p_clust_given_noclose {p_clust_given_noclose.shape}"
-        )
-    return p_clust
-
-
-@jit()
-def _calc_p_ends_given_noclose(npos: int,
-                               end5s: np.ndarray,
-                               end3s: np.ndarray,
-                               weights: np.ndarray):
-    """ Calculate the proportion of each pair of 5'/3' end coordinates
-    in `end5s` and `end3s`, weighted by `weights`.
-
-    This function is meant to be called by another function that has
-    validated the arguments; hence, this function makes assumptions:
-
-    -   `npos` is a non-negative integer.
-    -   `end5s` and `end3s` are each a 1D array of integers whose length
-        equals the number of reads.
-    -   `weights` is a 2D array of floats whose length
-    -   All integers in `end5s` and `end3s` are ≥ 0 and < `npos`.
-    -   All weights in `weights` are ≥ 0.
-    -   The sum of `weights` is > 0.
-
-    Parameters
-    ----------
-    npos: int
-        Number of positions.
-    end5s: np.ndarray
-        5' end coordinates of the reads: 1D array (reads)
-    end3s: np.ndarray
-        3' end coordinates of the reads: 1D array (reads)
-    weights: np.ndarray
-        Number of times each read occurs in each cluster:
-        2D array (reads x clusters)
-
-    Returns
-    -------
-    np.ndarray
-        Fraction of reads with each 5' (row) and 3' (column) coordinate:
-        3D array (positions x positions x clusters)
-    """
-    nreads, ncls = weights.shape
-    p_ends = np.zeros((npos, npos, ncls))
-    for i in range(nreads):
-        p_ends[end5s[i], end3s[i]] += weights[i]
-    return p_ends
+    # Compute the proportion of each cluster.
+    return _normalize(p_clust_given_noclose / p_noclose)
 
 
 def calc_p_noclose_given_ends_numpy(p_mut_given_span: np.ndarray, min_gap: int):
@@ -950,8 +890,7 @@ def calc_params_numpy(p_mut_given_span_noclose: np.ndarray,
     if prenormalize:
         p_mut_given_span_noclose = _clip(p_mut_given_span_noclose)
         p_ends_given_noclose = _triu_norm(_clip(p_ends_given_noclose))
-        p_clust_given_noclose = (p_clust_given_noclose
-                                 / np.sum(p_clust_given_noclose))
+        p_clust_given_noclose = _normalize(_clip(p_clust_given_noclose))
     # Determine the initial guess for the mutation rates.
     if guess_p_mut_given_span is None:
         # If no initial guess was given, then use the mutation rates of
@@ -979,8 +918,7 @@ def calc_params_numpy(p_mut_given_span_noclose: np.ndarray,
         )
     elif prenormalize:
         # Ensure the initial cluster proportions sum to 1.
-        guess_p_clust = _clip(guess_p_clust)
-        guess_p_clust = guess_p_clust / np.sum(guess_p_clust)
+        guess_p_clust = _normalize(_clip(guess_p_clust))
     # Determine the initial guess for the read coordinate distribution.
     if guess_p_ends is None:
         # If no initial guess was given, then use the coordinates of
@@ -1029,12 +967,56 @@ def calc_params_numpy(p_mut_given_span_noclose: np.ndarray,
                                     guess_p_mut_given_span,
                                     guess_p_clust)
         guess_p_clust = _calc_p_clust(p_clust_given_noclose,
-                                      guess_p_ends,
-                                      p_noclose_given_ends)
+                                      calc_p_noclose(guess_p_ends,
+                                                     p_noclose_given_ends))
     else:
         logger.warning("Mutation rates and distribution of read coordinates "
                        f"failed to converge in {max_iter} iterations.")
     return guess_p_mut_given_span, guess_p_ends, guess_p_clust
+
+
+@jit()
+def _calc_p_ends_given_noclose(npos: int,
+                               end5s: np.ndarray,
+                               end3s: np.ndarray,
+                               weights: np.ndarray):
+    """ Calculate the proportion of each pair of 5'/3' end coordinates
+    in `end5s` and `end3s`, weighted by `weights`.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function makes assumptions:
+
+    -   `npos` is a non-negative integer.
+    -   `end5s` and `end3s` are each a 1D array of integers whose length
+        equals the number of reads.
+    -   `weights` is a 2D array of floats whose length
+    -   All integers in `end5s` and `end3s` are ≥ 0 and < `npos`.
+    -   All weights in `weights` are ≥ 0.
+    -   The sum of `weights` is > 0.
+
+    Parameters
+    ----------
+    npos: int
+        Number of positions.
+    end5s: np.ndarray
+        5' end coordinates of the reads: 1D array (reads)
+    end3s: np.ndarray
+        3' end coordinates of the reads: 1D array (reads)
+    weights: np.ndarray
+        Number of times each read occurs in each cluster:
+        2D array (reads x clusters)
+
+    Returns
+    -------
+    np.ndarray
+        Fraction of reads with each 5' (row) and 3' (column) coordinate:
+        3D array (positions x positions x clusters)
+    """
+    nreads, ncls = weights.shape
+    p_ends = np.zeros((npos, npos, ncls))
+    for i in range(nreads):
+        p_ends[end5s[i], end3s[i]] += weights[i]
+    return p_ends
 
 
 def calc_p_ends_given_noclose(npos: int,
@@ -1125,6 +1107,83 @@ def calc_p_ends_given_noclose(npos: int,
                              f"but got {weights_sum[weights_sum < 0.]}")
     # Call the compiled function.
     return _calc_p_ends_given_noclose(npos, end5s, end3s, weights)
+
+
+def calc_params_noclose(n_pos_total: int,
+                        order: int,
+                        unmasked_pos: Iterable[int],
+                        muts_per_pos: Iterable[np.ndarray],
+                        end5s: np.ndarray,
+                        end3s: np.ndarray,
+                        counts_per_uniq: np.ndarray,
+                        membership: np.ndarray):
+    """ Calculate the observed estimates of the parameters with no two
+    mutations too close.
+
+    Parameters
+    ----------
+    n_pos_total: int
+        Total number of positions in the section.
+    order: int
+        Order of clustering.
+    unmasked_pos: Iterable[int]
+        Unmasked positions; must be zero-indexed with respect to the
+        5' end of the section.
+    muts_per_pos: Iterable[np.ndarray]
+        For each unmasked position, numbers of all reads with a mutation
+        at that position.
+    end5s: np.ndarray
+        Coordinates of the 5' ends of all reads; must be 0-indexed with
+        respect to the 5' end of the section.
+    end3s: np.ndarray
+        Coordinates of the 3' ends of all reads; must be 0-indexed with
+        respect to the 5' end of the section.
+    counts_per_uniq: np.ndarray
+        Number of times each unique read occurs.
+    membership: np.ndarray
+        Cluster memberships of each read: 2D array (reads x clusters)
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray, np.ndarray]
+
+    """
+    # Count each unique read in each cluster.
+    # 2D (unique reads x clusters)
+    n_each_read_each_clust = counts_per_uniq[:, np.newaxis] * membership
+    # Count the total number of reads in each cluster.
+    # 1D (clusters)
+    n_reads_per_clust = np.sum(n_each_read_each_clust, axis=0)
+    # Calculate the observed proportion of reads in each cluster.
+    # 1D (clusters)
+    p_clust_given_noclose = n_reads_per_clust / n_reads_per_clust.sum()
+    # Calculate the proportion of each unique read in each cluster.
+    # 2D (unique reads x clusters)
+    p_each_read_each_clust = n_each_read_each_clust / n_reads_per_clust
+    # Calculate the proportion of observed reads with each pair of
+    # 5' and 3' end coordinates.
+    # 3D (all positions x all positions x clusters)
+    p_ends_given_noclose = calc_p_ends_given_noclose(n_pos_total,
+                                                     end5s,
+                                                     end3s,
+                                                     p_each_read_each_clust,
+                                                     check_values=False)
+    # Count the observed reads that cover each position.
+    # 2D (all positions x clusters)
+    n_reads_per_pos = (calc_spanning_sum(p_ends_given_noclose)
+                       * n_reads_per_clust)
+    # Count the observed mutations at each position.
+    # 2D (all positions x clusters)
+    n_muts_per_pos = np.zeros((n_pos_total, order))
+    for j, mut_reads in zip(unmasked_pos, muts_per_pos, strict=True):
+        # Calculate the number of mutations at each position in each
+        # cluster by summing the count-weighted likelihood that each
+        # read with a mutation at (j) came from the cluster.
+        n_muts_per_pos[j] = counts_per_uniq[mut_reads] @ membership[mut_reads]
+    # Calculate the observed mutation rate at each position.
+    # 2D (all positions x clusters)
+    p_mut_given_noclose = n_muts_per_pos / n_reads_per_pos
+    return p_mut_given_noclose, p_ends_given_noclose, p_clust_given_noclose
 
 ########################################################################
 #                                                                      #

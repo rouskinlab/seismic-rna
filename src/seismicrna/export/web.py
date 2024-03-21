@@ -29,8 +29,7 @@ from ..table.base import (COVER_REL,
 from ..table.base import (Table,
                           PosTable,
                           ReadTable,
-                          ClustFreqTable,
-                          R_ADJ_TITLE)
+                          ClustFreqTable)
 
 logger = getLogger(__name__)
 
@@ -195,10 +194,9 @@ def iter_read_table_data(table: ReadTable, order: int, clust: int):
 
 
 def iter_clust_table_data(table: ClustFreqTable, order: int, clust: int):
-    reads_adj = table.data.loc[R_ADJ_TITLE]
-    clust_count = reads_adj[table.header.select(order=order,
-                                                clust=clust)].squeeze()
-    order_count = reads_adj[table.header.select(order=order)].sum().squeeze()
+    clust_count = table.data[table.header.select(order=order,
+                                                 clust=clust)].squeeze()
+    order_count = table.data[table.header.select(order=order)].sum().squeeze()
     proportion = (round(clust_count / order_count, PRECISION)
                   if order_count > 0
                   else np.nan)

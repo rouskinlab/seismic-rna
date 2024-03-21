@@ -133,7 +133,6 @@ def bowtie2_cmd(fq_inp: FastqUnit,
             "--threads", n_procs,
             # Alignment setup
             "--local" if bt2_local else "--end-to-end",
-            "--non-deterministic",
             "--gbar", bt2_gbar,
             "--dpad", bt2_dpad,
             "-L", bt2_l,

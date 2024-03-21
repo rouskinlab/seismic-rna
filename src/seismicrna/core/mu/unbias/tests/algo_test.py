@@ -4,6 +4,7 @@ from itertools import product
 import numpy as np
 
 from seismicrna.core.mu.unbias.algo import (_clip,
+                                            _normalize,
                                             _adjust_min_gap,
                                             _triu_log,
                                             _triu_sum,
@@ -17,10 +18,13 @@ from seismicrna.core.mu.unbias.algo import (_clip,
                                             _calc_p_mut_given_span_noclose,
                                             _calc_p_mut_given_span,
                                             _calc_p_ends,
+                                            _calc_p_ends_given_noclose,
+                                            _calc_p_clust,
+                                            calc_p_noclose,
                                             calc_p_noclose_given_ends_numpy,
                                             calc_params_numpy)
 
-rng = np.random.default_rng()
+rng = np.random.default_rng(seed=28)
 
 
 def no_close_muts(read: np.ndarray, min_gap: int):
@@ -88,9 +92,8 @@ def simulate_params(n_pos: int, n_cls: int, p_mut_max: float = 1.):
     return p_mut, p_ends, p_cls
 
 
-def calc_p_ends_given_noclose(p_ends: np.ndarray,
-                              p_noclose_given_ends: np.ndarray,
-                              p_mut_given_span: np.ndarray):
+def calc_p_ends_given_noclose_theory(p_ends: np.ndarray,
+                                     p_noclose_given_ends: np.ndarray):
     """ Calculate the proportion of reads with no two mutations too
     close with each pair of 5' and 3' coordinates.
 
@@ -116,9 +119,6 @@ def calc_p_ends_given_noclose(p_ends: np.ndarray,
         3D (positions x positions x clusters) array of the pobabilities
         that a read with 5' and 3' coordinates corresponding to the row
         and column would have no two mutations too close.
-    p_mut_given_span: np.ndarray
-        2D (positions x clusters) array of the total mutation rate at
-        each position in each cluster.
 
     Returns
     -------
@@ -127,29 +127,55 @@ def calc_p_ends_given_noclose(p_ends: np.ndarray,
         reads without mutations too close, beginning at the row position
         and ending at the column position, in each cluster.
     """
-    # Validate the dimensionality of the arguments.
-    npos, ncls = p_mut_given_span.shape
-    if p_ends.shape != (npos, npos):
+    # Validate the dimensions of the arguments.
+    if p_ends.ndim != 2 or (npos := p_ends.shape[0]) != p_ends.shape[1]:
         raise ValueError("p_ends must have dimensions (positions x positions), "
                          f"but got {p_ends.shape}")
-    if p_noclose_given_ends.shape != (npos, npos, ncls):
-        raise ValueError(
-            f"p_noclose_given_ends must have dimensions "
-            f"(positions x positions x clusters) {npos, npos, ncls}, "
-            f"but got {p_noclose_given_ends.shape}"
-        )
+    if p_noclose_given_ends.ndim != 3:
+        raise ValueError("p_noclose_given_ends must have 3 dimensions, "
+                         f"but got {p_noclose_given_ends.shape}")
+    if p_noclose_given_ends.shape[:2] != (npos, npos):
+        raise ValueError("p_noclose_given_ends must have first 2 dimensions "
+                         f"{npos, npos}, but got {p_noclose_given_ends.shape}")
     # Calculate the proportion of total reads that would have each
     # pair of end coordinates.
-    p_ends_given_noclose = _triu_norm(np.expand_dims(p_ends, 2)
-                                      * p_noclose_given_ends)
-    # Validate the dimensions of the proportions.
-    if p_ends_given_noclose.shape != (npos, npos, ncls):
-        raise ValueError(
-            "p_ends_given_noclose must have dimensions "
-            f"(positions x positions x clusters) {npos, npos, ncls}, "
-            f"but got {p_ends_given_noclose.shape}"
-        )
-    return p_ends_given_noclose
+    return _triu_norm(np.expand_dims(p_ends, 2) * p_noclose_given_ends)
+
+
+class TestCalcPEndsGivenNoCloseTheory(ut.TestCase):
+
+    def test_npos0_ncls1(self):
+        p_ends = np.ones((0, 0))
+        p_noclose_given_ends = np.ones((0, 0, 1))
+        expect = np.ones((0, 0, 1))
+        result = calc_p_ends_given_noclose_theory(p_ends, p_noclose_given_ends)
+        self.assertTrue(np.array_equal(result, expect))
+
+    def test_npos1_ncls0(self):
+        p_ends = np.ones((1, 1))
+        p_noclose_given_ends = np.ones((1, 1, 0))
+        expect = np.ones((1, 1, 0))
+        result = calc_p_ends_given_noclose_theory(p_ends, p_noclose_given_ends)
+        self.assertTrue(np.array_equal(result, expect))
+
+    def test_npos1_ncls1(self):
+        p_ends = np.ones((1, 1))
+        expect = np.ones((1, 1, 1))
+        for p in [0.01, 0.1, 1.0]:
+            p_noclose_given_ends = np.full((1, 1, 1), p)
+            result = calc_p_ends_given_noclose_theory(p_ends, p_noclose_given_ends)
+            self.assertTrue(np.array_equal(result, expect))
+
+    def test_npos2_ncls1(self):
+        p_ends = np.array([[0.2, 0.5],
+                           [0.0, 0.3]])
+        p_noclose_given_ends = np.array([[[0.9], [0.6]],
+                                         [[0.0], [0.8]]])
+        expect = np.array([[[3. / 12.], [5. / 12.]],
+                           [[0. / 12.], [4. / 12.]]])
+        result = calc_p_ends_given_noclose_theory(p_ends, p_noclose_given_ends)
+        self.assertEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
 
 
 def calc_p_clust_given_noclose(p_clust: np.ndarray,
@@ -167,19 +193,54 @@ def calc_p_clust_given_noclose(p_clust: np.ndarray,
             f"(positions x positions x clusters) {npos, npos, ncls}, "
             f"but got {p_noclose_given_ends.shape}"
         )
-    # Compute the weighted sum of the probabilities that reads from each
-    # cluster would have no two mutations too close.
+    # Compute the probability that a read would have no two mutations
+    # too close, averaging over all clusters.
     p_noclose = _triu_sum(np.expand_dims(p_ends, 2) * p_noclose_given_ends)
     # Adjust the cluster proportions given no mutations are too close.
     p_clust_given_noclose = p_clust * p_noclose
     # Normalize the proportions to sum to 1.
-    p_clust_given_noclose /= np.sum(p_clust_given_noclose)
+    if (p_clust_given_noclose_sum := np.sum(p_clust_given_noclose)) == 0.:
+        # If the sum is 0, then give each cluster the same probability.
+        p_clust_given_noclose = np.full_like(
+            p_clust_given_noclose, np.reciprocal(p_clust_given_noclose.size)
+        )
+    else:
+        p_clust_given_noclose /= p_clust_given_noclose_sum
     # Validate the dimensions of the proportions.
     if p_clust_given_noclose.shape != p_clust.shape:
         raise ValueError(f"The dimensions of p_clust_given_noclose "
                          f"{p_clust_given_noclose.shape} differ from those "
                          f"of p_clust {p_clust.shape}")
     return p_clust_given_noclose
+
+
+class TestCalcPClustGivenNoClose(ut.TestCase):
+
+    def test_ncls1(self):
+        p_clust = np.ones((1,))
+        expect = np.ones((1,))
+        for npos in range(5):
+            with self.subTest(npos=npos):
+                p_ends = np.ones((npos, npos))
+                p_noclose_given_ends = np.ones((npos, npos, 1))
+                result = calc_p_clust_given_noclose(p_clust,
+                                                    p_ends,
+                                                    p_noclose_given_ends)
+                self.assertEqual(result.shape, expect.shape)
+                self.assertTrue(np.allclose(result, expect))
+
+    def test_ncls2(self):
+        p_clust = np.ones((1,))
+        expect = np.ones((1,))
+        for npos in range(5):
+            with self.subTest(npos=npos):
+                p_ends = np.ones((npos, npos))
+                p_noclose_given_ends = np.ones((npos, npos, 1))
+                result = calc_p_clust_given_noclose(p_clust,
+                                                    p_ends,
+                                                    p_noclose_given_ends)
+                self.assertEqual(result.shape, expect.shape)
+                self.assertTrue(np.allclose(result, expect))
 
 
 class TestNoCloseMuts(ut.TestCase):
@@ -266,6 +327,31 @@ class TestClip(ut.TestCase):
         mus = rng.random(64, dtype=float)
         # All values are in [0, 1] and so should not be clipped.
         self.assertTrue(np.allclose(mus, _clip(mus)))
+
+
+class TestNormalize(ut.TestCase):
+
+    def test_sum_positive(self):
+        for ndim in range(1, 4):
+            for dims in product(range(5), repeat=ndim):
+                x = 1. - rng.random(dims)
+                result = _normalize(x)
+                self.assertEqual(result.shape, x.shape)
+                if x.size > 0:
+                    self.assertTrue(np.isclose(result.sum(), 1.))
+                    ratio = x / result
+                    self.assertTrue(np.allclose(ratio, ratio[(0,) * ndim]))
+
+    def test_sum_zero(self):
+        for ndim in range(1, 4):
+            for dims in product(range(5), repeat=ndim):
+                x = np.zeros(dims)
+                result = _normalize(x)
+                self.assertEqual(result.shape, x.shape)
+                if x.size > 0:
+                    self.assertTrue(np.isclose(result.sum(), 1.))
+                    ratio = x / result
+                    self.assertTrue(np.allclose(ratio, ratio[(0,) * ndim]))
 
 
 class TestTriuLog(ut.TestCase):
@@ -520,6 +606,7 @@ class TestAdjustMinGap(ut.TestCase):
 
 
 class TestCalcPNoCloseGivenEnds(ut.TestCase):
+    """ Test _calc_p_nomut_window and _calc_p_noclose_given_ends. """
 
     def test_min_gap_0(self):
         for npos in range(10):
@@ -771,7 +858,7 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
 
     def test_simulated(self):
         from scipy.stats import binom
-        confidence = 0.9995
+        confidence = 0.999
         # Simulate reads.
         n_pos = 6
         n_reads = 1_000_000
@@ -826,10 +913,9 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                                                  inter_up / n_expect)
                 # Compute the theoretical proportion of reads aligning
                 # to each pair of 5' and 3' coordinates.
-                p_ends_given_noclose_theory = calc_p_ends_given_noclose(
+                p_ends_given_noclose_theory = calc_p_ends_given_noclose_theory(
                     p_ends,
-                    np.expand_dims(p_noclose_given_ends_theory, 2),
-                    p_mut
+                    np.expand_dims(p_noclose_given_ends_theory, 2)
                 ).reshape((n_pos, n_pos))
                 # Compare to the simulated proportion of reads aligning
                 # to each pair of coordinates.
@@ -959,8 +1045,8 @@ class TestCalcPEnds(ut.TestCase):
                 p_noclose_given_ends = _calc_p_noclose_given_ends(
                     p_mut, _calc_p_nomut_window(p_mut, min_gap)
                 )
-                p_ends_given_noclose = calc_p_ends_given_noclose(
-                    p_ends, p_noclose_given_ends, p_mut
+                p_ends_given_noclose = calc_p_ends_given_noclose_theory(
+                    p_ends, p_noclose_given_ends
                 )
                 # Infer the original distribution of all reads.
                 p_ends_inferred = _calc_p_ends(p_ends_given_noclose,
@@ -971,7 +1057,53 @@ class TestCalcPEnds(ut.TestCase):
                 self.assertTrue(_triu_allclose(p_ends_inferred, p_ends))
 
 
-class TestCalcPMutPEndsNumPy(ut.TestCase):
+class TestCalcPNoClose(ut.TestCase):
+
+    def test_p_noclose(self):
+        p_ends = np.array([[0.2, 0.5],
+                           [0.4, 0.3]])
+        p_noclose_given_ends = np.array([[[0.2, 0.4], [0.1, 0.2]],
+                                         [[0.3, 0.6], [0.4, 0.8]]])
+        expect = np.array([0.21, 0.42])
+        result = calc_p_noclose(p_ends, p_noclose_given_ends)
+        self.assertEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
+
+
+class TestCalcPClust(ut.TestCase):
+
+    def test_p_clust(self):
+        p_clust_given_noclose = np.array([0.2, 0.5, 0.3])
+        p_noclose = np.array([0.8, 0.4, 0.5])
+        expect = np.array([0.25, 1.25, 0.60]) / 2.1
+        result = _calc_p_clust(p_clust_given_noclose, p_noclose)
+        self.assertEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
+
+
+class TestCalcPEndsGivenNoClose(ut.TestCase):
+
+    def test_calc_p_ends_given_noclose(self):
+        npos = 3
+        end5s = np.array([2, 0, 0, 1, 1, 2, 0, 0])
+        end3s = np.array([2, 1, 2, 2, 1, 2, 0, 1])
+        weights = np.array([[0.1, 0.2],
+                            [0.2, 0.3],
+                            [0.3, 0.4],
+                            [0.4, 0.5],
+                            [0.5, 0.6],
+                            [0.6, 0.7],
+                            [0.7, 0.8],
+                            [0.8, 0.9]])
+        expect = np.array([[[0.7, 0.8], [1.0, 1.2], [0.3, 0.4]],
+                           [[0.0, 0.0], [0.5, 0.6], [0.4, 0.5]],
+                           [[0.0, 0.0], [0.0, 0.0], [0.7, 0.9]]])
+        result = _calc_p_ends_given_noclose(npos, end5s, end3s, weights)
+        self.assertEqual(result.shape, expect.shape)
+        self.assertTrue(np.allclose(result, expect))
+
+
+class TestCalcParamsNumPy(ut.TestCase):
 
     def test_infer(self):
         n_pos = 16
@@ -990,8 +1122,8 @@ class TestCalcPMutPEndsNumPy(ut.TestCase):
                 p_mut_given_span_noclose = _calc_p_mut_given_span_noclose(
                     p_mut, p_ends, p_noclose_given_ends, p_nomut_window
                 )
-                p_ends_given_noclose = calc_p_ends_given_noclose(
-                    p_ends, p_noclose_given_ends, p_mut
+                p_ends_given_noclose = calc_p_ends_given_noclose_theory(
+                    p_ends, p_noclose_given_ends
                 )
                 p_clust_given_noclose = calc_p_clust_given_noclose(
                     p_cls, p_ends, p_noclose_given_ends

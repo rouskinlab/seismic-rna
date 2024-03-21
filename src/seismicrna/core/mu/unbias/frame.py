@@ -65,32 +65,49 @@ def calc_params_frame(section: Section,
         Data frame of the adjusted mutation rates with the same index
         and columns as `mu_obs`.
     """
-    p_mut_given_span, p_ends, p_clust = calc_params_numpy(
-        _data_to_matrix(p_mut_given_span_noclose, section),
-        p_ends_given_noclose,
-        np.atleast_1d(p_clust_given_noclose),
-        min_gap
-    )
-    if isinstance(p_mut_given_span_noclose, pd.DataFrame):
-        p_mut_given_span_frame = pd.DataFrame(
-            p_mut_given_span,
-            section.range,
-            p_mut_given_span_noclose.columns
+    # Determine the clusters.
+    if isinstance(p_clust_given_noclose, float):
+        # There are no clusters.
+        if not isinstance(p_mut_given_span_noclose, pd.Series):
+            raise TypeError("p_mut_given_span_noclose must be Series, but "
+                            f"got {type(p_mut_given_span_noclose).__name__}")
+        (p_mut_given_span, p_ends, _) = calc_params_numpy(
+            _data_to_matrix(p_mut_given_span_noclose, section),
+            p_ends_given_noclose,
+            np.array([p_clust_given_noclose]),
+            min_gap
         )
-    elif isinstance(p_mut_given_span_noclose, pd.Series):
-        p_mut_given_span_frame = pd.Series(
-            p_mut_given_span.reshape(section.length),
-            section.range
+        p_mut_given_span = pd.Series(p_mut_given_span[:, 0],
+                                     index=section.range)
+        p_clust = 1.
+    elif isinstance(p_clust_given_noclose, pd.Series):
+        # There are one or more clusters.
+        clusters = p_clust_given_noclose.index
+        if not isinstance(p_mut_given_span_noclose, pd.DataFrame):
+            raise TypeError("p_mut_given_span_noclose must be DataFrame, but "
+                            f"got {type(p_mut_given_span_noclose).__name__}")
+        if not p_mut_given_span_noclose.columns.equals(clusters):
+            raise ValueError("Clusters differ between p_clust_given_noclose "
+                             f"{clusters} and p_mut_given_span_noclose "
+                             f"{p_mut_given_span_noclose.columns}")
+        (p_mut_given_span, p_ends, p_clust) = calc_params_numpy(
+            _data_to_matrix(p_mut_given_span_noclose, section),
+            p_ends_given_noclose,
+            p_clust_given_noclose.values,
+            min_gap
         )
+        p_mut_given_span = pd.DataFrame(p_mut_given_span,
+                                        index=section.range,
+                                        columns=clusters)
+        p_clust = pd.Series(p_clust, index=clusters)
     else:
-        raise TypeError(
-            "p_mut_given_span_noclose must be a Series or DataFrame, "
-            f"but got {type(p_mut_given_span_noclose).__name__}"
-        )
-    p_mut_given_span_frame = (
-        p_mut_given_span_frame.loc[p_mut_given_span_noclose.index]
+        raise TypeError("p_clust_given_noclose must be float or Series, but "
+                        f"got {type(p_clust_given_noclose).__name__}")
+    # Remove masked positions.
+    p_mut_given_span = (
+        p_mut_given_span.loc[p_mut_given_span_noclose.index]
     )
-    return p_mut_given_span_frame, p_ends, p_clust
+    return p_mut_given_span, p_ends, p_clust
 
 ########################################################################
 #                                                                      #

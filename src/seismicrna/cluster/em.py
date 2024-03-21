@@ -9,8 +9,7 @@ from .uniq import UniqReads
 from ..core.batch import get_length
 from ..core.header import index_order_clusts
 from ..core.mu import (calc_p_noclose_given_ends_numpy,
-                       calc_p_ends_given_noclose,
-                       calc_spanning_sum,
+                       calc_params_noclose,
                        calc_params_numpy,
                        triu_log)
 
@@ -199,8 +198,8 @@ class EmClustering(object):
         return self.log_like - self.log_like_prev
 
     @property
-    def bic(self):
-        """ Bayesian Information Criterion of the model. """
+    def n_params(self):
+        """ Number of parameters in the model. """
         # The parameters estimated by the model are
         # - the mutation rates for each position in each cluster
         # - the proportion of each cluster
@@ -221,53 +220,34 @@ class EmClustering(object):
         # the proportions of all clusters must sum to 1.
         df_clust = self.order - 1
         # The number of parameters is the sum of the degrees of freedom.
-        n_params = df_mut + df_ends + df_clust
+        return df_mut + df_ends + df_clust
+
+    @property
+    def n_data(self):
+        """ Number of data points in the model. """
         # The number of data points is the total number of reads.
-        n_data = self.uniq_reads.num_nonuniq
-        return calc_bic(n_params, n_data, self.log_like)
+        return self.uniq_reads.num_nonuniq
+
+    @property
+    def bic(self):
+        """ Bayesian Information Criterion of the model. """
+        return calc_bic(self.n_params, self.n_data, self.log_like)
 
     def _max_step(self):
         """ Run the Maximization step of the EM algorithm. """
-        # Count each unique read in each cluster.
-        # 2D (unique reads x clusters)
-        n_each_read_each_clust = (self.uniq_reads.counts_per_uniq[:, np.newaxis]
-                                  * self.membership)
-        # Count the total number of reads in each cluster.
-        # 1D (clusters)
-        n_reads_per_clust = np.sum(n_each_read_each_clust, axis=0)
-        # Calculate the observed proportion of reads in each cluster.
-        # 1D (clusters)
-        p_clust_given_noclose = n_reads_per_clust / n_reads_per_clust.sum()
-        # Calculate the proportion of each unique read in each cluster.
-        # 2D (unique reads x clusters)
-        p_each_read_each_clust = n_each_read_each_clust / n_reads_per_clust
-        # Calculate the proportion of observed reads with each pair of
-        # 5' and 3' end coordinates.
-        # 3D (all positions x all positions x clusters)
-        p_ends_given_noclose = calc_p_ends_given_noclose(self.n_pos_total,
-                                                         self.end5s,
-                                                         self.end3s,
-                                                         p_each_read_each_clust,
-                                                         check_values=False)
-        # Count the observed reads that cover each position.
-        # 2D (all positions x clusters)
-        n_reads_per_pos = calc_spanning_sum(p_ends_given_noclose) * n_reads_per_clust
-        # Count the observed mutations at each position.
-        # 2D (all positions x clusters)
-        n_muts_per_pos = np.zeros((self.n_pos_total, self.order))
-        for j, mut_reads in zip(self.unmasked,
-                                self.uniq_reads.muts_per_pos,
-                                strict=True):
-            # Calculate the number of mutations at each position in each
-            # cluster by summing the count-weighted likelihood that each
-            # read with a mutation at (j) came from the cluster.
-            n_muts_per_pos[j] = (
-                    self.uniq_reads.counts_per_uniq[mut_reads]
-                    @ self.membership[mut_reads]
-            )
-        # Calculate the observed mutation rate at each position.
-        # 2D (all positions x clusters)
-        p_mut_noclose = n_muts_per_pos / n_reads_per_pos
+        # Estimate the parameters based on observed data.
+        (p_mut_given_noclose,
+         p_ends_given_noclose,
+         p_clust_given_noclose) = calc_params_noclose(
+            self.n_pos_total,
+            self.order,
+            self.unmasked,
+            self.uniq_reads.muts_per_pos,
+            self.end5s,
+            self.end3s,
+            self.uniq_reads.counts_per_uniq,
+            self.membership
+        )
         if self.iter > FIRST_ITER:
             # If this iteration is not the first, then use the previous
             # values of the parameters as the initial guesses.
@@ -281,14 +261,13 @@ class EmClustering(object):
             guess_p_clust = None
         # Update the parameters.
         self.p_mut, self.p_ends, self.p_clust = calc_params_numpy(
-            p_mut_noclose,
+            p_mut_given_noclose,
             p_ends_given_noclose,
             p_clust_given_noclose,
             self.uniq_reads.min_mut_gap,
             guess_p_mut,
             guess_p_ends,
-            guess_p_clust,
-            prenormalize=False,
+            guess_p_clust
         )
         # Update the log probability that a read with each pair of 5'/3'
         # end coordinates would have no two mutations too close.
