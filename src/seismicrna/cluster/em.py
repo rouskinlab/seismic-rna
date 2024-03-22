@@ -7,10 +7,11 @@ import pandas as pd
 from .names import CLUST_PROP_NAME
 from .uniq import UniqReads
 from ..core.batch import get_length
+from ..core.dims import find_dims
 from ..core.header import index_order_clusts
 from ..core.mu import (calc_p_noclose_given_ends_numpy,
                        calc_params_noclose,
-                       calc_params_numpy,
+                       calc_params,
                        triu_log)
 
 logger = getLogger(__name__)
@@ -19,10 +20,10 @@ LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
 FIRST_ITER = 1  # number of the first iteration
 
 
-def calc_bic(n_params: int,
-             n_data: int,
-             log_like: float,
-             min_data_param_ratio: float = 10.):
+def _calc_bic(n_params: int,
+              n_data: int,
+              log_like: float,
+              min_data_param_ratio: float = 10.):
     """ Compute the Bayesian Information Criterion (BIC) of a model.
     Typically, the model with the smallest BIC is preferred.
 
@@ -55,6 +56,88 @@ def calc_bic(n_params: int,
                        f"This model does not meet this criterion, so the BIC "
                        f"may not indicate the model's complexity accurately.")
     return n_params * np.log(n_data) - 2. * log_like
+
+
+def _zero_masked(p_mut: np.ndarray, unmasked: np.ndarray):
+    """ Set mutation rates of masked positions to zero. """
+    p_mut_unmasked = np.zeros_like(p_mut)
+    p_mut_unmasked[unmasked] = p_mut[unmasked]
+    return p_mut_unmasked
+
+
+def _expectation(p_mut: np.ndarray,
+                 p_ends: np.ndarray,
+                 p_clust: np.ndarray,
+                 end5s: np.ndarray,
+                 end3s: np.ndarray,
+                 unmasked: np.ndarray,
+                 muts_per_pos: list[np.ndarray],
+                 min_mut_gap: int):
+    # Validate the dimensions.
+    find_dims([("positions", "clusters"),
+               ("positions", "positions"),
+               ("clusters",),
+               ("reads",),
+               ("reads",)],
+              [p_mut, p_ends, p_clust, end5s, end3s],
+              ["p_mut", "p_ends", "p_clust", "end5s", "end3s"])
+    # Ensure the mutation rates of masked positions are 0.
+    p_mut = _zero_masked(p_mut, unmasked)
+    # Compute the probability that a read would have no two mutations
+    # too close given its end coordinates.
+    logp_noclose = triu_log(calc_p_noclose_given_ends_numpy(p_mut, min_mut_gap))
+    # Compute the logs of the parameters.
+    with np.errstate(divide="ignore"):
+        # Suppress warnings about taking the log of zero, which is a
+        # valid mutation rate.
+        logp_mut = np.log(p_mut)
+    logp_not = np.log(1. - p_mut)
+    logp_ends = triu_log(p_ends)
+    logp_clust = np.log(p_clust)
+    # For each cluster, calculate the probability that a read up to and
+    # including each position would have no mutations.
+    logp_nomut_incl = np.cumsum(logp_not, axis=0)
+    # For each cluster, calculate the probability that a read up to but
+    # not including each position would have no mutations.
+    logp_nomut_excl = np.vstack([np.zeros_like(p_clust), logp_nomut_incl[:-1]])
+    # For each unique read, calculate the probability that a random read
+    # with the same end coordinates would have no mutations.
+    logp_nomut = logp_nomut_incl[end3s] - logp_nomut_excl[end5s]
+    # For each unique read, compute the joint probability that a random
+    # read would have the same end coordinates, come from each cluster,
+    # and have no mutations; normalize by the fraction of all reads that
+    # have no two mutations too close, i.e. logp_noclose[end5s, end3s].
+    # 2D (unique reads x clusters)
+    logp_joint = (logp_clust[np.newaxis, :]
+                  + logp_nomut
+                  + logp_ends[end5s, end3s, np.newaxis]
+                  - logp_noclose[end5s, end3s])
+    # For each unique read, compute the likelihood of observing it
+    # (including its mutations) by adjusting the above likelihood
+    # of observing the end coordinates with no mutations.
+    for j, mut_reads in zip(unmasked, muts_per_pos, strict=True):
+        logp_joint[mut_reads] += logp_mut[j] - logp_not[j]
+    # For each unique observed read, the marginal probability that a
+    # random read would have the end coordinates and mutations, no
+    # matter which cluster it came from, is the sum of the joint
+    # probability over all clusters (axis 1).
+    # 1D (unique reads)
+    logp_marginal = np.logaddexp.reduce(logp_joint, axis=1)
+    # Calculate the posterior probability that each read came from
+    # each cluster by dividing the joint probability (observing the
+    # read and coming from the cluster) by the marginal probability
+    # (observing the read in any cluster).
+    # 2D (unique reads x clusters)
+    membership = np.exp(logp_joint - logp_marginal[:, np.newaxis])
+    return logp_marginal, membership
+
+
+def _calc_log_like(log_marginals: np.ndarray, counts_per_uniq: np.ndarray):
+    # Calculate the log likelihood of observing all the reads
+    # by summing the log probability over all reads, weighted
+    # by the number of times each read occurs. Cast to a float
+    # explicitly to verify that the product is a scalar.
+    return float(np.vdot(log_marginals, counts_per_uniq))
 
 
 class EmClustering(object):
@@ -106,14 +189,6 @@ class EmClustering(object):
         if not conv_thresh >= 0.:
             raise ValueError(f"conv_thresh must be ≥ 0, but got {conv_thresh}")
         self.conv_thresh = conv_thresh
-        # Number of reads with no two mutations too close.
-        # self.n_reads_noclose = np.empty(self.order)
-        # Probability that a read with each pair of end coordinates in
-        # each cluster would have no two mutations too close.
-        # 3D (all positions x all positions x clusters)
-        self.logp_noclose = np.empty((self.n_pos_total,
-                                      self.n_pos_total,
-                                      self.order))
         # Mutation rates adjusted for observer bias.
         # 2D (all positions x clusters)
         self.p_mut = np.empty((self.n_pos_total, self.order))
@@ -145,6 +220,11 @@ class EmClustering(object):
     def unmasked(self):
         """ Unmasked positions (0-indexed). """
         return self.uniq_reads.section.unmasked_zero
+
+    @cached_property
+    def masked(self):
+        """ Masked positions (0-indexed). """
+        return self.uniq_reads.section.masked_zero
 
     @property
     def n_pos_total(self):
@@ -231,7 +311,7 @@ class EmClustering(object):
     @property
     def bic(self):
         """ Bayesian Information Criterion of the model. """
-        return calc_bic(self.n_params, self.n_data, self.log_like)
+        return _calc_bic(self.n_params, self.n_data, self.log_like)
 
     def _max_step(self):
         """ Run the Maximization step of the EM algorithm. """
@@ -260,74 +340,39 @@ class EmClustering(object):
             guess_p_ends = None
             guess_p_clust = None
         # Update the parameters.
-        self.p_mut, self.p_ends, self.p_clust = calc_params_numpy(
+        self.p_mut, self.p_ends, self.p_clust = calc_params(
             p_mut_given_noclose,
             p_ends_given_noclose,
             p_clust_given_noclose,
             self.uniq_reads.min_mut_gap,
             guess_p_mut,
             guess_p_ends,
-            guess_p_clust
+            guess_p_clust,
+            prenormalize=False,
         )
-        # Update the log probability that a read with each pair of 5'/3'
-        # end coordinates would have no two mutations too close.
-        self.logp_noclose = triu_log(calc_p_noclose_given_ends_numpy(
-            self.p_mut, self.uniq_reads.min_mut_gap
-        ))
+        # Ensure all masked positions have a mutation rate of 0.
+        if n_nonzero := np.count_nonzero(self.p_mut[self.masked]):
+            logger.warning(
+                f"{n_nonzero} masked position(s) have a mutation rate ≠ 0: "
+            )
+            self.p_mut[self.masked] = 0.
 
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
-        # Compute the logs of the parameters.
-        with np.errstate(divide="ignore"):
-            # Suppress warnings about taking the log of zero, which is a
-            # valid mutation rate.
-            logp_mut = np.log(self.p_mut)
-        logp_not = np.log(1. - self.p_mut)
-        logp_ends = triu_log(self.p_ends)
-        logp_clust = np.log(self.p_clust)
-        # For each cluster, calculate the probability that a read up to
-        # and including each position would have no mutations.
-        logp_nomut_incl = np.cumsum(logp_not, axis=0)
-        # For each cluster, calculate the probability that a read up to
-        # but not including each position would have no mutations.
-        logp_nomut_excl = logp_nomut_incl - logp_nomut_incl[0]
-        # For each unique read, compute the joint probability that a
-        # random read would come from each cluster and have identical
-        # end coordinates but no mutations.
-        # To save memory, overwrite self.membership, which has the same
-        # dimensions and is no longer needed.
-        # 2D (unique reads x clusters)
-        self.membership = (logp_clust[np.newaxis, :]
-                           + (logp_ends[self.end5s, self.end3s, np.newaxis]
-                              - self.logp_noclose[self.end5s, self.end3s])
-                           + (logp_nomut_incl[self.end3s]
-                              - logp_nomut_excl[self.end5s]))
-        # For each unique read, compute the likelihood of observing it
-        # (including its mutations) by adjusting the above likelihood
-        # of observing the end coordinates with no mutations.
-        for j, mut_reads in zip(self.unmasked,
-                                self.uniq_reads.muts_per_pos,
-                                strict=True):
-            self.membership[mut_reads] += logp_mut[j] - logp_not[j]
-        # For each unique observed read, the marginal probability that a
-        # random read would have the end coordinates and mutations, no
-        # matter which cluster it came from, is the sum of the joint
-        # probability over all clusters (axis 1).
-        # 1D (unique reads)
-        self.log_marginals = np.logaddexp.reduce(self.membership, axis=1)
-        # Calculate the posterior probability that each read came from
-        # each cluster by dividing the joint probability (observing the
-        # read and coming from the cluster) by the marginal probability
-        # (observing the read in any cluster).
-        # 2D (unique reads x clusters)
-        self.membership = np.exp(self.membership
-                                 - self.log_marginals[:, np.newaxis])
-        # Calculate the log likelihood of observing all the reads
-        # by summing the log probability over all reads, weighted
-        # by the number of times each read occurs. Cast to a float
-        # explicitly to verify that the product is a scalar.
-        log_like = float(np.vdot(self.log_marginals,
-                                 self.uniq_reads.counts_per_uniq))
+        # Update the marginal probabilities and cluster memberships.
+        self.log_marginals, self.membership = _expectation(
+            self.p_mut,
+            self.p_ends,
+            self.p_clust,
+            self.end5s,
+            self.end3s,
+            self.unmasked,
+            self.uniq_reads.muts_per_pos,
+            self.uniq_reads.min_mut_gap
+        )
+        # Calculate the log likelihood and append it to the trajectory.
+        log_like = _calc_log_like(self.log_marginals,
+                                  self.uniq_reads.counts_per_uniq)
         self.log_likes.append(round(log_like, LOG_LIKE_PRECISION))
 
     def run(self, props_seed: int | None = None, resps_seed: int | None = None):

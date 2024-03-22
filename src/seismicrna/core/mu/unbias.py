@@ -82,6 +82,8 @@ from typing import Iterable
 import numpy as np
 from numba import jit, NumbaPerformanceWarning
 
+from ..dims import find_dims
+
 logger = getLogger(__name__)
 
 # Disable performance warnings from Numba.
@@ -815,17 +817,17 @@ def calc_spanning_sum(array: np.ndarray):
     return _calc_spanning_sum(array)
 
 
-def calc_params_numpy(p_mut_given_span_noclose: np.ndarray,
-                      p_ends_given_noclose: np.ndarray,
-                      p_clust_given_noclose: np.ndarray,
-                      min_gap: int,
-                      guess_p_mut_given_span: np.ndarray | None = None,
-                      guess_p_ends: np.ndarray | None = None,
-                      guess_p_clust: np.ndarray | None = None, *,
-                      prenormalize: bool = True,
-                      max_iter: int = 128,
-                      convergence_thresh: float = 1.e-4,
-                      **kwargs):
+def calc_params(p_mut_given_span_noclose: np.ndarray,
+                p_ends_given_noclose: np.ndarray,
+                p_clust_given_noclose: np.ndarray,
+                min_gap: int,
+                guess_p_mut_given_span: np.ndarray | None = None,
+                guess_p_ends: np.ndarray | None = None,
+                guess_p_clust: np.ndarray | None = None, *,
+                prenormalize: bool = True,
+                max_iter: int = 128,
+                convergence_thresh: float = 1.e-4,
+                **kwargs):
     """ Calculate the three sets of parameters based on observed data.
 
     Parameters

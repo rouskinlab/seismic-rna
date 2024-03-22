@@ -23,7 +23,7 @@ from ..core.header import ORDER_NAME, Header, make_header
 from ..core.mu import (calc_p_ends_given_noclose,
                        calc_p_noclose,
                        calc_p_noclose_given_ends_numpy,
-                       calc_params_numpy)
+                       calc_params)
 from ..core.rel import RelPattern, HalfRelPattern
 from ..core.seq import Section
 from ..mask.data import MaskMutsDataset
@@ -352,7 +352,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
     # Calculate the parameters.
     if clusters is None:
         # Calculate the parameters.
-        p_mut, p_ends, p_clust = calc_params_numpy(
+        p_mut, p_ends, p_clust = calc_params(
             p_mut_given_noclose,
             p_ends_given_noclose,
             p_clust_given_noclose,
@@ -388,7 +388,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
         for order in clusters.get_level_values(ORDER_NAME):
             i, j = _order_indices(order)
             # Calculate the parameters for each cluster.
-            p_mut[:, i: j], p_ends, p_clust[i: j] = calc_params_numpy(
+            p_mut[:, i: j], p_ends, p_clust[i: j] = calc_params(
                 p_mut_given_noclose[:, i: j],
                 p_ends_given_noclose[:, :, i: j],
                 p_clust_given_noclose[i: j],

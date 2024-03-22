@@ -22,7 +22,7 @@ from seismicrna.core.mu.unbias import (_clip,
                                        _calc_p_clust,
                                        calc_p_noclose,
                                        calc_p_noclose_given_ends_numpy,
-                                       calc_params_numpy)
+                                       calc_params)
 
 rng = np.random.default_rng(seed=28)
 
@@ -1103,7 +1103,7 @@ class TestCalcPEndsGivenNoClose(ut.TestCase):
         self.assertTrue(np.allclose(result, expect))
 
 
-class TestCalcParamsNumPy(ut.TestCase):
+class TestCalcParams(ut.TestCase):
 
     def test_infer(self):
         n_pos = 16
@@ -1132,7 +1132,7 @@ class TestCalcParamsNumPy(ut.TestCase):
                 # without mutations too close.
                 (p_mut_inferred,
                  p_ends_inferred,
-                 p_cls_inferred) = calc_params_numpy(
+                 p_cls_inferred) = calc_params(
                     p_mut_given_span_noclose,
                     p_ends_given_noclose,
                     p_clust_given_noclose,

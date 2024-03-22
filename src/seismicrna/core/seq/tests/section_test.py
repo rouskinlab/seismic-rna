@@ -862,6 +862,17 @@ class TestSectionMasked(ut.TestCase):
         expect = np.array([49, 52, 54, 55, 58])
         self.assertTrue(np.array_equal(section.masked_int, expect))
 
+    def test_masked_zero(self):
+        seq = DNA("CCCGCATCCCGACCAACACTAAGA")
+        seq5 = 38
+        end5 = 46
+        end3 = 58
+        section = Section("myref", seq, seq5=seq5, end5=end5, end3=end3)
+        section.add_mask("mymask1", [49, 54, 58])
+        section.add_mask("mymask2", [55, 49, 52])
+        expect = np.array([3, 6, 8, 9, 12])
+        self.assertTrue(np.array_equal(section.masked_zero, expect))
+
 
 class TestSectionUnmasked(ut.TestCase):
 

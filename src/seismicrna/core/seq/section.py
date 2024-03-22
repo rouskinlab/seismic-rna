@@ -441,6 +441,13 @@ class Section(object):
         return reduce(np.union1d, self._masks.values(), np.array([], int))
 
     @property
+    def masked_zero(self) -> np.ndarray:
+        """ Masked positions as integers (0-indexed with respect to the
+        first position in the section). """
+        # Do not cache this method since self.masked_int can change.
+        return self.masked_int - self.end5
+
+    @property
     def masked_bool(self) -> np.ndarray:
         """ Masked positions as a boolean array. """
         # Do not cache this method since self.masked_int can change.
