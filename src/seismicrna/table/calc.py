@@ -20,9 +20,9 @@ from .base import (COVER_REL,
 from ..cluster.data import ClusterMutsDataset
 from ..core.batch import END5_COORD, END3_COORD, accum_fits
 from ..core.header import ORDER_NAME, Header, make_header
-from ..core.mu import (calc_p_ends_given_noclose,
+from ..core.mu import (calc_p_ends_observed,
                        calc_p_noclose,
-                       calc_p_noclose_given_ends_numpy,
+                       calc_p_noclose_given_ends,
                        calc_params)
 from ..core.rel import RelPattern, HalfRelPattern
 from ..core.seq import Section
@@ -148,7 +148,7 @@ class Tabulator(ABC):
             end_counts = self._end_counts.values[:, np.newaxis]
         else:
             end_counts = self._end_counts.values
-        return calc_p_ends_given_noclose(
+        return calc_p_ends_observed(
             self.section.length,
             (self._end_counts.index.get_level_values(END5_COORD).values
              - self.section.end5),
@@ -362,7 +362,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
         # too close.
         p_noclose_given_clust = calc_p_noclose(
             p_ends,
-            calc_p_noclose_given_ends_numpy(p_mut, min_mut_gap)
+            calc_p_noclose_given_ends(p_mut, min_mut_gap)
         )
         # Drop the cluster dimension from the parameters.
         if p_mut.shape != (section.length, 1):
@@ -398,7 +398,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             # have no two mutations too close.
             p_noclose_given_clust[i: j] = calc_p_noclose(
                 p_ends,
-                calc_p_noclose_given_ends_numpy(p_mut[:, i: j], min_mut_gap)
+                calc_p_noclose_given_ends(p_mut[:, i: j], min_mut_gap)
             )
     # Remove masked positions from the mutation rates.
     p_mut = p_mut[unmask]

@@ -9,12 +9,19 @@ from .uniq import UniqReads
 from ..core.batch import get_length
 from ..core.dims import find_dims
 from ..core.header import index_order_clusts
-from ..core.mu import (calc_p_noclose_given_ends_numpy,
-                       calc_params_noclose,
+from ..core.mu import (calc_p_noclose_given_ends,
                        calc_params,
+                       calc_params_observed,
+                       calc_p_ends_given_noclose,
+                       calc_p_clust_given_noclose,
                        triu_log)
 
 logger = getLogger(__name__)
+
+# Define dimensions
+READS = "reads"
+POSITIONS = "positions"
+CLUSTERS = "clusters"
 
 LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
 FIRST_ITER = 1  # number of the first iteration
@@ -83,17 +90,26 @@ def _expectation(p_mut: np.ndarray,
               ["p_mut", "p_ends", "p_clust", "end5s", "end3s"])
     # Ensure the mutation rates of masked positions are 0.
     p_mut = _zero_masked(p_mut, unmasked)
+    # Calculate the end probabilities.
+    p_noclose_given_ends = calc_p_noclose_given_ends(p_mut, min_mut_gap)
+    p_ends_given_noclose = calc_p_ends_given_noclose(p_ends,
+                                                     p_noclose_given_ends)
+    # Calculate the cluster probabilities.
+    # FIXME: check if this repeats the calculation for p_ends_given_noclose
+    p_clust_given_noclose = calc_p_clust_given_noclose(p_clust,
+                                                       p_ends,
+                                                       p_noclose_given_ends)
     # Compute the probability that a read would have no two mutations
     # too close given its end coordinates.
-    logp_noclose = triu_log(calc_p_noclose_given_ends_numpy(p_mut, min_mut_gap))
+    logp_noclose = triu_log(calc_p_noclose_given_ends(p_mut, min_mut_gap))
     # Compute the logs of the parameters.
     with np.errstate(divide="ignore"):
         # Suppress warnings about taking the log of zero, which is a
         # valid mutation rate.
         logp_mut = np.log(p_mut)
     logp_not = np.log(1. - p_mut)
-    logp_ends = triu_log(p_ends)
-    logp_clust = np.log(p_clust)
+    logp_ends_given_noclose = triu_log(p_ends_given_noclose)
+    logp_clust_given_noclose = np.log(p_clust_given_noclose)
     # For each cluster, calculate the probability that a read up to and
     # including each position would have no mutations.
     logp_nomut_incl = np.cumsum(logp_not, axis=0)
@@ -108,9 +124,9 @@ def _expectation(p_mut: np.ndarray,
     # and have no mutations; normalize by the fraction of all reads that
     # have no two mutations too close, i.e. logp_noclose[end5s, end3s].
     # 2D (unique reads x clusters)
-    logp_joint = (logp_clust[np.newaxis, :]
+    logp_joint = (logp_clust_given_noclose[np.newaxis, :]
                   + logp_nomut
-                  + logp_ends[end5s, end3s, np.newaxis]
+                  + logp_ends_given_noclose[end5s, end3s]
                   - logp_noclose[end5s, end3s])
     # For each unique read, compute the likelihood of observing it
     # (including its mutations) by adjusting the above likelihood
@@ -316,9 +332,9 @@ class EmClustering(object):
     def _max_step(self):
         """ Run the Maximization step of the EM algorithm. """
         # Estimate the parameters based on observed data.
-        (p_mut_given_noclose,
-         p_ends_given_noclose,
-         p_clust_given_noclose) = calc_params_noclose(
+        (p_mut_observed,
+         p_ends_observed,
+         p_clust_observed) = calc_params_observed(
             self.n_pos_total,
             self.order,
             self.unmasked,
@@ -328,7 +344,7 @@ class EmClustering(object):
             self.uniq_reads.counts_per_uniq,
             self.membership
         )
-        if self.iter > FIRST_ITER:
+        if self.iter > 1:
             # If this iteration is not the first, then use the previous
             # values of the parameters as the initial guesses.
             guess_p_mut = self.p_mut
@@ -341,9 +357,9 @@ class EmClustering(object):
             guess_p_clust = None
         # Update the parameters.
         self.p_mut, self.p_ends, self.p_clust = calc_params(
-            p_mut_given_noclose,
-            p_ends_given_noclose,
-            p_clust_given_noclose,
+            p_mut_observed,
+            p_ends_observed,
+            p_clust_observed,
             self.uniq_reads.min_mut_gap,
             guess_p_mut,
             guess_p_ends,
