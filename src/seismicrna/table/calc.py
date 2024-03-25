@@ -19,6 +19,7 @@ from .base import (COVER_REL,
                    TABLE_RELS)
 from ..cluster.data import ClusterMutsDataset
 from ..core.batch import END5_COORD, END3_COORD, accum_fits
+from ..core.dims import triangular
 from ..core.header import ORDER_NAME, Header, make_header
 from ..core.mu import (calc_p_ends_observed,
                        calc_p_noclose,
@@ -298,14 +299,9 @@ def _insert_masked(p_mut: pd.Series | pd.DataFrame,
     return p_mut.values.reshape((section.length, -1))
 
 
-def _sum_ints(n: int):
-    """ Sum of all integers from 1 to n. """
-    return (n * n + n) // 2
-
-
 def _order_indices(order: int):
     """ First and last indices of the order in the array. """
-    last = _sum_ints(order)
+    last = triangular(order)
     first = last - order
     return first, last
 

@@ -9,7 +9,10 @@ from .uniq import UniqReads
 from ..core.batch import get_length
 from ..core.dims import find_dims
 from ..core.header import index_order_clusts
-from ..core.mu import (calc_p_noclose,
+from ..core.mu import (READS,
+                       POSITIONS,
+                       CLUSTERS,
+                       calc_p_noclose,
                        calc_p_noclose_given_ends,
                        calc_params,
                        calc_params_observed,
@@ -18,11 +21,6 @@ from ..core.mu import (calc_p_noclose,
                        triu_log)
 
 logger = getLogger(__name__)
-
-# Define dimensions
-READS = "reads"
-POSITIONS = "positions"
-CLUSTERS = "clusters"
 
 LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
 FIRST_ITER = 1  # number of the first iteration
@@ -82,13 +80,14 @@ def _expectation(p_mut: np.ndarray,
                  muts_per_pos: list[np.ndarray],
                  min_mut_gap: int):
     # Validate the dimensions.
-    find_dims([("positions", "clusters"),
-               ("positions", "positions"),
-               ("clusters",),
-               ("reads",),
-               ("reads",)],
+    find_dims([(POSITIONS, CLUSTERS),
+               (POSITIONS, POSITIONS),
+               (CLUSTERS,),
+               (READS,),
+               (READS,)],
               [p_mut, p_ends, p_clust, end5s, end3s],
-              ["p_mut", "p_ends", "p_clust", "end5s", "end3s"])
+              ["p_mut", "p_ends", "p_clust", "end5s", "end3s"],
+              nonzero=True)
     # Ensure the mutation rates of masked positions are 0.
     p_mut = _zero_masked(p_mut, unmasked)
     # Calculate the end probabilities.
@@ -124,9 +123,9 @@ def _expectation(p_mut: np.ndarray,
     # have no two mutations too close, i.e. logp_noclose[end5s, end3s].
     # 2D (unique reads x clusters)
     logp_joint = (logp_clust_given_noclose[np.newaxis, :]
-                  + logp_nomut
                   + logp_ends_given_noclose[end5s, end3s]
-                  - logp_noclose[end5s, end3s])
+                  - logp_noclose[end5s, end3s]
+                  + logp_nomut)
     # For each unique read, compute the likelihood of observing it
     # (including its mutations) by adjusting the above likelihood
     # of observing the end coordinates with no mutations.
@@ -371,6 +370,12 @@ class EmClustering(object):
                 f"{n_nonzero} masked position(s) have a mutation rate ≠ 0: "
             )
             self.p_mut[self.masked] = 0.
+        # print("\n---\nMUT")
+        # print(self.p_mut)
+        # print("\n---\nENDS")
+        # print(self.p_ends)
+        # print("\n---\nCLUST")
+        # print(self.p_clust)
 
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
@@ -389,6 +394,10 @@ class EmClustering(object):
         log_like = _calc_log_like(self.logp_marginal,
                                   self.uniq_reads.counts_per_uniq)
         self.log_likes.append(round(log_like, LOG_LIKE_PRECISION))
+        # print("\n---\nMARGINAL")
+        # print(self.logp_marginal)
+        # print("\n---\nMEMBERSHIP")
+        # print(self.membership)
 
     def run(self, props_seed: int | None = None, resps_seed: int | None = None):
         """ Run the EM clustering algorithm.
@@ -461,6 +470,14 @@ class EmClustering(object):
                            f"iterations: last log likelihood = {self.log_like}")
         # Return this instance so that any code that runs multiple
         # EmClustering objects can create and run them in one line.
+        print("\n---\nMUT")
+        print(self.p_mut)
+        print("\n---\nENDS")
+        print(self.p_ends)
+        print("\n---\nCLUST")
+        print(self.p_clust)
+        print("\n---\nMEMBERSHIP")
+        print(self.membership)
         return self
 
     @property

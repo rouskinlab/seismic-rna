@@ -2,7 +2,7 @@ import unittest as ut
 
 import numpy as np
 
-from seismicrna.core.dims import find_dims
+from seismicrna.core.dims import find_dims, triangular
 
 
 class TestFindDims(ut.TestCase):
@@ -220,6 +220,25 @@ class TestFindDims(ut.TestCase):
                                        dims,
                                        arrays,
                                        nonzero="z")
+
+
+class TestTriangular(ut.TestCase):
+
+    def test_whole_numbers(self):
+        for n in range(10):
+            self.assertEqual(triangular(n), sum(range(1, n + 1)))
+
+    def test_negative(self):
+        self.assertRaisesRegex(ValueError,
+                               "n must be ≥ 0, but got -1",
+                               triangular,
+                               -1)
+
+    def test_float(self):
+        self.assertRaisesRegex(TypeError,
+                               "n must be int, but got float",
+                               triangular,
+                               1.)
 
 
 if __name__ == "__main__":

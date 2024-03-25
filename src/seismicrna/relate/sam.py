@@ -22,7 +22,8 @@ def _range_of_records(get_records_func: Callable):
     @wraps(get_records_func)
     def wrapper(sam_file: TextIO, start: int, stop: int):
         logger.debug(
-            f"Reading records from {sam_file.name} from {start} to {stop}")
+            f"Reading records from {sam_file.name} from {start} to {stop}"
+        )
         sam_file.seek(start)
         records = get_records_func(sam_file)
         n_records = 0

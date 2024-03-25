@@ -89,3 +89,26 @@ def find_dims(dims: Sequence[Sequence[str | None]],
                 raise ValueError(f"Unknown dimension for nonzero: {repr(dim)}")
     # Return the size of each dimension.
     return sizes
+
+
+def triangular(n: int):
+    """ The `n` th triangular number (`n` ≥ 0): number of items in an
+    equilateral triangle with `n` items on each side.
+
+    Parameters
+    ----------
+    n: int
+        Index of the triangular number to return; equivalently, the side
+        length of the equilateral triangle.
+
+    Returns
+    -------
+    int
+        The triangular number with index `n`; equivalently, the number
+        of items in the equilateral triangle of side length `n`.
+    """
+    if not isinstance(n, int):
+        raise TypeError(f"n must be int, but got {type(n).__name__}")
+    if n < 0:
+        raise ValueError(f"n must be ≥ 0, but got {n}")
+    return (n * n + n) // 2
