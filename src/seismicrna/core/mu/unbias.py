@@ -120,8 +120,15 @@ def _normalize(x: np.ndarray):
     x_sum = np.sum(x)
     if x_sum == 0.:
         if x.size == 0:
+            # Handle the edge case of size zero, which would raise a
+            # ZeroDivisionError if handled in the next branch.
             return np.ones_like(x)
+        # If the sum of the input array is 0 and the array has at least
+        # 1 element, then return an array of the same size as the input
+        # where all elements are equal and sum to 1.
         return np.full_like(x, 1. / x.size)
+    # Divide each element by the sum of all elements so the resulting
+    # array has the same size as the input and all elements sum to 1.
     return x / x_sum
 
 
@@ -733,15 +740,68 @@ def calc_p_noclose(p_ends: np.ndarray,
     return _triu_dot(p_ends[:, :, np.newaxis], p_noclose_given_ends)
 
 
-def _calc_p_clust(p_clust_observed: np.ndarray, p_noclose: np.ndarray):
-    """ Proportion of each cluster for all reads. """
+def calc_p_clust(p_clust_observed: np.ndarray, p_noclose: np.ndarray):
+    """ Cluster proportion among all reads.
+
+    Parameters
+    ----------
+    p_clust_observed: np.ndarray
+        Proportion of each cluster among reads with no two mutations too
+        close.
+        1D (clusters)
+    p_noclose: np.ndarray
+        Probability that a read from each cluster would have no two
+        mutations too close.
+        1D (clusters)
+
+    Returns
+    -------
+    np.ndarray
+        Proportion of each cluster among all reads.
+        1D (clusters)
+    """
     # Validate the dimensions.
     find_dims([(CLUSTERS,), (CLUSTERS,)],
               [p_clust_observed, p_noclose],
               ["p_clust_observed", "p_noclose"],
               nonzero=True)
-    # Compute the proportion of each cluster.
+    # The cluster proportions among all reads are obtained by weighting
+    # each cluster proportion among reads with no two mutations too
+    # close by the reciprocal of the probability that no two mutations
+    # are too close in that cluster, then normalizing so the sum is 1.
     return _normalize(p_clust_observed / p_noclose)
+
+
+def calc_p_clust_given_noclose(p_clust: np.ndarray, p_noclose: np.ndarray):
+    """ Cluster proportions among reads with no two mutations too close.
+
+    Parameters
+    ----------
+    p_clust: np.ndarray
+        Proportion of each cluster among all reads.
+        1D (clusters)
+    p_noclose: np.ndarray
+        Probability that a read from each cluster would have no two
+        mutations too close.
+        1D (clusters)
+
+    Returns
+    -------
+    np.ndarray
+        Proportion of each cluster among reads with no two mutations too
+        close.
+        1D (clusters)
+    """
+    # Validate the dimensions.
+    find_dims([(CLUSTERS,), (CLUSTERS,)],
+              [p_clust, p_noclose],
+              ["p_clust", "p_noclose"],
+              nonzero=True)
+    # The cluster proportions among reads with no two mutations too
+    # close are obtained by weighting each cluster proportion by the
+    # probability that no two mutations are too close in that cluster,
+    # then normalizing so the sum is 1.
+    return _normalize(p_clust * p_noclose)
 
 
 def calc_p_noclose_given_ends(p_mut_given_span: np.ndarray, min_gap: int):
@@ -953,9 +1013,9 @@ def calc_params(p_mut_given_span_observed: np.ndarray,
                                     p_noclose_given_ends,
                                     guess_p_mut_given_span,
                                     guess_p_clust)
-        guess_p_clust = _calc_p_clust(p_clust_observed,
-                                      calc_p_noclose(guess_p_ends,
-                                                     p_noclose_given_ends))
+        guess_p_clust = calc_p_clust(p_clust_observed,
+                                     calc_p_noclose(guess_p_ends,
+                                                    p_noclose_given_ends))
     else:
         logger.warning("Mutation rates and distribution of read coordinates "
                        f"failed to converge in {max_iter} iterations.")
@@ -1005,32 +1065,6 @@ def calc_p_ends_given_noclose(p_ends: np.ndarray,
     # Calculate the proportion of total reads that would have each
     # pair of end coordinates.
     return _triu_norm(p_ends[:, :, np.newaxis] * p_noclose_given_ends)
-
-
-def calc_p_clust_given_noclose(p_clust: np.ndarray,
-                               p_ends: np.ndarray,
-                               p_noclose_given_ends: np.ndarray):
-    # Validate the dimensionality of the arguments.
-    find_dims([(CLUSTERS,),
-               (POSITIONS, POSITIONS),
-               (POSITIONS, POSITIONS, CLUSTERS)],
-              [p_clust, p_ends, p_noclose_given_ends],
-              ["p_clust", "p_ends", "p_noclose_given_ends"],
-              nonzero=True)
-    # Compute the probability that a read would have no two mutations
-    # too close, averaging over all clusters.
-    p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends)
-    # Adjust the cluster proportions given no mutations are too close.
-    p_clust_given_noclose = p_clust * p_noclose
-    # Normalize the proportions to sum to 1.
-    if (p_clust_given_noclose_sum := np.sum(p_clust_given_noclose)) == 0.:
-        # If the sum is 0, then give each cluster the same probability.
-        p_clust_given_noclose = np.full_like(
-            p_clust_given_noclose, np.reciprocal(p_clust_given_noclose.size)
-        )
-    else:
-        p_clust_given_noclose /= p_clust_given_noclose_sum
-    return p_clust_given_noclose
 
 
 @jit()

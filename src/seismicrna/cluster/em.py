@@ -9,7 +9,8 @@ from .uniq import UniqReads
 from ..core.batch import get_length
 from ..core.dims import find_dims
 from ..core.header import index_order_clusts
-from ..core.mu import (calc_p_noclose_given_ends,
+from ..core.mu import (calc_p_noclose,
+                       calc_p_noclose_given_ends,
                        calc_params,
                        calc_params_observed,
                        calc_p_ends_given_noclose,
@@ -95,10 +96,8 @@ def _expectation(p_mut: np.ndarray,
     p_ends_given_noclose = calc_p_ends_given_noclose(p_ends,
                                                      p_noclose_given_ends)
     # Calculate the cluster probabilities.
-    # FIXME: check if this repeats the calculation for p_ends_given_noclose
-    p_clust_given_noclose = calc_p_clust_given_noclose(p_clust,
-                                                       p_ends,
-                                                       p_noclose_given_ends)
+    p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends)
+    p_clust_given_noclose = calc_p_clust_given_noclose(p_clust, p_noclose)
     # Compute the probability that a read would have no two mutations
     # too close given its end coordinates.
     logp_noclose = triu_log(calc_p_noclose_given_ends(p_mut, min_mut_gap))
@@ -148,12 +147,12 @@ def _expectation(p_mut: np.ndarray,
     return logp_marginal, membership
 
 
-def _calc_log_like(log_marginals: np.ndarray, counts_per_uniq: np.ndarray):
+def _calc_log_like(logp_marginal: np.ndarray, counts_per_uniq: np.ndarray):
     # Calculate the log likelihood of observing all the reads
     # by summing the log probability over all reads, weighted
     # by the number of times each read occurs. Cast to a float
     # explicitly to verify that the product is a scalar.
-    return float(np.vdot(log_marginals, counts_per_uniq))
+    return float(np.vdot(logp_marginal, counts_per_uniq))
 
 
 class EmClustering(object):
@@ -219,7 +218,7 @@ class EmClustering(object):
         self.membership = np.empty((self.uniq_reads.num_uniq, self.order))
         # Marginal likelihoods of observing each unique read.
         # 1D (unique reads)
-        self.log_marginals = np.empty(self.uniq_reads.num_uniq)
+        self.logp_marginal = np.empty(self.uniq_reads.num_uniq)
         # Trajectory of log likelihood values.
         self.log_likes: list[float] = list()
         # Number of iterations.
@@ -376,7 +375,7 @@ class EmClustering(object):
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
         # Update the marginal probabilities and cluster memberships.
-        self.log_marginals, self.membership = _expectation(
+        self.logp_marginal, self.membership = _expectation(
             self.p_mut,
             self.p_ends,
             self.p_clust,
@@ -387,7 +386,7 @@ class EmClustering(object):
             self.uniq_reads.min_mut_gap
         )
         # Calculate the log likelihood and append it to the trajectory.
-        log_like = _calc_log_like(self.log_marginals,
+        log_like = _calc_log_like(self.logp_marginal,
                                   self.uniq_reads.counts_per_uniq)
         self.log_likes.append(round(log_like, LOG_LIKE_PRECISION))
 
@@ -467,7 +466,7 @@ class EmClustering(object):
     @property
     def logn_exp(self):
         """ Log number of expected observations of each read. """
-        return np.log(self.uniq_reads.num_nonuniq) + self.log_marginals
+        return np.log(self.uniq_reads.num_nonuniq) + self.logp_marginal
 
     def get_props(self):
         """ Real and observed log proportion of each cluster. """

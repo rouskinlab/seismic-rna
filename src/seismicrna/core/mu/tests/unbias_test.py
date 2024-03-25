@@ -19,7 +19,7 @@ from seismicrna.core.mu.unbias import (_clip,
                                        _calc_p_mut_given_span_noclose,
                                        _calc_p_mut_given_span,
                                        _calc_p_ends,
-                                       _calc_p_clust,
+                                       calc_p_clust,
                                        calc_p_noclose,
                                        calc_p_noclose_given_ends,
                                        calc_p_ends_given_noclose,
@@ -141,46 +141,26 @@ class TestCalcPClustGivenNoClose(ut.TestCase):
     def test_ncls1(self):
         p_clust = np.ones((1,))
         expect = np.ones((1,))
-        for npos in range(5):
+        for npos in range(1, 5):
             with self.subTest(npos=npos):
                 p_ends = np.ones((npos, npos))
                 p_noclose_given_ends = np.ones((npos, npos, 1))
-                if npos:
-                    result = calc_p_clust_given_noclose(p_clust,
-                                                        p_ends,
-                                                        p_noclose_given_ends)
-                    self.assertEqual(result.shape, expect.shape)
-                    self.assertTrue(np.allclose(result, expect))
-                else:
-                    self.assertRaisesRegex(ValueError,
-                                           "Size of dimension 'positions' "
-                                           "must be ≥ 1, but got 0",
-                                           calc_p_clust_given_noclose,
-                                           p_clust,
-                                           p_ends,
-                                           p_noclose_given_ends)
+                p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends)
+                result = calc_p_clust_given_noclose(p_clust, p_noclose)
+                self.assertEqual(result.shape, expect.shape)
+                self.assertTrue(np.allclose(result, expect))
 
     def test_ncls2(self):
         p_clust = np.ones((1,))
         expect = np.ones((1,))
-        for npos in range(5):
+        for npos in range(1, 5):
             with self.subTest(npos=npos):
                 p_ends = np.ones((npos, npos))
                 p_noclose_given_ends = np.ones((npos, npos, 1))
-                if npos:
-                    result = calc_p_clust_given_noclose(p_clust,
-                                                        p_ends,
-                                                        p_noclose_given_ends)
-                    self.assertEqual(result.shape, expect.shape)
-                    self.assertTrue(np.allclose(result, expect))
-                else:
-                    self.assertRaisesRegex(ValueError,
-                                           "Size of dimension 'positions' "
-                                           "must be ≥ 1, but got 0",
-                                           calc_p_clust_given_noclose,
-                                           p_clust,
-                                           p_ends,
-                                           p_noclose_given_ends)
+                p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends)
+                result = calc_p_clust_given_noclose(p_clust, p_noclose)
+                self.assertEqual(result.shape, expect.shape)
+                self.assertTrue(np.allclose(result, expect))
 
 
 class TestNoCloseMuts(ut.TestCase):
@@ -1024,7 +1004,7 @@ class TestCalcPClust(ut.TestCase):
         p_clust_given_observed = np.array([0.2, 0.5, 0.3])
         p_noclose = np.array([0.8, 0.4, 0.5])
         expect = np.array([0.25, 1.25, 0.60]) / 2.1
-        result = _calc_p_clust(p_clust_given_observed, p_noclose)
+        result = calc_p_clust(p_clust_given_observed, p_noclose)
         self.assertEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
 
@@ -1067,6 +1047,7 @@ class TestCalcParams(ut.TestCase):
                 p_noclose_given_ends = _calc_p_noclose_given_ends(
                     p_mut, p_nomut_window
                 )
+                p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends)
                 p_mut_given_span_noclose = _calc_p_mut_given_span_noclose(
                     p_mut, p_ends, p_noclose_given_ends, p_nomut_window
                 )
@@ -1074,7 +1055,7 @@ class TestCalcParams(ut.TestCase):
                     p_ends, p_noclose_given_ends
                 )
                 p_clust_given_noclose = calc_p_clust_given_noclose(
-                    p_cls, p_ends, p_noclose_given_ends
+                    p_cls, p_noclose
                 )
                 # Infer the original parameters using those of the reads
                 # without mutations too close.
