@@ -1,17 +1,23 @@
-from typing import Sequence
+from typing import Iterable, Sequence
 
 import numpy as np
 
 
 def find_dims(dims: Sequence[Sequence[str | None]],
               arrays: Sequence[np.ndarray],
-              names: Sequence[str] | None = None):
+              names: Sequence[str] | None = None,
+              nonzero: Iterable[str] | bool = False):
     """ Check the dimensions of the arrays.
 
     Parameters
     ----------
 
     """
+    # Ensure that nonzero is either True or a list of str.
+    if nonzero is False:
+        nonzero = list()
+    elif nonzero is not True:
+        nonzero = list(map(str, nonzero))
     # Verify there are the same number of arrays, dimensions, and names.
     if (n := len(arrays)) != len(dims):
         raise ValueError("The numbers of arrays and dimensions must equal, "
@@ -62,6 +68,24 @@ def find_dims(dims: Sequence[Sequence[str | None]],
                                      f"{repr(dim[i])}: {other_size} ≠ {size}")
             else:
                 # This is the first time this dimension was encountered.
+                # Validate the size.
+                if not isinstance(size, int):
+                    raise TypeError(f"Size of dimension {repr(dim[i])} must "
+                                    f"be int, but got {type(size).__name__}")
+                if nonzero is True:
+                    min_size = 1
+                elif nonzero is False:
+                    min_size = 0
+                else:
+                    min_size = 1 if dim[i] in nonzero else 0
+                if size < min_size:
+                    raise ValueError(f"Size of dimension {repr(dim[i])} must "
+                                     f"be ≥ {min_size}, but got {size}")
                 sizes[dim[i]] = size
+    # Check if any dimensions in nonzero were not defined.
+    if nonzero is not True:
+        for dim in nonzero:
+            if dim not in sizes:
+                raise ValueError(f"Unknown dimension for nonzero: {repr(dim)}")
     # Return the size of each dimension.
     return sizes

@@ -99,15 +99,19 @@ class TestCalcPEndsGivenNoClose(ut.TestCase):
     def test_npos0_ncls1(self):
         p_ends = np.ones((0, 0))
         p_noclose_given_ends = np.ones((0, 0, 1))
-        expect = np.ones((0, 0, 1))
-        result = calc_p_ends_given_noclose(p_ends, p_noclose_given_ends)
-        self.assertTrue(np.array_equal(result, expect))
+        self.assertRaisesRegex(ValueError,
+                               "Size of dimension 'positions' must be ≥ 1, "
+                               "but got 0",
+                               calc_p_ends_given_noclose,
+                               p_ends,
+                               p_noclose_given_ends)
 
     def test_npos1_ncls0(self):
         p_ends = np.ones((1, 1))
         p_noclose_given_ends = np.ones((1, 1, 0))
         self.assertRaisesRegex(ValueError,
-                               "Must have ≥ 1 clusters, but got 0",
+                               "Size of dimension 'clusters' must be ≥ 1, "
+                               "but got 0",
                                calc_p_ends_given_noclose,
                                p_ends,
                                p_noclose_given_ends)
@@ -141,11 +145,20 @@ class TestCalcPClustGivenNoClose(ut.TestCase):
             with self.subTest(npos=npos):
                 p_ends = np.ones((npos, npos))
                 p_noclose_given_ends = np.ones((npos, npos, 1))
-                result = calc_p_clust_given_noclose(p_clust,
-                                                    p_ends,
-                                                    p_noclose_given_ends)
-                self.assertEqual(result.shape, expect.shape)
-                self.assertTrue(np.allclose(result, expect))
+                if npos:
+                    result = calc_p_clust_given_noclose(p_clust,
+                                                        p_ends,
+                                                        p_noclose_given_ends)
+                    self.assertEqual(result.shape, expect.shape)
+                    self.assertTrue(np.allclose(result, expect))
+                else:
+                    self.assertRaisesRegex(ValueError,
+                                           "Size of dimension 'positions' "
+                                           "must be ≥ 1, but got 0",
+                                           calc_p_clust_given_noclose,
+                                           p_clust,
+                                           p_ends,
+                                           p_noclose_given_ends)
 
     def test_ncls2(self):
         p_clust = np.ones((1,))
@@ -154,11 +167,20 @@ class TestCalcPClustGivenNoClose(ut.TestCase):
             with self.subTest(npos=npos):
                 p_ends = np.ones((npos, npos))
                 p_noclose_given_ends = np.ones((npos, npos, 1))
-                result = calc_p_clust_given_noclose(p_clust,
-                                                    p_ends,
-                                                    p_noclose_given_ends)
-                self.assertEqual(result.shape, expect.shape)
-                self.assertTrue(np.allclose(result, expect))
+                if npos:
+                    result = calc_p_clust_given_noclose(p_clust,
+                                                        p_ends,
+                                                        p_noclose_given_ends)
+                    self.assertEqual(result.shape, expect.shape)
+                    self.assertTrue(np.allclose(result, expect))
+                else:
+                    self.assertRaisesRegex(ValueError,
+                                           "Size of dimension 'positions' "
+                                           "must be ≥ 1, but got 0",
+                                           calc_p_clust_given_noclose,
+                                           p_clust,
+                                           p_ends,
+                                           p_noclose_given_ends)
 
 
 class TestNoCloseMuts(ut.TestCase):
@@ -787,7 +809,7 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
         for min_gap in [0, 3, n_pos]:
             with self.subTest(min_gap=min_gap):
                 # Determine which reads have no two mutations too close.
-                noclose = label_no_close_muts(muts, min_gap)
+                has_no_close = label_no_close_muts(muts, min_gap)
                 # Calculate the theoretical probability of no mutations
                 # in each window.
                 p_nomut_window_theory = _calc_p_nomut_window(p_mut, min_gap)
@@ -814,7 +836,7 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                             # Find the fraction of simualted reads with
                             # those coordinates without close mutations.
                             p_noclose_given_ends_simulated = (
-                                    np.sum(np.logical_and(end53s, noclose))
+                                    np.sum(np.logical_and(end53s, has_no_close))
                                     / np.sum(end53s)
                             )
                             # Compute the confidence interval for the
@@ -852,8 +874,8 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                                                     p_ends_given_noclose_theory)
                 inter_lo = _triu_div(inter_lo, n_expect)
                 inter_up = _triu_div(inter_up, n_expect)
-                end5s_noclose = end5s[noclose]
-                end3s_noclose = end3s[noclose]
+                end5s_noclose = end5s[has_no_close]
+                end3s_noclose = end3s[has_no_close]
                 for end5 in range(n_pos):
                     for end3 in range(end5, n_pos):
                         p_ends_given_noclose_simulated = np.mean(np.logical_and(
@@ -880,9 +902,9 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                 ).reshape(n_pos)
                 # Compare the simulated probabilities of mutations given
                 # no mutations are too close.
-                p_mut_given_noclose_simulated = (np.sum(muts[noclose], axis=0)
+                p_mut_given_noclose_simulated = (np.sum(muts[has_no_close], axis=0)
                                                  /
-                                                 np.sum(info[noclose], axis=0))
+                                                 np.sum(info[has_no_close], axis=0))
                 inter_lo, inter_up = binom.interval(confidence,
                                                     n_expect,
                                                     p_mut_given_noclose_theory)

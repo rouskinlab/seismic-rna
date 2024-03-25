@@ -26,10 +26,6 @@ class TestExpectation(ut.TestCase):
                                                                 unmasked,
                                                                 muts_per_pos,
                                                                 min_mut_gap)
-        print("EXPECT MARGINALS")
-        print(np.exp(expect_log_marginals))
-        print("RESULT MARGINALS")
-        print(np.exp(result_log_marginals))
         self.assertEqual(result_log_marginals.shape, expect_log_marginals.shape)
         self.assertTrue(np.allclose(result_log_marginals, expect_log_marginals))
         self.assertEqual(expect_memberships.shape, result_memberships.shape)

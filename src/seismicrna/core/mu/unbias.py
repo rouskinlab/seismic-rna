@@ -612,7 +612,8 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
         )[:, 0]
     dims = find_dims([(POSITIONS, CLUSTERS)],
                      [p_mut_given_span_observed],
-                     ["p_mut_given_span_observed"])
+                     ["p_mut_given_span_observed"],
+                     nonzero=True)
     min_gap = _adjust_min_gap(dims[POSITIONS], min_gap)
     if min_gap == 0:
         # No two mutations can be too close.
@@ -707,9 +708,8 @@ def _calc_p_ends(p_ends_observed: np.ndarray,
                      ["p_ends_observed",
                       "p_noclose_given_ends",
                       "p_mut_given_span",
-                      "p_clust"])
-    if dims[CLUSTERS] == 0:
-        raise ValueError("Must have ≥ 1 cluster, but got 0")
+                      "p_clust"],
+                     nonzero=True)
     # Calculate the proportion of total reads that would have each
     # pair of end coordinates.
     p_ends = _triu_norm(_triu_div(p_ends_observed, p_noclose_given_ends))
@@ -724,11 +724,10 @@ def calc_p_noclose(p_ends: np.ndarray,
     """ Calculate the proportion of each cluster considering only reads
     with no two mutations too close. """
     # Validate the dimensionality of the arguments.
-    dims = find_dims([(POSITIONS, POSITIONS), (POSITIONS, POSITIONS, CLUSTERS)],
-                     [p_ends, p_noclose_given_ends],
-                     ["p_ends", "p_noclose_given_ends"])
-    if dims[CLUSTERS] == 0:
-        raise ValueError("Must have ≥ 1 cluster, but got 0")
+    find_dims([(POSITIONS, POSITIONS), (POSITIONS, POSITIONS, CLUSTERS)],
+              [p_ends, p_noclose_given_ends],
+              ["p_ends", "p_noclose_given_ends"],
+              nonzero=True)
     # Compute the weighted sum of the probabilities that reads from each
     # cluster would have no two mutations too close.
     return _triu_dot(p_ends[:, :, np.newaxis], p_noclose_given_ends)
@@ -737,11 +736,10 @@ def calc_p_noclose(p_ends: np.ndarray,
 def _calc_p_clust(p_clust_observed: np.ndarray, p_noclose: np.ndarray):
     """ Proportion of each cluster for all reads. """
     # Validate the dimensions.
-    dims = find_dims([(CLUSTERS,), (CLUSTERS,)],
-                     [p_clust_observed, p_noclose],
-                     ["p_clust_observed", "p_noclose"])
-    if dims[CLUSTERS] == 0:
-        raise ValueError("Must have ≥ 1 cluster, but got 0")
+    find_dims([(CLUSTERS,), (CLUSTERS,)],
+              [p_clust_observed, p_noclose],
+              ["p_clust_observed", "p_noclose"],
+              nonzero=True)
     # Compute the proportion of each cluster.
     return _normalize(p_clust_observed / p_noclose)
 
@@ -872,9 +870,8 @@ def calc_params(p_mut_given_span_observed: np.ndarray,
                       p_clust_observed],
                      ["p_mut_given_span_observed",
                       "p_ends_observed",
-                      "p_clust_observed"])
-    if dims[CLUSTERS] == 0:
-        raise ValueError("Must have ≥ 1 clusters, but got 0")
+                      "p_clust_observed"],
+                     nonzero=True)
     # Normalize the values.
     min_gap = _adjust_min_gap(dims[POSITIONS], min_gap)
     if prenormalize:
@@ -1001,11 +998,10 @@ def calc_p_ends_given_noclose(p_ends: np.ndarray,
         and ending at the column position, in each cluster.
     """
     # Validate the dimensions of the arguments.
-    dims = find_dims([(POSITIONS, POSITIONS), (POSITIONS, POSITIONS, CLUSTERS)],
-                     [p_ends, p_noclose_given_ends],
-                     ["p_ends", "p_noclose_given_ends"])
-    if dims[CLUSTERS] == 0:
-        raise ValueError("Must have ≥ 1 clusters, but got 0")
+    find_dims([(POSITIONS, POSITIONS), (POSITIONS, POSITIONS, CLUSTERS)],
+              [p_ends, p_noclose_given_ends],
+              ["p_ends", "p_noclose_given_ends"],
+              nonzero=True)
     # Calculate the proportion of total reads that would have each
     # pair of end coordinates.
     return _triu_norm(p_ends[:, :, np.newaxis] * p_noclose_given_ends)
@@ -1015,16 +1011,15 @@ def calc_p_clust_given_noclose(p_clust: np.ndarray,
                                p_ends: np.ndarray,
                                p_noclose_given_ends: np.ndarray):
     # Validate the dimensionality of the arguments.
-    dims = find_dims([(CLUSTERS,),
-                      (POSITIONS, POSITIONS),
-                      (POSITIONS, POSITIONS, CLUSTERS)],
-                     [p_clust, p_ends, p_noclose_given_ends],
-                     ["p_clust", "p_ends", "p_noclose_given_ends"])
-    if dims[CLUSTERS] == 0:
-        raise ValueError("Must have ≥ 1 clusters, but got 0")
+    find_dims([(CLUSTERS,),
+               (POSITIONS, POSITIONS),
+               (POSITIONS, POSITIONS, CLUSTERS)],
+              [p_clust, p_ends, p_noclose_given_ends],
+              ["p_clust", "p_ends", "p_noclose_given_ends"],
+              nonzero=True)
     # Compute the probability that a read would have no two mutations
     # too close, averaging over all clusters.
-    p_noclose = _triu_sum(np.expand_dims(p_ends, 2) * p_noclose_given_ends)
+    p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends)
     # Adjust the cluster proportions given no mutations are too close.
     p_clust_given_noclose = p_clust * p_noclose
     # Normalize the proportions to sum to 1.
@@ -1035,11 +1030,6 @@ def calc_p_clust_given_noclose(p_clust: np.ndarray,
         )
     else:
         p_clust_given_noclose /= p_clust_given_noclose_sum
-    # Validate the dimensions of the proportions.
-    if p_clust_given_noclose.shape != p_clust.shape:
-        raise ValueError(f"The dimensions of p_clust_given_noclose "
-                         f"{p_clust_given_noclose.shape} differ from those "
-                         f"of p_clust {p_clust.shape}")
     return p_clust_given_noclose
 
 
@@ -1132,13 +1122,10 @@ def calc_p_ends_observed(npos: int,
                                     end3s,
                                     weights=weights[:, np.newaxis],
                                     check_values=check_values)[:, :, 0]
-    dims = find_dims([(READS,), (READS,), (READS, CLUSTERS)],
-                     [end5s, end3s, weights],
-                     ["end5s", "end3s", "weights"])
-    if dims[READS] == 0:
-        raise ValueError(f"Must have ≥ 1 reads, but got {dims[READS]}")
-    if dims[CLUSTERS] == 0:
-        raise ValueError(f"Must have ≥ 1 clusters, but got {dims[CLUSTERS]}")
+    find_dims([(READS,), (READS,), (READS, CLUSTERS)],
+              [end5s, end3s, weights],
+              ["end5s", "end3s", "weights"],
+              nonzero=True)
     if check_values:
         # Validate the values.
         if np.min(end5s) < 0:
