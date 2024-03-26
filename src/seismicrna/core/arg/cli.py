@@ -6,12 +6,11 @@ Auth: Yves, Matty
 Define all command line interface (CLI) options and their defaults.
 """
 
-from datetime import datetime
 import logging
 import os
+from datetime import datetime
 
 import click
-import numpy as np
 from click import Argument, Choice, Option, Parameter, Path
 
 from ..io import DEFAULT_BROTLI_LEVEL
@@ -615,13 +614,6 @@ opt_exclude_file = Option(
     help="File of arbitrary positions to exclude"
 )
 
-opt_discontig_read = Option(
-    ("--discontig-read/--no-discontig-read",),
-    type=bool,
-    default=True,
-    help="Include paired-end reads with discontiguous mates"
-)
-
 opt_min_ncov_read = Option(
     ("--min-ncov-read",),
     type=int,
@@ -632,7 +624,7 @@ opt_min_ncov_read = Option(
 opt_min_finfo_read = Option(
     ("--min-finfo-read",),
     type=float,
-    default=0.9,
+    default=0.95,
     help="Minimum fraction of information in a read to keep it"
 )
 
@@ -697,7 +689,7 @@ opt_max_em_iter = Option(
 opt_em_thresh = Option(
     ("--em-thresh",),
     type=float,
-    default=np.log(2.),
+    default=0.1,
     help="Maximum change in log likelihood for convergence"
 )
 

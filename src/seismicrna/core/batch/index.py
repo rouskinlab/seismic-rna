@@ -140,24 +140,40 @@ def sanitize_pos(positions: Iterable[int], seq_length: int):
     return sanitize_values(positions, 1, seq_length, "positions")
 
 
-def contiguous_mates(mid5s: np.ndarray, mid3s: np.ndarray):
+def has_mids(mid5s: np.ndarray | None, mid3s: np.ndarray | None):
+    """ Whether the 5' and 3' middle coordinates exist. """
+    if isinstance(mid5s, np.ndarray) and isinstance(mid3s, np.ndarray):
+        # They exist if they are both arrays and have the same length.
+        ensure_same_length(mid5s,
+                           mid3s,
+                           "5' middle coordinates",
+                           "3' middle coordinates")
+        return True
+    if mid5s is None and mid3s is None:
+        # They do not exist if they are both None.
+        return False
+    # All other cases are invalid.
+    raise ValueError(
+        f"Inconsistent 5' and 3' middle coordinates:\n{mid5s}\nand\n{mid3s}"
+    )
+
+
+def contiguous_mates(mid5s: np.ndarray | None, mid3s: np.ndarray | None):
     """ Return whether the two mates form a contiguous read. """
     ensure_same_length(mid5s,
                        mid3s,
-                       "5' middle positions",
-                       "3' middle positions")
+                       "5' middle coordinates",
+                       "3' middle coordinates")
     return np.less_equal(mid5s, mid3s + 1)
 
 
 def sanitize_ends(max_pos: int,
                   end5s: list[int] | np.ndarray,
-                  mid5s: list[int] | np.ndarray,
-                  mid3s: list[int] | np.ndarray,
+                  mid5s: list[int] | np.ndarray | None,
+                  mid3s: list[int] | np.ndarray | None,
                   end3s: list[int] | np.ndarray):
     pos_dtype = fit_uint_type(max_pos)
     end5s = np.asarray(end5s, pos_dtype)
-    mid5s = np.asarray(mid5s, pos_dtype)
-    mid3s = np.asarray(mid3s, pos_dtype)
     end3s = np.asarray(end3s, pos_dtype)
     # Verify 5' end ≥ min position
     ensure_order(end5s,
@@ -165,33 +181,39 @@ def sanitize_ends(max_pos: int,
                  "5' end positions",
                  f"minimum position (1)",
                  gt_eq=True)
-    # Verify 5' end ≤ 5' mid
-    ensure_order(end5s, mid5s, "5' end positions", "5' middle positions")
-    # Verify 5' end ≤ 3' mid
-    ensure_order(end5s, mid3s, "5' end positions", "3' middle positions")
-    # Verify 5' mid ≤ 3' end
-    ensure_order(mid5s, end3s, "5' middle positions", "3' end positions")
-    # Verify 3' mid ≤ 3' end
-    ensure_order(mid3s, end3s, "3' middle positions", "3' end positions")
+    # Verify 5' end ≤ 3' end
+    ensure_order(end5s,
+                 end3s,
+                 "5' end positions",
+                 "3' end positions")
     # Verify 3' end ≤ max position
     ensure_order(end3s,
                  np.broadcast_to(max_pos, end3s.shape),
                  "3' end positions",
                  f"maximum position ({max_pos})")
-    # Check which reads are made of contiguous mates, i.e. the mates
-    # overlap or at least abut with no gap between.
-    is_contiguous = contiguous_mates(mid5s, mid3s)
-    if np.all(is_contiguous):
-        # In the special case that all mates are contiguous (which is
-        # very common with short read sequencing data and hence worth
-        # optimizing), nullify the middle positions to save space.
-        mid5s = None
-        mid3s = None
-    else:
-        # For contiguous mates, set the 5' and 3' ends of both mates to
-        # the 5' and 3' ends of the contiguous region that they cover.
-        mid5s[is_contiguous] = end5s[is_contiguous]
-        mid3s[is_contiguous] = end3s[is_contiguous]
+    if has_mids(mid5s, mid3s):
+        # Verify 5' end ≤ 5' mid
+        ensure_order(end5s, mid5s, "5' end positions", "5' middle positions")
+        # Verify 5' mid ≤ 3' end
+        ensure_order(mid5s, end3s, "5' middle positions", "3' end positions")
+        # Verify 5' end ≤ 3' mid
+        ensure_order(end5s, mid3s, "5' end positions", "3' middle positions")
+        # Verify 3' mid ≤ 3' end
+        ensure_order(mid3s, end3s, "3' middle positions", "3' end positions")
+        # Check which reads are made of contiguous mates, i.e. the mates
+        # overlap or at least abut with no gap between.
+        is_contiguous = contiguous_mates(mid5s, mid3s)
+        if np.all(is_contiguous):
+            # If all mates are contiguous (which is common in short read
+            # sequencing data and hence worth optimizing), nullify the
+            # 5' and 3' middle coordinates to reduce space.
+            mid5s = None
+            mid3s = None
+        else:
+            # For contiguous mates, set the 5' and 3' middle coordinates
+            # to the 5' and 3' ends of the contiguous region they cover.
+            mid5s[is_contiguous] = end5s[is_contiguous]
+            mid3s[is_contiguous] = end3s[is_contiguous]
     return end5s, mid5s, mid3s, end3s
 
 

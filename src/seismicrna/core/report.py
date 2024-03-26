@@ -48,7 +48,6 @@ from .arg import (opt_phred_enc,
                   opt_min_reads,
                   opt_min_mapq,
                   opt_min_ncov_read,
-                  opt_discontig_read,
                   opt_fold_temp,
                   opt_fold_md,
                   opt_fold_mfe,
@@ -357,7 +356,6 @@ MaxMutPosF = Field("max_fmut_pos",
                    float,
                    oconv=get_oconv_float())
 MinNCovReadF = OptionField(opt_min_ncov_read)
-DiscontigReadF = OptionField(opt_discontig_read)
 MinMutGapF = Field("min_mut_gap",
                    "Minimum Gap Between Mutations (nt)",
                    int)

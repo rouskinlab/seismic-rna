@@ -7,6 +7,7 @@ from ..core.batch import (AllReadBatch,
                           MutsBatch,
                           ReflenMutsBatch,
                           RefseqMutsBatch,
+                          ensure_same_length,
                           get_length)
 
 
@@ -25,13 +26,7 @@ class RelateBatch(MutsBatch, AllReadBatch, ABC):
 
     @cached_property
     def num_reads(self):
-        nums_reads = list(set(map(get_length, (self.end5s,
-                                               self.mid5s,
-                                               self.mid3s,
-                                               self.end3s))))
-        if len(nums_reads) != 1:
-            raise ValueError(f"Got inconsistent numbers of reads: {nums_reads}")
-        return nums_reads[0]
+        return ensure_same_length(self.end5s, self.end3s, "end5s", "end3s")
 
     @cached_property
     def pos_nums(self):

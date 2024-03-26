@@ -79,10 +79,10 @@ def from_reads(reads: Iterable[tuple[str, int, int, int, int, dict[int, int]]],
                               ref=ref,
                               reflen=reflen,
                               batch=batch,
-                              end5s=end5s,
-                              mid5s=mid5s,
-                              mid3s=mid3s,
-                              end3s=end3s,
+                              end5s=np.asarray(end5s),
+                              mid5s=np.asarray(mid5s),
+                              mid3s=np.asarray(mid3s),
+                              end3s=np.asarray(end3s),
                               muts=muts)
     return name_batch, rel_batch
 

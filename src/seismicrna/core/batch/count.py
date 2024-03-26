@@ -7,6 +7,7 @@ import pandas as pd
 from .index import (END_COORDS,
                     count_base_types,
                     get_length,
+                    has_mids,
                     iter_base_types,
                     stack_end_coords)
 from ..rel import MATCH, NOCOV, RelPattern
@@ -43,17 +44,22 @@ def get_half_coverage_matrix(pos_nums: np.ndarray,
 
 def get_coverage_matrix(pos_index: pd.Index,
                         end5s: np.ndarray,
-                        mid5s: np.ndarray,
-                        mid3s: np.ndarray,
+                        mid5s: np.ndarray | None,
+                        mid3s: np.ndarray | None,
                         end3s: np.ndarray,
                         read_nums: np.ndarray):
     pos_nums = pos_index.get_level_values(POS_NAME).values
-    return pd.DataFrame(np.logical_or(get_half_coverage_matrix(pos_nums,
-                                                               end5s,
-                                                               mid3s),
-                                      get_half_coverage_matrix(pos_nums,
-                                                               mid5s,
-                                                               end3s)),
+    if has_mids(mid5s, mid3s):
+        # If 5' and 3' middle coordinates are present, then take the
+        # union of the coverage of both mates.
+        coverage_matrix = np.logical_or(
+            get_half_coverage_matrix(pos_nums, end5s, mid3s),
+            get_half_coverage_matrix(pos_nums, mid5s, end3s)
+        )
+    else:
+        # Otherwise, just take the coverage between the 5' and 3' ends.
+        coverage_matrix = get_half_coverage_matrix(pos_nums, end5s, end3s)
+    return pd.DataFrame(coverage_matrix,
                         index=read_nums,
                         columns=pos_index,
                         copy=False)

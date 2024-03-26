@@ -52,7 +52,6 @@ class RelMasker(object):
                  min_finfo_read: float,
                  max_fmut_read: float,
                  min_mut_gap: int,
-                 discontig_read: bool,
                  min_ninfo_pos: int,
                  max_fmut_pos: float,
                  brotli_level: int):
@@ -79,7 +78,6 @@ class RelMasker(object):
         self.exclude_gu = exclude_gu
         self.exclude_pos = self._get_exclude_pos(exclude_file)
         # Set the parameters for filtering reads.
-        self.discontig_read = discontig_read
         self.min_ncov_read = min_ncov_read
         self.min_mut_gap = min_mut_gap
         self.min_finfo_read = min_finfo_read
@@ -187,6 +185,15 @@ class RelMasker(object):
             exclude_pos = list()
         return np.asarray(exclude_pos, dtype=int)
 
+    def _filter_discontig_read(self, batch: RefseqMutsBatch):
+        """ Filter out reads with discontiguous mates. """
+        # Find the reads with contiguous mates.
+        reads = batch.read_nums[batch.contiguous_reads]
+        logger.debug(f"{self} kept {reads.size} reads with coverage "
+                     f"≥ {self.min_ncov_read} in {batch}")
+        # Return a new batch of only those reads.
+        return apply_mask(batch, reads)
+
     def _filter_min_ncov_read(self, batch: RefseqMutsBatch):
         """ Filter out reads with too few covered positions. """
         if self.min_ncov_read < 1:
@@ -195,18 +202,6 @@ class RelMasker(object):
         # Find the reads with sufficiently many covered positions.
         reads = batch.read_nums[batch.cover_per_read.values.sum(axis=1)
                                 >= self.min_ncov_read]
-        logger.debug(f"{self} kept {reads.size} reads with coverage "
-                     f"≥ {self.min_ncov_read} in {batch}")
-        # Return a new batch of only those reads.
-        return apply_mask(batch, reads)
-
-    def _filter_discontig_read(self, batch: RefseqMutsBatch):
-        """ Filter out reads with improper contiguity of mates. """
-        if self.discontig_read:
-            # Discontiguous reads are permitted.
-            return batch
-        # Find the reads with contiguous mates.
-        reads = batch.read_nums[batch.contiguous_mates]
         logger.debug(f"{self} kept {reads.size} reads with coverage "
                      f"≥ {self.min_ncov_read} in {batch}")
         # Return a new batch of only those reads.
@@ -276,15 +271,16 @@ class RelMasker(object):
     def _filter_batch_reads(self, batch: RefseqMutsBatch):
         """ Remove the reads in the batch that do not pass the filters
         and return a new batch without those reads. """
+        # Determine the initial number of reads in the batch.
+        self._n_reads[self.MASK_READ_INIT] += (n := batch.num_reads)
+        # Remove reads with discontiguous mates.
+        batch = self._filter_discontig_read(batch)
+        self._n_reads[self.MASK_READ_DISCONTIG] += (n - (n := batch.num_reads))
         # Keep only the unmasked positions.
         batch = apply_mask(batch, positions=self.pos_kept)
-        self._n_reads[self.MASK_READ_INIT] += (n := batch.num_reads)
         # Remove reads with too few covered positions.
         batch = self._filter_min_ncov_read(batch)
         self._n_reads[self.MASK_READ_NCOV] += (n - (n := batch.num_reads))
-        # Remove reads with improper contiguity.
-        batch = self._filter_discontig_read(batch)
-        self._n_reads[self.MASK_READ_DISCONTIG] += (n - (n := batch.num_reads))
         # Remove reads with too few informative positions.
         batch = self._filter_min_finfo_read(batch)
         self._n_reads[self.MASK_READ_FINFO] += (n - (n := batch.num_reads))
@@ -371,7 +367,6 @@ class RelMasker(object):
             min_finfo_read=self.min_finfo_read,
             max_fmut_read=self.max_fmut_read,
             min_mut_gap=self.min_mut_gap,
-            discontig_read=self.discontig_read,
             n_reads_init=self.n_reads_init,
             n_reads_min_ncov=self.n_reads_min_ncov,
             n_reads_discontig=self.n_reads_discontig,

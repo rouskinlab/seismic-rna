@@ -15,7 +15,12 @@ from .count import (count_end_coords,
                     get_reads_per_pos,
                     get_rels_per_pos,
                     get_rels_per_read)
-from .index import contiguous_mates, iter_windows, sanitize_ends, sanitize_pos
+from .index import (contiguous_mates,
+                    ensure_same_length,
+                    has_mids,
+                    iter_windows,
+                    sanitize_ends,
+                    sanitize_pos)
 from .read import ReadBatch, PartialReadBatch
 from ..rel import REL_TYPE, RelPattern
 from ..seq import BASE_NAME, DNA, seq_pos_to_index
@@ -30,18 +35,29 @@ class MutsBatch(ReadBatch, ABC):
     def __init__(self, *,
                  muts: dict[int, dict[int, list[int] | np.ndarray]],
                  end5s: list[int] | np.ndarray,
-                 mid5s: list[int] | np.ndarray,
-                 mid3s: list[int] | np.ndarray,
+                 mid5s: list[int] | np.ndarray | None,
+                 mid3s: list[int] | np.ndarray | None,
                  end3s: list[int] | np.ndarray,
                  sanitize: bool = True,
                  **kwargs):
         super().__init__(**kwargs)
-        (self.end5s,
-         self._mid5s,
-         self._mid3s,
-         self.end3s) = (sanitize_ends(self.max_pos, end5s, mid5s, mid3s, end3s)
-                        if sanitize
-                        else (end5s, mid5s, mid3s, end3s))
+        if sanitize:
+            # Sanitize all coordinates, which can be slow.
+            end5s, mid5s, mid3s, end3s = sanitize_ends(self.max_pos,
+                                                       end5s,
+                                                       mid5s,
+                                                       mid3s,
+                                                       end3s)
+        else:
+            # Only ensure mid5s and mid3s are consistent, which is fast.
+            has_mids(mid5s, mid3s)
+        ensure_same_length(end5s, end3s, "end5s", "end3s")
+        # Store the coordinates.
+        self.end5s = end5s
+        self._mid5s = mid5s
+        self._mid3s = mid3s
+        self.end3s = end3s
+        # Validate and store the mutations.
         self.muts = {pos: {REL_TYPE(rel): np.asarray(reads, self.read_dtype)
                            for rel, reads in muts[pos].items()}
                      for pos in (sanitize_pos(muts, self.max_pos)
@@ -70,11 +86,11 @@ class MutsBatch(ReadBatch, ABC):
 
     @property
     def mid5s(self):
-        return self._mid5s if self._mid5s is not None else self.end5s
+        return self._mid5s
 
     @property
     def mid3s(self):
-        return self._mid3s if self._mid3s is not None else self.end3s
+        return self._mid3s
 
     @property
     def read_weights(self) -> pd.DataFrame | None:
@@ -82,9 +98,36 @@ class MutsBatch(ReadBatch, ABC):
         return None
 
     @cached_property
-    def contiguous_mates(self):
+    def contiguous_reads(self) -> np.ndarray:
         """ Whether each read is made of contiguous mates. """
-        return contiguous_mates(self.mid5s, self.mid3s)
+        if has_mids(self.mid5s, self.mid3s):
+            return contiguous_mates(self.mid5s, self.mid3s)
+        # If the 5' and 3' middle coordinates are absent, then every
+        # read is assumed to be contiguous.
+        return np.ones(self.num_reads, dtype=bool)
+
+    @cached_property
+    def all_contiguous_reads(self) -> bool:
+        """ Whether all reads are contiguous. """
+        if has_mids(self.mid5s, self.mid3s):
+            return np.all(self.contiguous_reads)
+        return True
+
+    @cached_property
+    def num_contiguous_reads(self):
+        """ Number of contiguous reads. """
+        if has_mids(self.mid5s, self.mid3s):
+            n = int(np.sum(self.contiguous_reads))
+            if n > self.num_reads:
+                raise ValueError(f"{self} cannot have more contiguous reads "
+                                 f"({n}) than total reads ({self.num_reads})")
+            return n
+        return self.num_reads
+
+    @cached_property
+    def num_discontiguous_reads(self):
+        """ Number of discontiguous reads. """
+        return self.num_reads - self.num_contiguous_reads
 
     @cached_property
     def end_counts(self):
@@ -223,6 +266,10 @@ class RefseqMutsBatch(MutsBatch, ABC):
     def iter_reads(self, pattern: RelPattern):
         """ Yield the 5'/3' end/middle positions and the positions that
         are mutated in each read. """
+        if self.num_discontiguous_reads:
+            raise ValueError(f"Iteration over {self} is not supported "
+                             f"because it has {self.num_discontiguous_reads} "
+                             "(> 0) discontiguous read(s)")
         reads_per_pos = self.reads_per_pos(pattern)
         # Find the maximum number of mutations in any read.
         max_mut_count = max(sum(map(Counter, reads_per_pos.values()),
@@ -241,15 +288,13 @@ class RefseqMutsBatch(MutsBatch, ABC):
         mut_counts = np.count_nonzero(mut_pos, axis=1)
         # For each read, yield the 5'/3' end/middle positions and the
         # mutated positions as a tuple.
-        for read_num, end5, mid5, mid3, end3, muts, count in zip(self.read_nums,
-                                                                 self.end5s,
-                                                                 self.mid5s,
-                                                                 self.mid3s,
-                                                                 self.end3s,
-                                                                 mut_pos,
-                                                                 mut_counts,
-                                                                 strict=True):
-            yield read_num, ((end5, mid5, mid3, end3), tuple(muts[:count]))
+        for read_num, end5, end3, muts, count in zip(self.read_nums,
+                                                     self.end5s,
+                                                     self.end3s,
+                                                     mut_pos,
+                                                     mut_counts,
+                                                     strict=True):
+            yield read_num, ((end5, end3), tuple(muts[:count]))
 
 
 class PartialMutsBatch(PartialReadBatch, MutsBatch, ABC):

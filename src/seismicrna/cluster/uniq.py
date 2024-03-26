@@ -205,18 +205,10 @@ def get_uniq_reads(pos_nums: Iterable[int],
             raise ValueError(
                 f"Batch {batch} is not in order (expected {batch_num})"
             )
-        if discontig := batch.num_reads - np.sum(batch.contiguous_mates):
-            raise ValueError(
-                f"Batch {batch} has {discontig} discontiguous paired-end "
-                f"read(s), which cluster does not (yet) support. To remove "
-                f"discontiguous pairs, rerun mask with --no-discontig-read"
-            )
         # Record the number of reads in the batch.
         read_nums_per_batch.append(batch.read_nums)
         # Find the reads with unique end coordinates and mutations.
-        for (read_num,
-             ((end5, mid5, mid3, end3),
-              read_muts)) in batch.iter_reads(pattern):
+        for (read_num, ((end5, end3), read_muts)) in batch.iter_reads(pattern):
             # Key each read by its 5' and 3' end coordinates and by the
             # positions at which it has mutations, so that non-unique
             # reads map to the same key; record each read as a tuple of

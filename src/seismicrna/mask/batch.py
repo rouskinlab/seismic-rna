@@ -7,6 +7,7 @@ import numpy as np
 from ..core.batch import (RefseqMutsBatch,
                           PartialMutsBatch,
                           PartialReadBatch,
+                          has_mids,
                           sanitize_pos)
 
 logger = getLogger(__name__)
@@ -24,7 +25,14 @@ class MaskReadBatch(PartialReadBatch):
 
 
 class MaskMutsBatch(MaskReadBatch, RefseqMutsBatch, PartialMutsBatch, ABC):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.num_discontiguous_reads:
+            raise ValueError(
+                f"{self} has {self.num_discontiguous_reads} discontiguous "
+                "paired-end reads, which are not (yet) supported for masking"
+            )
 
 
 def apply_mask(batch: RefseqMutsBatch,
@@ -61,16 +69,21 @@ def apply_mask(batch: RefseqMutsBatch,
         read_nums = np.asarray(reads, dtype=batch.read_dtype)
         read_indexes = batch.read_indexes[read_nums]
         end5s = batch.end5s[read_indexes]
-        mid5s = batch.mid5s[read_indexes]
-        mid3s = batch.mid3s[read_indexes]
         end3s = batch.end3s[read_indexes]
+        if has_mids(batch.mid5s, batch.mid3s):
+            mid5s = batch.mid5s[read_indexes]
+            mid3s = batch.mid3s[read_indexes]
+        else:
+            mid5s = None
+            mid3s = None
     else:
         # Use all reads.
         read_nums = batch.read_nums
         end5s = batch.end5s
+        end3s = batch.end3s
         mid5s = batch.mid5s
         mid3s = batch.mid3s
-        end3s = batch.end3s
+    # Clip the 5' and 3' end and middle coordinates.
     if clip5 is not None or clip3 is not None:
         if clip5 is not None and clip3 is not None and clip5 > clip3:
             raise ValueError("Must have clip5 ≤ clip3, "
@@ -79,9 +92,9 @@ def apply_mask(batch: RefseqMutsBatch,
             end5s = np.maximum(end5s, clip5)
         if clip3 is not None:
             end3s = np.minimum(end3s, clip3)
-        if clip5 is not None:
+        if clip5 is not None and mid5s is not None:
             mid5s = np.minimum(end3s, np.maximum(mid5s, clip5))
-        if clip3 is not None:
+        if clip3 is not None and mid3s is not None:
             mid3s = np.maximum(end5s, np.minimum(mid3s, clip3))
         sanitize = True
     else:
