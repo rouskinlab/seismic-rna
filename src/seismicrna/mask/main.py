@@ -39,6 +39,26 @@ from ..pool.data import load_relate_pool_dataset
 logger = getLogger(__name__)
 
 
+def load_sections(input_path: Iterable[str | Path],
+                  coords: Iterable[tuple[str, int, int]],
+                  primers: Iterable[tuple[str, DNA, DNA]],
+                  primer_gap: int,
+                  sections_file: Path | None = None):
+    """ Open sections of relate reports. """
+    # Load all datasets, grouped by their reference names.
+    datasets = defaultdict(list)
+    for dataset in load_datasets(input_path, load_relate_pool_dataset):
+        datasets[dataset.ref].append(dataset)
+    # Determine the sections for each reference in the datasets.
+    sections = RefSections({(loader.ref, loader.refseq)
+                            for loader in chain(*datasets.values())},
+                           coords=coords,
+                           primers=primers,
+                           primer_gap=primer_gap,
+                           sects_file=sections_file)
+    return datasets, sections
+
+
 @docdef.auto()
 def run(input_path: tuple[str, ...], *,
         # Sections
@@ -107,26 +127,6 @@ def run(input_path: tuple[str, ...], *,
                        args=args,
                        kwargs=kwargs)
     return list(map(Path, reports))
-
-
-def load_sections(input_path: Iterable[str | Path],
-                  coords: Iterable[tuple[str, int, int]],
-                  primers: Iterable[tuple[str, DNA, DNA]],
-                  primer_gap: int,
-                  sections_file: Path | None = None):
-    """ Open sections of relate reports. """
-    # Load all datasets, grouped by their reference names.
-    datasets = defaultdict(list)
-    for dataset in load_datasets(input_path, load_relate_pool_dataset):
-        datasets[dataset.ref].append(dataset)
-    # Determine the sections for each reference in the datasets.
-    sections = RefSections({(loader.ref, loader.refseq)
-                            for loader in chain(*datasets.values())},
-                           coords=coords,
-                           primers=primers,
-                           primer_gap=primer_gap,
-                           sects_file=sections_file)
-    return datasets, sections
 
 
 params = [

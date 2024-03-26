@@ -21,20 +21,6 @@ from ..pool.data import load_relate_pool_dataset
 
 logger = getLogger(__name__)
 
-params = [arg_input_path,
-          opt_table_pos,
-          opt_table_read,
-          opt_table_clust,
-          opt_force,
-          opt_max_procs,
-          opt_parallel]
-
-
-@command(CMD_TABLE, params=params)
-def cli(*args, **kwargs):
-    """ Count mutations for each read and position; output tables. """
-    return run(*args, **kwargs)
-
 
 @docdef.auto()
 def run(input_path: tuple[str, ...], *,
@@ -72,6 +58,21 @@ def run(input_path: tuple[str, ...], *,
                                             table_clust=table_clust,
                                             force=force),
                                 pass_n_procs=False)))
+
+
+params = [arg_input_path,
+          opt_table_pos,
+          opt_table_read,
+          opt_table_clust,
+          opt_force,
+          opt_max_procs,
+          opt_parallel]
+
+
+@command(CMD_TABLE, params=params)
+def cli(*args, **kwargs):
+    """ Count mutations for each read and position; output tables. """
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

@@ -41,41 +41,9 @@ from ..graph.histread import ReadHistogramRunner
 from ..graph.profile import ProfileRunner
 from ..graph.roc import ROCRunner
 
-graph_options = [opt_cgroup,
-                 opt_hist_bins,
-                 opt_hist_margin,
-                 opt_struct_file,
-                 opt_struct_sect,
-                 opt_window,
-                 opt_winmin,
-                 opt_csv,
-                 opt_html,
-                 opt_pdf]
-
-params = merge_params([opt_demultiplex],
-                      demultiplex_mod.params,
-                      align_mod.params,
-                      relate_mod.params,
-                      pool_mod.params,
-                      mask_mod.params,
-                      cluster_mod.params,
-                      join_mod.params,
-                      table_mod.params,
-                      [opt_fold],
-                      fold_mod.params,
-                      [opt_export],
-                      export_mod.params,
-                      graph_options)
-
 
 def as_tuple_str(items: Iterable):
     return tuple(map(str, items))
-
-
-@command(CMD_WORKFLOW, params=params)
-def cli(*args, **kwargs):
-    """ Run the entire workflow. """
-    return run(*args, **kwargs)
 
 
 @docdef.auto()
@@ -475,6 +443,39 @@ def run(*,
             parallel=parallel,
             force=force,
         )
+
+
+graph_options = [opt_cgroup,
+                 opt_hist_bins,
+                 opt_hist_margin,
+                 opt_struct_file,
+                 opt_struct_sect,
+                 opt_window,
+                 opt_winmin,
+                 opt_csv,
+                 opt_html,
+                 opt_pdf]
+
+params = merge_params([opt_demultiplex],
+                      demultiplex_mod.params,
+                      align_mod.params,
+                      relate_mod.params,
+                      pool_mod.params,
+                      mask_mod.params,
+                      cluster_mod.params,
+                      join_mod.params,
+                      table_mod.params,
+                      [opt_fold],
+                      fold_mod.params,
+                      [opt_export],
+                      export_mod.params,
+                      graph_options)
+
+
+@command(CMD_WORKFLOW, params=params)
+def cli(*args, **kwargs):
+    """ Run the entire workflow. """
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #
