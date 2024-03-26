@@ -17,7 +17,7 @@ RB_INDEX_NAMES = [BATCH_NUM, READ_NUM]
 # Indexes of read end coordinates.
 END5_COORD = "5' End"
 END3_COORD = "3' End"
-END_COORDS = [END5_COORD, END3_COORD]
+END_COORDS = END5_COORD, END3_COORD
 
 
 def list_batch_nums(num_batches: int):
