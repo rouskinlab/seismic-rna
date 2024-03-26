@@ -8,6 +8,7 @@ from .io import QnamesBatchIO, RelateBatchIO
 from .report import RelateReport
 from .write import get_reads_per_batch, mib_to_bytes
 from ..core.batch import END_COORDS, END5_COORD, END3_COORD, get_length
+from ..core.dims import triangular
 from ..core.io import RefseqIO
 from ..core.rel import SUB_A, SUB_C, SUB_G, SUB_T
 from ..core.seq import (BASEA,
@@ -16,13 +17,19 @@ from ..core.seq import (BASEA,
                         BASET,
                         DNA,
                         index_to_pos,
-                        index_to_seq)
+                        index_to_seq,
+                        seq_pos_to_index)
 from ..core.write import need_write
 
 rng = np.random.default_rng()
 
 
-def _naturals(values: np.ndarray, what: str = "values"):
+def _list_naturals(n: int):
+    """ List natural numbers. """
+    return np.arange(1, n + 1)
+
+
+def _check_naturals(values: np.ndarray, what: str = "values"):
     """ Raise ValueError if the values are not monotonically increasing
     natural numbers. """
     length = get_length(values, what)
@@ -49,7 +56,7 @@ def index_to_refseq_pos(index: pd.MultiIndex):
     # Determine the reference sequence.
     refseq = index_to_seq(index)
     # Validate the sequence positions.
-    pos = _naturals(index_to_pos(index), "positions")
+    pos = _check_naturals(index_to_pos(index), "positions")
     return refseq, pos
 
 
@@ -59,9 +66,35 @@ def choose_clusters(p_clust: pd.Series, n_reads: int):
     if not isinstance(p_clust, pd.Series):
         raise TypeError("p_clust must be Series, "
                         f"but got {type(p_clust).__name__}")
-    clusters = _naturals(p_clust.index, "clusters")
+    clusters = _check_naturals(p_clust.index, "clusters")
     # Choose a cluster for each read.
     return rng.choice(clusters, n_reads, p=p_clust.values)
+
+
+def simulate_p_mut(refseq: DNA, ncls: int):
+    """ Simulate mutation rates. """
+    return pd.DataFrame(
+        rng.random((len(refseq), ncls)),
+        seq_pos_to_index(refseq, _list_naturals(len(refseq)), 1),
+        _list_naturals(ncls)
+    )
+
+
+def simulate_p_ends(npos: int):
+    """ Simulate proportions of end coordinates. """
+    p_ends = pd.Series(
+        1. - rng.random(triangular(npos)),
+        pd.MultiIndex.from_arrays(
+            [a + 1 for a in np.triu_indices(npos)],
+            names=END_COORDS
+        )
+    )
+    return p_ends / p_ends.sum()
+
+
+def simulate_p_clust(ncls: int):
+    p_clust = pd.Series(1. - rng.random(ncls), _list_naturals(ncls))
+    return p_clust / p_clust.sum()
 
 
 def simulate_read_name(batch_num: int, read_num: int):
@@ -92,7 +125,7 @@ def simulate_relate_batch(sample: str,
         raise TypeError("p_mut must be DataFrame, "
                         f"but got {type(p_mut).__name__}")
     refseq, positions = index_to_refseq_pos(p_mut.index)
-    clusters = _naturals(p_mut.columns, "clusters")
+    clusters = _check_naturals(p_mut.columns, "clusters")
     # Validate the end coordinates.
     if not isinstance(p_ends, pd.Series):
         raise TypeError("p_ends must be Series, "
@@ -240,6 +273,11 @@ def simulate_relate(out_dir: Path,
                                      brotli_level=brotli_level,
                                      *args,
                                      **kwargs)
+        ns_batches = sorted(set(map(len, checksums.values())))
+        if len(ns_batches) != 1:
+            raise ValueError("Expected exactly 1 number of batches, "
+                             f"but got {ns_batches}")
+        n_batches = ns_batches[0]
         ended = datetime.now()
         # Write the report.
         report = RelateReport(sample=sample,
@@ -247,7 +285,7 @@ def simulate_relate(out_dir: Path,
                               min_mapq=-1,
                               min_reads=n_reads,
                               n_reads_rel=n_reads,
-                              n_batches=len(checksums),
+                              n_batches=n_batches,
                               checksums=checksums,
                               refseq_checksum=refseq_checksum,
                               began=began,

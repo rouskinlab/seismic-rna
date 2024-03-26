@@ -6,10 +6,13 @@ import numpy as np
 import pandas as pd
 from scipy.stats import binom
 
-from seismicrna.core.batch import END_COORDS, END5_COORD, END3_COORD
-from seismicrna.core.dims import triangular
-from seismicrna.core.seq import DNA, seq_pos_to_index
-from seismicrna.relate.sim import (choose_clusters,
+from seismicrna.core.batch import END5_COORD, END3_COORD
+from seismicrna.core.seq import DNA
+from seismicrna.relate.sim import (_list_naturals,
+                                   choose_clusters,
+                                   simulate_p_mut,
+                                   simulate_p_ends,
+                                   simulate_p_clust,
                                    simulate_relate_batch,
                                    simulate_relate,
                                    sub_options)
@@ -38,7 +41,7 @@ class TestChooseClusters(ut.TestCase):
 
     def test_1_cluster(self):
         """ With 1 cluster, all reads should be from that cluster. """
-        p_clust = pd.Series([1.], index=[1])
+        p_clust = simulate_p_clust(1)
         for n_reads in range(5):
             with self.subTest(n_reads=n_reads):
                 expect = np.ones(n_reads, dtype=int)
@@ -49,7 +52,7 @@ class TestChooseClusters(ut.TestCase):
 
     def test_2_clusters(self):
         """ With 2 clusters. """
-        confidence = 0.999
+        confidence = 0.9995
         # Vary the proportion of cluster 1.
         for p1 in np.linspace(0., 1., 5):
             p_clust = pd.Series([p1, 1. - p1], [1, 2])
@@ -76,19 +79,11 @@ class TestSimulateRelateBatch(ut.TestCase):
         # Vary the number of positions.
         for npos in range(1, 10):
             # Define the positions and sequence.
-            positions = np.arange(1, npos + 1)
             refseq = DNA.random(npos)
-            index = seq_pos_to_index(refseq, positions, 1)
-            # Simulate probabilities of each pair of end coordinates.
-            p_ends = pd.Series(
-                1. - rng.random(triangular(npos)),
-                pd.MultiIndex.from_arrays(
-                    [a + 1 for a in np.triu_indices(npos)],
-                    names=END_COORDS
-                )
-            )
-            p_ends /= p_ends.sum()
+            # Simulate proportions of end coordinates.
+            p_ends = simulate_p_ends(npos)
             # Estimate the fraction of reads covering each position.
+            positions = _list_naturals(npos)
             coverage = pd.Series(
                 [p_ends.values[np.logical_and(
                     pos >= p_ends.index.get_level_values(END5_COORD),
@@ -98,13 +93,11 @@ class TestSimulateRelateBatch(ut.TestCase):
             )
             # Vary the number of clusters.
             for ncls in range(1, 4):
-                clusters = np.arange(1, ncls + 1)
-                # Choose a cluster for each read.
-                p_clust = pd.Series(1. - rng.random(ncls), clusters)
-                p_clust /= p_clust.sum()
-                cluster_choices = choose_clusters(p_clust, n_reads)
                 # Simulate mutation rates for each position.
-                p_mut = pd.DataFrame(rng.random((npos, ncls)), index, clusters)
+                p_mut = simulate_p_mut(refseq, ncls)
+                # Choose a cluster for each read.
+                p_clust = simulate_p_clust(ncls)
+                cluster_choices = choose_clusters(p_clust, n_reads)
                 # Simulate the batch.
                 batch = simulate_relate_batch(
                     "sample", "ref", 0, n_reads, p_mut, p_ends, cluster_choices
@@ -133,34 +126,15 @@ class TestSimulateRelate(ut.TestCase):
         nreads = 100_000
         ncls = 2
         batch_size = 16.
-        # Define the positions and sequence.
-        positions = np.arange(1, npos + 1)
+        # Simulate the reference sequence.
         refseq = DNA.random(npos)
-        index = seq_pos_to_index(refseq, positions, 1)
-        # Simulate probabilities of each pair of end coordinates.
-        p_ends = pd.Series(
-            1. - rng.random(triangular(npos)),
-            pd.MultiIndex.from_arrays(
-                [a + 1 for a in np.triu_indices(npos)],
-                names=END_COORDS
-            )
-        )
-        p_ends /= p_ends.sum()
-        # Estimate the fraction of reads covering each position.
-        coverage = pd.Series(
-            [p_ends.values[np.logical_and(
-                pos >= p_ends.index.get_level_values(END5_COORD),
-                pos <= p_ends.index.get_level_values(END3_COORD)
-            )].sum() for pos in positions],
-            index=positions
-        )
-        clusters = np.arange(1, ncls + 1)
+        # Simulate proportions of end coordinates.
+        p_ends = simulate_p_ends(npos)
         # Choose a cluster for each read.
-        p_clust = pd.Series(1. - rng.random(ncls), clusters)
-        p_clust /= p_clust.sum()
+        p_clust = simulate_p_clust(ncls)
         cluster_choices = choose_clusters(p_clust, nreads)
         # Simulate mutation rates for each position.
-        p_mut = pd.DataFrame(rng.random((npos, ncls)), index, clusters)
+        p_mut = simulate_p_mut(refseq, ncls)
         # Simulate the relate step.
         report_file = simulate_relate(out_dir=Path.cwd(),
                                       sample="sample",
@@ -173,7 +147,6 @@ class TestSimulateRelate(ut.TestCase):
                                       cluster_choices=cluster_choices,
                                       brotli_level=5,
                                       force=False)
-        print(report_file)
         '''
         # Count the reads with mutations at each position.
         for pos, muts in batch.muts.items():

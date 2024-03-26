@@ -370,12 +370,6 @@ class EmClustering(object):
                 f"{n_nonzero} masked position(s) have a mutation rate ≠ 0: "
             )
             self.p_mut[self.masked] = 0.
-        # print("\n---\nMUT")
-        # print(self.p_mut)
-        # print("\n---\nENDS")
-        # print(self.p_ends)
-        # print("\n---\nCLUST")
-        # print(self.p_clust)
 
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
@@ -394,10 +388,6 @@ class EmClustering(object):
         log_like = _calc_log_like(self.logp_marginal,
                                   self.uniq_reads.counts_per_uniq)
         self.log_likes.append(round(log_like, LOG_LIKE_PRECISION))
-        # print("\n---\nMARGINAL")
-        # print(self.logp_marginal)
-        # print("\n---\nMEMBERSHIP")
-        # print(self.membership)
 
     def run(self, props_seed: int | None = None, resps_seed: int | None = None):
         """ Run the EM clustering algorithm.
@@ -470,14 +460,6 @@ class EmClustering(object):
                            f"iterations: last log likelihood = {self.log_like}")
         # Return this instance so that any code that runs multiple
         # EmClustering objects can create and run them in one line.
-        print("\n---\nMUT")
-        print(self.p_mut)
-        print("\n---\nENDS")
-        print(self.p_ends)
-        print("\n---\nCLUST")
-        print(self.p_clust)
-        print("\n---\nMEMBERSHIP")
-        print(self.membership)
         return self
 
     @property

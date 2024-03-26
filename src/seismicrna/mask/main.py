@@ -38,44 +38,6 @@ from ..pool.data import load_relate_pool_dataset
 
 logger = getLogger(__name__)
 
-params = [
-    # Input/output paths
-    arg_input_path,
-    # Sections
-    opt_coords,
-    opt_primers,
-    opt_primer_gap,
-    opt_sections_file,
-    # Mutation counting
-    opt_count_del,
-    opt_count_ins,
-    opt_discount_mut,
-    # Filtering
-    opt_exclude_polya,
-    opt_exclude_gu,
-    opt_exclude_file,
-    opt_min_ninfo_pos,
-    opt_max_fmut_pos,
-    opt_min_ncov_read,
-    opt_min_finfo_read,
-    opt_max_fmut_read,
-    opt_min_mut_gap,
-    opt_discontig_read,
-    # Compression
-    opt_brotli_level,
-    # Parallelization
-    opt_max_procs,
-    opt_parallel,
-    # Effort
-    opt_force,
-]
-
-
-@command(CMD_MASK, params=params)
-def cli(*args, **kwargs):
-    """ Define mutations and sections to filter reads and positions. """
-    return run(*args, **kwargs)
-
 
 @docdef.auto()
 def run(input_path: tuple[str, ...], *,
@@ -165,6 +127,45 @@ def load_sections(input_path: Iterable[str | Path],
                            primer_gap=primer_gap,
                            sects_file=sections_file)
     return datasets, sections
+
+
+params = [
+    # Input/output paths
+    arg_input_path,
+    # Sections
+    opt_coords,
+    opt_primers,
+    opt_primer_gap,
+    opt_sections_file,
+    # Mutation counting
+    opt_count_del,
+    opt_count_ins,
+    opt_discount_mut,
+    # Filtering
+    opt_exclude_polya,
+    opt_exclude_gu,
+    opt_exclude_file,
+    opt_min_ninfo_pos,
+    opt_max_fmut_pos,
+    opt_min_ncov_read,
+    opt_min_finfo_read,
+    opt_max_fmut_read,
+    opt_min_mut_gap,
+    opt_discontig_read,
+    # Compression
+    opt_brotli_level,
+    # Parallelization
+    opt_max_procs,
+    opt_parallel,
+    # Effort
+    opt_force,
+]
+
+
+@command(CMD_MASK, params=params)
+def cli(*args, **kwargs):
+    """ Define mutations and sections to filter reads and positions. """
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #
