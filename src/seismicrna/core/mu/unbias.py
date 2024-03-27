@@ -545,7 +545,9 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
                                                  * np.expand_dims(p_ends, 2))
     # Compute the mutation rates given no two mutations are too close
     # one position (j) at a time.
-    p_mut_given_span_noclose = p_mut_given_span / p_noclose_given_span
+    p_mut_given_span_noclose = np.nan_to_num(
+        p_mut_given_span / p_noclose_given_span
+    )
     for j in range(npos):
         nrows = j + 1
         ncols = npos - j
