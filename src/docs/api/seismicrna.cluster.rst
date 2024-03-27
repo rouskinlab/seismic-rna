@@ -6,6 +6,14 @@ seismicrna.cluster package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   seismicrna.cluster.tests
+
 Submodules
 ----------
 

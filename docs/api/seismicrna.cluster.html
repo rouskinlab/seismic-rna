@@ -19,7 +19,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="seismicrna.core package" href="seismicrna.core.html" />
+    <link rel="next" title="seismicrna.cluster.tests package" href="seismicrna.cluster.tests.html" />
     <link rel="prev" title="seismicrna.cleanfa package" href="seismicrna.cleanfa.html" /> 
 </head>
 
@@ -56,6 +56,7 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html">seismicrna.align package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.cleanfa.html">seismicrna.cleanfa package</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">seismicrna.cluster package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#subpackages">Subpackages</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#module-seismicrna.cluster.addclust">Submodules</a></li>
 </ul>
 </li>
@@ -113,6 +114,17 @@
              
   <section id="module-seismicrna.cluster">
 <span id="seismicrna-cluster-package"></span><h1>seismicrna.cluster package<a class="headerlink" href="#module-seismicrna.cluster" title="Permalink to this headline"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="seismicrna.cluster.tests.html">seismicrna.cluster.tests package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.cluster.tests.html#module-seismicrna.cluster.tests.em_test">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
 <section id="module-seismicrna.cluster.addclust">
 <span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.cluster.addclust" title="Permalink to this headline"></a></h2>
 <dl class="py function">
@@ -452,12 +464,12 @@ of EM clustering to a CSV file.</p>
 <dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.em.</span></span><span class="sig-name descname"><span class="pre">EmClustering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uniq_reads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#seismicrna.cluster.uniq.UniqReads" title="seismicrna.cluster.uniq.UniqReads"><span class="pre">seismicrna.cluster.uniq.UniqReads</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">conv_thresh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Run expectation-maximization to cluster the given bit vectors
-into the specified number of clusters.</p>
+<p>Run expectation-maximization to cluster the given reads into the
+specified number of clusters.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.bic">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bic</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.bic" title="Permalink to this definition"></a></dt>
-<dd><p>Compute this model’s Bayesian Information Criterion.</p>
+<dd><p>Bayesian Information Criterion of the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -473,6 +485,24 @@ into the specified number of clusters.</p>
 the current iteration.</p>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.end3s">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">end3s</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.end3s" title="Permalink to this definition"></a></dt>
+<dd><p>3’ end coordinates (0-indexed).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.end5s">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">end5s</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.end5s" title="Permalink to this definition"></a></dt>
+<dd><p>5’ end coordinates (0-indexed).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.get_members">
+<span class="sig-name descname"><span class="pre">get_members</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.get_members" title="Permalink to this definition"></a></dt>
+<dd><p>Cluster memberships of the reads in the batch.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.get_mus">
 <span class="sig-name descname"><span class="pre">get_mus</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.get_mus" title="Permalink to this definition"></a></dt>
@@ -483,12 +513,6 @@ the current iteration.</p>
 <dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.get_props">
 <span class="sig-name descname"><span class="pre">get_props</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.get_props" title="Permalink to this definition"></a></dt>
 <dd><p>Real and observed log proportion of each cluster.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.get_resps">
-<span class="sig-name descname"><span class="pre">get_resps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.get_resps" title="Permalink to this definition"></a></dt>
-<dd><p>Responsibilities of the reads in the batch.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -508,26 +532,37 @@ item in the trajectory of log likelihood values.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.logn_exp">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">logn_exp</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.logn_exp" title="Permalink to this definition"></a></dt>
-<dd><p>Log number of expected observations of each bit vector.</p>
+<dd><p>Log number of expected observations of each read.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.nreads_total">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">nreads_total</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.nreads_total" title="Permalink to this definition"></a></dt>
-<dd><p>Total number of reads, including redundant ones.</p>
+<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.masked">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">masked</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.masked" title="Permalink to this definition"></a></dt>
+<dd><p>Masked positions (0-indexed).</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.prop_adj">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prop_adj</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.prop_adj" title="Permalink to this definition"></a></dt>
-<dd><p>Proportion of each cluster, adjusted for observer bias.</p>
+<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.n_data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_data</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.n_data" title="Permalink to this definition"></a></dt>
+<dd><p>Number of data points in the model.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.prop_obs">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prop_obs</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.prop_obs" title="Permalink to this definition"></a></dt>
-<dd><p>Observed proportion of each cluster, without adjusting for
-observer bias.</p>
+<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.n_params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_params</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.n_params" title="Permalink to this definition"></a></dt>
+<dd><p>Number of parameters in the model.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.n_pos_total">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_pos_total</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.n_pos_total" title="Permalink to this definition"></a></dt>
+<dd><p>Number of positions, including those masked.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.n_pos_unmasked">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_pos_unmasked</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.n_pos_unmasked" title="Permalink to this definition"></a></dt>
+<dd><p>Number of unmasked positions.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -552,41 +587,17 @@ observer bias.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.sparse_mus">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sparse_mus</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.sparse_mus" title="Permalink to this definition"></a></dt>
-<dd><p>Mutation rates of all positions (row) in each cluster (col),
-including positions that are not used for clustering. The rate
-for every unused position always remains zero.</p>
+<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.section_end5">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">section_end5</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.section_end5" title="Permalink to this definition"></a></dt>
+<dd><p>5’ end of the section.</p>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.cluster.em.EmClustering.unmasked">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">unmasked</span></span><a class="headerlink" href="#seismicrna.cluster.em.EmClustering.unmasked" title="Permalink to this definition"></a></dt>
+<dd><p>Unmasked positions (0-indexed).</p>
 </dd></dl>
 
-<dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.cluster.em.calc_bic">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.em.</span></span><span class="sig-name descname"><span class="pre">calc_bic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_like</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_data_param_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.em.calc_bic" title="Permalink to this definition"></a></dt>
-<dd><p>Compute the Bayesian Information Criterion (BIC) of a model.
-Typically, the model with the smallest BIC is preferred.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>n_params</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Number of parameters that the model estimates</p></li>
-<li><p><strong>n_data</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Number of data points in the sample from which the parameters
-were estimated</p></li>
-<li><p><strong>log_like</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Natural logarithm of the likelihood of observing the data given
-the parameters</p></li>
-<li><p><strong>min_data_param_ratio</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span> <span class="pre">=</span> <span class="pre">10.0</span></code>) – In order for the BIC approximation to be valid, the sample size
-must be much larger than the number of estimated parameters.
-Issue a warning if the sample size is less than this ratio times
-the number of parameters, but still compute and return the BIC.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Bayesian Information Criterion (BIC)</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <span class="target" id="module-seismicrna.cluster.io"></span><dl class="py class">
@@ -615,7 +626,7 @@ the number of parameters, but still compute and return the BIC.</p></li>
 
 <span class="target" id="module-seismicrna.cluster.main"></span><dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.cluster.main.run">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.main.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_clusters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">em_runs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_em_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_em_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">em_thresh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.6931471805599453</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">brotli_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_procs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#seismicrna.cluster.main.run" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.main.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_clusters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">em_runs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_em_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_em_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">em_thresh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">brotli_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_procs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#seismicrna.cluster.main.run" title="Permalink to this definition"></a></dt>
 <dd><p>Infer alternative structures by clustering reads’ mutations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -624,7 +635,7 @@ the number of parameters, but still compute and return the BIC.</p></li>
 <li><p><strong>em_runs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Number of independent runs for each number of clusters [keyword-only, default: 6]</p></li>
 <li><p><strong>min_em_iter</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Minimum iterations per clustering run [keyword-only, default: 8]</p></li>
 <li><p><strong>max_em_iter</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Maximum iterations per clustering run [keyword-only, default: 512]</p></li>
-<li><p><strong>em_thresh</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Maximum change in log likelihood for convergence [keyword-only, default: 0.6931471805599453]</p></li>
+<li><p><strong>em_thresh</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Maximum change in log likelihood for convergence [keyword-only, default: 0.1]</p></li>
 <li><p><strong>brotli_level</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Compression level for brotli (0 - 11) [keyword-only, default: 10]</p></li>
 <li><p><strong>max_procs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Maximum number of simultaneous processes [keyword-only, default: 16]</p></li>
 <li><p><strong>parallel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Run tasks in parallel [keyword-only, default: True]</p></li>
@@ -677,18 +688,48 @@ the number of parameters, but still compute and return the BIC.</p></li>
 
 <span class="target" id="module-seismicrna.cluster.uniq"></span><dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.uniq.</span></span><span class="sig-name descname"><span class="pre">UniqReads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.section.Section" title="seismicrna.core.seq.section.Section"><span class="pre">seismicrna.core.seq.section.Section</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_mut_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">muts_per_pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_to_uniq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><span class="pre">pandas.core.series.Series</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">counts_per_uniq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.uniq.</span></span><span class="sig-name descname"><span class="pre">UniqReads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.section.Section" title="seismicrna.core.seq.section.Section"><span class="pre">seismicrna.core.seq.section.Section</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_mut_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ends</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">muts_per_pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_to_uniq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><span class="pre">pandas.core.series.Series</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">counts_per_uniq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Collection of bit vectors of unique reads.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads.end3s">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">end3s</span></span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads.end3s" title="Permalink to this definition"></a></dt>
+<dd><p>3’ end coordinates.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads.end3s_zero">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">end3s_zero</span></span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads.end3s_zero" title="Permalink to this definition"></a></dt>
+<dd><p>3’ end coordinates (0-indexed from 5’ end of section).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads.end5s">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">end5s</span></span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads.end5s" title="Permalink to this definition"></a></dt>
+<dd><p>5’ end coordinates.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads.end5s_zero">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">end5s_zero</span></span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads.end5s_zero" title="Permalink to this definition"></a></dt>
+<dd><p>5’ end coordinates (0-indexed from 5’ end of section).</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads.from_dataset">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.mask.html#seismicrna.mask.data.MaskMutsDataset" title="seismicrna.mask.data.MaskMutsDataset"><span class="pre">seismicrna.mask.data.MaskMutsDataset</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads.from_dataset" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads.get_matrix">
-<span class="sig-name descname"><span class="pre">get_matrix</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads.get_matrix" title="Permalink to this definition"></a></dt>
-<dd><p>Full boolean matrix of the unique bit vectors.</p>
+<dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads.get_cov_matrix">
+<span class="sig-name descname"><span class="pre">get_cov_matrix</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads.get_cov_matrix" title="Permalink to this definition"></a></dt>
+<dd><p>Full boolean matrix of the covered positions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads.get_mut_matrix">
+<span class="sig-name descname"><span class="pre">get_mut_matrix</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads.get_mut_matrix" title="Permalink to this definition"></a></dt>
+<dd><p>Full boolean matrix of the mutations.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -704,15 +745,9 @@ the number of parameters, but still compute and return the BIC.</p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads.num_pos">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_pos</span></span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads.num_pos" title="Permalink to this definition"></a></dt>
-<dd><p>Number of positions in each bit vector.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads.num_reads">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_reads</span></span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads.num_reads" title="Permalink to this definition"></a></dt>
-<dd><p>Number of total reads (including duplicates).</p>
+<dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads.num_nonuniq">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_nonuniq</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></em><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads.num_nonuniq" title="Permalink to this definition"></a></dt>
+<dd><p>Number of total reads (including non-unique reads).</p>
 </dd></dl>
 
 <dl class="py property">
@@ -720,11 +755,6 @@ the number of parameters, but still compute and return the BIC.</p></li>
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_uniq</span></span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads.num_uniq" title="Permalink to this definition"></a></dt>
 <dd><p>Number of unique reads.</p>
 </dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads.pos_nums">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pos_nums</span></span><a class="headerlink" href="#seismicrna.cluster.uniq.UniqReads.pos_nums" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.cluster.uniq.UniqReads.ref">
@@ -735,29 +765,9 @@ the number of parameters, but still compute and return the BIC.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.cluster.uniq.batch_to_uniq_read_num">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.uniq.</span></span><span class="sig-name descname"><span class="pre">batch_to_uniq_read_num</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">read_nums_per_batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uniq_read_nums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.uniq.batch_to_uniq_read_num" title="Permalink to this definition"></a></dt>
-<dd><p>Map each read’s number in its own batch to its unique number in
-the pool of all batches.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.cluster.uniq.count_uniq_reads">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.uniq.</span></span><span class="sig-name descname"><span class="pre">count_uniq_reads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uniq_read_nums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.uniq.count_uniq_reads" title="Permalink to this definition"></a></dt>
-<dd><p>Count the occurrances of each unique value in the original.</p>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.cluster.uniq.get_uniq_reads">
 <span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.uniq.</span></span><span class="sig-name descname"><span class="pre">get_uniq_reads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos_nums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.rel.html#seismicrna.core.rel.pattern.RelPattern" title="seismicrna.core.rel.pattern.RelPattern"><span class="pre">seismicrna.core.rel.pattern.RelPattern</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">batches</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="seismicrna.core.batch.html#seismicrna.core.batch.muts.RefseqMutsBatch" title="seismicrna.core.batch.muts.RefseqMutsBatch"><span class="pre">seismicrna.core.batch.muts.RefseqMutsBatch</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.uniq.get_uniq_reads" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.cluster.uniq.uniq_reads_to_mutations">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.cluster.uniq.</span></span><span class="sig-name descname"><span class="pre">uniq_reads_to_mutations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uniq_reads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_nums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.cluster.uniq.uniq_reads_to_mutations" title="Permalink to this definition"></a></dt>
-<dd><p>Map each position to the numbers of the unique reads that are
-mutated at the position.</p>
-</dd></dl>
 
 <span class="target" id="module-seismicrna.cluster.write"></span><dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.cluster.write.cluster">
@@ -791,7 +801,7 @@ mutated at the position.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="seismicrna.cleanfa.html" class="btn btn-neutral float-left" title="seismicrna.cleanfa package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="seismicrna.core.html" class="btn btn-neutral float-right" title="seismicrna.core package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="seismicrna.cluster.tests.html" class="btn btn-neutral float-right" title="seismicrna.cluster.tests package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

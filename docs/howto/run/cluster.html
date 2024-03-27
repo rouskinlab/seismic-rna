@@ -125,15 +125,13 @@
 <h3>Cluster input file: Mask report<a class="headerlink" href="#cluster-input-file-mask-report" title="Permalink to this headline"></a></h3>
 <p>You can give any number of Mask report files as inputs for the Cluster step.
 See <a class="reference internal" href="../inputs.html"><span class="doc">List Input Files</span></a> for ways to list multiple files.</p>
-<p>For example, to cluster relation vectors of reads from <code class="docutils literal notranslate"><span class="pre">sample-1</span></code> masked over
-reference <code class="docutils literal notranslate"><span class="pre">ref-1</span></code> section <code class="docutils literal notranslate"><span class="pre">abc</span></code>, and from <code class="docutils literal notranslate"><span class="pre">sample-2</span></code> masked over reference
-<code class="docutils literal notranslate"><span class="pre">ref-2</span></code> section <code class="docutils literal notranslate"><span class="pre">full</span></code>, use the command</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">cluster</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">mask</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">abc</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">2</span><span class="o">/</span><span class="n">mask</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mi">2</span><span class="o">/</span><span class="n">full</span>
+<p>Cluster all masked reads in <code class="docutils literal notranslate"><span class="pre">out</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">cluster</span> <span class="n">out</span>
 </pre></div>
 </div>
-<p>where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the path of your output directory from the Relate step.</p>
-<p>To cluster all masked relation vectors in <code class="docutils literal notranslate"><span class="pre">{out}</span></code>, you can use the command</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">cluster</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span>
+<p>Cluster reads from <code class="docutils literal notranslate"><span class="pre">sample-1</span></code> masked over reference reference <code class="docutils literal notranslate"><span class="pre">ref-1</span></code>,
+section <code class="docutils literal notranslate"><span class="pre">abc</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">cluster</span> <span class="n">out</span><span class="o">/</span><span class="n">sample</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">mask</span><span class="o">/</span><span class="n">ref</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">abc</span>
 </pre></div>
 </div>
 </section>
@@ -214,9 +212,7 @@ You can set the number of independent EM runs using <code class="docutils litera
 </section>
 <section id="cluster-output-files">
 <h2>Cluster: Output files<a class="headerlink" href="#cluster-output-files" title="Permalink to this headline"></a></h2>
-<p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/cluster/{ref}/{sect}</span></code>,
-where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, <code class="docutils literal notranslate"><span class="pre">{ref}</span></code>
-is the reference, and <code class="docutils literal notranslate"><span class="pre">{sect}</span></code> is the section.</p>
+<p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">OUT/SAMPLE/cluster/REFERENCE/SECTION</span></code>.</p>
 <section id="cluster-output-file-batch-of-cluster-memberships">
 <h3>Cluster output file: Batch of cluster memberships<a class="headerlink" href="#cluster-output-file-batch-of-cluster-memberships" title="Permalink to this headline"></a></h3>
 <p>Each batch of clustered reads contains a <code class="docutils literal notranslate"><span class="pre">ClustBatchIO</span></code> object and is saved to
@@ -276,7 +272,7 @@ the fields “NRMSD from Run 0” and “Correlation with Run 0” in the report
 If all runs converged to identical solutions, then every NRMSD would be 0 and
 every Correlation would be 1.
 Generally, the runs are sufficiently reproducible if runs 1 and 2 have NRMSDs
-less than 0.1 and Correlations greater than 0.95 with respect to run 0.
+less than 0.05 and Correlations greater than 0.98 with respect to run 0.
 If not, then there you have no evidence that run 0 is the global optimum for
 that number of clusters, so it would be best to rerun clustering using more
 independent runs to increase the chances of finding the global optimum.</p></li>

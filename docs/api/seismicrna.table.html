@@ -194,6 +194,12 @@
 <dd><p>Whether the table contains data for each read.</p>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.table.base.FreqTable.data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span></em><a class="headerlink" href="#seismicrna.table.base.FreqTable.data" title="Permalink to this definition"></a></dt>
+<dd><p>Table’s data.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.table.base.FreqTable.path_segs">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">path_segs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.FreqTable.path_segs" title="Permalink to this definition"></a></dt>
@@ -201,9 +207,9 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.base.FreqTable.transposed">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">transposed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.FreqTable.transposed" title="Permalink to this definition"></a></dt>
-<dd><p>Whether the data is saved as its transpose.</p>
+<dt class="sig sig-object py" id="seismicrna.table.base.FreqTable.series">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">series</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.FreqTable.series" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the data is a Series rather than a DataFrame.</p>
 </dd></dl>
 
 </dd></dl>
@@ -451,6 +457,12 @@ original number of reads. Must be ≥ 0; may be &gt; 1.</p></li>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.table.base.</span></span><span class="sig-name descname"><span class="pre">RelTypeTable</span></span><a class="headerlink" href="#seismicrna.table.base.RelTypeTable" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#seismicrna.table.base.Table" title="seismicrna.table.base.Table"><code class="xref py py-class docutils literal notranslate"><span class="pre">seismicrna.table.base.Table</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
 <p>Table with multiple types of relationships.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.table.base.RelTypeTable.data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></em><a class="headerlink" href="#seismicrna.table.base.RelTypeTable.data" title="Permalink to this definition"></a></dt>
+<dd><p>Table’s data.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.table.base.RelTypeTable.fetch_count">
 <span class="sig-name descname"><span class="pre">fetch_count</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude_masked</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">squeeze</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="headerlink" href="#seismicrna.table.base.RelTypeTable.fetch_count" title="Permalink to this definition"></a></dt>
@@ -464,9 +476,9 @@ original number of reads. Must be ≥ 0; may be &gt; 1.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.base.RelTypeTable.transposed">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">transposed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.RelTypeTable.transposed" title="Permalink to this definition"></a></dt>
-<dd><p>Whether the data is saved as its transpose.</p>
+<dt class="sig sig-object py" id="seismicrna.table.base.RelTypeTable.series">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">series</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.base.RelTypeTable.series" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the data is a Series rather than a DataFrame.</p>
 </dd></dl>
 
 </dd></dl>
@@ -484,8 +496,8 @@ original number of reads. Must be ≥ 0; may be &gt; 1.</p></li>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.table.base.Table.data">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span></em><a class="headerlink" href="#seismicrna.table.base.Table.data" title="Permalink to this definition"></a></dt>
-<dd><p>Table’s data frame.</p>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pandas.core.series.Series</span></em><a class="headerlink" href="#seismicrna.table.base.Table.data" title="Permalink to this definition"></a></dt>
+<dd><p>Table’s data.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -577,16 +589,16 @@ original number of reads. Must be ≥ 0; may be &gt; 1.</p></li>
 <dd><p>Name of the table’s section.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.table.base.Table.series">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">series</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span></span><a class="headerlink" href="#seismicrna.table.base.Table.series" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the data is a Series rather than a DataFrame.</p>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.table.base.Table.top">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">top</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">pathlib.Path</span></a></em><a class="headerlink" href="#seismicrna.table.base.Table.top" title="Permalink to this definition"></a></dt>
 <dd><p>Path of the table’s output directory.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.table.base.Table.transposed">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">transposed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span></span><a class="headerlink" href="#seismicrna.table.base.Table.transposed" title="Permalink to this definition"></a></dt>
-<dd><p>Whether the data is saved as its transpose.</p>
 </dd></dl>
 
 </dd></dl>
@@ -626,21 +638,9 @@ original number of reads. Must be ≥ 0; may be &gt; 1.</p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.table.calc.ClustTabulator.num_reads_adj">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_reads_adj</span></span><a class="headerlink" href="#seismicrna.table.calc.ClustTabulator.num_reads_adj" title="Permalink to this definition"></a></dt>
-<dd><p>Adjusted number of reads in each cluster.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="seismicrna.table.calc.ClustTabulator.num_reads_obs">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_reads_obs</span></span><a class="headerlink" href="#seismicrna.table.calc.ClustTabulator.num_reads_obs" title="Permalink to this definition"></a></dt>
-<dd><p>Observed number of reads in each cluster.</p>
-</dd></dl>
-
-<dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.table.calc.ClustTabulator.table_per_clust">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">table_per_clust</span></span><a class="headerlink" href="#seismicrna.table.calc.ClustTabulator.table_per_clust" title="Permalink to this definition"></a></dt>
-<dd><p>Observed and adjusted numbers of reads in each cluster.</p>
+<dd><p>Number of reads in each cluster.</p>
 </dd></dl>
 
 </dd></dl>
@@ -705,6 +705,12 @@ loader.</p>
 </dd></dl>
 
 <dl class="py property">
+<dt class="sig sig-object py" id="seismicrna.table.calc.Tabulator.p_ends_given_noclose">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">p_ends_given_noclose</span></span><a class="headerlink" href="#seismicrna.table.calc.Tabulator.p_ends_given_noclose" title="Permalink to this definition"></a></dt>
+<dd><p>Probability of each end coordinate.</p>
+</dd></dl>
+
+<dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.table.calc.Tabulator.pos_header">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pos_header</span></span><a class="headerlink" href="#seismicrna.table.calc.Tabulator.pos_header" title="Permalink to this definition"></a></dt>
 <dd><p>Header of the per-position data.</p>
@@ -755,13 +761,13 @@ loader.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.table.calc.adjust_counts">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.table.calc.</span></span><span class="sig-name descname"><span class="pre">adjust_counts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">counts_obs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.section.Section" title="seismicrna.core.seq.section.Section"><span class="pre">seismicrna.core.seq.section.Section</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_mut_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.calc.adjust_counts" title="Permalink to this definition"></a></dt>
-<dd><p>Adjust the given table of masked/clustered bit counts per position
-to correct for observer bias. The table is mutated in-place.</p>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.table.calc.</span></span><span class="sig-name descname"><span class="pre">adjust_counts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_per_pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_ends_given_noclose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_reads_clust</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pandas.core.series.Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">section</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.section.Section" title="seismicrna.core.seq.section.Section"><span class="pre">seismicrna.core.seq.section.Section</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_mut_gap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.calc.adjust_counts" title="Permalink to this definition"></a></dt>
+<dd><p>Adjust the given table of masked/clustered counts per position
+to correct for observer bias.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>counts_obs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – Counts of the bits for each type of relation (column) at each
+<li><p><strong>p_mut_given_noclose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – Counts of the bits for each type of relation (column) at each
 position (index) in the section of interest.</p></li>
 <li><p><strong>section</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Section</span></code>) – The section of interest.</p></li>
 <li><p><strong>min_mut_gap</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Minimum number of non-mutated bases permitted between mutations.</p></li>
@@ -775,11 +781,6 @@ position (index) in the section of interest.</p></li>
 <span class="sig-prename descclassname"><span class="pre">seismicrna.table.calc.</span></span><span class="sig-name descname"><span class="pre">all_patterns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="seismicrna.core.rel.html#seismicrna.core.rel.pattern.RelPattern" title="seismicrna.core.rel.pattern.RelPattern"><span class="pre">seismicrna.core.rel.pattern.RelPattern</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.calc.all_patterns" title="Permalink to this definition"></a></dt>
 <dd><p>Every RelPattern, keyed by its name.</p>
 </dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.table.calc.list_mut_patterns">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.table.calc.</span></span><span class="sig-name descname"><span class="pre">list_mut_patterns</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.table.calc.list_mut_patterns" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.table.calc.tabulate_loader">
@@ -866,7 +867,7 @@ of the argument <cite>dataset</cite>.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.table.load.TableLoader.data">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#seismicrna.table.load.TableLoader.data" title="Permalink to this definition"></a></dt>
-<dd><p>Table’s data frame.</p>
+<dd><p>Table’s data.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -988,7 +989,7 @@ given paths.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.table.write.ClustFreqTableWriter.data">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#seismicrna.table.write.ClustFreqTableWriter.data" title="Permalink to this definition"></a></dt>
-<dd><p>Table’s data frame.</p>
+<dd><p>Table’s data.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1024,7 +1025,7 @@ given paths.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.table.write.PosTableWriter.data">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#seismicrna.table.write.PosTableWriter.data" title="Permalink to this definition"></a></dt>
-<dd><p>Table’s data frame.</p>
+<dd><p>Table’s data.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1036,7 +1037,7 @@ given paths.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="seismicrna.table.write.ReadTableWriter.data">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#seismicrna.table.write.ReadTableWriter.data" title="Permalink to this definition"></a></dt>
-<dd><p>Table’s data frame.</p>
+<dd><p>Table’s data.</p>
 </dd></dl>
 
 </dd></dl>
