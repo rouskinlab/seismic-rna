@@ -189,8 +189,7 @@ class RelMasker(object):
         """ Filter out reads with discontiguous mates. """
         # Find the reads with contiguous mates.
         reads = batch.read_nums[batch.contiguous_reads]
-        logger.debug(f"{self} kept {reads.size} reads with coverage "
-                     f"≥ {self.min_ncov_read} in {batch}")
+        logger.debug(f"{self} kept {reads.size} contiguous reads in {batch}")
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
