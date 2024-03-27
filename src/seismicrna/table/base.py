@@ -21,8 +21,6 @@ from ..core.seq import SEQ_INDEX_NAMES, Section, index_to_pos, index_to_seq
 
 # General fields
 READ_TITLE = "Read Name"
-R_OBS_TITLE = "Reads Observed"
-R_ADJ_TITLE = "Reads Adjusted"
 
 # Count relationships
 COVER_REL = "Covered"
@@ -104,11 +102,6 @@ class Table(ABC):
 
     @classmethod
     @abstractmethod
-    def transposed(cls) -> bool:
-        """ Whether the data is saved as its transpose. """
-
-    @classmethod
-    @abstractmethod
     def header_type(cls) -> type[Header]:
         """ Type of the header for the table. """
 
@@ -146,6 +139,11 @@ class Table(ABC):
         """ Table's file extension: either '.csv' or '.csv.gz'. """
         return path.CSVZIP_EXT if cls.gzipped() else path.CSV_EXT
 
+    @classmethod
+    @abstractmethod
+    def series(cls) -> bool:
+        """ Whether the data is a Series rather than a DataFrame. """
+
     @property
     @abstractmethod
     def top(self) -> Path:
@@ -168,8 +166,8 @@ class Table(ABC):
 
     @cached_property
     @abstractmethod
-    def data(self) -> pd.DataFrame:
-        """ Table's data frame. """
+    def data(self) -> pd.DataFrame | pd.Series:
+        """ Table's data. """
 
     @cached_property
     def header(self):
@@ -204,10 +202,6 @@ class RelTypeTable(Table, ABC):
     """ Table with multiple types of relationships. """
 
     @classmethod
-    def transposed(cls):
-        return False
-
-    @classmethod
     def _format_data(cls,
                      data: pd.DataFrame, *,
                      precision: int | None,
@@ -224,6 +218,15 @@ class RelTypeTable(Table, ABC):
                                  f"squeezed, but got {data.columns}")
             data = data[data.columns[0]]
         return data
+
+    @classmethod
+    def series(cls):
+        return False
+
+    @cached_property
+    @abstractmethod
+    def data(self) -> pd.DataFrame:
+        """ Table's data. """
 
     @abstractmethod
     def _fetch_data(self,
@@ -666,8 +669,13 @@ class FreqTable(Table, ABC):
         return path.FREQ_TABLE_SEGS
 
     @classmethod
-    def transposed(cls):
+    def series(cls):
         return True
+
+    @cached_property
+    @abstractmethod
+    def data(self) -> pd.Series:
+        """ Table's data. """
 
 
 # Table by Source and Index ############################################

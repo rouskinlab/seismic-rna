@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Callable, TextIO
 
 from ..core import path
-from ..core.batch import BATCH_INDEX
 from ..core.ngs import (SAM_DELIM,
                         count_total_reads,
                         run_view_xam,
@@ -23,7 +22,8 @@ def _range_of_records(get_records_func: Callable):
     @wraps(get_records_func)
     def wrapper(sam_file: TextIO, start: int, stop: int):
         logger.debug(
-            f"Reading records from {sam_file.name} from {start} to {stop}")
+            f"Reading records from {sam_file.name} from {start} to {stop}"
+        )
         sam_file.seek(start)
         records = get_records_func(sam_file)
         n_records = 0
@@ -166,7 +166,7 @@ class XamViewer(object):
         # has at least one line) times the number of mates per record.
         n_skip = (self.n_per_batch - 1) * (self.paired + 1)
         # Count the batches.
-        batch = BATCH_INDEX
+        batch = 0
         with self.open_temp_sam() as sam_file:
             # Current position in the SAM file.
             position = sam_file.tell()

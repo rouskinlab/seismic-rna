@@ -133,7 +133,6 @@ def bowtie2_cmd(fq_inp: FastqUnit,
             "--threads", n_procs,
             # Alignment setup
             "--local" if bt2_local else "--end-to-end",
-            "--non-deterministic",
             "--gbar", bt2_gbar,
             "--dpad", bt2_dpad,
             "-L", bt2_l,
@@ -261,8 +260,8 @@ def xamgen_cmd(fq_inp: FastqUnit,
                                  flags_req=flags_req,
                                  flags_exc=flags_exc,
                                  bam=True,
-                                 n_procs=n_procs)
-    sort_xam_step = sort_xam_cmd(None, bam_out, n_procs=n_procs)
+                                 n_procs=1)
+    sort_xam_step = sort_xam_cmd(None, bam_out, n_procs=1)
     return cmds_to_pipe([bowtie2_step, view_xam_step, sort_xam_step])
 
 
@@ -287,7 +286,7 @@ def export_cmd(xam_in: Path | None,
                             sam=True,
                             with_header=False,
                             ref=ref,
-                            n_procs=n_procs)
+                            n_procs=1)
     # Merge the one header line and the reads for the reference.
     merge_step = cmds_to_subshell([echo_step, ref_step])
     # Sort reads by name so that mates are adjacent.
@@ -296,7 +295,7 @@ def export_cmd(xam_in: Path | None,
     export_step = view_xam_cmd(None,
                                xam_out,
                                refs_file=ref_file,
-                               n_procs=n_procs)
+                               n_procs=1)
     return cmds_to_pipe([merge_step, sort_step, export_step])
 
 

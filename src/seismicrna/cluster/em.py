@@ -4,10 +4,21 @@ from logging import getLogger
 import numpy as np
 import pandas as pd
 
-from .names import ADJ_NAME, OBS_NAME
+from .names import CLUST_PROP_NAME
 from .uniq import UniqReads
+from ..core.batch import get_length
+from ..core.dims import find_dims
 from ..core.header import index_order_clusts
-from ..core.mu import calc_f_obs_numpy, calc_mu_adj_numpy, calc_prop_adj_numpy
+from ..core.mu import (READS,
+                       POSITIONS,
+                       CLUSTERS,
+                       calc_p_noclose,
+                       calc_p_noclose_given_ends,
+                       calc_params,
+                       calc_params_observed,
+                       calc_p_ends_given_noclose,
+                       calc_p_clust_given_noclose,
+                       triu_log)
 
 logger = getLogger(__name__)
 
@@ -15,10 +26,10 @@ LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
 FIRST_ITER = 1  # number of the first iteration
 
 
-def calc_bic(n_params: int,
-             n_data: int,
-             log_like: float,
-             min_data_param_ratio: float = 10.):
+def _calc_bic(n_params: int,
+              n_data: int,
+              log_like: float,
+              min_data_param_ratio: float = 10.):
     """ Compute the Bayesian Information Criterion (BIC) of a model.
     Typically, the model with the smallest BIC is preferred.
 
@@ -53,9 +64,99 @@ def calc_bic(n_params: int,
     return n_params * np.log(n_data) - 2. * log_like
 
 
+def _zero_masked(p_mut: np.ndarray, unmasked: np.ndarray):
+    """ Set mutation rates of masked positions to zero. """
+    p_mut_unmasked = np.zeros_like(p_mut)
+    p_mut_unmasked[unmasked] = p_mut[unmasked]
+    return p_mut_unmasked
+
+
+def _expectation(p_mut: np.ndarray,
+                 p_ends: np.ndarray,
+                 p_clust: np.ndarray,
+                 end5s: np.ndarray,
+                 end3s: np.ndarray,
+                 unmasked: np.ndarray,
+                 muts_per_pos: list[np.ndarray],
+                 min_mut_gap: int):
+    # Validate the dimensions.
+    find_dims([(POSITIONS, CLUSTERS),
+               (POSITIONS, POSITIONS),
+               (CLUSTERS,),
+               (READS,),
+               (READS,)],
+              [p_mut, p_ends, p_clust, end5s, end3s],
+              ["p_mut", "p_ends", "p_clust", "end5s", "end3s"],
+              nonzero=True)
+    # Ensure the mutation rates of masked positions are 0.
+    p_mut = _zero_masked(p_mut, unmasked)
+    # Calculate the end probabilities.
+    p_noclose_given_ends = calc_p_noclose_given_ends(p_mut, min_mut_gap)
+    p_ends_given_noclose = calc_p_ends_given_noclose(p_ends,
+                                                     p_noclose_given_ends)
+    # Calculate the cluster probabilities.
+    p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends)
+    p_clust_given_noclose = calc_p_clust_given_noclose(p_clust, p_noclose)
+    # Compute the probability that a read would have no two mutations
+    # too close given its end coordinates.
+    logp_noclose = triu_log(calc_p_noclose_given_ends(p_mut, min_mut_gap))
+    # Compute the logs of the parameters.
+    with np.errstate(divide="ignore"):
+        # Suppress warnings about taking the log of zero, which is a
+        # valid mutation rate.
+        logp_mut = np.log(p_mut)
+    logp_not = np.log(1. - p_mut)
+    logp_ends_given_noclose = triu_log(p_ends_given_noclose)
+    logp_clust_given_noclose = np.log(p_clust_given_noclose)
+    # For each cluster, calculate the probability that a read up to and
+    # including each position would have no mutations.
+    logp_nomut_incl = np.cumsum(logp_not, axis=0)
+    # For each cluster, calculate the probability that a read up to but
+    # not including each position would have no mutations.
+    logp_nomut_excl = np.vstack([np.zeros_like(p_clust), logp_nomut_incl[:-1]])
+    # For each unique read, calculate the probability that a random read
+    # with the same end coordinates would have no mutations.
+    logp_nomut = logp_nomut_incl[end3s] - logp_nomut_excl[end5s]
+    # For each unique read, compute the joint probability that a random
+    # read would have the same end coordinates, come from each cluster,
+    # and have no mutations; normalize by the fraction of all reads that
+    # have no two mutations too close, i.e. logp_noclose[end5s, end3s].
+    # 2D (unique reads x clusters)
+    logp_joint = (logp_clust_given_noclose[np.newaxis, :]
+                  + logp_ends_given_noclose[end5s, end3s]
+                  - logp_noclose[end5s, end3s]
+                  + logp_nomut)
+    # For each unique read, compute the likelihood of observing it
+    # (including its mutations) by adjusting the above likelihood
+    # of observing the end coordinates with no mutations.
+    for j, mut_reads in zip(unmasked, muts_per_pos, strict=True):
+        logp_joint[mut_reads] += logp_mut[j] - logp_not[j]
+    # For each unique observed read, the marginal probability that a
+    # random read would have the end coordinates and mutations, no
+    # matter which cluster it came from, is the sum of the joint
+    # probability over all clusters (axis 1).
+    # 1D (unique reads)
+    logp_marginal = np.logaddexp.reduce(logp_joint, axis=1)
+    # Calculate the posterior probability that each read came from
+    # each cluster by dividing the joint probability (observing the
+    # read and coming from the cluster) by the marginal probability
+    # (observing the read in any cluster).
+    # 2D (unique reads x clusters)
+    membership = np.exp(logp_joint - logp_marginal[:, np.newaxis])
+    return logp_marginal, membership
+
+
+def _calc_log_like(logp_marginal: np.ndarray, counts_per_uniq: np.ndarray):
+    # Calculate the log likelihood of observing all the reads
+    # by summing the log probability over all reads, weighted
+    # by the number of times each read occurs. Cast to a float
+    # explicitly to verify that the product is a scalar.
+    return float(np.vdot(logp_marginal, counts_per_uniq))
+
+
 class EmClustering(object):
-    """ Run expectation-maximization to cluster the given bit vectors
-    into the specified number of clusters."""
+    """ Run expectation-maximization to cluster the given reads into the
+    specified number of clusters. """
 
     def __init__(self,
                  uniq_reads: UniqReads,
@@ -69,21 +170,21 @@ class EmClustering(object):
         uniq_reads: UniqReads
             Container of unique reads
         order: int
-            Number of clusters into which to cluster the bit vectors;
+            Number of clusters into which to cluster the reads;
             must be a positive integer
         min_iter: int
             Minimum number of iterations for clustering. Must be a
-            positive integer no greater than max_iter.
+            positive integer no greater than `max_iter`.
         max_iter: int
             Maximum number of iterations for clustering. Must be a
-            positive integer no less than min_iter.
+            positive integer no less than `min_iter`.
         conv_thresh: float
             Stop the algorithm when the difference in log likelihood
             between two successive iterations becomes smaller than the
             convergence threshold (and at least min_iter iterations have
-            run). Must be a positive real number (ideally close to 0).
+            run). Must be a positive real number.
         """
-        # Unique bit vectors of mutations
+        # Unique reads of mutations
         self.uniq_reads = uniq_reads
         # Number of clusters (i.e. order)
         if not order >= 1:
@@ -102,20 +203,21 @@ class EmClustering(object):
         if not conv_thresh >= 0.:
             raise ValueError(f"conv_thresh must be ≥ 0, but got {conv_thresh}")
         self.conv_thresh = conv_thresh
-        # Number of reads observed in each cluster, not adjusted
-        self.nreads_obs = np.empty(self.order, dtype=float)
-        # Log of the fraction observed for each cluster
-        self.log_f_obs = np.empty(self.order, dtype=float)
-        # Mutation rates of used positions (row) in each cluster (col),
-        # adjusted for observer bias
-        self.mus = np.empty((self.uniq_reads.num_pos, self.order), dtype=float)
-        # Positions of the section that will be used for clustering
-        self.unmasked = self.uniq_reads.section.unmasked_bool
-        # Likelihood of each vector (col) coming from each cluster (row)
-        self.resps = np.empty((self.order, self.uniq_reads.num_uniq),
-                              dtype=float)
-        # Marginal probabilities of observing each bit vector.
-        self.log_marginals = np.empty(self.uniq_reads.num_uniq, dtype=float)
+        # Mutation rates adjusted for observer bias.
+        # 2D (all positions x clusters)
+        self.p_mut = np.empty((self.n_pos_total, self.order))
+        # Read end coordinate proportions adjusted for observer bias.
+        # 2D (all positions x all positions)
+        self.p_ends = np.empty((self.n_pos_total, self.n_pos_total))
+        # Cluster proportions adjusted for observer bias.
+        # 1D (clusters)
+        self.p_clust = np.empty(self.order)
+        # Likelihood of each unique read coming from each cluster.
+        # 2D (unique reads x clusters)
+        self.membership = np.empty((self.uniq_reads.num_uniq, self.order))
+        # Marginal likelihoods of observing each unique read.
+        # 1D (unique reads)
+        self.logp_marginal = np.empty(self.uniq_reads.num_uniq)
         # Trajectory of log likelihood values.
         self.log_likes: list[float] = list()
         # Number of iterations.
@@ -123,40 +225,45 @@ class EmClustering(object):
         # Whether the algorithm has converged.
         self.converged = False
 
+    @property
+    def section_end5(self):
+        """ 5' end of the section. """
+        return self.uniq_reads.section.end5
+
     @cached_property
-    def nreads_total(self):
-        """ Total number of reads, including redundant ones. """
-        return int(round(self.uniq_reads.counts_per_uniq.sum()))
+    def unmasked(self):
+        """ Unmasked positions (0-indexed). """
+        return self.uniq_reads.section.unmasked_zero
+
+    @cached_property
+    def masked(self):
+        """ Masked positions (0-indexed). """
+        return self.uniq_reads.section.masked_zero
 
     @property
-    def sparse_mus(self):
-        """ Mutation rates of all positions (row) in each cluster (col),
-        including positions that are not used for clustering. The rate
-        for every unused position always remains zero. """
-        # Initialize an array of zeros with one row for each position in
-        # the section and one column for each cluster.
-        sparse_mus = np.zeros((self.uniq_reads.section.length, self.order),
-                              dtype=float)
-        # Copy the rows of self.mus that correspond to used positions.
-        # The rows for unused positions remain zero (hence "sparse").
-        sparse_mus[self.unmasked] = self.mus
-        return sparse_mus
+    def n_pos_total(self):
+        """ Number of positions, including those masked. """
+        return self.uniq_reads.section.length
+
+    @cached_property
+    def n_pos_unmasked(self):
+        """ Number of unmasked positions. """
+        return get_length(self.unmasked, "unmasked positions")
+
+    @cached_property
+    def end5s(self):
+        """ 5' end coordinates (0-indexed). """
+        return self.uniq_reads.end5s_zero
+
+    @cached_property
+    def end3s(self):
+        """ 3' end coordinates (0-indexed). """
+        return self.uniq_reads.end3s_zero
 
     @cached_property
     def clusters(self):
         """ MultiIndex of the order and cluster numbers. """
         return index_order_clusts(self.order)
-
-    @property
-    def prop_obs(self):
-        """ Observed proportion of each cluster, without adjusting for
-        observer bias. """
-        return self.nreads_obs / np.sum(self.nreads_obs)
-
-    @property
-    def prop_adj(self):
-        """ Proportion of each cluster, adjusted for observer bias. """
-        return calc_prop_adj_numpy(self.prop_obs, np.exp(self.log_f_obs))
 
     @property
     def log_like(self):
@@ -185,116 +292,101 @@ class EmClustering(object):
         return self.log_like - self.log_like_prev
 
     @property
+    def n_params(self):
+        """ Number of parameters in the model. """
+        # The parameters estimated by the model are
+        # - the mutation rates for each position in each cluster
+        # - the proportion of each cluster
+        # - the proportion of every pair of read end coordinates
+        # The cluster memberships are latent variables, not parameters.
+        # The degrees of freedom of the mutation rates equals the total
+        # number of unmasked positions times clusters.
+        df_mut = self.n_pos_unmasked * self.order
+        # The degrees of freedom of the coordinate proportions equals
+        # the number of non-zero proportions (which are the only ones
+        # that can be estimated) minus one because of the constraint
+        # that the proportions of all end coordinates must sum to 1.
+        df_ends = np.count_nonzero(
+            self.p_ends[np.triu_indices_from(self.p_ends)]
+        ) - 1
+        # The degrees of freedom of the cluster proportions equals the
+        # number of clusters minus one because of the constraint that
+        # the proportions of all clusters must sum to 1.
+        df_clust = self.order - 1
+        # The number of parameters is the sum of the degrees of freedom.
+        return df_mut + df_ends + df_clust
+
+    @property
+    def n_data(self):
+        """ Number of data points in the model. """
+        # The number of data points is the total number of reads.
+        return self.uniq_reads.num_nonuniq
+
+    @property
     def bic(self):
-        """ Compute this model's Bayesian Information Criterion. """
-        # The parameters estimated by the model are the mutation rates
-        # for each position in each cluster and the proportion of each
-        # cluster in the population. By contrast, the cluster membership
-        # values are latent variables because each describes one item in
-        # the sample (a bit vector), not a parameter of the population.
-        # The number of data points is the number of unique bit vectors.
-        return calc_bic(self.mus.size + self.prop_adj.size,
-                        self.uniq_reads.num_uniq,
-                        self.log_like)
+        """ Bayesian Information Criterion of the model. """
+        return _calc_bic(self.n_params, self.n_data, self.log_like)
 
     def _max_step(self):
         """ Run the Maximization step of the EM algorithm. """
-        # Calculate the number of reads in each cluster by summing the
-        # count-weighted likelihood that each bit vector came from the
-        # cluster.
-        self.nreads_obs = self.resps @ self.uniq_reads.counts_per_uniq
-        # If this iteration is not the first, then use mutation rates
-        # from the previous iteration as the initial guess for this one.
-        mus_guess = self.sparse_mus if self.iter > FIRST_ITER else None
-        # Compute the observed mutation rate at each position (j).
-        # To save memory and enable self.sparse_mus to use the observed
-        # rates of mutation, overwrite self.mus rather than allocate a
-        # new array.
-        for j, muts_j in enumerate(self.uniq_reads.muts_per_pos):
-            # Calculate the number of mutations at each position in each
-            # cluster by summing the count-weighted likelihood that each
-            # bit vector with a mutation at (j) came from the cluster,
-            # then divide by the count-weighted sum of the number of
-            # reads in the cluster to find the observed mutation rate.
-            self.mus[j] = ((self.resps[:, muts_j]
-                            @ self.uniq_reads.counts_per_uniq[muts_j])
-                           / self.nreads_obs)
-        # Solve for the real mutation rates that are expected to yield
-        # the observed mutation rates after considering read drop-out.
-        self.mus = calc_mu_adj_numpy(self.sparse_mus,
-                                     self.uniq_reads.min_mut_gap,
-                                     mus_guess)[self.unmasked]
+        # Estimate the parameters based on observed data.
+        (p_mut_observed,
+         p_ends_observed,
+         p_clust_observed) = calc_params_observed(
+            self.n_pos_total,
+            self.order,
+            self.unmasked,
+            self.uniq_reads.muts_per_pos,
+            self.end5s,
+            self.end3s,
+            self.uniq_reads.counts_per_uniq,
+            self.membership
+        )
+        if self.iter > 1:
+            # If this iteration is not the first, then use the previous
+            # values of the parameters as the initial guesses.
+            guess_p_mut = self.p_mut
+            guess_p_ends = self.p_ends
+            guess_p_clust = self.p_clust
+        else:
+            # Otherwise, do not guess the initial parameters.
+            guess_p_mut = None
+            guess_p_ends = None
+            guess_p_clust = None
+        # Update the parameters.
+        self.p_mut, self.p_ends, self.p_clust = calc_params(
+            p_mut_observed,
+            p_ends_observed,
+            p_clust_observed,
+            self.uniq_reads.min_mut_gap,
+            guess_p_mut,
+            guess_p_ends,
+            guess_p_clust,
+            prenormalize=False,
+        )
+        # Ensure all masked positions have a mutation rate of 0.
+        if n_nonzero := np.count_nonzero(self.p_mut[self.masked]):
+            logger.warning(
+                f"{n_nonzero} masked position(s) have a mutation rate ≠ 0: "
+            )
+            self.p_mut[self.masked] = 0.
 
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
-        # Update the log fraction observed of each cluster.
-        self.log_f_obs = np.log(calc_f_obs_numpy(self.sparse_mus,
-                                                 self.uniq_reads.min_mut_gap))
-        # Compute the logs of the mutation and non-mutation rates.
-        with np.errstate(divide="ignore"):
-            # Suppress warnings about taking the log of zero, which is a
-            # valid mutation rate. Thus, here we CAN compute log of 0,
-            # just like Chuck Norris.
-            log_mus = np.log(self.mus)
-        log_nos = np.log(1. - self.mus)
-        # Compute for each cluster and observed bit vector the joint
-        # probability that a random read vector would both come from the
-        # same cluster and have exactly the same set of bits. To save
-        # memory, overwrite self.resps rather than allocate a new array.
-        for k in range(self.order):
-            # Compute the probability that a bit vector has no mutations
-            # given that it comes from cluster (k), which is the sum of
-            # all not-mutated log probabilities, sum(log_nos[:, k]),
-            # minus the cluster's log fraction observed, log_f_obs[k].
-            log_prob_no_muts_given_k = np.sum(log_nos[:, k]) - self.log_f_obs[k]
-            # Initialize the log probability for all bit vectors in
-            # cluster (k) to the log probability that an observed bit
-            # vector comes from cluster (k) (log(prob_obs[k])) and has
-            # no mutations given that it came from cluster (k).
-            log_prob_no_muts_and_k = (np.log(self.prop_obs[k])
-                                      + log_prob_no_muts_given_k)
-            self.resps[k].fill(log_prob_no_muts_and_k)
-            # Loop over each position (j); each iteration adds the log
-            # PMF for one additional position in each bit vector to the
-            # accumulating total log probability of each bit vector.
-            # Using accumulation with this loop also uses less memory
-            # than would holding the PMF for every position in an array
-            # and then summing over the position axis.
-            for j in range(self.uniq_reads.num_pos):
-                # Compute the probability that each bit vector would
-                # have the bit observed at position (j). The probability
-                # is modeled using a Bernoulli distribution, with PMF:
-                # log_mus[k, j] if muts[j, i] else log_nos[k, j].
-                # This PMF could be computed explicitly, such as with
-                # scipy.stats.bernoulli.logpmf(muts[j], mus[k, j]).
-                # But few of the bits are mutated, so a more efficient
-                # (and much, MUCH faster) way is to assume initially
-                # that no bit is mutated -- that is, to initialize the
-                # probability of every bit vector with the probability
-                # that the bit vector has no mutations, as was done.
-                # Then, for only the few bits that are mutated, the
-                # probability is adjusted by adding the log of the
-                # probability that the base is mutated minus the log of
-                # the probability that the base is not mutated.
-                log_adjust_jk = log_mus[j, k] - log_nos[j, k]
-                self.resps[k][self.uniq_reads.muts_per_pos[j]] += log_adjust_jk
-        # For each observed bit vector, the marginal probability that a
-        # random read would have the same series of bits (regardless of
-        # which cluster it came from) is the sum over all clusters of
-        # the joint probability of coming from the cluster and having
-        # the specific series of bits.
-        self.log_marginals = np.logaddexp.reduce(self.resps, axis=0)
-        # Calculate the posterior probability that each bit vector came
-        # from each cluster by dividing the joint probability (observing
-        # the bit vector and coming from the cluster) by the marginal
-        # probability (observing the bit vector in any cluster).
-        self.resps = np.exp(self.resps - self.log_marginals)
-        # Calculate the log likelihood of observing all the bit vectors
-        # by summing the log probability over all bit vectors, weighted
-        # by the number of times each bit vector occurs. Cast to a float
-        # explicitly to verify that the product is a scalar.
-        log_like = float(np.vdot(self.log_marginals,
-                                 self.uniq_reads.counts_per_uniq))
+        # Update the marginal probabilities and cluster memberships.
+        self.logp_marginal, self.membership = _expectation(
+            self.p_mut,
+            self.p_ends,
+            self.p_clust,
+            self.end5s,
+            self.end3s,
+            self.unmasked,
+            self.uniq_reads.muts_per_pos,
+            self.uniq_reads.min_mut_gap
+        )
+        # Calculate the log likelihood and append it to the trajectory.
+        log_like = _calc_log_like(self.logp_marginal,
+                                  self.uniq_reads.counts_per_uniq)
         self.log_likes.append(round(log_like, LOG_LIKE_PRECISION))
 
     def run(self, props_seed: int | None = None, resps_seed: int | None = None):
@@ -330,14 +422,14 @@ class EmClustering(object):
         # parameter of a Dirichlet distribution can be 1 but not 0.
         conc_params = 1. - np.random.default_rng(props_seed).random(self.order)
         # Initialize cluster membership with a Dirichlet distribution.
-        self.resps = dirichlet.rvs(alpha=conc_params,
-                                   size=self.uniq_reads.num_uniq,
-                                   random_state=resps_seed).T
+        self.membership = dirichlet.rvs(alpha=conc_params,
+                                        size=self.uniq_reads.num_uniq,
+                                        random_state=resps_seed)
         # Run EM until the log likelihood converges or the number of
         # iterations reaches max_iter, whichever happens first.
         self.converged = False
         for self.iter in range(1, self.max_iter + 1):
-            # Update the mutation rates and cluster proportions.
+            # Update the parameters.
             self._max_step()
             # Update the cluster membership and log likelihood.
             self._exp_step()
@@ -372,124 +464,27 @@ class EmClustering(object):
 
     @property
     def logn_exp(self):
-        """ Log number of expected observations of each bit vector. """
-        return np.log(self.nreads_total) + self.log_marginals
+        """ Log number of expected observations of each read. """
+        return np.log(self.uniq_reads.num_nonuniq) + self.logp_marginal
 
     def get_props(self):
         """ Real and observed log proportion of each cluster. """
-        return pd.DataFrame(np.vstack([self.prop_obs, self.prop_adj]).T,
+        return pd.DataFrame(self.p_clust[:, np.newaxis],
                             index=self.clusters,
-                            columns=[OBS_NAME, ADJ_NAME])
+                            columns=[CLUST_PROP_NAME])
 
     def get_mus(self):
         """ Log mutation rate at each position for each cluster. """
-        return pd.DataFrame(self.mus,
+        return pd.DataFrame(self.p_mut[self.unmasked],
                             index=self.uniq_reads.section.unmasked_int,
                             columns=self.clusters)
 
-    def get_resps(self, batch_num: int):
-        """ Responsibilities of the reads in the batch. """
+    def get_members(self, batch_num: int):
+        """ Cluster memberships of the reads in the batch. """
         batch_uniq_nums = self.uniq_reads.batch_to_uniq[batch_num]
-        return pd.DataFrame(self.resps.T[batch_uniq_nums],
+        return pd.DataFrame(self.membership[batch_uniq_nums],
                             index=batch_uniq_nums.index,
                             columns=self.clusters)
-
-    '''
-    
-    @property
-    def logp_contig(self):
-        """ Log probability of every bit vector from the most likely to
-        the rarest observed bit vector, including any bit vector with an
-        intermediate probability that had an observed count of 0. """
-        # Find the log probability of the rarest observed bit vector.
-        min_logp = np.min(self.log_marginals)
-        # Initialize a bit vector iterator for each cluster.
-        bvecs = {clust: iter_all_bit_vectors(cmus,
-                                             self.data.section,
-                                             self.data.min_mut_gap)
-                 for clust, cmus in self.get_mus().items()}
-        # For each cluster, iterate through the bit vectors up to and
-        # including the rarest observed bit vector; record the log
-        # probability of each bit vector encountered.
-        logps = dict()
-        cump = 0.
-        for clust, clust_bvecs in bvecs.items():
-            # Initialize the map of bit vectors to log probabilities
-            # for this cluster.
-            logps[clust] = dict()
-            while True:
-                # Find the next bit vector; record its log probability.
-                bvec, logp = next(clust_bvecs)
-                logps[clust][bvec.tobytes().decode()] = logp
-                cump += np.exp(logp)
-                # Iterate until the log probability falls below that of
-                # the rarest bit vector.
-                if logp <= min_logp:
-                    break
-        # Find all "non-rare" bit vectors that had a higher probability
-        # than the rarest bit vector in any cluster.
-        bvecs_non_rare = set.union(*map(set, logps.values()))
-        # For each cluster, compute the log probability of all non-rare
-        # bit vectors that were not already encountered in the cluster.
-        for clust, clust_bvecs in bvecs.items():
-            # Find the non-rare bit vectors that were not encountered
-            # already in the cluster.
-            unseen_non_rare = bvecs_non_rare - set(logps[clust])
-            # Iterate until all such bit vectors are encountered.
-            while unseen_non_rare:
-                # Find the next bit vector; record its log probability.
-                bvec, logp = next(clust_bvecs)
-                bvec_str = bvec.tobytes().decode()
-                logps[clust][bvec_str] = logp
-                if bvec_str in unseen_non_rare:
-                    # This bit vector is no longer unseen.
-                    unseen_non_rare.remove(bvec_str)
-        # Now that all necessary bit vectors have been encountered, join
-        # the maps into a single DataFrame (taking the intersection of
-        # the indexes) of bit vectors (indexes) and clusters (columns).
-        logps_df = pd.concat([pd.Series(clust_logps, name=clust)
-                              for clust, clust_logps in logps.items()],
-                             join="inner")
-        # Compute the joint probability that a random bit vector would
-        # match the bit vector corresponding to a row in logps_df and
-        # come from the cluster corresponding to a column in logps_df.
-        logps_joint = logps_df + np.log(self.get_props()[self.ADJUSTED])
-        # Compute the marginal probability of observing each bit vector,
-        # regardless of the cluster from which it came.
-        logps_marginal = logsumexp(logps_joint, axis=0)
-        # Sort the bit vectors by decreasing log probability.
-        return logps_marginal.sort_values(ascending=False)
-
-    def output_cdf(self):
-        """ Return the cumulative fraction of reads in descending order
-        of likelihood. """
-
-        # Map each bit vector to its log probability and observed count.
-        ns_obs: dict[str, int] = dict()
-        logps: dict[int, dict[str, float]] = {c: dict() for c in bvecs}
-        # Iterate through each unique bit vector that was observed.
-        for bvec_arr, n_obs in zip(self.data.get_matrix(),
-                                   self.data.counts_per_uniq,
-                                   strict=True):
-            # Convert the bit vector from an array to a str so that it
-            # becomes hashable and internable (unlike bytes).
-            bvec_str = bvec_arr.tobytes().decode()
-            # Map the bit vector to its observed count.
-            ns_obs[bvec_str] = n_obs
-            # For each cluster, check if the bit vector has appeared.
-            for clust, clogps in logps.items():
-                # If the bit vector has not yet appeared, then iterate
-                # through the bit vectors until finding it.
-                while bvec_str not in clogps:
-                    # Get the next bit vector and its log likelihood.
-                    bvec, logp = next(bvecs[clust])
-                    # Map the bit vector to its log probability.
-                    clogps[bvec.tobytes().decode()] = logp
-        # Find the bit vectors that are
-        # Compute the adjusted proportion of each cluster.
-        props = self.get_props()[self.ADJUSTED]
-    
-    '''
 
     def __str__(self):
         return f"{type(self).__name__} {self.uniq_reads} to order {self.order}"

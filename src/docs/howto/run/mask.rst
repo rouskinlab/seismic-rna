@@ -110,20 +110,27 @@ Mask setting: Filter reads
 The second substep of masking is filtering reads.
 You can filter reads based on three criteria, in this order:
 
+Filter reads by number of positions covering the section
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+You can require every read to contain a minimum number of bases in the section
+(i.e. set a minimum coverage) using ``--min-ncov-read`` followed by the minimum
+coverage.
+The minimum coverage must be at least 1 because reads that do not cover the
+section at all should always be filtered out.
+Note that this filter considers only positions that were not pre-excluded (see
+:ref:`mask_exclude`).
+
 Filter reads by fraction of informative positions
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-For some applications, such as finding alternative structures, every read must
-span the vast majority of positions in the section of the reference.
-You can set a limit on the minimum number of informative bases in the read,
-as a fraction of the number of non-excluded positions in the section, using
-``--min-finfo-read {f}``.
-For example, to require 95% of the non-excluded positions in the section to be
+You can set a limit on the minimum information in each read, as a fraction of
+the number of non-excluded positions in the read, using ``--min-finfo-read``
+followed by the minimum fraction of informative positions.
+For example, to require 95% of the non-excluded positions in the read to be
 informative, use ``--min-finfo-read 0.95``.
-If the section had 296 positions, and 141 remained after excluding positions
-(see :ref:`mask_exclude`), then a read with 137 informative positions would
-have an informed fraction of 97% and be kept, but a read with 133 informative
-positions would have an informed fraction of 94% and be discarded.
+Note that the denominator of this fraction is the number of bases in the read
+that cover the section; it is not just the length of the section or of the read.
 
 Filter reads by fraction of mutated positions
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''

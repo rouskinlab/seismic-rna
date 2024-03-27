@@ -23,9 +23,6 @@ from .xna import BASEA, BASEC, BASEN, DNA
 
 logger = getLogger(__name__)
 
-# Positions are 1-indexed.
-POS_INDEX = 1
-
 # Names of the section index levels.
 POS_NAME = "Position"
 BASE_NAME = "Base"
@@ -444,6 +441,13 @@ class Section(object):
         return reduce(np.union1d, self._masks.values(), np.array([], int))
 
     @property
+    def masked_zero(self) -> np.ndarray:
+        """ Masked positions as integers (0-indexed with respect to the
+        first position in the section). """
+        # Do not cache this method since self.masked_int can change.
+        return self.masked_int - self.end5
+
+    @property
     def masked_bool(self) -> np.ndarray:
         """ Masked positions as a boolean array. """
         # Do not cache this method since self.masked_int can change.
@@ -457,9 +461,16 @@ class Section(object):
 
     @property
     def unmasked_int(self) -> np.ndarray:
-        """ Unmasked positions as integers. """
+        """ Unmasked positions as integers (1-indexed). """
         # Do not cache this method since self.unmasked_bool can change.
         return self.range_int[self.unmasked_bool]
+
+    @property
+    def unmasked_zero(self) -> np.ndarray:
+        """ Unmasked positions as integers (0-indexed with respect to
+        the first position in the section). """
+        # Do not cache this method since self.unmasked_int can change.
+        return self.unmasked_int - self.end5
 
     @property
     def unmasked(self):
@@ -796,7 +807,7 @@ class SectionFinder(Section):
     def __init__(self,
                  ref: str,
                  seq: DNA, *,
-                 seq5: int = POS_INDEX,
+                 seq5: int = 1,
                  end5: int | None = None,
                  end3: int | None = None,
                  fwd: DNA | None = None,

@@ -38,3 +38,9 @@ Submodules
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+.. automodule:: seismicrna.core.mu.tests.unbias_test
+   :members:
+   :undoc-members:
+   :show-inheritance:

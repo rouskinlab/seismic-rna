@@ -20,6 +20,7 @@ from ..core.arg import (CMD_MASK,
                         opt_exclude_polya,
                         opt_exclude_gu,
                         opt_exclude_file,
+                        opt_min_ncov_read,
                         opt_min_finfo_read,
                         opt_max_fmut_read,
                         opt_min_mut_gap,
@@ -36,41 +37,25 @@ from ..pool.data import load_relate_pool_dataset
 
 logger = getLogger(__name__)
 
-params = [
-    # Input/output paths
-    arg_input_path,
-    # Sections
-    opt_coords,
-    opt_primers,
-    opt_primer_gap,
-    opt_sections_file,
-    # Mutation counting
-    opt_count_del,
-    opt_count_ins,
-    opt_discount_mut,
-    # Filtering
-    opt_exclude_polya,
-    opt_exclude_gu,
-    opt_exclude_file,
-    opt_min_finfo_read,
-    opt_max_fmut_read,
-    opt_min_mut_gap,
-    opt_min_ninfo_pos,
-    opt_max_fmut_pos,
-    # Compression
-    opt_brotli_level,
-    # Parallelization
-    opt_max_procs,
-    opt_parallel,
-    # Effort
-    opt_force,
-]
 
-
-@command(CMD_MASK, params=params)
-def cli(*args, **kwargs):
-    """ Define mutations and sections to filter reads and positions. """
-    return run(*args, **kwargs)
+def load_sections(input_path: Iterable[str | Path],
+                  coords: Iterable[tuple[str, int, int]],
+                  primers: Iterable[tuple[str, DNA, DNA]],
+                  primer_gap: int,
+                  sections_file: Path | None = None):
+    """ Open sections of relate reports. """
+    # Load all datasets, grouped by their reference names.
+    datasets = defaultdict(list)
+    for dataset in load_datasets(input_path, load_relate_pool_dataset):
+        datasets[dataset.ref].append(dataset)
+    # Determine the sections for each reference in the datasets.
+    sections = RefSections({(loader.ref, loader.refseq)
+                            for loader in chain(*datasets.values())},
+                           coords=coords,
+                           primers=primers,
+                           primer_gap=primer_gap,
+                           sects_file=sections_file)
+    return datasets, sections
 
 
 @docdef.auto()
@@ -88,11 +73,12 @@ def run(input_path: tuple[str, ...], *,
         exclude_polya: int,
         exclude_gu: bool,
         exclude_file: str | None,
+        min_ninfo_pos: int,
+        max_fmut_pos: float,
+        min_ncov_read: int,
         min_finfo_read: float,
         max_fmut_read: int,
         min_mut_gap: int,
-        min_ninfo_pos: int,
-        max_fmut_pos: float,
         # Compression
         brotli_level: int,
         # Parallelization
@@ -122,6 +108,7 @@ def run(input_path: tuple[str, ...], *,
                   exclude_file=(Path(exclude_file)
                                 if exclude_file
                                 else None),
+                  min_ncov_read=min_ncov_read,
                   min_finfo_read=min_finfo_read,
                   max_fmut_read=max_fmut_read,
                   min_mut_gap=min_mut_gap,
@@ -139,24 +126,42 @@ def run(input_path: tuple[str, ...], *,
     return list(map(Path, reports))
 
 
-def load_sections(input_path: Iterable[str | Path],
-                  coords: Iterable[tuple[str, int, int]],
-                  primers: Iterable[tuple[str, DNA, DNA]],
-                  primer_gap: int,
-                  sections_file: Path | None = None):
-    """ Open sections of relate reports. """
-    # Load all datasets, grouped by their reference names.
-    datasets = defaultdict(list)
-    for dataset in load_datasets(input_path, load_relate_pool_dataset):
-        datasets[dataset.ref].append(dataset)
-    # Determine the sections for each reference in the datasets.
-    sections = RefSections({(loader.ref, loader.refseq)
-                            for loader in chain(*datasets.values())},
-                           coords=coords,
-                           primers=primers,
-                           primer_gap=primer_gap,
-                           sects_file=sections_file)
-    return datasets, sections
+params = [
+    # Input/output paths
+    arg_input_path,
+    # Sections
+    opt_coords,
+    opt_primers,
+    opt_primer_gap,
+    opt_sections_file,
+    # Mutation counting
+    opt_count_del,
+    opt_count_ins,
+    opt_discount_mut,
+    # Filtering
+    opt_exclude_polya,
+    opt_exclude_gu,
+    opt_exclude_file,
+    opt_min_ninfo_pos,
+    opt_max_fmut_pos,
+    opt_min_ncov_read,
+    opt_min_finfo_read,
+    opt_max_fmut_read,
+    opt_min_mut_gap,
+    # Compression
+    opt_brotli_level,
+    # Parallelization
+    opt_max_procs,
+    opt_parallel,
+    # Effort
+    opt_force,
+]
+
+
+@command(CMD_MASK, params=params)
+def cli(*args, **kwargs):
+    """ Define mutations and sections to filter reads and positions. """
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

@@ -63,8 +63,7 @@ class TableWriter(Table, ABC):
     def write(self, force: bool):
         """ Write the table's rounded data to the table's CSV file. """
         if need_write(self.path, force):
-            data = self.data.T if self.transposed() else self.data
-            data.round(decimals=PRECISION).to_csv(self.path)
+            self.data.round(decimals=PRECISION).to_csv(self.path)
         return self.path
 
 

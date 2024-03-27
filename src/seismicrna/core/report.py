@@ -47,6 +47,7 @@ from .arg import (opt_phred_enc,
                   opt_cram,
                   opt_min_reads,
                   opt_min_mapq,
+                  opt_min_ncov_read,
                   opt_fold_temp,
                   opt_fold_md,
                   opt_fold_mfe,
@@ -354,6 +355,7 @@ MaxMutPosF = Field("max_fmut_pos",
                    "Maximum Fraction of Mutations per Position",
                    float,
                    oconv=get_oconv_float())
+MinNCovReadF = OptionField(opt_min_ncov_read)
 MinMutGapF = Field("min_mut_gap",
                    "Minimum Gap Between Mutations (nt)",
                    int)
@@ -432,6 +434,12 @@ NumPosKeptF = Field("n_pos_kept",
 NumReadsInitF = Field("n_reads_init",
                       "Number of Reads Initially Given",
                       int)
+NumReadsLoNCovF = Field("n_reads_min_ncov",
+                        "Number of Reads Cut -- Too Few Covered Positions",
+                        int)
+NumReadsDiscontigF = Field("n_reads_discontig",
+                           "Number of Reads Cut -- Discontiguous Mates",
+                           int)
 NumReadsLoInfoF = Field("n_reads_min_finfo",
                         "Number of Reads Cut -- Too Few Informative Positions",
                         int)
@@ -445,7 +453,7 @@ NumReadsKeptF = Field("n_reads_kept",
                       "Number of Reads Ultimately Kept",
                       int)
 NumUniqReadKeptF = Field("n_uniq_reads",
-                         "Number of Unique Bit Vectors",
+                         "Number of Unique Reads",
                          int)
 
 # Cluster fields

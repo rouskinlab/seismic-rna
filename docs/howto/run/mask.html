@@ -211,19 +211,25 @@ all positions to exclude, in <a class="reference internal" href="../../formats/l
 <h3>Mask setting: Filter reads<a class="headerlink" href="#mask-setting-filter-reads" title="Permalink to this headline"></a></h3>
 <p>The second substep of masking is filtering reads.
 You can filter reads based on three criteria, in this order:</p>
+<section id="filter-reads-by-number-of-positions-covering-the-section">
+<h4>Filter reads by number of positions covering the section<a class="headerlink" href="#filter-reads-by-number-of-positions-covering-the-section" title="Permalink to this headline"></a></h4>
+<p>You can require every read to contain a minimum number of bases in the section
+(i.e. set a minimum coverage) using <code class="docutils literal notranslate"><span class="pre">--min-ncov-read</span></code> followed by the minimum
+coverage.
+The minimum coverage must be at least 1 because reads that do not cover the
+section at all should always be filtered out.
+Note that this filter considers only positions that were not pre-excluded (see
+<a class="reference internal" href="#mask-exclude"><span class="std std-ref">Mask setting: Exclude positions</span></a>).</p>
+</section>
 <section id="filter-reads-by-fraction-of-informative-positions">
 <h4>Filter reads by fraction of informative positions<a class="headerlink" href="#filter-reads-by-fraction-of-informative-positions" title="Permalink to this headline"></a></h4>
-<p>For some applications, such as finding alternative structures, every read must
-span the vast majority of positions in the section of the reference.
-You can set a limit on the minimum number of informative bases in the read,
-as a fraction of the number of non-excluded positions in the section, using
-<code class="docutils literal notranslate"><span class="pre">--min-finfo-read</span> <span class="pre">{f}</span></code>.
-For example, to require 95% of the non-excluded positions in the section to be
+<p>You can set a limit on the minimum information in each read, as a fraction of
+the number of non-excluded positions in the read, using <code class="docutils literal notranslate"><span class="pre">--min-finfo-read</span></code>
+followed by the minimum fraction of informative positions.
+For example, to require 95% of the non-excluded positions in the read to be
 informative, use <code class="docutils literal notranslate"><span class="pre">--min-finfo-read</span> <span class="pre">0.95</span></code>.
-If the section had 296 positions, and 141 remained after excluding positions
-(see <a class="reference internal" href="#mask-exclude"><span class="std std-ref">Mask setting: Exclude positions</span></a>), then a read with 137 informative positions would
-have an informed fraction of 97% and be kept, but a read with 133 informative
-positions would have an informed fraction of 94% and be discarded.</p>
+Note that the denominator of this fraction is the number of bases in the read
+that cover the section; it is not just the length of the section or of the read.</p>
 </section>
 <section id="filter-reads-by-fraction-of-mutated-positions">
 <h4>Filter reads by fraction of mutated positions<a class="headerlink" href="#filter-reads-by-fraction-of-mutated-positions" title="Permalink to this headline"></a></h4>

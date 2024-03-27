@@ -41,41 +41,9 @@ from ..graph.histread import ReadHistogramRunner
 from ..graph.profile import ProfileRunner
 from ..graph.roc import ROCRunner
 
-graph_options = [opt_cgroup,
-                 opt_hist_bins,
-                 opt_hist_margin,
-                 opt_struct_file,
-                 opt_struct_sect,
-                 opt_window,
-                 opt_winmin,
-                 opt_csv,
-                 opt_html,
-                 opt_pdf]
-
-params = merge_params([opt_demultiplex],
-                      demultiplex_mod.params,
-                      align_mod.params,
-                      relate_mod.params,
-                      pool_mod.params,
-                      mask_mod.params,
-                      cluster_mod.params,
-                      join_mod.params,
-                      table_mod.params,
-                      [opt_fold],
-                      fold_mod.params,
-                      [opt_export],
-                      export_mod.params,
-                      graph_options)
-
 
 def as_tuple_str(items: Iterable):
     return tuple(map(str, items))
-
-
-@command(CMD_WORKFLOW, params=params)
-def cli(*args, **kwargs):
-    """ Run the entire workflow. """
-    return run(*args, **kwargs)
 
 
 @docdef.auto()
@@ -162,6 +130,7 @@ def run(*,
         exclude_polya: int,
         exclude_gu: bool,
         exclude_file: str | None,
+        min_ncov_read: int,
         min_finfo_read: float,
         max_fmut_read: int,
         min_mut_gap: int,
@@ -323,6 +292,7 @@ def run(*,
         exclude_polya=exclude_polya,
         exclude_gu=exclude_gu,
         exclude_file=exclude_file,
+        min_ncov_read=min_ncov_read,
         min_finfo_read=min_finfo_read,
         max_fmut_read=max_fmut_read,
         min_mut_gap=min_mut_gap,
@@ -471,6 +441,39 @@ def run(*,
             parallel=parallel,
             force=force,
         )
+
+
+graph_options = [opt_cgroup,
+                 opt_hist_bins,
+                 opt_hist_margin,
+                 opt_struct_file,
+                 opt_struct_sect,
+                 opt_window,
+                 opt_winmin,
+                 opt_csv,
+                 opt_html,
+                 opt_pdf]
+
+params = merge_params([opt_demultiplex],
+                      demultiplex_mod.params,
+                      align_mod.params,
+                      relate_mod.params,
+                      pool_mod.params,
+                      mask_mod.params,
+                      cluster_mod.params,
+                      join_mod.params,
+                      table_mod.params,
+                      [opt_fold],
+                      fold_mod.params,
+                      [opt_export],
+                      export_mod.params,
+                      graph_options)
+
+
+@command(CMD_WORKFLOW, params=params)
+def cli(*args, **kwargs):
+    """ Run the entire workflow. """
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

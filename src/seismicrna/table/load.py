@@ -56,19 +56,31 @@ class TableLoader(Table, ABC):
 
     @cached_property
     def data(self):
-        data = (pd.read_csv(self.path,
-                            index_col=self.header_rows(),
-                            header=self.index_cols()).T
-                if self.transposed() else
-                pd.read_csv(self.path,
-                            index_col=self.index_cols(),
-                            header=self.header_rows()))
-        # Any numeric data in the header will be read as strings and
-        # must be cast to integers, which can be done with parse_header.
-        header = parse_header(data.columns)
-        # The columns must be replaced with the header index explicitly
-        # in order for the type casting to take effect.
-        data.columns = header.index
+        data = pd.read_csv(self.path,
+                           index_col=self.index_cols(),
+                           header=self.header_rows())
+        if self.series():
+            # Squeeze the data into a Series.
+            data = data.squeeze(axis=1)
+            if not isinstance(data, pd.Series):
+                raise ValueError(f"{self} must have Series-compatible data, "
+                                 f"but got {data}")
+            # Any numeric data in the header will be read as strings and
+            # must be cast to integers using parse_header.
+            header = parse_header(data.index)
+            # The index must be replaced with the header index for the
+            # type casting to take effect.
+            data.index = header.index
+        else:
+            if not isinstance(data, pd.DataFrame):
+                raise ValueError(f"{self} must have DataFrame-compatible data, "
+                                 f"but got {data}")
+            # Any numeric data in the header will be read as strings and
+            # must be cast to integers using parse_header.
+            header = parse_header(data.columns)
+            # The columns must be replaced with the header index for the
+            # type casting to take effect.
+            data.columns = header.index
         return data
 
 

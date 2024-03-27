@@ -7,8 +7,8 @@ from ..core.batch import (AllReadBatch,
                           MutsBatch,
                           ReflenMutsBatch,
                           RefseqMutsBatch,
+                          ensure_same_length,
                           get_length)
-from ..core.seq import POS_INDEX
 
 
 class QnamesBatch(AllReadBatch):
@@ -26,19 +26,11 @@ class RelateBatch(MutsBatch, AllReadBatch, ABC):
 
     @cached_property
     def num_reads(self):
-        nums_reads = list(set(map(get_length, (self.end5s,
-                                               self.mid5s,
-                                               self.mid3s,
-                                               self.end3s))))
-        if len(nums_reads) != 1:
-            raise ValueError(f"Got inconsistent numbers of reads: {nums_reads}")
-        return nums_reads[0]
+        return ensure_same_length(self.end5s, self.end3s, "end5s", "end3s")
 
     @cached_property
     def pos_nums(self):
-        return np.arange(POS_INDEX,
-                         POS_INDEX + self.max_pos,
-                         dtype=self.pos_dtype)
+        return np.arange(1, self.max_pos + 1, dtype=self.pos_dtype)
 
 
 class RelateReflenBatch(RelateBatch, ReflenMutsBatch):

@@ -20,7 +20,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="seismicrna.core.arg package" href="seismicrna.core.arg.html" />
-    <link rel="prev" title="seismicrna.cluster package" href="seismicrna.cluster.html" /> 
+    <link rel="prev" title="seismicrna.cluster.tests package" href="seismicrna.cluster.tests.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -126,6 +126,13 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="seismicrna.core.batch.html">seismicrna.core.batch package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.core.batch.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.batch.tests.html">seismicrna.core.batch.tests package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.batch.tests.html#module-seismicrna.core.batch.tests.count_test">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.core.batch.html#module-seismicrna.core.batch.accum">Submodules</a></li>
 </ul>
 </li>
@@ -148,11 +155,6 @@
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.core.mu.html#subpackages">Subpackages</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.mu.tests.html">seismicrna.core.mu.tests package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="seismicrna.core.mu.tests.html#module-seismicrna.core.mu.tests.compare_test">Submodules</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.mu.unbias.html">seismicrna.core.mu.unbias package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.mu.unbias.html#subpackages">Subpackages</a></li>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.mu.unbias.html#module-seismicrna.core.mu.unbias.algo">Submodules</a></li>
 </ul>
 </li>
 </ul>
@@ -209,7 +211,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="seismicrna.core.tests.html">seismicrna.core.tests package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="seismicrna.core.tests.html#module-seismicrna.core.tests.header_test">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.core.tests.html#module-seismicrna.core.tests.dims_test">Submodules</a></li>
 </ul>
 </li>
 </ul>
@@ -790,6 +792,32 @@ file for Dataset 1.</p>
 <li><p><strong>input_path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable[str</span> <span class="pre">|</span> <span class="pre">Path]</span></code>) – Input paths to be searched recursively for report files.</p></li>
 <li><p><strong>load_func</strong> (<a class="reference internal" href="#seismicrna.core.data.LoadFunction" title="seismicrna.core.data.LoadFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">LoadFunction</span></code></a>) – Function to load the dataset from each report file.</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-seismicrna.core.dims"></span><dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.dims.find_dims">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.dims.</span></span><span class="sig-name descname"><span class="pre">find_dims</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.12)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.12)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrays</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.12)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.12)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nonzero</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><span class="pre">Union</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.12)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.dims.find_dims" title="Permalink to this definition"></a></dt>
+<dd><p>Check the dimensions of the arrays.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.dims.triangular">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.dims.</span></span><span class="sig-name descname"><span class="pre">triangular</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.dims.triangular" title="Permalink to this definition"></a></dt>
+<dd><p>The <cite>n</cite> th triangular number (<cite>n</cite> ≥ 0): number of items in an
+equilateral triangle with <cite>n</cite> items on each side.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Index of the triangular number to return; equivalently, the side
+length of the equilateral triangle.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The triangular number with index <cite>n</cite>; equivalently, the number
+of items in the equilateral triangle of side length <cite>n</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2105,12 +2133,12 @@ titles of their fields.</p>
 <span class="target" id="module-seismicrna.core.version"></span><p>Version information for SEISMIC-RNA</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.version.format_version">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.version.</span></span><span class="sig-name descname"><span class="pre">format_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">major</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.version.format_version" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.version.</span></span><span class="sig-name descname"><span class="pre">format_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">major</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.version.format_version" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.version.parse_version">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.version.</span></span><span class="sig-name descname"><span class="pre">parse_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'0.14.0'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.version.parse_version" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.version.</span></span><span class="sig-name descname"><span class="pre">parse_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'0.15.0'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.version.parse_version" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <span class="target" id="module-seismicrna.core.write"></span><dl class="py function">
@@ -2162,7 +2190,7 @@ If False and the file exists, a FileExistsError will be raised.</p></li>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="seismicrna.cluster.html" class="btn btn-neutral float-left" title="seismicrna.cluster package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="seismicrna.cluster.tests.html" class="btn btn-neutral float-left" title="seismicrna.cluster.tests package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="seismicrna.core.arg.html" class="btn btn-neutral float-right" title="seismicrna.core.arg package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

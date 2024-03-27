@@ -81,7 +81,7 @@ def update_batches(dataset: ClusterMutsDataset,
                                    ref=dataset.ref,
                                    sect=dataset.sect,
                                    batch=original_batch.batch,
-                                   resps=original_batch.resps.loc[:, orders])
+                                   resps=original_batch.membership.loc[:, orders])
         _, checksum = new_batch.save(top=dataset.top,
                                      brotli_level=brotli_level,
                                      force=True)

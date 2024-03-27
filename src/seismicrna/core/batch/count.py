@@ -4,39 +4,62 @@ from functools import partial
 import numpy as np
 import pandas as pd
 
-from .index import get_length, count_base_types, iter_base_types
+from .index import (END_COORDS,
+                    count_base_types,
+                    get_length,
+                    has_mids,
+                    iter_base_types,
+                    stack_end_coords)
 from ..rel import MATCH, NOCOV, RelPattern
 from ..seq import POS_NAME, DNA
+
+
+def count_end_coords(end5s: np.ndarray,
+                     end3s: np.ndarray,
+                     weights: pd.DataFrame | None = None):
+    """ Count each pair of 5' and 3' end coordinates. """
+    # Make a MultiIndex of all 5' and 3' coordinates.
+    index = pd.MultiIndex.from_frame(pd.DataFrame(stack_end_coords(end5s,
+                                                                   end3s),
+                                                  columns=END_COORDS,
+                                                  copy=False))
+    # Convert the read weights into a Series/DataFrame with that index.
+    if weights is not None:
+        weights = pd.DataFrame(weights.values, index, weights.columns)
+    else:
+        weights = pd.Series(1., index)
+    # Sum the weights for each unique pair of 5'/3' coordinates.
+    return weights.groupby(level=list(range(weights.index.nlevels))).sum()
 
 
 def get_half_coverage_matrix(pos_nums: np.ndarray,
                              pos5s: np.ndarray,
                              pos3s: np.ndarray):
-    # Determine and validate the dimensions.
-    num_pos = get_length(pos_nums)
-    nreads = get_length(pos5s, "5' end positions")
-    # Reshape the positions and 5'/3' ends to row and column vectors.
-    pos_row = pos_nums.reshape((1, num_pos))
-    end5s_col = pos5s.reshape((nreads, 1))
-    end3s_col = pos3s.reshape((nreads, 1))
-    # Generate a boolean matrix where each element indicates whether
+    # Reshape the positions and 5'/3' ends to row and column vectors,
+    # then make a boolean matrix where each element indicates whether
     # the read (row) covers the position (column).
-    return np.logical_and(end5s_col <= pos_row, pos_row <= end3s_col)
+    return np.logical_and(pos5s[:, np.newaxis] <= pos_nums[np.newaxis, :],
+                          pos_nums[np.newaxis, :] <= pos3s[:, np.newaxis])
 
 
 def get_coverage_matrix(pos_index: pd.Index,
                         end5s: np.ndarray,
-                        mid5s: np.ndarray,
-                        mid3s: np.ndarray,
+                        mid5s: np.ndarray | None,
+                        mid3s: np.ndarray | None,
                         end3s: np.ndarray,
                         read_nums: np.ndarray):
     pos_nums = pos_index.get_level_values(POS_NAME).values
-    return pd.DataFrame(np.logical_or(get_half_coverage_matrix(pos_nums,
-                                                               end5s,
-                                                               mid3s),
-                                      get_half_coverage_matrix(pos_nums,
-                                                               mid5s,
-                                                               end3s)),
+    if has_mids(mid5s, mid3s):
+        # If 5' and 3' middle coordinates are present, then take the
+        # union of the coverage of both mates.
+        coverage_matrix = np.logical_or(
+            get_half_coverage_matrix(pos_nums, end5s, mid3s),
+            get_half_coverage_matrix(pos_nums, mid5s, end3s)
+        )
+    else:
+        # Otherwise, just take the coverage between the 5' and 3' ends.
+        coverage_matrix = get_half_coverage_matrix(pos_nums, end5s, end3s)
+    return pd.DataFrame(coverage_matrix,
                         index=read_nums,
                         columns=pos_index,
                         copy=False)

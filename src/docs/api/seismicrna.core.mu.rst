@@ -13,7 +13,6 @@ Subpackages
    :maxdepth: 4
 
    seismicrna.core.mu.tests
-   seismicrna.core.mu.unbias
 
 Submodules
 ----------
@@ -44,6 +43,12 @@ Submodules
 
 
 .. automodule:: seismicrna.core.mu.scale
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.core.mu.unbias
    :members:
    :undoc-members:
    :show-inheritance:

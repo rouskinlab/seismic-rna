@@ -67,73 +67,6 @@ from ..core.parallel import lock_temp_dir
 
 logger = getLogger(__name__)
 
-# Parameters for command line interface
-params = [
-    # Inputs
-    arg_fasta,
-    opt_fastqx,
-    opt_fastqy,
-    opt_fastqz,
-    opt_dmfastqx,
-    opt_dmfastqy,
-    opt_dmfastqz,
-    opt_phred_enc,
-    # Outputs
-    opt_out_dir,
-    opt_temp_dir,
-    opt_force,
-    opt_keep_temp,
-    # Parallelization
-    opt_parallel,
-    opt_max_procs,
-    # FASTQC
-    opt_fastqc,
-    opt_qc_extract,
-    # Cutadapt
-    opt_cutadapt,
-    opt_cut_a1,
-    opt_cut_g1,
-    opt_cut_a2,
-    opt_cut_g2,
-    opt_cut_o,
-    opt_cut_e,
-    opt_cut_q1,
-    opt_cut_q2,
-    opt_cut_m,
-    opt_cut_indels,
-    opt_cut_discard_trimmed,
-    opt_cut_discard_untrimmed,
-    opt_cut_nextseq,
-    # Bowtie2
-    opt_bt2_local,
-    opt_bt2_discordant,
-    opt_bt2_mixed,
-    opt_bt2_dovetail,
-    opt_bt2_contain,
-    opt_bt2_i,
-    opt_bt2_x,
-    opt_bt2_score_min_e2e,
-    opt_bt2_score_min_loc,
-    opt_bt2_s,
-    opt_bt2_l,
-    opt_bt2_gbar,
-    opt_bt2_d,
-    opt_bt2_r,
-    opt_bt2_dpad,
-    opt_bt2_orient,
-    opt_bt2_un,
-    # Samtools
-    opt_min_mapq,
-    opt_min_reads,
-    opt_cram,
-]
-
-
-@command(CMD_ALIGN, params=params)
-def cli(*args, **kwargs):
-    """ Trim FASTQ files and align them to reference sequences. """
-    return run(*args, **kwargs)
-
 
 @lock_temp_dir
 @docdef.auto()
@@ -261,6 +194,74 @@ def run(*,
                          min_mapq=min_mapq,
                          min_reads=min_reads,
                          cram=cram)
+
+
+# Parameters for command line interface
+params = [
+    # Inputs
+    arg_fasta,
+    opt_fastqx,
+    opt_fastqy,
+    opt_fastqz,
+    opt_dmfastqx,
+    opt_dmfastqy,
+    opt_dmfastqz,
+    opt_phred_enc,
+    # Outputs
+    opt_out_dir,
+    opt_temp_dir,
+    opt_force,
+    opt_keep_temp,
+    # Parallelization
+    opt_parallel,
+    opt_max_procs,
+    # FASTQC
+    opt_fastqc,
+    opt_qc_extract,
+    # Cutadapt
+    opt_cutadapt,
+    opt_cut_a1,
+    opt_cut_g1,
+    opt_cut_a2,
+    opt_cut_g2,
+    opt_cut_o,
+    opt_cut_e,
+    opt_cut_q1,
+    opt_cut_q2,
+    opt_cut_m,
+    opt_cut_indels,
+    opt_cut_discard_trimmed,
+    opt_cut_discard_untrimmed,
+    opt_cut_nextseq,
+    # Bowtie2
+    opt_bt2_local,
+    opt_bt2_discordant,
+    opt_bt2_mixed,
+    opt_bt2_dovetail,
+    opt_bt2_contain,
+    opt_bt2_i,
+    opt_bt2_x,
+    opt_bt2_score_min_e2e,
+    opt_bt2_score_min_loc,
+    opt_bt2_s,
+    opt_bt2_l,
+    opt_bt2_gbar,
+    opt_bt2_d,
+    opt_bt2_r,
+    opt_bt2_dpad,
+    opt_bt2_orient,
+    opt_bt2_un,
+    # Samtools
+    opt_min_mapq,
+    opt_min_reads,
+    opt_cram,
+]
+
+
+@command(CMD_ALIGN, params=params)
+def cli(*args, **kwargs):
+    """ Trim FASTQ files and align them to reference sequences. """
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

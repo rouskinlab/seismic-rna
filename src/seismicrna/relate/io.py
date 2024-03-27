@@ -6,7 +6,6 @@ import numpy as np
 
 from .batch import QnamesBatch, RelateReflenBatch
 from ..core import path
-from ..core.batch import POS_INDEX
 from ..core.io import MutsBatchIO, ReadBatchIO, RefIO
 
 
@@ -65,9 +64,9 @@ def from_reads(reads: Iterable[tuple[str, int, int, int, int, dict[int, int]]],
         for pos, rel in poss.items():
             muts[pos][rel].append(read)
     # Validate the positions.
-    if min(muts) < POS_INDEX:
-        raise ValueError(f"All positions must be ≥ {POS_INDEX}, but got "
-                         f"{[x for x in sorted(muts) if x < POS_INDEX]}")
+    if min(muts) < 1:
+        raise ValueError(f"All positions must be ≥ 1, but got "
+                         f"{[x for x in sorted(muts) if x < 1]}")
     if max(muts) > reflen:
         raise ValueError(f"All positions must be ≤ {reflen}, but got "
                          f"{[x for x in sorted(muts) if x > reflen]}")
@@ -80,10 +79,10 @@ def from_reads(reads: Iterable[tuple[str, int, int, int, int, dict[int, int]]],
                               ref=ref,
                               reflen=reflen,
                               batch=batch,
-                              end5s=end5s,
-                              mid5s=mid5s,
-                              mid3s=mid3s,
-                              end3s=end3s,
+                              end5s=np.asarray(end5s),
+                              mid5s=np.asarray(mid5s),
+                              mid3s=np.asarray(mid3s),
+                              end3s=np.asarray(end3s),
                               muts=muts)
     return name_batch, rel_batch
 

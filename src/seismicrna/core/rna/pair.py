@@ -3,7 +3,7 @@ from typing import Generator, Iterable
 
 import pandas as pd
 
-from ..seq import POS_INDEX, POS_NAME, Section
+from ..seq import POS_NAME, Section
 
 logger = getLogger(__name__)
 
@@ -16,8 +16,8 @@ def pairs_to_dict(pairs: Iterable[tuple[int, int]]):
 
     def add_pair(a: int, b: int):
         """ Add a base pair at position `at` to position `to`. """
-        if a < POS_INDEX:
-            raise ValueError(f"Position must be ≥ {POS_INDEX}, but got {a}")
+        if a < 1:
+            raise ValueError(f"Position must be ≥ 1, but got {a}")
         # Find the current pairing partner at this position.
         if (to2 := pair_dict.get(a)) is None:
             # There is no pairing partner at this position: add it.

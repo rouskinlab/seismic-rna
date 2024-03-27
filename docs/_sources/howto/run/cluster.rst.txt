@@ -11,17 +11,14 @@ Cluster input file: Mask report
 You can give any number of Mask report files as inputs for the Cluster step.
 See :doc:`../inputs` for ways to list multiple files.
 
-For example, to cluster relation vectors of reads from ``sample-1`` masked over
-reference ``ref-1`` section ``abc``, and from ``sample-2`` masked over reference
-``ref-2`` section ``full``, use the command ::
+Cluster all masked reads in ``out``::
 
-    seismic cluster {out}/sample-1/mask/ref-1/abc {out}/sample-2/mask/ref-2/full
+    seismic cluster out
 
-where ``{out}`` is the path of your output directory from the Relate step.
+Cluster reads from ``sample-1`` masked over reference reference ``ref-1``,
+section ``abc``::
 
-To cluster all masked relation vectors in ``{out}``, you can use the command ::
-
-    seismic cluster {out}
+    seismic cluster out/sample-1/mask/ref-1/abc
 
 Cluster: Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -105,9 +102,7 @@ You can set the number of independent EM runs using ``--em-runs`` (``-e``).
 Cluster: Output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All output files go into the directory ``{out}/{sample}/cluster/{ref}/{sect}``,
-where ``{out}`` is the output directory, ``{sample}`` is the sample, ``{ref}``
-is the reference, and ``{sect}`` is the section.
+All output files go into the directory ``OUT/SAMPLE/cluster/REFERENCE/SECTION``.
 
 Cluster output file: Batch of cluster memberships
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -171,7 +166,7 @@ In your cluster report:
   If all runs converged to identical solutions, then every NRMSD would be 0 and
   every Correlation would be 1.
   Generally, the runs are sufficiently reproducible if runs 1 and 2 have NRMSDs
-  less than 0.1 and Correlations greater than 0.95 with respect to run 0.
+  less than 0.05 and Correlations greater than 0.98 with respect to run 0.
   If not, then there you have no evidence that run 0 is the global optimum for
   that number of clusters, so it would be best to rerun clustering using more
   independent runs to increase the chances of finding the global optimum.

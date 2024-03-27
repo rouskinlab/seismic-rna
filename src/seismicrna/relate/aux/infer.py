@@ -16,7 +16,7 @@ from ...core.rel import (MATCH,
                          ANY_N,
                          IRREC,
                          NOCOV)
-from ...core.seq import BASEN, POS_INDEX, DNA
+from ...core.seq import BASEN, DNA
 
 
 def infer_read(refseq: DNA,
@@ -58,8 +58,8 @@ def infer_read(refseq: DNA,
 
     """
     # Validate the relation vector and reference sequence.
-    if end5 < POS_INDEX:
-        raise ValueError(f"end5 must be ≥ {POS_INDEX}, but got {end5}")
+    if end5 < 1:
+        raise ValueError(f"end5 must be ≥ 1, but got {end5}")
     if end3 > len(refseq):
         raise ValueError(f"end3 must be ≤ {len(refseq)}, but got {end3}")
     if muts:
