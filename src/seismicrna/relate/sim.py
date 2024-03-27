@@ -80,7 +80,7 @@ def simulate_p_mut(refseq: DNA, ncls: int):
     )
 
 
-def simulate_p_ends(npos: int):
+def simulate_p_ends(npos: int, min_size: int = 1, max_size: int | None = None):
     """ Simulate proportions of end coordinates. """
     p_ends = pd.Series(
         1. - rng.random(triangular(npos)),
@@ -89,6 +89,22 @@ def simulate_p_ends(npos: int):
             names=END_COORDS
         )
     )
+    # Validate the read size limits.
+    if not 1 <= min_size <= npos:
+        raise ValueError(f"min_size must be ≥ 1 and ≤ {npos}, "
+                         f"but got {min_size}")
+    if max_size is None:
+        max_size = npos
+    elif not min_size <= max_size <= npos:
+        raise ValueError(f"max_size must be ≥ {min_size} and ≤ {npos}, "
+                         f"but got {min_size}")
+    # Remove coordinates with improper sizes.
+    if min_size > 1 or max_size < npos:
+        end5s = p_ends.index.get_level_values(END5_COORD).values
+        end3s = p_ends.index.get_level_values(END3_COORD).values
+        sizes = end3s - end5s + 1
+        p_ends = p_ends.loc[np.logical_and(min_size <= sizes,
+                                           sizes <= max_size)]
     return p_ends / p_ends.sum()
 
 
