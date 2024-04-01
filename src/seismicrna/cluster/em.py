@@ -444,8 +444,8 @@ class EmClustering(object):
                 logger.warning(f"{self}, iteration {self.iter} returned a "
                                f"smaller log likelihood ({self.log_like}) than "
                                f"the previous iteration ({self.log_like_prev})")
-            elif (self.delta_log_like < self.conv_thresh
-                  and self.iter >= self.min_iter):
+            if (self.delta_log_like < self.conv_thresh
+                    and self.iter >= self.min_iter):
                 # Converge if the increase in log likelihood is
                 # smaller than the convergence cutoff and at least
                 # the minimum number of iterations have been run.
