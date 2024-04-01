@@ -80,6 +80,7 @@ STEP_ALIGN_INDEX = "index"
 STEP_ALIGN_INDEX_DEMULT = "index-demult"
 STEP_ALIGN_TRIM = "trim"
 STEP_ALIGN_MAP = "map"
+STEP_ALIGN_SORT = "sort"
 
 STEPS_REL_SAMS = "sams"
 
@@ -89,6 +90,7 @@ STEPS = (STEP_QC_INIT,
          STEP_ALIGN_INDEX_DEMULT,
          STEP_ALIGN_TRIM,
          STEP_ALIGN_MAP,
+         STEP_ALIGN_SORT,
          STEPS_REL_SAMS)
 
 # Tables

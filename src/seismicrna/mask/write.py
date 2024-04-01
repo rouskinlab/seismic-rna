@@ -84,15 +84,7 @@ class RelMasker(object):
         self.max_fmut_read = max_fmut_read
         self._n_reads = defaultdict(int)
         # Set the parameters for filtering positions.
-        if not min_ninfo_pos >= 0:
-            raise ValueError(
-                f"min_ninfo_pos must be ≥ 0, but got {min_ninfo_pos}"
-            )
         self.min_ninfo_pos = min_ninfo_pos
-        if not 0. <= max_fmut_pos < 1.:
-            raise ValueError(
-                f"max_fmut_pos Must be ≥ 0, < 1, but got {max_fmut_pos}"
-            )
         self.max_fmut_pos = max_fmut_pos
         # Set the parameters for saving files.
         self.top = dataset.top
@@ -189,8 +181,7 @@ class RelMasker(object):
         """ Filter out reads with discontiguous mates. """
         # Find the reads with contiguous mates.
         reads = batch.read_nums[batch.contiguous_reads]
-        logger.debug(f"{self} kept {reads.size} reads with coverage "
-                     f"≥ {self.min_ncov_read} in {batch}")
+        logger.debug(f"{self} kept {reads.size} contiguous reads in {batch}")
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
@@ -307,13 +298,21 @@ class RelMasker(object):
     def _filter_positions(self, info: pd.Series, muts: pd.Series):
         """ Remove the positions that do not pass the filters. """
         # Mask the positions with insufficient informative reads.
+        if not 1 <= self.min_ninfo_pos:
+            raise ValueError("min_ninfo_pos must be ≥ 1, "
+                             f"but got {self.min_ninfo_pos}")
         self.section.add_mask(
             self.MASK_POS_NINFO,
-            index_to_pos(info.index[info < self.min_ninfo_pos]))
+            index_to_pos(info.index[info < self.min_ninfo_pos])
+        )
         # Mask the positions with excessive mutation fractions.
+        if not 0. <= self.max_fmut_pos <= 1.:
+            raise ValueError("max_fmut_pos must be ≥ 0 and ≤ 1, "
+                             f"but got {self.max_fmut_pos}")
         self.section.add_mask(
             self.MASK_POS_FMUT,
-            index_to_pos(info.index[(muts / info) > self.max_fmut_pos]))
+            index_to_pos(info.index[(muts / info) > self.max_fmut_pos])
+        )
 
     def mask(self):
         # Exclude positions based on the parameters.

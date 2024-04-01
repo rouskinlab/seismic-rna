@@ -236,6 +236,37 @@ def _triu_norm(a: np.ndarray):
 
 
 @jit()
+def _triu_mul(factor1: np.ndarray, factor2: np.ndarray):
+    """ Multiply the upper triangles of `numer` and `denom`.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function makes assumptions:
+
+    -   `factor1` has at least 2 dimensions.
+    -   The first two dimensions of `factor1` have equal length.
+    -   `factor2` has the same first 2 dimensions as `factor1`.
+    -   `factor1` and `factor2` can be broadcast to each other.
+
+    Parameters
+    ----------
+    factor1: np.ndarray
+        Factor 1.
+    factor2: np.ndarray
+        Factor 2.
+
+    Returns
+    -------
+    np.ndarray
+        Product of the upper triangles; values below the main diagonal
+        are undefined.
+    """
+    product = np.empty(np.broadcast_shapes(factor1.shape, factor2.shape))
+    for j in range(factor1.shape[0]):
+        product[j, j:] = factor1[j, j:] * factor2[j, j:]
+    return product
+
+
+@jit()
 def _triu_div(numer: np.ndarray, denom: np.ndarray):
     """ Divide the upper triangles of `numer` and `denom`.
 
@@ -545,7 +576,9 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
                                                  * np.expand_dims(p_ends, 2))
     # Compute the mutation rates given no two mutations are too close
     # one position (j) at a time.
-    p_mut_given_span_noclose = p_mut_given_span / p_noclose_given_span
+    p_mut_given_span_noclose = np.nan_to_num(
+        p_mut_given_span / p_noclose_given_span
+    )
     for j in range(npos):
         nrows = j + 1
         ncols = npos - j
@@ -1064,7 +1097,7 @@ def calc_p_ends_given_noclose(p_ends: np.ndarray,
               nonzero=True)
     # Calculate the proportion of total reads that would have each
     # pair of end coordinates.
-    return _triu_norm(p_ends[:, :, np.newaxis] * p_noclose_given_ends)
+    return _triu_norm(_triu_mul(p_ends[:, :, np.newaxis], p_noclose_given_ends))
 
 
 @jit()

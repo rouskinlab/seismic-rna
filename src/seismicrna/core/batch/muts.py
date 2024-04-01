@@ -86,11 +86,11 @@ class MutsBatch(ReadBatch, ABC):
 
     @property
     def mid5s(self):
-        return self._mid5s
+        return self._mid5s  # compatibility
 
     @property
     def mid3s(self):
-        return self._mid3s
+        return self._mid3s  # compatibility
 
     @property
     def read_weights(self) -> pd.DataFrame | None:

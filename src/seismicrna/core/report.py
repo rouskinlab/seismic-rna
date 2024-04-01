@@ -436,10 +436,12 @@ NumReadsInitF = Field("n_reads_init",
                       int)
 NumReadsLoNCovF = Field("n_reads_min_ncov",
                         "Number of Reads Cut -- Too Few Covered Positions",
-                        int)
+                        int,
+                        default=0)  # compatibility
 NumReadsDiscontigF = Field("n_reads_discontig",
                            "Number of Reads Cut -- Discontiguous Mates",
-                           int)
+                           int,
+                           default=0)  # compatibility
 NumReadsLoInfoF = Field("n_reads_min_finfo",
                         "Number of Reads Cut -- Too Few Informative Positions",
                         int)
@@ -454,7 +456,8 @@ NumReadsKeptF = Field("n_reads_kept",
                       int)
 NumUniqReadKeptF = Field("n_uniq_reads",
                          "Number of Unique Reads",
-                         int)
+                         int,
+                         default=0)  # compatibility
 
 # Cluster fields
 
