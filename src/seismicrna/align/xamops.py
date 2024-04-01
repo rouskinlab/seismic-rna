@@ -240,8 +240,9 @@ run_bowtie2 = ShellCommand("aligning", bowtie2_cmd, parse_bowtie2)
 
 def xamgen_cmd(fq_inp: FastqUnit,
                bam_out: Path | None, *,
-               min_mapq: int,
-               n_procs: int,
+               temp_dir: Path | None = None,
+               min_mapq: int | None = None,
+               n_procs: int = 1,
                **kwargs):
     """ Wrap alignment and post-processing into one pipeline. """
     bowtie2_step = bowtie2_cmd(fq_inp, None, n_procs=n_procs, **kwargs)
@@ -261,7 +262,10 @@ def xamgen_cmd(fq_inp: FastqUnit,
                                  flags_exc=flags_exc,
                                  bam=True,
                                  n_procs=1)
-    sort_xam_step = sort_xam_cmd(None, bam_out, n_procs=1)
+    sort_xam_step = sort_xam_cmd(None,
+                                 bam_out,
+                                 temp_dir=temp_dir,
+                                 n_procs=1)
     return cmds_to_pipe([bowtie2_step, view_xam_step, sort_xam_step])
 
 
@@ -275,6 +279,7 @@ def export_cmd(xam_in: Path | None,
                ref: str,
                header: str,
                ref_file: Path | None = None,
+               temp_dir: Path | None = None,
                n_procs: int = 1):
     """ Wrap selecting, sorting, and exporting into one pipeline. """
     # Pipe the header line.
@@ -290,7 +295,11 @@ def export_cmd(xam_in: Path | None,
     # Merge the one header line and the reads for the reference.
     merge_step = cmds_to_subshell([echo_step, ref_step])
     # Sort reads by name so that mates are adjacent.
-    sort_step = sort_xam_cmd(None, None, name=True, n_procs=n_procs)
+    sort_step = sort_xam_cmd(None,
+                             None,
+                             temp_dir=temp_dir,
+                             name=True,
+                             n_procs=n_procs)
     # Export the reads into a XAM file.
     export_step = view_xam_cmd(None,
                                xam_out,

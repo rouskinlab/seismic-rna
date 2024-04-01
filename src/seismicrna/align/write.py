@@ -185,6 +185,15 @@ def fq_pipeline(fq_inp: FastqUnit,
     reads_align = run_xamgen(fq_inp if fq_cut is None else fq_cut,
                              xam_whole,
                              index_pfx=bowtie2_index,
+                             temp_dir=path.builddir(
+                                 path.SampSeg,
+                                 path.CmdSeg,
+                                 path.StepSeg,
+                                 top=temp_dir,
+                                 sample=sample,
+                                 cmd=path.CMD_ALIGN_DIR,
+                                 step=path.STEP_ALIGN_MAP
+                             ),
                              n_procs=n_procs,
                              bt2_local=bt2_local,
                              bt2_discordant=bt2_discordant,
@@ -280,7 +289,20 @@ def fq_pipeline(fq_inp: FastqUnit,
                                  ext=(path.CRAM_EXT if cram else path.BAM_EXT))
             if xam_ref.parent != xams_out_dir:
                 raise path.PathValueError(f"{xam_ref} is not in {xams_out_dir}")
-            exp_kwargs = dict(ref=ref, header=ref_headers[ref], n_procs=n_procs)
+            exp_kwargs = dict(
+                ref=ref,
+                header=ref_headers[ref],
+                temp_dir=path.builddir(path.SampSeg,
+                                       path.CmdSeg,
+                                       path.StepSeg,
+                                       path.RefSeg,
+                                       top=temp_dir,
+                                       sample=sample,
+                                       cmd=path.CMD_ALIGN_DIR,
+                                       step=path.STEP_ALIGN_SORT,
+                                       ref=ref),
+                n_procs=n_procs
+            )
             if cram:
                 # Write the one reference sequence to a temporary FASTA.
                 # Do NOT use overwrite=True because if refs_file is a
