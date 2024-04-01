@@ -124,6 +124,7 @@ def run(input_path: tuple[str, ...],
     return list(chain(dispatch(fold_profile,
                                max_procs,
                                parallel,
+                               pass_n_procs=True,
                                args=[(loader, ref_sections.list(loader.ref))
                                      for loader in tables],
                                kwargs=dict(temp_dir=Path(temp_dir),
@@ -139,26 +140,26 @@ def run(input_path: tuple[str, ...],
                                            fold_mfe=fold_mfe,
                                            fold_max=fold_max,
                                            fold_percent=fold_percent,
-                                           force=force),
-                               pass_n_procs=True)))
+                                           force=force))))
 
 
 def fold_profile(table: MaskPosTable | ClustPosTable,
                  sections: list[Section],
-                 n_procs: int,
                  quantile: float,
+                 n_procs: int,
                  **kwargs):
     """ Fold an RNA molecule from one table of reactivities. """
     return dispatch(fold_section,
                     n_procs,
                     parallel=True,
+                    hybrid=True,
+                    pass_n_procs=True,
                     args=as_list_of_tuples(table.iter_profiles(
                         sections=sections, quantile=quantile)
                     ),
                     kwargs=dict(out_dir=table.top,
                                 quantile=quantile,
-                                **kwargs),
-                    pass_n_procs=False)
+                                **kwargs))
 
 
 def fold_section(rna: RNAProfile,
@@ -171,6 +172,7 @@ def fold_section(rna: RNAProfile,
                  fold_max: int,
                  fold_percent: float,
                  force: bool,
+                 n_procs: int,
                  **kwargs):
     """ Fold a section of an RNA from one mutational profile. """
     began = datetime.now()
@@ -184,6 +186,7 @@ def fold_section(rna: RNAProfile,
                    fold_max=fold_max,
                    fold_percent=fold_percent,
                    force=force,
+                   n_procs=n_procs,
                    **kwargs)
     ct2dot(ct_file)
     ended = datetime.now()

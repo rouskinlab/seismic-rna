@@ -5,6 +5,7 @@ Wrapper around RNAstructure from the Mathews Lab at U of Rochester:
 https://rna.urmc.rochester.edu/RNAstructure.html
 """
 
+import os
 import re
 from logging import getLogger
 from pathlib import Path
@@ -13,12 +14,15 @@ from ..core import path
 from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
                            RNASTRUCTURE_DOT2CT_CMD,
                            RNASTRUCTURE_FOLD_CMD,
+                           RNASTRUCTURE_FOLD_SMP_CMD,
                            args_to_cmd,
                            run_cmd)
 from ..core.rna import RNAProfile, renumber_ct
 from ..core.write import need_write, write_mode
 
 logger = getLogger(__name__)
+
+FOLD_SMP_NUM_THREADS = "OMP_NUM_THREADS"
 
 
 def fold(rna: RNAProfile, *,
@@ -31,24 +35,34 @@ def fold(rna: RNAProfile, *,
          out_dir: Path,
          temp_dir: Path,
          keep_temp: bool,
-         force: bool):
-    """ Run the 'Fold' program of RNAstructure. """
+         force: bool,
+         n_procs: int):
+    """ Run the 'Fold' or 'Fold-smp' program of RNAstructure. """
     ct_file = rna.get_ct_file(out_dir)
     if need_write(ct_file, force):
-        cmd = [RNASTRUCTURE_FOLD_CMD, "--temperature", fold_temp]
-        # Constraints.
+        if n_procs > 1:
+            # Fold with multiple threads using the Fold-smp program.
+            cmd = [RNASTRUCTURE_FOLD_SMP_CMD]
+            os.environ[FOLD_SMP_NUM_THREADS] = str(n_procs)
+        else:
+            # Fold with one thread using the Fold program.
+            cmd = [RNASTRUCTURE_FOLD_CMD]
+        # Temperature of folding (Kelvin).
+        cmd.extend(["--temperature", fold_temp])
         if fold_constraint is not None:
+            # File of constraints.
             cmd.extend(["--constraint", fold_constraint])
-        # Maximum distance between paired bases.
         if fold_md > 0:
+            # Maximum distance between paired bases.
             cmd.extend(["--maxdistance", fold_md])
-        # Predict only the minimum free energy structure.
         if fold_mfe:
+            # Predict only the minimum free energy structure.
             cmd.append("--MFE")
-        # Maximum number of structures.
-        cmd.extend(["--maximum", fold_max])
-        # Maximum % difference between free energies of structures.
-        cmd.extend(["--percent", fold_percent])
+        else:
+            # Maximum number of structures.
+            cmd.extend(["--maximum", fold_max])
+            # Maximum % difference between free energies of structures.
+            cmd.extend(["--percent", fold_percent])
         # DMS reactivities file for the RNA.
         cmd.extend(["--DMS", dms_file := rna.to_dms(temp_dir)])
         # Temporary FASTA file for the RNA.
