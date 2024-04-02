@@ -35,7 +35,7 @@ class TableLoader(Table, ABC):
         self._ref = fields[path.REF]
         self._sect = fields[path.SECT]
         if not self.path.with_suffix(table_file.suffix).samefile(table_file):
-            raise ValueError(f"{type(self).__name__} got path {table_file},"
+            raise ValueError(f"{type(self).__name__} got path {table_file}, "
                              f"but expected {self.path}")
 
     @property
@@ -54,38 +54,22 @@ class TableLoader(Table, ABC):
     def sect(self) -> str:
         return self._sect
 
-    @cached_property
-    def data(self):
-        data = pd.read_csv(self.path,
-                           index_col=self.index_cols(),
-                           header=self.header_rows())
-        if self.series():
-            # Squeeze the data into a Series.
-            data = data.squeeze(axis=1)
-            if not isinstance(data, pd.Series):
-                raise ValueError(f"{self} must have Series-compatible data, "
-                                 f"but got {data}")
-            # Any numeric data in the header will be read as strings and
-            # must be cast to integers using parse_header.
-            header = parse_header(data.index)
-            # The index must be replaced with the header index for the
-            # type casting to take effect.
-            data.index = header.index
-        else:
-            if not isinstance(data, pd.DataFrame):
-                raise ValueError(f"{self} must have DataFrame-compatible data, "
-                                 f"but got {data}")
-            # Any numeric data in the header will be read as strings and
-            # must be cast to integers using parse_header.
-            header = parse_header(data.columns)
-            # The columns must be replaced with the header index for the
-            # type casting to take effect.
-            data.columns = header.index
-        return data
-
 
 class RelTypeTableLoader(TableLoader, RelTypeTable, ABC):
     """ Load a table of relationship types. """
+
+    @cached_property
+    def data(self) -> pd.DataFrame:
+        data = pd.read_csv(self.path,
+                           index_col=self.index_cols(),
+                           header=self.header_rows())
+        # Any numeric data in the header will be read as strings and
+        # must be cast to integers using parse_header.
+        header = parse_header(data.columns)
+        # The columns must be replaced with the header index for the
+        # type casting to take effect.
+        data.columns = header.index
+        return data
 
 
 # Load by Index (position/read/frequency) ##############################
@@ -126,6 +110,20 @@ class ClustReadTableLoader(ReadTableLoader, ClustReadTable):
 
 class ClustFreqTableLoader(TableLoader, ClustFreqTable):
     """ Load cluster data indexed by cluster. """
+
+    @cached_property
+    def data(self) -> pd.Series:
+        data = pd.read_csv(self.path,
+                           index_col=self.index_cols()).squeeze(axis=1)
+        if not isinstance(data, pd.Series):
+            raise ValueError(f"{self} must have one column, but got\n{data}")
+        # Any numeric data in the header will be read as strings and
+        # must be cast to integers using parse_header.
+        header = parse_header(data.index)
+        # The index must be replaced with the header index for the
+        # type casting to take effect.
+        data.index = header.index
+        return data
 
 
 # Helper Functions #####################################################

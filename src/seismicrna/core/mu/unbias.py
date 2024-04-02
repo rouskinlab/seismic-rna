@@ -573,7 +573,7 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
     # Calculate the probability that a read spanning each position would
     # have no two mutations too close.
     p_noclose_given_span = _calc_rectangular_sum(p_noclose_given_ends
-                                                 * np.expand_dims(p_ends, 2))
+                                                 * p_ends[:, :, np.newaxis])
     # Compute the mutation rates given no two mutations are too close
     # one position (j) at a time.
     p_mut_given_span_noclose = np.nan_to_num(

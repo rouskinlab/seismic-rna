@@ -110,11 +110,6 @@ class Table(ABC):
         return cls.header_type().num_levels()
 
     @classmethod
-    def header_rows(cls) -> list[int]:
-        """ Row(s) of the file to use as the columns. """
-        return list(range(cls.header_depth()))
-
-    @classmethod
     @abstractmethod
     def index_depth(cls) -> int:
         """ Number of columns in the index. """
@@ -139,11 +134,6 @@ class Table(ABC):
         """ Table's file extension: either '.csv' or '.csv.gz'. """
         return path.CSVZIP_EXT if cls.gzipped() else path.CSV_EXT
 
-    @classmethod
-    @abstractmethod
-    def series(cls) -> bool:
-        """ Whether the data is a Series rather than a DataFrame. """
-
     @property
     @abstractmethod
     def top(self) -> Path:
@@ -164,20 +154,6 @@ class Table(ABC):
     def sect(self) -> str:
         """ Name of the table's section. """
 
-    @cached_property
-    @abstractmethod
-    def data(self) -> pd.DataFrame | pd.Series:
-        """ Table's data. """
-
-    @cached_property
-    def header(self):
-        """ Header for the table's data. """
-        header = parse_header(self.data.columns)
-        if not isinstance(header, self.header_type()):
-            raise TypeError(f"Expected {self.header_type().__name__}, "
-                            f"but got {type(header).__name__}")
-        return header
-
     @property
     def path_fields(self) -> dict[str, Any]:
         """ Table's path fields. """
@@ -194,12 +170,35 @@ class Table(ABC):
         """ Path of the table's CSV file (possibly gzipped). """
         return path.buildpar(*self.path_segs(), **self.path_fields)
 
+    @abstractmethod
+    def _get_header(self) -> Header:
+        """ Get the Header for the table's data. """
+
+    @cached_property
+    def header(self):
+        """ Header for the table's data. """
+        header = self._get_header()
+        if not isinstance(header, self.header_type()):
+            raise TypeError(f"Expected {self.header_type().__name__}, "
+                            f"but got {type(header).__name__}")
+        return header
+
+    @cached_property
+    @abstractmethod
+    def data(self) -> pd.DataFrame | pd.Series:
+        """ Table's data. """
+
     def __str__(self):
         return f"{type(self).__name__}: {self.path}"
 
 
 class RelTypeTable(Table, ABC):
     """ Table with multiple types of relationships. """
+
+    @classmethod
+    def header_rows(cls) -> list[int]:
+        """ Row(s) of the file to use as the columns. """
+        return list(range(cls.header_depth()))
 
     @classmethod
     def _format_data(cls,
@@ -219,14 +218,13 @@ class RelTypeTable(Table, ABC):
             data = data[data.columns[0]]
         return data
 
-    @classmethod
-    def series(cls):
-        return False
-
     @cached_property
     @abstractmethod
     def data(self) -> pd.DataFrame:
         """ Table's data. """
+
+    def _get_header(self):
+        return parse_header(self.data.columns)
 
     @abstractmethod
     def _fetch_data(self,
@@ -668,10 +666,6 @@ class FreqTable(Table, ABC):
     def path_segs(cls):
         return path.FREQ_TABLE_SEGS
 
-    @classmethod
-    def series(cls):
-        return True
-
     @cached_property
     @abstractmethod
     def data(self) -> pd.Series:
@@ -756,7 +750,10 @@ class ClustFreqTable(FreqTable, ABC):
 
     @classmethod
     def index_depth(cls):
-        return 1
+        return cls.header_depth()
+
+    def _get_header(self):
+        return parse_header(self.data.index)
 
 ########################################################################
 #                                                                      #
