@@ -6,7 +6,7 @@ from pathlib import Path
 from click import command
 
 from .report import FoldReport
-from .rnastructure import fold, ct2dot
+from .rnastructure import ct2dot, fold, require_data_path
 from ..core.arg import (CMD_FOLD,
                         docdef,
                         arg_input_path,
@@ -41,31 +41,67 @@ logger = getLogger(__name__)
 
 DEFAULT_QUANTILE = 0.95
 
-params = [
-    arg_input_path,
-    opt_sections_file,
-    opt_coords,
-    opt_primers,
-    opt_primer_gap,
-    opt_quantile,
-    opt_fold_temp,
-    opt_fold_constraint,
-    opt_fold_md,
-    opt_fold_mfe,
-    opt_fold_max,
-    opt_fold_percent,
-    opt_temp_dir,
-    opt_keep_temp,
-    opt_max_procs,
-    opt_parallel,
-    opt_force,
-]
+
+def fold_section(rna: RNAProfile,
+                 out_dir: Path,
+                 quantile: float,
+                 fold_temp: float,
+                 fold_constraint: Path | None,
+                 fold_md: int,
+                 fold_mfe: bool,
+                 fold_max: int,
+                 fold_percent: float,
+                 force: bool,
+                 n_procs: int,
+                 **kwargs):
+    """ Fold a section of an RNA from one mutational profile. """
+    began = datetime.now()
+    rna.to_varna_color_file(out_dir)
+    ct_file = fold(rna,
+                   out_dir=out_dir,
+                   fold_temp=fold_temp,
+                   fold_constraint=fold_constraint,
+                   fold_md=fold_md,
+                   fold_mfe=fold_mfe,
+                   fold_max=fold_max,
+                   fold_percent=fold_percent,
+                   force=force,
+                   n_procs=n_procs,
+                   **kwargs)
+    ct2dot(ct_file)
+    ended = datetime.now()
+    report = FoldReport(sample=rna.sample,
+                        ref=rna.ref,
+                        sect=rna.sect,
+                        profile=rna.profile,
+                        quantile=quantile,
+                        fold_temp=fold_temp,
+                        fold_md=fold_md,
+                        fold_mfe=fold_mfe,
+                        fold_max=fold_max,
+                        fold_percent=fold_percent,
+                        began=began,
+                        ended=ended)
+    return report.save(out_dir, force=force)
 
 
-@command(CMD_FOLD, params=params)
-def cli(*args, **kwargs):
-    """ Predict RNA secondary structures using mutation rates. """
-    return run(*args, **kwargs)
+def fold_profile(table: MaskPosTable | ClustPosTable,
+                 sections: list[Section],
+                 quantile: float,
+                 n_procs: int,
+                 **kwargs):
+    """ Fold an RNA molecule from one table of reactivities. """
+    return dispatch(fold_section,
+                    n_procs,
+                    parallel=True,
+                    hybrid=True,
+                    pass_n_procs=True,
+                    args=as_list_of_tuples(table.iter_profiles(
+                        sections=sections, quantile=quantile)
+                    ),
+                    kwargs=dict(out_dir=table.top,
+                                quantile=quantile,
+                                **kwargs))
 
 
 @lock_temp_dir
@@ -89,8 +125,16 @@ def run(input_path: tuple[str, ...],
         parallel: bool,
         force: bool):
     """ Predict RNA secondary structures using mutation rates. """
-    require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
-    require_dependency(RNASTRUCTURE_CT2DOT_CMD, __name__)
+    # Check for the dependencies and the DATAPATH environment variable.
+    if error := require_dependency(RNASTRUCTURE_FOLD_CMD, __name__):
+        logger.critical(error)
+        return list()
+    if error := require_dependency(RNASTRUCTURE_CT2DOT_CMD, __name__):
+        logger.critical(error)
+        return list()
+    if error := require_data_path():
+        logger.critical(error)
+        return list()
     # Reactivities must be normalized before using them to fold.
     if quantile <= 0.:
         logger.warning("Fold needs normalized mutation rates, but got quantile "
@@ -143,66 +187,31 @@ def run(input_path: tuple[str, ...],
                                            force=force))))
 
 
-def fold_profile(table: MaskPosTable | ClustPosTable,
-                 sections: list[Section],
-                 quantile: float,
-                 n_procs: int,
-                 **kwargs):
-    """ Fold an RNA molecule from one table of reactivities. """
-    return dispatch(fold_section,
-                    n_procs,
-                    parallel=True,
-                    hybrid=True,
-                    pass_n_procs=True,
-                    args=as_list_of_tuples(table.iter_profiles(
-                        sections=sections, quantile=quantile)
-                    ),
-                    kwargs=dict(out_dir=table.top,
-                                quantile=quantile,
-                                **kwargs))
+params = [
+    arg_input_path,
+    opt_sections_file,
+    opt_coords,
+    opt_primers,
+    opt_primer_gap,
+    opt_quantile,
+    opt_fold_temp,
+    opt_fold_constraint,
+    opt_fold_md,
+    opt_fold_mfe,
+    opt_fold_max,
+    opt_fold_percent,
+    opt_temp_dir,
+    opt_keep_temp,
+    opt_max_procs,
+    opt_parallel,
+    opt_force,
+]
 
 
-def fold_section(rna: RNAProfile,
-                 out_dir: Path,
-                 quantile: float,
-                 fold_temp: float,
-                 fold_constraint: Path | None,
-                 fold_md: int,
-                 fold_mfe: bool,
-                 fold_max: int,
-                 fold_percent: float,
-                 force: bool,
-                 n_procs: int,
-                 **kwargs):
-    """ Fold a section of an RNA from one mutational profile. """
-    began = datetime.now()
-    rna.to_varna_color_file(out_dir)
-    ct_file = fold(rna,
-                   out_dir=out_dir,
-                   fold_temp=fold_temp,
-                   fold_constraint=fold_constraint,
-                   fold_md=fold_md,
-                   fold_mfe=fold_mfe,
-                   fold_max=fold_max,
-                   fold_percent=fold_percent,
-                   force=force,
-                   n_procs=n_procs,
-                   **kwargs)
-    ct2dot(ct_file)
-    ended = datetime.now()
-    report = FoldReport(sample=rna.sample,
-                        ref=rna.ref,
-                        sect=rna.sect,
-                        profile=rna.profile,
-                        quantile=quantile,
-                        fold_temp=fold_temp,
-                        fold_md=fold_md,
-                        fold_mfe=fold_mfe,
-                        fold_max=fold_max,
-                        fold_percent=fold_percent,
-                        began=began,
-                        ended=ended)
-    return report.save(out_dir, force=force)
+@command(CMD_FOLD, params=params)
+def cli(*args, **kwargs):
+    """ Predict RNA secondary structures using mutation rates. """
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

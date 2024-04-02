@@ -7,12 +7,15 @@ def dependency_exists(dependency: str) -> bool:
 
 
 def require_dependency(dependency: str, module: str = ""):
-    """ Check whether a dependency exists and raise an error if not. """
-    if not dependency_exists(dependency):
-        by = f"by '{module}' " if module else ""
-        raise RuntimeError(f"The dependency '{dependency}' is required {by}but "
-                           f"was not found. Please install it (if not yet) and "
-                           f"place the executable '{dependency}' in your PATH.")
+    """ If a dependency does not exist, return an error message. """
+    if dependency_exists(dependency):
+        # The dependency exists: no error message.
+        return ""
+    # The dependency is missing: error message.
+    by = f"by '{module}' " if module else ""
+    return (f"{repr(dependency)} is required {by}but was not found. "
+            f"Please install it (if not yet) and place the executable for "
+            f"{repr(dependency)} in your PATH.")
 
 ########################################################################
 #                                                                      #

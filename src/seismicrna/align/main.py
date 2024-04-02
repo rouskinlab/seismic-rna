@@ -130,13 +130,21 @@ def run(*,
         cram: bool) -> list[Path]:
     """ Trim FASTQ files and align them to reference sequences. """
     # Check for external dependencies.
-    if fastqc:
-        require_dependency(FASTQC_CMD, __name__)
-    if cut:
-        require_dependency(CUTADAPT_CMD, __name__)
-    require_dependency(BOWTIE2_CMD, __name__)
-    require_dependency(BOWTIE2_BUILD_CMD, __name__)
-    require_dependency(SAMTOOLS_CMD, __name__)
+    if fastqc and (error := require_dependency(FASTQC_CMD, __name__)):
+        logger.critical(error)
+        return list()
+    if cut and (error := require_dependency(CUTADAPT_CMD, __name__)):
+        logger.critical(error)
+        return list()
+    if error := require_dependency(BOWTIE2_CMD, __name__):
+        logger.critical(error)
+        return list()
+    if error := require_dependency(BOWTIE2_BUILD_CMD, __name__):
+        logger.critical(error)
+        return list()
+    if error := require_dependency(SAMTOOLS_CMD, __name__):
+        logger.critical(error)
+        return list()
     # FASTQ files of read sequences may come from up to seven different
     # sources (i.e. each argument beginning with "fq_unit"). This step
     # collects all of them into one list (fq_units) and also bundles

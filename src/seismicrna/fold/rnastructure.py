@@ -23,6 +23,289 @@ from ..core.write import need_write, write_mode
 logger = getLogger(__name__)
 
 FOLD_SMP_NUM_THREADS = "OMP_NUM_THREADS"
+DATAPATH = "DATAPATH"
+DATAPATH_FILES = """
+autodetect.txt
+average_ensemble_defect.model
+b-test.coaxial.dg
+b-test.coaxial.dh
+b-test.coaxstack.dg
+b-test.coaxstack.dh
+b-test.dangle.dg
+b-test.dangle.dh
+b-test.dynalignmiscloop.dg
+b-test.hexaloop.dg
+b-test.hexaloop.dh
+b-test.int11.dg
+b-test.int11.dh
+b-test.int21.dg
+b-test.int21.dh
+b-test.int22.dg
+b-test.int22.dh
+b-test.loop.dg
+b-test.miscloop.dg
+b-test.miscloop.dh
+b-test.specification.dat
+b-test.stack.dg
+b-test.stack.dh
+b-test.tloop.dg
+b-test.tloop.dh
+b-test.triloop.dg
+b-test.triloop.dh
+b-test.tstack.dg
+b-test.tstack.dh
+b-test.tstackcoax.dg
+b-test.tstackcoax.dh
+b-test.tstackh.dg
+b-test.tstackh.dh
+b-test.tstacki.dg
+b-test.tstacki.dh
+b-test.tstacki1n.dg
+b-test.tstacki1n.dh
+b-test.tstacki23.dg
+b-test.tstacki23.dh
+b-test.tstackm.dg
+b-test.tstackm.dh
+coaxial.dat
+coaxial.dh
+coaxstack.dat
+coaxstack.dh
+dangle.dat
+dangle.dh
+data_assemble_training_Multifind_predict_ensemble_z_final_svmformat.model
+description.txt
+design.DNA.Helices.dat
+design.DNA.Loops.dat
+design.RNA.Helices.dat
+design.RNA.Loops.dat
+dists
+dna.coaxial.dg
+dna.coaxial.dh
+dna.coaxstack.dg
+dna.coaxstack.dh
+dna.dangle.dg
+dna.dangle.dh
+dna.dynalignmiscloop.dg
+dna.dynalignmiscloop.dh
+dna.hexaloop.dg
+dna.hexaloop.dh
+dna.int11.dg
+dna.int11.dh
+dna.int21.dg
+dna.int21.dh
+dna.int22.dg
+dna.int22.dh
+dna.loop.dg
+dna.loop.dh
+dna.miscloop.dg
+dna.miscloop.dh
+dna.specification.dat
+dna.stack.dg
+dna.stack.dh
+dna.tloop.dg
+dna.tloop.dh
+dna.triloop.dg
+dna.triloop.dh
+dna.tstack.dg
+dna.tstack.dh
+dna.tstackcoax.dg
+dna.tstackcoax.dh
+dna.tstackh.dg
+dna.tstackh.dh
+dna.tstacki.dg
+dna.tstacki.dh
+dna.tstacki1n.dg
+dna.tstacki1n.dh
+dna.tstacki23.dg
+dna.tstacki23.dh
+dna.tstackm.dg
+dna.tstackm.dh
+dnacoaxial.dat
+dnacoaxial.dh
+dnacoaxstack.dat
+dnacoaxstack.dh
+dnadangle.dat
+dnadangle.dh
+dnadynalignmiscloop.dat
+dnadynalignmiscloop.dh
+dnahexaloop.dat
+dnahexaloop.dh
+dnaint11.dat
+dnaint11.dh
+dnaint21.dat
+dnaint21.dh
+dnaint22.dat
+dnaint22.dh
+dnaloop.dat
+dnaloop.dh
+dnamiscloop.dat
+dnamiscloop.dh
+dnastack.dat
+dnastack.dh
+dnatloop.dat
+dnatloop.dh
+dnatriloop.dat
+dnatriloop.dh
+dnatstack.dat
+dnatstack.dh
+dnatstackcoax.dat
+dnatstackcoax.dh
+dnatstackh.dat
+dnatstackh.dh
+dnatstacki.dat
+dnatstacki.dh
+dnatstacki1n.dat
+dnatstacki1n.dh
+dnatstacki23.dat
+dnatstacki23.dh
+dnatstackm.dat
+dnatstackm.dh
+dynalignmiscloop.dat
+fam_hmm_pars.dat
+helix.dat
+helixdr.dat
+hexaloop.dat
+hexaloop.dh
+int11.dat
+int11.dh
+int21.dat
+int21.dh
+int22-exp.dh
+int22.dat
+int22.dh
+loop.dat
+loop.dh
+m6A.coaxial.dg
+m6A.coaxstack.dg
+m6A.dangle.dg
+m6A.hexaloop.dg
+m6A.int11.dg
+m6A.int21.dg
+m6A.int22.dg
+m6A.loop.dg
+m6A.miscloop.dg
+m6A.specification.dat
+m6A.stack.dg
+m6A.tloop.dg
+m6A.triloop.dg
+m6A.tstack.dg
+m6A.tstackcoax.dg
+m6A.tstackh.dg
+m6A.tstacki.dg
+m6A.tstacki1n.dg
+m6A.tstacki23.dg
+m6A.tstackm.dg
+miscloop.dat
+miscloop.dh
+new_training_z_ave.scale.model
+new_training_z_std.scale.model
+pseudconst.dat
+rna.coaxial.dg
+rna.coaxial.dh
+rna.coaxstack.dg
+rna.coaxstack.dh
+rna.cov.dg
+rna.cov.dh
+rna.dangle.dg
+rna.dangle.dh
+rna.dynalignmiscloop.dg
+rna.hexaloop.dg
+rna.hexaloop.dh
+rna.int11.dg
+rna.int11.dh
+rna.int21.dg
+rna.int21.dh
+rna.int22.dg
+rna.int22.dh
+rna.loop.dg
+rna.loop.dh
+rna.miscloop.dg
+rna.miscloop.dh
+rna.param_map.dg
+rna.specification.dat
+rna.stack.dg
+rna.stack.dh
+rna.tloop.dg
+rna.tloop.dh
+rna.triloop.dg
+rna.triloop.dh
+rna.tstack.dg
+rna.tstack.dh
+rna.tstackcoax.dg
+rna.tstackcoax.dh
+rna.tstackh.dg
+rna.tstackh.dh
+rna.tstacki.dg
+rna.tstacki.dh
+rna.tstacki1n.dg
+rna.tstacki1n.dh
+rna.tstacki23.dg
+rna.tstacki23.dh
+rna.tstackm.dg
+rna.tstackm.dh
+rsample
+stack.dat
+stack.dh
+stack.ds
+stackdr.dat
+stackdr.dh
+stackdr.ds
+std_ensemble_defect.model
+tloop.dat
+tloop.dh
+triloop.dat
+triloop.dh
+tstack.dat
+tstack.dh
+tstackcoax.dat
+tstackcoax.dh
+tstackh.dat
+tstackh.dh
+tstacki.dat
+tstacki.dh
+tstacki1n.dat
+tstacki1n.dh
+tstacki23.dat
+tstacki23.dh
+tstackm.dat
+tstackm.dh
+"""
+
+
+def check_data_path():
+    """ Confirm the DATAPATH environment variable indicates the correct
+    directory. """
+    # Get the value of the DATAPATH environment variable, if it exists.
+    data_path = os.environ.get(DATAPATH)
+    if data_path is None:
+        return f"the {DATAPATH} environment variable is not set"
+    # Check if the path indicated by DATAPATH exists on the file system.
+    if not os.path.exists(data_path):
+        return f"{DATAPATH} is {repr(data_path)}, which does not exist"
+    if not os.path.isdir(data_path):
+        return f"{DATAPATH} is {repr(data_path)}, which is not a directory"
+    # Check if all expected files in the DATAPATH directory exist.
+    extant_files = set(os.listdir(data_path))
+    for expected_file in DATAPATH_FILES.strip().split():
+        if expected_file not in extant_files:
+            return (f"{DATAPATH} is {repr(data_path)}, which is missing "
+                    f"the required file {repr(expected_file)}")
+    # All checks succeeded.
+    return ""
+
+
+def require_data_path():
+    """ Return an error message if the DATAPATH is not valid. """
+    if error := check_data_path():
+        # The DATAPATH is not valid: error message.
+        return (
+            f"RNAstructure requires an environment variable called {DATAPATH} "
+            f"to point to the directory in which its thermodynamic parameters "
+            f"are located, but {error}. For more information, please refer to "
+            f"https://rna.urmc.rochester.edu/Text/Thermodynamics.html"
+        )
+    # The DATAPATH is valid: no error.
+    return ""
 
 
 def fold(rna: RNAProfile, *,
