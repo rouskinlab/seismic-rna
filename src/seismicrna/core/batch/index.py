@@ -25,6 +25,21 @@ def list_batch_nums(num_batches: int):
     return list(range(num_batches))
 
 
+def list_naturals(n: int):
+    """ List natural numbers. """
+    return np.arange(1, n + 1)
+
+
+def check_naturals(values: np.ndarray, what: str = "values"):
+    """ Raise ValueError if the values are not monotonically increasing
+    natural numbers. """
+    length = get_length(values, what)
+    if not np.array_equal(values, np.arange(1, length + 1)):
+        raise ValueError(f"{what} must be numbered 1 to {length}, "
+                         f"but got {values}")
+    return np.asarray(values, dtype=int)
+
+
 def get_length(array: np.ndarray, what: str = "array") -> int:
     if array.ndim != 1:
         raise ValueError(f"{what} must have 1 dimension, but got {array.ndim}")

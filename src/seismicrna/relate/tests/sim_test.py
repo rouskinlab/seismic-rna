@@ -8,7 +8,7 @@ from scipy.stats import binom
 
 from seismicrna.core.batch import END5_COORD, END3_COORD
 from seismicrna.core.seq import DNA
-from seismicrna.relate.sim import (_list_naturals,
+from seismicrna.relate.sim import (list_naturals,
                                    choose_clusters,
                                    simulate_p_mut,
                                    simulate_p_ends,
@@ -83,7 +83,7 @@ class TestSimulateRelateBatch(ut.TestCase):
             # Simulate proportions of end coordinates.
             p_ends = simulate_p_ends(npos)
             # Estimate the fraction of reads covering each position.
-            positions = _list_naturals(npos)
+            positions = list_naturals(npos)
             coverage = pd.Series(
                 [p_ends.values[np.logical_and(
                     pos >= p_ends.index.get_level_values(END5_COORD),

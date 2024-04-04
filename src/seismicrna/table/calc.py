@@ -18,7 +18,7 @@ from .base import (COVER_REL,
                    INFOR_REL,
                    TABLE_RELS)
 from ..cluster.data import ClusterMutsDataset
-from ..core.batch import END5_COORD, END3_COORD, accum_fits
+from ..core.batch import END5_COORD, END3_COORD, accum_fits, check_naturals
 from ..core.dims import triangular
 from ..core.header import ORDER_NAME, Header, make_header
 from ..core.mu import (calc_p_ends_observed,
@@ -375,13 +375,20 @@ def adjust_counts(table_per_pos: pd.DataFrame,
         if p_noclose_given_clust.shape != (1,):
             raise ValueError(f"p_noclose_given_clust must have shape {1,}, "
                              f"but got {p_noclose_given_clust.shape}")
-        p_noclose_given_clust = float(p_noclose_given_clust[0])
+        p_noclose = p_noclose_given_clust = float(p_noclose_given_clust[0])
+        # Compute the number of reads.
+        n_clust = n_reads_noclose / p_noclose
     else:
+        # Determine the orders of clustering.
+        orders = check_naturals(
+            np.unique(clusters.get_level_values(ORDER_NAME)), "orders"
+        )
         # Calculate the parameters for each order separately.
         p_mut = np.empty_like(p_mut_given_noclose)
         p_clust = np.empty_like(p_clust_given_noclose)
         p_noclose_given_clust = np.empty_like(p_clust_given_noclose)
-        for order in clusters.get_level_values(ORDER_NAME):
+        n_clust = pd.Series(index=clusters)
+        for order in map(int, orders):
             i, j = _order_indices(order)
             # Calculate the parameters for each cluster.
             p_mut[:, i: j], p_ends, p_clust[i: j] = calc_params(
@@ -396,17 +403,18 @@ def adjust_counts(table_per_pos: pd.DataFrame,
                 p_ends,
                 calc_p_noclose_given_ends(p_mut[:, i: j], min_mut_gap)
             )
+            # Compute the probability that reads from any cluster would
+            # have no two mutations too close.
+            p_noclose = float(np.vdot(p_noclose_given_clust[i: j],
+                                      p_clust[i: j]))
+            # Compute the number of reads in each cluster.
+            n_clust.loc[order] = n_reads_noclose / p_noclose * p_clust[i: j]
     # Remove masked positions from the mutation rates.
     p_mut = p_mut[unmask]
     # Create the table of adjusted counts.
     # Initialize an empty DataFrame of the adjusted counts with the same
     # index and columns as the observed counts.
     n_rels = pd.DataFrame(np.nan, table_per_pos.index, table_per_pos.columns)
-    # Calculate the probability that a read from any cluster would have
-    # no two mutations too close.
-    p_noclose = np.vdot(p_noclose_given_clust, p_clust)
-    # Calculate the total number of reads.
-    n_reads_total = n_reads_noclose / p_noclose
     # Assume that the observance bias affects the counts of covered and
     # informative bases equally, so p_noclose_given_ends is defined as:
     # p_noclose_given_ends := ninfo_obs / n_info
@@ -437,8 +445,6 @@ def adjust_counts(table_per_pos: pd.DataFrame,
     # Scale every subtype of mutation by this factor.
     for mut in SUBMUTS:
         n_rels.loc[unmask, mut] = scale * table_per_pos.loc[unmask, mut].values
-    # Calculate the number of reads in each cluster.
-    n_clust = pd.Series(p_clust * n_reads_total, index=clusters)
     return n_rels, n_clust
 
 

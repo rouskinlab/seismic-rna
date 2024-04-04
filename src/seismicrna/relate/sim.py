@@ -7,7 +7,12 @@ import pandas as pd
 from .io import QnamesBatchIO, RelateBatchIO
 from .report import RelateReport
 from .write import get_reads_per_batch, mib_to_bytes
-from ..core.batch import END_COORDS, END5_COORD, END3_COORD, get_length
+from ..core.batch import (END_COORDS,
+                          END5_COORD,
+                          END3_COORD,
+                          get_length,
+                          list_naturals,
+                          check_naturals)
 from ..core.dims import triangular
 from ..core.io import RefseqIO
 from ..core.rel import SUB_A, SUB_C, SUB_G, SUB_T
@@ -22,21 +27,6 @@ from ..core.seq import (BASEA,
 from ..core.write import need_write
 
 rng = np.random.default_rng()
-
-
-def _list_naturals(n: int):
-    """ List natural numbers. """
-    return np.arange(1, n + 1)
-
-
-def _check_naturals(values: np.ndarray, what: str = "values"):
-    """ Raise ValueError if the values are not monotonically increasing
-    natural numbers. """
-    length = get_length(values, what)
-    if not np.array_equal(values, np.arange(1, length + 1)):
-        raise ValueError(f"{what} must be numbered 1 to {length}, "
-                         f"but got {values}")
-    return np.asarray(values, dtype=int)
 
 
 def sub_options(base: str):
@@ -56,7 +46,7 @@ def index_to_refseq_pos(index: pd.MultiIndex):
     # Determine the reference sequence.
     refseq = index_to_seq(index)
     # Validate the sequence positions.
-    pos = _check_naturals(index_to_pos(index), "positions")
+    pos = check_naturals(index_to_pos(index), "positions")
     return refseq, pos
 
 
@@ -66,7 +56,7 @@ def choose_clusters(p_clust: pd.Series, n_reads: int):
     if not isinstance(p_clust, pd.Series):
         raise TypeError("p_clust must be Series, "
                         f"but got {type(p_clust).__name__}")
-    clusters = _check_naturals(p_clust.index, "clusters")
+    clusters = check_naturals(p_clust.index, "clusters")
     # Choose a cluster for each read.
     return rng.choice(clusters, n_reads, p=p_clust.values)
 
@@ -75,8 +65,8 @@ def simulate_p_mut(refseq: DNA, ncls: int):
     """ Simulate mutation rates. """
     return pd.DataFrame(
         rng.random((len(refseq), ncls)),
-        seq_pos_to_index(refseq, _list_naturals(len(refseq)), 1),
-        _list_naturals(ncls)
+        seq_pos_to_index(refseq, list_naturals(len(refseq)), 1),
+        list_naturals(ncls)
     )
 
 
@@ -109,7 +99,7 @@ def simulate_p_ends(npos: int, min_size: int = 1, max_size: int | None = None):
 
 
 def simulate_p_clust(ncls: int):
-    p_clust = pd.Series(1. - rng.random(ncls), _list_naturals(ncls))
+    p_clust = pd.Series(1. - rng.random(ncls), list_naturals(ncls))
     return p_clust / p_clust.sum()
 
 
@@ -141,7 +131,7 @@ def simulate_relate_batch(sample: str,
         raise TypeError("p_mut must be DataFrame, "
                         f"but got {type(p_mut).__name__}")
     refseq, positions = index_to_refseq_pos(p_mut.index)
-    clusters = _check_naturals(p_mut.columns, "clusters")
+    clusters = check_naturals(p_mut.columns, "clusters")
     # Validate the end coordinates.
     if not isinstance(p_ends, pd.Series):
         raise TypeError("p_ends must be Series, "
