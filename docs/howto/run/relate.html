@@ -215,6 +215,23 @@ batches may contain more than <em>N</em> reads, up to a maximum of 2<em>N</em> i
 extreme case that only one read aligned in every mate pair.</p>
 </div>
 </section>
+<section id="relate-setting-overhangs">
+<h3>Relate setting: Overhangs<a class="headerlink" href="#relate-setting-overhangs" title="Permalink to this headline"></a></h3>
+<p>When relating sequencing reads, SEISMIC-RNA will by default compute
+relationships for all base calls between the smallest 5’ aligned position and
+the greatest 3’ aligned position.
+This occurs independent of mate alignment orientation, and can result in the
+relating of base calls that fall outside the region between mate starts, for
+instance, if the 5’ mate aligns to the negative strand at a position less than
+the 3’ mate start position on the positive strand.
+In certain rare circumstances, like when adapter trimming is inconsistent, or
+when using randomized adapter sequences during library preparation, this can
+result in SEISMIC-RNA calculating relationships for extraneous extensions.
+The default behavior <code class="docutils literal notranslate"><span class="pre">--overhangs</span></code> can be disabled in favor of a more
+conservative approach <code class="docutils literal notranslate"><span class="pre">--no-overhangs</span></code>, where only base calls greater than
+the 5’ mate start and less than the 3’ mate start positions
+(i.e. within the insert) are related.</p>
+</section>
 </section>
 <section id="relate-output-files">
 <h2>Relate: Output files<a class="headerlink" href="#relate-output-files" title="Permalink to this headline"></a></h2>

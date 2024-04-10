@@ -4,7 +4,7 @@ set -eu -o pipefail
 
 
 # Directories
-ROOT_DIR=$HOME/git/seismic-rna
+ROOT_DIR=$PWD/../..
 BUILD_DIR=$ROOT_DIR/docs
 LOGO_DIR=$ROOT_DIR/logo
 SRC_DIR=$ROOT_DIR/src

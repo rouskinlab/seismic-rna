@@ -205,6 +205,13 @@ over multiple batches.</p>
 </dd></dl>
 
 <span class="target" id="module-seismicrna.core.batch.index"></span><dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.check_naturals">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">check_naturals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">what</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'values'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.check_naturals" title="Permalink to this definition"></a></dt>
+<dd><p>Raise ValueError if the values are not monotonically increasing
+natural numbers.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.batch.index.contiguous_mates">
 <span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">contiguous_mates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mid5s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mid3s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.contiguous_mates" title="Permalink to this definition"></a></dt>
 <dd><p>Return whether the two mates form a contiguous read.</p>
@@ -281,6 +288,12 @@ section.</p>
 <dt class="sig sig-object py" id="seismicrna.core.batch.index.list_batch_nums">
 <span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">list_batch_nums</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_batches</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.list_batch_nums" title="Permalink to this definition"></a></dt>
 <dd><p>List the batch numbers.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="seismicrna.core.batch.index.list_naturals">
+<span class="sig-prename descclassname"><span class="pre">seismicrna.core.batch.index.</span></span><span class="sig-name descname"><span class="pre">list_naturals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.batch.index.list_naturals" title="Permalink to this definition"></a></dt>
+<dd><p>List natural numbers.</p>
 </dd></dl>
 
 <dl class="py function">

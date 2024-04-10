@@ -20,3 +20,6 @@ __pycache__/
 
 # macOS
 .DS_Store
+
+# Spyder
+src/seismicrna/.spyproject
