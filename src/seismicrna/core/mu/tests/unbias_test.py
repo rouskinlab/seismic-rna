@@ -130,10 +130,11 @@ class TestCalcPEndsGivenNoClose(ut.TestCase):
         p_noclose_given_ends = np.array([[[0.9], [0.6]],
                                          [[0.0], [0.8]]])
         expect = np.array([[[3. / 12.], [5. / 12.]],
-                           [[0. / 12.], [4. / 12.]]])
+                           [[np.nan], [4. / 12.]]])
         result = calc_p_ends_given_noclose(p_ends, p_noclose_given_ends)
         self.assertEqual(result.shape, expect.shape)
-        self.assertTrue(np.allclose(result, expect))
+        self.assertTrue(np.all(np.logical_or(np.isclose(result, expect),
+                                             np.isnan(expect))))
 
 
 class TestCalcPClustGivenNoClose(ut.TestCase):

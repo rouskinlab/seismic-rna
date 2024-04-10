@@ -295,6 +295,7 @@ def simulate_relate(out_dir: Path,
                               checksums=checksums,
                               refseq_checksum=refseq_checksum,
                               began=began,
-                              ended=ended)
+                              ended=ended,
+                              overhangs=True)
         report.save(out_dir, force=True)
     return report_file
