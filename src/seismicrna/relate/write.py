@@ -69,6 +69,7 @@ def generate_batch(batch: int, *,
                    min_mapq: int,
                    min_qual: str,
                    ambrel: bool,
+                   overhangs: bool,
                    brotli_level: int):
     """ Compute relation vectors for every SAM record in one batch,
     write the vectors to a batch file, and return its MD5 checksum
@@ -85,7 +86,8 @@ def generate_batch(batch: int, *,
                                      refseq,
                                      min_mapq,
                                      min_qual,
-                                     ambrel)
+                                     ambrel,
+                                     overhangs)
             except Exception as error:
                 logger.error(f"Failed to compute relation vector: {error}")
 
@@ -138,6 +140,7 @@ class RelationWriter(object):
                           phred_enc: int,
                           min_phred: int,
                           ambrel: bool,
+                          overhangs: bool,
                           brotli_level: int,
                           n_procs: int):
         """ Compute a relation vector for every record in a XAM file,
@@ -156,6 +159,7 @@ class RelationWriter(object):
                                min_mapq=min_mapq,
                                min_qual=encode_phred(min_phred, phred_enc),
                                ambrel=ambrel,
+                               overhangs=overhangs,
                                brotli_level=brotli_level)
             # Generate and write relation vectors for each batch.
             results = dispatch(generate_batch,
@@ -189,6 +193,7 @@ class RelationWriter(object):
               min_reads: int,
               brotli_level: int,
               force: bool,
+              overhangs: bool,
               **kwargs):
         """ Compute a relation vector for every record in a BAM file,
         write the vectors into one or more batch files, compute their
@@ -206,11 +211,13 @@ class RelationWriter(object):
              checks) = self._generate_batches(out_dir=out_dir,
                                               brotli_level=brotli_level,
                                               min_mapq=min_mapq,
+                                              overhangs=overhangs,
                                               **kwargs)
             ended = datetime.now()
             # Write a report of the relation step.
             self._write_report(out_dir=out_dir,
                                min_mapq=min_mapq,
+                               overhangs=overhangs,
                                min_reads=min_reads,
                                n_reads_rel=nreads,
                                n_batches=nbats,

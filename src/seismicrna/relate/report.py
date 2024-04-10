@@ -10,7 +10,8 @@ from ..core.report import (BatchedRefseqReport,
                            SampleF,
                            MinMapQualF,
                            MinReadsF,
-                           NumReadsRelF)
+                           NumReadsRelF,
+                           OverhangsF)
 
 BATCH_INDEX_COL = "Read Name"
 
@@ -23,7 +24,8 @@ class RelateReport(BatchedRefseqReport, RelateIO):
                 RefF,
                 MinMapQualF,
                 MinReadsF,
-                NumReadsRelF] + super().fields()
+                NumReadsRelF,
+                OverhangsF] + super().fields()
 
     @classmethod
     def file_seg_type(cls):
