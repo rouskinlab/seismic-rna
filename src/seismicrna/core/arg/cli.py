@@ -645,7 +645,7 @@ opt_max_fmut_read = Option(
 opt_min_mut_gap = Option(
     ("--min-mut-gap",),
     type=int,
-    default=0,
+    default=3,
     help="Minimum gap between two mutations in a read to keep it"
 )
 
