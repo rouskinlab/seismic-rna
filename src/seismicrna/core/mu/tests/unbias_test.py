@@ -447,41 +447,70 @@ class TestTriuSum(ut.TestCase):
 
 class TestTriuNorm(ut.TestCase):
 
+    def compare(self, result: np.ndarray, expect: np.ndarray):
+        self.assertEqual(result.shape, expect.shape)
+        self.assertTrue(np.all(np.logical_or(np.isclose(result, expect),
+                                             np.isnan(expect))))
+
+    def test_0x0(self):
+        array = rng.random((0, 0))
+        expect = np.ones_like(array)
+        self.compare(_triu_norm(array), expect)
+
+    def test_0x0x1(self):
+        array = rng.random((0, 0, 1))
+        expect = np.ones_like(array)
+        self.compare(_triu_norm(array), expect)
+
     def test_1x1(self):
         array = rng.random((1, 1))
         expect = np.ones_like(array)
-        self.assertTrue(np.array_equal(_triu_norm(array), expect))
+        self.compare(_triu_norm(array), expect)
 
     def test_1x1x1(self):
         array = rng.random((1, 1, 1))
         expect = np.ones_like(array)
-        self.assertTrue(np.array_equal(_triu_norm(array), expect))
+        self.compare(_triu_norm(array), expect)
 
     def test_1x1x2(self):
         array = rng.random((1, 1, 2))
         expect = np.ones_like(array)
-        self.assertTrue(np.array_equal(_triu_norm(array), expect))
+        self.compare(_triu_norm(array), expect)
 
     def test_2x2(self):
         array = np.array([[1., 2.],
                           [3., 4.]])
-        expect = np.array([[1. / 7., 2. / 7.],
-                           [3. / 7., 4. / 7.]])
-        self.assertTrue(np.array_equal(_triu_norm(array), expect))
+        expect = np.array([[1 / 7, 2 / 7],
+                           [np.nan, 4 / 7]])
+        self.compare(_triu_norm(array), expect)
+
+    def test_2x2_zero(self):
+        array = np.array([[0., 0.],
+                          [3., 0.]])
+        expect = np.array([[1 / 3, 1 / 3],
+                           [np.nan, 1 / 3]])
+        self.compare(_triu_norm(array), expect)
 
     def test_2x2x1(self):
         array = np.array([[[1.], [2.]],
                           [[3.], [4.]]])
-        expect = np.array([[[1. / 7.], [2. / 7.]],
-                           [[3. / 7.], [4. / 7.]]])
-        self.assertTrue(np.array_equal(_triu_norm(array), expect))
+        expect = np.array([[[1 / 7], [2 / 7]],
+                           [[np.nan], [4 / 7]]])
+        self.compare(_triu_norm(array), expect)
 
     def test_2x2x2(self):
         array = np.array([[[1., 5.], [2., 6.]],
                           [[3., 7.], [4., 8.]]])
-        expect = np.array([[[1. / 7., 5. / 19.], [2. / 7., 6. / 19.]],
-                           [[3. / 7., 7. / 19.], [4. / 7., 8. / 19.]]])
-        self.assertTrue(np.array_equal(_triu_norm(array), expect))
+        expect = np.array([[[1 / 7, 5 / 19], [2 / 7, 6 / 19]],
+                           [[np.nan, np.nan], [4 / 7, 8 / 19]]])
+        self.compare(_triu_norm(array), expect)
+
+    def test_2x2x2_zero(self):
+        array = np.array([[[1., 0.], [2., 0.]],
+                          [[3., 5.], [4., 0.]]])
+        expect = np.array([[[1 / 7, 1 / 3], [2 / 7, 1 / 3]],
+                           [[np.nan, np.nan], [4 / 7, 1 / 3]]])
+        self.compare(_triu_norm(array), expect)
 
     def test_2x2x2x2(self):
         array = np.array([[[[1., 5.],
@@ -490,13 +519,28 @@ class TestTriuNorm(ut.TestCase):
                           [[[3., 7.],
                             [11., 15.]], [[4., 8.],
                                           [12., 16.]]]])
-        expect = np.array([[[[1. / 7., 5. / 19.],
-                             [9. / 31., 13. / 43]], [[2. / 7., 6. / 19.],
-                                                     [10. / 31, 14. / 43]]],
-                           [[[3. / 7., 7. / 19.],
-                             [11. / 31, 15. / 43]], [[4. / 7., 8. / 19.],
-                                                     [12. / 31, 16. / 43]]]])
-        self.assertTrue(np.array_equal(_triu_norm(array), expect))
+        expect = np.array([[[[1 / 7, 5 / 19],
+                             [9 / 31, 13 / 43]], [[2 / 7, 6 / 19],
+                                                  [10 / 31, 14 / 43]]],
+                           [[[np.nan, np.nan],
+                             [np.nan, np.nan]], [[4 / 7, 8 / 19],
+                                                 [12 / 31, 16 / 43]]]])
+        self.compare(_triu_norm(array), expect)
+
+    def test_2x2x2x2_zero(self):
+        array = np.array([[[[0., 5.],
+                            [9., 0.]], [[0., 6.],
+                                        [10., 0.]]],
+                          [[[3., 7.],
+                            [0., 15.]], [[0., 8.],
+                                         [12., 0.]]]])
+        expect = np.array([[[[1 / 3, 5 / 19],
+                             [9 / 31, 1 / 3]], [[1 / 3, 6 / 19],
+                                                [10 / 31, 1 / 3]]],
+                           [[[np.nan, np.nan],
+                             [np.nan, np.nan]], [[1 / 3, 8 / 19],
+                                                 [12 / 31, 1 / 3]]]])
+        self.compare(_triu_norm(array), expect)
 
 
 class TestAdjustMinGap(ut.TestCase):

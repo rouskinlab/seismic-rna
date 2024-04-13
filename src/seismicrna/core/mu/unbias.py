@@ -82,7 +82,7 @@ from typing import Iterable
 import numpy as np
 from numba import jit, NumbaPerformanceWarning
 
-from ..dims import find_dims
+from ..dims import find_dims, triangular
 
 logger = getLogger(__name__)
 
@@ -203,67 +203,11 @@ def _triu_sum(a: np.ndarray):
         Sum of the upper triangle(s), with the same shape as the third
         and subsequent dimensions of `a`.
     """
-    sums = np.zeros(a.shape[2:])
+    a_sum = np.zeros(a.shape[2:])
     # Sum over axes 0 and 1.
     for j in range(a.shape[0]):
-        sums += a[j, j:].sum(axis=0)
-    return sums
-
-
-@jit()
-def _triu_norm(a: np.ndarray):
-    """ Normalize the upper triangle of array `a` to sum to 1.
-
-    This function is meant to be called by another function that has
-    validated the arguments; hence, this function makes assumptions:
-
-    -   `a` has at least 2 dimensions.
-    -   The first two dimensions of `a` have equal length.
-    -   The elements of the upper triangle of `a` do not sum to 0.
-
-    Parameters
-    ----------
-    a: np.ndarray
-        Array to normalize.
-
-    Returns
-    -------
-    np.ndarray
-        Array of the same shape as `a` but scaled so that the
-    """
-    # Divide by the sum over axes 0 and 1.
-    return a / _triu_sum(a)
-
-
-@jit()
-def _triu_mul(factor1: np.ndarray, factor2: np.ndarray):
-    """ Multiply the upper triangles of `numer` and `denom`.
-
-    This function is meant to be called by another function that has
-    validated the arguments; hence, this function makes assumptions:
-
-    -   `factor1` has at least 2 dimensions.
-    -   The first two dimensions of `factor1` have equal length.
-    -   `factor2` has the same first 2 dimensions as `factor1`.
-    -   `factor1` and `factor2` can be broadcast to each other.
-
-    Parameters
-    ----------
-    factor1: np.ndarray
-        Factor 1.
-    factor2: np.ndarray
-        Factor 2.
-
-    Returns
-    -------
-    np.ndarray
-        Product of the upper triangles; values below the main diagonal
-        are undefined.
-    """
-    product = np.empty(np.broadcast_shapes(factor1.shape, factor2.shape))
-    for j in range(factor1.shape[0]):
-        product[j, j:] = factor1[j, j:] * factor2[j, j:]
-    return product
+        a_sum += a[j, j:].sum(axis=0)
+    return a_sum
 
 
 @jit()
@@ -296,6 +240,83 @@ def _triu_div(numer: np.ndarray, denom: np.ndarray):
     for j in range(numer.shape[0]):
         quotient[j, j:] = numer[j, j:] / denom[j, j:]
     return quotient
+
+
+# @jit()
+def _triu_norm(a: np.ndarray):
+    """ Normalize the upper triangle of array `a` to sum to 1.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function makes assumptions:
+
+    -   `a` has at least 2 dimensions.
+    -   The first two dimensions of `a` have equal length.
+    -   The elements of the upper triangle of `a` do not sum to 0.
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array to normalize.
+
+    Returns
+    -------
+    np.ndarray
+        Array of the same shape as `a` but scaled so that the
+    """
+    # Calculate the sum over axes 0 and 1.
+    a_sum = _triu_sum(a)
+    # Normalize by dividing by that sum, ignoring division by zero,
+    # which is handled subsequently.
+    a_norm = _triu_div(a, np.broadcast_to(a_sum, a.shape))
+    # Determine which sums to normalize by are zero.
+    a_sum_zero = a_sum == 0.
+    if np.any(np.atleast_1d(a_sum_zero)):
+        # Count the elements over which normalization occurred.
+        n_norm = triangular(a.shape[0])
+        if n_norm == 0:
+            # Handle the edge case of size zero, which would raise a
+            # ZeroDivisionError if handled in the next branch.
+            return np.ones_like(a_norm)
+        # For each sum that was zero, set all elements to the same value
+        # such that they sum to 1.
+        fill = 1. / n_norm
+        if a_sum_zero.ndim:
+            for indexes in zip(*np.nonzero(a_sum_zero), strict=True):
+                a_norm[(slice(None),) * 2 + indexes] = fill
+        else:
+            a_norm[:, :] = fill
+    return a_norm
+
+
+@jit()
+def _triu_mul(factor1: np.ndarray, factor2: np.ndarray):
+    """ Multiply the upper triangles of `numer` and `denom`.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function makes assumptions:
+
+    -   `factor1` has at least 2 dimensions.
+    -   The first two dimensions of `factor1` have equal length.
+    -   `factor2` has the same first 2 dimensions as `factor1`.
+    -   `factor1` and `factor2` can be broadcast to each other.
+
+    Parameters
+    ----------
+    factor1: np.ndarray
+        Factor 1.
+    factor2: np.ndarray
+        Factor 2.
+
+    Returns
+    -------
+    np.ndarray
+        Product of the upper triangles; values below the main diagonal
+        are undefined.
+    """
+    product = np.empty(np.broadcast_shapes(factor1.shape, factor2.shape))
+    for j in range(factor1.shape[0]):
+        product[j, j:] = factor1[j, j:] * factor2[j, j:]
+    return product
 
 
 @jit()
@@ -1114,10 +1135,9 @@ def _calc_p_ends_observed(npos: int,
     -   `npos` is a non-negative integer.
     -   `end5s` and `end3s` are each a 1D array of integers whose length
         equals the number of reads.
-    -   `weights` is a 2D array of floats whose length
+    -   `weights` is a 2D array of floats whose length and width are the
+        numbers of reads and clusters, respectively.
     -   All integers in `end5s` and `end3s` are ≥ 0 and < `npos`.
-    -   All weights in `weights` are ≥ 0.
-    -   The sum of `weights` is > 0.
 
     Parameters
     ----------
@@ -1215,9 +1235,6 @@ def calc_p_ends_observed(npos: int,
             raise ValueError(
                 f"All weights must be ≥ 0, but got {weights[weights < 0.]}"
             )
-        if np.min(weights_sum := weights.sum(axis=0)) <= 0.:
-            raise ValueError("The sum of weights must be > 0, "
-                             f"but got {weights_sum[weights_sum < 0.]}")
     # Call the compiled function.
     return _calc_p_ends_observed(npos, end5s, end3s, weights)
 

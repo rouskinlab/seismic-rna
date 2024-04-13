@@ -27,7 +27,7 @@ class ReadBatch(ABC):
 
     @cached_property
     @abstractmethod
-    def num_reads(self) -> int:
+    def num_reads(self) -> int | pd.Series:
         """ Number of reads that are actually in use. """
 
     @cached_property

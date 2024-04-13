@@ -435,7 +435,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
     n_ref = n_info - n_mut
     n_rels.loc[unmask, MATCH_REL] = n_ref
     # Compute the factor by which n_mut was scaled for each position.
-    with np.errstate(divide="ignore"):
+    with np.errstate(divide="ignore", invalid="ignore"):
         # Division by 0 is possible if no mutations were observed at a
         # given position, resulting in a NaN value at that position.
         scale = n_mut / table_per_pos.loc[unmask, MUTAT_REL].values

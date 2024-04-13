@@ -12,7 +12,7 @@ class ClusterReadBatch(PartialReadBatch):
         super().__init__(**kwargs)
 
     @cached_property
-    def num_reads(self):
+    def num_reads(self) -> pd.Series:
         return self.resps.sum(axis=0)
 
     @cached_property

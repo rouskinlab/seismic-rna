@@ -1,6 +1,7 @@
 from typing import Iterable, Sequence
 
 import numpy as np
+from numba import jit
 
 
 def find_dims(dims: Sequence[Sequence[str | None]],
@@ -91,6 +92,7 @@ def find_dims(dims: Sequence[Sequence[str | None]],
     return sizes
 
 
+@jit()
 def triangular(n: int):
     """ The `n` th triangular number (`n` ≥ 0): number of items in an
     equilateral triangle with `n` items on each side.
@@ -107,8 +109,4 @@ def triangular(n: int):
         The triangular number with index `n`; equivalently, the number
         of items in the equilateral triangle of side length `n`.
     """
-    if not isinstance(n, int):
-        raise TypeError(f"n must be int, but got {type(n).__name__}")
-    if n < 0:
-        raise ValueError(f"n must be ≥ 0, but got {n}")
     return (n * n + n) // 2
