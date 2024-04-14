@@ -346,9 +346,9 @@ def adjust_counts(table_per_pos: pd.DataFrame,
     elif isinstance(n_reads_clust, pd.Series):
         # Calculate the number of reads with no two mutations too close
         # in each order.
-        n_reads_noclose = n_reads_clust.groupby(level=ORDER_NAME).sum()
+        n_reads_noclose_orders = n_reads_clust.groupby(level=ORDER_NAME).sum()
         # Determine the orders of clustering.
-        orders = check_naturals(n_reads_noclose.index.values, "orders")
+        orders = check_naturals(n_reads_noclose_orders.index.values, "orders")
         # Calculate the parameters for each order separately.
         p_mut = np.empty_like(p_mut_given_noclose)
         p_clust = np.empty_like(n_reads_clust.values)
@@ -358,8 +358,9 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             i, j = _order_indices(order)
             # Calculate the fraction of reads with no two mutations too
             # close in each cluster.
+            n_reads_noclose = float(n_reads_noclose_orders.at[order])
             p_clust_given_noclose = (n_reads_clust.loc[order].values
-                                     / n_reads_noclose.at[order])
+                                     / n_reads_noclose)
             # Calculate the parameters for each cluster.
             p_mut[:, i: j], p_ends, p_clust[i: j] = calc_params(
                 p_mut_given_noclose[:, i: j],
@@ -378,7 +379,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             p_noclose = float(np.vdot(p_noclose_given_clust[i: j],
                                       p_clust[i: j]))
             # Compute the number of reads in each cluster.
-            n_clust.loc[order] = n_reads_noclose / p_noclose * p_clust[i: j]
+            n_clust.loc[order] = (n_reads_noclose / p_noclose) * p_clust[i: j]
     else:
         raise TypeError("n_reads_clust must be an int or Series, "
                         f"but got {type(n_reads_clust).__name__}")
