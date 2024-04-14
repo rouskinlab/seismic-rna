@@ -263,33 +263,6 @@ def all_patterns(mask: RelPattern | None = None):
     return dict(_iter_patterns(mask))
 
 
-def _get_clusters(n_reads_clust: pd.Series | int):
-    """ Determine the clusters. """
-    if isinstance(n_reads_clust, int):
-        return None
-    if isinstance(n_reads_clust, pd.Series):
-        return n_reads_clust.index
-    raise TypeError("n_reads_clust must be an int or Series, "
-                    f"but got {type(n_reads_clust).__name__}")
-
-
-def _calc_n_reads(n_reads_clust: pd.Series | int):
-    """ Total number of reads among all clusters. """
-    if isinstance(n_reads_clust, int):
-        return n_reads_clust
-    if isinstance(n_reads_clust, pd.Series):
-        # Calculate the number of reads for each order.
-        n_reads_order = n_reads_clust.groupby(level=ORDER_NAME).sum()
-        # The numbers of reads should be identical.
-        n_reads_order_1 = int(n_reads_order.loc[1])
-        if not np.allclose(n_reads_order, n_reads_order_1):
-            raise ValueError("Numbers of reads per order should match, "
-                             f"but got {n_reads_order}")
-        return n_reads_order_1
-    raise TypeError("n_reads_clust must be an int or Series, "
-                    f"but got {type(n_reads_clust).__name__}")
-
-
 def _insert_masked(p_mut: pd.Series | pd.DataFrame,
                    section: Section):
     """ 2D array where masked positions are filled with 0. """
@@ -326,14 +299,6 @@ def adjust_counts(table_per_pos: pd.DataFrame,
     """
     # Determine which positions are unmasked.
     unmask = section.unmasked_bool
-    # Calculate the number of reads with no two mutations too close.
-    n_reads_noclose = _calc_n_reads(n_reads_clust)
-    # Calculate the fraction of reads with no two mutations too close in
-    # each cluster.
-    p_clust_given_noclose = np.atleast_1d(n_reads_clust / n_reads_noclose)
-    if p_clust_given_noclose.ndim != 1:
-        raise ValueError("p_clust_given_noclose must have 1 dimension, "
-                         f"but got {p_clust_given_noclose.ndim}")
     # Calculate the fraction of mutations at each position among reads
     # with no two mutations too close.
     with np.errstate(divide="ignore"):
@@ -343,10 +308,10 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             table_per_pos[MUTAT_REL] / table_per_pos[INFOR_REL],
             section
         ))
-    # Determine the clusters.
-    clusters = _get_clusters(n_reads_clust)
-    # Calculate the parameters.
-    if clusters is None:
+    if isinstance(n_reads_clust, int):
+        # There is only one cluster, so the probability that each read
+        # belongs to that cluster is 1.
+        p_clust_given_noclose = np.array([1.])
         # Calculate the parameters.
         p_mut, p_ends, p_clust = calc_params(
             p_mut_given_noclose,
@@ -377,24 +342,29 @@ def adjust_counts(table_per_pos: pd.DataFrame,
                              f"but got {p_noclose_given_clust.shape}")
         p_noclose = p_noclose_given_clust = float(p_noclose_given_clust[0])
         # Compute the number of reads.
-        n_clust = n_reads_noclose / p_noclose
-    else:
+        n_clust = n_reads_clust / p_noclose
+    elif isinstance(n_reads_clust, pd.Series):
+        # Calculate the number of reads with no two mutations too close
+        # in each order.
+        n_reads_noclose = n_reads_clust.groupby(level=ORDER_NAME).sum()
         # Determine the orders of clustering.
-        orders = check_naturals(
-            np.unique(clusters.get_level_values(ORDER_NAME)), "orders"
-        )
+        orders = check_naturals(n_reads_noclose.index.values, "orders")
         # Calculate the parameters for each order separately.
         p_mut = np.empty_like(p_mut_given_noclose)
-        p_clust = np.empty_like(p_clust_given_noclose)
-        p_noclose_given_clust = np.empty_like(p_clust_given_noclose)
-        n_clust = pd.Series(index=clusters)
+        p_clust = np.empty_like(n_reads_clust.values)
+        p_noclose_given_clust = np.empty_like(n_reads_clust.values)
+        n_clust = pd.Series(index=n_reads_clust.index)
         for order in map(int, orders):
             i, j = _order_indices(order)
+            # Calculate the fraction of reads with no two mutations too
+            # close in each cluster.
+            p_clust_given_noclose = (n_reads_clust.loc[order].values
+                                     / n_reads_noclose.at[order])
             # Calculate the parameters for each cluster.
             p_mut[:, i: j], p_ends, p_clust[i: j] = calc_params(
                 p_mut_given_noclose[:, i: j],
                 p_ends_given_noclose[:, :, i: j],
-                p_clust_given_noclose[i: j],
+                p_clust_given_noclose,
                 min_mut_gap
             )
             # Compute the probability that reads from each cluster would
@@ -409,6 +379,9 @@ def adjust_counts(table_per_pos: pd.DataFrame,
                                       p_clust[i: j]))
             # Compute the number of reads in each cluster.
             n_clust.loc[order] = n_reads_noclose / p_noclose * p_clust[i: j]
+    else:
+        raise TypeError("n_reads_clust must be an int or Series, "
+                        f"but got {type(n_reads_clust).__name__}")
     # Remove masked positions from the mutation rates.
     p_mut = p_mut[unmask]
     # Create the table of adjusted counts.
