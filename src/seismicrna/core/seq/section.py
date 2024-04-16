@@ -548,6 +548,10 @@ class Section(object):
         # Do not log self._masks[name] due to memory leak.
         logger.debug(f"Added mask {repr(name)} to {self}")
 
+    def remove_mask(self, name: str):
+        """ Remove the specified mask from the section. """
+        self._masks.pop(name, None)
+
     def _find_gu(self) -> np.ndarray:
         """ Array of each position whose base is neither A nor C. """
         # Mark whether each position is neither A nor C.
