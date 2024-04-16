@@ -335,22 +335,6 @@ class PosTable(RelTypeTable, ABC):
         return int(self.range_int[-1])
 
     @cached_property
-    def masked_bool(self):
-        return self.data.isna().all(axis=1)
-
-    @cached_property
-    def unmasked_bool(self):
-        return ~self.masked_bool
-
-    @cached_property
-    def unmasked(self):
-        return self.data.index[self.unmasked_bool]
-
-    @cached_property
-    def unmasked_int(self):
-        return index_to_pos(self.unmasked)
-
-    @cached_property
     def section(self):
         """ Section covered by the table. """
         section = Section(self.ref,
@@ -365,7 +349,7 @@ class PosTable(RelTypeTable, ABC):
     def _fetch_data(self,
                     columns: pd.Index,
                     exclude_masked: bool = False):
-        return (self.data.loc[self.unmasked, columns] if exclude_masked
+        return (self.data.loc[self.section.unmasked, columns] if exclude_masked
                 else self.data.loc[:, columns])
 
     @abstractmethod
@@ -426,11 +410,11 @@ class PosTable(RelTypeTable, ABC):
         # Model the counts using binomial distributions.
         lo, up = binom.interval(confidence, n, p.values)
         # Copy the confidence interval bounds into two DataFrames.
-        index = self.unmasked if exclude_masked else self.data.index
+        index = self.section.unmasked if exclude_masked else self.data.index
         lower = pd.DataFrame(np.nan, index=index, columns=p.columns)
         upper = pd.DataFrame(np.nan, index=index, columns=p.columns)
-        lower.loc[self.unmasked] = lo / n if use_ratio else lo
-        upper.loc[self.unmasked] = up / n if use_ratio else up
+        lower.loc[self.section.unmasked] = lo / n if use_ratio else lo
+        upper.loc[self.section.unmasked] = up / n if use_ratio else up
         return lower, upper
 
     def ci_count(self, confidence: float, **kwargs):
@@ -563,7 +547,7 @@ class PosTable(RelTypeTable, ABC):
             n_every_rel = rng.multinomial(n_any_rel, p_every_rel)
             # Extract the number of each kind of relationship.
             n_each_rel = pd.DataFrame(n_every_rel[:, :len(rel_kinds)],
-                                      index=self.unmasked,
+                                      index=self.section.unmasked,
                                       columns=rel_kinds)
             return n_each_rel
 
@@ -606,7 +590,7 @@ class PosTable(RelTypeTable, ABC):
         rng = np.random.default_rng(seed)
         # Initialize the resampled data.
         resampled = pd.DataFrame(np.nan,
-                                 index=(self.unmasked if exclude_masked
+                                 index=(self.section.unmasked if exclude_masked
                                         else self.data.index),
                                  columns=self.data.columns)
         for order, clust in self.header.clusts:
@@ -626,7 +610,7 @@ class PosTable(RelTypeTable, ABC):
             # Record the resampled data for the cluster.
             for rel, n_rel in resampled_clust.items():
                 key = (rel, order, clust) if order > 0 else rel
-                resampled.loc[self.unmasked, key] = n_rel
+                resampled.loc[self.section.unmasked, key] = n_rel
         return resampled
 
 
