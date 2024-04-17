@@ -1,11 +1,12 @@
+import shutil
 import unittest as ut
-from pathlib import Path
 from string import ascii_letters
 
 import numpy as np
 import pandas as pd
 from scipy.stats import binom
 
+from seismicrna.core import path
 from seismicrna.core.batch import END5_COORD, END3_COORD
 from seismicrna.core.seq import DNA
 from seismicrna.relate.sim import (list_naturals,
@@ -136,17 +137,21 @@ class TestSimulateRelate(ut.TestCase):
         # Simulate mutation rates for each position.
         p_mut = simulate_p_mut(refseq, ncls)
         # Simulate the relate step.
-        report_file = simulate_relate(out_dir=Path.cwd(),
-                                      sample="sample",
-                                      ref="ref",
-                                      refseq=refseq,
-                                      batch_size=batch_size,
-                                      n_reads=nreads,
-                                      p_mut=p_mut,
-                                      p_ends=p_ends,
-                                      cluster_choices=cluster_choices,
-                                      brotli_level=5,
-                                      force=False)
+        out_dir = path.randdir(prefix="out_")
+        try:
+            report_file = simulate_relate(out_dir=out_dir,
+                                          sample="sample",
+                                          ref="ref",
+                                          refseq=refseq,
+                                          batch_size=batch_size,
+                                          n_reads=nreads,
+                                          p_mut=p_mut,
+                                          p_ends=p_ends,
+                                          cluster_choices=cluster_choices,
+                                          brotli_level=5,
+                                          force=False)
+        finally:
+            shutil.rmtree(out_dir, ignore_errors=True)
         '''
         # Count the reads with mutations at each position.
         for pos, muts in batch.muts.items():

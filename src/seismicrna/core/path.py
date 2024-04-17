@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import os
 import pathlib as pl
+import random
 import re
 from collections import Counter
 from functools import cache, cached_property, partial
@@ -669,6 +670,40 @@ def buildpar(*segment_types: Segment, **field_values: Any):
     path = build(*segment_types, **field_values)
     path.parent.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def randdir(parent: str | pl.Path | None = None,
+            prefix: str = "",
+            suffix: str = "",
+            length: int = 6,
+            max_tries: int = 256):
+    """ Build a path of a new directory that does not exist and create
+    it on the file system. """
+    if parent is None:
+        # Use the current directory as the default parent directory.
+        parent = pl.Path.cwd()
+    elif isinstance(parent, str):
+        parent = pl.Path(parent)
+    elif not isinstance(parent, pl.Path):
+        raise TypeError(f"parent must be pathlib.Path, str, or None, "
+                        f"but got {type(parent).__name__}")
+    if length < 1:
+        raise ValueError(f"length must be ≥ 1, but got {length}")
+    for i in range(max_tries):
+        # Make a random name for the new directory.
+        name = f"{prefix}{''.join(random.choices(STR_CHARS, k=length))}{suffix}"
+        path = parent.joinpath(name)
+        try:
+            # Create the new directory if it does not already exist.
+            path.mkdir(exist_ok=False, parents=True)
+        except FileExistsError:
+            # If it does already exist, then try another name.
+            pass
+        else:
+            # If making the directory succeeded, then return the path.
+            return path
+    raise ValueError(f"Failed to create random directory in {parent} "
+                     f"within {max_tries} attempts")
 
 
 # Path parsing routines
