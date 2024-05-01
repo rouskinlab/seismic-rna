@@ -5,6 +5,6 @@ About
 .. toctree::
     :maxdepth: 2
 
-    dms
-    authors
     license
+    authors
+    cite
