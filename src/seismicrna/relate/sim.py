@@ -121,7 +121,6 @@ def simulate_qnames_batch(sample: str,
 def simulate_relate_batch(sample: str,
                           ref: str,
                           batch: int,
-                          n_reads: int,
                           p_mut: pd.DataFrame,
                           p_ends: pd.Series,
                           cluster_choices: np.ndarray):
@@ -139,6 +138,7 @@ def simulate_relate_batch(sample: str,
     if tuple(p_ends.index.names) != END_COORDS:
         raise ValueError(f"p_ends index must have names {END_COORDS}, "
                          f"but got {p_ends.index.names}")
+    n_reads = get_length(cluster_choices)
     reads = np.arange(n_reads)
     # Choose 5' and 3' end coordinates for each read.
     coords = rng.choice(p_ends.size, n_reads, p=p_ends.values)
