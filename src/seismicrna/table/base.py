@@ -337,13 +337,18 @@ class PosTable(RelTypeTable, ABC):
     @cached_property
     def section(self):
         """ Section covered by the table. """
+        # Infer masked positions from the table.
+        masked_bool = self.data.isna().all(axis=1)
+        unmasked_bool = ~masked_bool
+        unmasked = self.data.index[unmasked_bool]
+        unmasked_int = index_to_pos(unmasked)
         section = Section(self.ref,
                           self.seq,
                           seq5=self.end5,
                           end5=self.end5,
                           end3=self.end3,
                           name=self.sect)
-        section.add_mask(self.MASK, self.unmasked_int, complement=True)
+        section.add_mask(self.MASK, unmasked_int, complement=True)
         return section
 
     def _fetch_data(self,
