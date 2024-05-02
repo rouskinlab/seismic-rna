@@ -191,13 +191,15 @@ def simulate_relate_batch(sample: str,
 def simulate_batch(sample: str,
                    ref: str,
                    batch: int,
-                   n_reads: int,
                    p_mut: pd.DataFrame,
                    p_ends: pd.Series,
                    cluster_choices: np.ndarray):
-    qnames_batch = simulate_qnames_batch(sample, ref, batch, n_reads)
-    relate_batch = simulate_relate_batch(sample, ref, batch, n_reads,
-                                         p_mut, p_ends, cluster_choices)
+    qnames_batch = simulate_qnames_batch(
+        sample, ref, batch, get_length(cluster_choices)
+    )
+    relate_batch = simulate_relate_batch(
+        sample, ref, batch, p_mut, p_ends, cluster_choices
+    )
     return qnames_batch, relate_batch
 
 
