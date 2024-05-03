@@ -2,28 +2,32 @@
 Version information for SEISMIC-RNA
 """
 
+import re
 from logging import getLogger
 
 logger = getLogger(__name__)
 
-__version__ = "0.15.6"
-
-VERSION_DELIM = "."
+__version__ = "0.16.0a"
 
 
 def parse_version(version: str = __version__):
-    try:
-        major, minor, patch = map(int, version.split(VERSION_DELIM))
-    except ValueError:
+    """ Major and minor versions, patch, and pre-release tag. """
+    match = re.match(r"([0-9]+)[.]([0-9]+)[.]([0-9]+)([a-z]*[0-9]*)", version)
+    if not match:
         raise ValueError(f"Malformatted version number: {version}")
-    return major, minor, patch
+    major, minor, patch = map(int, match.groups()[:3])
+    prtag = match.groups()[3]
+    return major, minor, patch, prtag
 
 
-MAJOR, MINOR, PATCH = parse_version()
+MAJOR, MINOR, PATCH, PRTAG = parse_version()
 
 
-def format_version(major: int = MAJOR, minor: int = MINOR, patch: int = PATCH):
-    return VERSION_DELIM.join(map(str, (major, minor, patch)))
+def format_version(major: int = MAJOR,
+                   minor: int = MINOR,
+                   patch: int = PATCH,
+                   prtag: str = PRTAG):
+    return ".".join(map(str, (major, minor, patch, prtag)))
 
 ########################################################################
 #                                                                      #
