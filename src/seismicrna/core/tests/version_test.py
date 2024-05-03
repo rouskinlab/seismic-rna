@@ -38,6 +38,36 @@ class TestParseVersion(ut.TestCase):
     def test_parse_prtag_letters_numbers(self):
         self.assertEqual(parse_version("8.7.4xyz321"), (8, 7, 4, "xyz321"))
 
+    def test_invalid_1(self):
+        self.assertRaisesRegex(ValueError,
+                               "Malformatted version",
+                               parse_version,
+                               "123456")
+
+    def test_invalid_2(self):
+        self.assertRaisesRegex(ValueError,
+                               "Malformatted version",
+                               parse_version,
+                               "12.689")
+
+    def test_invalid_3(self):
+        self.assertRaisesRegex(ValueError,
+                               "Malformatted version",
+                               parse_version,
+                               "7.0.a")
+
+    def test_invalid_4(self):
+        self.assertRaisesRegex(ValueError,
+                               "Malformatted version",
+                               parse_version,
+                               "0.9.5.a")
+
+    def test_invalid_5(self):
+        self.assertRaisesRegex(ValueError,
+                               "Malformatted version",
+                               parse_version,
+                               "8.7.4xyz321b")
+
 
 if __name__ == "__main__":
     ut.main()
