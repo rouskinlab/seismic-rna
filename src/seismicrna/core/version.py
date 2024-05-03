@@ -27,7 +27,7 @@ def format_version(major: int = MAJOR,
                    minor: int = MINOR,
                    patch: int = PATCH,
                    prtag: str = PRTAG):
-    return ".".join(map(str, (major, minor, patch, prtag)))
+    return f"{major}.{minor}.{patch}{prtag}"
 
 ########################################################################
 #                                                                      #
