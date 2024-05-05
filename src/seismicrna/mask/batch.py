@@ -1,14 +1,12 @@
 from abc import ABC
 from logging import getLogger
-from typing import Iterable
 
 import numpy as np
 
-from ..core.batch import (RefseqMutsBatch,
+from ..core.batch import (SectionMutsBatch,
                           PartialMutsBatch,
-                          PartialReadBatch,
-                          has_mids,
-                          sanitize_pos)
+                          PartialReadBatch)
+from ..core.seq import Section
 
 logger = getLogger(__name__)
 
@@ -24,89 +22,51 @@ class MaskReadBatch(PartialReadBatch):
         return self._read_nums
 
 
-class MaskMutsBatch(MaskReadBatch, RefseqMutsBatch, PartialMutsBatch, ABC):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.num_discontiguous_reads:
-            raise ValueError(
-                f"{self} has {self.num_discontiguous_reads} discontiguous "
-                "paired-end reads, which are not (yet) supported for masking"
-            )
+class MaskMutsBatch(MaskReadBatch, SectionMutsBatch, PartialMutsBatch, ABC):
+    pass
 
 
-def apply_mask(batch: RefseqMutsBatch,
-               reads: Iterable[int] | None = None,
-               positions: Iterable[int] | None = None,
-               clip5: int | None = None,
-               clip3: int | None = None):
-    # Determine masked read numbers.
-    masked_reads = (np.setdiff1d(batch.read_nums, reads)
-                    if reads is not None
-                    else None)
-    # Clean and validate the selection.
-    if positions is not None:
-        positions = sanitize_pos(positions, batch.max_pos)
-    # Select mutations at each position.
-    muts = dict()
-    for pos in positions if positions is not None else batch.pos_nums:
-        if clip5 is not None and pos < clip5:
-            logger.warning(f"Skipped clipped position {pos} (< {clip5})")
-            continue
-        if clip3 is not None and pos > clip3:
-            logger.warning(f"Skipped clipped position {pos} (> {clip3})")
-            continue
-        muts[pos] = dict()
-        # Remove masked reads with each type of mutation at this position.
-        for mut, pos_mut_reads in batch.muts.get(pos, dict()).items():
-            muts[pos][mut] = (np.setdiff1d(pos_mut_reads,
-                                           masked_reads,
-                                           assume_unique=True)
-                              if reads is not None
-                              else pos_mut_reads)
-    if reads is not None:
+def apply_mask(batch: SectionMutsBatch,
+               read_nums: np.ndarray | None = None,
+               section: Section | None = None,
+               sanitize: bool = False):
+    # Determine which reads to use.
+    if read_nums is not None:
         # Select specific read indexes.
-        read_nums = np.asarray(reads, dtype=batch.read_dtype)
         read_indexes = batch.read_indexes[read_nums]
-        end5s = batch.end5s[read_indexes]
-        end3s = batch.end3s[read_indexes]
-        if has_mids(batch.mid5s, batch.mid3s):
-            mid5s = batch.mid5s[read_indexes]
-            mid3s = batch.mid3s[read_indexes]
-        else:
-            mid5s = None
-            mid3s = None
+        ends = [(e5[read_indexes], e3[read_indexes]) for e5, e3 in batch.ends]
+        # Determine which reads were masked.
+        masked_reads = np.setdiff1d(batch.read_nums, read_nums)
     else:
         # Use all reads.
         read_nums = batch.read_nums
-        end5s = batch.end5s
-        end3s = batch.end3s
-        mid5s = batch.mid5s
-        mid3s = batch.mid3s
-    # Clip the 5' and 3' end and middle coordinates.
-    if clip5 is not None or clip3 is not None:
-        if clip5 is not None and clip3 is not None and clip5 > clip3:
-            raise ValueError("Must have clip5 ≤ clip3, "
-                             f"but got {clip5} > {clip3}")
-        if clip5 is not None:
-            end5s = np.maximum(end5s, clip5)
-        if clip3 is not None:
-            end3s = np.minimum(end3s, clip3)
-        if clip5 is not None and mid5s is not None:
-            mid5s = np.minimum(end3s, np.maximum(mid5s, clip5))
-        if clip3 is not None and mid3s is not None:
-            mid3s = np.maximum(end5s, np.minimum(mid3s, clip3))
-        sanitize = True
+        ends = batch.ends
+        masked_reads = None
+    # Determine the section of the new batch.
+    if section is not None:
+        # Clip the read coordinates to the section bounds.
+        ends = [(np.clip(e5, section.end5, section.end3 + 1),
+                 np.clip(e3, section.end5 - 1, section.end3))
+                for e5, e3 in ends]
     else:
-        sanitize = False
+        # Use the same section as the given batch.
+        section = batch.section
+    # Select only the given positions and reads.
+    muts = dict()
+    for pos in section.unmasked_int:
+        muts[pos] = dict()
+        # Remove masked reads.
+        for mut, pos_mut_reads in batch.muts[pos].items():
+            muts[pos][mut] = (np.setdiff1d(pos_mut_reads,
+                                           masked_reads,
+                                           assume_unique=True)
+                              if masked_reads is not None
+                              else pos_mut_reads)
     return MaskMutsBatch(batch=batch.batch,
-                         refseq=batch.refseq,
-                         muts=muts,
                          read_nums=read_nums,
-                         end5s=end5s,
-                         mid5s=mid5s,
-                         mid3s=mid3s,
-                         end3s=end3s,
+                         section=section,
+                         ends=ends,
+                         muts=muts,
                          sanitize=sanitize)
 
 ########################################################################

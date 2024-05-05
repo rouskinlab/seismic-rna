@@ -4,7 +4,8 @@ from functools import cached_property
 import numpy as np
 import pandas as pd
 
-from .index import RB_INDEX_NAMES, NO_READ, get_inverse, get_length
+from .index import RB_INDEX_NAMES
+from ..array import get_inverse, get_length
 from ..types import fit_uint_type
 
 
@@ -77,7 +78,7 @@ class PartialReadBatch(ReadBatch, ABC):
 
     @cached_property
     def max_read(self):
-        return self.read_nums.max(initial=NO_READ)
+        return self.read_nums.max(initial=0)
 
     @cached_property
     def read_indexes(self):

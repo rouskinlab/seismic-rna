@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from .index import END_COORDS
-from .muts import RefseqMutsBatch
+from .muts import SectionMutsBatch
 from ..header import make_header
 from ..rel import RelPattern
 from ..seq import DNA, seq_pos_to_index
@@ -23,7 +23,7 @@ def _add_to_rel(added: pd.Series | pd.DataFrame, frame: pd.DataFrame, rel: str):
     frame[rel] = (frame_rel + added).values
 
 
-def accumulate(batches: Iterable[RefseqMutsBatch],
+def accumulate(batches: Iterable[SectionMutsBatch],
                refseq: DNA,
                patterns: dict[str, RelPattern], *,
                max_order: int = 0,
@@ -117,7 +117,7 @@ def accumulate(batches: Iterable[RefseqMutsBatch],
             end_counts)
 
 
-def accum_per_pos(batches: Iterable[RefseqMutsBatch],
+def accum_per_pos(batches: Iterable[SectionMutsBatch],
                   refseq: DNA,
                   pos_nums: np.ndarray,
                   patterns: dict[str, RelPattern],
@@ -134,7 +134,7 @@ def accum_per_pos(batches: Iterable[RefseqMutsBatch],
     return num_reads, fpp, ipp
 
 
-def accum_fits(batches: Iterable[RefseqMutsBatch],
+def accum_fits(batches: Iterable[SectionMutsBatch],
                refseq: DNA,
                pos_nums: np.ndarray,
                patterns: dict[str, RelPattern],

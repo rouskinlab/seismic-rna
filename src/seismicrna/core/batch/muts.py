@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections import Counter
 from functools import cached_property
 from logging import getLogger
@@ -9,22 +9,16 @@ import pandas as pd
 from .count import (count_end_coords,
                     get_count_per_pos,
                     get_count_per_read,
-                    get_coverage_matrix,
                     get_cover_per_pos,
                     get_cover_per_read,
                     get_reads_per_pos,
                     get_rels_per_pos,
                     get_rels_per_read)
-from .index import (contiguous_mates,
-                    ensure_same_length,
-                    has_mids,
-                    iter_windows,
-                    sanitize_ends,
-                    sanitize_pos)
+from .index import (iter_windows,
+                    sanitize_ends)
 from .read import ReadBatch, PartialReadBatch
 from ..rel import REL_TYPE, RelPattern
-from ..seq import BASE_NAME, DNA, seq_pos_to_index
-from ..types import fit_uint_type
+from ..seq import Section
 
 logger = getLogger(__name__)
 
@@ -33,64 +27,53 @@ class MutsBatch(ReadBatch, ABC):
     """ Batch of mutational data. """
 
     def __init__(self, *,
+                 section: Section,
+                 ends: list[tuple[list | np.ndarray, list | np.ndarray]],
                  muts: dict[int, dict[int, list[int] | np.ndarray]],
-                 end5s: list[int] | np.ndarray,
-                 mid5s: list[int] | np.ndarray | None,
-                 mid3s: list[int] | np.ndarray | None,
-                 end3s: list[int] | np.ndarray,
                  sanitize: bool = True,
                  **kwargs):
         super().__init__(**kwargs)
-        if sanitize:
-            # Sanitize all coordinates, which can be slow.
-            end5s, mid5s, mid3s, end3s = sanitize_ends(self.max_pos,
-                                                       end5s,
-                                                       mid5s,
-                                                       mid3s,
-                                                       end3s)
-        else:
-            # Only ensure mid5s and mid3s are consistent, which is fast.
-            has_mids(mid5s, mid3s)
-        ensure_same_length(end5s, end3s, "end5s", "end3s")
-        # Store the coordinates.
-        self.end5s = end5s
-        self._mid5s = mid5s
-        self._mid3s = mid3s
-        self.end3s = end3s
+        # Validate and store the read end coordinates.
+        self.ends = sanitize_ends(ends, section.end5, section.end3, sanitize)
         # Validate and store the mutations.
-        self.muts = {pos: {REL_TYPE(rel): np.asarray(reads, self.read_dtype)
-                           for rel, reads in muts[pos].items()}
-                     for pos in (sanitize_pos(muts, self.max_pos)
-                                 if sanitize
-                                 else muts)}
+        self.muts = {pos: ({REL_TYPE(rel): np.asarray(reads, self.read_dtype)
+                            for rel, reads in muts[pos].items()}
+                           if sanitize
+                           else muts[pos])
+                     for pos in section.unmasked_int}
 
-    @property
-    def num_pos(self):
-        """ Number of positions in use. """
-        return self.pos_nums.size
+    @cached_property
+    def end5s(self):
+        """ 5' end coordinates of reads. """
+        end5s, _ = self.ends[0]
+        for (seg5s, _) in self.ends[1:]:
+            end5s = np.minimum(end5s, seg5s)
+        return end5s
 
-    @property
-    @abstractmethod
-    def max_pos(self) -> int:
-        """ Maximum allowed position. """
+    @cached_property
+    def end3s(self):
+        """ 3' end coordinates of reads. """
+        _, end3s = self.ends[0]
+        for (_, seg3s) in self.ends[1:]:
+            end3s = np.maximum(end3s, seg3s)
+        return end3s
 
     @cached_property
     def pos_dtype(self):
-        """ Data type for position numbers. """
-        return fit_uint_type(self.max_pos)
+        """ Data type for positions. """
+        dtype = self.ends[0][0].dtype
+        for seg in self.ends:
+            for ends in seg:
+                if ends.dtype is not dtype:
+                    raise TypeError(
+                        f"Got > 1 positional data type: {dtype} ≠ {ends.dtype}"
+                    )
+        return dtype
 
     @cached_property
-    @abstractmethod
-    def pos_nums(self) -> np.ndarray:
+    def pos_nums(self):
         """ Positions in use. """
-
-    @property
-    def mid5s(self):
-        return self._mid5s  # compatibility
-
-    @property
-    def mid3s(self):
-        return self._mid3s  # compatibility
+        return np.fromiter(self.muts, self.pos_dtype)
 
     @property
     def read_weights(self) -> pd.DataFrame | None:
@@ -98,75 +81,17 @@ class MutsBatch(ReadBatch, ABC):
         return None
 
     @cached_property
-    def contiguous_reads(self) -> np.ndarray:
-        """ Whether each read is made of contiguous mates. """
-        if has_mids(self.mid5s, self.mid3s):
-            return contiguous_mates(self.mid5s, self.mid3s)
-        # If the 5' and 3' middle coordinates are absent, then every
-        # read is assumed to be contiguous.
-        return np.ones(self.num_reads, dtype=bool)
-
-    @cached_property
-    def all_contiguous_reads(self) -> bool:
-        """ Whether all reads are contiguous. """
-        if has_mids(self.mid5s, self.mid3s):
-            return np.all(self.contiguous_reads)
-        return True
-
-    @cached_property
-    def num_contiguous_reads(self):
-        """ Number of contiguous reads. """
-        if has_mids(self.mid5s, self.mid3s):
-            n = int(np.sum(self.contiguous_reads))
-            if n > self.num_reads:
-                raise ValueError(f"{self} cannot have more contiguous reads "
-                                 f"({n}) than total reads ({self.num_reads})")
-            return n
-        return self.num_reads
-
-    @cached_property
-    def num_discontiguous_reads(self):
-        """ Number of discontiguous reads. """
-        return self.num_reads - self.num_contiguous_reads
-
-    @cached_property
     def end_counts(self):
         """ Counts of end coordinates. """
         return count_end_coords(self.end5s, self.end3s, self.read_weights)
 
 
-class ReflenMutsBatch(MutsBatch, ABC):
-    """ Batch of mutational data with only a known reference length. """
+class SectionMutsBatch(MutsBatch, ABC):
+    """ Batch of mutational data that knows its section. """
 
-    def __init__(self, *, reflen: int, **kwargs):
-        self.seqlen = reflen
-        super().__init__(**kwargs)
-
-    @property
-    def max_pos(self) -> int:
-        return self.seqlen
-
-
-class RefseqMutsBatch(MutsBatch, ABC):
-    """ Batch of mutational data with a known reference sequence. """
-
-    def __init__(self, *, refseq: DNA, **kwargs):
-        self.refseq = refseq
-        super().__init__(**kwargs)
-
-    @property
-    def max_pos(self):
-        return len(self.refseq)
-
-    @cached_property
-    def pos_index(self):
-        return seq_pos_to_index(self.refseq, self.pos_nums, 1)
-
-    @cached_property
-    def count_base_types(self):
-        bases = self.pos_index.get_level_values(BASE_NAME)
-        base_types, counts = np.unique(bases, return_counts=True)
-        return pd.Series(counts, base_types)
+    def __init__(self, *, section: Section, **kwargs):
+        self.section = section
+        super().__init__(section=section, **kwargs)
 
     def iter_windows(self, size: int):
         """ Yield the positions in each window of size positions of the
@@ -174,23 +99,25 @@ class RefseqMutsBatch(MutsBatch, ABC):
         yield from iter_windows(self.pos_nums, size)
 
     @cached_property
-    def coverage_matrix(self):
-        return get_coverage_matrix(self.pos_index,
-                                   self.end5s,
-                                   self.mid5s,
-                                   self.mid3s,
-                                   self.end3s,
-                                   self.read_nums)
+    def pos_index(self):
+        """ Index of unmasked positions and bases. """
+        return self.section.unmasked
 
     @cached_property
     def cover_per_pos(self):
         """ Number of reads covering each position. """
-        return get_cover_per_pos(self.coverage_matrix, self.read_weights)
+        return get_cover_per_pos(self.pos_index,
+                                 self.end5s,
+                                 self.end3s,
+                                 self.read_weights)
 
     @cached_property
     def cover_per_read(self):
         """ Number of positions covered by each read. """
-        return get_cover_per_read(self.coverage_matrix)
+        return get_cover_per_read(self.pos_index,
+                                  self.end5s,
+                                  self.end3s,
+                                  self.read_nums)
 
     @cached_property
     def rels_per_pos(self):
@@ -266,10 +193,6 @@ class RefseqMutsBatch(MutsBatch, ABC):
     def iter_reads(self, pattern: RelPattern):
         """ Yield the 5'/3' end/middle positions and the positions that
         are mutated in each read. """
-        if self.num_discontiguous_reads:
-            raise ValueError(f"Iteration over {self} is not supported "
-                             f"because it has {self.num_discontiguous_reads} "
-                             "(> 0) discontiguous read(s)")
         reads_per_pos = self.reads_per_pos(pattern)
         # Find the maximum number of mutations in any read.
         max_mut_count = max(sum(map(Counter, reads_per_pos.values()),

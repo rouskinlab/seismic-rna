@@ -6,7 +6,8 @@ import numpy as np
 import pandas as pd
 
 from .names import BIT_VECTOR_NAME
-from ..core.batch import RefseqMutsBatch, get_length
+from ..core.array import get_length
+from ..core.batch import SectionMutsBatch
 from ..core.rel import RelPattern
 from ..core.seq import Section
 from ..mask.data import MaskMutsDataset
@@ -197,7 +198,7 @@ def _count_uniq_reads(uniq_read_nums: Iterable[list]):
 
 def get_uniq_reads(pos_nums: Iterable[int],
                    pattern: RelPattern,
-                   batches: Iterable[RefseqMutsBatch]):
+                   batches: Iterable[SectionMutsBatch]):
     uniq_reads = defaultdict(list)
     read_nums_per_batch = list()
     for batch_num, batch in enumerate(batches):

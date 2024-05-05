@@ -3,12 +3,10 @@ from functools import cached_property
 
 import numpy as np
 
+from ..core.array import ensure_same_length, get_length
 from ..core.batch import (AllReadBatch,
                           MutsBatch,
-                          ReflenMutsBatch,
-                          RefseqMutsBatch,
-                          ensure_same_length,
-                          get_length)
+                          SectionMutsBatch)
 
 
 class QnamesBatch(AllReadBatch):
@@ -28,16 +26,8 @@ class RelateBatch(MutsBatch, AllReadBatch, ABC):
     def num_reads(self):
         return ensure_same_length(self.end5s, self.end3s, "end5s", "end3s")
 
-    @cached_property
-    def pos_nums(self):
-        return np.arange(1, self.max_pos + 1, dtype=self.pos_dtype)
 
-
-class RelateReflenBatch(RelateBatch, ReflenMutsBatch):
-    pass
-
-
-class RelateRefseqBatch(RelateBatch, RefseqMutsBatch):
+class RelateSectionBatch(RelateBatch, SectionMutsBatch):
     pass
 
 ########################################################################

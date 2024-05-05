@@ -4,7 +4,7 @@ from typing import Any, Iterable
 
 import numpy as np
 
-from .batch import QnamesBatch, RelateReflenBatch
+from .batch import QnamesBatch, RelateBatch
 from ..core import path
 from ..core.io import MutsBatchIO, ReadBatchIO, RefIO
 
@@ -34,7 +34,7 @@ class QnamesBatchIO(RelateIO, ReadBatchIO, QnamesBatch):
         self.names = np.char.decode(state["names"])
 
 
-class RelateBatchIO(RelateIO, MutsBatchIO, RelateReflenBatch):
+class RelateBatchIO(RelateIO, MutsBatchIO, RelateBatch):
 
     @classmethod
     def file_seg_type(cls):
@@ -53,7 +53,7 @@ def from_reads(reads: Iterable[tuple[str, int, int, int, int, dict[int, int]]],
     mid5s = list()
     mid3s = list()
     end3s = list()
-    muts = defaultdict(lambda: defaultdict(list))
+    muts = {pos: defaultdict(list) for pos in range(1, reflen + 1)}
     # Collect the mutation data from the reads.
     for read, (name, end5, mid5, mid3, end3, poss) in enumerate(reads):
         names.append(name)

@@ -15,7 +15,7 @@ from .batch import apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
 from ..core.arg import docdef
-from ..core.batch import RefseqMutsBatch, accum_per_pos
+from ..core.batch import SectionMutsBatch, accum_per_pos
 from ..core.rel import RelPattern
 from ..core.seq import FIELD_REF, POS_NAME, Section, index_to_pos
 from ..core.write import need_write
@@ -30,7 +30,6 @@ class RelMasker(object):
 
     PATTERN_KEY = "pattern"
     MASK_READ_INIT = "read-init"
-    MASK_READ_DISCONTIG = "read-discontig"
     MASK_READ_NCOV = "read-ncov"
     MASK_READ_FINFO = "read-finfo"
     MASK_READ_FMUT = "read-fmut"
@@ -98,10 +97,6 @@ class RelMasker(object):
     @property
     def n_reads_min_ncov(self):
         return self._n_reads[self.MASK_READ_NCOV]
-
-    @property
-    def n_reads_discontig(self):
-        return self._n_reads[self.MASK_READ_DISCONTIG]
 
     @property
     def n_reads_min_finfo(self):
@@ -177,15 +172,7 @@ class RelMasker(object):
             exclude_pos = list()
         return np.asarray(exclude_pos, dtype=int)
 
-    def _filter_discontig_read(self, batch: RefseqMutsBatch):
-        """ Filter out reads with discontiguous mates. """
-        # Find the reads with contiguous mates.
-        reads = batch.read_nums[batch.contiguous_reads]
-        logger.debug(f"{self} kept {reads.size} contiguous reads in {batch}")
-        # Return a new batch of only those reads.
-        return apply_mask(batch, reads)
-
-    def _filter_min_ncov_read(self, batch: RefseqMutsBatch):
+    def _filter_min_ncov_read(self, batch: SectionMutsBatch):
         """ Filter out reads with too few covered positions. """
         if self.min_ncov_read < 1:
             raise ValueError(f"min_ncov_read must be ≥ 1, but got "
@@ -198,7 +185,7 @@ class RelMasker(object):
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
-    def _filter_min_finfo_read(self, batch: RefseqMutsBatch):
+    def _filter_min_finfo_read(self, batch: SectionMutsBatch):
         """ Filter out reads with too few informative positions. """
         if not 0. <= self.min_finfo_read <= 1.:
             raise ValueError(f"min_finfo_read must be ≥ 0, ≤ 1, but got "
@@ -217,7 +204,7 @@ class RelMasker(object):
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
-    def _filter_max_fmut_read(self, batch: RefseqMutsBatch):
+    def _filter_max_fmut_read(self, batch: SectionMutsBatch):
         """ Filter out reads with too many mutations. """
         if not 0. <= self.max_fmut_read <= 1.:
             raise ValueError(f"max_fmut_read must be ≥ 0, ≤ 1, but got "
@@ -237,7 +224,7 @@ class RelMasker(object):
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
-    def _mask_min_mut_gap(self, batch: RefseqMutsBatch):
+    def _mask_min_mut_gap(self, batch: SectionMutsBatch):
         """ Filter out reads with mutations that are too close. """
         if not self.min_mut_gap >= 0:
             raise ValueError(
@@ -259,16 +246,13 @@ class RelMasker(object):
             self.section.mask_gu()
         self.section.mask_pos(self.exclude_pos)
 
-    def _filter_batch_reads(self, batch: RefseqMutsBatch):
+    def _filter_batch_reads(self, batch: SectionMutsBatch):
         """ Remove the reads in the batch that do not pass the filters
         and return a new batch without those reads. """
         # Determine the initial number of reads in the batch.
         self._n_reads[self.MASK_READ_INIT] += (n := batch.num_reads)
-        # Remove reads with discontiguous mates.
-        batch = self._filter_discontig_read(batch)
-        self._n_reads[self.MASK_READ_DISCONTIG] += (n - (n := batch.num_reads))
         # Keep only the unmasked positions.
-        batch = apply_mask(batch, positions=self.pos_kept)
+        batch = apply_mask(batch, section=self.section)
         # Remove reads with too few covered positions.
         batch = self._filter_min_ncov_read(batch)
         self._n_reads[self.MASK_READ_NCOV] += (n - (n := batch.num_reads))
@@ -368,7 +352,6 @@ class RelMasker(object):
             min_mut_gap=self.min_mut_gap,
             n_reads_init=self.n_reads_init,
             n_reads_min_ncov=self.n_reads_min_ncov,
-            n_reads_discontig=self.n_reads_discontig,
             n_reads_min_finfo=self.n_reads_min_finfo,
             n_reads_max_fmut=self.n_reads_max_fmut,
             n_reads_min_gap=self.n_reads_min_gap,

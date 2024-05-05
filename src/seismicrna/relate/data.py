@@ -1,4 +1,4 @@
-from .batch import RelateRefseqBatch
+from .batch import RelateSectionBatch
 from .io import RelateBatchIO
 from .report import RelateReport
 from ..core.data import LoadedMutsDataset
@@ -30,7 +30,7 @@ class RelateDataset(LoadedMutsDataset):
             key: getattr(relate_batch, key)
             for key in ["batch", "muts", "end5s", "mid5s", "mid3s", "end3s"]
         }
-        return RelateRefseqBatch(refseq=self.refseq, sanitize=False, **kwargs)
+        return RelateSectionBatch(refseq=self.refseq, sanitize=False, **kwargs)
 
 ########################################################################
 #                                                                      #

@@ -3,11 +3,12 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
+from ..array import (ensure_order,
+                     ensure_same_length,
+                     get_length,
+                     sanitize_values)
 from ..seq import BASE_NAME
-from ..types import fit_uint_type, get_uint_type, UINT_NBYTES
-
-# Missing identifiers.
-NO_READ = -1
+from ..types import fit_uint_type
 
 # Indexes of read and batch numbers.
 READ_NUM = "Read Number"
@@ -25,211 +26,93 @@ def list_batch_nums(num_batches: int):
     return list(range(num_batches))
 
 
-def list_naturals(n: int):
-    """ List natural numbers. """
-    return np.arange(1, n + 1)
-
-
-def check_naturals(values: np.ndarray, what: str = "values"):
-    """ Raise ValueError if the values are not monotonically increasing
-    natural numbers. """
-    length = get_length(values, what)
-    if not np.array_equal(values, np.arange(1, length + 1)):
-        raise ValueError(f"{what} must be numbered 1 to {length}, "
-                         f"but got {values}")
-    return np.asarray(values, dtype=int)
-
-
-def get_length(array: np.ndarray, what: str = "array") -> int:
-    if array.ndim != 1:
-        raise ValueError(f"{what} must have 1 dimension, but got {array.ndim}")
-    length, = array.shape
-    return length
-
-
-def get_inverse(target: np.ndarray, what: str = "array"):
-    """ Map integers in [0, max(target)] to their 0-based indexes in
-    `target`, or to -1 if not in `target`. """
-    uniq, counts = np.unique(target, return_counts=True)
-    if uniq.size > 0:
-        # Verify that all values in target are non-negative.
-        if get_length(uniq, what) > 0 > uniq[0]:
-            raise ValueError(f"{what} has negative values: {uniq[uniq < 0]}")
-        # Verify that all values in target are unique.
-        if np.max(counts) > 1:
-            raise ValueError(f"{what} has repeated values: {uniq[counts > 1]}")
-        # Initialize a 1-dimensional array whose length is one more than
-        # the maximum value of target, so that the array has every index
-        # in the range [0, max(target)].
-        inverse_size = np.max(target) + 1
-    else:
-        inverse_size = 0
-    # Initialize all elements in the array to -1, a placeholder value.
-    inverse = np.full(inverse_size, -1)
-    # For each value n with index i in target, set the value at index n
-    # of inverse to i.
-    inverse[target] = np.arange(get_length(target, what))
-    return inverse
-
-
-def ensure_same_length(arr1: np.ndarray,
-                       arr2: np.ndarray,
-                       what1: str = "array1",
-                       what2: str = "array2"):
-    if (len1 := get_length(arr1, what1)) != (len2 := get_length(arr2, what2)):
+def get_num_segments(ends: np.ndarray) -> int:
+    """ Number of segments for the given end coordinates. """
+    if not isinstance(ends, np.ndarray):
+        raise TypeError(f"ends must be ndarray, but got {type(ends).__name__}")
+    if ends.ndim != 2:
+        raise ValueError(f"ends must have 2 dimensions, but got {ends.ndim}")
+    _, num_ends = ends.shape
+    num_segs, odd = divmod(num_ends, 2)
+    if odd:
         raise ValueError(
-            f"Lengths differ between {what1} ({len1}) and {what2} ({len2})"
+            f"Number of end coordinates must be even, but got {num_ends}"
         )
-    return len1
+    return num_segs
 
 
-def ensure_order(array1: np.ndarray,
-                 array2: np.ndarray,
-                 what1: str = "array1",
-                 what2: str = "array2",
-                 gt_eq: bool = False):
-    """ Ensure that `array1` is ≤ or ≥ `array2`, element-wise.
+def sanitize_pos(positions: Iterable[int], min_pos: int, max_pos: int):
+    """ Validate and sort positions, and return them as an array. """
+    return sanitize_values(positions, min_pos, max_pos, "positions")
+
+
+def sanitize_ends(ends: list[tuple[list | np.ndarray, list | np.ndarray]],
+                  min_pos: int,
+                  max_pos: int,
+                  check_values: bool = True):
+    """ Sanitize end coordinates.
 
     Parameters
     ----------
-    array1: np.ndarray
-        Array 1 (same length as `array2`).
-    array2: np.ndarray
-        Array 2 (same length as `array1`).
-    what1: str = "array1"
-        What `array1` contains (only used for error messages).
-    what2: str = "array2"
-        What `array2` contains (only used for error messages).
-    gt_eq: bool = False
-        Ensure `array1 ≥ array2` if True, otherwise `array1 ≤ array2`.
+    ends: list[tuple[list | np.ndarray, list | np.ndarray]]
+        End coordinates (1-indexed). Each item corresponds to a segment
+        of the read and must be a tuple of its 5' and 3' coordinates.
+    min_pos: int
+        Minimum allowed value of a position.
+    max_pos: int
+        Maximum allowed value of a position.
+    check_values: bool = True
+        Whether to check the bounds of the values, which is the most
+        expensive operation in this function. Can be set to False if the
+        only desired effect is to ensure the output is a positive, even
+        number of arrays in the proper data type.
 
     Returns
     -------
-    int
-        Shared length of `array1` and `array2`.
+    list[tuple[np.ndarray, np.ndarray]]
+        Sanitized end coordinates: positive, even number of arrays, all
+        the same length and with the most efficient data type, and if
+        `check_values` is True then all with valid coordinates.
     """
-    length = ensure_same_length(array1, array2, what1, what2)
-    ineq_func, ineq_sign = (np.less, "<") if gt_eq else (np.greater, ">")
-    if np.any(is_err := ineq_func(array1, array2)):
-        index = pd.Index(np.arange(length)[is_err], name=READ_NUM)
-        errors = pd.DataFrame.from_dict({what1: pd.Series(array1[is_err],
-                                                          index=index),
-                                         what2: pd.Series(array2[is_err],
-                                                          index=index)})
-        raise ValueError(f"Got {what1} {ineq_sign} {what2}:\n{errors}")
-    return length
-
-
-def sanitize_values(values: Iterable[int],
-                    lower_limit: int,
-                    upper_limit: int,
-                    whats: str = "values"):
-    """ Validate and sort values, and return them as an array. """
-    # Convert the values to an array and ensure it is one-dimensional.
-    if not isinstance(values, (np.ndarray, list)):
-        values = list(values)
-    array = np.asarray(values)
-    n_values = get_length(array, whats)
-    if n_values == 0:
-        # The array is empty.
-        return np.array([], dtype=get_uint_type(min(UINT_NBYTES)))
-    # Find and sort the unique values.
-    array = np.unique(array)
-    if array.size != n_values:
-        raise ValueError(f"Got non-unique {whats}")
-    # Validate the minimum and maximum values.
-    min_value = array[0]
-    max_value = array[-1]
-    if min_value < lower_limit:
-        raise ValueError(f"All {whats} must be ≥ {lower_limit}, but got "
-                         f"{array[array < lower_limit]}")
-    if max_value > upper_limit:
-        raise ValueError(f"All {whats} must be ≤ {upper_limit}, but got "
-                         f"{array[array > upper_limit]}")
-    # Return the array as the smallest data type that will fit the data.
-    return np.asarray(array, dtype=fit_uint_type(max_value))
-
-
-def sanitize_pos(positions: Iterable[int], seq_length: int):
-    """ Validate and sort positions, and return them as an array. """
-    return sanitize_values(positions, 1, seq_length, "positions")
-
-
-def has_mids(mid5s: np.ndarray | None, mid3s: np.ndarray | None):
-    """ Whether the 5' and 3' middle coordinates exist. """
-    if isinstance(mid5s, np.ndarray) and isinstance(mid3s, np.ndarray):
-        # They exist if they are both arrays and have the same length.
-        ensure_same_length(mid5s,
-                           mid3s,
-                           "5' middle coordinates",
-                           "3' middle coordinates")
-        return True
-    if mid5s is None and mid3s is None:
-        # They do not exist if they are both None.
-        return False
-    # All other cases are invalid.
-    raise ValueError(
-        f"Inconsistent 5' and 3' middle coordinates:\n{mid5s}\nand\n{mid3s}"
-    )
-
-
-def contiguous_mates(mid5s: np.ndarray | None, mid3s: np.ndarray | None):
-    """ Return whether the two mates form a contiguous read. """
-    ensure_same_length(mid5s,
-                       mid3s,
-                       "5' middle coordinates",
-                       "3' middle coordinates")
-    return np.less_equal(mid5s, mid3s + 1)
-
-
-def sanitize_ends(max_pos: int,
-                  end5s: list[int] | np.ndarray,
-                  mid5s: list[int] | np.ndarray | None,
-                  mid3s: list[int] | np.ndarray | None,
-                  end3s: list[int] | np.ndarray):
+    if not ends:
+        raise ValueError("Got no pairs of end coordinates")
+    # Convert all end coordinates into arrays, if not already.
+    ends = [(np.asarray(e5), np.asarray(e3)) for e5, e3 in ends]
+    # Ensure all arrays have the same length.
+    lengths = [get_length(ej, f"segment {i} {j}' coordinates")
+               for i, seg in enumerate(ends)
+               for j, ej in zip("53", seg, strict=True)]
+    if len(set(lengths)) != 1:
+        raise ValueError("Arrays of end coordinates must have equal lengths, "
+                         f"but got lengths {lengths}")
+    if check_values:
+        # Validate every pair of end coordinates.
+        length = lengths[0]
+        for i, (e5, e3) in enumerate(ends):
+            # All coordinates must be ≥ 1.
+            ensure_order(e5,
+                         np.broadcast_to(min_pos, length),
+                         f"segment {i} 5' coordinates",
+                         f"minimum position ({min_pos})",
+                         gt_eq=True)
+            # End 1 coordinates must be ≤ end 2 coordinates.
+            ensure_order(e5,
+                         e3,
+                         f"segment {i} 5' coordinates",
+                         f"segment {i} 3' coordinates")
+            # All coordinates must be ≤ max position
+            ensure_order(e3,
+                         np.broadcast_to(max_pos, length),
+                         f"segment {i} 3' coordinates",
+                         f"maximum position ({max_pos})")
+    # Convert all ends into arrays of the most efficient data type.
+    # Conversion must be done after checking the values against max_pos.
+    # Otherwise, values greater than the data type can accomodate would
+    # be converted to their modulo relative to the maximum value of the
+    # data type, which would mean checking the wrong values.
     pos_dtype = fit_uint_type(max_pos)
-    end5s = np.asarray(end5s, pos_dtype)
-    end3s = np.asarray(end3s, pos_dtype)
-    # Verify 5' end ≥ min position
-    ensure_order(end5s,
-                 np.broadcast_to(1, end5s.shape),
-                 "5' end positions",
-                 f"minimum position (1)",
-                 gt_eq=True)
-    # Verify 5' end ≤ 3' end
-    ensure_order(end5s,
-                 end3s,
-                 "5' end positions",
-                 "3' end positions")
-    # Verify 3' end ≤ max position
-    ensure_order(end3s,
-                 np.broadcast_to(max_pos, end3s.shape),
-                 "3' end positions",
-                 f"maximum position ({max_pos})")
-    if has_mids(mid5s, mid3s):
-        # Verify 5' end ≤ 5' mid
-        ensure_order(end5s, mid5s, "5' end positions", "5' middle positions")
-        # Verify 5' mid ≤ 3' end
-        ensure_order(mid5s, end3s, "5' middle positions", "3' end positions")
-        # Verify 5' end ≤ 3' mid
-        ensure_order(end5s, mid3s, "5' end positions", "3' middle positions")
-        # Verify 3' mid ≤ 3' end
-        ensure_order(mid3s, end3s, "3' middle positions", "3' end positions")
-        # Check which reads are made of contiguous mates, i.e. the mates
-        # overlap or at least abut with no gap between.
-        is_contiguous = contiguous_mates(mid5s, mid3s)
-        if np.all(is_contiguous):
-            # If all mates are contiguous (which is common in short read
-            # sequencing data and hence worth optimizing), nullify the
-            # 5' and 3' middle coordinates to reduce space.
-            mid5s = None
-            mid3s = None
-        else:
-            # For contiguous mates, set the 5' and 3' middle coordinates
-            # to the 5' and 3' ends of the contiguous region they cover.
-            mid5s[is_contiguous] = end5s[is_contiguous]
-            mid3s[is_contiguous] = end3s[is_contiguous]
-    return end5s, mid5s, mid3s, end3s
+    return [(np.asarray(e5, pos_dtype), np.asarray(e3, pos_dtype))
+            for e5, e3 in ends]
 
 
 def stack_end_coords(end5s: np.ndarray, end3s: np.ndarray):

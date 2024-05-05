@@ -3,15 +3,15 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
+from numba import jit
 
 from .index import (END_COORDS,
                     count_base_types,
-                    get_length,
-                    has_mids,
                     iter_base_types,
                     stack_end_coords)
+from ..array import get_length
 from ..rel import MATCH, NOCOV, RelPattern
-from ..seq import POS_NAME, DNA
+from ..seq import DNA, POS_NAME
 
 
 def count_end_coords(end5s: np.ndarray,
@@ -32,42 +32,13 @@ def count_end_coords(end5s: np.ndarray,
     return weights.groupby(level=list(range(weights.index.nlevels))).sum()
 
 
-def get_half_coverage_matrix(pos_nums: np.ndarray,
-                             pos5s: np.ndarray,
-                             pos3s: np.ndarray):
-    # Reshape the positions and 5'/3' ends to row and column vectors,
-    # then make a boolean matrix where each element indicates whether
-    # the read (row) covers the position (column).
-    return np.logical_and(pos5s[:, np.newaxis] <= pos_nums[np.newaxis, :],
-                          pos_nums[np.newaxis, :] <= pos3s[:, np.newaxis])
-
-
-def get_coverage_matrix(pos_index: pd.Index,
-                        end5s: np.ndarray,
-                        mid5s: np.ndarray | None,
-                        mid3s: np.ndarray | None,
-                        end3s: np.ndarray,
-                        read_nums: np.ndarray):
-    pos_nums = pos_index.get_level_values(POS_NAME).values
-    if has_mids(mid5s, mid3s):
-        # If 5' and 3' middle coordinates are present, then take the
-        # union of the coverage of both mates.
-        coverage_matrix = np.logical_or(
-            get_half_coverage_matrix(pos_nums, end5s, mid3s),
-            get_half_coverage_matrix(pos_nums, mid5s, end3s)
-        )
-    else:
-        # Otherwise, just take the coverage between the 5' and 3' ends.
-        coverage_matrix = get_half_coverage_matrix(pos_nums, end5s, end3s)
-    return pd.DataFrame(coverage_matrix,
-                        index=read_nums,
-                        columns=pos_index,
-                        copy=False)
-
-
-def get_cover_per_pos(coverage_matrix: pd.DataFrame,
+def get_cover_per_pos(pos_index: pd.Index,
+                      end5s: np.ndarray,
+                      end3s: np.ndarray,
                       read_weights: pd.DataFrame | None = None):
     """ Number of reads covering each position. """
+    positions = pos_index.get_level_values(POS_NAME).values
+    rel_end5s, rel_end3s, num_pos, min5 = _get_relative_ends(end5s, end3s)
     if read_weights is not None:
         if not read_weights.index.equals(coverage_matrix.index):
             raise ValueError(f"Read numbers differ between the coverage matrix "
@@ -84,19 +55,70 @@ def get_cover_per_pos(coverage_matrix: pd.DataFrame,
                      index=coverage_matrix.columns)
 
 
-def get_cover_per_read(coverage_matrix: pd.DataFrame):
+@jit()
+def _count_base_per_read(ends_sorted: np.ndarray,
+                         segment_end3s: np.ndarray,
+                         base_count: np.ndarray):
+    """ Count one kind of base in the given reads.
+    
+    Parameters
+    ----------
+    ends_sorted: np.ndarray
+        Array (reads x ends) of the 5' and 3' end coordinates of the
+        segments in each read; must be sorted ascendingly over axis 1,
+        with 5' and 3' coordinates intermixed.
+    segment_end3s: np.ndarray
+        Array (reads x ends) of whether each coordinate in `ends_sorted`
+        corresponds to the 3' end of a segment.
+    base_count: np.ndarray
+        Array (positions) of the cumulative count of this kind of base
+        up to each position.
+    """
+    num_reads, _ = ends_sorted.shape
+    base_per_read = np.zeros(num_reads, dtype=np.int64)
+    for i in range(num_reads):
+        # Find the coordinates of the contiguous segments.
+        end3_indices = np.flatnonzero(segment_end3s[i])
+        end5_indices = np.roll(end3_indices + 1, 1)
+        end5_indices[0] = 0
+        end5_coords = ends_sorted[i, end5_indices]
+        end3_coords = ends_sorted[i, end3_indices]
+        # Count the bases in each segment, then sum the segments.
+        base_per_read[i] = np.sum(
+            base_count[end3_coords] - base_count[end5_coords]
+        )
+    return base_per_read
+
+
+def get_cover_per_read(pos_index: pd.Index,
+                       ends: np.ndarray,
+                       read_nums: np.ndarray):
     """ Number of positions covered by each read. """
-    cover_per_read = {
-        base: pd.Series(np.count_nonzero(coverage_matrix.loc[:, index], axis=1),
-                        index=coverage_matrix.index)
-        for base, index in iter_base_types(coverage_matrix.columns)
-    }
-    if not cover_per_read:
-        cover_per_read = {
-            base: pd.Series(0, index=coverage_matrix.index)
-            for base in DNA.alph()
-        }
-    return pd.DataFrame.from_dict(cover_per_read)
+    # FIXME: temporary hack to make 5' ends 0-indexed
+    for i in range(0, ends.shape[1], 2):
+        ends[:, i] -= 1
+    max_pos = max(pos_index.get_level_values(POS_NAME).max(), ends.max())
+    # Sort the 5' and 3' end coordinates for each read ascendingly.
+    sort_order = np.argsort(ends, axis=1)
+    ends_sorted = np.take_along_axis(ends, sort_order, axis=1)
+    # Find the cumulative count of 5' ends encountered minus 3' ends
+    # encountered while moving along the segments.
+    segment_end3s = np.logical_not(
+        np.cumsum(np.where(np.mod(sort_order, 2), -1, 1), axis=1)
+    )
+    # Initialize a blank coverage matrix for each kind of base.
+    cover_per_read = pd.DataFrame(0, index=read_nums, columns=list(DNA.alph()))
+    # Group positions by kind of base.
+    for base, base_pos in iter_base_types(pos_index):
+        # Find the cumulative count of the base up to each position.
+        is_base = np.zeros(max_pos + 1, dtype=bool)
+        is_base[base_pos.get_level_values(POS_NAME)] = True
+        base_count = np.cumsum(is_base)
+        # Count this base in each read.
+        cover_per_read[base] = _count_base_per_read(ends_sorted,
+                                                    segment_end3s,
+                                                    base_count)
+    return cover_per_read
 
 
 def get_rels_per_pos(mutations: dict[int, dict[int, np.ndarray]],
@@ -184,7 +206,7 @@ def get_rels_per_read(mutations: dict[int, dict[int, np.ndarray]],
     counts[MATCH] = cover_per_read.copy()
     for pos, base in pos_index:
         column = bases.index(base)
-        for mut, reads in mutations.get(pos, dict()).items():
+        for mut, reads in mutations[pos].items():
             rows = read_indexes[reads]
             counts[MATCH].values[rows, column] -= 1
             counts[mut].values[rows, column] += 1

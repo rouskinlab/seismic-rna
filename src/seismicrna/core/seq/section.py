@@ -498,7 +498,7 @@ class Section(object):
         """ Number of relevant positions in the section. """
         return self.length - self.masked_int.size
 
-    def copy(self):
+    def copy(self, masks: bool = True):
         """ Return an identical section. """
         copied = self.__class__(ref=self.ref,
                                 seq=self.seq,
@@ -508,8 +508,9 @@ class Section(object):
                                 end5=self.end5,
                                 end3=self.end3,
                                 name=self.name)
-        for name, masked in self._masks.items():
-            copied.add_mask(name, masked)
+        if masks:
+            for name, masked in self._masks.items():
+                copied.add_mask(name, masked)
         return copied
 
     def get_mask(self, name: str):
@@ -548,9 +549,13 @@ class Section(object):
         # Do not log self._masks[name] due to memory leak.
         logger.debug(f"Added mask {repr(name)} to {self}")
 
-    def remove_mask(self, name: str):
+    def remove_mask(self, name: str, missing_ok: bool = False):
         """ Remove the specified mask from the section. """
-        self._masks.pop(name, None)
+        try:
+            self._masks.pop(name)
+        except KeyError:
+            if not missing_ok:
+                raise
 
     def _find_gu(self) -> np.ndarray:
         """ Array of each position whose base is neither A nor C. """

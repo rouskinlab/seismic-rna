@@ -7,7 +7,7 @@ from ..core.data import ChainedMutsDataset, LoadedDataset, LoadFunction
 from ..core.rel import RelPattern
 from ..core.report import CountMutsF, CountRefsF, MinMutGapF, PosKeptF
 from ..pool.data import load_relate_pool_dataset
-from ..relate.batch import RelateRefseqBatch
+from ..relate.batch import RelateSectionBatch
 
 
 class MaskReadDataset(LoadedDataset):
@@ -64,7 +64,7 @@ class MaskMutsDataset(ChainedMutsDataset):
                          complement=True)
         return section
 
-    def _chain(self, batch1: RelateRefseqBatch, batch2: MaskBatchIO):
+    def _chain(self, batch1: RelateSectionBatch, batch2: MaskBatchIO):
         return apply_mask(batch1,
                           batch2.read_nums,
                           self.section.unmasked_int,
