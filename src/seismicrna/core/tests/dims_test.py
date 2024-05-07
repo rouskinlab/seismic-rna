@@ -2,7 +2,7 @@ import unittest as ut
 
 import numpy as np
 
-from seismicrna.core.dims import find_dims, triangular
+from seismicrna.core.array import find_dims, triangular
 
 
 class TestFindDims(ut.TestCase):

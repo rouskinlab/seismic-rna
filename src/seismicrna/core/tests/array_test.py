@@ -2,7 +2,7 @@ import unittest as ut
 
 import numpy as np
 
-from seismicrna.core.array import ensure_same_length, get_inverse, get_length
+from seismicrna.core.array import ensure_same_length, calc_inverse, get_length
 
 rng = np.random.default_rng()
 
@@ -67,18 +67,41 @@ class TestEnsureSameLength(ut.TestCase):
                     )
 
 
-class TestGetInverse(ut.TestCase):
+class TestCalcInverse(ut.TestCase):
 
-    def test_get_inverse(self):
+    def test_calc_inverse(self):
         """ Invert an array with a known inverse. """
         target = np.array([4, 7, 3, 8, 1])
         expect = np.array([-1, 4, -1, 2, 0, -1, -1, 1, 3])
-        self.assertTrue(np.array_equal(get_inverse(target), expect))
+        self.assertTrue(np.array_equal(calc_inverse(target), expect))
+
+    def test_calc_inverse_max10(self):
+        """ Invert an array with a known inverse. """
+        target = np.array([4, 7, 3, 8, 1])
+        expect = np.array([-1, 4, -1, 2, 0, -1, -1, 1, 3, -1, -1])
+        self.assertTrue(np.array_equal(calc_inverse(target, maximum=10),
+                                       expect))
+
+    def test_calc_inverse_fill_fwd(self):
+        """ Invert an array with a known inverse; fill forward. """
+        target = np.array([4, 7, 3, 8, 1])
+        expect = np.array([-1, 4, 4, 2, 0, 0, 0, 1, 3])
+        self.assertTrue(np.array_equal(calc_inverse(target, fill=True),
+                                       expect))
+
+    def test_calc_inverse_fill_rev(self):
+        """ Invert an array with a known inverse; fill reverse. """
+        target = np.array([4, 7, 3, 8, 1])
+        expect = np.array([4, 4, 2, 2, 0, 1, 1, 1, 3])
+        self.assertTrue(np.array_equal(
+            calc_inverse(target, fill=True, fill_rev=True),
+            expect)
+        )
 
     def test_is_inverse(self):
         """ Verify every position in the inverse of a random array. """
         target = rng.choice(16, 8, replace=False)
-        inverse = get_inverse(target)
+        inverse = calc_inverse(target)
         for i, inv in enumerate(inverse):
             if inv == -1:
                 self.assertNotIn(i, target)
@@ -90,18 +113,18 @@ class TestGetInverse(ut.TestCase):
         target = np.array([4, 7, -3, 8, 1])
         self.assertRaisesRegex(ValueError,
                                "test_negative has negative values",
-                               get_inverse,
+                               calc_inverse,
                                target,
-                               "test_negative")
+                               what="test_negative")
 
     def test_repeated(self):
         """ Repeated values in the target are not permitted. """
         target = np.array([4, 7, 3, 8, 7, 1])
         self.assertRaisesRegex(ValueError,
                                "test_repeated has repeated values",
-                               get_inverse,
+                               calc_inverse,
                                target,
-                               "test_repeated")
+                               what="test_repeated")
 
 
 if __name__ == "__main__":

@@ -18,9 +18,8 @@ from .base import (COVER_REL,
                    INFOR_REL,
                    TABLE_RELS)
 from ..cluster.data import ClusterMutsDataset
-from ..core.array import check_naturals
+from ..core.array import check_naturals, triangular
 from ..core.batch import END5_COORD, END3_COORD, accum_fits
-from ..core.dims import triangular
 from ..core.header import ORDER_NAME, Header, make_header
 from ..core.mu import (calc_p_ends_observed,
                        calc_p_noclose,

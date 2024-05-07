@@ -82,7 +82,7 @@ from typing import Iterable
 import numpy as np
 from numba import jit, NumbaPerformanceWarning
 
-from ..dims import find_dims, triangular
+from ..array import find_dims, triangular
 
 logger = getLogger(__name__)
 

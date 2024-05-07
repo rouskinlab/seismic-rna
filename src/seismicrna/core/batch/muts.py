@@ -9,8 +9,7 @@ import pandas as pd
 from .count import (count_end_coords,
                     get_count_per_pos,
                     get_count_per_read,
-                    get_cover_per_pos,
-                    get_cover_per_read,
+                    calc_coverage,
                     get_reads_per_pos,
                     get_rels_per_pos,
                     get_rels_per_read)
@@ -104,20 +103,24 @@ class SectionMutsBatch(MutsBatch, ABC):
         return self.section.unmasked
 
     @cached_property
+    def _coverage(self):
+        """ Coverage per position and per read. """
+        return calc_coverage(self.pos_index,
+                             self.read_nums,
+                             self.ends,
+                             self.read_weights)
+
+    @property
     def cover_per_pos(self):
         """ Number of reads covering each position. """
-        return get_cover_per_pos(self.pos_index,
-                                 self.end5s,
-                                 self.end3s,
-                                 self.read_weights)
+        per_pos, per_read = self._coverage
+        return per_pos
 
-    @cached_property
+    @property
     def cover_per_read(self):
         """ Number of positions covered by each read. """
-        return get_cover_per_read(self.pos_index,
-                                  self.end5s,
-                                  self.end3s,
-                                  self.read_nums)
+        per_pos, per_read = self._coverage
+        return per_read
 
     @cached_property
     def rels_per_pos(self):

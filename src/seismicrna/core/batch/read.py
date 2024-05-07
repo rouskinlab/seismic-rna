@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from .index import RB_INDEX_NAMES
-from ..array import get_inverse, get_length
+from ..array import calc_inverse, get_length
 from ..types import fit_uint_type
 
 
@@ -82,7 +82,7 @@ class PartialReadBatch(ReadBatch, ABC):
 
     @cached_property
     def read_indexes(self):
-        return get_inverse(self.read_nums, "read_nums")
+        return calc_inverse(self.read_nums, what="read_nums", verify=False)
 
 ########################################################################
 #                                                                      #

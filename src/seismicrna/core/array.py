@@ -1,7 +1,8 @@
-from typing import Iterable
+from typing import Iterable, Sequence
 
 import numpy as np
 import pandas as pd
+from numba import jit
 
 from .types import UINT_NBYTES, fit_uint_type, get_uint_type
 
@@ -30,28 +31,94 @@ def get_length(array: np.ndarray, what: str = "array") -> int:
     return length
 
 
-def get_inverse(target: np.ndarray, what: str = "array"):
+@jit()
+def _fill_inverse_fwd(inverse: np.ndarray):
+    """ Fill missing indexes in `inverse` in forward order. """
+    fill = inverse[0]
+    for i in range(1, inverse.size):
+        if inverse[i] == -1:
+            inverse[i] = fill
+        else:
+            fill = inverse[i]
+
+
+@jit()
+def _fill_inverse_rev(inverse: np.ndarray):
+    """ Fill missing indexes in `inverse` in reverse order. """
+    fill = inverse[-1]
+    for i in range(inverse.size - 2, -1, -1):
+        if inverse[i] == -1:
+            inverse[i] = fill
+        else:
+            fill = inverse[i]
+
+
+def calc_inverse(target: np.ndarray,
+                 maximum: int = -1,
+                 fill: bool = False,
+                 fill_rev: bool = False,
+                 what: str = "array",
+                 verify: bool = True):
     """ Map integers in [0, max(target)] to their 0-based indexes in
-    `target`, or to -1 if not in `target`. """
-    uniq, counts = np.unique(target, return_counts=True)
-    if uniq.size > 0:
-        # Verify that all values in target are non-negative.
-        if get_length(uniq, what) > 0 > uniq[0]:
-            raise ValueError(f"{what} has negative values: {uniq[uniq < 0]}")
-        # Verify that all values in target are unique.
-        if np.max(counts) > 1:
-            raise ValueError(f"{what} has repeated values: {uniq[counts > 1]}")
-        # Initialize a 1-dimensional array whose length is one more than
-        # the maximum value of target, so that the array has every index
-        # in the range [0, max(target)].
-        inverse_size = np.max(target) + 1
-    else:
-        inverse_size = 0
-    # Initialize all elements in the array to -1, a placeholder value.
-    inverse = np.full(inverse_size, -1)
+    `target`, or to -1 if not in `target`.
+
+    Parameters
+    ----------
+    target: np.ndarray
+        Target values; all must be unique, non-negative integers.
+    maximum: int = -1
+        Maximum value for the target; will be computed if left at -1.
+    fill: bool = False
+        Fill missing indexes (that do not appear in `target`).
+    fill_rev: bool = False
+        Fill missing indexes in reverse order instead of forward order;
+        has an effect only if `fill` is True.
+    what: str = "array"
+        What to name the array (only used for error messages).
+    verify: bool = True
+        Verify that all target values are unique, non-negative integers.
+        If this assumption is incorrect and verify is False, then the
+        results of this function will be incorrect.
+
+    Returns
+    -------
+    np.ndarray
+        Inverse of target, such that
+    """
+    length = get_length(target, what)
+    if not length:
+        # If target is empty, then return an empty inverse.
+        return np.full(0, -1)
+    if verify:
+        uniq, counts = np.unique(target, return_counts=True)
+        if uniq.size > 0:
+            # Verify that all values in target are non-negative.
+            if get_length(uniq, what) > 0 > uniq[0]:
+                raise ValueError(
+                    f"{what} has negative values: {uniq[uniq < 0]}"
+                )
+            # Verify that all values in target are unique.
+            if counts.max() > 1:
+                raise ValueError(
+                    f"{what} has repeated values: {uniq[counts > 1]}"
+                )
+    # Create a 1-dimensional array whose length is one greater than the
+    # maximum value of target, so that the array has every index in the
+    # range [0, max(target)]; initialize all elements to placeholder -1.
+    if maximum < 0:
+        maximum = target.max()
+        if maximum < 0:
+            raise ValueError(f"Maximum target must be ≥ 0, but got {maximum}")
+    inverse = np.full(maximum + 1, -1)
     # For each value n with index i in target, set the value at index n
     # of inverse to i.
-    inverse[target] = np.arange(get_length(target, what))
+    inverse[target] = np.arange(length)
+    if fill:
+        # Fill missing values in inverse.
+        if fill_rev:
+            _fill_inverse_rev(inverse)
+        else:
+            _fill_inverse_fwd(inverse)
     return inverse
 
 
@@ -131,3 +198,104 @@ def sanitize_values(values: Iterable[int],
                          f"{array[array > upper_limit]}")
     # Return the array as the smallest data type that will fit the data.
     return np.asarray(array, dtype=fit_uint_type(max_value))
+
+
+def find_dims(dims: Sequence[Sequence[str | None]],
+              arrays: Sequence[np.ndarray],
+              names: Sequence[str] | None = None,
+              nonzero: Iterable[str] | bool = False):
+    """ Check the dimensions of the arrays.
+
+    Parameters
+    ----------
+
+    """
+    # Ensure that nonzero is either True or a set of str.
+    if nonzero is False:
+        nonzero = set()
+    elif nonzero is not True:
+        nonzero = set(map(str, nonzero))
+    # Verify there are the same number of arrays, dimensions, and names.
+    if (n := len(arrays)) != len(dims):
+        raise ValueError("The numbers of arrays and dimensions must equal, "
+                         f"but got {n} array(s) and {len(dims)} dimension(s)")
+    if names is not None:
+        if len(names) != n:
+            raise ValueError("The numbers of arrays and names must equal, "
+                             f"but got {n} array(s) and {len(names)} name(s)")
+    else:
+        names = [f"array{i}" for i in range(n)]
+    # Check the dimensions of the arrays.
+    sizes = dict()
+    for array, dim, name in zip(arrays, dims, names, strict=True):
+        if not isinstance(array, np.ndarray):
+            raise TypeError(f"Each array must be a NumPy NDArray, "
+                            f"but got {type(array).__name__} for {repr(name)}")
+        # Count the named and extra dimensions for this array.
+        if len(dim) > 0 and dim[-1] is None:
+            # The last dimension is None, so subtract it from the number
+            # of named dimensions.
+            n_named = len(dim) - 1
+            # Extra dimensions in the array are allowed.
+            extras = True
+        else:
+            # All dimensions are named.
+            n_named = len(dim)
+            # Extra dimensions in the array are forbidden.
+            extras = False
+        # Verify the array has a valid number of dimensions.
+        if array.ndim != n_named:
+            if not extras:
+                raise ValueError(f"Array {repr(name)} must have {n_named} "
+                                 f"dimension(s), but got {array.ndim}")
+            if array.ndim < n_named:
+                raise ValueError(f"Array {repr(name)} must have ≥ {n_named} "
+                                 f"dimension(s), but got {array.ndim}")
+        # Check each named dimension of the array.
+        for i in range(n_named):
+            if not isinstance(dim[i], str):
+                raise TypeError("The name of each dimension must be str, "
+                                f"but got {type(dim[i]).__name__}")
+            # Get the size of this dimension in the array.
+            size = array.shape[i]
+            if (other_size := sizes.get(dim[i])) is not None:
+                # A dimension of this name was already encountered.
+                if size != other_size:
+                    raise ValueError("Got multiple sizes for dimension "
+                                     f"{repr(dim[i])}: {other_size} ≠ {size}")
+            else:
+                # This is the first time this dimension was encountered.
+                # Validate the size.
+                if not isinstance(size, int):
+                    raise TypeError(f"Size of dimension {repr(dim[i])} must "
+                                    f"be int, but got {type(size).__name__}")
+                min_size = int(nonzero is True or dim[i] in nonzero)
+                if size < min_size:
+                    raise ValueError(f"Size of dimension {repr(dim[i])} must "
+                                     f"be ≥ {min_size}, but got {size}")
+                sizes[dim[i]] = size
+    # Check if any dimensions in nonzero were not defined.
+    if nonzero is not True and (unknown := nonzero - set(sizes)):
+        raise ValueError(f"Unknown dimension(s) for nonzero: {unknown}")
+    # Return the size of each dimension.
+    return sizes
+
+
+@jit()
+def triangular(n: int):
+    """ The `n` th triangular number (`n` ≥ 0): number of items in an
+    equilateral triangle with `n` items on each side.
+
+    Parameters
+    ----------
+    n: int
+        Index of the triangular number to return; equivalently, the side
+        length of the equilateral triangle.
+
+    Returns
+    -------
+    int
+        The triangular number with index `n`; equivalently, the number
+        of items in the equilateral triangle of side length `n`.
+    """
+    return (n * n + n) // 2

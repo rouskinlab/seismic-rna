@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from seismicrna.core.batch.count import (count_end_coords,
-                                         get_cover_per_read)
+                                         calc_coverage)
 from seismicrna.core.batch.index import END5_COORD, END3_COORD
 from seismicrna.core.seq.section import SEQ_INDEX_NAMES
 
@@ -151,7 +151,7 @@ class TestCountEndCoords(ut.TestCase):
         ))
 
 
-class TestGetCoverPerRead(ut.TestCase):
+class TestCalcCoverage(ut.TestCase):
 
     def test_1_segment(self):
         pos_index = pd.MultiIndex.from_tuples([(3, "G"),
@@ -163,41 +163,72 @@ class TestGetCoverPerRead(ut.TestCase):
                                                (10, "G"),
                                                (11, "C")],
                                               names=SEQ_INDEX_NAMES)
-        ends = np.array([[1, 1],
-                         [1, 2],
-                         [1, 3],
-                         [2, 4],
-                         [4, 4],
-                         [4, 6],
-                         [1, 7],
-                         [1, 13],
-                         [7, 13],
-                         [8, 10],
-                         [10, 10],
-                         [10, 12],
+        ends = np.array([[0, 1],
+                         [0, 2],
+                         [0, 3],
+                         [1, 4],
+                         [3, 4],
+                         [3, 6],
+                         [0, 7],
+                         [0, 13],
+                         [6, 13],
+                         [7, 10],
+                         [9, 10],
+                         [9, 12],
+                         [10, 13],
                          [11, 13],
-                         [12, 13],
-                         [13, 13]])
+                         [12, 13]])
         read_nums = np.arange(ends.shape[0])
-        expect = {"A": pd.Series([0, 0, 0, 1, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0],
-                                 read_nums),
-                  "C": pd.Series([0, 0, 0, 0, 0, 1, 1, 2, 1, 0, 0, 1, 1, 0, 0],
-                                 read_nums),
-                  "G": pd.Series([0, 0, 1, 1, 0, 0, 1, 2, 1, 1, 1, 1, 0, 0, 0],
-                                 read_nums),
-                  "T": pd.Series([0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0],
-                                 read_nums),
-                  "N": pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 read_nums)}
-        result = get_cover_per_read(pos_index, ends, read_nums)
-        self.assertEqual(sorted(result), sorted(expect))
-        for base in expect:
-            self.assertIsInstance(result[base], pd.Series)
-            self.assertTrue(np.array_equal(result[base].index.values,
-                                           read_nums))
-            self.assertTrue(result[base].equals(expect[base]))
+        exp_per_pos = pd.Series([4., 5., 3., 3., 3., 3., 5., 4.],
+                                index=pos_index)
+        exp_per_read = {
+            "A": pd.Series([0, 0, 0, 1, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0],
+                           read_nums),
+            "C": pd.Series([0, 0, 0, 0, 0, 1, 1, 2, 1, 0, 0, 1, 1, 0, 0],
+                           read_nums),
+            "G": pd.Series([0, 0, 1, 1, 0, 0, 1, 2, 1, 1, 1, 1, 0, 0, 0],
+                           read_nums),
+            "T": pd.Series([0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0],
+                           read_nums),
+            "N": pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                           read_nums)
+        }
+        res_per_pos, res_per_read = calc_coverage(pos_index, read_nums, ends)
+        self.assertIsInstance(res_per_pos, pd.Series)
+        self.assertTrue(res_per_pos.equals(exp_per_pos))
+        self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
+        for base in exp_per_read:
+            self.assertIsInstance(res_per_read[base], pd.Series)
+            self.assertTrue(res_per_read[base].equals(exp_per_read[base]))
 
     def test_2_segments(self):
+        """
+        01234567890123
+
+         -----
+                 =====
+
+            -----
+              =====
+
+           ----
+           ====
+
+                 -
+                 =
+
+             ----
+                  ====
+
+             -----
+                  ====
+
+             ------
+                  ====
+
+         -------------
+         =============
+        """
         pos_index = pd.MultiIndex.from_tuples([(3, "G"),
                                                (4, "A"),
                                                (5, "C"),
@@ -207,37 +238,41 @@ class TestGetCoverPerRead(ut.TestCase):
                                                (10, "G"),
                                                (11, "C")],
                                               names=SEQ_INDEX_NAMES)
-        ends = np.array([[1, 5, 9, 13],
-                         [9, 13, 1, 5],
-                         [4, 8, 6, 10],
-                         [6, 10, 4, 8],
-                         [3, 6, 3, 6],
-                         [9, 9, 9, 9],
-                         [5, 8, 10, 13],
-                         [10, 13, 5, 8],
-                         [5, 9, 10, 13],
-                         [10, 13, 5, 9],
-                         [5, 10, 10, 13],
-                         [10, 13, 5, 10],
-                         [1, 13, 1, 13]])
+        ends = np.array([[0, 5, 8, 13],
+                         [8, 13, 0, 5],
+                         [3, 8, 5, 10],
+                         [5, 10, 3, 8],
+                         [2, 6, 2, 6],
+                         [8, 9, 8, 9],
+                         [4, 8, 9, 13],
+                         [9, 13, 4, 8],
+                         [4, 9, 9, 13],
+                         [9, 13, 4, 9],
+                         [4, 10, 9, 13],
+                         [9, 13, 4, 10],
+                         [0, 13, 0, 13]])
         read_nums = np.arange(ends.shape[0])
-        expect = {"A": pd.Series([1, 1, 2, 2, 2, 0, 1, 1, 1, 1, 1, 1, 2],
-                                 read_nums),
-                  "C": pd.Series([2, 2, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2],
-                                 read_nums),
-                  "G": pd.Series([2, 2, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 2],
-                                 read_nums),
-                  "T": pd.Series([1, 1, 2, 2, 0, 1, 1, 1, 2, 2, 2, 2, 2],
-                                 read_nums),
-                  "N": pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 read_nums)}
-        result = get_cover_per_read(pos_index, ends, read_nums)
-        self.assertEqual(sorted(result), sorted(expect))
-        for base in expect:
-            self.assertIsInstance(result[base], pd.Series)
-            self.assertTrue(np.array_equal(result[base].index.values,
-                                           read_nums))
-            self.assertTrue(result[base].equals(expect[base]))
+        exp_per_pos = pd.Series([4., 6., 12., 10., 9., 10., 11., 9.],
+                                index=pos_index)
+        exp_per_read = {
+            "A": pd.Series([1, 1, 2, 2, 2, 0, 1, 1, 1, 1, 1, 1, 2],
+                           read_nums),
+            "C": pd.Series([2, 2, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2],
+                           read_nums),
+            "G": pd.Series([2, 2, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 2],
+                           read_nums),
+            "T": pd.Series([1, 1, 2, 2, 0, 1, 1, 1, 2, 2, 2, 2, 2],
+                           read_nums),
+            "N": pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                           read_nums)
+        }
+        res_per_pos, res_per_read = calc_coverage(pos_index, read_nums, ends)
+        self.assertIsInstance(res_per_pos, pd.Series)
+        self.assertTrue(res_per_pos.equals(exp_per_pos))
+        self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
+        for base in exp_per_read:
+            self.assertIsInstance(res_per_read[base], pd.Series)
+            self.assertTrue(res_per_read[base].equals(exp_per_read[base]))
 
 
 if __name__ == "__main__":

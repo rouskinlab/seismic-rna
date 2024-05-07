@@ -6,8 +6,7 @@ import pandas as pd
 
 from .names import CLUST_PROP_NAME
 from .uniq import UniqReads
-from ..core.array import get_length
-from ..core.dims import find_dims
+from ..core.array import find_dims, get_length
 from ..core.header import index_order_clusts
 from ..core.mu import (READS,
                        POSITIONS,

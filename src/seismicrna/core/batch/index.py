@@ -41,6 +41,16 @@ def get_num_segments(ends: np.ndarray) -> int:
     return num_segs
 
 
+def split_ends(ends: np.ndarray):
+    """ Split an array of end positions into 5' and 3' ends. """
+    # Although num_ends will just be the 2nd dimension (axis 1) of ends,
+    # use get_num_segments to validate the shape of ends.
+    num_ends = get_num_segments(ends) * 2
+    end5s = ends[:, np.arange(0, num_ends, 2)]
+    end3s = ends[:, np.arange(1, num_ends, 2)]
+    return end5s, end3s
+
+
 def sanitize_pos(positions: Iterable[int], min_pos: int, max_pos: int):
     """ Validate and sort positions, and return them as an array. """
     return sanitize_values(positions, min_pos, max_pos, "positions")

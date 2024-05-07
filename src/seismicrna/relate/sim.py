@@ -10,10 +10,8 @@ from .write import get_reads_per_batch, mib_to_bytes
 from ..core.batch import (END_COORDS,
                           END5_COORD,
                           END3_COORD,
-                          get_length,
-                          list_naturals,
-                          check_naturals)
-from ..core.dims import triangular
+                          get_length)
+from ..core.array import check_naturals, list_naturals, triangular
 from ..core.io import RefseqIO
 from ..core.rel import SUB_A, SUB_C, SUB_G, SUB_T
 from ..core.seq import (BASEA,
