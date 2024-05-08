@@ -3,6 +3,8 @@ from itertools import chain, filterfalse, repeat
 from logging import getLogger
 from typing import Any, Callable, Iterable
 
+from ..logs import config, get_config
+
 logger = getLogger(__name__)
 
 
@@ -91,10 +93,17 @@ class Task(object):
 
     def __init__(self, func: Callable):
         self._func = func
+        self._config = get_config()
 
     def __call__(self, *args, **kwargs):
         """ Call the task's function in a try-except block, return the
         result if it succeeds, and return `None` otherwise. """
+        if get_config() != self._config:
+            # Tasks running in parallel may not have the same top logger
+            # as the parent process (this seems to be system dependent).
+            # If not, then this task's top logger must be configured to
+            # match the configuration of the parent process.
+            config(*self._config)
         task = fmt_func_args(self._func, *args, **kwargs)
         logger.debug(f"Began task {task}")
         try:
