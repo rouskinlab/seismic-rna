@@ -21,16 +21,11 @@ class RelateDataset(LoadedMutsDataset):
 
     def get_batch(self, batch: int):
         relate_batch = super().get_batch(batch)
-        # Add the reference sequence to the batch.
-        if (batch_nt := getattr(relate_batch, "max_pos")) != len(self.refseq):
-            raise ValueError(f"Reference sequence is {len(self.refseq)} nt, "
-                             f"but {relate_batch} has {batch_nt} nt")
-        # Add the other attributes to the batch.
-        kwargs = {
-            key: getattr(relate_batch, key)
-            for key in ["batch", "muts", "end5s", "mid5s", "mid3s", "end3s"]
-        }
-        return RelateSectionBatch(refseq=self.refseq, sanitize=False, **kwargs)
+        return RelateSectionBatch(batch=relate_batch.batch,
+                                  ends=relate_batch.ends,
+                                  muts=relate_batch.muts,
+                                  section=self.section,
+                                  sanitize=False)
 
 ########################################################################
 #                                                                      #

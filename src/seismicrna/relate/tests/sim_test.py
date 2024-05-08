@@ -101,7 +101,7 @@ class TestSimulateRelateBatch(ut.TestCase):
                 cluster_choices = choose_clusters(p_clust, n_reads)
                 # Simulate the batch.
                 batch = simulate_relate_batch(
-                    "sample", "ref", 0, n_reads, p_mut, p_ends, cluster_choices
+                    "sample", "ref", 0, p_mut, p_ends, cluster_choices
                 )
                 # Count the reads with mutations at each position.
                 for pos, muts in batch.muts.items():

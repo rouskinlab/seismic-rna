@@ -198,7 +198,7 @@ class RelMasker(object):
         # Find the reads with sufficiently many informative positions.
         info, muts = batch.count_per_read(self.pattern)
         finfo_read = info.values / batch.cover_per_read.values.sum(axis=1)
-        reads = info.index[finfo_read >= self.min_finfo_read]
+        reads = info.index.values[finfo_read >= self.min_finfo_read]
         logger.debug(f"{self} kept {reads.size} reads with informative "
                      f"fractions ≥ {self.min_finfo_read} in {batch}")
         # Return a new batch of only those reads.
@@ -218,7 +218,7 @@ class RelMasker(object):
         info, muts = batch.count_per_read(self.pattern)
         with np.errstate(invalid="ignore"):
             fmut_read = muts.values / info.values
-        reads = info.index[fmut_read <= self.max_fmut_read]
+        reads = info.index.values[fmut_read <= self.max_fmut_read]
         logger.debug(f"{self} kept {reads.size} reads with mutated "
                      f"fractions ≤ {self.max_fmut_read} in {batch}")
         # Return a new batch of only those reads.

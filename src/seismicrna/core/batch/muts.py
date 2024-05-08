@@ -14,7 +14,8 @@ from .count import (count_end_coords,
                     get_rels_per_pos,
                     get_rels_per_read)
 from .index import (iter_windows,
-                    sanitize_ends)
+                    sanitize_ends,
+                    split_ends)
 from .read import ReadBatch, PartialReadBatch
 from ..rel import REL_TYPE, RelPattern
 from ..seq import Section
@@ -27,7 +28,7 @@ class MutsBatch(ReadBatch, ABC):
 
     def __init__(self, *,
                  section: Section,
-                 ends: list[tuple[list | np.ndarray, list | np.ndarray]],
+                 ends: np.ndarray,
                  muts: dict[int, dict[int, list[int] | np.ndarray]],
                  sanitize: bool = True,
                  **kwargs):
@@ -44,30 +45,19 @@ class MutsBatch(ReadBatch, ABC):
     @cached_property
     def end5s(self):
         """ 5' end coordinates of reads. """
-        end5s, _ = self.ends[0]
-        for (seg5s, _) in self.ends[1:]:
-            end5s = np.minimum(end5s, seg5s)
-        return end5s
+        end5s, _ = split_ends(self.ends)
+        return end5s.min(axis=1)
 
     @cached_property
     def end3s(self):
         """ 3' end coordinates of reads. """
-        _, end3s = self.ends[0]
-        for (_, seg3s) in self.ends[1:]:
-            end3s = np.maximum(end3s, seg3s)
-        return end3s
+        _, end3s = split_ends(self.ends)
+        return end3s.max(axis=1)
 
-    @cached_property
+    @property
     def pos_dtype(self):
         """ Data type for positions. """
-        dtype = self.ends[0][0].dtype
-        for seg in self.ends:
-            for ends in seg:
-                if ends.dtype is not dtype:
-                    raise TypeError(
-                        f"Got > 1 positional data type: {dtype} ≠ {ends.dtype}"
-                    )
-        return dtype
+        return self.ends.dtype
 
     @cached_property
     def pos_nums(self):

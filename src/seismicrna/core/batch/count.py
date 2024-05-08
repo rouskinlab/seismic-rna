@@ -7,6 +7,7 @@ from numba import jit
 
 from .index import (END_COORDS,
                     count_base_types,
+                    get_num_segments,
                     iter_base_types,
                     stack_end_coords)
 from ..array import find_dims, get_length
@@ -135,6 +136,8 @@ def calc_coverage(pos_index: pd.Index,
         arrays.append(read_weights)
         names.append("read_weights")
     find_dims(dims, arrays, names)
+    # Convert the 5' end coordinates from 1-indexed to 0-indexed.
+    ends = ends - np.array([[1, 0] * get_num_segments(ends)])
     # Find the unique end coordinates, to speed up the calculation when
     # many reads have identical end coordinates (e.g. for amplicons).
     # Limit the coordinates to the range [min_pos - 1, max_pos].
@@ -179,13 +182,14 @@ def calc_coverage(pos_index: pd.Index,
                      if read_weights is not None
                      else pd.Series(cover_per_pos.reshape(positions.size),
                                     index=pos_index))
-    cover_per_read = {
-        base: pd.Series((cover_per_read[uniq_inverse, bases.index(base)]
-                         if base in bases
-                         else 0),
-                        index=read_nums)
-        for base in DNA.alph()
-    }
+    cover_per_read = pd.DataFrame.from_dict(
+        {base: pd.Series((cover_per_read[uniq_inverse, bases.index(base)]
+                          if base in bases
+                          else 0),
+                         index=read_nums)
+         for base in DNA.alph()},
+        orient="columns",
+    )
     return cover_per_pos, cover_per_read
 
 

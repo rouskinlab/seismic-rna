@@ -56,7 +56,7 @@ def sanitize_pos(positions: Iterable[int], min_pos: int, max_pos: int):
     return sanitize_values(positions, min_pos, max_pos, "positions")
 
 
-def sanitize_ends(ends: list[tuple[list | np.ndarray, list | np.ndarray]],
+def sanitize_ends(ends: np.ndarray,
                   min_pos: int,
                   max_pos: int,
                   check_values: bool = True):
@@ -64,9 +64,9 @@ def sanitize_ends(ends: list[tuple[list | np.ndarray, list | np.ndarray]],
 
     Parameters
     ----------
-    ends: list[tuple[list | np.ndarray, list | np.ndarray]]
-        End coordinates (1-indexed). Each item corresponds to a segment
-        of the read and must be a tuple of its 5' and 3' coordinates.
+    ends: np.ndarray
+        End coordinates (1-indexed). Columns alternate 5' and 3' end
+        coordinates (2 columns per segment).
     min_pos: int
         Minimum allowed value of a position.
     max_pos: int
@@ -79,29 +79,22 @@ def sanitize_ends(ends: list[tuple[list | np.ndarray, list | np.ndarray]],
 
     Returns
     -------
-    list[tuple[np.ndarray, np.ndarray]]
-        Sanitized end coordinates: positive, even number of arrays, all
-        the same length and with the most efficient data type, and if
-        `check_values` is True then all with valid coordinates.
+    np.ndarray
+        Sanitized end coordinates: with an even number of columns and
+        encoded in the most efficient data type, and if `check_values`
+        is True then all between `min_pos` and `max_pos` (inclusive).
     """
-    if not ends:
-        raise ValueError("Got no pairs of end coordinates")
-    # Convert all end coordinates into arrays, if not already.
-    ends = [(np.asarray(e5), np.asarray(e3)) for e5, e3 in ends]
-    # Ensure all arrays have the same length.
-    lengths = [get_length(ej, f"segment {i} {j}' coordinates")
-               for i, seg in enumerate(ends)
-               for j, ej in zip("53", seg, strict=True)]
-    if len(set(lengths)) != 1:
-        raise ValueError("Arrays of end coordinates must have equal lengths, "
-                         f"but got lengths {lengths}")
+    num_segs = get_num_segments(ends)
+    if not num_segs:
+        raise ValueError("Got no end coordinates")
+    num_reads, _ = ends.shape
     if check_values:
-        # Validate every pair of end coordinates.
-        length = lengths[0]
-        for i, (e5, e3) in enumerate(ends):
+        for i in range(num_segs):
+            e5 = ends[:, i * 2]
+            e3 = ends[:, i * 2 + 1]
             # All coordinates must be ≥ 1.
             ensure_order(e5,
-                         np.broadcast_to(min_pos, length),
+                         np.broadcast_to(min_pos, num_reads),
                          f"segment {i} 5' coordinates",
                          f"minimum position ({min_pos})",
                          gt_eq=True)
@@ -112,7 +105,7 @@ def sanitize_ends(ends: list[tuple[list | np.ndarray, list | np.ndarray]],
                          f"segment {i} 3' coordinates")
             # All coordinates must be ≤ max position
             ensure_order(e3,
-                         np.broadcast_to(max_pos, length),
+                         np.broadcast_to(max_pos, num_reads),
                          f"segment {i} 3' coordinates",
                          f"maximum position ({max_pos})")
     # Convert all ends into arrays of the most efficient data type.
@@ -120,9 +113,7 @@ def sanitize_ends(ends: list[tuple[list | np.ndarray, list | np.ndarray]],
     # Otherwise, values greater than the data type can accomodate would
     # be converted to their modulo relative to the maximum value of the
     # data type, which would mean checking the wrong values.
-    pos_dtype = fit_uint_type(max_pos)
-    return [(np.asarray(e5, pos_dtype), np.asarray(e3, pos_dtype))
-            for e5, e3 in ends]
+    return np.asarray(ends, dtype=fit_uint_type(max_pos))
 
 
 def stack_end_coords(end5s: np.ndarray, end3s: np.ndarray):

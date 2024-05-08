@@ -5,7 +5,8 @@ import numpy as np
 
 from ..core.batch import (SectionMutsBatch,
                           PartialMutsBatch,
-                          PartialReadBatch)
+                          PartialReadBatch,
+                          get_num_segments)
 from ..core.seq import Section
 
 logger = getLogger(__name__)
@@ -14,6 +15,10 @@ logger = getLogger(__name__)
 class MaskReadBatch(PartialReadBatch):
 
     def __init__(self, *, read_nums: np.ndarray, **kwargs):
+        if not isinstance(read_nums, np.ndarray):
+            raise TypeError(
+                f"read_nums must be ndarray, but got {type(read_nums).__name__}"
+            )
         self._read_nums = read_nums
         super().__init__(**kwargs)
 
@@ -33,8 +38,7 @@ def apply_mask(batch: SectionMutsBatch,
     # Determine which reads to use.
     if read_nums is not None:
         # Select specific read indexes.
-        read_indexes = batch.read_indexes[read_nums]
-        ends = [(e5[read_indexes], e3[read_indexes]) for e5, e3 in batch.ends]
+        ends = batch.ends[batch.read_indexes[read_nums]]
         # Determine which reads were masked.
         masked_reads = np.setdiff1d(batch.read_nums, read_nums)
     else:
@@ -45,9 +49,10 @@ def apply_mask(batch: SectionMutsBatch,
     # Determine the section of the new batch.
     if section is not None:
         # Clip the read coordinates to the section bounds.
-        ends = [(np.clip(e5, section.end5, section.end3 + 1),
-                 np.clip(e3, section.end5 - 1, section.end3))
-                for e5, e3 in ends]
+        num_segs = get_num_segments(ends)
+        clip_min = np.array([[section.end5, section.end5 - 1] * num_segs])
+        clip_max = np.array([[section.end3 + 1, section.end3] * num_segs])
+        ends = ends.clip(clip_min, clip_max)
     else:
         # Use the same section as the given batch.
         section = batch.section

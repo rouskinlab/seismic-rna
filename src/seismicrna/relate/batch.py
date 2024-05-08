@@ -3,7 +3,7 @@ from functools import cached_property
 
 import numpy as np
 
-from ..core.array import ensure_same_length, get_length
+from ..core.array import get_length
 from ..core.batch import (AllReadBatch,
                           MutsBatch,
                           SectionMutsBatch)
@@ -23,8 +23,9 @@ class QnamesBatch(AllReadBatch):
 class RelateBatch(MutsBatch, AllReadBatch, ABC):
 
     @cached_property
-    def num_reads(self):
-        return ensure_same_length(self.end5s, self.end3s, "end5s", "end3s")
+    def num_reads(self) -> int:
+        num_reads, _ = self.ends.shape
+        return num_reads
 
 
 class RelateSectionBatch(RelateBatch, SectionMutsBatch):

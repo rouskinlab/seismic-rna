@@ -66,9 +66,6 @@ def accumulate(batches: Iterable[SectionMutsBatch],
         info_per_read_per_batch = None
     # Accumulate the counts from the batches.
     for batch in batches:
-        if batch.refseq != refseq:
-            raise ValueError(f"Reference sequence of {batch} ({batch.refseq}) "
-                             f"differs from the reference sequence ({refseq})")
         if pos_nums is not None and not np.array_equal(batch.pos_nums,
                                                        pos_nums):
             raise ValueError(f"Positions of {batch} ({batch.pos_nums}) "

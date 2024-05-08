@@ -24,7 +24,9 @@ def check_naturals(values: np.ndarray, what: str = "values"):
 
 def get_length(array: np.ndarray, what: str = "array") -> int:
     if not isinstance(array, np.ndarray):
-        raise TypeError(f"array must be ndarray, but got {type(array).__name__}")
+        raise TypeError(
+            f"{what} must be ndarray, but got {type(array).__name__}"
+        )
     if array.ndim != 1:
         raise ValueError(f"{what} must have 1 dimension, but got {array.ndim}")
     length, = array.shape
@@ -276,7 +278,7 @@ def find_dims(dims: Sequence[Sequence[str | None]],
                 sizes[dim[i]] = size
     # Check if any dimensions in nonzero were not defined.
     if nonzero is not True and (unknown := nonzero - set(sizes)):
-        raise ValueError(f"Unknown dimension(s) for nonzero: {unknown}")
+        raise ValueError(f"Unknown dimensions for nonzero: {unknown}")
     # Return the size of each dimension.
     return sizes
 

@@ -94,7 +94,7 @@ def generate_batch(batch: int, *,
     names, relvecs = from_reads(relate_records(xam_view.iter_records(batch)),
                                 xam_view.sample,
                                 xam_view.ref,
-                                len(refseq),
+                                refseq,
                                 batch)
     logger.info(f"Ended computing relation vectors for batch {batch} "
                 f"of {xam_view}")

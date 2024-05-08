@@ -54,7 +54,7 @@ def choose_clusters(p_clust: pd.Series, n_reads: int):
     if not isinstance(p_clust, pd.Series):
         raise TypeError("p_clust must be Series, "
                         f"but got {type(p_clust).__name__}")
-    clusters = check_naturals(p_clust.index, "clusters")
+    clusters = check_naturals(p_clust.index.values, "clusters")
     # Choose a cluster for each read.
     return rng.choice(clusters, n_reads, p=p_clust.values)
 
@@ -128,7 +128,7 @@ def simulate_relate_batch(sample: str,
         raise TypeError("p_mut must be DataFrame, "
                         f"but got {type(p_mut).__name__}")
     refseq, positions = index_to_refseq_pos(p_mut.index)
-    clusters = check_naturals(p_mut.columns, "clusters")
+    clusters = check_naturals(p_mut.columns.values, "clusters")
     # Validate the end coordinates.
     if not isinstance(p_ends, pd.Series):
         raise TypeError("p_ends must be Series, "
@@ -219,7 +219,7 @@ def generate_batches(refseq: DNA,
     # Determine the numbers of batches and reads per batch.
     n_reads_per_batch = get_reads_per_batch(mib_to_bytes(batch_size),
                                             len(refseq))
-    n_batches_full, n_reads_extra = divmod(n_reads, n_reads_per_batch)
+    n_batches_full = n_reads % n_reads_per_batch
     # Generate every full-size batch.
     for batch in range(n_batches_full):
         first = n_reads_per_batch * batch
@@ -227,20 +227,18 @@ def generate_batches(refseq: DNA,
         qnames_check, relate_check = generate_batch(
             *args,
             batch=batch,
-            n_reads=n_reads_per_batch,
             cluster_choices=cluster_choices[first: last],
             **kwargs
         )
         qnames_checks.append(qnames_check)
         relate_checks.append(relate_check)
     # Generate the last batch, which may have fewer reads.
-    if n_reads_extra:
-        first = n_reads_per_batch * n_batches_full
-        last = n_reads
+    first = n_reads_per_batch * n_batches_full
+    last = n_reads
+    if last - first > 0:
         qnames_check, relate_check = generate_batch(
             *args,
             batch=n_batches_full,
-            n_reads=n_reads_extra,
             cluster_choices=cluster_choices[first: last],
             **kwargs
         )

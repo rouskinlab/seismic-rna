@@ -46,16 +46,18 @@ def iter_relvecs_q53(refseq: DNA,
     low_qual = set(low_qual)
     # Determine the section of the reference sequence that is occupied
     # by the read.
-    sect = Section("", refseq, end5=end5, end3=end3)
-    all_positions = set(sect.range_int)
-    all5_positions = set(sect.range_int[:-1]) if sect.length > 0 else set()
+    section = Section("", refseq, end5=end5, end3=end3)
+    all_positions = set(section.range_int)
+    all5_positions = (set(section.range_int[:-1])
+                      if section.length > 0
+                      else set())
     if low_qual - all_positions:
         raise ValueError(f"Invalid positions in low_qual: "
-                         f"{sorted(low_qual - set(sect.range))}")
+                         f"{sorted(low_qual - set(section.range))}")
     # Find the possible relationships at each position in the section,
     # not including insertions.
     rel_opts = list()
-    for pos in sect.range_int:
+    for pos in section.range_int:
         # Find the base in the reference sequence (pos is 1-indexed).
         ref_base = refseq[pos - 1]
         if low_qual:
@@ -67,7 +69,7 @@ def iter_relvecs_q53(refseq: DNA,
                     for read_base in DNA.four()]
         # A deletion is an option at every position except the ends of
         # the covered region.
-        if sect.end5 < pos < sect.end3:
+        if section.end5 < pos < section.end3:
             opts.append(DELET)
         rel_opts.append([(pos, rel) for rel in opts])
     # Iterate through all possible relationships at each position.
@@ -75,7 +77,7 @@ def iter_relvecs_q53(refseq: DNA,
     for rels in product(*rel_opts):
         # Generate a relation vector from the relationships.
         relvec = dict((pos, rel) for pos, rel in rels if rel != MATCH)
-        yield sect.end5, sect.end3, relvec
+        yield section.end5, section.end3, relvec
         if max_ins is None or max_ins > 0:
             no_ins5_pos = {pos for del_pos, rel in relvec.items()
                            if rel == DELET
@@ -92,7 +94,7 @@ def iter_relvecs_q53(refseq: DNA,
                         i3 = i5 + 1
                         rv_ins[i5] = rv_ins.get(i5, MATCH) | INS_5
                         rv_ins[i3] = rv_ins.get(i3, MATCH) | INS_3
-                    yield sect.end5, sect.end3, rv_ins
+                    yield section.end5, section.end3, rv_ins
 
 
 def iter_relvecs_all(refseq: DNA, max_ins: int | None = None):
@@ -110,7 +112,7 @@ def iter_relvecs_all(refseq: DNA, max_ins: int | None = None):
     # Use every possible pair of 5' and 3' end positions.
     for end5, end3 in cwr(range(1, len(refseq) + 1), 2):
         # Use every possible number of low-quality base calls.
-        for n_low_qual in range((end3 - end5 + 1) + 1):
+        for n_low_qual in range((end3 - (end5 - 1)) + 1):
             # Use every possible set of low-quality positions.
             for low_qual in combinations(range(end5, end3 + 1), n_low_qual):
                 # Yield every possible relation vector.

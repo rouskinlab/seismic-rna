@@ -57,7 +57,8 @@ def ref_to_alignments(refseq: DNA,
         n_ins3 = sum(bool(rel & INS_3) for rel in muts.values())
         if n_ins != n_ins3:
             raise ValueError(
-                f"Got {n_ins} 5' and {n_ins3} 3' insertions in {muts}")
+                f"Got {n_ins} 5' and {n_ins3} 3' insertions in {muts}"
+            )
         if n_ins > max_ins:
             # This should not happen. Checking just in case.
             raise ValueError(f"Got {n_ins} insertions, but max_ins = {max_ins}")

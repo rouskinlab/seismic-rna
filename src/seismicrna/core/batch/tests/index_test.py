@@ -49,8 +49,8 @@ class TestSplitEnds(ut.TestCase):
             ends = np.stack([end5s, end3s], axis=1)
             self.assertEqual(ends.shape, (nreads, 2))
             for result, expect in zip(split_ends(ends),
-                                      [end5s[: np.newaxis],
-                                       end3s[: np.newaxis]],
+                                      [end5s[:, np.newaxis],
+                                       end3s[:, np.newaxis]],
                                       strict=True):
                 self.assertTrue(np.array_equal(result, expect))
 

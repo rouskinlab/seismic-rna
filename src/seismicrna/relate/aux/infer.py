@@ -108,7 +108,7 @@ def infer_read(refseq: DNA,
                 # Being both a deletion and an insertion is forbidden.
                 raise ValueError(f"Position {pos} in {muts} is del and ins")
             if rel & INS_3:
-                if not pos > end5:
+                if pos <= end5:
                     # Insertions cannot occur before the beginning of
                     # the read.
                     raise ValueError(f"Position {pos} in {end5}-{end3} cannot "
@@ -137,7 +137,7 @@ def infer_read(refseq: DNA,
                 # Check if this position should be 3' of an insertion.
                 raise ValueError(f"Missing 3' ins at {pos} in {muts}")
             if rel & INS_5:
-                if not pos < end3:
+                if pos >= end3:
                     raise ValueError(f"Position {pos} in {end5}-{end3} cannot "
                                      f"be 5' of an insertion")
                 # The current position is 5' of an insertion, so the
@@ -162,7 +162,8 @@ def infer_read(refseq: DNA,
             # Deletion from the read.
             if not end5 < pos < end3:
                 raise ValueError(
-                    f"Deletion cannot be at position {pos} in {end5}-{end3}")
+                    f"Deletion cannot be at position {pos} in {end5}-{end3}"
+                )
             add_to_cigar(CIG_DELET)
         elif rel ^ ANY_N in (SUB_A, SUB_C, SUB_G, SUB_T, IRREC):
             # Ambiguous substitution: Add any nucleotide as low quality.
@@ -178,7 +179,8 @@ def infer_read(refseq: DNA,
                 raise ValueError(f"Invalid relation {rel} in {muts}[{pos}]")
             if ref_base == read_base:
                 raise ValueError(
-                    f"Cannot substitute {ref_base} to itself in {muts}[{pos}]")
+                    f"Cannot substitute {ref_base} to itself in {muts}[{pos}]"
+                )
             read.append(read_base)
             qual.append(hi_qual)
             add_to_cigar(CIG_SUBST)
