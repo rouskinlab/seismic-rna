@@ -211,6 +211,36 @@ def _triu_sum(a: np.ndarray):
 
 
 @jit()
+def _triu_cumsum(a: np.ndarray):
+    """ Calculate the cumulative sum from the upper right corner of `a`
+    to every other element in the upper right triangle.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function makes assumptions:
+
+    -   `a` has at least 2 dimensions.
+    -   The first two dimensions of `a` have equal length.
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array whose upper triangle to sum.
+
+    Returns
+    -------
+    np.ndarray
+        Cumulative sum, with the same shape as `a`.
+    """
+    a_cumsum = np.empty_like(a)
+    if a_cumsum.size == 0:
+        return a_cumsum
+    a_cumsum[0] = np.cumsum(a[0, ::-1])[::-1]
+    for j in range(1, a.shape[0]):
+        a_cumsum[j, j:] = np.cumsum(a[j, :j - 1:-1])[::-1] + a_cumsum[j - 1, j:]
+    return a_cumsum
+
+
+@jit()
 def _triu_div(numer: np.ndarray, denom: np.ndarray):
     """ Divide the upper triangles of `numer` and `denom`.
 
@@ -647,10 +677,59 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
     return p_mut_given_span_noclose
 
 
+def _slice_p_ends(p_ends: np.ndarray,
+                  p_ends_cumsum: np.ndarray,
+                  end5: int,
+                  end3: int):
+    p_ends_slice = p_ends[end5: end3, end5: end3].copy()
+    if p_ends_slice.size > 0:
+        p_ends_slice[0, :-1] = p_ends[:end5, end5: end3 - 1].sum(axis=0)
+        p_ends_slice[1:, -1] = p_ends[end5 + 1: end3, end3:].sum(axis=1)
+        p_ends_slice[0, -1] = p_ends_cumsum[end5 + 1, end3 - 1]
+    return p_ends_slice
+
+
+def _split_positions(p_mut: np.ndarray,
+                     p_ends: np.ndarray,
+                     min_gap: int,
+                     threshold: float):
+    """ Split `p_mut` and `p_ends` where at least `min_gap` consecutive
+    positions are no greater than `threshold` in every cluster. """
+    dims = find_dims([(POSITIONS, CLUSTERS),
+                      (POSITIONS, POSITIONS)],
+                     [p_mut, p_ends],
+                     ["p_mut", "p_ends"])
+    npos = dims[POSITIONS]
+    min_gap = _adjust_min_gap(npos, min_gap)
+    if min_gap == 0:
+        return [p_mut], [p_ends]
+    cum_pos = np.cumsum(np.all(p_mut <= threshold, axis=1))
+    split_pos = np.flatnonzero(np.diff(
+        np.asarray(cum_pos[min_gap:] - cum_pos[:-min_gap] == min_gap,
+                   dtype=int)
+    ) == -1) + min_gap
+    if split_pos.size == 0:
+        return [p_mut], [p_ends]
+    p_mut_split = np.split(p_mut, split_pos)
+    p_ends_cumsum = _triu_cumsum(p_ends)
+    p_ends_split = [_slice_p_ends(p_ends, p_ends_cumsum, 0, split_pos[0])]
+    for i in range(len(split_pos) - 1):
+        p_ends_split.append(_slice_p_ends(p_ends,
+                                          p_ends_cumsum,
+                                          split_pos[i],
+                                          split_pos[i + 1]))
+    p_ends_split.append(_slice_p_ends(p_ends,
+                                      p_ends_cumsum,
+                                      split_pos[-1],
+                                      npos))
+    return p_mut_split, p_ends_split
+
+
 def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                            min_gap: int,
                            p_ends: np.ndarray,
                            init_p_mut_given_span: np.ndarray, *,
+                           split_positions: bool = True,
                            f_tol: float = 5e-1,
                            f_rtol: float = 5e-1,
                            x_tol: float = 1e-4,

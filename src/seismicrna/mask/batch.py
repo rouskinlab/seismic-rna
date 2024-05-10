@@ -57,16 +57,13 @@ def apply_mask(batch: SectionMutsBatch,
         # Use the same section as the given batch.
         section = batch.section
     # Select only the given positions and reads.
-    muts = dict()
-    for pos in section.unmasked_int:
-        muts[pos] = dict()
-        # Remove masked reads.
-        for mut, pos_mut_reads in batch.muts[pos].items():
-            muts[pos][mut] = (np.setdiff1d(pos_mut_reads,
-                                           masked_reads,
-                                           assume_unique=True)
-                              if masked_reads is not None
-                              else pos_mut_reads)
+    muts = {pos: ({mut: np.setdiff1d(pos_mut_reads,
+                                     masked_reads,
+                                     assume_unique=True)
+                   for mut, pos_mut_reads in batch.muts[pos].items()}
+                  if masked_reads is not None
+                  else batch.muts[pos])
+            for pos in section.unmasked_int}
     return MaskMutsBatch(batch=batch.batch,
                          read_nums=read_nums,
                          section=section,

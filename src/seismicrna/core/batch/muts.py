@@ -7,12 +7,12 @@ import numpy as np
 import pandas as pd
 
 from .count import (count_end_coords,
-                    get_count_per_pos,
-                    get_count_per_read,
+                    calc_count_per_pos,
+                    calc_count_per_read,
                     calc_coverage,
-                    get_reads_per_pos,
-                    get_rels_per_pos,
-                    get_rels_per_read)
+                    calc_reads_per_pos,
+                    calc_rels_per_pos,
+                    calc_rels_per_read)
 from .index import (iter_windows,
                     sanitize_ends,
                     split_ends)
@@ -116,40 +116,40 @@ class SectionMutsBatch(MutsBatch, ABC):
     def rels_per_pos(self):
         """ For each relationship, the number of reads at each position
         with that relationship. """
-        return get_rels_per_pos(self.muts,
-                                self.num_reads,
-                                self.cover_per_pos,
-                                self.read_indexes,
-                                self.read_weights)
+        return calc_rels_per_pos(self.muts,
+                                 self.num_reads,
+                                 self.cover_per_pos,
+                                 self.read_indexes,
+                                 self.read_weights)
 
     @cached_property
     def rels_per_read(self):
         """ For each relationship, the number of positions in each read
         with that relationship. """
-        return get_rels_per_read(self.muts,
-                                 self.pos_index,
-                                 self.cover_per_read,
-                                 self.read_indexes)
+        return calc_rels_per_read(self.muts,
+                                  self.pos_index,
+                                  self.cover_per_read,
+                                  self.read_indexes)
 
     def reads_per_pos(self, pattern: RelPattern):
         """ For each position, find all reads matching a relationship
         pattern. """
-        return get_reads_per_pos(pattern, self.muts, self.pos_index)
+        return calc_reads_per_pos(pattern, self.muts, self.pos_index)
 
     def count_per_pos(self, pattern: RelPattern):
         """ Count the reads that fit a relationship pattern at each
         position in a section. """
-        return get_count_per_pos(pattern,
-                                 self.cover_per_pos,
-                                 self.rels_per_pos)
+        return calc_count_per_pos(pattern,
+                                  self.cover_per_pos,
+                                  self.rels_per_pos)
 
     def count_per_read(self, pattern: RelPattern):
         """ Count the positions in a section that fit a relationship
         pattern in each read. """
-        return get_count_per_read(pattern,
-                                  self.cover_per_read,
-                                  self.rels_per_read,
-                                  self.read_weights)
+        return calc_count_per_read(pattern,
+                                   self.cover_per_read,
+                                   self.rels_per_read,
+                                   self.read_weights)
 
     def reads_noclose_muts(self, pattern: RelPattern, min_gap: int):
         """ List the reads with no two mutations too close. """
