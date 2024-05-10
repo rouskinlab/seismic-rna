@@ -689,31 +689,38 @@ def _slice_p_ends(p_ends: np.ndarray,
     return p_ends_slice
 
 
-def _split_positions(p_mut: np.ndarray,
-                     p_ends: np.ndarray,
-                     min_gap: int,
-                     threshold: float):
-    """ Split `p_mut` and `p_ends` where at least `min_gap` consecutive
-    positions are no greater than `threshold` in every cluster. """
-    dims = find_dims([(POSITIONS, CLUSTERS),
-                      (POSITIONS, POSITIONS)],
-                     [p_mut, p_ends],
-                     ["p_mut", "p_ends"])
-    npos = dims[POSITIONS]
+def _find_split_positions(p_mut: np.ndarray, min_gap: int, threshold: float):
+    npos, _ = p_mut.shape
     min_gap = _adjust_min_gap(npos, min_gap)
     if min_gap == 0:
-        return [p_mut], [p_ends]
+        return np.array([], dtype=int)
     cum_pos = np.cumsum(np.all(p_mut <= threshold, axis=1))
-    split_pos = np.flatnonzero(np.diff(
+    return np.flatnonzero(np.diff(
         np.asarray(cum_pos[min_gap:] - cum_pos[:-min_gap] == min_gap,
                    dtype=int)
     ) == -1) + min_gap
-    if split_pos.size == 0:
-        return [p_mut], [p_ends]
+
+
+def _split_positions(p_mut: np.ndarray,
+                     p_mut_init: np.ndarray,
+                     p_ends: np.ndarray,
+                     split_pos: np.ndarray):
+    """ Split `p_mut` and `p_ends` where at least `min_gap` consecutive
+    positions are no greater than `threshold` in every cluster. """
+    dims = find_dims([(POSITIONS, CLUSTERS),
+                      (POSITIONS, CLUSTERS),
+                      (POSITIONS, POSITIONS)],
+                     [p_mut, p_mut_init, p_ends],
+                     ["p_mut", "p_mut_init", "p_ends"])
+    n_splits, = split_pos.shape
+    if n_splits == 0:
+        return [p_mut], [p_mut_init], [p_ends]
+    npos = dims[POSITIONS]
     p_mut_split = np.split(p_mut, split_pos)
+    p_mut_init_split = np.split(p_mut_init, split_pos)
     p_ends_cumsum = _triu_cumsum(p_ends)
     p_ends_split = [_slice_p_ends(p_ends, p_ends_cumsum, 0, split_pos[0])]
-    for i in range(len(split_pos) - 1):
+    for i in range(n_splits - 1):
         p_ends_split.append(_slice_p_ends(p_ends,
                                           p_ends_cumsum,
                                           split_pos[i],
@@ -722,7 +729,7 @@ def _split_positions(p_mut: np.ndarray,
                                       p_ends_cumsum,
                                       split_pos[-1],
                                       npos))
-    return p_mut_split, p_ends_split
+    return p_mut_split, p_mut_init_split, p_ends_split
 
 
 def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
@@ -730,6 +737,7 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                            p_ends: np.ndarray,
                            init_p_mut_given_span: np.ndarray, *,
                            split_positions: bool = True,
+                           split_threshold: float = 0.,
                            f_tol: float = 5e-1,
                            f_rtol: float = 5e-1,
                            x_tol: float = 1e-4,
@@ -758,6 +766,36 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
     if min_gap == 0:
         # No two mutations can be too close.
         return p_mut_given_span_observed
+
+    if split_positions:
+        # Split the mutation rates and end coordinate distributions,
+        # calculate them separately, and reassemble them.
+        p_mut_given_span_list = list()
+        for p_mut_split, p_mut_init_split, p_ends_split in zip(
+                *_split_positions(p_mut_given_span_observed,
+                                  init_p_mut_given_span,
+                                  p_ends,
+                                  _find_split_positions(
+                                      p_mut_given_span_observed,
+                                      min_gap,
+                                      split_threshold)),
+                strict=True
+        ):
+            p_mut_given_span_list.append(_calc_p_mut_given_span(
+                p_mut_split,
+                min_gap,
+                p_ends_split,
+                p_mut_init_split,
+                split_positions=False,
+                split_threshold=split_threshold,
+                f_tol=f_tol,
+                f_rtol=f_rtol,
+                x_tol=x_tol,
+                x_rtol=x_rtol
+            ))
+        return (np.concatenate(p_mut_given_span_list, axis=0)
+                if p_mut_given_span_list
+                else np.empty((dims[POSITIONS], dims[CLUSTERS])))
 
     # Use the Newton-Krylov method to solve for the total mutation rates
     # (including reads with two mutations too close) that result in zero
