@@ -5,7 +5,7 @@ import pandas as pd
 
 from ..core import path
 from ..core.seq import DNA
-from ..relate.write import get_reads_per_batch, mib_to_bytes
+from ..relate.write import calc_reads_per_batch, mib_to_bytes
 
 
 def sim_whole(out_dir: Path,
@@ -16,7 +16,7 @@ def sim_whole(out_dir: Path,
               batch_size: float,
               ploq: pd.Series,
               pmut: pd.Series):
-    n_per_batch = get_reads_per_batch(mib_to_bytes(batch_size), len(refseq))
+    n_per_batch = calc_reads_per_batch(mib_to_bytes(batch_size), len(refseq))
 
     relvecs = sim_relvecs(refseq, ploq, pmut)
 

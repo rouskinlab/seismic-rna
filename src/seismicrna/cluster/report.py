@@ -72,16 +72,15 @@ class ClusterReport(BatchedReport, ClusterIO):
                       began: datetime,
                       ended: datetime):
         """ Create a ClusterReport from EmClustering objects. """
-        # Initialize a new ClusterReport.
         return cls(sample=uniq_reads.sample,
                    ref=uniq_reads.ref,
                    sect=uniq_reads.section.name,
                    n_uniq_reads=uniq_reads.num_uniq,
-                   max_order=max_order,
-                   num_runs=num_runs,
-                   min_iter=min_iter,
-                   max_iter=max_iter,
-                   conv_thresh=conv_thresh,
+                   max_clusters=max_order,
+                   em_runs=num_runs,
+                   min_em_iter=min_iter,
+                   max_em_iter=max_iter,
+                   em_thresh=conv_thresh,
                    checksums={ClusterBatchIO.btype(): checksums},
                    n_batches=len(checksums),
                    converged={runs.order: runs.converged for runs in orders},

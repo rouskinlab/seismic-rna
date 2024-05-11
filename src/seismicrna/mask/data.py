@@ -5,7 +5,12 @@ from .io import MaskBatchIO
 from .report import MaskReport
 from ..core.data import ChainedMutsDataset, LoadedDataset, LoadFunction
 from ..core.rel import RelPattern
-from ..core.report import CountMutsF, CountRefsF, MinMutGapF, PosKeptF
+from ..core.report import (CountMutsF,
+                           CountRefsF,
+                           MinMutGapF,
+                           PosKeptF,
+                           QuickUnbiasF,
+                           QuickUnbiasThreshF)
 from ..pool.data import load_relate_pool_dataset
 from ..relate.batch import RelateSectionBatch
 
@@ -24,6 +29,14 @@ class MaskReadDataset(LoadedDataset):
     @property
     def min_mut_gap(self):
         return self.report.get_field(MinMutGapF)
+
+    @property
+    def quick_unbias(self):
+        return self.report.get_field(QuickUnbiasF)
+
+    @property
+    def quick_unbias_thresh(self):
+        return self.report.get_field(QuickUnbiasThreshF)
 
     @property
     def pos_kept(self):
@@ -51,6 +64,14 @@ class MaskMutsDataset(ChainedMutsDataset):
     @property
     def min_mut_gap(self):
         return getattr(self.data2, "min_mut_gap")
+
+    @property
+    def quick_unbias(self):
+        return getattr(self.data2, "quick_unbias")
+
+    @property
+    def quick_unbias_thresh(self):
+        return getattr(self.data2, "quick_unbias_thresh")
 
     @property
     def pattern(self):

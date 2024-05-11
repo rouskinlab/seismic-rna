@@ -188,7 +188,9 @@ class PartialTabulator(Tabulator, ABC):
                              self.p_ends_given_noclose,
                              self._num_reads,
                              self.section,
-                             self.dataset.min_mut_gap)
+                             self.dataset.min_mut_gap,
+                             self.dataset.quick_unbias,
+                             self.dataset.quick_unbias_thresh)
 
     @cached_property
     def table_per_pos(self):
@@ -283,7 +285,9 @@ def adjust_counts(table_per_pos: pd.DataFrame,
                   p_ends_given_noclose: np.ndarray,
                   n_reads_clust: pd.Series | int,
                   section: Section,
-                  min_mut_gap: int):
+                  min_mut_gap: int,
+                  quick_unbias: bool,
+                  quick_unbias_thresh: float):
     """ Adjust the given table of masked/clustered counts per position
     to correct for observer bias.
 
@@ -317,7 +321,9 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             p_mut_given_noclose,
             p_ends_given_noclose,
             p_clust_given_noclose,
-            min_mut_gap
+            min_mut_gap,
+            quick_unbias=quick_unbias,
+            quick_unbias_thresh=quick_unbias_thresh
         )
         # Compute the probability that reads would have no two mutations
         # too close.

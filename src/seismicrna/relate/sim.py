@@ -6,7 +6,7 @@ import pandas as pd
 
 from .io import QnamesBatchIO, RelateBatchIO
 from .report import RelateReport
-from .write import get_reads_per_batch, mib_to_bytes
+from .write import calc_reads_per_batch, mib_to_bytes
 from ..core.batch import (END_COORDS,
                           END5_COORD,
                           END3_COORD,
@@ -19,6 +19,7 @@ from ..core.seq import (BASEA,
                         BASEG,
                         BASET,
                         DNA,
+                        Section,
                         index_to_pos,
                         index_to_seq,
                         seq_pos_to_index)
@@ -142,6 +143,7 @@ def simulate_relate_batch(sample: str,
     coords = rng.choice(p_ends.size, n_reads, p=p_ends.values)
     end5_choices = p_ends.index.get_level_values(END5_COORD).values[coords]
     end3_choices = p_ends.index.get_level_values(END3_COORD).values[coords]
+    ends = np.stack([end5_choices, end3_choices], axis=1)
     # Validate the cluster choices.
     if not isinstance(cluster_choices, np.ndarray):
         raise TypeError("cluster_choices must be ndarray, "
@@ -176,13 +178,9 @@ def simulate_relate_batch(sample: str,
                                             read_choices[sub_choices == sub]])
     # Assemble a simulated RelateBatchIO.
     return RelateBatchIO(sample=sample,
-                         ref=ref,
-                         reflen=len(refseq),
+                         section=Section(ref, refseq),
                          batch=batch,
-                         end5s=end5_choices,
-                         mid5s=end5_choices,
-                         mid3s=end3_choices,
-                         end3s=end3_choices,
+                         ends=ends,
                          muts=muts)
 
 
@@ -217,9 +215,9 @@ def generate_batches(refseq: DNA,
     qnames_checks = list()
     relate_checks = list()
     # Determine the numbers of batches and reads per batch.
-    n_reads_per_batch = get_reads_per_batch(mib_to_bytes(batch_size),
-                                            len(refseq))
-    n_batches_full = n_reads % n_reads_per_batch
+    n_reads_per_batch = calc_reads_per_batch(mib_to_bytes(batch_size),
+                                             len(refseq))
+    n_batches_full = n_reads // n_reads_per_batch
     # Generate every full-size batch.
     for batch in range(n_batches_full):
         first = n_reads_per_batch * batch

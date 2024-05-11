@@ -53,6 +53,8 @@ class RelMasker(object):
                  min_mut_gap: int,
                  min_ninfo_pos: int,
                  max_fmut_pos: float,
+                 quick_unbias: bool,
+                 quick_unbias_thresh: float,
                  brotli_level: int):
         """
         Parameters
@@ -85,6 +87,9 @@ class RelMasker(object):
         # Set the parameters for filtering positions.
         self.min_ninfo_pos = min_ninfo_pos
         self.max_fmut_pos = max_fmut_pos
+        # Set the parameters for observer bias correction.
+        self.quick_unbias = quick_unbias
+        self.quick_unbias_thresh = quick_unbias_thresh
         # Set the parameters for saving files.
         self.top = dataset.top
         self.brotli_level = brotli_level
@@ -356,6 +361,8 @@ class RelMasker(object):
             n_reads_max_fmut=self.n_reads_max_fmut,
             n_reads_min_gap=self.n_reads_min_gap,
             n_reads_kept=self.n_reads_kept,
+            quick_unbias=self.quick_unbias,
+            quick_unbias_thresh=self.quick_unbias_thresh,
             began=began,
             ended=ended,
         )

@@ -50,6 +50,14 @@ class ClusterMutsDataset(ChainedMutsDataset):
         return getattr(self.data1, "min_mut_gap")
 
     @property
+    def quick_unbias(self):
+        return getattr(self.data1, "quick_unbias")
+
+    @property
+    def quick_unbias_thresh(self):
+        return getattr(self.data1, "quick_unbias_thresh")
+
+    @property
     def pattern(self):
         return self.data1.pattern
 
@@ -67,12 +75,9 @@ class ClusterMutsDataset(ChainedMutsDataset):
 
     def _chain(self, batch1: MaskMutsBatch, batch2: ClusterBatchIO):
         return ClusterMutsBatch(batch=batch1.batch,
-                                refseq=batch1.refseq,
+                                section=batch1.section,
+                                ends=batch1.ends,
                                 muts=batch1.muts,
-                                end5s=batch1.end5s,
-                                mid5s=batch1.mid5s,
-                                mid3s=batch1.mid3s,
-                                end3s=batch1.end3s,
                                 resps=batch2.resps,
                                 sanitize=False)
 

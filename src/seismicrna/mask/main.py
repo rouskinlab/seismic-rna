@@ -26,6 +26,8 @@ from ..core.arg import (CMD_MASK,
                         opt_min_mut_gap,
                         opt_min_ninfo_pos,
                         opt_max_fmut_pos,
+                        opt_quick_unbias,
+                        opt_quick_unbias_thresh,
                         opt_brotli_level,
                         opt_max_procs,
                         opt_parallel,
@@ -79,6 +81,9 @@ def run(input_path: tuple[str, ...], *,
         min_finfo_read: float,
         max_fmut_read: int,
         min_mut_gap: int,
+        # Observer bias correction
+        quick_unbias: bool,
+        quick_unbias_thresh: float,
         # Compression
         brotli_level: int,
         # Parallelization
@@ -114,6 +119,8 @@ def run(input_path: tuple[str, ...], *,
                   min_mut_gap=min_mut_gap,
                   min_ninfo_pos=min_ninfo_pos,
                   max_fmut_pos=max_fmut_pos,
+                  quick_unbias=quick_unbias,
+                  quick_unbias_thresh=quick_unbias_thresh,
                   brotli_level=brotli_level,
                   force=force)
     # Call the mutations and filter the relation vectors.
@@ -148,6 +155,9 @@ params = [
     opt_min_finfo_read,
     opt_max_fmut_read,
     opt_min_mut_gap,
+    # Observer bias correction
+    opt_quick_unbias,
+    opt_quick_unbias_thresh,
     # Compression
     opt_brotli_level,
     # Parallelization

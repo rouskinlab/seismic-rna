@@ -362,11 +362,15 @@ class EmClustering(object):
             guess_p_ends,
             guess_p_clust,
             prenormalize=False,
+            quick_unbias=self.uniq_reads.quick_unbias,
+            quick_unbias_thresh=self.uniq_reads.quick_unbias_thresh,
         )
         # Ensure all masked positions have a mutation rate of 0.
         if n_nonzero := np.count_nonzero(self.p_mut[self.masked]):
+            p_mut_masked = self.p_mut[self.masked]
             logger.warning(
                 f"{n_nonzero} masked position(s) have a mutation rate ≠ 0: "
+                f"{p_mut_masked[p_mut_masked != 0.]}"
             )
             self.p_mut[self.masked] = 0.
 

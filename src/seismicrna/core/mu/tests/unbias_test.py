@@ -8,6 +8,7 @@ from seismicrna.core.mu.unbias import (_clip,
                                        _adjust_min_gap,
                                        _triu_log,
                                        _triu_sum,
+                                       _triu_cumsum,
                                        _triu_norm,
                                        _triu_dot,
                                        _triu_div,
@@ -19,6 +20,9 @@ from seismicrna.core.mu.unbias import (_clip,
                                        _calc_p_mut_given_span_noclose,
                                        _calc_p_mut_given_span,
                                        _calc_p_ends,
+                                       _slice_p_ends,
+                                       _find_split_positions,
+                                       _split_positions,
                                        calc_p_clust,
                                        calc_p_noclose,
                                        calc_p_noclose_given_ends,
@@ -26,7 +30,7 @@ from seismicrna.core.mu.unbias import (_clip,
                                        calc_p_clust_given_noclose,
                                        calc_params)
 
-rng = np.random.default_rng(seed=28)
+rng = np.random.default_rng(seed=0)
 
 
 def no_close_muts(read: np.ndarray, min_gap: int):
@@ -445,6 +449,70 @@ class TestTriuSum(ut.TestCase):
         self.assertTrue(np.array_equal(_triu_sum(array), expect))
 
 
+class TestTriuCumSum(ut.TestCase):
+
+    def test_all_0(self):
+        for ndim in range(2, 6):
+            array = rng.random((0,) * ndim)
+            result = _triu_cumsum(array)
+            self.assertEqual(result.shape, array.shape)
+            self.assertTrue(_triu_allclose(result, array))
+
+    def test_all_1(self):
+        for ndim in range(2, 6):
+            array = rng.random((1,) * ndim)
+            result = _triu_cumsum(array)
+            self.assertEqual(result.shape, array.shape)
+            self.assertTrue(_triu_allclose(result, array))
+
+    def test_1x1x2(self):
+        x = rng.random()
+        y = rng.random()
+        array = np.array([[[x, y]]])
+        self.assertTrue(_triu_allclose(_triu_cumsum(array), array))
+
+    def test_2x2(self):
+        array = np.array([[1., 2.],
+                          [3., 4.]])
+        expect = np.array([[3., 2.],
+                           [10., 6.]])
+        self.assertTrue(_triu_allclose(_triu_cumsum(array), expect))
+
+    def test_2x2x1(self):
+        array = np.array([[[1.], [2.]],
+                          [[3.], [4.]]])
+        expect = np.array([[[3.], [2.]],
+                           [[10.], [6.]]])
+        self.assertTrue(_triu_allclose(_triu_cumsum(array), expect))
+
+    def test_2x2x2(self):
+        array = np.array([[[1., 5.], [2., 6.]],
+                          [[3., 7.], [4., 8.]]])
+        expect = np.array([[[3., 11.], [2., 6.]],
+                           [[0., 0.], [6., 14.]]])
+        self.assertTrue(_triu_allclose(_triu_cumsum(array), expect))
+
+    def test_3x3(self):
+        array = np.array([[3., 4., 6.],
+                          [7., 8., 9.],
+                          [1., 2., 5.]])
+        expect = np.array([[13., 10., 6.],
+                           [0., 27., 15.],
+                           [0., 0., 20.]])
+        self.assertTrue(_triu_allclose(_triu_cumsum(array), expect))
+
+    def test_explicit_sum(self):
+        for npos in range(8):
+            array = rng.random((npos, npos))
+            result = _triu_cumsum(array)
+            for row in range(npos):
+                for col in range(npos):
+                    if row > col:
+                        continue
+                    self.assertTrue(np.isclose(result[row, col],
+                                               array[:row + 1, col:].sum()))
+
+
 class TestTriuNorm(ut.TestCase):
 
     def compare(self, result: np.ndarray, expect: np.ndarray):
@@ -788,7 +856,7 @@ class TestPublicCalcPNoCloseGivenEnds(ut.TestCase):
                                            gap)
 
 
-class CalcRectangularSum(ut.TestCase):
+class TestCalcRectangularSum(ut.TestCase):
 
     @staticmethod
     def calc_spanning_sum_slow(array: np.ndarray):
@@ -968,6 +1036,177 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                                 p_nomut_window[:, :, [k]],
                             ).reshape(n_pos)
                         ))
+
+
+class TestSlicePEnds(ut.TestCase):
+
+    def test_0x0(self):
+        p_ends = np.empty((0, 0))
+        self.assertTrue(np.array_equal(_slice_p_ends(p_ends, p_ends, 0, 0),
+                                       p_ends))
+
+    def test_slice_3x3(self):
+        p_ends = np.array([[1., 2., 3.],
+                           [4., 5., 6.],
+                           [7., 8., 9.]])
+        p_ends_cumsum = _triu_cumsum(p_ends)
+        result = _slice_p_ends(p_ends, p_ends_cumsum, 1, 2)
+        expect = np.array([[16.]])
+        self.assertTrue(_triu_allclose(result, expect))
+
+    def test_slice_5x5(self):
+        p_ends = np.arange(25.).reshape((5, 5))
+        p_ends_cumsum = _triu_cumsum(p_ends)
+        result = _slice_p_ends(p_ends, p_ends_cumsum, 1, 4)
+        expect = np.array([[7., 9., 24.],
+                           [0., 12., 27.],
+                           [0., 0., 37.]])
+        self.assertTrue(_triu_allclose(result, expect))
+
+
+class TestFindSplitPositions(ut.TestCase):
+
+    def test_0(self):
+        for min_gap in range(4):
+            self.assertTrue(np.array_equal(
+                _find_split_positions(np.array([[]]), min_gap, 0.),
+                np.array([], dtype=int)
+            ))
+
+    def test_thresh0(self):
+        p_mut = 1. - rng.random((10, 2))
+        for min_gap in range(4):
+            self.assertTrue(np.array_equal(
+                _find_split_positions(p_mut, min_gap, 0.),
+                np.array([], dtype=int)
+            ))
+
+    def test_thresh1(self):
+        p_mut = 1. - rng.random((10, 2))
+        for min_gap in range(4):
+            self.assertTrue(np.array_equal(
+                _find_split_positions(p_mut, min_gap, 1.),
+                np.array([], dtype=int)
+            ))
+
+    def test_gap0(self):
+        p_mut = 1. - rng.random((10, 2))
+        for thresh in np.linspace(0., 1., 5):
+            self.assertTrue(np.array_equal(
+                _find_split_positions(p_mut, 0, thresh),
+                np.array([], dtype=int)
+            ))
+
+    def test_gap1_split1_single_mid(self):
+        p_mut = np.array([[0.2, 0.1, 0.1, 0.0, 0.1, 0.2]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 1, 0.),
+            np.array([3])
+        ))
+
+    def test_gap1_split0_single_end5(self):
+        p_mut = np.array([[0.0, 0.1, 0.1, 0.3, 0.1, 0.2]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 1, 0.),
+            np.array([], dtype=int)
+        ))
+
+    def test_gap1_split0_single_end3(self):
+        p_mut = np.array([[0.2, 0.1, 0.1, 0.3, 0.1, 0.0]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 1, 0.),
+            np.array([], dtype=int)
+        ))
+
+    def test_gap1_split1_double(self):
+        p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.1, 0.2]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 1, 0.),
+            np.array([3])
+        ))
+
+    def test_gap1_split1_triple(self):
+        p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.0, 0.2]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 1, 0.),
+            np.array([4])
+        ))
+
+    def test_gap1_split0_quadruple(self):
+        p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.0, 0.0]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 1, 0.),
+            np.array([], dtype=int)
+        ))
+
+    def test_gap1_split2(self):
+        p_mut = np.array([[0.2, 0.0, 0.1, 0.0, 0.1, 0.2]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 1, 0.),
+            np.array([1, 3])
+        ))
+
+    def test_gap2_split0(self):
+        p_mut = np.array([[0.2, 0.0, 0.1, 0.0, 0.1, 0.2]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 2, 0.),
+            np.array([], dtype=int)
+        ))
+
+    def test_gap2_split1(self):
+        p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.1, 0.2]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 2, 0.),
+            np.array([3])
+        ))
+
+    def test_gap4_split0(self):
+        p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.1, 0.2]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 4, 0.),
+            np.array([], dtype=int)
+        ))
+
+    def test_gap4_split1(self):
+        p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.1, 0.2]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 4, 0.1),
+            np.array([4])
+        ))
+
+    def test_generic_split(self):
+
+        def find_split_positions_slow(p_mut: np.ndarray,
+                                      min_gap: int,
+                                      threshold: int):
+            p_mut = p_mut.max(axis=1)
+            ever_above_thresh = p_mut[0] > threshold
+            prev_above_thresh = ever_above_thresh
+            current_below_count = 0
+            gaps = list()
+            if min_gap > 0:
+                for pos in range(p_mut.size):
+                    above_thresh = p_mut[pos] > threshold
+                    if above_thresh:
+                        if (current_below_count >= min_gap
+                                and ever_above_thresh
+                                and not prev_above_thresh):
+                            gaps.append(pos - 1)
+                        ever_above_thresh = True
+                        prev_above_thresh = True
+                        current_below_count = 0
+                    else:
+                        current_below_count += 1
+                        prev_above_thresh = False
+            return np.array(gaps, dtype=int)
+
+        p = rng.random((100, 2))
+        for gap in range(4):
+            for thresh in np.linspace(0., 1., 6):
+                self.assertTrue(np.array_equal(
+                    _find_split_positions(p, gap, thresh),
+                    find_split_positions_slow(p, gap, thresh)
+                ))
 
 
 class TestCalcPMutGivenSpan(ut.TestCase):

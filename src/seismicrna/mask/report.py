@@ -11,8 +11,8 @@ from ..core.report import (BatchedReport,
                            ExclGUF,
                            ExclPolyAF,
                            ExclUserPosF,
-                           MinInfoPosF,
-                           MaxMutPosF,
+                           MinNInfoPosF,
+                           MaxFMutPosF,
                            NumPosInitF,
                            NumPosCutGUF,
                            NumPosCutPolyAF,
@@ -27,15 +27,17 @@ from ..core.report import (BatchedReport,
                            PosCutHiMutF,
                            PosKeptF,
                            MinNCovReadF,
-                           MinInfoReadF,
-                           MaxMutReadF,
+                           MinFInfoReadF,
+                           MaxFMutReadF,
                            MinMutGapF,
                            NumReadsInitF,
                            NumReadsLoNCovF,
                            NumReadsLoInfoF,
                            NumReadsHiMutF,
                            NumReadsCloseMutF,
-                           NumReadsKeptF)
+                           NumReadsKeptF,
+                           QuickUnbiasF,
+                           QuickUnbiasThreshF)
 
 
 class MaskReport(BatchedReport, MaskIO):
@@ -64,8 +66,8 @@ class MaskReport(BatchedReport, MaskIO):
             ExclGUF,
             ExclPolyAF,
             ExclUserPosF,
-            MinInfoPosF,
-            MaxMutPosF,
+            MinNInfoPosF,
+            MaxFMutPosF,
             # Position filtering results.
             NumPosInitF,
             NumPosCutGUF,
@@ -82,8 +84,8 @@ class MaskReport(BatchedReport, MaskIO):
             PosKeptF,
             # Read filtering parameters.
             MinNCovReadF,
-            MinInfoReadF,
-            MaxMutReadF,
+            MinFInfoReadF,
+            MaxFMutReadF,
             MinMutGapF,
             # Read filtering results.
             NumReadsInitF,
@@ -92,6 +94,9 @@ class MaskReport(BatchedReport, MaskIO):
             NumReadsHiMutF,
             NumReadsCloseMutF,
             NumReadsKeptF,
+            # Observer bias correction.
+            QuickUnbiasF,
+            QuickUnbiasThreshF,
         ] + super().fields()
 
     @classmethod

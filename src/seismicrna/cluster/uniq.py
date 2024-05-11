@@ -21,6 +21,8 @@ class UniqReads(object):
         return cls(dataset.sample,
                    dataset.section,
                    dataset.min_mut_gap,
+                   dataset.quick_unbias,
+                   dataset.quick_unbias_thresh,
                    *get_uniq_reads(dataset.section.unmasked_int,
                                    dataset.pattern,
                                    dataset.iter_batches()))
@@ -29,6 +31,8 @@ class UniqReads(object):
                  sample: str,
                  section: Section,
                  min_mut_gap: int,
+                 quick_unbias: bool,
+                 quick_unbias_thresh: float,
                  ends: tuple[np.ndarray, np.ndarray],
                  muts_per_pos: list[np.ndarray],
                  batch_to_uniq: list[pd.Series],
@@ -36,6 +40,8 @@ class UniqReads(object):
         self.sample = sample
         self.section = section
         self.min_mut_gap = min_mut_gap
+        self.quick_unbias = quick_unbias
+        self.quick_unbias_thresh = quick_unbias_thresh
         if len(muts_per_pos) != (npos := get_length(self.section.unmasked_int,
                                                     "pos_nums")):
             raise ValueError(f"Expected {npos} positions, "

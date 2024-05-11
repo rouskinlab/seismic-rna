@@ -52,14 +52,9 @@ def mib_to_bytes(batch_size: float):
     return nbytes
 
 
-def get_reads_per_batch(bytes_per_batch: int, seq_len: int):
-    """ Compute the number of reads per batch. """
-    reads_per_batch = bytes_per_batch // seq_len
-    if reads_per_batch < 1:
-        logger.warning(f"Cannot have {bytes_per_batch} bytes per batch with a "
-                       f"sequence of {seq_len} nt. Using 1 read per batch.")
-        return 1
-    return reads_per_batch
+def calc_reads_per_batch(bytes_per_batch: int, seq_len: int):
+    """ Calculate the number of reads per batch. """
+    return max(bytes_per_batch // seq_len, 1)
 
 
 def generate_batch(batch: int, *,
@@ -194,6 +189,9 @@ class RelationWriter(object):
               brotli_level: int,
               force: bool,
               overhangs: bool,
+              min_phred: int,
+              phred_enc: int,
+              ambrel: bool,
               **kwargs):
         """ Compute a relation vector for every record in a BAM file,
         write the vectors into one or more batch files, compute their
@@ -212,12 +210,18 @@ class RelationWriter(object):
                                               brotli_level=brotli_level,
                                               min_mapq=min_mapq,
                                               overhangs=overhangs,
+                                              min_phred=min_phred,
+                                              phred_enc=phred_enc,
+                                              ambrel=ambrel,
                                               **kwargs)
             ended = datetime.now()
             # Write a report of the relation step.
             self._write_report(out_dir=out_dir,
                                min_mapq=min_mapq,
+                               min_phred=min_phred,
+                               phred_enc=phred_enc,
                                overhangs=overhangs,
+                               ambrel=ambrel,
                                min_reads=min_reads,
                                n_reads_rel=nreads,
                                n_batches=nbats,
@@ -242,7 +246,7 @@ def write_one(xam_file: Path, *,
     ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
     seq = get_fasta_seq(fasta, DNA, ref)
     # Compute the number of records per batch.
-    rec_per_batch = get_reads_per_batch(mib_to_bytes(batch_size), len(seq))
+    rec_per_batch = calc_reads_per_batch(mib_to_bytes(batch_size), len(seq))
     # Determine if there are enough reads.
     xam = XamViewer(xam_file, temp_dir, rec_per_batch)
     if min_reads > 0 and xam.n_reads < min_reads:

@@ -234,9 +234,20 @@ def _triu_cumsum(a: np.ndarray):
     a_cumsum = np.empty_like(a)
     if a_cumsum.size == 0:
         return a_cumsum
-    a_cumsum[0] = np.cumsum(a[0, ::-1])[::-1]
-    for j in range(1, a.shape[0]):
-        a_cumsum[j, j:] = np.cumsum(a[j, :j - 1:-1])[::-1] + a_cumsum[j - 1, j:]
+    npos = a.shape[0]
+    extras = a.shape[2:]
+    # Numba does not (as of v0.59.0) support np.cumsum with the optional
+    # argument "axis", so need to replicate this functionality manually.
+    # First, fill the first row, starting from the top right element.
+    a_cumsum[0, -1] = a[0, -1]
+    for col in range(npos - 2, -1, -1):
+        a_cumsum[0, col] = a[0, col] + a_cumsum[0, col + 1]
+    # Then, fill each subsequent row.
+    for row in range(1, npos):
+        row_cumsum = np.zeros(extras, dtype=a.dtype)
+        for col in range(npos - 1, row - 1, -1):
+            row_cumsum += a[row, col]
+            a_cumsum[row, col] = row_cumsum + a_cumsum[row - 1, col]
     return a_cumsum
 
 
@@ -681,20 +692,23 @@ def _slice_p_ends(p_ends: np.ndarray,
                   p_ends_cumsum: np.ndarray,
                   end5: int,
                   end3: int):
+    """ Slice a matrix of end coordinate probabilities. """
     p_ends_slice = p_ends[end5: end3, end5: end3].copy()
     if p_ends_slice.size > 0:
-        p_ends_slice[0, :-1] = p_ends[:end5, end5: end3 - 1].sum(axis=0)
-        p_ends_slice[1:, -1] = p_ends[end5 + 1: end3, end3:].sum(axis=1)
-        p_ends_slice[0, -1] = p_ends_cumsum[end5 + 1, end3 - 1]
+        p_ends_slice[0, :-1] = p_ends[:end5 + 1, end5: end3 - 1].sum(axis=0)
+        p_ends_slice[1:, -1] = p_ends[end5 + 1: end3, end3 - 1:].sum(axis=1)
+        p_ends_slice[0, -1] = p_ends_cumsum[end5, end3 - 1]
     return p_ends_slice
 
 
 def _find_split_positions(p_mut: np.ndarray, min_gap: int, threshold: float):
+    """ Find the positions (at or below the threshold) at which to split
+    the mutation rates. """
     npos, _ = p_mut.shape
     min_gap = _adjust_min_gap(npos, min_gap)
     if min_gap == 0:
         return np.array([], dtype=int)
-    cum_pos = np.cumsum(np.all(p_mut <= threshold, axis=1))
+    cum_pos = np.cumsum(p_mut.max(axis=1) <= threshold)
     return np.flatnonzero(np.diff(
         np.asarray(cum_pos[min_gap:] - cum_pos[:-min_gap] == min_gap,
                    dtype=int)
@@ -736,12 +750,9 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                            min_gap: int,
                            p_ends: np.ndarray,
                            init_p_mut_given_span: np.ndarray, *,
-                           split_positions: bool = True,
-                           split_threshold: float = 0.,
-                           f_tol: float = 5e-1,
-                           f_rtol: float = 5e-1,
-                           x_tol: float = 1e-4,
-                           x_rtol: float = 5e-1):
+                           quick_unbias: bool = True,
+                           quick_unbias_thresh: float = 0.,
+                           f_tol: float = 5e-5):
     """ Calculate the underlying mutation rates including for reads with
     two mutations too close based on the observed mutation rates. """
     # Validate the dimensionality of the arguments.
@@ -753,10 +764,7 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
             min_gap,
             p_ends,
             init_p_mut_given_span,
-            f_tol=f_tol,
-            f_rtol=f_rtol,
-            x_tol=x_tol,
-            x_rtol=x_rtol,
+            f_tol=f_tol
         )[:, 0]
     dims = find_dims([(POSITIONS, CLUSTERS)],
                      [p_mut_given_span_observed],
@@ -767,7 +775,7 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
         # No two mutations can be too close.
         return p_mut_given_span_observed
 
-    if split_positions:
+    if quick_unbias:
         # Split the mutation rates and end coordinate distributions,
         # calculate them separately, and reassemble them.
         p_mut_given_span_list = list()
@@ -778,7 +786,7 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                                   _find_split_positions(
                                       p_mut_given_span_observed,
                                       min_gap,
-                                      split_threshold)),
+                                      quick_unbias_thresh)),
                 strict=True
         ):
             p_mut_given_span_list.append(_calc_p_mut_given_span(
@@ -786,12 +794,9 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                 min_gap,
                 p_ends_split,
                 p_mut_init_split,
-                split_positions=False,
-                split_threshold=split_threshold,
-                f_tol=f_tol,
-                f_rtol=f_rtol,
-                x_tol=x_tol,
-                x_rtol=x_rtol
+                quick_unbias=False,
+                quick_unbias_thresh=quick_unbias_thresh,
+                f_tol=f_tol
             ))
         return (np.concatenate(p_mut_given_span_list, axis=0)
                 if p_mut_given_span_list
@@ -822,10 +827,7 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
 
     return _clip(newton_krylov(objective,
                                init_p_mut_given_span,
-                               f_tol=f_tol,
-                               f_rtol=f_rtol,
-                               x_tol=x_tol,
-                               x_rtol=x_rtol))
+                               f_tol=f_tol))
 
 
 def _calc_p_ends(p_ends_observed: np.ndarray,
