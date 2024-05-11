@@ -752,7 +752,8 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                            init_p_mut_given_span: np.ndarray, *,
                            quick_unbias: bool = True,
                            quick_unbias_thresh: float = 0.,
-                           f_tol: float = 5e-5):
+                           f_tol: float = 1.e-4,
+                           x_rtol: float = 1.e-3):
     """ Calculate the underlying mutation rates including for reads with
     two mutations too close based on the observed mutation rates. """
     # Validate the dimensionality of the arguments.
@@ -764,7 +765,8 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
             min_gap,
             p_ends,
             init_p_mut_given_span,
-            f_tol=f_tol
+            f_tol=f_tol,
+            x_rtol=x_rtol,
         )[:, 0]
     dims = find_dims([(POSITIONS, CLUSTERS)],
                      [p_mut_given_span_observed],
@@ -796,7 +798,8 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                 p_mut_init_split,
                 quick_unbias=False,
                 quick_unbias_thresh=quick_unbias_thresh,
-                f_tol=f_tol
+                f_tol=f_tol,
+                x_rtol=x_rtol,
             ))
         return (np.concatenate(p_mut_given_span_list, axis=0)
                 if p_mut_given_span_list
@@ -827,7 +830,8 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
 
     return _clip(newton_krylov(objective,
                                init_p_mut_given_span,
-                               f_tol=f_tol))
+                               f_tol=f_tol,
+                               x_rtol=x_rtol))
 
 
 def _calc_p_ends(p_ends_observed: np.ndarray,
