@@ -226,7 +226,9 @@ def find_contiguous_reads(seg_end5s: np.ndarray, seg_end3s: np.ndarray):
         return np.ones(num_reads, dtype=bool)
     # For contiguous reads, only the last coordinate (when sorted) will
     # be the end of a contiguous segment.
-    _, _, is_contig_end3 = sort_segment_ends(seg_end5s, seg_end3s)
+    _, _, is_contig_end3 = sort_segment_ends(seg_end5s,
+                                             seg_end3s,
+                                             one_indexed=False)
     return np.logical_not(np.count_nonzero(is_contig_end3[:, :-1], axis=1))
 
 ########################################################################

@@ -512,24 +512,86 @@ class TestSortSegmentEnds(ut.TestCase):
             self.assertTrue(np.array_equal(result_contig, expect_contig))
 
 
-@ut.skip("pending")
-class TestFindContiguous(ut.TestCase):
+class TestFindContiguousReads(ut.TestCase):
 
     def test_1_segment(self):
         for n_reads in range(10):
-            ends = rng.integers(1, 11, (n_reads, 2))
-            self.assertTrue(np.array_equal(find_contiguous_reads(ends),
+            end5s = rng.integers(1, 10, (n_reads, 1))
+            end3s = rng.integers(1, 10, (n_reads, 1)) + end5s
+            self.assertTrue(np.array_equal(find_contiguous_reads(end5s, end3s),
                                            np.ones(n_reads, dtype=bool)))
 
-    def test_2_segments(self):
-        ends = np.array([[3, 11, 11, 16],
-                         [11, 16, 3, 11],
-                         [3, 10, 11, 16],
-                         [11, 16, 3, 10],
-                         [3, 9, 11, 16],
-                         [11, 16, 3, 9]])
-        expect = np.array([True, True, False, True, False, False])
-        self.assertTrue(np.array_equal(find_contiguous_reads(ends), expect))
+    def test_2_segments_nomask(self):
+        end5s = np.array([[1, 4],
+                          [1, 3],
+                          [1, 2],
+                          [1, 1],
+                          [2, 1],
+                          [3, 1],
+                          [4, 1]])
+        end3s = np.array([[2, 5],
+                          [2, 4],
+                          [2, 3],
+                          [2, 2],
+                          [3, 2],
+                          [4, 2],
+                          [5, 2]])
+        expect = np.array([False, True, True, True, True, True, False])
+        self.assertTrue(np.array_equal(find_contiguous_reads(end5s, end3s),
+                                       expect))
+
+    def test_2_segments_mask(self):
+        mask = np.array([[False, False],
+                         [False, False],
+                         [False, False],
+                         [False, False],
+                         [False, False],
+                         [False, False],
+                         [False, False],
+                         [True, False],
+                         [True, False],
+                         [True, False],
+                         [True, False],
+                         [False, True],
+                         [False, True],
+                         [False, True],
+                         [False, True]])
+        end5s = np.ma.masked_array([[1, 4],
+                                    [1, 3],
+                                    [1, 2],
+                                    [1, 1],
+                                    [2, 1],
+                                    [3, 1],
+                                    [4, 1],
+                                    [3, 4],
+                                    [3, 3],
+                                    [3, 2],
+                                    [3, 1],
+                                    [1, 3],
+                                    [2, 3],
+                                    [3, 3],
+                                    [4, 3]],
+                                   mask)
+        end3s = np.ma.masked_array([[2, 5],
+                                    [2, 4],
+                                    [2, 3],
+                                    [2, 2],
+                                    [3, 2],
+                                    [4, 2],
+                                    [5, 2],
+                                    [2, 5],
+                                    [2, 4],
+                                    [2, 3],
+                                    [2, 2],
+                                    [2, 2],
+                                    [3, 2],
+                                    [4, 2],
+                                    [5, 2]],
+                                   mask)
+        expect = np.array([False, True, True, True, True, True, False,
+                           True, True, True, True, True, True, True, True])
+        self.assertTrue(np.array_equal(find_contiguous_reads(end5s, end3s),
+                                       expect))
 
 
 if __name__ == "__main__":
