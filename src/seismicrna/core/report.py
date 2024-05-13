@@ -61,7 +61,7 @@ from .arg import (opt_phred_enc,
                   opt_min_mut_gap,
                   opt_min_ninfo_pos,
                   opt_max_fmut_pos,
-                  opt_ambrel,
+                  opt_ambindel,
                   opt_em_runs,
                   opt_em_thresh,
                   opt_min_em_iter,
@@ -332,7 +332,7 @@ ChecksumsF = Field("checksums", "MD5 checksums of batches", dict)
 RefseqChecksumF = Field("refseq_checksum",
                         "MD5 checksum of reference sequence",
                         str)
-AmindelF = OptionField(opt_ambrel)
+AmbindelF = OptionField(opt_ambindel)
 OverhangsF = OptionField(opt_overhangs)
 MinPhredF = OptionField(opt_min_phred)
 

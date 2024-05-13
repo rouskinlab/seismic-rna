@@ -126,7 +126,7 @@ class TestSimulateRelate(ut.TestCase):
         npos = 300
         nreads = 100_000
         ncls = 2
-        batch_size = 16.
+        batch_size = 30_000
         # Simulate the reference sequence.
         refseq = DNA.random(npos)
         # Simulate proportions of end coordinates.

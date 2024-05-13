@@ -541,8 +541,8 @@ opt_batch_size = Option(
     help="maximum number of reads per batch"
 )
 
-opt_ambrel = Option(
-    ("--ambrel/--no-ambrel",),
+opt_ambindel = Option(
+    ("--ambindel/--no-ambindel",),
     type=bool,
     default=True,
     help="mark all ambiguous indels"

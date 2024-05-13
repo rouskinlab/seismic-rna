@@ -28,18 +28,13 @@ from ..core.write import need_write
 logger = getLogger(__name__)
 
 
-def calc_reads_per_batch(bytes_per_batch: int, seq_len: int):
-    """ Calculate the number of reads per batch. """
-    return max(bytes_per_batch // seq_len, 1)
-
-
 def generate_batch(batch: int, *,
                    xam_view: XamViewer,
                    out_dir: Path,
                    refseq: DNA,
                    min_mapq: int,
                    min_qual: str,
-                   ambrel: bool,
+                   ambindel: bool,
                    overhangs: bool,
                    brotli_level: int):
     """ Compute relation vectors for every SAM record in one batch,
@@ -57,7 +52,7 @@ def generate_batch(batch: int, *,
                                      refseq,
                                      min_mapq,
                                      min_qual,
-                                     ambrel,
+                                     ambindel,
                                      overhangs)
             except Exception as error:
                 logger.error(f"Failed to compute relation vector: {error}")
@@ -110,7 +105,7 @@ class RelationWriter(object):
                           min_mapq: int,
                           phred_enc: int,
                           min_phred: int,
-                          ambrel: bool,
+                          ambindel: bool,
                           overhangs: bool,
                           brotli_level: int,
                           n_procs: int):
@@ -129,7 +124,7 @@ class RelationWriter(object):
                                refseq=self.seq,
                                min_mapq=min_mapq,
                                min_qual=encode_phred(min_phred, phred_enc),
-                               ambrel=ambrel,
+                               ambindel=ambindel,
                                overhangs=overhangs,
                                brotli_level=brotli_level)
             # Generate and write relation vectors for each batch.
@@ -167,7 +162,7 @@ class RelationWriter(object):
               overhangs: bool,
               min_phred: int,
               phred_enc: int,
-              ambrel: bool,
+              ambindel: bool,
               **kwargs):
         """ Compute a relation vector for every record in a BAM file,
         write the vectors into one or more batch files, compute their
@@ -188,7 +183,7 @@ class RelationWriter(object):
                                               overhangs=overhangs,
                                               min_phred=min_phred,
                                               phred_enc=phred_enc,
-                                              ambrel=ambrel,
+                                              ambindel=ambindel,
                                               **kwargs)
             ended = datetime.now()
             # Write a report of the relation step.
@@ -197,7 +192,7 @@ class RelationWriter(object):
                                min_phred=min_phred,
                                phred_enc=phred_enc,
                                overhangs=overhangs,
-                               ambrel=ambrel,
+                               ambindel=ambindel,
                                min_reads=min_reads,
                                n_reads_rel=nreads,
                                n_batches=nbats,

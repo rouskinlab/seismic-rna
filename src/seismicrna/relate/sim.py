@@ -6,7 +6,6 @@ import pandas as pd
 
 from .io import QnamesBatchIO, RelateBatchIO
 from .report import RelateReport
-from .write import calc_reads_per_batch, mib_to_bytes
 from ..core.batch import (END_COORDS,
                           END5_COORD,
                           END3_COORD,
@@ -206,8 +205,7 @@ def generate_batch(out_dir: Path, brotli_level: int, *args, **kwargs):
     return qnames_check, relate_check
 
 
-def generate_batches(refseq: DNA,
-                     n_reads: int,
+def generate_batches(n_reads: int,
                      batch_size: int,
                      cluster_choices: np.ndarray,
                      *args,
@@ -215,13 +213,11 @@ def generate_batches(refseq: DNA,
     qnames_checks = list()
     relate_checks = list()
     # Determine the numbers of batches and reads per batch.
-    n_reads_per_batch = calc_reads_per_batch(mib_to_bytes(batch_size),
-                                             len(refseq))
-    n_batches_full = n_reads // n_reads_per_batch
+    n_batches_full = n_reads // batch_size
     # Generate every full-size batch.
     for batch in range(n_batches_full):
-        first = n_reads_per_batch * batch
-        last = n_reads_per_batch + first
+        first = batch_size * batch
+        last = batch_size + first
         qnames_check, relate_check = generate_batch(
             *args,
             batch=batch,
@@ -231,7 +227,7 @@ def generate_batches(refseq: DNA,
         qnames_checks.append(qnames_check)
         relate_checks.append(relate_check)
     # Generate the last batch, which may have fewer reads.
-    first = n_reads_per_batch * n_batches_full
+    first = batch_size * n_batches_full
     last = n_reads
     if last - first > 0:
         qnames_check, relate_check = generate_batch(
@@ -270,7 +266,6 @@ def simulate_relate(out_dir: Path,
         checksums = generate_batches(out_dir=out_dir,
                                      sample=sample,
                                      ref=ref,
-                                     refseq=refseq,
                                      n_reads=n_reads,
                                      brotli_level=brotli_level,
                                      *args,
@@ -285,6 +280,9 @@ def simulate_relate(out_dir: Path,
         report = RelateReport(sample=sample,
                               ref=ref,
                               min_mapq=-1,
+                              phred_enc=0,
+                              min_phred=0,
+                              ambindel=False,
                               min_reads=n_reads,
                               n_reads_rel=n_reads,
                               n_batches=n_batches,

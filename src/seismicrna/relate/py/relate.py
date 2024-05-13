@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from .ambrel import Deletion, Insertion, find_ambrels
+from .ambindel import Deletion, Insertion, find_ambindels
 from .cigar import (CIG_ALIGN,
                     CIG_MATCH,
                     CIG_SUBST,
@@ -78,7 +78,7 @@ class SamRead(object):
         return f"Read {repr(self.qname)} {attrs}"
 
 
-def _find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambrel: bool):
+def _find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambindel: bool):
     """
     Find the relationships between a read and a reference.
 
@@ -90,7 +90,7 @@ def _find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambrel: bool):
         Reference sequence; refseq and muts must have the same length.
     min_qual: int
         ASCII encoding of the minimum Phred score to accept a base call
-    ambrel: bool
+    ambindel: bool
         Whether to find and label all ambiguous insertions and deletions
 
     Returns
@@ -220,8 +220,8 @@ def _find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambrel: bool):
     for ins in inns:
         ins.stamp(rels, len(refseq))
     # Find and label all relationships that are ambiguous due to indels.
-    if ambrel and (dels or inns):
-        find_ambrels(rels, refseq, read.seq, read.qual, min_qual, dels, inns)
+    if ambindel and (dels or inns):
+        find_ambindels(rels, refseq, read.seq, read.qual, min_qual, dels, inns)
     return read.pos, ref_pos, dict(rels)
 
 
@@ -301,18 +301,18 @@ def find_rels_line(line1: str,
                    refseq: DNA,
                    min_mapq: int,
                    qmin: str,
-                   ambrel: bool,
+                   ambindel: bool,
                    overhangs: bool):
     # Generate the relationships for read 1.
     read1 = SamRead(line1)
     _validate_read(read1, ref, min_mapq)
-    end51, end31, rels1 = _find_rels_read(read1, refseq, qmin, ambrel)
+    end51, end31, rels1 = _find_rels_read(read1, refseq, qmin, ambindel)
     if line2:
         # Generate the relationships for read 2.
         read2 = SamRead(line2)
         _validate_read(read2, ref, min_mapq)
         _validate_pair(read1, read2)
-        end52, end32, rels2 = _find_rels_read(read2, refseq, qmin, ambrel)
+        end52, end32, rels2 = _find_rels_read(read2, refseq, qmin, ambindel)
         # Determine which read (1 or 2) faces forward and reverse.
         if read2.flag.rev:
             end5f, end3f, relsf = end51, end31, rels1
