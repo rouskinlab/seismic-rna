@@ -295,11 +295,11 @@ class TestSortSegmentEnds(ut.TestCase):
                                [True, False]])
         expect_contig = np.array([[False, True],
                                   [False, True]])
-        for idx1, expect_ends in [(False, expect_ends_0),
-                                  (True, expect_ends_1)]:
+        for idx0, expect_ends in [(True, expect_ends_0),
+                                  (False, expect_ends_1)]:
             result_ends, result_seg, result_contig = sort_segment_ends(end5s,
                                                                        end3s,
-                                                                       idx1)
+                                                                       idx0)
             self.assertTrue(np.array_equal(result_ends, expect_ends))
             self.assertTrue(np.array_equal(result_seg, expect_seg))
             self.assertTrue(np.array_equal(result_contig, expect_contig))
@@ -347,11 +347,11 @@ class TestSortSegmentEnds(ut.TestCase):
                                   [False, False, False, True],
                                   [False, False, False, True],
                                   [False, True, False, True]])
-        for idx1, expect_ends in [(False, expect_ends_0),
-                                  (True, expect_ends_1)]:
+        for idx0, expect_ends in [(True, expect_ends_0),
+                                  (False, expect_ends_1)]:
             result_ends, result_seg, result_contig = sort_segment_ends(end5s,
                                                                        end3s,
-                                                                       idx1)
+                                                                       idx0)
             self.assertTrue(np.array_equal(result_ends, expect_ends))
             self.assertTrue(np.array_equal(result_seg, expect_seg))
             self.assertTrue(np.array_equal(result_contig, expect_contig))
@@ -427,11 +427,11 @@ class TestSortSegmentEnds(ut.TestCase):
                                             [False, True, False, True],
                                             [False, True, False, True]],
                                            mask)
-        for idx1, expect_ends in [(False, expect_ends_0),
-                                  (True, expect_ends_1)]:
+        for idx0, expect_ends in [(True, expect_ends_0),
+                                  (False, expect_ends_1)]:
             result_ends, result_seg, result_contig = sort_segment_ends(end5s,
                                                                        end3s,
-                                                                       idx1)
+                                                                       idx0)
             self.assertTrue(np.all(result_ends == expect_ends))
             self.assertTrue(np.array_equal(result_ends.mask,
                                            expect_ends.mask))
@@ -501,11 +501,11 @@ class TestSortSegmentEnds(ut.TestCase):
                                   [False, True, False, True],
                                   [False, True, False, True],
                                   [False, True, False, True]])
-        for idx1, expect_ends in [(False, expect_ends_0),
-                                  (True, expect_ends_1)]:
+        for idx0, expect_ends in [(True, expect_ends_0),
+                                  (False, expect_ends_1)]:
             result_ends, result_seg, result_contig = sort_segment_ends(end5s,
                                                                        end3s,
-                                                                       idx1,
+                                                                       idx0,
                                                                        True)
             self.assertTrue(np.array_equal(result_ends, expect_ends))
             self.assertTrue(np.array_equal(result_seg, expect_seg))

@@ -5,8 +5,7 @@ import pandas as pd
 
 from seismicrna.core.batch.count import (count_end_coords,
                                          calc_coverage,
-                                         _calc_uniq_read_weights,
-                                         find_contiguous)
+                                         _calc_uniq_read_weights)
 from seismicrna.core.batch.ends import END5_COORD, END3_COORD
 from seismicrna.core.seq.section import SEQ_INDEX_NAMES
 
@@ -236,22 +235,37 @@ class TestCalcCoverage(ut.TestCase):
                                                (10, "G"),
                                                (11, "C")],
                                               names=SEQ_INDEX_NAMES)
-        ends = np.array([[1, 1],
-                         [1, 2],
-                         [1, 3],
-                         [2, 4],
-                         [4, 4],
-                         [4, 6],
-                         [1, 7],
-                         [1, 13],
-                         [7, 13],
-                         [8, 10],
-                         [10, 10],
-                         [10, 12],
-                         [11, 13],
-                         [12, 13],
-                         [13, 13]])
-        read_nums = np.arange(ends.shape[0])
+        end5s = np.array([[1],
+                          [1],
+                          [1],
+                          [2],
+                          [4],
+                          [4],
+                          [1],
+                          [1],
+                          [7],
+                          [8],
+                          [10],
+                          [10],
+                          [11],
+                          [12],
+                          [13]])
+        end3s = np.array([[1],
+                          [2],
+                          [3],
+                          [4],
+                          [4],
+                          [6],
+                          [7],
+                          [13],
+                          [13],
+                          [10],
+                          [10],
+                          [12],
+                          [13],
+                          [13],
+                          [13]])
+        read_nums = np.arange(15)
         exp_per_pos = pd.Series([4., 5., 3., 3., 3., 3., 5., 4.],
                                 index=pos_index)
         exp_per_read = {
@@ -266,7 +280,10 @@ class TestCalcCoverage(ut.TestCase):
             "N": pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                            read_nums)
         }
-        res_per_pos, res_per_read = calc_coverage(pos_index, read_nums, ends)
+        res_per_pos, res_per_read = calc_coverage(pos_index,
+                                                  read_nums,
+                                                  end5s,
+                                                  end3s)
         self.assertIsInstance(res_per_pos, pd.Series)
         self.assertTrue(res_per_pos.equals(exp_per_pos))
         self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
@@ -303,22 +320,37 @@ class TestCalcCoverage(ut.TestCase):
                                                (10, "G"),
                                                (11, "C")],
                                               names=SEQ_INDEX_NAMES)
-        ends = np.array([[1, 1],
-                         [1, 2],
-                         [1, 3],
-                         [2, 4],
-                         [4, 4],
-                         [4, 6],
-                         [1, 7],
-                         [1, 13],
-                         [7, 13],
-                         [8, 10],
-                         [10, 10],
-                         [10, 12],
-                         [11, 13],
-                         [12, 13],
-                         [13, 13]])
-        read_nums = np.arange(ends.shape[0])
+        end5s = np.array([[1],
+                          [1],
+                          [1],
+                          [2],
+                          [4],
+                          [4],
+                          [1],
+                          [1],
+                          [7],
+                          [8],
+                          [10],
+                          [10],
+                          [11],
+                          [12],
+                          [13]])
+        end3s = np.array([[1],
+                          [2],
+                          [3],
+                          [4],
+                          [4],
+                          [6],
+                          [7],
+                          [13],
+                          [13],
+                          [10],
+                          [10],
+                          [12],
+                          [13],
+                          [13],
+                          [13]])
+        read_nums = np.arange(15)
         read_weights = pd.DataFrame.from_dict({
             "C1": pd.Series(np.linspace(0.1, 1.5, 15)),
             "C2": pd.Series(np.linspace(1.5, 0.1, 15))
@@ -343,7 +375,8 @@ class TestCalcCoverage(ut.TestCase):
         }
         res_per_pos, res_per_read = calc_coverage(pos_index,
                                                   read_nums,
-                                                  ends,
+                                                  end5s,
+                                                  end3s,
                                                   read_weights)
         self.assertIsInstance(res_per_pos, pd.DataFrame)
         self.assertTrue(res_per_pos.round(6).equals(exp_per_pos.round(6)))
@@ -371,12 +404,17 @@ class TestCalcCoverage(ut.TestCase):
                                                (10, "G"),
                                                (11, "C")],
                                               names=SEQ_INDEX_NAMES)
-        ends = np.array([[1, 7],
-                         [4, 10],
-                         [7, 13],
-                         [4, 10],
-                         [1, 7]])
-        read_nums = np.arange(ends.shape[0])
+        end5s = np.array([[1],
+                          [4],
+                          [7],
+                          [4],
+                          [1]])
+        end3s = np.array([[7],
+                          [10],
+                          [13],
+                          [10],
+                          [7]])
+        read_nums = np.arange(5)
         exp_per_pos = pd.Series([2., 4., 4., 4., 3., 3., 3., 1.],
                                 index=pos_index)
         exp_per_read = {
@@ -386,7 +424,10 @@ class TestCalcCoverage(ut.TestCase):
             "T": pd.Series([0, 2, 2, 2, 0], read_nums),
             "N": pd.Series([0, 0, 0, 0, 0], read_nums)
         }
-        res_per_pos, res_per_read = calc_coverage(pos_index, read_nums, ends)
+        res_per_pos, res_per_read = calc_coverage(pos_index,
+                                                  read_nums,
+                                                  end5s,
+                                                  end3s)
         self.assertIsInstance(res_per_pos, pd.Series)
         self.assertTrue(res_per_pos.equals(exp_per_pos))
         self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
@@ -413,12 +454,17 @@ class TestCalcCoverage(ut.TestCase):
                                                (10, "G"),
                                                (11, "C")],
                                               names=SEQ_INDEX_NAMES)
-        ends = np.array([[1, 7],
-                         [4, 10],
-                         [7, 13],
-                         [4, 10],
-                         [1, 7]])
-        read_nums = np.arange(ends.shape[0])
+        end5s = np.array([[1],
+                          [4],
+                          [7],
+                          [4],
+                          [1]])
+        end3s = np.array([[7],
+                          [10],
+                          [13],
+                          [10],
+                          [7]])
+        read_nums = np.arange(5)
         read_weights = pd.DataFrame.from_dict({
             "C1": pd.Series([0.6, 0.5, 0.9, 0.4, 0.1]),
             "C2": pd.Series([0.2, 0.3, 0.8, 1.0, 0.7])
@@ -438,7 +484,8 @@ class TestCalcCoverage(ut.TestCase):
         }
         res_per_pos, res_per_read = calc_coverage(pos_index,
                                                   read_nums,
-                                                  ends,
+                                                  end5s,
+                                                  end3s,
                                                   read_weights)
         self.assertIsInstance(res_per_pos, pd.DataFrame)
         self.assertTrue(res_per_pos.round(6).equals(exp_per_pos.round(6)))
@@ -447,7 +494,7 @@ class TestCalcCoverage(ut.TestCase):
             self.assertIsInstance(res_per_read[base], pd.Series)
             self.assertTrue(res_per_read[base].equals(exp_per_read[base]))
 
-    def test_2_segments(self):
+    def test_2_segments_nomask(self):
         """
         1234567890123
 
@@ -484,20 +531,33 @@ class TestCalcCoverage(ut.TestCase):
                                                (10, "G"),
                                                (11, "C")],
                                               names=SEQ_INDEX_NAMES)
-        ends = np.array([[1, 5, 9, 13],
-                         [9, 13, 1, 5],
-                         [4, 8, 6, 10],
-                         [6, 10, 4, 8],
-                         [3, 6, 3, 6],
-                         [9, 9, 9, 9],
-                         [5, 8, 10, 13],
-                         [10, 13, 5, 8],
-                         [5, 9, 10, 13],
-                         [10, 13, 5, 9],
-                         [5, 10, 10, 13],
-                         [10, 13, 5, 10],
-                         [1, 13, 1, 13]])
-        read_nums = np.arange(ends.shape[0])
+        end5s = np.array([[1, 9],
+                          [9, 1],
+                          [4, 6],
+                          [6, 4],
+                          [3, 3],
+                          [9, 9],
+                          [5, 10],
+                          [10, 5],
+                          [5, 10],
+                          [10, 5],
+                          [5, 10],
+                          [10, 5],
+                          [1, 1]])
+        end3s = np.array([[5, 13],
+                          [13, 5],
+                          [8, 10],
+                          [10, 8],
+                          [6, 6],
+                          [9, 9],
+                          [8, 13],
+                          [13, 8],
+                          [9, 13],
+                          [13, 9],
+                          [10, 13],
+                          [13, 10],
+                          [13, 13]])
+        read_nums = np.arange(13)
         exp_per_pos = pd.Series([4., 6., 12., 10., 9., 10., 11., 9.],
                                 index=pos_index)
         exp_per_read = {
@@ -512,36 +572,120 @@ class TestCalcCoverage(ut.TestCase):
             "N": pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                            read_nums)
         }
-        res_per_pos, res_per_read = calc_coverage(pos_index, read_nums, ends)
+        res_per_pos, res_per_read = calc_coverage(pos_index,
+                                                  read_nums,
+                                                  end5s,
+                                                  end3s)
         self.assertIsInstance(res_per_pos, pd.Series)
-        print("Result")
-        print(res_per_pos)
-        print("Expect")
-        print(exp_per_pos)
         self.assertTrue(res_per_pos.equals(exp_per_pos))
         self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
         for base in exp_per_read:
             self.assertIsInstance(res_per_read[base], pd.Series)
             self.assertTrue(res_per_read[base].equals(exp_per_read[base]))
 
+    def test_2_segments_mask(self):
+        """
+        01234567890123
 
-class TestFindContiguous(ut.TestCase):
+         [---]
+        ][
 
-    def test_1_segment(self):
-        for n_reads in range(10):
-            ends = rng.integers(1, 11, (n_reads, 2))
-            self.assertTrue(np.array_equal(find_contiguous(ends),
-                                           np.ones(n_reads, dtype=bool)))
+         [---]
+         ][
 
-    def test_2_segments(self):
-        ends = np.array([[3, 11, 11, 16],
-                         [11, 16, 3, 11],
-                         [3, 10, 11, 16],
-                         [11, 16, 3, 10],
-                         [3, 9, 11, 16],
-                         [11, 16, 3, 9]])
-        expect = np.array([True, True, False, True, False, False])
-        self.assertTrue(np.array_equal(find_contiguous(ends), expect))
+         [---]
+            ][
+
+         [---]
+             ][
+
+         [---]
+              [===]
+
+        ][
+         [===]
+
+         ][
+         [===]
+
+            ][
+         [===]
+
+             ][
+         [===]
+        """
+        pos_index = pd.MultiIndex.from_tuples([(3, "G"),
+                                               (4, "A"),
+                                               (5, "C"),
+                                               (6, "A"),
+                                               (8, "T"),
+                                               (9, "T"),
+                                               (10, "G"),
+                                               (11, "C")],
+                                              names=SEQ_INDEX_NAMES)
+        mask = np.array([[False, True],
+                         [False, True],
+                         [False, True],
+                         [False, True],
+                         [False, False],
+                         [True, False],
+                         [True, False],
+                         [True, False],
+                         [True, False]])
+        end5s = np.ma.masked_array([[1, 1],
+                                    [1, 2],
+                                    [1, 5],
+                                    [1, 6],
+                                    [1, 6],
+                                    [1, 1],
+                                    [2, 1],
+                                    [5, 1],
+                                    [6, 1]],
+                                   mask)
+        end3s = np.ma.masked_array([[5, 0],
+                                    [5, 1],
+                                    [5, 4],
+                                    [5, 5],
+                                    [5, 10],
+                                    [0, 5],
+                                    [1, 5],
+                                    [4, 5],
+                                    [5, 5]],
+                                   mask)
+        read_nums = np.arange(9)
+        read_weights = pd.DataFrame.from_dict({
+            "C1": pd.Series([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]),
+            "C2": pd.Series([0.2, 0.3, 0.8, 0.9, 0.7, 0.5, 0.6, 0.1, 0.4])
+        })
+        exp_per_pos = pd.DataFrame.from_dict({
+            "C1": pd.Series([9.0, 9.0, 9.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+                            pos_index),
+            "C2": pd.Series([4.5, 4.5, 4.5, 0.7, 0.7, 0.7, 0.7, 0.0],
+                            pos_index),
+        })
+        exp_per_read = {
+            "A": pd.Series([1, 1, 1, 1, 2, 1, 1, 1, 1],
+                           read_nums),
+            "C": pd.Series([1, 1, 1, 1, 1, 1, 1, 1, 1],
+                           read_nums),
+            "G": pd.Series([1, 1, 1, 1, 2, 1, 1, 1, 1],
+                           read_nums),
+            "T": pd.Series([0, 0, 0, 0, 2, 0, 0, 0, 0],
+                           read_nums),
+            "N": pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0],
+                           read_nums)
+        }
+        res_per_pos, res_per_read = calc_coverage(pos_index,
+                                                  read_nums,
+                                                  end5s,
+                                                  end3s,
+                                                  read_weights)
+        self.assertIsInstance(res_per_pos, pd.DataFrame)
+        self.assertTrue(res_per_pos.round(6).equals(exp_per_pos.round(6)))
+        self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
+        for base in exp_per_read:
+            self.assertIsInstance(res_per_read[base], pd.Series)
+            self.assertTrue(res_per_read[base].equals(exp_per_read[base]))
 
 
 if __name__ == "__main__":

@@ -160,7 +160,7 @@ def sanitize_segment_ends(seg_end5s: np.ndarray,
 
 def sort_segment_ends(seg_end5s: np.ndarray,
                       seg_end3s: np.ndarray,
-                      one_indexed: bool = True,
+                      zero_indexed: bool = True,
                       fill_mask: bool = False):
     """ Sort the segment end coordinates and label the 3' end of each
     contiguous set of segments.
@@ -171,9 +171,9 @@ def sort_segment_ends(seg_end5s: np.ndarray,
         5' end of each segment in each read; may be masked.
     seg_end3s: np.ndarray
         3' end of each segment in each read; may be masked.
-    one_indexed: bool = True
-        In the return array, make the 5' ends 1-indexed; if False, then
-        they will be 0-indexed.
+    zero_indexed: bool = True
+        In the return array, make the 5' ends 0-indexed; if False, then
+        they will be 1-indexed (like the input).
     fill_mask: bool = False
         If `seg_end5s` or `seg_end3s` is a masked array, then return a
         regular array with all masked coordinates set to 0 (or 1 for
@@ -212,7 +212,7 @@ def sort_segment_ends(seg_end5s: np.ndarray,
                                          seg_ends_sorted.mask)
         is_contig_end3 = np.ma.masked_array(is_contig_end3,
                                             seg_ends_sorted.mask)
-    if one_indexed:
+    if not zero_indexed:
         # Make the 5' coordinates 1-indexed again.
         seg_ends_sorted[np.nonzero(is_seg_end5)] += 1
     return seg_ends_sorted, is_seg_end5, is_contig_end3
@@ -228,7 +228,7 @@ def find_contiguous_reads(seg_end5s: np.ndarray, seg_end3s: np.ndarray):
     # be the end of a contiguous segment.
     _, _, is_contig_end3 = sort_segment_ends(seg_end5s,
                                              seg_end3s,
-                                             one_indexed=False)
+                                             zero_indexed=False)
     return np.logical_not(np.count_nonzero(is_contig_end3[:, :-1], axis=1))
 
 ########################################################################

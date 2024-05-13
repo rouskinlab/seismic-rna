@@ -64,7 +64,7 @@ def _calc_uniq_read_weights(read_weights: np.ndarray,
 
 @jit()
 def _calc_coverage(ends_sorted: np.ndarray,
-                   is_end3: np.ndarray,
+                   is_contig_end3: np.ndarray,
                    read_weights: np.ndarray,
                    base_count: np.ndarray):
     """ Count one kind of base in the given reads.
@@ -72,15 +72,14 @@ def _calc_coverage(ends_sorted: np.ndarray,
     Parameters
     ----------
     ends_sorted: np.ndarray
-        Array (unique reads x ends) of 5' and 3' end coordinates of the
-        segments in each read; must be sorted ascendingly over axis 1,
-        with 5' and 3' coordinates intermixed.
-    is_end3: np.ndarray
-        Array (unique reads x ends) of booleans indicating whether each
-        coordinate in `ends_sorted` is the 3' end of a segment.
+        Array (reads x ends) of the 5' and 3' ends of the segments in
+        each read; must be sorted ascendingly over axis 1, with 5' and
+        3' ends intermixed; 5' ends must be 0-indexed.
+    is_contig_end3: np.ndarray
+        Array (reads x ends) indicating whether each coordinate in
+        `ends_sorted` is the 3' end of a contiguous segment.
     read_weights: np.ndarray
-        Array (unique reads x clusters) of the weight of each read in
-        each cluster.
+        Array (reads x clusters) of the weight of each read per cluster.
     base_count: np.ndarray
         Array ((positions + 1) x bases) of the cumulative count of this
         kind of base up to each position.
@@ -94,7 +93,7 @@ def _calc_coverage(ends_sorted: np.ndarray,
     per_read = np.zeros((num_reads, num_bases), dtype=np.int64)
     for i in range(num_reads):
         # Find the coordinates of the contiguous segments.
-        end3_indices = np.flatnonzero(is_end3[i])
+        end3_indices = np.flatnonzero(is_contig_end3[i])
         end5_indices = np.roll(end3_indices + 1, 1)
         end5_indices[0] = 0
         end5_coords = ends_sorted[i, end5_indices]
@@ -112,7 +111,8 @@ def _calc_coverage(ends_sorted: np.ndarray,
 
 def calc_coverage(pos_index: pd.Index,
                   read_nums: np.ndarray,
-                  ends: np.ndarray,
+                  seg_end5s: np.ndarray,
+                  seg_end3s: np.ndarray,
                   read_weights: pd.DataFrame | None = None):
     """ Number of positions covered by each read. """
     # Find the positions in use.
@@ -124,9 +124,9 @@ def calc_coverage(pos_index: pd.Index,
     min_pos = positions[0]
     max_pos = positions[-1]
     # Validate the dimensions.
-    dims = [(POSITIONS,), (READS,), (READS, SEGMENTS)]
-    arrays = [positions, read_nums, ends]
-    names = ["positions", "read_nums", "ends"]
+    dims = [(POSITIONS,), (READS,), (READS, SEGMENTS), (READS, SEGMENTS)]
+    arrays = [positions, read_nums, seg_end5s, seg_end3s]
+    names = ["positions", "read_nums", "seg_end5s", "seg_end3s"]
     if read_weights is not None:
         if not isinstance(read_weights, pd.DataFrame):
             raise TypeError("If given, read_weights must be DataFrame, "
@@ -136,14 +136,22 @@ def calc_coverage(pos_index: pd.Index,
         arrays.append(read_weights.values)
         names.append("read_weights")
     find_dims(dims, arrays, names)
+    # Clip the end coordinates to the minimum and maximum positions.
     # Sort the end coordinates and label the 3' ends.
-    ends, is_end3 = sort_segment_ends(ends, min_pos, max_pos)
+    ends, _, is_end3 = sort_segment_ends(seg_end5s.clip(min_pos, max_pos + 1),
+                                         seg_end3s.clip(min_pos - 1, max_pos),
+                                         zero_indexed=True,
+                                         fill_mask=True)
     # Find the unique end coordinates, to speed up the calculation when
     # many reads have identical end coordinates (e.g. for amplicons).
-    uniq_ends, uniq_inverse, uniq_counts = np.unique(ends,
-                                                     axis=0,
-                                                     return_inverse=True,
-                                                     return_counts=True)
+    (uniq_ends,
+     uniq_index,
+     uniq_inverse,
+     uniq_counts) = np.unique(ends,
+                              return_index=True,
+                              return_inverse=True,
+                              return_counts=True,
+                              axis=0)
     # Find the cumulative count of each base up to each position.
     bases = list()
     base_count = list()
@@ -161,7 +169,7 @@ def calc_coverage(pos_index: pd.Index,
                     else uniq_counts[:, np.newaxis])
     # Compute the coverage per position and per read.
     cover_per_pos, cover_per_read = _calc_coverage(uniq_ends,
-                                                   is_end3,
+                                                   is_end3[uniq_index],
                                                    uniq_weights,
                                                    base_count)
     # Reformat the coverage into pandas objects.
