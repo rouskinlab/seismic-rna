@@ -208,7 +208,7 @@ def generate_batch(out_dir: Path, brotli_level: int, *args, **kwargs):
 
 def generate_batches(refseq: DNA,
                      n_reads: int,
-                     batch_size: float,
+                     batch_size: int,
                      cluster_choices: np.ndarray,
                      *args,
                      **kwargs):

@@ -28,30 +28,6 @@ from ..core.write import need_write
 logger = getLogger(__name__)
 
 
-def mib_to_bytes(batch_size: float):
-    """
-    Return the number of bytes per batch of a given size in mebibytes.
-
-    Parameters
-    ----------
-    batch_size: float
-        Size of the batch in mebibytes (MiB): 1 MiB = 2^20 bytes
-
-    Return
-    ------
-    int
-        Number of bytes per batch, to the nearest integer
-    """
-    if batch_size <= 0.:
-        raise ValueError(f"batch_size must be > 0, but got {batch_size}")
-    nbytes = round(batch_size * 2 ** 20)
-    if nbytes <= 0:
-        logger.warning(f"Using batch_size of {batch_size} MiB gave {nbytes} "
-                       f"bytes per batch: defaulting to 1")
-        nbytes = 1
-    return nbytes
-
-
 def calc_reads_per_batch(bytes_per_batch: int, seq_len: int):
     """ Calculate the number of reads per batch. """
     return max(bytes_per_batch // seq_len, 1)
@@ -238,17 +214,15 @@ class RelationWriter(object):
 def write_one(xam_file: Path, *,
               fasta: Path,
               temp_dir: Path,
-              batch_size: float,
+              batch_size: int,
               min_reads: int = 0,
               **kwargs):
     """ Write the batches of relation vectors for one XAM file. """
     # Get the reference sequence.
     ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
     seq = get_fasta_seq(fasta, DNA, ref)
-    # Compute the number of records per batch.
-    rec_per_batch = calc_reads_per_batch(mib_to_bytes(batch_size), len(seq))
     # Determine if there are enough reads.
-    xam = XamViewer(xam_file, temp_dir, rec_per_batch)
+    xam = XamViewer(xam_file, temp_dir, batch_size)
     if min_reads > 0 and xam.n_reads < min_reads:
         raise ValueError(
             f"Insufficient reads in {xam}: {xam.n_reads} (< {min_reads})")

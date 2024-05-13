@@ -117,7 +117,7 @@ def run(*,
         min_reads: int,
         ambrel: bool,
         overhangs: bool,
-        batch_size: float,
+        batch_size: int,
         # Pool options
         pool: str,
         # Mask options

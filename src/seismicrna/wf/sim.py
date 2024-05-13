@@ -13,7 +13,7 @@ def sim_whole(out_dir: Path,
               ref: str,
               refseq: DNA,
               reads: int,
-              batch_size: float,
+              batch_size: int,
               ploq: pd.Series,
               pmut: pd.Series):
     n_per_batch = calc_reads_per_batch(mib_to_bytes(batch_size), len(refseq))

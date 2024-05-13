@@ -86,10 +86,10 @@ def _iter_records_paired(sam_file: TextIO):
 
 class XamViewer(object):
 
-    def __init__(self, xam_input: Path, temp_dir: Path, records_per_batch: int):
+    def __init__(self, xam_input: Path, temp_dir: Path, batch_size: int):
         self.xam_input = xam_input
         self.temp_dir = temp_dir
-        self.n_per_batch = records_per_batch
+        self.batch_size = batch_size
 
     @cached_property
     def _sample_ref(self):
@@ -155,16 +155,16 @@ class XamViewer(object):
         files, both mates are present. In the extreme case that only one
         mate is present for every paired-end record, there can be up to
         `2 * records_per_batch` records in a batch. """
-        if self.n_per_batch <= 0:
-            raise ValueError(f"records_per_batch must be a positive integer, "
-                             f"but got {self.n_per_batch}")
+        if self.batch_size <= 0:
+            raise ValueError(f"batch_size must be a positive integer, "
+                             f"but got {self.batch_size}")
         logger.info(f"Began computing batch indexes for {self}, aiming for "
-                    f"{self.n_per_batch} records per batch")
+                    f"{self.batch_size} reads per batch")
         # Number of lines to skip between batches: the number of records
         # per batch minus one (to account for the one line that is read
         # at the beginning of each batch, which ensures that every batch
         # has at least one line) times the number of mates per record.
-        n_skip = (self.n_per_batch - 1) * (self.paired + 1)
+        n_skip = (self.batch_size - 1) * (self.paired + 1)
         # Count the batches.
         batch = 0
         with self.open_temp_sam() as sam_file:

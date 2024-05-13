@@ -536,9 +536,9 @@ opt_min_reads = Option(
 
 opt_batch_size = Option(
     ("--batch-size",),
-    type=float,
-    default=256.,
-    help="target size of each batch (millions of base calls)"
+    type=int,
+    default=2**16,
+    help="maximum number of reads per batch"
 )
 
 opt_ambrel = Option(
