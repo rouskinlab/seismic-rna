@@ -210,7 +210,6 @@ def sort_segment_ends(seg_end5s: np.ndarray,
     # when the cumulative numbers of 5' and 3' segment ends are equal.
     is_contig_end3 = np.logical_not(np.cumsum(np.where(is_seg_end5, 1, -1),
                                               axis=1))
-
     if np.ma.isarray(seg_ends_sorted):
         # Mask is_seg_end5 and is_contig_end3 like seg_ends_sorted.
         is_seg_end5 = np.ma.masked_array(is_seg_end5,
@@ -233,7 +232,7 @@ def find_contiguous_reads(seg_end5s: np.ndarray, seg_end3s: np.ndarray):
     # be the end of a contiguous segment.
     _, _, is_contig_end3 = sort_segment_ends(seg_end5s,
                                              seg_end3s,
-                                             zero_indexed=False)
+                                             zero_indexed=True)
     return np.logical_not(np.count_nonzero(is_contig_end3[:, :-1], axis=1))
 
 
