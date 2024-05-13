@@ -5,9 +5,12 @@ import pandas as pd
 
 from seismicrna.core.batch.count import (count_end_coords,
                                          calc_coverage,
-                                         _calc_uniq_read_weights)
-from seismicrna.core.batch.index import END5_COORD, END3_COORD
+                                         _calc_uniq_read_weights,
+                                         find_contiguous)
+from seismicrna.core.batch.ends import END5_COORD, END3_COORD
 from seismicrna.core.seq.section import SEQ_INDEX_NAMES
+
+rng = np.random.default_rng(0)
 
 
 class TestCountEndCoords(ut.TestCase):
@@ -511,11 +514,34 @@ class TestCalcCoverage(ut.TestCase):
         }
         res_per_pos, res_per_read = calc_coverage(pos_index, read_nums, ends)
         self.assertIsInstance(res_per_pos, pd.Series)
+        print("Result")
+        print(res_per_pos)
+        print("Expect")
+        print(exp_per_pos)
         self.assertTrue(res_per_pos.equals(exp_per_pos))
         self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
         for base in exp_per_read:
             self.assertIsInstance(res_per_read[base], pd.Series)
             self.assertTrue(res_per_read[base].equals(exp_per_read[base]))
+
+
+class TestFindContiguous(ut.TestCase):
+
+    def test_1_segment(self):
+        for n_reads in range(10):
+            ends = rng.integers(1, 11, (n_reads, 2))
+            self.assertTrue(np.array_equal(find_contiguous(ends),
+                                           np.ones(n_reads, dtype=bool)))
+
+    def test_2_segments(self):
+        ends = np.array([[3, 11, 11, 16],
+                         [11, 16, 3, 11],
+                         [3, 10, 11, 16],
+                         [11, 16, 3, 10],
+                         [3, 9, 11, 16],
+                         [11, 16, 3, 9]])
+        expect = np.array([True, True, False, True, False, False])
+        self.assertTrue(np.array_equal(find_contiguous(ends), expect))
 
 
 if __name__ == "__main__":

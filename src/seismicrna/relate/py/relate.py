@@ -281,13 +281,13 @@ def _merge_mates(end5f: int,
                  relsr: dict[int, int],
                  overhangs: bool):
     if not overhangs:
-        # The 5' end of the reverse read cannot extend past the 5' end
-        # of the forward read.
+        # The 5' end of the reverse mate cannot extend past the 5' end
+        # of the forward mate.
         if end5r < end5f:
             end5r = end5f
             relsr = {pos: rel for pos, rel in relsr.items() if pos >= end5r}
-        # The 3' end of the forward read cannot extend past the 3' end
-        # of the reverse read.
+        # The 3' end of the forward mate cannot extend past the 3' end
+        # of the reverse mate.
         if end3f > end3r:
             end3f = end3r
             relsf = {pos: rel for pos, rel in relsf.items() if pos <= end3f}

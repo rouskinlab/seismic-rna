@@ -131,7 +131,7 @@ def cluster(mask_report_file: Path,
                     f"{max_order}, with {n_runs} run(s) per order")
         # Load the unique reads.
         dataset = load_mask_dataset(mask_report_file)
-        uniq_reads = UniqReads.from_dataset(dataset)
+        uniq_reads = UniqReads.from_dataset(dataset, require_contiguous=True)
         # Run clustering for every order.
         orders = list(run_max_order(uniq_reads,
                                     max_order=max_order,

@@ -2,7 +2,7 @@ import unittest as ut
 
 import numpy as np
 
-from seismicrna.core.batch.index import (get_num_segments,
+from seismicrna.core.batch.index import (find_num_segments,
                                          split_ends,
                                          stack_end_coords)
 
@@ -15,7 +15,7 @@ class TestGetNumSegments(ut.TestCase):
         for nseg in range(10):
             ncol = nseg * 2
             ends = rng.integers(1, 11, (8, ncol))
-            self.assertEqual(get_num_segments(ends), nseg)
+            self.assertEqual(find_num_segments(ends), nseg)
 
     def test_odd(self):
         for ncol in range(1, 10, 2):
@@ -23,7 +23,7 @@ class TestGetNumSegments(ut.TestCase):
             self.assertRaisesRegex(
                 ValueError,
                 f"Number of end coordinates must be even, but got {ncol}",
-                get_num_segments,
+                find_num_segments,
                 ends
             )
 
@@ -35,7 +35,7 @@ class TestGetNumSegments(ut.TestCase):
             self.assertRaisesRegex(
                 ValueError,
                 f"ends must have 2 dimensions, but got {ndim}",
-                get_num_segments,
+                find_num_segments,
                 ends
             )
 

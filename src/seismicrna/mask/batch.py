@@ -5,8 +5,7 @@ import numpy as np
 
 from ..core.batch import (SectionMutsBatch,
                           PartialMutsBatch,
-                          PartialReadBatch,
-                          get_num_segments)
+                          PartialReadBatch)
 from ..core.seq import Section
 
 logger = getLogger(__name__)
@@ -38,21 +37,22 @@ def apply_mask(batch: SectionMutsBatch,
     # Determine which reads to use.
     if read_nums is not None:
         # Select specific read indexes.
-        ends = batch.ends[batch.read_indexes[read_nums]]
+        read_indexes = batch.read_indexes[read_nums]
+        seg_end5s = batch.seg_end5s[read_indexes]
+        seg_end3s = batch.seg_end3s[read_indexes]
         # Determine which reads were masked.
         masked_reads = np.setdiff1d(batch.read_nums, read_nums)
     else:
         # Use all reads.
         read_nums = batch.read_nums
-        ends = batch.ends
+        seg_end5s = batch.seg_end5s
+        seg_end3s = batch.seg_end3s
         masked_reads = None
     # Determine the section of the new batch.
     if section is not None:
         # Clip the read coordinates to the section bounds.
-        num_segs = get_num_segments(ends)
-        clip_min = np.array([[section.end5, section.end5 - 1] * num_segs])
-        clip_max = np.array([[section.end3 + 1, section.end3] * num_segs])
-        ends = ends.clip(clip_min, clip_max)
+        seg_end5s = seg_end5s.clip(section.end5, section.end3 + 1)
+        seg_end3s = seg_end3s.clip(section.end5 - 1, section.end3)
     else:
         # Use the same section as the given batch.
         section = batch.section
@@ -67,7 +67,8 @@ def apply_mask(batch: SectionMutsBatch,
     return MaskMutsBatch(batch=batch.batch,
                          read_nums=read_nums,
                          section=section,
-                         ends=ends,
+                         seg_end5s=seg_end5s,
+                         seg_end3s=seg_end3s,
                          muts=muts,
                          sanitize=sanitize)
 

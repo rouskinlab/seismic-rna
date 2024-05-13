@@ -3,7 +3,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .index import END_COORDS
+from .ends import END_COORDS
 from .muts import SectionMutsBatch
 from ..header import make_header
 from ..rel import RelPattern
@@ -74,7 +74,7 @@ def accumulate(batches: Iterable[SectionMutsBatch],
         num_reads += batch.num_reads
         # Count the end coordinates.
         if end_counts is not None:
-            end_counts = end_counts.add(batch.end_counts, fill_value=0.)
+            end_counts = end_counts.add(batch.read_end_counts, fill_value=0.)
         # Count the positions and/or reads matching each pattern.
         if fits_per_read_per_batch is not None:
             fits_per_read_per_batch.append(pd.DataFrame(zero,

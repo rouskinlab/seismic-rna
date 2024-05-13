@@ -1,125 +1,18 @@
-from typing import Iterable
-
 import numpy as np
 import pandas as pd
 
-from ..array import (ensure_order,
-                     ensure_same_length,
-                     get_length,
-                     sanitize_values)
+from ..array import get_length
 from ..seq import BASE_NAME
-from ..types import fit_uint_type
 
 # Indexes of read and batch numbers.
 READ_NUM = "Read Number"
 BATCH_NUM = "Batch Number"
 RB_INDEX_NAMES = [BATCH_NUM, READ_NUM]
 
-# Indexes of read end coordinates.
-END5_COORD = "5' End"
-END3_COORD = "3' End"
-END_COORDS = END5_COORD, END3_COORD
-
 
 def list_batch_nums(num_batches: int):
     """ List the batch numbers. """
     return list(range(num_batches))
-
-
-def get_num_segments(ends: np.ndarray) -> int:
-    """ Number of segments for the given end coordinates. """
-    if not isinstance(ends, np.ndarray):
-        raise TypeError(f"ends must be ndarray, but got {type(ends).__name__}")
-    if ends.ndim != 2:
-        raise ValueError(f"ends must have 2 dimensions, but got {ends.ndim}")
-    _, num_ends = ends.shape
-    num_segs, odd = divmod(num_ends, 2)
-    if odd:
-        raise ValueError(
-            f"Number of end coordinates must be even, but got {num_ends}"
-        )
-    return num_segs
-
-
-def split_ends(ends: np.ndarray):
-    """ Split an array of end positions into 5' and 3' ends. """
-    # Although num_ends will just be the 2nd dimension (axis 1) of ends,
-    # use get_num_segments to validate the shape of ends.
-    num_ends = get_num_segments(ends) * 2
-    end5s = ends[:, np.arange(0, num_ends, 2)]
-    end3s = ends[:, np.arange(1, num_ends, 2)]
-    return end5s, end3s
-
-
-def sanitize_pos(positions: Iterable[int], min_pos: int, max_pos: int):
-    """ Validate and sort positions, and return them as an array. """
-    return sanitize_values(positions, min_pos, max_pos, "positions")
-
-
-def sanitize_ends(ends: np.ndarray,
-                  min_pos: int,
-                  max_pos: int,
-                  check_values: bool = True):
-    """ Sanitize end coordinates.
-
-    Parameters
-    ----------
-    ends: np.ndarray
-        End coordinates (1-indexed). Columns alternate 5' and 3' end
-        coordinates (2 columns per segment).
-    min_pos: int
-        Minimum allowed value of a position.
-    max_pos: int
-        Maximum allowed value of a position.
-    check_values: bool = True
-        Whether to check the bounds of the values, which is the most
-        expensive operation in this function. Can be set to False if the
-        only desired effect is to ensure the output is a positive, even
-        number of arrays in the proper data type.
-
-    Returns
-    -------
-    np.ndarray
-        Sanitized end coordinates: with an even number of columns and
-        encoded in the most efficient data type, and if `check_values`
-        is True then all between `min_pos` and `max_pos` (inclusive).
-    """
-    num_segs = get_num_segments(ends)
-    if not num_segs:
-        raise ValueError("Got no end coordinates")
-    num_reads, _ = ends.shape
-    if check_values:
-        for i in range(num_segs):
-            e5 = ends[:, i * 2]
-            e3 = ends[:, i * 2 + 1]
-            # All coordinates must be ≥ 1.
-            ensure_order(e5,
-                         np.broadcast_to(min_pos, num_reads),
-                         f"segment {i} 5' coordinates",
-                         f"minimum position ({min_pos})",
-                         gt_eq=True)
-            # End 1 coordinates must be ≤ end 2 coordinates.
-            ensure_order(e5,
-                         e3,
-                         f"segment {i} 5' coordinates",
-                         f"segment {i} 3' coordinates")
-            # All coordinates must be ≤ max position
-            ensure_order(e3,
-                         np.broadcast_to(max_pos, num_reads),
-                         f"segment {i} 3' coordinates",
-                         f"maximum position ({max_pos})")
-    # Convert all ends into arrays of the most efficient data type.
-    # Conversion must be done after checking the values against max_pos.
-    # Otherwise, values greater than the data type can accomodate would
-    # be converted to their modulo relative to the maximum value of the
-    # data type, which would mean checking the wrong values.
-    return np.asarray(ends, dtype=fit_uint_type(max_pos))
-
-
-def stack_end_coords(end5s: np.ndarray, end3s: np.ndarray):
-    """ Return the 5' and 3' ends as one 2D array. """
-    ensure_same_length(end5s, end3s, "5' end coordinates", "3' end coordinates")
-    return np.stack([end5s, end3s], axis=1)
 
 
 def count_base_types(base_pos_index: pd.Index):

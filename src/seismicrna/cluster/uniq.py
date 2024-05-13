@@ -7,7 +7,7 @@ import pandas as pd
 
 from .names import BIT_VECTOR_NAME
 from ..core.array import get_length
-from ..core.batch import SectionMutsBatch
+from ..core.batch import SectionMutsBatch, match_reads_segments
 from ..core.rel import RelPattern
 from ..core.seq import Section
 from ..mask.data import MaskMutsDataset
@@ -17,7 +17,7 @@ class UniqReads(object):
     """ Collection of bit vectors of unique reads. """
 
     @classmethod
-    def from_dataset(cls, dataset: MaskMutsDataset):
+    def from_dataset(cls, dataset: MaskMutsDataset, **kwargs):
         return cls(dataset.sample,
                    dataset.section,
                    dataset.min_mut_gap,
@@ -25,7 +25,8 @@ class UniqReads(object):
                    dataset.quick_unbias_thresh,
                    *get_uniq_reads(dataset.section.unmasked_int,
                                    dataset.pattern,
-                                   dataset.iter_batches()))
+                                   dataset.iter_batches(),
+                                   **kwargs))
 
     def __init__(self,
                  sample: str,
@@ -33,7 +34,8 @@ class UniqReads(object):
                  min_mut_gap: int,
                  quick_unbias: bool,
                  quick_unbias_thresh: float,
-                 ends: tuple[np.ndarray, np.ndarray],
+                 seg_end5s: np.ndarray,
+                 seg_end3s: np.ndarray,
                  muts_per_pos: list[np.ndarray],
                  batch_to_uniq: list[pd.Series],
                  counts_per_uniq: np.ndarray):
@@ -49,11 +51,14 @@ class UniqReads(object):
         self.muts_per_pos = muts_per_pos
         self.batch_to_uniq = batch_to_uniq
         self.counts_per_uniq = counts_per_uniq
-        for end_coords in ends:
-            if get_length(end_coords) != self.num_uniq:
-                raise ValueError(f"Expected {self.num_uniq} end coordinates, "
-                                 f"but got {get_length(end_coords)}")
-        self.ends = ends
+        num_uniq, num_segs = match_reads_segments(seg_end5s, seg_end3s)
+        if num_uniq != self.num_uniq:
+            raise ValueError(f"Expected {self.num_uniq} end coordinates, "
+                             f"but got {num_uniq}")
+        if num_segs == 0:
+            raise ValueError(f"Expected ≥ 1 segment(s), but got {num_segs}")
+        self.seg_end5s = seg_end5s
+        self.seg_end3s = seg_end3s
 
     @property
     def ref(self):
@@ -61,26 +66,44 @@ class UniqReads(object):
         return self.section.ref
 
     @property
-    def end5s(self):
-        """ 5' end coordinates. """
-        end5s, end3s = self.ends
-        return end5s
+    def num_segments(self):
+        """ Number of segments. """
+        _, num_segs = match_reads_segments(self.seg_end5s, self.seg_end3s)
+        return num_segs
 
-    @property
-    def end3s(self):
+    @cached_property
+    def read_end5s(self):
+        """ 5' end coordinates. """
+        if self.num_segments == 1:
+            return self.seg_end5s[:, 0]
+        return self.seg_end5s.min(axis=1)
+
+    @cached_property
+    def read_end3s(self):
         """ 3' end coordinates. """
-        end5s, end3s = self.ends
-        return end3s
+        if self.num_segments == 1:
+            return self.seg_end3s[:, 0]
+        return self.seg_end3s.max(axis=1)
+
+    @cached_property
+    def seg_end5s_zero(self):
+        """ 5' end of every segment (0-indexed in the section). """
+        return self.seg_end5s - self.section.end5
+
+    @cached_property
+    def seg_end3s_zero(self):
+        """ 3' end of every segment (0-indexed in the section). """
+        return self.seg_end3s - self.section.end5
 
     @cached_property
     def end5s_zero(self):
-        """ 5' end coordinates (0-indexed from 5' end of section). """
-        return self.end5s - self.section.end5
+        """ 5' end coordinates (0-indexed in the section). """
+        return self.read_end5s - self.section.end5
 
     @cached_property
     def end3s_zero(self):
-        """ 3' end coordinates (0-indexed from 5' end of section). """
-        return self.end3s - self.section.end5
+        """ 3' end coordinates (0-indexed in the section). """
+        return self.read_end3s - self.section.end5
 
     @cached_property
     def num_batches(self):
@@ -115,8 +138,11 @@ class UniqReads(object):
         # read and one column for each position.
         covs = np.zeros((self.num_uniq, self.section.length), dtype=bool)
         # For each read (i), set the covered elements to True.
-        for i, (end5, end3) in enumerate(zip(self.end5s_zero, self.end3s_zero)):
-            covs[i, end5: (end3 + 1)] = True
+        for segment in range(self.num_segments):
+            end5s = self.seg_end5s_zero[:, segment]
+            end3s = self.seg_end3s_zero[:, segment] + 1
+            for read, (end5, end3) in enumerate(zip(end5s, end3s)):
+                covs[read, end5: end3] = True
         return covs
 
     def get_uniq_names(self):
@@ -145,11 +171,12 @@ class UniqReads(object):
         return (self.sample == other.sample
                 and self.section == other.section
                 and self.min_mut_gap == other.min_mut_gap
+                and self.num_batches == other.num_batches
+                and np.array_equal(self.ends, other.ends)
                 and all(np.array_equal(m1, m2)
                         for m1, m2 in zip(self.muts_per_pos,
                                           other.muts_per_pos,
                                           strict=True))
-                and self.num_batches == other.num_batches
                 and all(b1.equals(b2)
                         for b1, b2 in zip(self.batch_to_uniq,
                                           other.batch_to_uniq,
@@ -165,18 +192,15 @@ def _uniq_reads_to_ends_muts(uniq_reads: Iterable[tuple[tuple, tuple]],
                              pos_nums: Iterable[int]):
     """ Map each position to the numbers of the unique reads that are
     mutated at the position. """
-    end5s = list()
-    end3s = list()
+    ends = list()
     muts = defaultdict(list)
-    for uniq_read_num, ((end5, end3), read_muts) in enumerate(uniq_reads):
-        end5s.append(end5)
-        end3s.append(end3)
+    for uniq_read_num, (read_ends, read_muts) in enumerate(uniq_reads):
+        ends.append(read_ends)
         for pos in read_muts:
             muts[pos].append(uniq_read_num)
-    reads_ends = (np.array(end5s, dtype=int),
-                  np.array(end3s, dtype=int))
-    muts_per_pos = [np.array(muts[pos], dtype=int) for pos in pos_nums]
-    return reads_ends, muts_per_pos
+    ends = np.array(ends)
+    muts = [np.array(muts[pos], dtype=int) for pos in pos_nums]
+    return ends, muts
 
 
 def _batch_to_uniq_read_num(read_nums_per_batch: list[np.ndarray],
@@ -204,7 +228,8 @@ def _count_uniq_reads(uniq_read_nums: Iterable[list]):
 
 def get_uniq_reads(pos_nums: Iterable[int],
                    pattern: RelPattern,
-                   batches: Iterable[SectionMutsBatch]):
+                   batches: Iterable[SectionMutsBatch],
+                   **kwargs):
     uniq_reads = defaultdict(list)
     read_nums_per_batch = list()
     for batch_num, batch in enumerate(batches):
@@ -215,12 +240,12 @@ def get_uniq_reads(pos_nums: Iterable[int],
         # Record the number of reads in the batch.
         read_nums_per_batch.append(batch.read_nums)
         # Find the reads with unique end coordinates and mutations.
-        for (read_num, ((end5, end3), read_muts)) in batch.iter_reads(pattern):
-            # Key each read by its 5' and 3' end coordinates and by the
-            # positions at which it has mutations, so that non-unique
-            # reads map to the same key; record each read as a tuple of
-            # its batch number and its read number within its batch.
-            uniq_reads[((end5, end3), read_muts)].append((batch_num, read_num))
+        for (read_num, read_data) in batch.iter_reads(pattern, **kwargs):
+            # Key each read by its end coordinates and by the positions
+            # at which it has mutations, so that redundant reads map to
+            # the same key; record each read as a tuple of its batch and
+            # its read number within the batch.
+            uniq_reads[read_data].append((batch_num, read_num))
     # Pre-process the unique reads to extract necessary information.
     reads_ends, muts_per_pos = _uniq_reads_to_ends_muts(uniq_reads,
                                                         pos_nums)

@@ -5,11 +5,8 @@ import numpy as np
 import pandas as pd
 from numba import jit
 
-from .index import (END_COORDS,
-                    count_base_types,
-                    get_num_segments,
-                    iter_base_types,
-                    stack_end_coords)
+from .ends import END_COORDS, merge_read_ends, sort_segment_ends
+from .index import count_base_types, iter_base_types
 from ..array import find_dims, get_length
 from ..rel import MATCH, NOCOV, RelPattern
 from ..seq import DNA, POS_NAME
@@ -25,8 +22,8 @@ def count_end_coords(end5s: np.ndarray,
                      weights: pd.DataFrame | None = None):
     """ Count each pair of 5' and 3' end coordinates. """
     # Make a MultiIndex of all 5' and 3' coordinates.
-    index = pd.MultiIndex.from_frame(pd.DataFrame(stack_end_coords(end5s,
-                                                                   end3s),
+    index = pd.MultiIndex.from_frame(pd.DataFrame(merge_read_ends(end5s,
+                                                                  end3s),
                                                   columns=END_COORDS,
                                                   copy=False))
     # Convert the read weights into a Series/DataFrame with that index.
@@ -139,24 +136,14 @@ def calc_coverage(pos_index: pd.Index,
         arrays.append(read_weights.values)
         names.append("read_weights")
     find_dims(dims, arrays, names)
-    # Convert the 5' end coordinates from 1-indexed to 0-indexed.
-    ends = ends - np.array([[1, 0] * get_num_segments(ends)])
+    # Sort the end coordinates and label the 3' ends.
+    ends, is_end3 = sort_segment_ends(ends, min_pos, max_pos)
     # Find the unique end coordinates, to speed up the calculation when
     # many reads have identical end coordinates (e.g. for amplicons).
-    # Limit the coordinates to the range [min_pos - 1, max_pos].
-    uniq_ends, uniq_inverse, uniq_counts = np.unique(ends.clip(min_pos - 1,
-                                                               max_pos),
+    uniq_ends, uniq_inverse, uniq_counts = np.unique(ends,
                                                      axis=0,
                                                      return_inverse=True,
                                                      return_counts=True)
-    # Sort the 5' and 3' end coordinates for each read ascendingly.
-    sort_order = np.argsort(uniq_ends, axis=1)
-    ends_sorted = np.take_along_axis(uniq_ends, sort_order, axis=1)
-    # Label the 3' end of each contiguous segment, which occurs when the
-    # total number of 3' ends encountered equals the total number of 5'
-    # ends encountered.
-    is_end3 = np.logical_not(np.cumsum(np.where(np.mod(sort_order, 2), -1, 1),
-                                       axis=1))
     # Find the cumulative count of each base up to each position.
     bases = list()
     base_count = list()
@@ -173,7 +160,7 @@ def calc_coverage(pos_index: pd.Index,
                     if read_weights is not None
                     else uniq_counts[:, np.newaxis])
     # Compute the coverage per position and per read.
-    cover_per_pos, cover_per_read = _calc_coverage(ends_sorted,
+    cover_per_pos, cover_per_read = _calc_coverage(uniq_ends,
                                                    is_end3,
                                                    uniq_weights,
                                                    base_count)

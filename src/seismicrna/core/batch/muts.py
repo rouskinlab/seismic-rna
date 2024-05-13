@@ -13,9 +13,13 @@ from .count import (count_end_coords,
                     calc_reads_per_pos,
                     calc_rels_per_pos,
                     calc_rels_per_read)
-from .index import (iter_windows,
-                    sanitize_ends,
-                    split_ends)
+from .ends import (find_contiguous_reads,
+                   find_read_end5s,
+                   find_read_end3s,
+                   mask_segment_ends,
+                   match_reads_segments,
+                   sanitize_segment_ends)
+from .index import iter_windows
 from .read import ReadBatch, PartialReadBatch
 from ..rel import REL_TYPE, RelPattern
 from ..seq import Section
@@ -28,36 +32,69 @@ class MutsBatch(ReadBatch, ABC):
 
     def __init__(self, *,
                  section: Section,
-                 ends: np.ndarray,
+                 seg_end5s: np.ndarray,
+                 seg_end3s: np.ndarray,
                  muts: dict[int, dict[int, list[int] | np.ndarray]],
                  sanitize: bool = True,
                  **kwargs):
         super().__init__(**kwargs)
         # Validate and store the read end coordinates.
-        self.ends = sanitize_ends(ends, section.end5, section.end3, sanitize)
+        self._end5s, self._end3s = sanitize_segment_ends(seg_end5s,
+                                                         seg_end3s,
+                                                         section.end5,
+                                                         section.end3,
+                                                         sanitize)
         # Validate and store the mutations.
-        self.muts = {pos: ({REL_TYPE(rel): np.asarray(reads, self.read_dtype)
-                            for rel, reads in muts[pos].items()}
-                           if sanitize
-                           else muts[pos])
-                     for pos in section.unmasked_int}
+        self._muts = {pos: ({REL_TYPE(rel): np.asarray(reads, self.read_dtype)
+                             for rel, reads in muts[pos].items()}
+                            if sanitize
+                            else muts[pos])
+                      for pos in section.unmasked_int}
+
+    @property
+    def muts(self):
+        """ Reads with each type of mutation at each position. """
+        return self._muts
 
     @cached_property
-    def end5s(self):
-        """ 5' end coordinates of reads. """
-        end5s, _ = split_ends(self.ends)
-        return end5s.min(axis=1)
+    def num_segments(self):
+        """ Number of segments in each read. """
+        _, num_segs = match_reads_segments(self._end5s, self._end3s)
+        return num_segs
 
     @cached_property
-    def end3s(self):
-        """ 3' end coordinates of reads. """
-        _, end3s = split_ends(self.ends)
-        return end3s.max(axis=1)
+    def _seg_ends(self):
+        """ 5' and 3' ends of each segment in each read. """
+        return mask_segment_ends(self._end5s, self._end3s)
+
+    @property
+    def seg_end5s(self):
+        """ 5' end of each segment in each read. """
+        seg_end5s, _ = self._seg_ends
+        return seg_end5s
+
+    @property
+    def seg_end3s(self):
+        """ 3' end of each segment in each read. """
+        _, seg_end3s = self._seg_ends
+        return seg_end3s
+
+    @cached_property
+    def read_end5s(self):
+        """ 5' end of each read. """
+        return find_read_end5s(self.seg_end5s)
+
+    @cached_property
+    def read_end3s(self):
+        """ 3' end of each read. """
+        return find_read_end3s(self.seg_end3s)
 
     @property
     def pos_dtype(self):
         """ Data type for positions. """
-        return self.ends.dtype
+        if self._end5s.dtype is not self._end3s.dtype:
+            raise ValueError("Data types differ for 5' and 3' ends")
+        return self._end5s.dtype
 
     @cached_property
     def pos_nums(self):
@@ -70,9 +107,26 @@ class MutsBatch(ReadBatch, ABC):
         return None
 
     @cached_property
-    def end_counts(self):
-        """ Counts of end coordinates. """
-        return count_end_coords(self.end5s, self.end3s, self.read_weights)
+    def read_end_counts(self):
+        """ Counts of read end coordinates. """
+        return count_end_coords(self.read_end5s,
+                                self.read_end3s,
+                                self.read_weights)
+
+    @cached_property
+    def contiguous(self):
+        """ Whether the segments of each read are contiguous. """
+        return find_contiguous_reads(self.seg_end5s, self.seg_end3s)
+
+    @cached_property
+    def num_contiguous(self):
+        """ Number of contiguous reads. """
+        return np.count_nonzero(self.contiguous)
+
+    @cached_property
+    def num_discontiguous(self):
+        """ Number of discontiguous reads. """
+        return self.num_reads - self.num_contiguous
 
 
 class SectionMutsBatch(MutsBatch, ABC):
@@ -183,9 +237,14 @@ class SectionMutsBatch(MutsBatch, ABC):
                 nonprox &= read_counts <= 1
         return self.read_nums[nonprox]
 
-    def iter_reads(self, pattern: RelPattern):
-        """ Yield the 5'/3' end/middle positions and the positions that
-        are mutated in each read. """
+    def iter_reads(self,
+                   pattern: RelPattern,
+                   only_read_ends: bool = False,
+                   require_contiguous: bool = False):
+        """ End coordinates and mutated positions in each read. """
+        if require_contiguous and self.num_discontiguous:
+            raise ValueError("This function requires contiguous reads, but got "
+                             f"{self.num_discontiguous} discontiguous read(s)")
         reads_per_pos = self.reads_per_pos(pattern)
         # Find the maximum number of mutations in any read.
         max_mut_count = max(sum(map(Counter, reads_per_pos.values()),
@@ -202,15 +261,17 @@ class SectionMutsBatch(MutsBatch, ABC):
             mut_pos[row_idxs, np.count_nonzero(mut_pos[row_idxs], axis=1)] = pos
         # Count the mutations in each read.
         mut_counts = np.count_nonzero(mut_pos, axis=1)
-        # For each read, yield the 5'/3' end/middle positions and the
-        # mutated positions as a tuple.
-        for read_num, end5, end3, muts, count in zip(self.read_nums,
-                                                     self.end5s,
-                                                     self.end3s,
-                                                     mut_pos,
-                                                     mut_counts,
-                                                     strict=True):
-            yield read_num, ((end5, end3), tuple(muts[:count]))
+        # For each read, yield the end coordinates and mutated positions
+        # as a tuple.
+        iter_ends = (zip(self.end5s, self.end3s, strict=True)
+                     if only_read_ends or require_contiguous
+                     else self.ends)
+        for read_num, ends, muts, count in zip(self.read_nums,
+                                               iter_ends,
+                                               mut_pos,
+                                               mut_counts,
+                                               strict=True):
+            yield read_num, (tuple(ends), tuple(muts[:count]))
 
 
 class PartialMutsBatch(PartialReadBatch, MutsBatch, ABC):
