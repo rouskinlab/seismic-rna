@@ -292,7 +292,7 @@ def _merge_mates(end5f: int,
             end3f = end3r
             relsf = {pos: rel for pos, rel in relsf.items() if pos <= end3f}
     rels = _merge_rels(end5f, end3f, relsf, end5r, end3r, relsr)
-    return [end5f, end3f, end5r, end3r], rels
+    return ([end5f, end5r], [end3f, end3r]), rels
 
 
 def find_rels_line(line1: str,
@@ -326,7 +326,7 @@ def find_rels_line(line1: str,
         )
     else:
         # The read is single-ended.
-        ends = [end51, end31]
+        ends = [end51], [end31]
         rels = rels1
     return read1.qname, ends, rels
 

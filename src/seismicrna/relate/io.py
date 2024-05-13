@@ -8,6 +8,7 @@ from .batch import QnamesBatch, RelateBatch
 from ..core import path
 from ..core.io import MutsBatchIO, ReadBatchIO, RefIO
 from ..core.seq import DNA, Section
+from ..core.types import fit_uint_type
 
 
 class RelateIO(RefIO, ABC):
@@ -42,7 +43,7 @@ class RelateBatchIO(MutsBatchIO, RelateIO, RelateBatch):
         return path.RelateBatSeg
 
 
-def from_reads(reads: Iterable[tuple[str, list[int], dict[int, int]]],
+def from_reads(reads: Iterable[tuple[str, tuple[list[int], [list[int]]], dict[int, int]]],
                sample: str,
                ref: str,
                refseq: DNA,
@@ -50,22 +51,18 @@ def from_reads(reads: Iterable[tuple[str, list[int], dict[int, int]]],
     """ Accumulate reads into relation vectors. """
     # Initialize empty data.
     names = list()
-    ends = list()
+    seg_end5s = list()
+    seg_end3s = list()
     muts = {pos: defaultdict(list) for pos in range(1, len(refseq) + 1)}
     # Collect the mutation data from the reads.
-    for read, (name, read_ends, poss) in enumerate(reads):
+    for read, (name, (end5s, end3s), poss) in enumerate(reads):
         names.append(name)
-        ends.append(read_ends)
+        seg_end5s.append(end5s)
+        seg_end3s.append(end3s)
         for pos, rel in poss.items():
             muts[pos][rel].append(read)
-    # Validate the positions.
-    if min(muts) < 1:
-        raise ValueError(f"All positions must be ≥ 1, but got "
-                         f"{[x for x in sorted(muts) if x < 1]}")
-    if max(muts) > len(refseq):
-        raise ValueError(f"All positions must be ≤ {len(refseq)}, but got "
-                         f"{[x for x in sorted(muts) if x > len(refseq)]}")
     # Assemble and return the batches.
+    pos_dtype = fit_uint_type(max(muts))
     name_batch = QnamesBatchIO(sample=sample,
                                ref=ref,
                                batch=batch,
@@ -73,7 +70,8 @@ def from_reads(reads: Iterable[tuple[str, list[int], dict[int, int]]],
     rel_batch = RelateBatchIO(sample=sample,
                               batch=batch,
                               section=Section(ref, refseq),
-                              ends=np.array(ends),
+                              seg_end5s=np.array(seg_end5s, dtype=pos_dtype),
+                              seg_end3s=np.array(seg_end3s, dtype=pos_dtype),
                               muts=muts)
     return name_batch, rel_batch
 

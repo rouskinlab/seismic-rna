@@ -22,7 +22,8 @@ class RelateDataset(LoadedMutsDataset):
     def get_batch(self, batch: int):
         relate_batch = super().get_batch(batch)
         return RelateBatch(batch=relate_batch.batch,
-                           ends=relate_batch.ends,
+                           seg_end5s=relate_batch.seg_end5s,
+                           seg_end3s=relate_batch.seg_end3s,
                            muts=relate_batch.muts,
                            section=self.section,
                            sanitize=False)
