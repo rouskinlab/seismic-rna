@@ -1,8 +1,9 @@
-from abc import ABC
+from functools import cached_property
 from logging import getLogger
 
 import numpy as np
 
+from ..core.array import get_length
 from ..core.batch import (SectionMutsBatch,
                           PartialMutsBatch,
                           PartialReadBatch)
@@ -25,9 +26,16 @@ class MaskReadBatch(PartialReadBatch):
     def read_nums(self):
         return self._read_nums
 
+    @cached_property
+    def num_reads(self):
+        return get_length(self.read_nums, "read_nums")
 
-class MaskMutsBatch(MaskReadBatch, SectionMutsBatch, PartialMutsBatch, ABC):
-    pass
+
+class MaskMutsBatch(MaskReadBatch, SectionMutsBatch, PartialMutsBatch):
+
+    @property
+    def read_weights(self):
+        return None
 
 
 def apply_mask(batch: SectionMutsBatch,

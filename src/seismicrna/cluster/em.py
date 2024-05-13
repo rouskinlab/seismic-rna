@@ -252,12 +252,12 @@ class EmClustering(object):
     @cached_property
     def end5s(self):
         """ 5' end coordinates (0-indexed). """
-        return self.uniq_reads.end5s_zero
+        return self.uniq_reads.read_end5s_zero
 
     @cached_property
     def end3s(self):
         """ 3' end coordinates (0-indexed). """
-        return self.uniq_reads.end3s_zero
+        return self.uniq_reads.read_end3s_zero
 
     @cached_property
     def clusters(self):

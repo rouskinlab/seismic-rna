@@ -332,7 +332,7 @@ ChecksumsF = Field("checksums", "MD5 checksums of batches", dict)
 RefseqChecksumF = Field("refseq_checksum",
                         "MD5 checksum of reference sequence",
                         str)
-AmbrelF = OptionField(opt_ambrel)
+AmindelF = OptionField(opt_ambrel)
 OverhangsF = OptionField(opt_overhangs)
 MinPhredF = OptionField(opt_min_phred)
 

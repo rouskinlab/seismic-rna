@@ -134,7 +134,7 @@ def simulate_relate_batch(sample: str,
     if not isinstance(p_ends, pd.Series):
         raise TypeError("p_ends must be Series, "
                         f"but got {type(p_ends).__name__}")
-    if tuple(p_ends.index.names) != END_COORDS:
+    if p_ends.index.names != END_COORDS:
         raise ValueError(f"p_ends index must have names {END_COORDS}, "
                          f"but got {p_ends.index.names}")
     n_reads = get_length(cluster_choices)
@@ -143,7 +143,6 @@ def simulate_relate_batch(sample: str,
     coords = rng.choice(p_ends.size, n_reads, p=p_ends.values)
     end5_choices = p_ends.index.get_level_values(END5_COORD).values[coords]
     end3_choices = p_ends.index.get_level_values(END3_COORD).values[coords]
-    ends = np.stack([end5_choices, end3_choices], axis=1)
     # Validate the cluster choices.
     if not isinstance(cluster_choices, np.ndarray):
         raise TypeError("cluster_choices must be ndarray, "
@@ -180,7 +179,8 @@ def simulate_relate_batch(sample: str,
     return RelateBatchIO(sample=sample,
                          section=Section(ref, refseq),
                          batch=batch,
-                         ends=ends,
+                         seg_end5s=end5_choices[:, np.newaxis],
+                         seg_end3s=end3_choices[:, np.newaxis],
                          muts=muts)
 
 

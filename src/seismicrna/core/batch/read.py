@@ -18,18 +18,18 @@ class ReadBatch(ABC):
 
     @cached_property
     @abstractmethod
-    def read_nums(self) -> np.ndarray:
-        """ Read numbers in use. """
-
-    @cached_property
-    @abstractmethod
     def max_read(self) -> int:
         """ Maximum possible value for a read index. """
 
     @cached_property
     @abstractmethod
     def num_reads(self) -> int | pd.Series:
-        """ Number of reads that are actually in use. """
+        """ Number of reads. """
+
+    @cached_property
+    @abstractmethod
+    def read_nums(self) -> np.ndarray:
+        """ Read numbers. """
 
     @cached_property
     def read_dtype(self):
@@ -71,10 +71,6 @@ class AllReadBatch(ReadBatch, ABC):
 
 
 class PartialReadBatch(ReadBatch, ABC):
-
-    @cached_property
-    def num_reads(self):
-        return get_length(self.read_nums, "read_nums")
 
     @cached_property
     def max_read(self):

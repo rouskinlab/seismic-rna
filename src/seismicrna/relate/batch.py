@@ -1,12 +1,9 @@
-from abc import ABC
 from functools import cached_property
 
 import numpy as np
 
 from ..core.array import get_length
-from ..core.batch import (AllReadBatch,
-                          MutsBatch,
-                          SectionMutsBatch)
+from ..core.batch import AllReadBatch, SectionMutsBatch
 
 
 class QnamesBatch(AllReadBatch):
@@ -20,16 +17,11 @@ class QnamesBatch(AllReadBatch):
         return get_length(self.names, "read names")
 
 
-class RelateBatch(MutsBatch, AllReadBatch, ABC):
+class RelateBatch(SectionMutsBatch, AllReadBatch):
 
-    @cached_property
-    def num_reads(self) -> int:
-        num_reads, _ = self.ends.shape
-        return num_reads
-
-
-class RelateSectionBatch(RelateBatch, SectionMutsBatch):
-    pass
+    @property
+    def read_weights(self):
+        return None
 
 ########################################################################
 #                                                                      #

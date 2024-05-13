@@ -1,4 +1,4 @@
-from .batch import RelateSectionBatch
+from .batch import RelateBatch
 from .io import RelateBatchIO
 from .report import RelateReport
 from ..core.data import LoadedMutsDataset
@@ -21,11 +21,11 @@ class RelateDataset(LoadedMutsDataset):
 
     def get_batch(self, batch: int):
         relate_batch = super().get_batch(batch)
-        return RelateSectionBatch(batch=relate_batch.batch,
-                                  ends=relate_batch.ends,
-                                  muts=relate_batch.muts,
-                                  section=self.section,
-                                  sanitize=False)
+        return RelateBatch(batch=relate_batch.batch,
+                           ends=relate_batch.ends,
+                           muts=relate_batch.muts,
+                           section=self.section,
+                           sanitize=False)
 
 ########################################################################
 #                                                                      #

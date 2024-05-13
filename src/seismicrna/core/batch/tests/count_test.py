@@ -3,9 +3,9 @@ import unittest as ut
 import numpy as np
 import pandas as pd
 
-from seismicrna.core.batch.count import (count_end_coords,
-                                         calc_coverage,
-                                         _calc_uniq_read_weights)
+from seismicrna.core.batch.count import (calc_coverage,
+                                         _calc_uniq_read_weights,
+                                         count_end_coords)
 from seismicrna.core.batch.ends import END5_COORD, END3_COORD
 from seismicrna.core.seq.section import SEQ_INDEX_NAMES
 

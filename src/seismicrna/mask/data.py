@@ -12,7 +12,7 @@ from ..core.report import (CountMutsF,
                            QuickUnbiasF,
                            QuickUnbiasThreshF)
 from ..pool.data import load_relate_pool_dataset
-from ..relate.batch import RelateSectionBatch
+from ..relate.batch import RelateBatch
 
 
 class MaskReadDataset(LoadedDataset):
@@ -85,7 +85,7 @@ class MaskMutsDataset(ChainedMutsDataset):
                          complement=True)
         return section
 
-    def _chain(self, batch1: RelateSectionBatch, batch2: MaskBatchIO):
+    def _chain(self, batch1: RelateBatch, batch2: MaskBatchIO):
         return apply_mask(batch1,
                           batch2.read_nums,
                           self.section,

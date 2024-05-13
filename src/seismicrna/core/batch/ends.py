@@ -1,12 +1,15 @@
+from functools import cached_property
+
 import numpy as np
 
 from ..array import ensure_order, ensure_same_length
+from ..seq import Section
 from ..types import fit_uint_type
 
 # Indexes of read end coordinates.
 END5_COORD = "5' End"
 END3_COORD = "3' End"
-END_COORDS = END5_COORD, END3_COORD
+END_COORDS = [END5_COORD, END3_COORD]
 
 
 def count_reads_segments(seg_ends: np.ndarray,
@@ -127,6 +130,8 @@ def sanitize_segment_ends(seg_end5s: np.ndarray,
         and `max_pos` (inclusive).
     """
     num_reads, num_segs = match_reads_segments(seg_end5s, seg_end3s)
+    if num_segs == 0:
+        raise ValueError(f"Expected ≥ 1 segment(s), but got {num_segs}")
     if check_values:
         for i in range(num_segs):
             # All coordinates must be ≥ 1.
@@ -230,6 +235,85 @@ def find_contiguous_reads(seg_end5s: np.ndarray, seg_end3s: np.ndarray):
                                              seg_end3s,
                                              zero_indexed=False)
     return np.logical_not(np.count_nonzero(is_contig_end3[:, :-1], axis=1))
+
+
+class EndCoords(object):
+    """ Collection of 5' and 3' segment end coordinates. """
+
+    def __init__(self, *,
+                 section: Section,
+                 seg_end5s: np.ndarray,
+                 seg_end3s: np.ndarray,
+                 sanitize: bool = True,
+                 **kwargs):
+        super().__init__(**kwargs)
+        # Validate and store the segment end coordinates.
+        self._end5s, self._end3s = sanitize_segment_ends(seg_end5s,
+                                                         seg_end3s,
+                                                         section.end5,
+                                                         section.end3,
+                                                         sanitize)
+
+    @cached_property
+    def num_reads(self):
+        """ Number of reads. """
+        num_reads, _ = match_reads_segments(self._end5s, self._end3s)
+        return num_reads
+
+    @cached_property
+    def num_segments(self):
+        """ Number of segments in each read. """
+        _, num_segs = match_reads_segments(self._end5s, self._end3s)
+        return num_segs
+
+    @cached_property
+    def _seg_ends(self):
+        """ 5' and 3' ends of each segment in each read. """
+        return mask_segment_ends(self._end5s, self._end3s)
+
+    @property
+    def seg_end5s(self):
+        """ 5' end of each segment in each read. """
+        seg_end5s, _ = self._seg_ends
+        return seg_end5s
+
+    @property
+    def seg_end3s(self):
+        """ 3' end of each segment in each read. """
+        _, seg_end3s = self._seg_ends
+        return seg_end3s
+
+    @cached_property
+    def read_end5s(self):
+        """ 5' end of each read. """
+        return find_read_end5s(self.seg_end5s)
+
+    @cached_property
+    def read_end3s(self):
+        """ 3' end of each read. """
+        return find_read_end3s(self.seg_end3s)
+
+    @property
+    def pos_dtype(self):
+        """ Data type for positions. """
+        if self._end5s.dtype is not self._end3s.dtype:
+            raise ValueError("Data types differ for 5' and 3' ends")
+        return self._end5s.dtype
+
+    @cached_property
+    def contiguous(self):
+        """ Whether the segments of each read are contiguous. """
+        return find_contiguous_reads(self.seg_end5s, self.seg_end3s)
+
+    @cached_property
+    def num_contiguous(self):
+        """ Number of contiguous reads. """
+        return np.count_nonzero(self.contiguous)
+
+    @cached_property
+    def num_discontiguous(self):
+        """ Number of discontiguous reads. """
+        return self.num_reads - self.num_contiguous
 
 ########################################################################
 #                                                                      #

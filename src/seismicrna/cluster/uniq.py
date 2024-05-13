@@ -7,13 +7,13 @@ import pandas as pd
 
 from .names import BIT_VECTOR_NAME
 from ..core.array import get_length
-from ..core.batch import SectionMutsBatch, match_reads_segments
+from ..core.batch import EndCoords, SectionMutsBatch
 from ..core.rel import RelPattern
 from ..core.seq import Section
 from ..mask.data import MaskMutsDataset
 
 
-class UniqReads(object):
+class UniqReads(EndCoords):
     """ Collection of bit vectors of unique reads. """
 
     @classmethod
@@ -34,11 +34,11 @@ class UniqReads(object):
                  min_mut_gap: int,
                  quick_unbias: bool,
                  quick_unbias_thresh: float,
-                 seg_end5s: np.ndarray,
-                 seg_end3s: np.ndarray,
                  muts_per_pos: list[np.ndarray],
                  batch_to_uniq: list[pd.Series],
-                 counts_per_uniq: np.ndarray):
+                 counts_per_uniq: np.ndarray,
+                 **kwargs):
+        super().__init__(section=section, **kwargs)
         self.sample = sample
         self.section = section
         self.min_mut_gap = min_mut_gap
@@ -51,39 +51,11 @@ class UniqReads(object):
         self.muts_per_pos = muts_per_pos
         self.batch_to_uniq = batch_to_uniq
         self.counts_per_uniq = counts_per_uniq
-        num_uniq, num_segs = match_reads_segments(seg_end5s, seg_end3s)
-        if num_uniq != self.num_uniq:
-            raise ValueError(f"Expected {self.num_uniq} end coordinates, "
-                             f"but got {num_uniq}")
-        if num_segs == 0:
-            raise ValueError(f"Expected ≥ 1 segment(s), but got {num_segs}")
-        self.seg_end5s = seg_end5s
-        self.seg_end3s = seg_end3s
 
     @property
     def ref(self):
         """ Reference name. """
         return self.section.ref
-
-    @property
-    def num_segments(self):
-        """ Number of segments. """
-        _, num_segs = match_reads_segments(self.seg_end5s, self.seg_end3s)
-        return num_segs
-
-    @cached_property
-    def read_end5s(self):
-        """ 5' end coordinates. """
-        if self.num_segments == 1:
-            return self.seg_end5s[:, 0]
-        return self.seg_end5s.min(axis=1)
-
-    @cached_property
-    def read_end3s(self):
-        """ 3' end coordinates. """
-        if self.num_segments == 1:
-            return self.seg_end3s[:, 0]
-        return self.seg_end3s.max(axis=1)
 
     @cached_property
     def seg_end5s_zero(self):
@@ -96,12 +68,12 @@ class UniqReads(object):
         return self.seg_end3s - self.section.end5
 
     @cached_property
-    def end5s_zero(self):
+    def read_end5s_zero(self):
         """ 5' end coordinates (0-indexed in the section). """
         return self.read_end5s - self.section.end5
 
     @cached_property
-    def end3s_zero(self):
+    def read_end3s_zero(self):
         """ 3' end coordinates (0-indexed in the section). """
         return self.read_end3s - self.section.end5
 
@@ -172,7 +144,8 @@ class UniqReads(object):
                 and self.section == other.section
                 and self.min_mut_gap == other.min_mut_gap
                 and self.num_batches == other.num_batches
-                and np.array_equal(self.ends, other.ends)
+                and np.array_equal(self.seg_end5s, other.seg_end5s)
+                and np.array_equal(self.seg_end3s, other.seg_end3s)
                 and all(np.array_equal(m1, m2)
                         for m1, m2 in zip(self.muts_per_pos,
                                           other.muts_per_pos,
@@ -192,15 +165,18 @@ def _uniq_reads_to_ends_muts(uniq_reads: Iterable[tuple[tuple, tuple]],
                              pos_nums: Iterable[int]):
     """ Map each position to the numbers of the unique reads that are
     mutated at the position. """
-    ends = list()
+    end5s = list()
+    end3s = list()
     muts = defaultdict(list)
-    for uniq_read_num, (read_ends, read_muts) in enumerate(uniq_reads):
-        ends.append(read_ends)
+    for uniq_read_num, ((end5, end3), read_muts) in enumerate(uniq_reads):
+        end5s.append(end5)
+        end3s.append(end3)
         for pos in read_muts:
             muts[pos].append(uniq_read_num)
-    ends = np.array(ends)
+    end5s = np.array(end5s)
+    end3s = np.array(end3s)
     muts = [np.array(muts[pos], dtype=int) for pos in pos_nums]
-    return ends, muts
+    return (end5s, end3s), muts
 
 
 def _batch_to_uniq_read_num(read_nums_per_batch: list[np.ndarray],

@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections import Counter
 from functools import cached_property
 from logging import getLogger
@@ -6,50 +6,45 @@ from logging import getLogger
 import numpy as np
 import pandas as pd
 
-from .count import (count_end_coords,
-                    calc_count_per_pos,
+from .count import (calc_count_per_pos,
                     calc_count_per_read,
                     calc_coverage,
                     calc_reads_per_pos,
                     calc_rels_per_pos,
-                    calc_rels_per_read)
-from .ends import (find_contiguous_reads,
-                   find_read_end5s,
-                   find_read_end3s,
-                   mask_segment_ends,
-                   match_reads_segments,
-                   sanitize_segment_ends)
+                    calc_rels_per_read,
+                    count_end_coords)
+from .ends import EndCoords
 from .index import iter_windows
 from .read import ReadBatch, PartialReadBatch
+from ..array import get_length
 from ..rel import REL_TYPE, RelPattern
 from ..seq import Section
 
 logger = getLogger(__name__)
 
 
-class MutsBatch(ReadBatch, ABC):
+def sanitize_muts(muts: dict[int, dict[int, list[int] | np.ndarray]],
+                  section: Section,
+                  data_type: type,
+                  sanitize: bool = True):
+    return {pos: ({REL_TYPE(rel): np.asarray(reads, data_type)
+                   for rel, reads in muts[pos].items()}
+                  if sanitize
+                  else muts[pos])
+            for pos in section.unmasked_int}
+
+
+class MutsBatch(EndCoords, ReadBatch, ABC):
     """ Batch of mutational data. """
 
     def __init__(self, *,
                  section: Section,
-                 seg_end5s: np.ndarray,
-                 seg_end3s: np.ndarray,
-                 muts: dict[int, dict[int, list[int] | np.ndarray]],
                  sanitize: bool = True,
+                 muts: dict[int, dict[int, list[int] | np.ndarray]],
                  **kwargs):
-        super().__init__(**kwargs)
-        # Validate and store the read end coordinates.
-        self._end5s, self._end3s = sanitize_segment_ends(seg_end5s,
-                                                         seg_end3s,
-                                                         section.end5,
-                                                         section.end3,
-                                                         sanitize)
+        super().__init__(section=section, sanitize=sanitize, **kwargs)
         # Validate and store the mutations.
-        self._muts = {pos: ({REL_TYPE(rel): np.asarray(reads, self.read_dtype)
-                             for rel, reads in muts[pos].items()}
-                            if sanitize
-                            else muts[pos])
-                      for pos in section.unmasked_int}
+        self._muts = sanitize_muts(muts, section, self.read_dtype, sanitize)
 
     @property
     def muts(self):
@@ -57,54 +52,14 @@ class MutsBatch(ReadBatch, ABC):
         return self._muts
 
     @cached_property
-    def num_segments(self):
-        """ Number of segments in each read. """
-        _, num_segs = match_reads_segments(self._end5s, self._end3s)
-        return num_segs
-
-    @cached_property
-    def _seg_ends(self):
-        """ 5' and 3' ends of each segment in each read. """
-        return mask_segment_ends(self._end5s, self._end3s)
-
-    @property
-    def seg_end5s(self):
-        """ 5' end of each segment in each read. """
-        seg_end5s, _ = self._seg_ends
-        return seg_end5s
-
-    @property
-    def seg_end3s(self):
-        """ 3' end of each segment in each read. """
-        _, seg_end3s = self._seg_ends
-        return seg_end3s
-
-    @cached_property
-    def read_end5s(self):
-        """ 5' end of each read. """
-        return find_read_end5s(self.seg_end5s)
-
-    @cached_property
-    def read_end3s(self):
-        """ 3' end of each read. """
-        return find_read_end3s(self.seg_end3s)
-
-    @property
-    def pos_dtype(self):
-        """ Data type for positions. """
-        if self._end5s.dtype is not self._end3s.dtype:
-            raise ValueError("Data types differ for 5' and 3' ends")
-        return self._end5s.dtype
-
-    @cached_property
     def pos_nums(self):
         """ Positions in use. """
         return np.fromiter(self.muts, self.pos_dtype)
 
     @property
+    @abstractmethod
     def read_weights(self) -> pd.DataFrame | None:
         """ Weights for each read when computing counts. """
-        return None
 
     @cached_property
     def read_end_counts(self):
@@ -112,21 +67,6 @@ class MutsBatch(ReadBatch, ABC):
         return count_end_coords(self.read_end5s,
                                 self.read_end3s,
                                 self.read_weights)
-
-    @cached_property
-    def contiguous(self):
-        """ Whether the segments of each read are contiguous. """
-        return find_contiguous_reads(self.seg_end5s, self.seg_end3s)
-
-    @cached_property
-    def num_contiguous(self):
-        """ Number of contiguous reads. """
-        return np.count_nonzero(self.contiguous)
-
-    @cached_property
-    def num_discontiguous(self):
-        """ Number of discontiguous reads. """
-        return self.num_reads - self.num_contiguous
 
 
 class SectionMutsBatch(MutsBatch, ABC):
@@ -137,8 +77,7 @@ class SectionMutsBatch(MutsBatch, ABC):
         super().__init__(section=section, **kwargs)
 
     def iter_windows(self, size: int):
-        """ Yield the positions in each window of size positions of the
-        section. """
+        """ Yield the positions in each window of the section. """
         yield from iter_windows(self.pos_nums, size)
 
     @cached_property
@@ -151,7 +90,8 @@ class SectionMutsBatch(MutsBatch, ABC):
         """ Coverage per position and per read. """
         return calc_coverage(self.pos_index,
                              self.read_nums,
-                             self.ends,
+                             self.seg_end5s,
+                             self.seg_end3s,
                              self.read_weights)
 
     @property
@@ -263,22 +203,29 @@ class SectionMutsBatch(MutsBatch, ABC):
         mut_counts = np.count_nonzero(mut_pos, axis=1)
         # For each read, yield the end coordinates and mutated positions
         # as a tuple.
-        iter_ends = (zip(self.end5s, self.end3s, strict=True)
-                     if only_read_ends or require_contiguous
-                     else self.ends)
-        for read_num, ends, muts, count in zip(self.read_nums,
-                                               iter_ends,
-                                               mut_pos,
-                                               mut_counts,
-                                               strict=True):
-            yield read_num, (tuple(ends), tuple(muts[:count]))
+        if only_read_ends:
+            end5s = self.read_end5s[:, np.newaxis]
+            end3s = self.read_end3s[:, np.newaxis]
+        else:
+            end5s = self.seg_end5s
+            end3s = self.seg_end3s
+        for read_num, (end5, end3), muts, count in zip(self.read_nums,
+                                                       zip(end5s,
+                                                           end3s,
+                                                           strict=True),
+                                                       mut_pos,
+                                                       mut_counts,
+                                                       strict=True):
+            yield read_num, ((tuple(end5), tuple(end3)), tuple(muts[:count]))
 
 
-class PartialMutsBatch(PartialReadBatch, MutsBatch, ABC):
+class PartialMutsBatch(MutsBatch, PartialReadBatch, ABC):
 
-    @cached_property
-    def pos_nums(self):
-        return np.array(list(self.muts))
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if (rnum := get_length(self.read_nums, "read_nums")) != self.num_reads:
+            raise ValueError(f"Got different numbers of reads ({rnum}) "
+                             f"and end coordinates ({self.num_reads})")
 
 ########################################################################
 #                                                                      #

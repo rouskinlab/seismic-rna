@@ -11,7 +11,7 @@ from ..core.report import (BatchedRefseqReport,
                            MinMapQualF,
                            MinReadsF,
                            NumReadsRelF,
-                           AmbrelF,
+                           AmindelF,
                            MinPhredF,
                            PhredEncF,
                            OverhangsF)
@@ -28,7 +28,7 @@ class RelateReport(BatchedRefseqReport, RelateIO):
                 MinMapQualF,
                 PhredEncF,
                 MinPhredF,
-                AmbrelF,
+                AmindelF,
                 OverhangsF,
                 MinReadsF,
                 NumReadsRelF] + super().fields()
