@@ -62,8 +62,8 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
                                                           opt_min_mapq.default,
                                                           cigar,
                                                           end5)
-                self.assertEqual(end5_, end5)
-                self.assertEqual(end3_, end3)
+                self.assertEqual(end5_, [end5])
+                self.assertEqual(end3_, [end3])
                 self.assertEqual(rels_, rels)
 
     def test_aaaa_0ins(self):
@@ -95,7 +95,7 @@ class TestMergeMates(ut.TestCase):
 
     def test_empty(self):
         result = _merge_mates(1, 10, {}, 1, 10, {}, True)
-        expect = [1, 10, 1, 10], {}
+        expect = ([1, 1], [10, 10]), {}
         self.assertEqual(result, expect)
 
     def test_read1(self):
@@ -112,13 +112,13 @@ class TestMergeMates(ut.TestCase):
                     # The relationship can be compensated by read 2.
                     if rel & MATCH:
                         # The match in read 2 compensated.
-                        expect = [1, 20, 11, 30], {}
+                        expect = ([1, 11], [20, 30]), {}
                     else:
                         # The match in read 2 is irreconcilable.
-                        expect = [1, 20, 11, 30], {pos: IRREC}
+                        expect = ([1, 11], [20, 30]), {pos: IRREC}
                 else:
                     # Read 2 cannot compensate.
-                    expect = [1, 20, 11, 30], {pos: rel}
+                    expect = ([1, 11], [20, 30]), {pos: rel}
                 self.assertEqual(result, expect)
 
     def test_read2(self):
@@ -135,13 +135,13 @@ class TestMergeMates(ut.TestCase):
                     # The relationship can be compensated by read 1.
                     if rel & MATCH:
                         # The match in read 1 compensated.
-                        expect = [1, 20, 11, 30], {}
+                        expect = ([1, 11], [20, 30]), {}
                     else:
                         # The match in read 1 is irreconcilable.
-                        expect = [1, 20, 11, 30], {pos: IRREC}
+                        expect = ([1, 11], [20, 30]), {pos: IRREC}
                 else:
                     # Read 1 cannot compensate.
-                    expect = [1, 20, 11, 30], {pos: rel}
+                    expect = ([1, 11], [20, 30]), {pos: rel}
                 self.assertEqual(result, expect)
 
     def test_both_reads(self):
@@ -163,11 +163,11 @@ class TestMergeMates(ut.TestCase):
                             if pos1 == pos2:
                                 merged = rel1 & rel2
                                 if merged == MATCH:
-                                    expect = [1, 2, 2, 3], {}
+                                    expect = ([1, 2], [2, 3]), {}
                                 else:
-                                    expect = [1, 2, 2, 3], {pos1: merged}
+                                    expect = ([1, 2], [2, 3]), {pos1: merged}
                             else:
-                                expect = [1, 2, 2, 3], {}
+                                expect = ([1, 2], [2, 3]), {}
                                 merged1 = (rel1 & MATCH
                                            if end52 <= pos1 <= end32
                                            else rel1)
@@ -214,12 +214,13 @@ class TestMergeMates(ut.TestCase):
                                       end5r, end3r, relsr,
                                       overhangs)
                 if overhangs:
-                    ends = [end5f, end3f, end5r, end3r]
+                    ends = [end5f, end5r], [end3f, end3r]
                 else:
-                    ends = [end5f, min(end3f, end3r), max(end5f, end5r), end3r]
+                    ends = ([end5f, max(end5f, end5r)],
+                            [min(end3f, end3r), end3r])
                 rels = {pos: SUB_G
-                        for pos in chain(range(ends[0], ends[1] + 1),
-                                         range(ends[2], ends[3] + 1))}
+                        for pos in chain(range(ends[0][0], ends[1][0] + 1),
+                                         range(ends[0][1], ends[1][1] + 1))}
                 expect = ends, rels
                 with self.subTest(overhangs=overhangs,
                                   end5f=end5f,
