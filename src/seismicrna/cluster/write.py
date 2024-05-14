@@ -131,6 +131,10 @@ def cluster(mask_report_file: Path,
                     f"{max_order}, with {n_runs} run(s) per order")
         # Load the unique reads.
         dataset = load_mask_dataset(mask_report_file)
+        if dataset.min_mut_gap != 3:
+            logger.warning("For clustering, it is highly recommended to use "
+                           "the observer bias correction with min_mut_gap=3, "
+                           f"but got min_mut_gap={dataset.min_mut_gap}")
         uniq_reads = UniqReads.from_dataset(dataset,
                                             only_read_ends=True,
                                             require_contiguous=True)

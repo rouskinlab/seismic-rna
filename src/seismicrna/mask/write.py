@@ -82,6 +82,13 @@ class Masker(object):
         self.exclude_gu = exclude_gu
         self.exclude_pos = self._get_exclude_pos(exclude_file, exclude_pos)
         # Set the parameters for filtering reads.
+        if discontig and min_mut_gap > 0:
+            raise ValueError(f"The observer bias correction does not work with "
+                             f"discontiguous reads. If you need discontiguous "
+                             f"reads, disable bias correction with the option "
+                             f"--min-mut-gap=0 (but be warned that disabling "
+                             f"bias correction can produce misleading results, "
+                             f"especially with clustering).")
         self.min_ncov_read = min_ncov_read
         self.min_mut_gap = min_mut_gap
         self.min_finfo_read = min_finfo_read
