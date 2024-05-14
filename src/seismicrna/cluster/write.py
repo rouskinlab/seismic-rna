@@ -54,7 +54,7 @@ def run_orders(uniq_reads: UniqReads,
                prev_bic: float | None, *,
                min_iter: int,
                max_iter: int,
-               conv_thresh: float,
+               em_thresh: float,
                n_procs: int,
                top: Path,
                **kwargs):
@@ -72,7 +72,7 @@ def run_orders(uniq_reads: UniqReads,
         runs = run_order(uniq_reads,
                          order,
                          n_runs=(n_runs if order > 1 else 1),
-                         conv_thresh=(conv_thresh if order > 1 else inf),
+                         em_thresh=(em_thresh if order > 1 else inf),
                          min_iter=(min_iter * order if order > 1 else 2),
                          max_iter=(max_iter * order if order > 1 else 2),
                          n_procs=n_procs,
@@ -135,9 +135,7 @@ def cluster(mask_report_file: Path,
             logger.warning("For clustering, it is highly recommended to use "
                            "the observer bias correction with min_mut_gap=3, "
                            f"but got min_mut_gap={dataset.min_mut_gap}")
-        uniq_reads = UniqReads.from_dataset(dataset,
-                                            only_read_ends=True,
-                                            require_contiguous=True)
+        uniq_reads = UniqReads.from_dataset_contig(dataset)
         # Run clustering for every order.
         orders = list(run_max_order(uniq_reads,
                                     max_order=max_order,

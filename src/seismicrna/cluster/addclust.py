@@ -89,8 +89,8 @@ def update_batches(dataset: ClusterMutsDataset,
     checksums = list()
     for batch in dataset.iter_batches():
         # Merge the original responsibilities with the new ones.
-        resps = pd.concat([batch.membership] + [runs.best.get_members(batch.batch)
-                                                for runs in new_orders],
+        resps = pd.concat([batch.resps] + [runs.best.get_members(batch.batch)
+                                           for runs in new_orders],
                           axis=1,
                           verify_integrity=True)
         batch = ClusterBatchIO(sample=dataset.sample,
@@ -133,11 +133,11 @@ def update_report(original_report: ClusterReport,
         ref=original_report.ref,
         sect=original_report.sect,
         n_uniq_reads=original_report.get_field(NumUniqReadKeptF),
-        max_order=max_order,
-        num_runs=original_report.get_field(ClustNumRunsF),
-        min_iter=original_report.get_field(MinIterClustF),
-        max_iter=original_report.get_field(MaxIterClustF),
-        conv_thresh=original_report.get_field(ClustConvThreshF),
+        max_clusters=max_order,
+        em_runs=original_report.get_field(ClustNumRunsF),
+        min_em_iter=original_report.get_field(MinIterClustF),
+        max_em_iter=original_report.get_field(MaxIterClustF),
+        em_thresh=original_report.get_field(ClustConvThreshF),
         checksums={BTYPE: checksums},
         n_batches=len(checksums),
         converged=update_field(original_report,
@@ -190,7 +190,7 @@ def add_orders(report_file: Path,
         if original_best_order == original_max_order:
             # The original clustering stopped because the order reached
             # the maximum order, not because the BIC decreased.
-            uniq_reads = UniqReads.from_dataset(dataset)
+            uniq_reads = UniqReads.from_dataset_contig(dataset)
             # Add more clusters up to max_order.
             new_orders = list(run_orders(
                 uniq_reads,
@@ -200,7 +200,7 @@ def add_orders(report_file: Path,
                 prev_bic=min(report.get_field(ClustsBicF).values()),
                 min_iter=report.get_field(MinIterClustF),
                 max_iter=report.get_field(MaxIterClustF),
-                conv_thresh=report.get_field(ClustConvThreshF),
+                em_thresh=report.get_field(ClustConvThreshF),
                 n_procs=n_procs,
                 top=dataset.top)
             )

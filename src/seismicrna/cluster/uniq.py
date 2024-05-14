@@ -18,6 +18,7 @@ class UniqReads(EndCoords):
 
     @classmethod
     def from_dataset(cls, dataset: MaskMutsDataset, **kwargs):
+        """ Get unique reads from a dataset. """
         ((seg_end5s, seg_end3s),
          muts_per_pos,
          batch_to_uniq,
@@ -35,6 +36,13 @@ class UniqReads(EndCoords):
                    count_per_uniq,
                    seg_end5s=seg_end5s,
                    seg_end3s=seg_end3s)
+
+    @classmethod
+    def from_dataset_contig(cls, dataset: MaskMutsDataset):
+        """ Get unique reads from a dataset of contiguous reads. """
+        return cls.from_dataset(dataset,
+                                only_read_ends=True,
+                                require_contiguous=True)
 
     def __init__(self,
                  sample: str,

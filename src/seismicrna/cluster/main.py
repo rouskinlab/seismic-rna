@@ -54,7 +54,7 @@ def run(input_path: tuple[str, ...], *,
                                 n_runs=em_runs,
                                 min_iter=min_em_iter,
                                 max_iter=max_em_iter,
-                                conv_thresh=em_thresh,
+                                em_thresh=em_thresh,
                                 brotli_level=brotli_level,
                                 force=force))
 

@@ -67,7 +67,7 @@ class ClusterReport(BatchedReport, ClusterIO):
                       num_runs: int, *,
                       min_iter: int,
                       max_iter: int,
-                      conv_thresh: float,
+                      em_thresh: float,
                       checksums: list[str],
                       began: datetime,
                       ended: datetime):
@@ -80,7 +80,7 @@ class ClusterReport(BatchedReport, ClusterIO):
                    em_runs=num_runs,
                    min_em_iter=min_iter,
                    max_em_iter=max_iter,
-                   em_thresh=conv_thresh,
+                   em_thresh=em_thresh,
                    checksums={ClusterBatchIO.btype(): checksums},
                    n_batches=len(checksums),
                    converged={runs.order: runs.converged for runs in orders},

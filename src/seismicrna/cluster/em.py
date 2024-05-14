@@ -162,7 +162,7 @@ class EmClustering(object):
                  order: int, *,
                  min_iter: int,
                  max_iter: int,
-                 conv_thresh: float):
+                 em_thresh: float):
         """
         Parameters
         ----------
@@ -177,7 +177,7 @@ class EmClustering(object):
         max_iter: int
             Maximum number of iterations for clustering. Must be a
             positive integer no less than `min_iter`.
-        conv_thresh: float
+        em_thresh: float
             Stop the algorithm when the difference in log likelihood
             between two successive iterations becomes smaller than the
             convergence threshold (and at least min_iter iterations have
@@ -199,9 +199,9 @@ class EmClustering(object):
                              f"but got {max_iter}")
         self.max_iter = max_iter
         # Cutoff for convergence of EM
-        if not conv_thresh >= 0.:
-            raise ValueError(f"conv_thresh must be ≥ 0, but got {conv_thresh}")
-        self.conv_thresh = conv_thresh
+        if not em_thresh >= 0.:
+            raise ValueError(f"em_thresh must be ≥ 0, but got {em_thresh}")
+        self.em_thresh = em_thresh
         # Mutation rates adjusted for observer bias.
         # 2D (all positions x clusters)
         self.p_mut = np.empty((self.n_pos_total, self.order))
@@ -447,7 +447,7 @@ class EmClustering(object):
                 logger.warning(f"{self}, iteration {self.iter} returned a "
                                f"smaller log likelihood ({self.log_like}) than "
                                f"the previous iteration ({self.log_like_prev})")
-            if (self.delta_log_like < self.conv_thresh
+            if (self.delta_log_like < self.em_thresh
                     and self.iter >= self.min_iter):
                 # Converge if the increase in log likelihood is
                 # smaller than the convergence cutoff and at least
