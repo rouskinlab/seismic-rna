@@ -15,7 +15,7 @@ from .base import (COVER_REL,
                    SUB_C_REL,
                    SUB_G_REL,
                    SUB_T_REL,
-                   INFOR_REL,
+                   UNAMB_REL,
                    TABLE_RELS)
 from ..cluster.data import ClusterMutsDataset
 from ..core.array import check_naturals, triangular
@@ -63,7 +63,7 @@ class Tabulator(ABC):
         for rel, rel_counts in counts.items():
             table.loc[:, rel] = rel_counts
         # Add a column for informative relationships.
-        table.loc[:, INFOR_REL] = (table.loc[:, MATCH_REL].values
+        table.loc[:, UNAMB_REL] = (table.loc[:, MATCH_REL].values
                                    +
                                    table.loc[:, MUTAT_REL].values)
         return table
@@ -309,7 +309,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
         # Ignore division by zero, which is acceptable here because any
         # resulting NaN values are zeroed by nan_to_num.
         p_mut_given_noclose = np.nan_to_num(_insert_masked(
-            table_per_pos[MUTAT_REL] / table_per_pos[INFOR_REL],
+            table_per_pos[MUTAT_REL] / table_per_pos[UNAMB_REL],
             section
         ))
     if isinstance(n_reads_clust, int):
@@ -401,9 +401,9 @@ def adjust_counts(table_per_pos: pd.DataFrame,
     # from which we can estimate the informative bases after adjustment:
     # n_info = ninfo_obs / p_noclose_given_ends
     n_cov = table_per_pos.loc[unmask, COVER_REL].values / p_noclose_given_clust
-    n_info = table_per_pos.loc[unmask, INFOR_REL].values / p_noclose_given_clust
+    n_info = table_per_pos.loc[unmask, UNAMB_REL].values / p_noclose_given_clust
     n_rels.loc[unmask, COVER_REL] = n_cov
-    n_rels.loc[unmask, INFOR_REL] = n_info
+    n_rels.loc[unmask, UNAMB_REL] = n_info
     # From the definition of the adjusted fraction of mutations:
     # p_mut := n_mut / n_info
     # we can also estimate the mutated bases after adjustment:

@@ -45,12 +45,12 @@ class Masker(object):
                  dataset: RelateDataset | PoolDataset,
                  section: Section,
                  pattern: RelPattern, *,
-                 exclude_polya: int,
-                 exclude_gu: bool,
-                 exclude_file: Path | None,
-                 exclude_pos: list[tuple[str, int]],
+                 mask_polya: int,
+                 mask_gu: bool,
+                 mask_pos: list[tuple[str, int]],
+                 mask_pos_file: Path | None,
+                 mask_discontig: bool,
                  min_ncov_read: int,
-                 discontig: bool,
                  min_finfo_read: float,
                  max_fmut_read: float,
                  min_mut_gap: int,
@@ -78,22 +78,27 @@ class Masker(object):
                                name=section.name)
         self.pattern = pattern
         # Set the parameters for excluding positions from the section.
-        self.exclude_polya = exclude_polya
-        self.exclude_gu = exclude_gu
-        self.exclude_pos = self._get_exclude_pos(exclude_file, exclude_pos)
+        if mask_polya <= 0 or mask_polya > 5:
+            logger.warning("It is not recommended to keep sequences of 5 or "
+                           "more consecutive As because of an artifact during "
+                           "RT that causes low reactivity. See Kladwang et al. "
+                           "(https://doi.org/10.1021/acs.biochem.0c00020).")
+        self.mask_polya = mask_polya
+        self.mask_gu = mask_gu
+        self.mask_pos = self._get_mask_pos(mask_pos, mask_pos_file)
         # Set the parameters for filtering reads.
-        if discontig and min_mut_gap > 0:
-            raise ValueError(f"The observer bias correction does not work with "
-                             f"discontiguous reads. If you need discontiguous "
-                             f"reads, disable bias correction with the option "
-                             f"--min-mut-gap=0 (but be warned that disabling "
-                             f"bias correction can produce misleading results, "
-                             f"especially with clustering).")
+        if min_mut_gap > 0 and not mask_discontig:
+            raise ValueError("The observer bias correction does not work with "
+                             "discontiguous reads. If you need discontiguous "
+                             "reads, disable bias correction with the option "
+                             "--min-mut-gap=0 (but be warned that disabling "
+                             "bias correction can produce misleading results, "
+                             "especially with clustering).")
+        self.mask_discontig = mask_discontig
         self.min_ncov_read = min_ncov_read
         self.min_mut_gap = min_mut_gap
         self.min_finfo_read = min_finfo_read
         self.max_fmut_read = max_fmut_read
-        self.discontig = discontig
         self._n_reads = defaultdict(int)
         # Set the parameters for filtering positions.
         self.min_ninfo_pos = min_ninfo_pos
@@ -139,7 +144,7 @@ class Masker(object):
     def pos_gu(self):
         """ Positions masked for having a G or U base. """
         return (self.section.get_mask(self.section.MASK_GU)
-                if self.exclude_gu
+                if self.mask_gu
                 else np.array([], dtype=int))
 
     @property
@@ -172,28 +177,25 @@ class Masker(object):
         """ Number of batches of reads. """
         return len(self.checksums)
 
-    def _get_exclude_pos(self,
-                         exclude_file: Path | None,
-                         exclude_pos: list[tuple[str, int]]):
-        """ List all positions to exclude. """
+    def _get_mask_pos(self,
+                      mask_pos: list[tuple[str, int]],
+                      mask_pos_file: Path | None):
+        """ List all positions to mask. """
+        # Collect the positions to mask from the list.
+        mask_pos = np.array([pos for ref, pos in mask_pos
+                             if ref == self.dataset.ref])
         # Read positions to exclude from a file.
-        if exclude_file is not None:
-            expos = pd.read_csv(
-                exclude_file,
-                index_col=[FIELD_REF, POS_NAME]
-            ).loc[self.dataset.ref].index.values
-        else:
-            expos = np.array([], dtype=int)
-        # Add positions to exclude from a list, then drop redundancies.
-        expos = np.unique(np.concatenate(
-            [expos,
-             np.array([pos for ref, pos in exclude_pos
-                       if ref == self.dataset.ref])]
-        ))
+        if mask_pos_file is not None:
+            mask_pos = np.concatenate([mask_pos,
+                                       pd.read_csv(
+                                           mask_pos_file,
+                                           index_col=[FIELD_REF, POS_NAME]
+                                       ).loc[self.dataset.ref].index.values])
+        # Drop redundant positions and sort the remaining ones.
+        mask_pos = np.unique(np.asarray(mask_pos, dtype=int))
         # Keep only the positions in the section.
-        return np.asarray(expos[np.logical_and(expos >= self.section.end5,
-                                               expos <= self.section.end3)],
-                          dtype=int)
+        return mask_pos[np.logical_and(mask_pos >= self.section.end5,
+                                       mask_pos <= self.section.end3)]
 
     def _filter_min_ncov_read(self, batch: SectionMutsBatch):
         """ Filter out reads with too few covered positions. """
@@ -210,7 +212,7 @@ class Masker(object):
 
     def _filter_discontig(self, batch: SectionMutsBatch):
         """ Filter out reads with discontiguous mates. """
-        if self.discontig:
+        if not self.mask_discontig:
             # Keep discontiguous reads.
             logger.debug(f"{self} skipped filtering reads with "
                          f"discontiguous mates in {batch}")
@@ -278,10 +280,10 @@ class Masker(object):
 
     def _exclude_positions(self):
         """ Exclude positions from the section. """
-        self.section.mask_polya(self.exclude_polya)
-        if self.exclude_gu:
+        self.section.mask_polya(self.mask_polya)
+        if self.mask_gu:
             self.section.mask_gu()
-        self.section.mask_pos(self.exclude_pos)
+        self.section.mask_list(self.mask_pos)
 
     def _filter_batch_reads(self, batch: SectionMutsBatch):
         """ Remove the reads in the batch that do not pass the filters
@@ -368,9 +370,9 @@ class Masker(object):
             n_batches=self.n_batches,
             count_refs=self.pattern.nos,
             count_muts=self.pattern.yes,
-            exclude_gu=self.exclude_gu,
-            exclude_polya=self.exclude_polya,
-            exclude_pos=self.exclude_pos,
+            mask_gu=self.mask_gu,
+            mask_polya=self.mask_polya,
+            mask_pos=self.mask_pos,
             min_ninfo_pos=self.min_ninfo_pos,
             max_fmut_pos=self.max_fmut_pos,
             n_pos_init=self.section.length,
@@ -390,7 +392,7 @@ class Masker(object):
             min_finfo_read=self.min_finfo_read,
             max_fmut_read=self.max_fmut_read,
             min_mut_gap=self.min_mut_gap,
-            discontig=self.discontig,
+            mask_discontig=self.mask_discontig,
             n_reads_init=self.n_reads_init,
             n_reads_min_ncov=self.n_reads_min_ncov,
             n_reads_discontig=self.n_reads_discontig,
@@ -410,9 +412,9 @@ class Masker(object):
 
 def mask_section(dataset: RelateDataset | PoolDataset,
                  section: Section,
-                 count_del: bool,
-                 count_ins: bool,
-                 discount: Iterable[str], *,
+                 mask_del: bool,
+                 mask_ins: bool,
+                 mask_mut: Iterable[str], *,
                  force: bool,
                  **kwargs):
     """ Filter a section of a set of bit vectors. """
@@ -423,7 +425,7 @@ def mask_section(dataset: RelateDataset | PoolDataset,
                                         sect=section.name)
     if need_write(report_file, force):
         began = datetime.now()
-        pattern = RelPattern.from_counts(count_del, count_ins, discount)
+        pattern = RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
         masker = Masker(dataset, section, pattern, **kwargs)
         masker.mask()
         ended = datetime.now()

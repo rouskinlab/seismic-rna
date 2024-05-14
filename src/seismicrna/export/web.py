@@ -18,7 +18,7 @@ from ..mask.report import MaskReport
 from ..pool.data import load_relate_pool_dataset
 from ..relate.report import RelateReport
 from ..table.base import (COVER_REL,
-                          INFOR_REL,
+                          UNAMB_REL,
                           SUBST_REL,
                           SUB_A_REL,
                           SUB_C_REL,
@@ -42,7 +42,7 @@ SECT_END3 = "section_end"
 SECT_POS = "positions"
 POS_DATA = {
     "cov": COVER_REL,
-    "info": INFOR_REL,
+    "info": UNAMB_REL,
     "sub_N": SUBST_REL,
     "sub_A": SUB_A_REL,
     "sub_C": SUB_C_REL,

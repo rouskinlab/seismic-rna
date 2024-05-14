@@ -519,24 +519,23 @@ class Section(object):
 
     def add_mask(self,
                  name: str,
-                 mask_pos: Iterable[int],
+                 positions: Iterable[int],
                  complement: bool = False):
-        """ Mask the integer positions in the array `mask_pos`.
+        """ Mask the integer positions in the array `positions`.
 
         Parameters
         ----------
         name: str
             Name of the mask.
-        mask_pos: Iterable[int]
+        positions: Iterable[int]
             Positions to mask (1-indexed).
         complement: bool = False
-            If False, then remove the positions in mask_pos. Otherwise,
-            remove all but those positions.
+            If True, then leave only positions in `positions` unmasked.
         """
         if name in self._masks:
             raise ValueError(f"Mask {repr(name)} was already set")
         # Convert positions to a NumPy integer array.
-        p = np.unique(np.asarray(list(mask_pos), dtype=int))
+        p = np.unique(np.asarray(list(positions), dtype=int))
         # Check for positions outside the section.
         if np.any(p < self.end5) or np.any(p > self.end3):
             out = p[np.logical_or(p < self.end5, p > self.end3)]
@@ -590,8 +589,8 @@ class Section(object):
         """ Mask poly(A) stretches with length ≥ `min_length`. """
         self.add_mask(self.MASK_POLYA, self._find_polya(min_length))
 
-    def mask_pos(self, pos: Iterable[int]):
-        """ Mask arbitrary positions. """
+    def mask_list(self, pos: Iterable[int]):
+        """ Mask a list of positions. """
         self.add_mask(self.MASK_LIST, pos)
 
     def subsection(self,
@@ -632,8 +631,8 @@ class Section(object):
         # Copy any masked positions from this section, offseting them by
         # the difference between the numbering systems.
         offset = renumbered.end5 - self.end5
-        for mask_name, mask_pos in self._masks.items():
-            renumbered.add_mask(mask_name, mask_pos + offset)
+        for mask_name, pos in self._masks.items():
+            renumbered.add_mask(mask_name, pos + offset)
         return renumbered
 
     def __str__(self):

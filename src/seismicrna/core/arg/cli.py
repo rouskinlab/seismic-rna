@@ -574,116 +574,115 @@ opt_pool = Option(
 
 # Mask
 
-opt_count_del = Option(
-    ("--count-del/--discount-del",),
-    type=bool,
-    default=False,
-    help="count deletions as mutations"
-)
-
-opt_count_ins = Option(
-    ("--count-ins/--discount-ins",),
-    type=bool,
-    default=False,
-    help="count insertions as mutations"
-)
-
-opt_discount_mut = Option(
-    ("--discount-mut",),
-    type=str,
-    multiple=True,
-    default=(),
-    help="type of mutation to ignore"
-)
-
-opt_exclude_polya = Option(
-    ("--exclude-polya",),
-    type=int,
-    default=5,
-    help="minimum length of poly(A) sequences to exclude (0 to include all)"
-)
-
-opt_exclude_gu = Option(
-    ("--exclude-gu/--include-gu",),
+opt_mask_del = Option(
+    ("--mask-del/--keep-del",),
     type=bool,
     default=True,
-    help="exclude G and U bases"
+    help="mask deletions"
 )
 
-opt_exclude_file = Option(
-    ("--exclude-file",),
-    type=Path(dir_okay=False, exists=True),
-    help="file of arbitrary positions to exclude"
+opt_mask_ins = Option(
+    ("--mask-ins/--keep-ins",),
+    type=bool,
+    default=True,
+    help="mask insertions"
 )
 
-opt_exclude_pos = Option(
-    ("--exclude-pos",),
+opt_mask_mut = Option(
+    ("--mask-mut",),
+    type=str,
+    multiple=True,
+    help="mask this type of mutation"
+)
+
+opt_mask_polya = Option(
+    ("--mask-polya",),
+    type=int,
+    default=5,
+    help="mask stretches of at least this many consecutive A bases (0 disables)"
+)
+
+opt_mask_gu = Option(
+    ("--mask-gu/--keep-gu",),
+    type=bool,
+    default=True,
+    help="mask G and U bases"
+)
+
+opt_mask_pos = Option(
+    ("--mask-pos",),
     type=(str, int),
     multiple=True,
-    help="arbitrary position to exclude"
+    help="mask this position in this reference"
 )
 
-opt_discontig = Option(
-    ("--discontig/--no-discontig",),
+opt_mask_pos_file = Option(
+    ("--mask-pos-file",),
+    type=Path(dir_okay=False, exists=True),
+    help="mask positions in references from this file"
+)
+
+opt_mask_discontig = Option(
+    ("--mask-discontig/--keep-discontig",),
     type=bool,
-    default=False,
-    help="keep paired-end reads with discontiguous mates"
+    default=True,
+    help="mask paired-end reads with discontiguous mates"
 )
 
 opt_min_ncov_read = Option(
     ("--min-ncov-read",),
     type=int,
     default=1,
-    help="minimum coverage of a read to keep it (nt)"
+    help="mask reads with fewer than this many bases covering the section"
 )
 
 opt_min_finfo_read = Option(
     ("--min-finfo-read",),
     type=float,
     default=0.95,
-    help="minimum fraction of information in a read to keep it"
+    help="mask reads with less than this fraction of unambiguous base calls"
 )
 
 opt_max_fmut_read = Option(
     ("--max-fmut-read",),
     type=float,
     default=1.,
-    help="maximum fraction of mutations in a read to keep it"
+    help="mask reads with more than this fraction of mutated base calls"
 )
 
 opt_min_mut_gap = Option(
     ("--min-mut-gap",),
     type=int,
     default=3,
-    help="minimum gap between two mutations in a read to keep it (nt)"
+    help="mask reads with two mutations separated by fewer than this many bases"
 )
 
 opt_min_ninfo_pos = Option(
     ("--min-ninfo-pos",),
     type=int,
     default=2**10,
-    help="minimum information count at a position to keep it"
+    help="mask positions with fewer than this many unambiguous base calls"
 )
 
 opt_max_fmut_pos = Option(
     ("--max-fmut-pos",),
     type=float,
     default=1.,
-    help="maximum mutation fraction at a position to keep it"
+    help="mask positions with more than this fraction of mutated base calls"
 )
 
 opt_quick_unbias = Option(
     ("--quick-unbias/--exact-unbias",),
     type=bool,
     default=True,
-    help="use a quick approximation to correct observer bias in mutation rates"
+    help="correct observer bias using a quick (typically linear-time) heuristic"
 )
 
 opt_quick_unbias_thresh = Option(
     ("--quick-unbias-thresh",),
     type=float,
     default=0.005,
-    help="maximum mutation rate to consider 0 when approximating observer bias"
+    help="treat mutated fractions under this threshold as 0 with --quick-unbias"
 )
 
 # Cluster options
@@ -699,27 +698,27 @@ opt_em_runs = Option(
     ("--em-runs", "-e"),
     type=int,
     default=12,
-    help="number of independent EM runs per number of clusters"
+    help="number of independent EM runs"
 )
 
 opt_min_em_iter = Option(
     ("--min-em-iter",),
     type=int,
     default=2**3,
-    help="minimum iterations per EM run"
+    help="minimum iterations (times number of clusters) per EM run"
 )
 
 opt_max_em_iter = Option(
     ("--max-em-iter",),
     type=int,
     default=2**9,
-    help="maximum iterations per EM run"
+    help="maximum iterations (times number of clusters) per EM run"
 )
 
 opt_em_thresh = Option(
     ("--em-thresh",),
     type=float,
-    default=round(1./math.e, 3),
+    default=round(1./math.e, 2),
     help="threshold for convergence of log likelihood"
 )
 
