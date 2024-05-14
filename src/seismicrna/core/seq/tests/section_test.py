@@ -781,7 +781,7 @@ class TestSectionMaskPos(ut.TestCase):
         end3 = 26
         section = Section("myref", seq, seq5=seq5, end5=end5, end3=end3)
         section.mask_pos([19, 24, 23, 19])
-        self.assertTrue(np.array_equal(section._masks[section.MASK_POS],
+        self.assertTrue(np.array_equal(section._masks[section.MASK_LIST],
                                        np.array([19, 23, 24])))
 
 

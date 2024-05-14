@@ -322,7 +322,7 @@ class Section(object):
 
     MASK_POLYA = "pos-polya"
     MASK_GU = "pos-gu"
-    MASK_POS = "pos-user"
+    MASK_LIST = "pos-list"
 
     def __init__(self,
                  ref: str,
@@ -592,7 +592,7 @@ class Section(object):
 
     def mask_pos(self, pos: Iterable[int]):
         """ Mask arbitrary positions. """
-        self.add_mask(self.MASK_POS, pos)
+        self.add_mask(self.MASK_LIST, pos)
 
     def subsection(self,
                    end5: int | None = None,

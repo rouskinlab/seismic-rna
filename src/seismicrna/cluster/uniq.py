@@ -18,15 +18,23 @@ class UniqReads(EndCoords):
 
     @classmethod
     def from_dataset(cls, dataset: MaskMutsDataset, **kwargs):
+        ((seg_end5s, seg_end3s),
+         muts_per_pos,
+         batch_to_uniq,
+         count_per_uniq) = get_uniq_reads(dataset.section.unmasked_int,
+                                          dataset.pattern,
+                                          dataset.iter_batches(),
+                                          **kwargs)
         return cls(dataset.sample,
                    dataset.section,
                    dataset.min_mut_gap,
                    dataset.quick_unbias,
                    dataset.quick_unbias_thresh,
-                   *get_uniq_reads(dataset.section.unmasked_int,
-                                   dataset.pattern,
-                                   dataset.iter_batches(),
-                                   **kwargs))
+                   muts_per_pos,
+                   batch_to_uniq,
+                   count_per_uniq,
+                   seg_end5s=seg_end5s,
+                   seg_end3s=seg_end3s)
 
     def __init__(self,
                  sample: str,

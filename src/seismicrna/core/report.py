@@ -70,6 +70,7 @@ from .arg import (opt_phred_enc,
                   opt_max_clusters,
                   opt_exclude_gu,
                   opt_exclude_polya,
+                  opt_discontig,
                   opt_min_phred)
 from .io import FileIO, ReadBatchIO, RefIO
 from .rel import HalfRelPattern
@@ -256,7 +257,6 @@ def oconv_datetime(dtime: datetime):
 
 
 # General fields
-
 VersionF = Field("version", "version of SEISMIC-RNA", str, __version__)
 BranchesF = Field("branches", "branches", list, list())
 SampleF = Field("sample", "sample", str)
@@ -273,7 +273,6 @@ TimeTakenF = Field("taken", "time taken (minutes)", float, calc_taken,
                    oconv=get_oconv_float(TIME_TAKEN_PRECISION))
 
 # Align fields
-
 IsDemultF = Field("demultiplexed", "Use demultiplexed mode", bool)
 IsPairedEndF = Field("paired_end", "Use paired-end mode", bool)
 PhredEncF = OptionField(opt_phred_enc)
@@ -337,7 +336,6 @@ OverhangsF = OptionField(opt_overhangs)
 MinPhredF = OptionField(opt_min_phred)
 
 # Pool fields
-
 PooledSamplesF = Field("pooled_samples", "pooled samples", list)
 
 # Mask fields
@@ -354,40 +352,41 @@ CountRefsF = Field("count_refs",
 ExclPolyAF = OptionField(opt_exclude_polya)
 ExclGUF = OptionField(opt_exclude_gu)
 ExclUserPosF = Field("exclude_pos",
-                     "exclude arbitrary positions",
+                     "exclude positions from a list",
                      np.ndarray,
                      iconv=iconv_array_int,
                      oconv=oconv_array_int)
 MinNInfoPosF = OptionField(opt_min_ninfo_pos)
 MaxFMutPosF = OptionField(opt_max_fmut_pos)
 MinNCovReadF = OptionField(opt_min_ncov_read)
+DiscontigF = OptionField(opt_discontig)
 MinMutGapF = OptionField(opt_min_mut_gap)
 QuickUnbiasF = OptionField(opt_quick_unbias)
 QuickUnbiasThreshF = OptionField(opt_quick_unbias_thresh)
 MinFInfoReadF = OptionField(opt_min_finfo_read)
 MaxFMutReadF = OptionField(opt_max_fmut_read)
 PosCutPolyAF = Field("pos_polya",
-                     "positions cut -- poly(A)",
+                     "positions cut for being poly(A) sequences",
                      np.ndarray,
                      iconv=iconv_array_int,
                      oconv=oconv_array_int)
 PosCutGUF = Field("pos_gu",
-                  "positions cut -- G/U base",
+                  "positions cut for being G/U bases",
                   np.ndarray,
                   iconv=iconv_array_int,
                   oconv=oconv_array_int)
-PosCutUserF = Field("pos_user",
-                    "positions cut -- arbitrary",
+PosCutListF = Field("pos_list",
+                    "positions cut for being listed",
                     np.ndarray,
                     iconv=iconv_array_int,
                     oconv=oconv_array_int)
 PosCutLoInfoF = Field("pos_min_ninfo",
-                      "positions cut -- too few informative reads",
+                      "positions cut for insufficient information",
                       np.ndarray,
                       iconv=iconv_array_int,
                       oconv=oconv_array_int)
 PosCutHiMutF = Field("pos_max_fmut",
-                     "positions cut -- too many mutations",
+                     "positions cut for excessive mutations",
                      np.ndarray,
                      iconv=iconv_array_int,
                      oconv=oconv_array_int)
@@ -400,19 +399,19 @@ NumPosInitF = Field("n_pos_init",
                     "number of positions in total",
                     int)
 NumPosCutPolyAF = Field("n_pos_polya",
-                        "number of positions cut -- poly(A)",
+                        "number of positions cut for being poly(A) sequences",
                         int)
 NumPosCutGUF = Field("n_pos_gu",
-                     "number of positions cut -- G/U base",
+                     "number of positions cut for being G/U bases",
                      int)
-NumPosCutUserF = Field("n_pos_user",
-                       "number of positions cut -- arbitrary",
+NumPosCutListF = Field("n_pos_user",
+                       "number of positions cut for being listed",
                        int)
 NumPosCutLoInfoF = Field("n_pos_min_ninfo",
-                         "number of positions cut -- too few informative reads",
+                         "number of positions cut for insufficient information",
                          int)
 NumPosCutHiMutF = Field("n_pos_max_fmut",
-                        "number of positions cut -- too many mutations",
+                        "number of positions cut for excessive mutations",
                         int)
 NumPosKeptF = Field("n_pos_kept",
                     "number of positions kept",
@@ -421,16 +420,19 @@ NumReadsInitF = Field("n_reads_init",
                       "number of reads in total",
                       int)
 NumReadsLoNCovF = Field("n_reads_min_ncov",
-                        "number of reads cut -- too few covered positions",
+                        "number of reads cut for insufficient coverage",
                         int)
+NumDiscontigF = Field("n_reads_discontig",
+                      "number of reads cut for discontiguous mates",
+                      int)
 NumReadsLoInfoF = Field("n_reads_min_finfo",
-                        "number of reads cut -- too few informative positions",
+                        "number of reads cut for insufficient information",
                         int)
 NumReadsHiMutF = Field("n_reads_max_fmut",
-                       "number of reads cut -- too many mutations",
+                       "number of reads cut for excessive mutations",
                        int)
 NumReadsCloseMutF = Field("n_reads_min_gap",
-                          "number of reads cut -- mutations too close together",
+                          "number of reads cut for two mutations too close",
                           int)
 NumReadsKeptF = Field("n_reads_kept",
                       "number of reads kept",

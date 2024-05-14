@@ -16,7 +16,6 @@ from .count import (calc_count_per_pos,
 from .ends import EndCoords
 from .index import iter_windows
 from .read import ReadBatch, PartialReadBatch
-from ..array import get_length
 from ..rel import REL_TYPE, RelPattern
 from ..seq import Section
 
@@ -220,12 +219,7 @@ class SectionMutsBatch(MutsBatch, ABC):
 
 
 class PartialMutsBatch(MutsBatch, PartialReadBatch, ABC):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        if (rnum := get_length(self.read_nums, "read_nums")) != self.num_reads:
-            raise ValueError(f"Got different numbers of reads ({rnum}) "
-                             f"and end coordinates ({self.num_reads})")
+    pass
 
 ########################################################################
 #                                                                      #

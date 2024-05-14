@@ -25,12 +25,13 @@ from ..relate.data import RelateDataset
 logger = getLogger(__name__)
 
 
-class RelMasker(object):
+class Masker(object):
     """ Mask batches of relation vectors. """
 
     PATTERN_KEY = "pattern"
     MASK_READ_INIT = "read-init"
     MASK_READ_NCOV = "read-ncov"
+    MASK_READ_DISCONTIG = "read-discontig"
     MASK_READ_FINFO = "read-finfo"
     MASK_READ_FMUT = "read-fmut"
     MASK_READ_GAP = "read-gap"
@@ -47,7 +48,9 @@ class RelMasker(object):
                  exclude_polya: int,
                  exclude_gu: bool,
                  exclude_file: Path | None,
+                 exclude_pos: list[tuple[str, int]],
                  min_ncov_read: int,
+                 discontig: bool,
                  min_finfo_read: float,
                  max_fmut_read: float,
                  min_mut_gap: int,
@@ -77,12 +80,13 @@ class RelMasker(object):
         # Set the parameters for excluding positions from the section.
         self.exclude_polya = exclude_polya
         self.exclude_gu = exclude_gu
-        self.exclude_pos = self._get_exclude_pos(exclude_file)
+        self.exclude_pos = self._get_exclude_pos(exclude_file, exclude_pos)
         # Set the parameters for filtering reads.
         self.min_ncov_read = min_ncov_read
         self.min_mut_gap = min_mut_gap
         self.min_finfo_read = min_finfo_read
         self.max_fmut_read = max_fmut_read
+        self.discontig = discontig
         self._n_reads = defaultdict(int)
         # Set the parameters for filtering positions.
         self.min_ninfo_pos = min_ninfo_pos
@@ -102,6 +106,10 @@ class RelMasker(object):
     @property
     def n_reads_min_ncov(self):
         return self._n_reads[self.MASK_READ_NCOV]
+
+    @property
+    def n_reads_discontig(self):
+        return self._n_reads[self.MASK_READ_DISCONTIG]
 
     @property
     def n_reads_min_finfo(self):
@@ -133,9 +141,9 @@ class RelMasker(object):
         return self.section.get_mask(self.section.MASK_POLYA)
 
     @property
-    def pos_user(self):
-        """ Positions masked arbitrarily by the user. """
-        return self.section.get_mask(self.section.MASK_POS)
+    def pos_list(self):
+        """ Positions masked arbitrarily from a list. """
+        return self.section.get_mask(self.section.MASK_LIST)
 
     @property
     def pos_min_ninfo(self):
@@ -157,25 +165,28 @@ class RelMasker(object):
         """ Number of batches of reads. """
         return len(self.checksums)
 
-    def _get_exclude_pos(self, exclude_file: Path | None):
-        """ Get the positions to exclude from a file. """
+    def _get_exclude_pos(self,
+                         exclude_file: Path | None,
+                         exclude_pos: list[tuple[str, int]]):
+        """ List all positions to exclude. """
+        # Read positions to exclude from a file.
         if exclude_file is not None:
-            exclude_pos = pd.read_csv(
+            expos = pd.read_csv(
                 exclude_file,
                 index_col=[FIELD_REF, POS_NAME]
-            ).loc[self.dataset.ref].index
-            # Check if any positions are out of bounds.
-            if below := exclude_pos[exclude_pos < 1].to_list():
-                raise ValueError(f"Got excluded positions < 1: {below}")
-            seqlen = len(self.dataset.refseq)
-            if above := exclude_pos[exclude_pos > seqlen].to_list():
-                raise ValueError(f"Got excluded positions < {seqlen}: {above}")
-            # Retain only the positions in the section.
-            exclude_pos = exclude_pos[(exclude_pos >= self.section.end5)
-                                      & (exclude_pos <= self.section.end3)]
+            ).loc[self.dataset.ref].index.values
         else:
-            exclude_pos = list()
-        return np.asarray(exclude_pos, dtype=int)
+            expos = np.array([], dtype=int)
+        # Add positions to exclude from a list, then drop redundancies.
+        expos = np.unique(np.concatenate(
+            [expos,
+             np.array([pos for ref, pos in exclude_pos
+                       if ref == self.dataset.ref])]
+        ))
+        # Keep only the positions in the section.
+        return np.asarray(expos[np.logical_and(expos >= self.section.end5,
+                                               expos <= self.section.end3)],
+                          dtype=int)
 
     def _filter_min_ncov_read(self, batch: SectionMutsBatch):
         """ Filter out reads with too few covered positions. """
@@ -187,6 +198,20 @@ class RelMasker(object):
                                 >= self.min_ncov_read]
         logger.debug(f"{self} kept {reads.size} reads with coverage "
                      f"≥ {self.min_ncov_read} in {batch}")
+        # Return a new batch of only those reads.
+        return apply_mask(batch, reads)
+
+    def _filter_discontig(self, batch: SectionMutsBatch):
+        """ Filter out reads with discontiguous mates. """
+        if self.discontig:
+            # Keep discontiguous reads.
+            logger.debug(f"{self} skipped filtering reads with "
+                         f"discontiguous mates in {batch}")
+            return batch
+        # Find the reads with contiguous mates.
+        reads = batch.read_nums[batch.contiguous]
+        logger.debug(f"{self} kept {reads.size} reads with "
+                     f"contiguous mates in {batch}")
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
@@ -261,6 +286,9 @@ class RelMasker(object):
         # Remove reads with too few covered positions.
         batch = self._filter_min_ncov_read(batch)
         self._n_reads[self.MASK_READ_NCOV] += (n - (n := batch.num_reads))
+        # Remove reads with discontiguous mates.
+        batch = self._filter_discontig(batch)
+        self._n_reads[self.MASK_READ_DISCONTIG] += (n - (n := batch.num_reads))
         # Remove reads with too few informative positions.
         batch = self._filter_min_finfo_read(batch)
         self._n_reads[self.MASK_READ_FINFO] += (n - (n := batch.num_reads))
@@ -341,13 +369,13 @@ class RelMasker(object):
             n_pos_init=self.section.length,
             n_pos_gu=self.pos_gu.size,
             n_pos_polya=self.pos_polya.size,
-            n_pos_user=self.pos_user.size,
+            n_pos_user=self.pos_list.size,
             n_pos_min_ninfo=self.pos_min_ninfo.size,
             n_pos_max_fmut=self.pos_max_fmut.size,
             n_pos_kept=self.pos_kept.size,
             pos_gu=self.pos_gu,
             pos_polya=self.pos_polya,
-            pos_user=self.pos_user,
+            pos_list=self.pos_list,
             pos_min_ninfo=self.pos_min_ninfo,
             pos_max_fmut=self.pos_max_fmut,
             pos_kept=self.pos_kept,
@@ -355,8 +383,10 @@ class RelMasker(object):
             min_finfo_read=self.min_finfo_read,
             max_fmut_read=self.max_fmut_read,
             min_mut_gap=self.min_mut_gap,
+            discontig=self.discontig,
             n_reads_init=self.n_reads_init,
             n_reads_min_ncov=self.n_reads_min_ncov,
+            n_reads_discontig=self.n_reads_discontig,
             n_reads_min_finfo=self.n_reads_min_finfo,
             n_reads_max_fmut=self.n_reads_max_fmut,
             n_reads_min_gap=self.n_reads_min_gap,
@@ -387,7 +417,7 @@ def mask_section(dataset: RelateDataset | PoolDataset,
     if need_write(report_file, force):
         began = datetime.now()
         pattern = RelPattern.from_counts(count_del, count_ins, discount)
-        masker = RelMasker(dataset, section, pattern, **kwargs)
+        masker = Masker(dataset, section, pattern, **kwargs)
         masker.mask()
         ended = datetime.now()
         report = masker.create_report(began, ended)

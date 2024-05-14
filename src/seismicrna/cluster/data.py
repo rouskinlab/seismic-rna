@@ -76,7 +76,8 @@ class ClusterMutsDataset(ChainedMutsDataset):
     def _chain(self, batch1: MaskMutsBatch, batch2: ClusterBatchIO):
         return ClusterMutsBatch(batch=batch1.batch,
                                 section=batch1.section,
-                                ends=batch1.ends,
+                                seg_end5s=batch1.seg_end5s,
+                                seg_end3s=batch1.seg_end3s,
                                 muts=batch1.muts,
                                 resps=batch2.resps,
                                 sanitize=False)

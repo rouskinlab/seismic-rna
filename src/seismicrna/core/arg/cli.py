@@ -7,6 +7,7 @@ Define all command line interface (CLI) options and their defaults.
 """
 
 import logging
+import math
 import os
 from datetime import datetime
 
@@ -530,7 +531,7 @@ opt_primer_gap = Option(
 opt_min_reads = Option(
     ("--min-reads", "-N"),
     type=int,
-    default=1000,
+    default=2**10,
     help="minimum number of reads in an alignment map to keep it"
 )
 
@@ -615,6 +616,20 @@ opt_exclude_file = Option(
     help="file of arbitrary positions to exclude"
 )
 
+opt_exclude_pos = Option(
+    ("--exclude-pos",),
+    type=(str, int),
+    multiple=True,
+    help="arbitrary position to exclude"
+)
+
+opt_discontig = Option(
+    ("--discontig/--no-discontig",),
+    type=bool,
+    default=False,
+    help="keep paired-end reads with discontiguous mates"
+)
+
 opt_min_ncov_read = Option(
     ("--min-ncov-read",),
     type=int,
@@ -632,7 +647,7 @@ opt_min_finfo_read = Option(
 opt_max_fmut_read = Option(
     ("--max-fmut-read",),
     type=float,
-    default=0.1,
+    default=1.,
     help="maximum fraction of mutations in a read to keep it"
 )
 
@@ -646,15 +661,15 @@ opt_min_mut_gap = Option(
 opt_min_ninfo_pos = Option(
     ("--min-ninfo-pos",),
     type=int,
-    default=1000,
-    help="minimum information count at a position to use it"
+    default=2**10,
+    help="minimum information count at a position to keep it"
 )
 
 opt_max_fmut_pos = Option(
     ("--max-fmut-pos",),
     type=float,
-    default=0.5,
-    help="maximum mutation fraction at a position to use it"
+    default=1.,
+    help="maximum mutation fraction at a position to keep it"
 )
 
 opt_quick_unbias = Option(
@@ -677,34 +692,34 @@ opt_max_clusters = Option(
     ("--max-clusters", "-k"),
     type=int,
     default=0,
-    help="maximum number of clusters to attempt (0 to disable clustering)"
+    help="maximum number of clusters to attempt"
 )
 
 opt_em_runs = Option(
     ("--em-runs", "-e"),
     type=int,
     default=12,
-    help="number of independent EM runs for each order (number of clusters)"
+    help="number of independent EM runs per number of clusters"
 )
 
 opt_min_em_iter = Option(
     ("--min-em-iter",),
     type=int,
-    default=8,
+    default=2**3,
     help="minimum iterations per EM run"
 )
 
 opt_max_em_iter = Option(
     ("--max-em-iter",),
     type=int,
-    default=512,
+    default=2**9,
     help="maximum iterations per EM run"
 )
 
 opt_em_thresh = Option(
     ("--em-thresh",),
     type=float,
-    default=0.1,
+    default=round(1./math.e, 3),
     help="threshold for convergence of log likelihood"
 )
 
