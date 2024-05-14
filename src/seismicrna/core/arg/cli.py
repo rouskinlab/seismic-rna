@@ -957,7 +957,7 @@ opt_export = Option(
     ("--export/--no-export",),
     type=bool,
     default=False,
-    help="Export results for each sample for the SEISMICgraph web app"
+    help="Export each sample to SEISMICgraph (https://seismicrna.org)"
 )
 
 opt_samples_meta = Option(
