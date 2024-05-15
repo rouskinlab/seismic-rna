@@ -17,7 +17,7 @@ from ..core.arg import (CMD_TABLE,
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..cluster.data import load_cluster_dataset
 from ..mask.data import load_mask_dataset
-from ..pool.data import load_relate_pool_dataset
+from ..pool.data import load_relate_dataset
 
 logger = getLogger(__name__)
 
@@ -32,7 +32,7 @@ def run(input_path: tuple[str, ...], *,
         parallel: bool):
     """ Count mutations for each read and position; output tables. """
     relate_reports = path.find_files_chain(
-        input_path, load_relate_pool_dataset.report_path_seg_types
+        input_path, load_relate_dataset.report_path_seg_types
     )
     if relate_reports:
         logger.debug(f"Found relate report files: {relate_reports}")

@@ -37,7 +37,7 @@ from ..core.arg import (CMD_MASK,
 from ..core.data import load_datasets
 from ..core.parallel import dispatch
 from ..core.seq import DNA, RefSections
-from ..pool.data import load_relate_pool_dataset
+from ..pool.data import load_relate_dataset
 
 logger = getLogger(__name__)
 
@@ -50,7 +50,7 @@ def load_sections(input_path: Iterable[str | Path],
     """ Open sections of relate reports. """
     # Load all datasets, grouped by their reference names.
     datasets = defaultdict(list)
-    for dataset in load_datasets(input_path, load_relate_pool_dataset):
+    for dataset in load_datasets(input_path, load_relate_dataset):
         datasets[dataset.ref].append(dataset)
     # Determine the sections for each reference in the datasets.
     sections = RefSections({(loader.ref, loader.refseq)

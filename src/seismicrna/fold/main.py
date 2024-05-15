@@ -32,7 +32,7 @@ from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
 from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
 from ..core.rna import RNAProfile
 from ..core.seq import DNA, RefSections, RefSeqs, Section
-from ..pool.data import load_relate_pool_dataset
+from ..pool.data import load_relate_dataset
 from ..relate.report import RelateReport
 from ..table.base import MaskPosTable, ClustPosTable
 from ..table.load import load_pos_tables
@@ -150,7 +150,7 @@ def run(input_path: tuple[str, ...],
             # Fetch the reference sequence from the Relate step.
             ref_seqs.add(
                 table.ref,
-                load_relate_pool_dataset(
+                load_relate_dataset(
                     RelateReport.build_path(top=table.top,
                                             sample=table.sample,
                                             ref=table.ref)

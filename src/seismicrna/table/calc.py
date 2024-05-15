@@ -17,9 +17,10 @@ from .base import (COVER_REL,
                    SUB_T_REL,
                    UNAMB_REL,
                    TABLE_RELS)
-from ..cluster.data import ClusterMutsDataset
+from ..cluster.data import ClusterMutsDataset, load_cluster_dataset
 from ..core.array import check_naturals, triangular
 from ..core.batch import END5_COORD, END3_COORD, accum_fits
+from ..core.data import MutsDataset, UnbiasDataset
 from ..core.header import ORDER_NAME, Header, make_header
 from ..core.mu import (calc_p_ends_observed,
                        calc_p_noclose,
@@ -27,9 +28,8 @@ from ..core.mu import (calc_p_ends_observed,
                        calc_params)
 from ..core.rel import RelPattern, HalfRelPattern
 from ..core.seq import Section
-from ..mask.data import MaskMutsDataset
-from ..pool.data import PoolDataset
-from ..relate.data import RelateDataset
+from ..mask.data import load_mask_dataset
+from ..pool.data import load_relate_dataset
 
 logger = getLogger(__name__)
 
@@ -68,10 +68,8 @@ class Tabulator(ABC):
                                    table.loc[:, MUTAT_REL].values)
         return table
 
-    def __init__(self, dataset: (RelateDataset
-                                 | PoolDataset
-                                 | MaskMutsDataset
-                                 | ClusterMutsDataset)):
+    def __init__(self,
+                 dataset: MutsDataset | ClusterMutsDataset | UnbiasDataset):
         self.dataset = dataset
 
     @property
@@ -290,16 +288,6 @@ def adjust_counts(table_per_pos: pd.DataFrame,
                   quick_unbias_thresh: float):
     """ Adjust the given table of masked/clustered counts per position
     to correct for observer bias.
-
-    Parameters
-    ----------
-    p_mut_given_noclose: DataFrame
-        Counts of the bits for each type of relation (column) at each
-        position (index) in the section of interest.
-    section: Section
-        The section of interest.
-    min_mut_gap: int
-        Minimum number of non-mutated bases permitted between mutations.
     """
     # Determine which positions are unmasked.
     unmask = section.unmasked_bool
@@ -428,17 +416,14 @@ def adjust_counts(table_per_pos: pd.DataFrame,
     return n_rels, n_clust
 
 
-def tabulate_loader(dataset: (RelateDataset
-                              | PoolDataset
-                              | MaskMutsDataset
-                              | ClusterMutsDataset)):
+def tabulate_loader(dataset: MutsDataset | ClusterMutsDataset | UnbiasDataset):
     """ Return a new Dataset, choosing the subclass based on the type
     of the argument `dataset`. """
-    if isinstance(dataset, (RelateDataset, PoolDataset)):
+    if load_relate_dataset.is_dataset_type(dataset):
         return RelateTabulator(dataset)
-    if isinstance(dataset, MaskMutsDataset):
+    if load_mask_dataset.is_dataset_type(dataset):
         return MaskTabulator(dataset)
-    if isinstance(dataset, ClusterMutsDataset):
+    if load_cluster_dataset.is_dataset_type(dataset):
         return ClustTabulator(dataset)
     raise TypeError(f"Invalid dataset type: {type(dataset).__name__}")
 

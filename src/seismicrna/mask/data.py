@@ -1,9 +1,13 @@
 from functools import cached_property
 
-from .batch import apply_mask
+from .batch import MaskMutsBatch, apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
-from ..core.data import ChainedMutsDataset, LoadedDataset, LoadFunction
+from ..core.data import (ArrowDataset,
+                         LoadedDataset,
+                         LoadFunction,
+                         MergedUnbiasDataset,
+                         UnbiasDataset)
 from ..core.rel import RelPattern
 from ..core.report import (CountMutsF,
                            CountRefsF,
@@ -11,11 +15,18 @@ from ..core.report import (CountMutsF,
                            PosKeptF,
                            QuickUnbiasF,
                            QuickUnbiasThreshF)
-from ..pool.data import load_relate_pool_dataset
+from ..joinbase.data import (BATCH_NUM,
+                             READ_NUMS,
+                             SEG_END5S,
+                             SEG_END3S,
+                             MUTS,
+                             JoinMutsDataset)
+from ..joinbase.report import JoinMaskReport
+from ..pool.data import load_relate_dataset
 from ..relate.batch import RelateBatch
 
 
-class MaskReadDataset(LoadedDataset):
+class MaskReadDataset(LoadedDataset, UnbiasDataset):
     """ Load batches of masked relation vectors. """
 
     @classmethod
@@ -40,6 +51,7 @@ class MaskReadDataset(LoadedDataset):
 
     @property
     def pos_kept(self):
+        """ Positions kept after masking. """
         return self.report.get_field(PosKeptF)
 
     @cached_property
@@ -48,18 +60,22 @@ class MaskReadDataset(LoadedDataset):
                           self.report.get_field(CountRefsF))
 
 
-class MaskMutsDataset(ChainedMutsDataset):
+class MaskMutsDataset(ArrowDataset, UnbiasDataset):
     """ Chain mutation data with masked reads. """
 
     MASK_NAME = "mask"
 
     @classmethod
     def get_dataset1_load_func(cls):
-        return load_relate_pool_dataset
+        return load_relate_dataset
 
     @classmethod
     def get_dataset2_type(cls):
         return MaskReadDataset
+
+    @property
+    def pattern(self):
+        return self.data2.pattern
 
     @property
     def min_mut_gap(self):
@@ -73,26 +89,47 @@ class MaskMutsDataset(ChainedMutsDataset):
     def quick_unbias_thresh(self):
         return getattr(self.data2, "quick_unbias_thresh")
 
-    @property
-    def pattern(self):
-        return self.data2.pattern
-
     @cached_property
     def section(self):
+        # Mask the positions that were not kept.
         section = super().section
         section.add_mask(self.MASK_NAME,
                          getattr(self.data2, "pos_kept"),
                          complement=True)
         return section
 
-    def _chain(self, batch1: RelateBatch, batch2: MaskBatchIO):
+    def _integrate(self, batch1: RelateBatch, batch2: MaskBatchIO):
         return apply_mask(batch1,
                           batch2.read_nums,
                           self.section,
                           sanitize=False)
 
 
-load_mask_dataset = LoadFunction(MaskMutsDataset)
+class JoinMaskMutsDataset(JoinMutsDataset, MergedUnbiasDataset):
+
+    @classmethod
+    def get_report_type(cls):
+        return JoinMaskReport
+
+    @classmethod
+    def get_dataset_load_func(cls):
+        return load_mask_dataset
+
+    @classmethod
+    def get_batch_type(cls):
+        return MaskMutsBatch
+
+    @classmethod
+    def name_batch_attrs(cls):
+        return [BATCH_NUM, READ_NUMS, SEG_END5S, SEG_END3S, MUTS]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self._clusts is not None:
+            raise TypeError(f"{self} has no clusters, but got {self._clusts}")
+
+
+load_mask_dataset = LoadFunction(MaskMutsDataset, JoinMaskMutsDataset)
 
 ########################################################################
 #                                                                      #

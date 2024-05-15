@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from . import path
-from .batch import MutsBatch, ReadBatch, PartialMutsBatch, list_batch_nums
+from .batch import MutsBatch, ReadBatch, list_batch_nums
 from .io import MutsBatchIO, ReadBatchIO, RefseqIO
 from .rel import RelPattern
 from .report import (SampleF,
@@ -109,6 +109,26 @@ class Dataset(ABC):
         return f"{type(self).__name__} for sample {repr(self.sample)}"
 
 
+class UnbiasDataset(Dataset, ABC):
+    """ Dataset with attributes for correcting observer bias. """
+
+    @property
+    @abstractmethod
+    def min_mut_gap(self) -> int:
+        """ Minimum gap between two mutations. """
+
+    @property
+    @abstractmethod
+    def quick_unbias(self) -> bool:
+        """ Use the quick heuristic for unbiasing. """
+
+    @property
+    @abstractmethod
+    def quick_unbias_thresh(self) -> float:
+        """ Consider mutation rates less than or equal to this threshold
+        to be 0 when using the quick heuristic for unbiasing. """
+
+
 class MutsDataset(Dataset, ABC):
     """ Dataset with explicit mutational data. """
 
@@ -123,8 +143,17 @@ class MutsDataset(Dataset, ABC):
         return len(self.refseq)
 
     @cached_property
-    def section(self):
+    @abstractmethod
+    def section(self) -> Section:
         """ Section of the dataset. """
+
+
+class NarrowDataset(MutsDataset, ABC):
+    """ MutsDataset with one section, in contrast to a WideDataset that
+    unites one or more sections. """
+
+    @cached_property
+    def section(self):
         return Section(ref=self.ref,
                        seq=self.refseq,
                        end5=self.end5,
@@ -135,10 +164,8 @@ class MutsDataset(Dataset, ABC):
 class LoadFunction(object):
     """ Function to load a dataset. """
 
-    def __init__(self,
-                 dataset_type: type[Dataset | MutsDataset], /,
-                 *more_types: type[Dataset | MutsDataset]):
-        self._dataset_types = [dataset_type] + list(more_types)
+    def __init__(self, data_type: type[Dataset], /, *more_types: type[Dataset]):
+        self._dataset_types = [data_type] + list(more_types)
 
     def _dataset_type_consensus(self,
                                 method: Callable[[type[Dataset]], Any],
@@ -166,6 +193,16 @@ class LoadFunction(object):
             lambda dt: dt.get_report_type().auto_fields(),
             "automatic path fields of the report type"
         )
+
+    @property
+    def dataset_types(self):
+        """ Types of datasets that this function can load. """
+        return self._dataset_types
+
+    def is_dataset_type(self, dataset: Dataset):
+        """ Whether the dataset is one of the loadable types. """
+        return any(isinstance(dataset, dataset_type)
+                   for dataset_type in self._dataset_types)
 
     def __call__(self, report_file: Path):
         """ Load a dataset from the report file. """
@@ -272,7 +309,7 @@ class LoadedDataset(Dataset, ABC):
         return batch
 
 
-class LoadedMutsDataset(LoadedDataset, MutsDataset, ABC):
+class LoadedMutsDataset(LoadedDataset, NarrowDataset, ABC):
 
     @cached_property
     def refseq(self):
@@ -342,6 +379,22 @@ class MergedDataset(Dataset, ABC):
         return self._get_common_attr("pattern")
 
 
+class MergedUnbiasDataset(MergedDataset, UnbiasDataset, ABC):
+    """ MergedDataset with attributes for correcting observer bias. """
+
+    @property
+    def min_mut_gap(self):
+        return self._get_common_attr("min_mut_gap")
+
+    @property
+    def quick_unbias(self):
+        return self._get_common_attr("quick_unbias")
+
+    @property
+    def quick_unbias_thresh(self):
+        return self._get_common_attr("quick_unbias_thresh")
+
+
 class MergedMutsDataset(MergedDataset, MutsDataset, ABC):
     """ MergedDataset with explicit mutational data. """
 
@@ -350,8 +403,9 @@ class MergedMutsDataset(MergedDataset, MutsDataset, ABC):
         return self._get_common_attr("refseq")
 
 
-class PooledDataset(MergedDataset, ABC):
-    """ Datasets of the same type pooled from multiple samples. """
+class TallDataset(MergedDataset, NarrowDataset, ABC):
+    """ Dataset made by vertically pooling other datasets from one or
+    more samples aligned to the same reference sequence. """
 
     @classmethod
     def load(cls, report_file: Path):
@@ -417,7 +471,7 @@ class PooledDataset(MergedDataset, ABC):
                 return dataset_num, dataset_batch_num
             dataset_batch_num -= num_batches
         raise ValueError(f"Batch {batch_num} is invalid for {self} with "
-                         f"{self.num_batches} batches")
+                         f"{self.num_batches} batch(es)")
 
     def get_batch(self, batch_num: int):
         # Determine the dataset and the batch number in that dataset.
@@ -430,12 +484,13 @@ class PooledDataset(MergedDataset, ABC):
         return batch
 
 
-class PooledMutsDataset(PooledDataset, MergedMutsDataset, ABC):
-    """ PooledDataset with explicit mutational data. """
+class TallMutsDataset(TallDataset, MergedMutsDataset, ABC):
+    """ TallDataset with mutational data. """
 
 
-class JoinedMutsDataset(MergedMutsDataset, ABC):
-    """ Dataset joining multiple sections from the same sample. """
+class WideDataset(MergedMutsDataset, ABC):
+    """ Dataset made by horizontally joining other datasets from one or
+    more sections of the same reference sequence. """
 
     @classmethod
     def load(cls, report_file: Path):
@@ -461,7 +516,7 @@ class JoinedMutsDataset(MergedMutsDataset, ABC):
     def __init__(self,
                  sect: str,
                  clusts: dict | None,
-                 datasets: Iterable[MutsDataset]):
+                 datasets: Iterable[Dataset]):
         self._sect = sect
         self._clusts = clusts
         super().__init__(datasets)
@@ -481,7 +536,6 @@ class JoinedMutsDataset(MergedMutsDataset, ABC):
 
     @cached_property
     def section(self):
-        """ Joined section. """
         return unite(*self._list_dataset_attr("section"),
                      name=self._sect,
                      refseq=self.refseq)
@@ -499,8 +553,7 @@ class JoinedMutsDataset(MergedMutsDataset, ABC):
         return self.section.end3
 
     @abstractmethod
-    def _join(self,
-              batches: Iterable[tuple[str, MutsBatch]]) -> PartialMutsBatch:
+    def _join(self, batches: Iterable[tuple[str, ReadBatch]]) -> ReadBatch:
         """ Join corresponding batches of data. """
 
     def get_batch(self, batch_num: int):
@@ -509,9 +562,9 @@ class JoinedMutsDataset(MergedMutsDataset, ABC):
                           for dataset in self._datasets)
 
 
-class ChainedDataset(Dataset, ABC):
-    """ A Dataset created with a function that accepts two datasets and
-    returns a third "chained" dataset. """
+class MultistepDataset(MutsDataset, ABC):
+    """ Dataset made by integrating two datasets from different steps of
+    the workflow. """
 
     @classmethod
     @abstractmethod
@@ -520,7 +573,7 @@ class ChainedDataset(Dataset, ABC):
 
     @classmethod
     @abstractmethod
-    def get_dataset2_type(cls) -> type[Dataset | MutsDataset]:
+    def get_dataset2_type(cls) -> type[Dataset]:
         """ Type of Dataset 2. """
 
     @classmethod
@@ -578,36 +631,21 @@ class ChainedDataset(Dataset, ABC):
                              f"{self.data1} ({val1}) and {self.data2} ({val2})")
         return val1
 
-    @property
+    @cached_property
     def top(self):
         return self._get_data_attr("top")
 
-    @property
+    @cached_property
     def sample(self):
         return self._get_data_attr("sample")
 
-    @property
+    @cached_property
     def ref(self):
         return self._get_data_attr("ref")
 
     @property
     def refseq(self):
         return self.data1.refseq
-
-    @abstractmethod
-    def _chain(self, batch1: MutsBatch, batch2: ReadBatch) -> MutsBatch:
-        """ Chain together corresponding batches of data. """
-
-    @property
-    def num_batches(self):
-        return self._get_data_attr("num_batches")
-
-    def get_batch(self, batch_num: int):
-        return self._chain(self.data1.get_batch(batch_num),
-                           self.data2.get_batch(batch_num))
-
-
-class ChainedMutsDataset(ChainedDataset, MutsDataset, ABC):
 
     @property
     def end5(self):
@@ -620,6 +658,23 @@ class ChainedMutsDataset(ChainedDataset, MutsDataset, ABC):
     @property
     def sect(self):
         return self.data2.sect
+
+    @abstractmethod
+    def _integrate(self, batch1: MutsBatch, batch2: ReadBatch) -> MutsBatch:
+        """ Integrate corresponding batches of data. """
+
+    @property
+    def num_batches(self):
+        return self._get_data_attr("num_batches")
+
+    def get_batch(self, batch_num: int):
+        return self._integrate(self.data1.get_batch(batch_num),
+                               self.data2.get_batch(batch_num))
+
+
+class ArrowDataset(MultistepDataset, NarrowDataset, ABC):
+    """ Dataset made by integrating two datasets from different steps of
+    the workflow, with one section. """
 
 
 def load_datasets(input_path: Iterable[str | Path], load_func: LoadFunction):

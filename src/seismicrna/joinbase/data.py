@@ -3,21 +3,11 @@ from functools import cached_property
 from typing import Any, Iterable
 
 import numpy as np
-import pandas as pd
 
-from .report import JoinMaskReport, JoinClusterReport
-from ..cluster.batch import ClusterMutsBatch
-from ..cluster.data import ClusterReadDataset, ClusterMutsDataset
 from ..core.array import locate_elements
 from ..core.batch import MutsBatch, match_reads_segments
-from ..core.data import LoadFunction, JoinedMutsDataset
-from ..core.header import (ClustHeader,
-                           index_orders_clusts,
-                           list_clusts,
-                           list_orders)
+from ..core.data import WideDataset
 from ..core.seq import Section
-from ..mask.batch import MaskMutsBatch
-from ..mask.data import MaskMutsDataset
 
 BATCH_NUM = "batch"
 READ_NUMS = "read_nums"
@@ -103,12 +93,12 @@ def _join_attrs(attrs: dict[str, Any],
                    for pos in section.unmasked_int}
 
 
-class JoinMutsDataset(JoinedMutsDataset, ABC):
+class JoinMutsDataset(WideDataset, ABC):
 
     @classmethod
     @abstractmethod
     def get_batch_type(cls) -> type[MutsBatch]:
-        """ Type of the batch. """
+        """ Type of batch. """
 
     @classmethod
     @abstractmethod
@@ -123,135 +113,35 @@ class JoinMutsDataset(JoinedMutsDataset, ABC):
                             f"but got {type(batch).__name__}")
 
     @classmethod
-    def _get_batch_attrs(cls, batch: MutsBatch):
-        """ Get the values of the attributes from a batch. """
-        cls.check_batch_type(batch)
-        return {attr: getattr(batch, attr) for attr in cls.name_batch_attrs()}
-
-    @classmethod
     def _get_first_batch(cls, batches: Iterable[tuple[str, MutsBatch]]):
         """ Get the first batch; raise ValueError if no batches. """
-        for _, batch in batches:
+        for sect, batch in batches:
             cls.check_batch_type(batch)
-            return batch
+            return batch, sect
         raise ValueError("Cannot get first batch among 0 batches")
-
-    def _join_attrs(self, attrs: dict[str, Any], add_attrs: dict[str, Any]):
-        """ Join the attributes from a new batch. """
-        return _join_attrs(attrs, add_attrs, self.section)
-
-    def _join(self, batches: Iterable[tuple[str, MutsBatch]]):
-        attrs = self._get_batch_attrs(self._get_first_batch(batches))
-        for _, batch in batches:
-            self._join_attrs(attrs, self._get_batch_attrs(batch))
-        return self.get_batch_type()(section=self.section, **attrs)
-
-
-class JoinMaskMutsDataset(JoinMutsDataset):
-
-    @classmethod
-    def get_report_type(cls):
-        return JoinMaskReport
-
-    @classmethod
-    def get_dataset_load_func(cls):
-        return LoadFunction(MaskMutsDataset)
-
-    @classmethod
-    def get_batch_type(cls):
-        return MaskMutsBatch
-
-    @classmethod
-    def name_batch_attrs(cls):
-        return [BATCH_NUM, READ_NUMS, SEG_END5S, SEG_END3S, MUTS]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self._clusts is not None:
-            raise TypeError(f"{self} has no clusters, but got {self._clusts}")
 
     @cached_property
     def min_mut_gap(self):
         return self._get_common_attr("min_mut_gap")
 
+    def _get_batch_attrs(self, batch: MutsBatch, _: str):
+        """ Get the values of the attributes from a batch. """
+        self.check_batch_type(batch)
+        return {attr: getattr(batch, attr) for attr in self.name_batch_attrs()}
 
-class JoinClusterReadDataset(JoinedMutsDataset):
+    def _join_attrs(self, attrs: dict[str, Any], add_attrs: dict[str, Any]):
+        """ Join the attributes from a new batch. """
+        _join_attrs(attrs, add_attrs, self.section)
 
-    @classmethod
-    def get_report_type(cls):
-        return JoinClusterReport
+    def _finalize_attrs(self, attrs: dict[str, Any]):
+        """ Finalize the attributes. """
 
-    @classmethod
-    def get_dataset_load_func(cls):
-        return LoadFunction(ClusterReadDataset)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if not self._clusts:
-            self._clusts = {sect: {order: {clust: clust
-                                           for clust in list_clusts(order)}
-                                   for order in list_orders(self.max_order)}
-                            for sect in self.sects}
-        if sorted(self._clusts) != sorted(self.sects):
-            raise ValueError(f"{self} expected clusters for {self.sects}, "
-                             f"but got {self._clusts}")
-
-    @cached_property
-    def max_order(self):
-        return self._get_common_attr("max_order")
-
-    @cached_property
-    def clusts(self):
-        """ Index of order and cluster numbers. """
-        return index_orders_clusts(self.max_order)
-
-    def _sect_cols(self, sect: str):
-        """ Get the columns for a section's responsibilities. """
-        clusts = self._clusts[sect]
-        return pd.MultiIndex.from_tuples(
-            [(order, clusts[order][clust])
-             for order, clust in self.clusts],
-            names=ClustHeader.level_names()
-        )
-
-    def _sect_resps(self, sect: str, resps: pd.DataFrame):
-        """ Get the cluster responsibilities for a section. """
-        # Reorder the columns.
-        reordered = resps.loc[:, self._sect_cols(sect)]
-        # Rename the columns by increasing order and cluster.
-        reordered.columns = self.clusts
-        return reordered
-
-    def _join(self, batches: Iterable[tuple[str, ClusterMutsBatch]]):
-        batch_num = None
-        resps = None
+    def _join(self, batches: Iterable[tuple[str, MutsBatch]]):
+        attrs = self._get_batch_attrs(*self._get_first_batch(batches))
         for sect, batch in batches:
-            if batch_num is None:
-                batch_num = batch.batch
-            elif batch.batch != batch_num:
-                raise ValueError(
-                    f"Inconsistent batch number: {batch_num} ≠ {batch.batch}"
-                )
-            if resps is None:
-                resps = self._sect_resps(sect, batch.resps)
-            else:
-                resps = resps.add(self._sect_resps(sect, batch.resps),
-                                  fill_value=0.)
-        if batch_num is None:
-            raise ValueError("No batches were given to join")
-        return ClusterMutsBatch(batch=batch_num,
-                                resps=resps.fillna(0.).sort_index())
-
-
-class JoinClusterMutsDataset(JoinMutsDataset, ClusterMutsDataset):
-
-    @classmethod
-    def get_dataset1_load_func(cls):
-        return LoadFunction(JoinMaskMutsDataset)
-
-    @classmethod
-    def get_dataset2_type(cls):
-        return JoinClusterReadDataset
+            self._join_attrs(attrs, self._get_batch_attrs(batch, sect))
+        self._finalize_attrs(attrs)
+        return self.get_batch_type()(section=self.section, **attrs)
 
 ########################################################################
 #                                                                      #

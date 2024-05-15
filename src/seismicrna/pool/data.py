@@ -1,9 +1,9 @@
 from .report import PoolReport
-from ..core.data import LoadFunction, PooledMutsDataset
+from ..core.data import LoadFunction, TallMutsDataset
 from ..relate.data import RelateDataset
 
 
-class PoolDataset(PooledMutsDataset):
+class PoolDataset(TallMutsDataset):
     """ Load pooled batches of relation vectors. """
 
     @classmethod
@@ -12,10 +12,10 @@ class PoolDataset(PooledMutsDataset):
 
     @classmethod
     def get_dataset_load_func(cls):
-        return load_relate_pool_dataset
+        return load_relate_dataset
 
 
-load_relate_pool_dataset = LoadFunction(RelateDataset, PoolDataset)
+load_relate_dataset = LoadFunction(RelateDataset, PoolDataset)
 
 ########################################################################
 #                                                                      #

@@ -6,7 +6,7 @@ from typing import Iterable
 
 from click import command
 
-from .data import PoolDataset, load_relate_pool_dataset
+from .data import PoolDataset, load_relate_dataset
 from .report import PoolReport
 from ..core.arg import (CMD_POOL,
                         docdef,
@@ -110,7 +110,7 @@ def run(input_path: tuple[str, ...], *,
         return list()
     # Group the datasets by output directory and reference name.
     pools = defaultdict(list)
-    for dataset in load_datasets(input_path, load_relate_pool_dataset):
+    for dataset in load_datasets(input_path, load_relate_dataset):
         # Check whether the dataset was pooled.
         if isinstance(dataset, PoolDataset):
             # If so, then use all samples in the pool.
