@@ -79,29 +79,6 @@ class TestCalcInverse(ut.TestCase):
         expect = np.array([-1, 4, -1, 2, 0, -1, -1, 1, 3])
         self.assertTrue(np.array_equal(calc_inverse(target), expect))
 
-    def test_calc_inverse_max10(self):
-        """ Invert an array with a known inverse. """
-        target = np.array([4, 7, 3, 8, 1])
-        expect = np.array([-1, 4, -1, 2, 0, -1, -1, 1, 3, -1, -1])
-        self.assertTrue(np.array_equal(calc_inverse(target, maximum=10),
-                                       expect))
-
-    def test_calc_inverse_fill_fwd(self):
-        """ Invert an array with a known inverse; fill forward. """
-        target = np.array([4, 7, 3, 8, 1])
-        expect = np.array([-1, 4, 4, 2, 0, 0, 0, 1, 3])
-        self.assertTrue(np.array_equal(calc_inverse(target, fill=True),
-                                       expect))
-
-    def test_calc_inverse_fill_rev(self):
-        """ Invert an array with a known inverse; fill reverse. """
-        target = np.array([4, 7, 3, 8, 1])
-        expect = np.array([4, 4, 2, 2, 0, 1, 1, 1, 3])
-        self.assertTrue(np.array_equal(
-            calc_inverse(target, fill=True, fill_rev=True),
-            expect)
-        )
-
     def test_is_inverse(self):
         """ Verify every position in the inverse of a random array. """
         target = rng.choice(16, 8, replace=False)

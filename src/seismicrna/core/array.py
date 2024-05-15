@@ -1,10 +1,18 @@
-from typing import Iterable, Sequence
+from typing import Any, Iterable, Sequence
 
 import numpy as np
 import pandas as pd
 from numba import jit
 
 from .types import UINT_NBYTES, fit_uint_type, get_uint_type
+
+
+def _unpack_tuple(items: Any):
+    """ If items is a length-1 tuple, then return its single item;
+    otherwise, return the items unchanged. """
+    if isinstance(items, tuple) and len(items) == 1:
+        return items[0]
+    return items
 
 
 def list_naturals(n: int):
@@ -33,62 +41,38 @@ def get_length(array: np.ndarray, what: str = "array") -> int:
     return length
 
 
-@jit()
-def _fill_inverse_fwd(inverse: np.ndarray):
-    """ Fill missing indexes in `inverse` in forward order. """
-    fill = inverse[0]
-    for i in range(1, inverse.size):
-        if inverse[i] == -1:
-            inverse[i] = fill
-        else:
-            fill = inverse[i]
-
-
-@jit()
-def _fill_inverse_rev(inverse: np.ndarray):
-    """ Fill missing indexes in `inverse` in reverse order. """
-    fill = inverse[-1]
-    for i in range(inverse.size - 2, -1, -1):
-        if inverse[i] == -1:
-            inverse[i] = fill
-        else:
-            fill = inverse[i]
-
-
 def calc_inverse(target: np.ndarray,
-                 maximum: int = -1,
-                 fill: bool = False,
-                 fill_rev: bool = False,
                  what: str = "array",
                  verify: bool = True):
-    """ Map integers in [0, max(target)] to their 0-based indexes in
-    `target`, or to -1 if not in `target`.
+    """ Calculate the inverse of `target`, such that if element i of
+    `target` has value x, then element x of the inverse has value i.
+
+    >>> list(calc_inverse(np.array([3, 2, 7, 5, 1])))
+    [-1, 4, 1, 0, -1, 3, -1, 2]
+    >>> list(calc_inverse(np.arange(5)))
+    [0, 1, 2, 3, 4]
 
     Parameters
     ----------
     target: np.ndarray
-        Target values; all must be unique, non-negative integers.
-    maximum: int = -1
-        Maximum value for the target; will be computed if left at -1.
-    fill: bool = False
-        Fill missing indexes (that do not appear in `target`).
-    fill_rev: bool = False
-        Fill missing indexes in reverse order instead of forward order;
-        has an effect only if `fill` is True.
+        Target values; must be a 1-dimensional array of non-negative
+        integers with no duplicate values.
     what: str = "array"
         What to name the array (only used for error messages).
     verify: bool = True
         Verify that all target values are unique, non-negative integers.
-        If this assumption is incorrect and verify is False, then the
-        results of this function will be incorrect.
+        If this is incorrect, then if `verify` is True, then ValueError
+        will be raised; and if False, then the results of this function
+        will be incorrect. Always set to True unless you have already
+        verified that `target` is unique, non-negative integers.
 
     Returns
     -------
     np.ndarray
-        Inverse of target, such that
+        Inverse of `target`.
     """
     length = get_length(target, what)
-    if not length:
+    if length == 0:
         # If target is empty, then return an empty inverse.
         return np.full(0, -1)
     if verify:
@@ -107,21 +91,49 @@ def calc_inverse(target: np.ndarray,
     # Create a 1-dimensional array whose length is one greater than the
     # maximum value of target, so that the array has every index in the
     # range [0, max(target)]; initialize all elements to placeholder -1.
-    if maximum < 0:
-        maximum = target.max()
-        if maximum < 0:
-            raise ValueError(f"Maximum target must be ≥ 0, but got {maximum}")
-    inverse = np.full(maximum + 1, -1)
+    inverse = np.full(target.max() + 1, -1)
     # For each value n with index i in target, set the value at index n
     # of inverse to i.
     inverse[target] = np.arange(length)
-    if fill:
-        # Fill missing values in inverse.
-        if fill_rev:
-            _fill_inverse_rev(inverse)
-        else:
-            _fill_inverse_fwd(inverse)
     return inverse
+
+
+def locate_elements(collection: np.ndarray,
+                    *elements: np.ndarray,
+                    what: str = "collection",
+                    verify: bool = True):
+    """ Find the index at which each element of `elements` occurs in
+    `collection`.
+
+    >>> list(locate_elements(np.array([4, 1, 2, 7, 5, 3]), np.array([5, 2, 5])))
+    [4, 2, 4]
+
+    Parameters
+    ----------
+    collection: np.ndarray
+        Collection in which to find each element in `elements`; must be
+        a 1-dimensional array of non-negative integers with no duplicate
+        values.
+    *elements: np.ndarray
+        Elements to find; must be a 1-dimensional array that is a subset
+        of `collection`, although duplicate values are permitted.
+    what: str = "collection"
+        What to name the collection (only used for error messages).
+    verify: bool = True
+        Verify that all values in `collection` are unique, non-negative
+        integers and that all items in `elements` are in `collections`.
+
+    Returns
+    -------
+    np.ndarray
+        Index of each element of `elements` in `collections`.
+    """
+    if verify:
+        for e in elements:
+            if get_length(extras := e[np.isin(e, collection, invert=True)]):
+                raise ValueError(f"Elements {extras} are not in {what}")
+    inverse = calc_inverse(collection, what, verify)
+    return _unpack_tuple(tuple(inverse[e] for e in elements))
 
 
 def ensure_same_length(arr1: np.ndarray,
@@ -283,6 +295,7 @@ def find_dims(dims: Sequence[Sequence[str | None]],
     return sizes
 
 
+# Use @jit() because triangular is called by other jitted functions.
 @jit()
 def triangular(n: int):
     """ The `n` th triangular number (`n` ≥ 0): number of items in an

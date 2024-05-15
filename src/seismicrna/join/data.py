@@ -1,30 +1,107 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Iterable
+from typing import Any, Iterable
 
 import numpy as np
 import pandas as pd
 
 from .report import JoinMaskReport, JoinClusterReport
-from ..cluster.batch import ClusterReadBatch
+from ..cluster.batch import ClusterMutsBatch
 from ..cluster.data import ClusterReadDataset, ClusterMutsDataset
-from ..core.data import LoadFunction, JoinedDataset, ChainedMutsDataset
+from ..core.array import locate_elements
+from ..core.batch import MutsBatch
+from ..core.data import LoadFunction, JoinedMutsDataset
 from ..core.header import (ClustHeader,
                            index_orders_clusts,
                            list_clusts,
                            list_orders)
-from ..mask.batch import MaskReadBatch
-from ..mask.data import MaskReadDataset, MaskMutsDataset
+from ..mask.batch import MaskMutsBatch
+from ..mask.data import MaskMutsDataset
+
+BATCH_NUM = "batch"
+READ_NUMS = "read_nums"
+SEG_END5S = "seg_end5s"
+SEG_END3S = "seg_end3s"
+MUTS = "muts"
+RESPS = "resps"
 
 
-class JoinMutsDataset(ChainedMutsDataset, ABC):
+class JoinMutsDataset(JoinedMutsDataset, ABC):
 
-    @property
-    def sects(self):
-        return getattr(self.data2, "sects")
+    @classmethod
+    @abstractmethod
+    def get_batch_type(cls) -> type[MutsBatch]:
+        """ Type of the batch. """
+
+    @classmethod
+    @abstractmethod
+    def name_batch_attrs(cls) -> list[str]:
+        """ Name the attributes of each batch. """
+
+    @classmethod
+    def check_batch_type(cls, batch: MutsBatch):
+        """ Raise TypeError if the batch is the incorrect type. """
+        if not isinstance(batch, cls.get_batch_type()):
+            raise TypeError(f"Expected {cls.get_batch_type().__name__}, "
+                            f"but got {type(batch).__name__}")
+
+    @classmethod
+    def _get_batch_attrs(cls, batch: MutsBatch):
+        """ Get the values of the attributes from a batch. """
+        cls.check_batch_type(batch)
+        return {attr: getattr(batch, attr) for attr in cls.name_batch_attrs()}
+
+    @classmethod
+    def _get_first_batch(cls, batches: Iterable[tuple[str, MutsBatch]]):
+        """ Get the first batch; raise ValueError if no batches. """
+        for _, batch in batches:
+            cls.check_batch_type(batch)
+            return batch
+        raise ValueError("Cannot get first batch among 0 batches")
+
+    def _update_attrs(self, attrs: dict[str, Any], add_attrs: dict[str, Any]):
+        """ Update the attributes from another batch. """
+        # Verify the batch number matches (but no need to update).
+        if attrs[BATCH_NUM] != add_attrs[BATCH_NUM]:
+            raise ValueError(f"Inconsistent batch number ({attrs[BATCH_NUM]} "
+                             f"≠ {add_attrs[BATCH_NUM]})")
+        # Merge the read numbers and find the indexes of the original
+        # read numbers in the combined array.
+        union_read_nums = np.union1d(attrs[READ_NUMS], add_attrs[READ_NUMS])
+        read_indexes, add_read_indexes = locate_elements(union_read_nums,
+                                                         attrs[READ_NUMS],
+                                                         add_attrs[READ_NUMS],
+                                                         what="read_nums",
+                                                         verify=False)
+        attrs[READ_NUMS] = union_read_nums
+        # Merge the end coordinates, setting the 5' and 3' ends of any
+        # missing segments to 1 and 0, respectively.
+        num_reads, = attrs[READ_NUMS].shape
+        _, num_segs = attrs[SEG_END5S].shape
+        _, add_num_segs = add_attrs[SEG_END5S].shape
+        seg_end5s = np.full((num_reads, num_segs), self.end3)
+        seg_end3s = np.full((num_reads, num_segs), self.end5)
+        add_seg_end5s = np.full((num_reads, add_num_segs), self.end3)
+        add_seg_end3s = np.full((num_reads, add_num_segs), self.end5)
+        seg_end5s[read_indexes] = attrs[SEG_END5S]
+        seg_end3s[read_indexes] = attrs[SEG_END3S]
+        add_seg_end5s[add_read_indexes] = add_attrs[SEG_END5S]
+        add_seg_end3s[add_read_indexes] = add_attrs[SEG_END3S]
+        attrs[SEG_END5S] = np.hstack([seg_end5s, add_seg_end5s])
+        attrs[SEG_END3S] = np.hstack([seg_end3s, add_seg_end3s])
+        # Merge the mutations.
+        # FIXME
+        attrs[MUTS] = {pos: attrs[MUTS].get(pos, dict()) for pos in self.section.unmasked_int}
 
 
-class JoinMaskReadDataset(JoinedDataset):
+    def _join(self, batches: Iterable[tuple[str, MutsBatch]]):
+        attrs = self._get_batch_attrs(self._get_first_batch(batches))
+        for _, batch in batches:
+            self._update_attrs(attrs, self._get_batch_attrs(batch))
+        return self.get_batch_type()(section=self.section, **attrs)
+
+
+class JoinMaskMutsDataset(JoinMutsDataset):
 
     @classmethod
     def get_report_type(cls):
@@ -32,7 +109,15 @@ class JoinMaskReadDataset(JoinedDataset):
 
     @classmethod
     def get_dataset_load_func(cls):
-        return LoadFunction(MaskReadDataset)
+        return LoadFunction(MaskMutsDataset)
+
+    @classmethod
+    def get_batch_type(cls):
+        return MaskMutsBatch
+
+    @classmethod
+    def name_batch_attrs(cls):
+        return [BATCH_NUM, READ_NUMS, SEG_END5S, SEG_END3S, MUTS]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -43,46 +128,8 @@ class JoinMaskReadDataset(JoinedDataset):
     def min_mut_gap(self):
         return self._get_common_attr("min_mut_gap")
 
-    @cached_property
-    def pos_kept(self):
-        # Take the union of all positions kept among all datasets.
-        pos_kept = None
-        for data_pos in self._list_dataset_attr("pos_kept"):
-            if pos_kept is not None:
-                pos_kept = np.union1d(pos_kept, data_pos)
-            else:
-                pos_kept = data_pos
-        if pos_kept is None:
-            raise ValueError("Got no datasets to determine positions kept")
-        return pos_kept
 
-    def _join(self, batches: Iterable[tuple[str, MaskReadBatch]]):
-        batch_num = None
-        read_nums = None
-        for _, batch in batches:
-            if batch_num is None:
-                batch_num = batch.batch
-            elif batch.batch != batch_num:
-                raise ValueError(
-                    f"Inconsistent batch number: {batch_num} ≠ {batch.batch}"
-                )
-            if read_nums is None:
-                read_nums = batch.read_nums
-            else:
-                read_nums = np.union1d(read_nums, batch.read_nums)
-        if batch_num is None:
-            raise ValueError("No batches were given to join")
-        return MaskReadBatch(batch=batch_num, read_nums=read_nums)
-
-
-class JoinMaskMutsDataset(JoinMutsDataset, MaskMutsDataset):
-
-    @classmethod
-    def get_dataset2_type(cls):
-        return JoinMaskReadDataset
-
-
-class JoinClusterReadDataset(JoinedDataset):
+class JoinClusterReadDataset(JoinedMutsDataset):
 
     @classmethod
     def get_report_type(cls):
@@ -129,7 +176,7 @@ class JoinClusterReadDataset(JoinedDataset):
         reordered.columns = self.clusts
         return reordered
 
-    def _join(self, batches: Iterable[tuple[str, ClusterReadBatch]]):
+    def _join(self, batches: Iterable[tuple[str, ClusterMutsBatch]]):
         batch_num = None
         resps = None
         for sect, batch in batches:
@@ -146,7 +193,7 @@ class JoinClusterReadDataset(JoinedDataset):
                                   fill_value=0.)
         if batch_num is None:
             raise ValueError("No batches were given to join")
-        return ClusterReadBatch(batch=batch_num,
+        return ClusterMutsBatch(batch=batch_num,
                                 resps=resps.fillna(0.).sort_index())
 
 

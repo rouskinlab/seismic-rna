@@ -792,7 +792,7 @@ def unite(*sections: Section,
     for s in sections[1:]:
         unmasked = np.union1d(s.unmasked_int, unmasked)
     if unmasked.size < union.size:
-        union.add_mask("union", unmasked, complement=True)
+        union.add_mask("gaps", unmasked, complement=True)
     return union
 
 

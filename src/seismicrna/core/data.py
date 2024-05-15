@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from . import path
-from .batch import MutsBatch, ReadBatch, PartialReadBatch, list_batch_nums
+from .batch import MutsBatch, ReadBatch, PartialMutsBatch, list_batch_nums
 from .io import MutsBatchIO, ReadBatchIO, RefseqIO
 from .rel import RelPattern
 from .report import (SampleF,
@@ -21,7 +21,7 @@ from .report import (SampleF,
                      JoinedClustersF,
                      Report,
                      BatchedReport)
-from .seq import FULL_NAME, DNA, Section, hyphenate_ends
+from .seq import FULL_NAME, DNA, Section, hyphenate_ends, unite
 
 logger = getLogger(__name__)
 
@@ -92,8 +92,7 @@ class Dataset(ABC):
         return list_batch_nums(self.num_batches)
 
     @abstractmethod
-    def get_batch(self, batch_num: int
-                  ) -> ReadBatch | MutsBatch | PartialReadBatch:
+    def get_batch(self, batch_num: int) -> ReadBatch:
         """ Get a specific batch of data. """
 
     def iter_batches(self):
@@ -112,13 +111,6 @@ class Dataset(ABC):
 
 class MutsDataset(Dataset, ABC):
     """ Dataset with explicit mutational data. """
-
-    @classmethod
-    @abstractmethod
-    def load(cls, report_file: Path):
-        # This method is repeated here to make type linters understand
-        # that MutsDataset.load() returns a MutsDataset instance.
-        return cls()
 
     @property
     @abstractmethod
@@ -442,7 +434,7 @@ class PooledMutsDataset(PooledDataset, MergedMutsDataset, ABC):
     """ PooledDataset with explicit mutational data. """
 
 
-class JoinedDataset(MergedDataset, ABC):
+class JoinedMutsDataset(MergedMutsDataset, ABC):
     """ Dataset joining multiple sections from the same sample. """
 
     @classmethod
@@ -469,31 +461,18 @@ class JoinedDataset(MergedDataset, ABC):
     def __init__(self,
                  sect: str,
                  clusts: dict | None,
-                 datasets: Iterable[Dataset]):
+                 datasets: Iterable[MutsDataset]):
         self._sect = sect
         self._clusts = clusts
         super().__init__(datasets)
 
     @cached_property
+    def num_batches(self):
+        return self._get_common_attr("num_batches")
+
+    @cached_property
     def sample(self):
         return self._get_common_attr("sample")
-
-    @cached_property
-    def samples(self) -> list[str]:
-        """ Name of the sample for each dataset in the pool. """
-        return self._list_dataset_attr("sample")
-
-    @cached_property
-    def end5(self):
-        return min(self._list_dataset_attr("end5"))
-
-    @cached_property
-    def end3(self):
-        return max(self._list_dataset_attr("end3"))
-
-    @property
-    def sect(self):
-        return self._sect
 
     @cached_property
     def sects(self):
@@ -501,12 +480,27 @@ class JoinedDataset(MergedDataset, ABC):
         return self._list_dataset_attr("sect")
 
     @cached_property
-    def num_batches(self):
-        return self._get_common_attr("num_batches")
+    def section(self):
+        """ Joined section. """
+        return unite(*self._list_dataset_attr("section"),
+                     name=self._sect,
+                     refseq=self.refseq)
+
+    @property
+    def sect(self):
+        return self.section.name
+
+    @cached_property
+    def end5(self):
+        return self.section.end5
+
+    @cached_property
+    def end3(self):
+        return self.section.end3
 
     @abstractmethod
-    def _join(self, batches: Iterable[tuple[str, PartialReadBatch]]
-              ) -> PartialReadBatch:
+    def _join(self,
+              batches: Iterable[tuple[str, MutsBatch]]) -> PartialMutsBatch:
         """ Join corresponding batches of data. """
 
     def get_batch(self, batch_num: int):
