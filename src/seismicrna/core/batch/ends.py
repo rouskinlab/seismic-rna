@@ -143,13 +143,13 @@ def sanitize_segment_ends(seg_end5s: np.ndarray,
             ensure_order(seg_end3s[:, i],
                          np.broadcast_to(min_pos - 1, num_reads),
                          f"segment {i} 3' coordinates",
-                         f"minimum position ({min_pos})",
+                         f"minimum position - 1 ({min_pos - 1})",
                          gt_eq=True)
             # All coordinates must be ≤ max position
             ensure_order(seg_end5s[:, i],
                          np.broadcast_to(max_pos + 1, num_reads),
                          f"segment {i} 5' coordinates",
-                         f"maximum position ({max_pos})")
+                         f"maximum position + 1 ({max_pos + 1})")
             ensure_order(seg_end3s[:, i],
                          np.broadcast_to(max_pos, num_reads),
                          f"segment {i} 3' coordinates",
