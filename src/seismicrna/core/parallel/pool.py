@@ -1,9 +1,9 @@
 from concurrent.futures import Future, ProcessPoolExecutor
 from itertools import chain, filterfalse, repeat
-from logging import getLogger
+from logging import DEBUG, getLogger
 from typing import Any, Callable, Iterable
 
-from ..logs import config, get_config
+from ..logs import set_config, get_config
 
 logger = getLogger(__name__)
 
@@ -103,13 +103,15 @@ class Task(object):
             # as the parent process (this seems to be system dependent).
             # If not, then this task's top logger must be configured to
             # match the configuration of the parent process.
-            config(*self._config)
+            set_config(*self._config)
         task = fmt_func_args(self._func, *args, **kwargs)
         logger.debug(f"Began task {task}")
         try:
             result = self._func(*args, **kwargs)
         except Exception as error:
-            logger.error(f"Failed task {task}:\n{error}\n", exc_info=True)
+            # Print a traceback if the logging level is at the maximum.
+            exc_info = logger.getEffectiveLevel() <= DEBUG
+            logger.error(f"Failed task {task}:\n{error}\n", exc_info=exc_info)
         else:
             logger.debug(f"Ended task {task}:\n{result}\n")
             return result

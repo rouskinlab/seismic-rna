@@ -118,10 +118,10 @@ def get_verbosity(verbose: int = 0, quiet: int = 0):
         return get_verbosity()
 
 
-def config(verbose: int,
-           quiet: int,
-           log_file: str | None = None,
-           log_color: bool = True):
+def set_config(verbose: int,
+               quiet: int,
+               log_file: str | None = None,
+               log_color: bool = True):
     """ Configure the main logger with handlers and verbosity. """
     # Set up logger.
     logger = get_top_logger()
@@ -144,13 +144,15 @@ def get_config(logger: logging.Logger | None = None):
     """ Get the configuration parameters of a logger. """
     if logger is None:
         logger = get_top_logger()
-    verbose, quiet = VERBOSITIES.get(logger.getEffectiveLevel(), (0, 0))
+    verbose = 0
+    quiet = 0
     log_file = None
     log_color = False
     for handler in logger.handlers:
         if isinstance(handler, logging.FileHandler):
             log_file = handler.baseFilename
-        if isinstance(handler, logging.StreamHandler):
+        elif isinstance(handler, logging.StreamHandler):
+            verbose, quiet = VERBOSITIES.get(handler.level, (verbose, quiet))
             if isinstance(handler.formatter, ColorFormatter):
                 log_color = True
     return verbose, quiet, log_file, log_color

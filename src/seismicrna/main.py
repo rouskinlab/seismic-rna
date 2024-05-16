@@ -33,12 +33,12 @@ from . import (wf,
                cleanfa,
                renumct,
                __version__)
-from .core import logs
 from .core.arg import (opt_log,
                        opt_log_color,
                        opt_profile,
                        opt_quiet,
                        opt_verbose)
+from .core.logs import set_config
 
 params = [
     opt_verbose,
@@ -69,7 +69,7 @@ def cli(ctx: Context,
         os.makedirs(os.path.dirname(log_file), exist_ok=True)
     else:
         log_file = None
-    logs.config(verbose, quiet, log_file, log_color)
+    set_config(verbose, quiet, log_file, log_color)
     # If no subcommand was given, then run the entire pipeline.
     if ctx.invoked_subcommand is None:
         if profile:
