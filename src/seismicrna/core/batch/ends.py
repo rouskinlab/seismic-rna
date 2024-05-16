@@ -197,7 +197,7 @@ def sort_segment_ends(seg_end5s: np.ndarray,
     seg_ends = merge_segment_ends(seg_end5s - 1, seg_end3s)
     # Sort the coordinates in ascending order within each read.
     kwargs = dict(fill_value=0) if np.ma.isarray(seg_ends) else dict()
-    sort_order = seg_ends.argsort(axis=1, **kwargs)
+    sort_order = seg_ends.argsort(axis=1, kind="stable", **kwargs)
     if np.ma.isarray(seg_ends) and fill_mask:
         # Fill the masked values with zero and remove the mask.
         mask = seg_ends.mask

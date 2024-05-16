@@ -511,6 +511,43 @@ class TestSortSegmentEnds(ut.TestCase):
             self.assertTrue(np.array_equal(result_seg, expect_seg))
             self.assertTrue(np.array_equal(result_contig, expect_contig))
 
+    def test_n_segments_contig(self):
+        for n in range(1, 10):
+            ends = rng.permutation(np.arange(1, n + 1))[np.newaxis, :]
+            expect_seg = np.array([True]
+                                  + [True, False] * (n - 1)
+                                  + [False])[np.newaxis, :]
+            expect_contig = np.array([False] * (2 * n - 1)
+                                     + [True])[np.newaxis, :]
+            expect_ends_0 = np.concatenate([[0]]
+                                           + [[i, i] for i in range(1, n)]
+                                           + [[n]])[np.newaxis, :]
+            expect_ends_1 = expect_ends_0 + expect_seg
+            for idx0, expect_ends in [(True, expect_ends_0),
+                                      (False, expect_ends_1)]:
+                result_ends, result_seg, result_contig = sort_segment_ends(ends,
+                                                                           ends,
+                                                                           idx0)
+                self.assertTrue(np.array_equal(result_ends, expect_ends))
+                self.assertTrue(np.array_equal(result_seg, expect_seg))
+                self.assertTrue(np.array_equal(result_contig, expect_contig))
+
+    def test_n_segments_discontig(self):
+        for n in range(1, 10):
+            ends = rng.permutation(np.arange(1, n + 1) * 2)[np.newaxis, :]
+            expect_seg = np.array([True, False] * n)[np.newaxis, :]
+            expect_contig = np.logical_not(expect_seg)
+            expect_ends_0 = np.arange(1, 2 * n + 1)[np.newaxis, :]
+            expect_ends_1 = expect_ends_0 + expect_seg
+            for idx0, expect_ends in [(True, expect_ends_0),
+                                      (False, expect_ends_1)]:
+                result_ends, result_seg, result_contig = sort_segment_ends(ends,
+                                                                           ends,
+                                                                           idx0)
+                self.assertTrue(np.array_equal(result_ends, expect_ends))
+                self.assertTrue(np.array_equal(result_seg, expect_seg))
+                self.assertTrue(np.array_equal(result_contig, expect_contig))
+
 
 class TestFindContiguousReads(ut.TestCase):
 
