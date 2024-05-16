@@ -112,7 +112,7 @@ class Masker(object):
         self.checksums = list()
 
     @property
-    def n_reads_init(self):
+    def n_reads_premask(self):
         return self._n_reads[self.MASK_READ_INIT]
 
     @property
@@ -393,7 +393,7 @@ class Masker(object):
             max_fmut_read=self.max_fmut_read,
             min_mut_gap=self.min_mut_gap,
             mask_discontig=self.mask_discontig,
-            n_reads_init=self.n_reads_init,
+            n_reads_premask=self.n_reads_premask,
             n_reads_min_ncov=self.n_reads_min_ncov,
             n_reads_discontig=self.n_reads_discontig,
             n_reads_min_finfo=self.n_reads_min_finfo,

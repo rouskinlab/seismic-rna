@@ -497,35 +497,14 @@ opt_cram = Option(
     help="Compress alignment maps in CRAM format"
 )
 
-# Reference section specification options
-opt_coords = Option(
-    ("--coords", "-c"),
-    type=(str, int, int),
-    multiple=True,
-    help="Define a section of a reference from 5' and 3' end coordinates"
-)
-
-opt_primers = Option(
-    ("--primers", "-p"),
-    type=(str, DNA, DNA),
-    multiple=True,
-    help="Define a section of a reference from forward and reverse primers"
-)
-
-opt_primer_gap = Option(
-    ("--primer-gap",),
-    type=int,
-    default=0,
-    help="Leave a gap of this many bases between the primer and the section"
-)
-
-# Relate
 opt_min_reads = Option(
     ("--min-reads", "-N"),
     type=int,
-    default=2 ** 10,
+    default=1000,
     help="Discard alignment maps with fewer than this many reads"
 )
+
+# Relate
 
 opt_batch_size = Option(
     ("--batch-size",),
@@ -565,6 +544,27 @@ opt_pool = Option(
 )
 
 # Mask
+
+opt_coords = Option(
+    ("--coords", "-c"),
+    type=(str, int, int),
+    multiple=True,
+    help="Define a section of a reference from 5' and 3' end coordinates"
+)
+
+opt_primers = Option(
+    ("--primers", "-p"),
+    type=(str, DNA, DNA),
+    multiple=True,
+    help="Define a section of a reference from forward and reverse primers"
+)
+
+opt_primer_gap = Option(
+    ("--primer-gap",),
+    type=int,
+    default=0,
+    help="Leave a gap of this many bases between the primer and the section"
+)
 
 opt_mask_del = Option(
     ("--mask-del/--keep-del",),
@@ -652,7 +652,7 @@ opt_min_mut_gap = Option(
 opt_min_ninfo_pos = Option(
     ("--min-ninfo-pos",),
     type=int,
-    default=2 ** 10,
+    default=1000,
     help="Mask positions with fewer than this many unambiguous base calls"
 )
 
@@ -696,14 +696,14 @@ opt_em_runs = Option(
 opt_min_em_iter = Option(
     ("--min-em-iter",),
     type=int,
-    default=2 ** 3,
+    default=10,
     help="Run EM for at least this many iterations (times number of clusters)"
 )
 
 opt_max_em_iter = Option(
     ("--max-em-iter",),
     type=int,
-    default=2 ** 9,
+    default=500,
     help="Run EM for at most this many iterations (times number of clusters)"
 )
 

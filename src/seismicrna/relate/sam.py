@@ -214,6 +214,9 @@ class XamViewer(object):
             else:
                 yield from _iter_records_single(sam_file, start, stop)
 
+    def __str__(self):
+        return f"alignment map {self.xam_input}"
+
 ########################################################################
 #                                                                      #
 # © Copyright 2024, the Rouskin Lab.                                   #

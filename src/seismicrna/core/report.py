@@ -336,7 +336,8 @@ ReadsRefsF = Field("reads_refs",
                    iconv=iconv_dict_str_int)
 
 # Relate fields
-NumReadsRelF = Field("n_reads_rel", "Number of reads", int)
+NumReadsXamF = Field("n_reads_xam", "Number of reads in SAM/BAM/CRAM file", int)
+NumReadsRelF = Field("n_reads_rel", "Number of reads processed by relate", int)
 NumBatchF = Field("n_batches", "Number of batches", int)
 ChecksumsF = Field("checksums", "MD5 checksums of batches", dict)
 RefseqChecksumF = Field("refseq_checksum",
@@ -429,8 +430,8 @@ NumPosCutHiMutF = Field("n_pos_max_fmut",
 NumPosKeptF = Field("n_pos_kept",
                     "Number of positions kept after masking",
                     int)
-NumReadsInitF = Field("n_reads_init",
-                      "Total number of reads from the relate step",
+NumReadsInitF = Field("n_reads_premask",
+                      "Total number of reads before masking",
                       int)
 NumReadsLoNCovF = Field("n_reads_min_ncov",
                         "Number of reads with too few bases covering the "

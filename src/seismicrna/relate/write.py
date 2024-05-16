@@ -19,9 +19,9 @@ from .py.relate import find_rels_line
 from .report import RelateReport
 from .sam import XamViewer
 from ..core import path
-from ..core.parallel import as_list_of_tuples, dispatch
-from ..core.ngs import encode_phred
 from ..core.io import RefseqIO
+from ..core.ngs import encode_phred
+from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.seq import DNA, get_fasta_seq
 from ..core.write import need_write
 
@@ -76,16 +76,20 @@ class RelationWriter(object):
     """
 
     def __init__(self, xam_view: XamViewer, seq: DNA):
-        self.xam = xam_view
+        self._xam = xam_view
         self.seq = seq
 
     @property
     def sample(self):
-        return self.xam.sample
+        return self._xam.sample
 
     @property
     def ref(self):
-        return self.xam.ref
+        return self._xam.ref
+
+    @property
+    def num_reads(self):
+        return self._xam.n_reads
 
     def _write_report(self, *, out_dir: Path, **kwargs):
         report = RelateReport(sample=self.sample, ref=self.ref, **kwargs)
@@ -119,7 +123,7 @@ class RelationWriter(object):
         logger.info(f"Began {self}")
         try:
             # Collect the keyword arguments.
-            disp_kwargs = dict(xam_view=self.xam,
+            disp_kwargs = dict(xam_view=self._xam,
                                out_dir=out_dir,
                                refseq=self.seq,
                                min_mapq=min_mapq,
@@ -132,7 +136,7 @@ class RelationWriter(object):
                                n_procs,
                                parallel=True,
                                pass_n_procs=False,
-                               args=as_list_of_tuples(self.xam.indexes),
+                               args=as_list_of_tuples(self._xam.indexes),
                                kwargs=disp_kwargs)
             if results:
                 nums_reads, relv_checks, name_checks = map(list,
@@ -151,7 +155,7 @@ class RelationWriter(object):
         finally:
             if not keep_temp:
                 # Delete the temporary SAM file before exiting.
-                self.xam.delete_temp_sam()
+                self._xam.delete_temp_sam()
 
     def write(self, *,
               out_dir: Path,
@@ -172,6 +176,10 @@ class RelationWriter(object):
                                               ref=self.ref)
         if need_write(report_file, force):
             began = datetime.now()
+            # Determine if there are enough reads.
+            if self.num_reads < min_reads:
+                raise ValueError(f"Insufficient reads in {self._xam}: "
+                                 f"{self.num_reads} < {min_reads}")
             # Write the reference sequence to a file.
             refseq_checksum = self._write_refseq(out_dir, brotli_level)
             # Compute relation vectors and time how long it takes.
@@ -194,6 +202,7 @@ class RelationWriter(object):
                                overhangs=overhangs,
                                ambindel=ambindel,
                                min_reads=min_reads,
+                               n_reads_xam=self.num_reads,
                                n_reads_rel=nreads,
                                n_batches=nbats,
                                checksums=checks,
@@ -203,27 +212,19 @@ class RelationWriter(object):
         return report_file
 
     def __str__(self):
-        return f"Relate {self.xam}"
+        return f"Relate {self._xam}"
 
 
 def write_one(xam_file: Path, *,
               fasta: Path,
               temp_dir: Path,
               batch_size: int,
-              min_reads: int = 0,
               **kwargs):
     """ Write the batches of relation vectors for one XAM file. """
-    # Get the reference sequence.
     ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
-    seq = get_fasta_seq(fasta, DNA, ref)
-    # Determine if there are enough reads.
-    xam = XamViewer(xam_file, temp_dir, batch_size)
-    if min_reads > 0 and xam.n_reads < min_reads:
-        raise ValueError(
-            f"Insufficient reads in {xam}: {xam.n_reads} (< {min_reads})")
-    # Write the batches.
-    writer = RelationWriter(xam, seq)
-    return writer.write(min_reads=min_reads, **kwargs)
+    writer = RelationWriter(XamViewer(xam_file, temp_dir, batch_size),
+                            get_fasta_seq(fasta, DNA, ref))
+    return writer.write(**kwargs)
 
 
 def write_all(xam_files: Iterable[Path],
