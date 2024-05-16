@@ -206,6 +206,63 @@ class TestCalcUniqReadWeights(ut.TestCase):
 
 class TestCalcCoverage(ut.TestCase):
 
+    def test_0_positions(self):
+        pos_index = pd.MultiIndex.from_tuples([], names=SEQ_INDEX_NAMES)
+        end5s = np.array([[]], dtype=int)
+        end3s = np.array([[]], dtype=int)
+        read_nums = np.arange(0)
+        exp_per_pos = pd.Series(0., index=pos_index)
+        exp_per_read = {
+            "A": pd.Series([], read_nums, dtype=int),
+            "C": pd.Series([], read_nums, dtype=int),
+            "G": pd.Series([], read_nums, dtype=int),
+            "T": pd.Series([], read_nums, dtype=int),
+            "N": pd.Series([], read_nums, dtype=int),
+        }
+        res_per_pos, res_per_read = calc_coverage(pos_index,
+                                                  read_nums,
+                                                  end5s,
+                                                  end3s)
+        self.assertIsInstance(res_per_pos, pd.Series)
+        self.assertTrue(res_per_pos.equals(exp_per_pos))
+        self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
+        for base in exp_per_read:
+            self.assertIsInstance(res_per_read[base], pd.Series)
+            self.assertTrue(res_per_read[base].equals(exp_per_read[base]))
+
+    def test_0_positions_weighted(self):
+        pos_index = pd.MultiIndex.from_tuples([], names=SEQ_INDEX_NAMES)
+        end5s = np.array([[]], dtype=int)
+        end3s = np.array([[]], dtype=int)
+        read_nums = np.arange(0)
+        read_weights = pd.DataFrame.from_dict({
+            "C1": pd.Series(np.array([])),
+            "C2": pd.Series(np.array([])),
+        })
+        exp_per_pos = pd.DataFrame.from_dict({
+            "C1": pd.Series(np.array([]), index=pos_index),
+            "C2": pd.Series(np.array([]), index=pos_index),
+        })
+        exp_per_read = {
+            "A": pd.Series([], read_nums, dtype=int),
+            "C": pd.Series([], read_nums, dtype=int),
+            "G": pd.Series([], read_nums, dtype=int),
+            "T": pd.Series([], read_nums, dtype=int),
+            "N": pd.Series([], read_nums, dtype=int),
+        }
+        res_per_pos, res_per_read = calc_coverage(pos_index,
+                                                  read_nums,
+                                                  end5s,
+                                                  end3s,
+                                                  read_weights)
+        self.assertIsInstance(res_per_pos, pd.DataFrame)
+        self.assertTrue(res_per_pos.equals(exp_per_pos))
+        self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
+        for base in exp_per_read:
+            self.assertIsInstance(res_per_read[base], pd.Series)
+            self.assertTrue(res_per_read[base].equals(exp_per_read[base]))
+
+
     def test_1_segment(self):
         """
         1234567890123

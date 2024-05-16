@@ -1334,27 +1334,26 @@ def calc_p_ends_observed(npos: int,
                                     check_values=check_values)[:, :, 0]
     find_dims([(READS,), (READS,), (READS, CLUSTERS)],
               [end5s, end3s, weights],
-              ["end5s", "end3s", "weights"],
-              nonzero=True)
+              ["end5s", "end3s", "weights"])
     if check_values:
         # Validate the values.
-        if np.min(end5s) < 0:
+        if end5s.min(initial=npos - 1) < 0:
             raise ValueError(
                 f"All end5s must be ≥ 0, but got {end5s[end5s < 0]}"
             )
-        if np.max(end5s) >= npos:
+        if end5s.max(initial=0) >= npos:
             raise ValueError(
                 f"All end5s must be < {npos}, but got {end5s[end5s >= npos]}"
             )
-        if np.min(end3s) < 0:
+        if end3s.min(initial=npos - 1) < 0:
             raise ValueError(
                 f"All end3s must be ≥ 0, but got {end3s[end3s < 0]}"
             )
-        if np.max(end3s) >= npos:
+        if end3s.max(initial=0) >= npos:
             raise ValueError(
                 f"All end3s must be < {npos}, but got {end3s[end3s >= npos]}"
             )
-        if np.min(weights) < 0.:
+        if weights.min(initial=1.) < 0.:
             raise ValueError(
                 f"All weights must be ≥ 0, but got {weights[weights < 0.]}"
             )

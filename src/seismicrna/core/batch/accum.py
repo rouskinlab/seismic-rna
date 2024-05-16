@@ -32,7 +32,9 @@ def accumulate(batches: Iterable[SectionMutsBatch],
                get_info: bool = True,
                count_ends: bool = True):
     header = make_header(rels=list(patterns), max_order=max_order)
-    end_counts_index = pd.MultiIndex.from_tuples([], names=END_COORDS)
+    end_counts_index = pd.MultiIndex.from_arrays([np.array([], dtype=int)
+                                                  for _ in END_COORDS],
+                                                 names=END_COORDS)
     # Initialize the total read counts and end coordinate counts.
     if header.clustered():
         dtype = float

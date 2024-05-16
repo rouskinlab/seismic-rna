@@ -147,14 +147,14 @@ class Tabulator(ABC):
             end_counts = self._end_counts.values[:, np.newaxis]
         else:
             end_counts = self._end_counts.values
-        return calc_p_ends_observed(
-            self.section.length,
-            (self._end_counts.index.get_level_values(END5_COORD).values
-             - self.section.end5),
-            (self._end_counts.index.get_level_values(END3_COORD).values
-             - self.section.end5),
-            end_counts,
-        )
+        end5s = (self._end_counts.index.get_level_values(END5_COORD).values
+                 - self.section.end5)
+        end3s = (self._end_counts.index.get_level_values(END3_COORD).values
+                 - self.section.end5)
+        return calc_p_ends_observed(self.section.length,
+                                    end5s,
+                                    end3s,
+                                    end_counts)
 
     @cached_property
     def table_per_pos(self):

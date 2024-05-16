@@ -117,7 +117,15 @@ def calc_coverage(pos_index: pd.Index,
     """ Number of positions covered by each read. """
     # Find the positions in use.
     positions = pos_index.get_level_values(POS_NAME).values
-    if np.diff(positions).min(initial=1) <= 0:
+    if positions.size == 0:
+        # If there are no positions in use, return empty arrays.
+        cover_per_pos = (pd.DataFrame(0., pos_index, read_weights.columns)
+                         if read_weights is not None
+                         else pd.Series(0., pos_index))
+        cover_per_read = pd.DataFrame.from_dict({base: pd.Series(0, read_nums)
+                                                 for base in DNA.alph()})
+        return cover_per_pos, cover_per_read
+    if np.diff(positions).min() <= 0:
         raise ValueError(
             f"positions must increase monotonically, but got {positions}"
         )
@@ -186,7 +194,6 @@ def calc_coverage(pos_index: pd.Index,
                           else 0),
                          index=read_nums)
          for base in DNA.alph()},
-        orient="columns",
     )
     return cover_per_pos, cover_per_read
 
