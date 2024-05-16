@@ -78,6 +78,8 @@ class ROCGraph(StructOneTableGraph):
             if key in fpr or key in tpr:
                 raise ValueError(f"Duplicate RNA state: {key}")
             fpr[key], tpr[key] = state.roc
+        if not fpr or not tpr:
+            raise ValueError(f"Got no data for {self}")
         # Consolidate the FPR and TPR data into two DataFrames.
         return _consolidate_pr(fpr), _consolidate_pr(tpr)
 
