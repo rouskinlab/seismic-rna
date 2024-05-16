@@ -1,9 +1,9 @@
 from concurrent.futures import Future, ProcessPoolExecutor
 from itertools import chain, filterfalse, repeat
-from logging import DEBUG, getLogger
+from logging import getLogger
 from typing import Any, Callable, Iterable
 
-from ..logs import set_config, get_config
+from ..logs import MAX_VERBOSE, set_config, get_config
 
 logger = getLogger(__name__)
 
@@ -95,6 +95,11 @@ class Task(object):
         self._func = func
         self._config = get_config()
 
+    @property
+    def verbosity(self):
+        verbose, quiet, log_file, log_color = self._config
+        return verbose - quiet
+
     def __call__(self, *args, **kwargs):
         """ Call the task's function in a try-except block, return the
         result if it succeeds, and return `None` otherwise. """
@@ -110,7 +115,7 @@ class Task(object):
             result = self._func(*args, **kwargs)
         except Exception as error:
             # Print a traceback if the logging level is at the maximum.
-            exc_info = logger.getEffectiveLevel() <= DEBUG
+            exc_info = self.verbosity >= MAX_VERBOSE
             logger.error(f"Failed task {task}:\n{error}\n", exc_info=exc_info)
         else:
             logger.debug(f"Ended task {task}:\n{result}\n")
