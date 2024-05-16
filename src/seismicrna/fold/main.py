@@ -12,9 +12,9 @@ from ..core.arg import (CMD_FOLD,
                         arg_input_path,
                         opt_temp_dir,
                         opt_keep_temp,
-                        opt_sections_file,
-                        opt_coords,
-                        opt_primers,
+                        opt_fold_sections_file,
+                        opt_fold_coords,
+                        opt_fold_primers,
                         opt_primer_gap,
                         opt_quantile,
                         opt_fold_temp,
@@ -108,9 +108,9 @@ def fold_profile(table: MaskPosTable | ClustPosTable,
 @docdef.auto()
 def run(input_path: tuple[str, ...],
         *,
-        sections_file: str | None,
-        coords: tuple[tuple[str, int, int], ...],
-        primers: tuple[tuple[str, DNA, DNA], ...],
+        fold_sections_file: str | None,
+        fold_coords: tuple[tuple[str, int, int], ...],
+        fold_primers: tuple[tuple[str, DNA, DNA], ...],
         primer_gap: int,
         quantile: float,
         fold_temp: float,
@@ -148,22 +148,23 @@ def run(input_path: tuple[str, ...],
         if isinstance(table, (MaskPosTable, ClustPosTable)):
             tables.append(table)
             # Fetch the reference sequence from the Relate step.
-            ref_seqs.add(
-                table.ref,
-                load_relate_dataset(
-                    RelateReport.build_path(top=table.top,
-                                            sample=table.sample,
-                                            ref=table.ref)
-                ).refseq
-            )
+            ref_seqs.add(table.ref,
+                         load_relate_dataset(
+                             RelateReport.build_path(top=table.top,
+                                                     sample=table.sample,
+                                                     ref=table.ref)
+                         ).refseq)
+        else:
+            logger.warning(f"Skipped {table}, which cannot be used to fold")
     # Get the sections for every reference sequence.
     ref_sections = RefSections(ref_seqs,
-                               sects_file=(Path(sections_file)
-                                           if sections_file
+                               sects_file=(Path(fold_sections_file)
+                                           if fold_sections_file
                                            else None),
-                               coords=coords,
-                               primers=primers,
-                               primer_gap=primer_gap)
+                               coords=fold_coords,
+                               primers=fold_primers,
+                               primer_gap=primer_gap,
+                               exclude_primers=False)
     # Fold the RNA profiles.
     return list(chain(dispatch(fold_profile,
                                max_procs,
@@ -189,9 +190,9 @@ def run(input_path: tuple[str, ...],
 
 params = [
     arg_input_path,
-    opt_sections_file,
-    opt_coords,
-    opt_primers,
+    opt_fold_sections_file,
+    opt_fold_coords,
+    opt_fold_primers,
     opt_primer_gap,
     opt_quantile,
     opt_fold_temp,

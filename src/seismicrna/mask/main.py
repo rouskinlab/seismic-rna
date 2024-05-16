@@ -10,10 +10,10 @@ from .write import mask_section
 from ..core.arg import (CMD_MASK,
                         docdef,
                         arg_input_path,
-                        opt_coords,
-                        opt_primers,
+                        opt_mask_coords,
+                        opt_mask_primers,
                         opt_primer_gap,
-                        opt_sections_file,
+                        opt_mask_sections_file,
                         opt_mask_del,
                         opt_mask_ins,
                         opt_mask_mut,
@@ -55,20 +55,21 @@ def load_sections(input_path: Iterable[str | Path],
     # Determine the sections for each reference in the datasets.
     sections = RefSections({(loader.ref, loader.refseq)
                             for loader in chain(*datasets.values())},
+                           sects_file=sections_file,
                            coords=coords,
                            primers=primers,
                            primer_gap=primer_gap,
-                           sects_file=sections_file)
+                           exclude_primers=True)
     return datasets, sections
 
 
 @docdef.auto()
 def run(input_path: tuple[str, ...], *,
         # Sections
-        coords: tuple[tuple[str, int, int], ...],
-        primers: tuple[tuple[str, DNA, DNA], ...],
+        mask_coords: tuple[tuple[str, int, int], ...],
+        mask_primers: tuple[tuple[str, DNA, DNA], ...],
         primer_gap: int,
-        sections_file: str,
+        mask_sections_file: str,
         # Mutation counting
         mask_del: bool,
         mask_ins: bool,
@@ -98,11 +99,11 @@ def run(input_path: tuple[str, ...], *,
     """ Define mutations and sections to filter reads and positions. """
     # Load all Relate datasets and get the sections for each.
     datasets, sections = load_sections(input_path,
-                                       coords=coords,
-                                       primers=primers,
+                                       coords=mask_coords,
+                                       primers=mask_primers,
                                        primer_gap=primer_gap,
-                                       sections_file=(Path(sections_file)
-                                                      if sections_file
+                                       sections_file=(Path(mask_sections_file)
+                                                      if mask_sections_file
                                                       else None))
     # List the datasets and their sections.
     args = [(dataset, section)
@@ -143,10 +144,10 @@ params = [
     # Input/output paths
     arg_input_path,
     # Sections
-    opt_coords,
-    opt_primers,
+    opt_mask_coords,
+    opt_mask_primers,
     opt_primer_gap,
-    opt_sections_file,
+    opt_mask_sections_file,
     # Mutation counting
     opt_mask_del,
     opt_mask_ins,

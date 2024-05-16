@@ -820,7 +820,8 @@ class SectionFinder(Section):
                  end3: int | None = None,
                  fwd: DNA | None = None,
                  rev: DNA | None = None,
-                 primer_gap: int | None = None,
+                 primer_gap: int = 0,
+                 exclude_primers: bool = False,
                  **kwargs):
         """
         Parameters
@@ -845,7 +846,7 @@ class SectionFinder(Section):
             (For amplicons only) Sequence of the reverse PCR primer
             that was used to generate the amplicon (the actual sequence,
             not its reverse complement)
-        primer_gap: int | None = None
+        primer_gap: int = 1
             (For coordinates specified by fwd/rev only) Number of
             positions 3' of the forward primer and 5' of the reverse
             primer to exclude from the section. Coordinates within 1 - 2
@@ -854,6 +855,8 @@ class SectionFinder(Section):
             respectively, to the coordinates immediately adjacent to
             (i.e. 1 nucleotide 3' and 5' of) the 3' end of the forward
             and reverse primers.
+        exclude_primers: bool = False
+            Whether to exclude the primer sequences from the section.
         """
         if primer_gap < 0:
             raise ValueError(f"primer_gap must be ≥ 0, but got {primer_gap}")
@@ -864,21 +867,29 @@ class SectionFinder(Section):
         if end5 is None:
             # No 5' end coordinate was given.
             if fwd is not None:
-                # A forward primer was given.
-                if primer_gap is None:
-                    raise TypeError("Must give primer_gap if using primers")
-                # Locate the end of the forward primer, then start the
-                # section (primer_gap + 1) positions downstream.
-                end5 = self.locate(seq, fwd, seq5).pos3 + (primer_gap + 1)
+                # Locate the forward primer.
+                primer_site = self.locate(seq, fwd, seq5)
+                if exclude_primers:
+                    # Place the 5' end of the section (primer_gap + 1)
+                    # positions after the 3' end of the reverse primer.
+                    end5 = primer_site.pos3 + (primer_gap + 1)
+                else:
+                    # Place the 5' end of the section at the 5' end of
+                    # the reverse primer.
+                    end5 = primer_site.pos5
         if end3 is None:
             # No 3' end coordinate was given.
             if rev is not None:
-                # A reverse primer was given.
-                if primer_gap is None:
-                    raise TypeError("Must give primer_gap if using primers")
-                # Locate the start of the reverse primer, then end the
-                # section (primer_gap + 1) positions upstream.
-                end3 = self.locate(seq, rev.rc, seq5).pos5 - (primer_gap + 1)
+                # Locate the reverse primer.
+                primer_site = self.locate(seq, rev.rc, seq5)
+                if exclude_primers:
+                    # Place the 3' end of the section (primer_gap + 1)
+                    # positions before the 5' end of the reverse primer.
+                    end3 = primer_site.pos5 - (primer_gap + 1)
+                else:
+                    # Place the 3' end of the section at the 3' end of
+                    # the reverse primer.
+                    end3 = primer_site.pos3
         super().__init__(ref, seq, seq5=seq5, end5=end5, end3=end3, **kwargs)
 
     @staticmethod
@@ -936,7 +947,8 @@ class RefSections(object):
                  sects_file: Path | None = None,
                  coords: Iterable[tuple[str, int, int]] = (),
                  primers: Iterable[tuple[str, DNA, DNA]] = (),
-                 primer_gap: int):
+                 primer_gap: int,
+                 exclude_primers: bool):
         # Get the names of the sections from the sections file, if any.
         sect_coords = dict()
         sect_primers = dict()
@@ -964,7 +976,6 @@ class RefSections(object):
                                   seq,
                                   end5=end5,
                                   end3=end3,
-                                  primer_gap=primer_gap,
                                   name=sect_coords.get((ref, end5, end3)))
             for fwd, rev in ref_primers[ref]:
                 # Add a section for each pair of fwd and rev primers.
@@ -973,6 +984,7 @@ class RefSections(object):
                                   fwd=fwd,
                                   rev=rev,
                                   primer_gap=primer_gap,
+                                  exclude_primers=exclude_primers,
                                   name=sect_primers.get((ref, fwd, rev)))
             if not self._sections[ref]:
                 # If no sections were given for the reference, then add

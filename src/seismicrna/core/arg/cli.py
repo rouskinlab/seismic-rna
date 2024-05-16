@@ -110,13 +110,6 @@ opt_max_procs = Option(
 
 # Experiment and analysis setup options
 
-opt_sections_file = Option(
-    ("--sections-file", "-s"),
-    type=Path(dir_okay=False),
-    default="",
-    help="Define sections of references from coordinates/primers in a CSV file"
-)
-
 opt_force = Option(
     ("--force/--no-force",),
     type=bool,
@@ -545,18 +538,25 @@ opt_pool = Option(
 
 # Mask
 
-opt_coords = Option(
-    ("--coords", "-c"),
-    type=(str, int, int),
-    multiple=True,
-    help="Define a section of a reference from 5' and 3' end coordinates"
+opt_mask_sections_file = Option(
+    ("--mask-sections-file", "-s"),
+    type=Path(dir_okay=False),
+    default="",
+    help="Mask sections of references from coordinates/primers in a CSV file"
 )
 
-opt_primers = Option(
-    ("--primers", "-p"),
+opt_mask_coords = Option(
+    ("--mask-coords", "-c"),
+    type=(str, int, int),
+    multiple=True,
+    help="Mask a section of a reference given its 5' and 3' end coordinates"
+)
+
+opt_mask_primers = Option(
+    ("--mask-primers", "-p"),
     type=(str, DNA, DNA),
     multiple=True,
-    help="Define a section of a reference from forward and reverse primers"
+    help="Mask a section of a reference given its forward and reverse primers"
 )
 
 opt_primer_gap = Option(
@@ -768,6 +768,27 @@ opt_fold = Option(
     type=bool,
     default=False,
     help="Predict the secondary structure using the RNAstructure Fold program"
+)
+
+opt_fold_sections_file = Option(
+    ("--fold-sections-file", "-f"),
+    type=Path(dir_okay=False),
+    default="",
+    help="Fold sections of references from coordinates/primers in a CSV file"
+)
+
+opt_fold_coords = Option(
+    ("--fold-coords",),
+    type=(str, int, int),
+    multiple=True,
+    help="Fold a section of a reference given its 5' and 3' end coordinates"
+)
+
+opt_fold_primers = Option(
+    ("--fold-primers",),
+    type=(str, DNA, DNA),
+    multiple=True,
+    help="Fold a section of a reference given its forward and reverse primers"
 )
 
 opt_quantile = Option(
