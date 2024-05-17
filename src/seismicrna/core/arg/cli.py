@@ -937,21 +937,35 @@ opt_csv = Option(
     ("--csv/--no-csv",),
     type=bool,
     default=True,
-    help="Output the source data for each graph as a CSV file"
+    help="Output the data for each graph in a Comma-Separated Values file"
 )
 
 opt_html = Option(
     ("--html/--no-html",),
     type=bool,
     default=True,
-    help="Output each graph as an HTML file"
+    help="Output each graph in an interactive HyperText Markup Language file"
+)
+
+opt_svg = Option(
+    ("--svg/--no-svg",),
+    type=bool,
+    default=False,
+    help="Output each graph in a Scalable Vector Graphics file"
 )
 
 opt_pdf = Option(
     ("--pdf/--no-pdf",),
     type=bool,
     default=False,
-    help="Output each graph as a PDF file"
+    help="Output each graph in a Portable Document Format file"
+)
+
+opt_png = Option(
+    ("--png/--no-png",),
+    type=bool,
+    default=False,
+    help="Output each graph in a Portable Network Graphics file"
 )
 
 # CT renumbering

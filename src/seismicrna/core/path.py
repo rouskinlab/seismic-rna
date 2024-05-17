@@ -150,10 +150,10 @@ DOT_EXT = ".dot"
 DOT_EXTS = DB_EXT, DBN_EXT, DOT_EXT
 DMS_EXT = ".dms"
 HTML_EXT = ".html"
+SVG_EXT = ".svg"
 PDF_EXT = ".pdf"
 PNG_EXT = ".png"
-GRAPH_EXTS = CSV_EXT, HTML_EXT, PDF_EXT, PNG_EXT
-IMAGE_EXTS = PDF_EXT, PNG_EXT
+GRAPH_EXTS = CSV_EXT, HTML_EXT, SVG_EXT, PDF_EXT, PNG_EXT
 
 
 # Path Exceptions ######################################################

@@ -22,7 +22,9 @@ from ..core.arg import (CLUST_INDIV,
                         opt_out_dir,
                         opt_csv,
                         opt_html,
+                        opt_svg,
                         opt_pdf,
+                        opt_png,
                         opt_force,
                         opt_max_procs,
                         opt_parallel)
@@ -357,22 +359,44 @@ class GraphBase(ABC):
             self.figure.write_html(file)
         return file
 
-    def write_pdf(self, force: bool):
-        """ Write the graph to a PDF file. """
-        file = self.get_path(path.PDF_EXT)
+    def _write_image(self, ext: str, force: bool):
+        """ Write the graph to an image file. """
+        file = self.get_path(ext)
         if need_write(file, force):
             self.figure.write_image(file)
         return file
 
-    def write(self, csv: bool, html: bool, pdf: bool, force: bool = False):
+    def write_svg(self, force: bool):
+        """ Write the graph to an SVG file. """
+        return self._write_image(path.SVG_EXT, force)
+
+    def write_pdf(self, force: bool):
+        """ Write the graph to a PDF file. """
+        return self._write_image(path.PDF_EXT, force)
+
+    def write_png(self, force: bool):
+        """ Write the graph to a PNG file. """
+        return self._write_image(path.PNG_EXT, force)
+
+    def write(self,
+              csv: bool,
+              html: bool,
+              svg: bool,
+              pdf: bool,
+              png: bool,
+              force: bool = False):
         """ Write the selected files. """
         files = list()
         if csv:
             files.append(self.write_csv(force))
         if html:
             files.append(self.write_html(force))
+        if svg:
+            files.append(self.write_svg(force))
         if pdf:
             files.append(self.write_pdf(force))
+        if png:
+            files.append(self.write_png(force))
         return files
 
     @cached_property
@@ -420,11 +444,18 @@ class GraphWriter(ABC):
               *args,
               csv: bool,
               html: bool,
+              svg: bool,
               pdf: bool,
+              png: bool,
               force: bool,
               **kwargs):
         """ Generate and write every graph for the table. """
-        return list(chain(graph.write(csv=csv, html=html, pdf=pdf, force=force)
+        return list(chain(graph.write(csv=csv,
+                                      html=html,
+                                      svg=svg,
+                                      pdf=pdf,
+                                      png=png,
+                                      force=force)
                           for graph in self.iter_graphs(*args, **kwargs)))
 
 
@@ -464,7 +495,9 @@ class GraphRunner(ABC):
                 opt_out_dir,
                 opt_csv,
                 opt_html,
+                opt_svg,
                 opt_pdf,
+                opt_png,
                 opt_force,
                 opt_max_procs,
                 opt_parallel]
@@ -503,7 +536,9 @@ class GraphRunner(ABC):
             out_dir: str,
             csv: bool,
             html: bool,
+            svg: bool,
             pdf: bool,
+            png: bool,
             force: bool,
             max_procs: int,
             parallel: bool,

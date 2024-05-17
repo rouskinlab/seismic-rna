@@ -34,7 +34,9 @@ from ..core.arg import (CMD_WORKFLOW,
                         opt_winmin,
                         opt_csv,
                         opt_html,
-                        opt_pdf)
+                        opt_svg,
+                        opt_pdf,
+                        opt_png)
 from ..core.seq import DNA
 from ..graph.aucroll import RollingAUCRunner
 from ..graph.histread import ReadHistogramRunner
@@ -197,7 +199,9 @@ def run(*,
         winmin: int,
         csv: bool,
         html: bool,
-        pdf: bool):
+        svg: bool,
+        pdf: bool,
+        png: bool):
     """ Run the entire workflow. """
     # Demultiplex
     if demult_on:
@@ -394,7 +398,9 @@ def run(*,
                       out_dir=out_dir,
                       csv=csv,
                       html=html,
+                      svg=svg,
                       pdf=pdf,
+                      png=png,
                       max_procs=max_procs,
                       parallel=parallel,
                       force=force)
@@ -407,7 +413,9 @@ def run(*,
                       out_dir=out_dir,
                       csv=csv,
                       html=html,
+                      svg=svg,
                       pdf=pdf,
+                      png=png,
                       max_procs=max_procs,
                       parallel=parallel,
                       force=force)
@@ -422,7 +430,9 @@ def run(*,
                             out_dir=out_dir,
                             csv=csv,
                             html=html,
+                            svg=svg,
                             pdf=pdf,
+                            png=png,
                             max_procs=max_procs,
                             parallel=parallel,
                             force=force)
@@ -441,7 +451,9 @@ def run(*,
                       out_dir=out_dir,
                       csv=csv,
                       html=html,
+                      svg=svg,
                       pdf=pdf,
+                      png=png,
                       max_procs=max_procs,
                       parallel=parallel,
                       force=force)
@@ -461,7 +473,9 @@ def run(*,
                              out_dir=out_dir,
                              csv=csv,
                              html=html,
+                             svg=svg,
                              pdf=pdf,
+                             png=png,
                              max_procs=max_procs,
                              parallel=parallel,
                              force=force)
@@ -487,7 +501,9 @@ graph_options = [opt_cgroup,
                  opt_winmin,
                  opt_csv,
                  opt_html,
-                 opt_pdf]
+                 opt_svg,
+                 opt_pdf,
+                 opt_png]
 
 params = merge_params([opt_demultiplex],
                       demultiplex_mod.params,
