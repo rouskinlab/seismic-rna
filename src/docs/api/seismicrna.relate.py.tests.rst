@@ -10,7 +10,7 @@ Submodules
 ----------
 
 
-.. automodule:: seismicrna.relate.py.tests.ambrel_test
+.. automodule:: seismicrna.relate.py.tests.ambindel_test
    :members:
    :undoc-members:
    :show-inheritance:

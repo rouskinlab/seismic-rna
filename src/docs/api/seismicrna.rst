@@ -20,7 +20,7 @@ Subpackages
    seismicrna.export
    seismicrna.fold
    seismicrna.graph
-   seismicrna.join
+   seismicrna.joinbase
    seismicrna.lists
    seismicrna.mask
    seismicrna.pool
@@ -33,6 +33,12 @@ Subpackages
 
 Submodules
 ----------
+
+
+.. automodule:: seismicrna.join
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 
 .. automodule:: seismicrna.main

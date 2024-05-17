@@ -57,14 +57,14 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.cluster.html">seismicrna.cluster package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="seismicrna.core.html#subpackages">Subpackages</a></li>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.data">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.array">Submodules</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.join.html">seismicrna.join package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.joinbase.html">seismicrna.joinbase package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.lists.html">seismicrna.lists package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.pool.html">seismicrna.pool package</a></li>
@@ -76,7 +76,7 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.wf.html">seismicrna.wf package</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="seismicrna.html#module-seismicrna.main">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.html#module-seismicrna.join">Submodules</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../formats/index.html">File Formats</a></li>
@@ -639,8 +639,8 @@ for trailing whitespace, which is simply ignored.</p>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionEqual.test_diff_mask_pos">
-<span class="sig-name descname"><span class="pre">test_diff_mask_pos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionEqual.test_diff_mask_pos" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionEqual.test_diff_mask_positions">
+<span class="sig-name descname"><span class="pre">test_diff_mask_positions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionEqual.test_diff_mask_positions" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -878,6 +878,17 @@ sequence.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskList">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSectionMaskList</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskList" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskList.test_mask_list">
+<span class="sig-name descname"><span class="pre">test_mask_list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskList.test_mask_list" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskNames">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSectionMaskNames</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskNames" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
@@ -905,17 +916,6 @@ sequence.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskPolyA.test_mask_polya">
 <span class="sig-name descname"><span class="pre">test_mask_polya</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskPolyA.test_mask_polya" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskPos">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.seq.tests.section_test.</span></span><span class="sig-name descname"><span class="pre">TestSectionMaskPos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskPos" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.seq.tests.section_test.TestSectionMaskPos.test_mask_pos">
-<span class="sig-name descname"><span class="pre">test_mask_pos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.seq.tests.section_test.TestSectionMaskPos.test_mask_pos" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>

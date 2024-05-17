@@ -18,7 +18,7 @@ Submodules
 ----------
 
 
-.. automodule:: seismicrna.relate.py.ambrel
+.. automodule:: seismicrna.relate.py.ambindel
    :members:
    :undoc-members:
    :show-inheritance:

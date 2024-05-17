@@ -57,14 +57,14 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.cluster.html">seismicrna.cluster package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="seismicrna.core.html">seismicrna.core package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="seismicrna.core.html#subpackages">Subpackages</a></li>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.data">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.html#module-seismicrna.core.array">Submodules</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.demult.html">seismicrna.demult package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.export.html">seismicrna.export package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.fold.html">seismicrna.fold package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.graph.html">seismicrna.graph package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.join.html">seismicrna.join package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.joinbase.html">seismicrna.joinbase package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.lists.html">seismicrna.lists package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.mask.html">seismicrna.mask package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.pool.html">seismicrna.pool package</a></li>
@@ -76,7 +76,7 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.wf.html">seismicrna.wf package</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="seismicrna.html#module-seismicrna.main">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.html#module-seismicrna.join">Submodules</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../formats/index.html">File Formats</a></li>
@@ -952,27 +952,6 @@ to the target shape of <cite>tshape</cite>.</p>
 </dd></dl>
 
 <span class="target" id="module-seismicrna.core.mu.tests.unbias_test"></span><dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.CalcRectangularSum">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.tests.unbias_test.</span></span><span class="sig-name descname"><span class="pre">CalcRectangularSum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.CalcRectangularSum" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.CalcRectangularSum.calc_spanning_sum_slow">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">calc_spanning_sum_slow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.CalcRectangularSum.calc_spanning_sum_slow" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.CalcRectangularSum.test_2d">
-<span class="sig-name descname"><span class="pre">test_2d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.CalcRectangularSum.test_2d" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.CalcRectangularSum.test_3d">
-<span class="sig-name descname"><span class="pre">test_3d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.CalcRectangularSum.test_3d" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestAdjustMinGap">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.tests.unbias_test.</span></span><span class="sig-name descname"><span class="pre">TestAdjustMinGap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestAdjustMinGap" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
@@ -1125,6 +1104,27 @@ to the target shape of <cite>tshape</cite>.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestCalcRectangularSum">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.tests.unbias_test.</span></span><span class="sig-name descname"><span class="pre">TestCalcRectangularSum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestCalcRectangularSum" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestCalcRectangularSum.calc_spanning_sum_slow">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">calc_spanning_sum_slow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestCalcRectangularSum.calc_spanning_sum_slow" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestCalcRectangularSum.test_2d">
+<span class="sig-name descname"><span class="pre">test_2d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestCalcRectangularSum.test_2d" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestCalcRectangularSum.test_3d">
+<span class="sig-name descname"><span class="pre">test_3d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestCalcRectangularSum.test_3d" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestClip">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.tests.unbias_test.</span></span><span class="sig-name descname"><span class="pre">TestClip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestClip" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
@@ -1136,6 +1136,92 @@ to the target shape of <cite>tshape</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestClip.test_without_clip">
 <span class="sig-name descname"><span class="pre">test_without_clip</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestClip.test_without_clip" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.tests.unbias_test.</span></span><span class="sig-name descname"><span class="pre">TestFindSplitPositions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_0">
+<span class="sig-name descname"><span class="pre">test_0</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap0">
+<span class="sig-name descname"><span class="pre">test_gap0</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split0_quadruple">
+<span class="sig-name descname"><span class="pre">test_gap1_split0_quadruple</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split0_quadruple" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split0_single_end3">
+<span class="sig-name descname"><span class="pre">test_gap1_split0_single_end3</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split0_single_end3" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split0_single_end5">
+<span class="sig-name descname"><span class="pre">test_gap1_split0_single_end5</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split0_single_end5" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split1_double">
+<span class="sig-name descname"><span class="pre">test_gap1_split1_double</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split1_double" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split1_single_mid">
+<span class="sig-name descname"><span class="pre">test_gap1_split1_single_mid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split1_single_mid" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split1_triple">
+<span class="sig-name descname"><span class="pre">test_gap1_split1_triple</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split1_triple" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split2">
+<span class="sig-name descname"><span class="pre">test_gap1_split2</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap1_split2" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap2_split0">
+<span class="sig-name descname"><span class="pre">test_gap2_split0</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap2_split0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap2_split1">
+<span class="sig-name descname"><span class="pre">test_gap2_split1</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap2_split1" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap4_split0">
+<span class="sig-name descname"><span class="pre">test_gap4_split0</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap4_split0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap4_split1">
+<span class="sig-name descname"><span class="pre">test_gap4_split1</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_gap4_split1" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_generic_split">
+<span class="sig-name descname"><span class="pre">test_generic_split</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_generic_split" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_thresh0">
+<span class="sig-name descname"><span class="pre">test_thresh0</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_thresh0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_thresh1">
+<span class="sig-name descname"><span class="pre">test_thresh1</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions.test_thresh1" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1256,6 +1342,55 @@ to the target shape of <cite>tshape</cite>.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestQuickUnbias">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.tests.unbias_test.</span></span><span class="sig-name descname"><span class="pre">TestQuickUnbias</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestQuickUnbias" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Test that the quick unbiasing algorithm produces results very
+similar to the exact algorithm.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestQuickUnbias.TOLERANCE">
+<span class="sig-name descname"><span class="pre">TOLERANCE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.009950330853168092</span></em><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestQuickUnbias.TOLERANCE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestQuickUnbias.random_params">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">random_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">npos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestQuickUnbias.random_params" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestQuickUnbias.test_threshold_0">
+<span class="sig-name descname"><span class="pre">test_threshold_0</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestQuickUnbias.test_threshold_0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestQuickUnbias.test_threshold_0p001">
+<span class="sig-name descname"><span class="pre">test_threshold_0p001</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestQuickUnbias.test_threshold_0p001" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestSlicePEnds">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.tests.unbias_test.</span></span><span class="sig-name descname"><span class="pre">TestSlicePEnds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestSlicePEnds" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestSlicePEnds.test_0x0">
+<span class="sig-name descname"><span class="pre">test_0x0</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestSlicePEnds.test_0x0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestSlicePEnds.test_slice_3x3">
+<span class="sig-name descname"><span class="pre">test_slice_3x3</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestSlicePEnds.test_slice_3x3" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestSlicePEnds.test_slice_5x5">
+<span class="sig-name descname"><span class="pre">test_slice_5x5</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestSlicePEnds.test_slice_5x5" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestTriuAllClose">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.tests.unbias_test.</span></span><span class="sig-name descname"><span class="pre">TestTriuAllClose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestTriuAllClose" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
@@ -1272,6 +1407,52 @@ to the target shape of <cite>tshape</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestTriuAllClose.test_triu">
 <span class="sig-name descname"><span class="pre">test_triu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestTriuAllClose.test_triu" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestTriuCumSum">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.core.mu.tests.unbias_test.</span></span><span class="sig-name descname"><span class="pre">TestTriuCumSum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestTriuCumSum" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_1x1x2">
+<span class="sig-name descname"><span class="pre">test_1x1x2</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_1x1x2" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_2x2">
+<span class="sig-name descname"><span class="pre">test_2x2</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_2x2" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_2x2x1">
+<span class="sig-name descname"><span class="pre">test_2x2x1</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_2x2x1" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_2x2x2">
+<span class="sig-name descname"><span class="pre">test_2x2x2</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_2x2x2" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_3x3">
+<span class="sig-name descname"><span class="pre">test_3x3</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_3x3" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_all_0">
+<span class="sig-name descname"><span class="pre">test_all_0</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_all_0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_all_1">
+<span class="sig-name descname"><span class="pre">test_all_1</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_all_1" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_explicit_sum">
+<span class="sig-name descname"><span class="pre">test_explicit_sum</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.mu.tests.unbias_test.TestTriuCumSum.test_explicit_sum" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>

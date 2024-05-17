@@ -28,13 +28,13 @@ Submodules
 ----------
 
 
-.. automodule:: seismicrna.core.data
+.. automodule:: seismicrna.core.array
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seismicrna.core.dims
+.. automodule:: seismicrna.core.data
    :members:
    :undoc-members:
    :show-inheritance:

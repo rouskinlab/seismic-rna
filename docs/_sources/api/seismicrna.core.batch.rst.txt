@@ -30,6 +30,12 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.core.batch.ends
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.core.batch.index
    :members:
    :undoc-members:
