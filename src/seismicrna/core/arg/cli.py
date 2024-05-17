@@ -673,7 +673,7 @@ opt_quick_unbias = Option(
 opt_quick_unbias_thresh = Option(
     ("--quick-unbias-thresh",),
     type=float,
-    default=0.005,
+    default=0.001,
     help="Treat mutated fractions under this threshold as 0 with --quick-unbias"
 )
 
