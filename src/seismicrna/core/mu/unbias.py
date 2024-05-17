@@ -704,15 +704,25 @@ def _slice_p_ends(p_ends: np.ndarray,
 def _find_split_positions(p_mut: np.ndarray, min_gap: int, threshold: float):
     """ Find the positions (at or below the threshold) at which to split
     the mutation rates. """
-    npos, _ = p_mut.shape
+    npos, ncls = p_mut.shape
     min_gap = _adjust_min_gap(npos, min_gap)
-    if min_gap == 0:
+    if min_gap == 0 or ncls == 0:
         return np.array([], dtype=int)
-    cum_pos = np.cumsum(p_mut.max(axis=1) <= threshold)
-    return np.flatnonzero(np.diff(
-        np.asarray(cum_pos[min_gap:] - cum_pos[:-min_gap] == min_gap,
-                   dtype=int)
-    ) == -1) + min_gap
+    # Count the cumulative number of mutation rates below the threshold.
+    cum_below = np.cumsum(np.concatenate([np.zeros(min_gap, dtype=bool),
+                                          p_mut.max(axis=1) <= threshold]))
+    # Label every position for which it and the previous (min_gap - 1)
+    # positions are all below the threshold.
+    win_below = cum_below[min_gap:] - cum_below[:-min_gap] == min_gap
+    # Locate each stretch of consecutive positions where the previous
+    # (min_gap - 1) positions are all below the threshold; the first
+    # (min_gap - 1) positions can be ignored because they cannot have
+    # (min_gap - 1) preceding positions.
+    diff_win_below = np.diff(win_below.astype(int)[(min_gap - 1):])
+    first_pos = np.flatnonzero(diff_win_below == 1) + 1
+    last_pos = np.flatnonzero(diff_win_below == -1) + min_gap
+    # Collect all boundary positions and find the unique ones.
+    return np.unique(np.concatenate([first_pos, last_pos]))
 
 
 def _split_positions(p_mut: np.ndarray,
@@ -788,19 +798,24 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                                   _find_split_positions(
                                       p_mut_given_span_observed,
                                       min_gap,
-                                      quick_unbias_thresh)),
+                                      quick_unbias_thresh
+                                  )),
                 strict=True
         ):
-            p_mut_given_span_list.append(_calc_p_mut_given_span(
-                p_mut_split,
-                min_gap,
-                p_ends_split,
-                p_mut_init_split,
-                quick_unbias=False,
-                quick_unbias_thresh=quick_unbias_thresh,
-                f_tol=f_tol,
-                x_rtol=x_rtol,
-            ))
+            if p_mut_split.max(initial=0.) > quick_unbias_thresh:
+                p_mut_given_span_list.append(_calc_p_mut_given_span(
+                    p_mut_split,
+                    min_gap,
+                    p_ends_split,
+                    p_mut_init_split,
+                    quick_unbias=False,
+                    quick_unbias_thresh=quick_unbias_thresh,
+                    f_tol=f_tol,
+                    x_rtol=x_rtol,
+                ))
+            else:
+                # No mutation rate exceeds the threshold.
+                p_mut_given_span_list.append(p_mut_split)
         return (np.concatenate(p_mut_given_span_list, axis=0)
                 if p_mut_given_span_list
                 else np.empty((dims[POSITIONS], dims[CLUSTERS])))

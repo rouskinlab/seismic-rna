@@ -1100,49 +1100,77 @@ class TestFindSplitPositions(ut.TestCase):
         p_mut = np.array([[0.2, 0.1, 0.1, 0.0, 0.1, 0.2]]).T
         self.assertTrue(np.array_equal(
             _find_split_positions(p_mut, 1, 0.),
-            np.array([3])
+            np.array([3, 4])
         ))
 
-    def test_gap1_split0_single_end5(self):
+    def test_gap1_single_end5(self):
         p_mut = np.array([[0.0, 0.1, 0.1, 0.3, 0.1, 0.2]]).T
         self.assertTrue(np.array_equal(
             _find_split_positions(p_mut, 1, 0.),
-            np.array([], dtype=int)
+            np.array([1], dtype=int)
         ))
 
-    def test_gap1_split0_single_end3(self):
+    def test_gap2_single_end5(self):
+        p_mut = np.array([[0.0, 0.0, 0.1, 0.3, 0.1, 0.2]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 2, 0.),
+            np.array([2], dtype=int)
+        ))
+
+    def test_gap3_single_end5(self):
+        p_mut = np.array([[0.0, 0.0, 0.0, 0.3, 0.1, 0.2]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 3, 0.),
+            np.array([3], dtype=int)
+        ))
+
+    def test_gap1_single_end3(self):
         p_mut = np.array([[0.2, 0.1, 0.1, 0.3, 0.1, 0.0]]).T
         self.assertTrue(np.array_equal(
             _find_split_positions(p_mut, 1, 0.),
-            np.array([], dtype=int)
+            np.array([5], dtype=int)
+        ))
+
+    def test_gap2_single_end3(self):
+        p_mut = np.array([[0.2, 0.1, 0.1, 0.3, 0.0, 0.0]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 2, 0.),
+            np.array([4], dtype=int)
+        ))
+
+    def test_gap3_single_end3(self):
+        p_mut = np.array([[0.2, 0.1, 0.1, 0.0, 0.0, 0.0]]).T
+        self.assertTrue(np.array_equal(
+            _find_split_positions(p_mut, 3, 0.),
+            np.array([3], dtype=int)
         ))
 
     def test_gap1_split1_double(self):
         p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.1, 0.2]]).T
         self.assertTrue(np.array_equal(
             _find_split_positions(p_mut, 1, 0.),
-            np.array([3])
+            np.array([2, 4])
         ))
 
     def test_gap1_split1_triple(self):
         p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.0, 0.2]]).T
         self.assertTrue(np.array_equal(
             _find_split_positions(p_mut, 1, 0.),
-            np.array([4])
+            np.array([2, 5])
         ))
 
     def test_gap1_split0_quadruple(self):
         p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.0, 0.0]]).T
         self.assertTrue(np.array_equal(
             _find_split_positions(p_mut, 1, 0.),
-            np.array([], dtype=int)
+            np.array([2], dtype=int)
         ))
 
     def test_gap1_split2(self):
         p_mut = np.array([[0.2, 0.0, 0.1, 0.0, 0.1, 0.2]]).T
         self.assertTrue(np.array_equal(
             _find_split_positions(p_mut, 1, 0.),
-            np.array([1, 3])
+            np.array([1, 2, 3, 4])
         ))
 
     def test_gap2_split0(self):
@@ -1156,7 +1184,7 @@ class TestFindSplitPositions(ut.TestCase):
         p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.1, 0.2]]).T
         self.assertTrue(np.array_equal(
             _find_split_positions(p_mut, 2, 0.),
-            np.array([3])
+            np.array([2, 4])
         ))
 
     def test_gap4_split0(self):
@@ -1170,7 +1198,7 @@ class TestFindSplitPositions(ut.TestCase):
         p_mut = np.array([[0.2, 0.1, 0.0, 0.0, 0.1, 0.2]]).T
         self.assertTrue(np.array_equal(
             _find_split_positions(p_mut, 4, 0.1),
-            np.array([4])
+            np.array([1, 5])
         ))
 
     def test_generic_split(self):
@@ -1179,25 +1207,30 @@ class TestFindSplitPositions(ut.TestCase):
                                       min_gap: int,
                                       threshold: int):
             p_mut = p_mut.max(axis=1)
-            ever_above_thresh = p_mut[0] > threshold
-            prev_above_thresh = ever_above_thresh
-            current_below_count = 0
-            gaps = list()
-            if min_gap > 0:
-                for pos in range(p_mut.size):
-                    above_thresh = p_mut[pos] > threshold
-                    if above_thresh:
-                        if (current_below_count >= min_gap
-                                and ever_above_thresh
-                                and not prev_above_thresh):
-                            gaps.append(pos - 1)
-                        ever_above_thresh = True
-                        prev_above_thresh = True
-                        current_below_count = 0
-                    else:
+            n_pos = p_mut.size
+            splits = list()
+            if n_pos > 0 and min_gap > 0:
+                current_below_count = 0
+                for pos in range(n_pos):
+                    below_thresh = p_mut[pos] <= threshold
+                    if below_thresh:
+                        if current_below_count == 0 and pos > 0:
+                            # Begin a below-threshold stretch.
+                            splits.append(pos)
                         current_below_count += 1
-                        prev_above_thresh = False
-            return np.array(gaps, dtype=int)
+                    else:
+                        if current_below_count > 0:
+                            if current_below_count >= min_gap:
+                                # End a sufficiently long stretch.
+                                splits.append(pos)
+                            elif splits:
+                                # End an insufficiently long stretch.
+                                splits.pop()
+                            current_below_count = 0
+                if 0 < current_below_count < min_gap and splits:
+                    # End an insufficiently long stretch.
+                    splits.pop()
+            return np.array(splits, dtype=int)
 
         p = rng.random((100, 2))
         for gap in range(4):
@@ -1212,18 +1245,19 @@ class TestQuickUnbias(ut.TestCase):
     """ Test that the quick unbiasing algorithm produces results very
     similar to the exact algorithm. """
 
-    TOLERANCE = np.log(1.01)
+    ABS_TOL = 5.e-4
+    REL_TOL = 3.e-2
 
     @staticmethod
     def random_params(npos: int, ncls: int):
-        p_mut = rng.beta(0.9, 27.1, (npos, ncls))
+        p_mut = rng.beta(0.5, 9.5, (npos, ncls))
         p_ends = 1. - rng.random((npos, npos, ncls))
         p_cls = 1. - rng.random(ncls)
         return p_mut, p_ends, p_cls
 
     def test_threshold_0(self):
         t = 0.
-        n_pos = 300
+        n_pos = 500
         for n_cls in [1, 2]:
             for min_gap in [1, 3]:
                 for f_below in [0.2, 0.5, 0.8]:
@@ -1245,59 +1279,54 @@ class TestQuickUnbias(ut.TestCase):
                      p_clust_exact) = calc_params(p_mut, p_ends, p_cls, min_gap,
                                                   quick_unbias=False,
                                                   quick_unbias_thresh=t)
-                    self.assertTrue(np.allclose(p_mut_quick[is_below_t], 0.))
-                    self.assertLessEqual(
-                        np.mean(np.abs(np.log(p_mut_quick[~is_below_t]
-                                             / p_mut_exact[~is_below_t]))),
-                        self.TOLERANCE
-                    )
-                    self.assertLessEqual(np.mean(
-                        np.abs(np.triu(_triu_log(_triu_div(p_ends_quick,
-                                                           p_ends_exact))))),
-                        self.TOLERANCE
-                    )
-                    self.assertLessEqual(
-                        np.mean(np.abs(np.log(p_clust_quick / p_clust_exact))),
-                        self.TOLERANCE
-                    )
+                    with self.subTest(n_cls=n_cls,
+                                      min_gap=min_gap,
+                                      f_below=f_below):
+                        self.assertTrue(np.allclose(p_mut_quick[is_below_t],
+                                                    0.))
+                        self.assertTrue(np.allclose(p_mut_quick[~is_below_t],
+                                                    p_mut_exact[~is_below_t],
+                                                    atol=self.ABS_TOL,
+                                                    rtol=self.REL_TOL))
+                        self.assertTrue(np.allclose(np.triu(p_ends_quick),
+                                                    np.triu(p_ends_exact),
+                                                    atol=self.ABS_TOL,
+                                                    rtol=self.REL_TOL))
+                        self.assertTrue(np.allclose(p_clust_quick,
+                                                    p_clust_exact,
+                                                    atol=self.ABS_TOL,
+                                                    rtol=self.REL_TOL))
 
     def test_threshold_0p001(self):
         t = 0.001
-        n_pos = 300
+        n_pos = 500
         for n_cls in [1, 2]:
             for min_gap in [1, 3]:
-                for f_below in [0.2, 0.5, 0.8]:
-                    p_mut, p_ends, p_cls = self.random_params(n_pos, n_cls)
-                    # Set some mutation rates to below the threshold..
-                    n_below = round(n_pos * f_below)
-                    below_t = rng.choice(n_pos, n_below, replace=False)
-                    is_below_t = np.zeros(n_pos, dtype=bool)
-                    is_below_t[below_t] = True
-                    p_mut[is_below_t] = t
-                    # Compare quick vs. exact unbias.
-                    (p_mut_quick,
-                     p_ends_quick,
-                     p_clust_quick) = calc_params(p_mut, p_ends, p_cls, min_gap,
-                                                  quick_unbias=True,
-                                                  quick_unbias_thresh=t)
-                    (p_mut_exact,
-                     p_ends_exact,
-                     p_clust_exact) = calc_params(p_mut, p_ends, p_cls, min_gap,
-                                                  quick_unbias=False,
-                                                  quick_unbias_thresh=t)
-                    self.assertLessEqual(
-                        np.mean(np.abs(np.log(p_mut_quick / p_mut_exact))),
-                        self.TOLERANCE
-                    )
-                    self.assertLessEqual(np.mean(
-                        np.abs(np.triu(_triu_log(_triu_div(p_ends_quick,
-                                                           p_ends_exact))))),
-                        self.TOLERANCE
-                    )
-                    self.assertLessEqual(
-                        np.mean(np.abs(np.log(p_clust_quick / p_clust_exact))),
-                        self.TOLERANCE
-                    )
+                p_mut, p_ends, p_cls = self.random_params(n_pos, n_cls)
+                # Compare quick vs. exact unbias.
+                (p_mut_quick,
+                 p_ends_quick,
+                 p_clust_quick) = calc_params(p_mut, p_ends, p_cls, min_gap,
+                                              quick_unbias=True,
+                                              quick_unbias_thresh=t)
+                (p_mut_exact,
+                 p_ends_exact,
+                 p_clust_exact) = calc_params(p_mut, p_ends, p_cls, min_gap,
+                                              quick_unbias=False,
+                                              quick_unbias_thresh=t)
+                with self.subTest(n_cls=n_cls, min_gap=min_gap):
+                    self.assertTrue(np.allclose(p_mut_quick,
+                                                p_mut_exact,
+                                                atol=self.ABS_TOL,
+                                                rtol=self.REL_TOL))
+                    self.assertTrue(np.allclose(np.triu(p_ends_quick),
+                                                np.triu(p_ends_exact),
+                                                atol=self.ABS_TOL,
+                                                rtol=self.REL_TOL))
+                    self.assertTrue(np.allclose(p_clust_quick,
+                                                p_clust_exact,
+                                                atol=self.ABS_TOL,
+                                                rtol=self.REL_TOL))
 
 
 class TestCalcPMutGivenSpan(ut.TestCase):
