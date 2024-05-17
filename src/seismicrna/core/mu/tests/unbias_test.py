@@ -888,7 +888,6 @@ class TestCalcRectangularSum(ut.TestCase):
 
 class TestCalcPMutGivenSpanNoClose(ut.TestCase):
 
-    @ut.skip("x")
     def test_simulated(self):
         from scipy.stats import binom
         confidence = 0.999
