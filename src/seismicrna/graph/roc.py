@@ -7,8 +7,9 @@ import pandas as pd
 from click import command
 
 from .base import PosGraphRunner, PosGraphWriter
-from .onestruct import StructOneTableGraph, StructOneTableRunner
-from .onetable import OneTableWriter
+from .onestruct import (StructOneTableGraph,
+                        StructOneTableRunner,
+                        StructOneTableWriter)
 from .trace import iter_roc_traces
 
 logger = getLogger(__name__)
@@ -128,7 +129,7 @@ class ROCGraph(StructOneTableGraph):
                 yield (row, 1), trace
 
 
-class ROCWriter(OneTableWriter, PosGraphWriter):
+class ROCWriter(StructOneTableWriter, PosGraphWriter):
 
     def get_graph(self, rels_group: str, **kwargs):
         return ROCGraph(table=self.table, rel=rels_group, **kwargs)

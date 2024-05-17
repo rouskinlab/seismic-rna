@@ -17,7 +17,9 @@ from ..core.header import (REL_NAME,
                            parse_header)
 from ..core.mu import winsorize
 from ..core.rna import RNAProfile
-from ..core.seq import SEQ_INDEX_NAMES, Section, index_to_pos, index_to_seq
+from ..core.seq import DNA, SEQ_INDEX_NAMES, Section, index_to_pos, index_to_seq
+from ..pool.data import load_relate_dataset
+from ..relate.report import RelateReport
 
 # General fields
 READ_TITLE = "Read Name"
@@ -49,6 +51,7 @@ REL_CODES = {
     'd': DELET_REL,
     'i': INSRT_REL,
 }
+REL_NAMES = {name: code for code, name in REL_CODES.items()}
 
 # Columns of each relation-based table
 TABLE_RELS = list(REL_CODES.values())
@@ -153,6 +156,14 @@ class Table(ABC):
     @abstractmethod
     def sect(self) -> str:
         """ Name of the table's section. """
+
+    @cached_property
+    def refseq(self) -> DNA:
+        """ Reference sequence. """
+        dataset = load_relate_dataset(RelateReport.build_path(
+            top=self.top, sample=self.sample, ref=self.ref)
+        )
+        return dataset.refseq
 
     @property
     def path_fields(self) -> dict[str, Any]:

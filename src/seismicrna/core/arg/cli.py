@@ -907,23 +907,23 @@ opt_metric = Option(
 opt_struct_file = Option(
     ("--struct-file",),
     type=click.Path(exists=True, dir_okay=False),
-    help="Compare mutational profiles to the structure(s) in this CT file "
-         "(overrides --struct-sect)"
+    multiple=True,
+    help="Compare mutational profiles to the structure(s) in this CT file"
 )
 
-opt_struct_sect = Option(
-    ("--struct-sect",),
-    type=str,
-    default="",
-    help="Compare mutational profiles to this folded section of the RNA "
-         "(overriden by --struct-file)"
+opt_fold_full = Option(
+    ("--fold-full/--fold-table",),
+    type=bool,
+    default=True,
+    help="If no sections are specified, whether to default to the full section "
+         "or to the table's section"
 )
 
 opt_hist_bins = Option(
     ("--hist-bins",),
     type=int,
     default=10,
-    help="number of bins in each histogram; must be ≥ 1"
+    help="Number of bins in each histogram; must be ≥ 1"
 )
 
 opt_hist_margin = Option(

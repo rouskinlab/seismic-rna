@@ -104,6 +104,12 @@ def get_sect_coords_primers(sects_file: Path):
                 ref = str(ref)
             # The section name may be left blank.
             sect = "" if pd.isnull(sect) else str(sect)
+            if sect.lower() == FULL_NAME.lower():
+                raise ValueError(
+                    f"A section cannot be given the name {repr(FULL_NAME)}, "
+                    "which reserved for when a reference is automatically "
+                    "given a full section in the absence of coordinates/primers"
+                )
             # Check whether coordinates or primers were given.
             has_coords = not (pd.isnull(end5) or pd.isnull(end3))
             has_primers = not (pd.isnull(fwd) or pd.isnull(rev))
@@ -947,8 +953,9 @@ class RefSections(object):
                  sects_file: Path | None = None,
                  coords: Iterable[tuple[str, int, int]] = (),
                  primers: Iterable[tuple[str, DNA, DNA]] = (),
-                 primer_gap: int,
-                 exclude_primers: bool):
+                 primer_gap: int = 0,
+                 exclude_primers: bool = False,
+                 default_full: bool = True):
         # Get the names of the sections from the sections file, if any.
         sect_coords = dict()
         sect_primers = dict()
@@ -968,30 +975,30 @@ class RefSections(object):
         ref_primers = get_coords_by_ref(primers)
         # For each reference, generate sections from the coordinates.
         self._sections: dict[str, dict[tuple[int, int], Section]] = dict()
-        for ref, seq in RefSeqs(ref_seqs):
+        for ref, refseq in RefSeqs(ref_seqs):
             self._sections[ref] = dict()
             for end5, end3 in ref_coords[ref]:
                 # Add a section for each pair of 5' and 3' coordinates.
+                sect = sect_coords.get((ref, end5, end3))
                 self._add_section(ref,
-                                  seq,
+                                  refseq,
                                   end5=end5,
                                   end3=end3,
-                                  name=sect_coords.get((ref, end5, end3)))
+                                  name=sect)
             for fwd, rev in ref_primers[ref]:
                 # Add a section for each pair of fwd and rev primers.
+                sect = sect_primers.get((ref, fwd, rev))
                 self._add_section(ref,
-                                  seq,
+                                  refseq,
                                   fwd=fwd,
                                   rev=rev,
                                   primer_gap=primer_gap,
                                   exclude_primers=exclude_primers,
-                                  name=sect_primers.get((ref, fwd, rev)))
-            if not self._sections[ref]:
+                                  name=sect)
+            if default_full and not self._sections[ref]:
                 # If no sections were given for the reference, then add
                 # a section that spans the full reference.
-                self._add_section(ref, seq, primer_gap=primer_gap)
-        if extra := (set(ref_coords) | set(ref_primers)) - set(self._sections):
-            logger.warning(f"No sequences given for references {sorted(extra)}")
+                self._add_section(ref, refseq)
 
     def _add_section(self, *args, **kwargs):
         """ Create a section and add it to the object. """
@@ -999,7 +1006,8 @@ class RefSections(object):
             section = SectionFinder(*args, **kwargs)
         except Exception as error:
             logger.error(
-                f"Failed to create section with {args, kwargs}: {error}")
+                f"Failed to create section with {args, kwargs}: {error}"
+            )
         else:
             # Check if the section was seen already.
             if (seen := self._sections[section.ref].get(section.coord)) is None:
@@ -1014,8 +1022,19 @@ class RefSections(object):
                              f"Using the first encountered: {seen}")
 
     def list(self, ref: str):
-        """ Return a list of the sections for a given reference. """
+        """ List the sections for a given reference. """
         return list(self._sections[ref].values())
+
+    @property
+    def refs(self):
+        """ Reference names. """
+        return list(self._sections)
+
+    @property
+    def dict(self):
+        """ List the sections for every reference. """
+        return {ref: list(sections.values())
+                for ref, sections in self._sections.items()}
 
     @property
     def count(self):
