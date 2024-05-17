@@ -2,6 +2,7 @@ from datetime import datetime
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
+from typing import Iterable
 
 from click import command
 
@@ -12,10 +13,10 @@ from ..core.arg import (CMD_FOLD,
                         arg_input_path,
                         opt_temp_dir,
                         opt_keep_temp,
-                        opt_sections_file,
-                        opt_coords,
-                        opt_primers,
-                        opt_primer_gap,
+                        opt_fold_sections_file,
+                        opt_fold_coords,
+                        opt_fold_primers,
+                        opt_fold_full,
                         opt_quantile,
                         opt_fold_temp,
                         opt_fold_constraint,
@@ -32,14 +33,24 @@ from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
 from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
 from ..core.rna import RNAProfile
 from ..core.seq import DNA, RefSections, RefSeqs, Section
-from ..pool.data import load_relate_pool_dataset
-from ..relate.report import RelateReport
 from ..table.base import MaskPosTable, ClustPosTable
-from ..table.load import load_pos_tables
+from ..table.load import find_pos_tables, load_pos_table
 
 logger = getLogger(__name__)
 
 DEFAULT_QUANTILE = 0.95
+
+
+def find_foldable_tables(input_path: Iterable[str | Path]):
+    """ Find tables that can be folded. """
+    for file in find_pos_tables(input_path):
+        try:
+            table = load_pos_table(file)
+        except Exception as error:
+            logger.error(f"Failed to load table from {file}: {error}")
+        else:
+            if isinstance(table, (ClustPosTable, MaskPosTable)):
+                yield file, table
 
 
 def fold_section(rna: RNAProfile,
@@ -106,12 +117,11 @@ def fold_profile(table: MaskPosTable | ClustPosTable,
 
 @lock_temp_dir
 @docdef.auto()
-def run(input_path: tuple[str, ...],
-        *,
-        sections_file: str | None,
-        coords: tuple[tuple[str, int, int], ...],
-        primers: tuple[tuple[str, DNA, DNA], ...],
-        primer_gap: int,
+def run(input_path: tuple[str, ...], *,
+        fold_coords: tuple[tuple[str, int, int], ...],
+        fold_primers: tuple[tuple[str, DNA, DNA], ...],
+        fold_sections_file: str | None,
+        fold_full: bool,
         quantile: float,
         fold_temp: float,
         fold_constraint: str | None,
@@ -140,37 +150,31 @@ def run(input_path: tuple[str, ...],
         logger.warning("Fold needs normalized mutation rates, but got quantile "
                        f"= {quantile}; setting quantile to {DEFAULT_QUANTILE}")
         quantile = DEFAULT_QUANTILE
-    # Gather the tables and reference sequences.
-    tables = list()
+    # List the tables.
+    tables = [table for _, table in find_foldable_tables(input_path)]
+    # Get the sections to fold for every reference sequence.
     ref_seqs = RefSeqs()
-    for table in load_pos_tables(input_path):
-        # Fold can use only positional tables from Mask and Cluster.
-        if isinstance(table, (MaskPosTable, ClustPosTable)):
-            tables.append(table)
-            # Fetch the reference sequence from the Relate step.
-            ref_seqs.add(
-                table.ref,
-                load_relate_pool_dataset(
-                    RelateReport.build_path(top=table.top,
-                                            sample=table.sample,
-                                            ref=table.ref)
-                ).refseq
-            )
-    # Get the sections for every reference sequence.
-    ref_sections = RefSections(ref_seqs,
-                               sects_file=(Path(sections_file)
-                                           if sections_file
-                                           else None),
-                               coords=coords,
-                               primers=primers,
-                               primer_gap=primer_gap)
+    for table in tables:
+        ref_seqs.add(table.ref, table.refseq)
+    fold_sections = RefSections(ref_seqs,
+                                sects_file=(Path(fold_sections_file)
+                                            if fold_sections_file
+                                            else None),
+                                coords=fold_coords,
+                                primers=fold_primers,
+                                default_full=fold_full).dict
+    # For each table whose reference had no sections defined, default to
+    # the table's section.
+    args = [(table, (fold_sections[table.ref]
+                     if fold_sections[table.ref]
+                     else [table.section]))
+            for table in tables]
     # Fold the RNA profiles.
     return list(chain(dispatch(fold_profile,
                                max_procs,
                                parallel,
                                pass_n_procs=True,
-                               args=[(loader, ref_sections.list(loader.ref))
-                                     for loader in tables],
+                               args=args,
                                kwargs=dict(temp_dir=Path(temp_dir),
                                            keep_temp=keep_temp,
                                            quantile=quantile,
@@ -189,10 +193,10 @@ def run(input_path: tuple[str, ...],
 
 params = [
     arg_input_path,
-    opt_sections_file,
-    opt_coords,
-    opt_primers,
-    opt_primer_gap,
+    opt_fold_sections_file,
+    opt_fold_coords,
+    opt_fold_primers,
+    opt_fold_full,
     opt_quantile,
     opt_fold_temp,
     opt_fold_constraint,

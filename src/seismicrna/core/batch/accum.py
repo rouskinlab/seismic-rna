@@ -3,8 +3,8 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .index import END_COORDS
-from .muts import RefseqMutsBatch
+from .ends import END_COORDS
+from .muts import SectionMutsBatch
 from ..header import make_header
 from ..rel import RelPattern
 from ..seq import DNA, seq_pos_to_index
@@ -23,7 +23,7 @@ def _add_to_rel(added: pd.Series | pd.DataFrame, frame: pd.DataFrame, rel: str):
     frame[rel] = (frame_rel + added).values
 
 
-def accumulate(batches: Iterable[RefseqMutsBatch],
+def accumulate(batches: Iterable[SectionMutsBatch],
                refseq: DNA,
                patterns: dict[str, RelPattern], *,
                max_order: int = 0,
@@ -32,7 +32,9 @@ def accumulate(batches: Iterable[RefseqMutsBatch],
                get_info: bool = True,
                count_ends: bool = True):
     header = make_header(rels=list(patterns), max_order=max_order)
-    end_counts_index = pd.MultiIndex.from_tuples([], names=END_COORDS)
+    end_counts_index = pd.MultiIndex.from_arrays([np.array([], dtype=int)
+                                                  for _ in END_COORDS],
+                                                 names=END_COORDS)
     # Initialize the total read counts and end coordinate counts.
     if header.clustered():
         dtype = float
@@ -66,9 +68,6 @@ def accumulate(batches: Iterable[RefseqMutsBatch],
         info_per_read_per_batch = None
     # Accumulate the counts from the batches.
     for batch in batches:
-        if batch.refseq != refseq:
-            raise ValueError(f"Reference sequence of {batch} ({batch.refseq}) "
-                             f"differs from the reference sequence ({refseq})")
         if pos_nums is not None and not np.array_equal(batch.pos_nums,
                                                        pos_nums):
             raise ValueError(f"Positions of {batch} ({batch.pos_nums}) "
@@ -77,7 +76,7 @@ def accumulate(batches: Iterable[RefseqMutsBatch],
         num_reads += batch.num_reads
         # Count the end coordinates.
         if end_counts is not None:
-            end_counts = end_counts.add(batch.end_counts, fill_value=0.)
+            end_counts = end_counts.add(batch.read_end_counts, fill_value=0.)
         # Count the positions and/or reads matching each pattern.
         if fits_per_read_per_batch is not None:
             fits_per_read_per_batch.append(pd.DataFrame(zero,
@@ -117,7 +116,7 @@ def accumulate(batches: Iterable[RefseqMutsBatch],
             end_counts)
 
 
-def accum_per_pos(batches: Iterable[RefseqMutsBatch],
+def accum_per_pos(batches: Iterable[SectionMutsBatch],
                   refseq: DNA,
                   pos_nums: np.ndarray,
                   patterns: dict[str, RelPattern],
@@ -134,7 +133,7 @@ def accum_per_pos(batches: Iterable[RefseqMutsBatch],
     return num_reads, fpp, ipp
 
 
-def accum_fits(batches: Iterable[RefseqMutsBatch],
+def accum_fits(batches: Iterable[SectionMutsBatch],
                refseq: DNA,
                pos_nums: np.ndarray,
                patterns: dict[str, RelPattern],

@@ -6,8 +6,7 @@ import pandas as pd
 
 from .names import CLUST_PROP_NAME
 from .uniq import UniqReads
-from ..core.batch import get_length
-from ..core.dims import find_dims
+from ..core.array import find_dims, get_length
 from ..core.header import index_order_clusts
 from ..core.mu import (READS,
                        POSITIONS,
@@ -163,7 +162,7 @@ class EmClustering(object):
                  order: int, *,
                  min_iter: int,
                  max_iter: int,
-                 conv_thresh: float):
+                 em_thresh: float):
         """
         Parameters
         ----------
@@ -178,7 +177,7 @@ class EmClustering(object):
         max_iter: int
             Maximum number of iterations for clustering. Must be a
             positive integer no less than `min_iter`.
-        conv_thresh: float
+        em_thresh: float
             Stop the algorithm when the difference in log likelihood
             between two successive iterations becomes smaller than the
             convergence threshold (and at least min_iter iterations have
@@ -200,9 +199,9 @@ class EmClustering(object):
                              f"but got {max_iter}")
         self.max_iter = max_iter
         # Cutoff for convergence of EM
-        if not conv_thresh >= 0.:
-            raise ValueError(f"conv_thresh must be ≥ 0, but got {conv_thresh}")
-        self.conv_thresh = conv_thresh
+        if not em_thresh >= 0.:
+            raise ValueError(f"em_thresh must be ≥ 0, but got {em_thresh}")
+        self.em_thresh = em_thresh
         # Mutation rates adjusted for observer bias.
         # 2D (all positions x clusters)
         self.p_mut = np.empty((self.n_pos_total, self.order))
@@ -253,12 +252,12 @@ class EmClustering(object):
     @cached_property
     def end5s(self):
         """ 5' end coordinates (0-indexed). """
-        return self.uniq_reads.end5s_zero
+        return self.uniq_reads.read_end5s_zero
 
     @cached_property
     def end3s(self):
         """ 3' end coordinates (0-indexed). """
-        return self.uniq_reads.end3s_zero
+        return self.uniq_reads.read_end3s_zero
 
     @cached_property
     def clusters(self):
@@ -363,11 +362,15 @@ class EmClustering(object):
             guess_p_ends,
             guess_p_clust,
             prenormalize=False,
+            quick_unbias=self.uniq_reads.quick_unbias,
+            quick_unbias_thresh=self.uniq_reads.quick_unbias_thresh,
         )
         # Ensure all masked positions have a mutation rate of 0.
         if n_nonzero := np.count_nonzero(self.p_mut[self.masked]):
+            p_mut_masked = self.p_mut[self.masked]
             logger.warning(
                 f"{n_nonzero} masked position(s) have a mutation rate ≠ 0: "
+                f"{p_mut_masked[p_mut_masked != 0.]}"
             )
             self.p_mut[self.masked] = 0.
 
@@ -444,7 +447,7 @@ class EmClustering(object):
                 logger.warning(f"{self}, iteration {self.iter} returned a "
                                f"smaller log likelihood ({self.log_like}) than "
                                f"the previous iteration ({self.log_like_prev})")
-            if (self.delta_log_like < self.conv_thresh
+            if (self.delta_log_like < self.em_thresh
                     and self.iter >= self.min_iter):
                 # Converge if the increase in log likelihood is
                 # smaller than the convergence cutoff and at least

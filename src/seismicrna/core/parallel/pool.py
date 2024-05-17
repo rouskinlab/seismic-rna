@@ -3,6 +3,8 @@ from itertools import chain, filterfalse, repeat
 from logging import getLogger
 from typing import Any, Callable, Iterable
 
+from ..logs import MAX_VERBOSE, set_config, get_config
+
 logger = getLogger(__name__)
 
 
@@ -91,16 +93,30 @@ class Task(object):
 
     def __init__(self, func: Callable):
         self._func = func
+        self._config = get_config()
+
+    @property
+    def verbosity(self):
+        verbose, quiet, log_file, log_color = self._config
+        return verbose - quiet
 
     def __call__(self, *args, **kwargs):
         """ Call the task's function in a try-except block, return the
         result if it succeeds, and return `None` otherwise. """
+        if get_config() != self._config:
+            # Tasks running in parallel may not have the same top logger
+            # as the parent process (this seems to be system dependent).
+            # If not, then this task's top logger must be configured to
+            # match the configuration of the parent process.
+            set_config(*self._config)
         task = fmt_func_args(self._func, *args, **kwargs)
         logger.debug(f"Began task {task}")
         try:
             result = self._func(*args, **kwargs)
         except Exception as error:
-            logger.error(f"Failed task {task}:\n{error}\n", exc_info=True)
+            # Print a traceback if the logging level is at the maximum.
+            exc_info = self.verbosity >= MAX_VERBOSE
+            logger.error(f"Failed task {task}:\n{error}\n", exc_info=exc_info)
         else:
             logger.debug(f"Ended task {task}:\n{result}\n")
             return result

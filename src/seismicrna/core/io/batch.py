@@ -3,6 +3,7 @@ from abc import ABC
 
 from .file import BrickleIO
 from ..batch import MutsBatch, ReadBatch
+from ..seq import Section
 
 
 class ReadBatchIO(ReadBatch, BrickleIO, ABC):
@@ -16,6 +17,9 @@ class ReadBatchIO(ReadBatch, BrickleIO, ABC):
 
 class MutsBatchIO(MutsBatch, ReadBatchIO, ABC):
     """ Pickled file of a batch of mutational data. """
+
+    def __init__(self, *args, section: Section, **kwargs):
+        super().__init__(*args, **kwargs, section=section, ref=section.ref)
 
 ########################################################################
 #                                                                      #

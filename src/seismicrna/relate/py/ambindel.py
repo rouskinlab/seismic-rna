@@ -388,7 +388,7 @@ def sweep_indels(muts: dict[int, int],
             indels.insert(idx, indel)
 
 
-def find_ambrels(muts: dict[int, int],
+def find_ambindels(muts: dict[int, int],
                  refseq: DNA,
                  read: DNA,
                  qual: str,

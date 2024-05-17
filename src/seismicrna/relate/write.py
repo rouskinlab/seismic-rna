@@ -19,47 +19,13 @@ from .py.relate import find_rels_line
 from .report import RelateReport
 from .sam import XamViewer
 from ..core import path
-from ..core.parallel import as_list_of_tuples, dispatch
-from ..core.ngs import encode_phred
 from ..core.io import RefseqIO
+from ..core.ngs import encode_phred
+from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.seq import DNA, get_fasta_seq
 from ..core.write import need_write
 
 logger = getLogger(__name__)
-
-
-def mib_to_bytes(batch_size: float):
-    """
-    Return the number of bytes per batch of a given size in mebibytes.
-
-    Parameters
-    ----------
-    batch_size: float
-        Size of the batch in mebibytes (MiB): 1 MiB = 2^20 bytes
-
-    Return
-    ------
-    int
-        Number of bytes per batch, to the nearest integer
-    """
-    if batch_size <= 0.:
-        raise ValueError(f"batch_size must be > 0, but got {batch_size}")
-    nbytes = round(batch_size * 2 ** 20)
-    if nbytes <= 0:
-        logger.warning(f"Using batch_size of {batch_size} MiB gave {nbytes} "
-                       f"bytes per batch: defaulting to 1")
-        nbytes = 1
-    return nbytes
-
-
-def get_reads_per_batch(bytes_per_batch: int, seq_len: int):
-    """ Compute the number of reads per batch. """
-    reads_per_batch = bytes_per_batch // seq_len
-    if reads_per_batch < 1:
-        logger.warning(f"Cannot have {bytes_per_batch} bytes per batch with a "
-                       f"sequence of {seq_len} nt. Using 1 read per batch.")
-        return 1
-    return reads_per_batch
 
 
 def generate_batch(batch: int, *,
@@ -68,7 +34,7 @@ def generate_batch(batch: int, *,
                    refseq: DNA,
                    min_mapq: int,
                    min_qual: str,
-                   ambrel: bool,
+                   ambindel: bool,
                    overhangs: bool,
                    brotli_level: int):
     """ Compute relation vectors for every SAM record in one batch,
@@ -86,7 +52,7 @@ def generate_batch(batch: int, *,
                                      refseq,
                                      min_mapq,
                                      min_qual,
-                                     ambrel,
+                                     ambindel,
                                      overhangs)
             except Exception as error:
                 logger.error(f"Failed to compute relation vector: {error}")
@@ -94,7 +60,7 @@ def generate_batch(batch: int, *,
     names, relvecs = from_reads(relate_records(xam_view.iter_records(batch)),
                                 xam_view.sample,
                                 xam_view.ref,
-                                len(refseq),
+                                refseq,
                                 batch)
     logger.info(f"Ended computing relation vectors for batch {batch} "
                 f"of {xam_view}")
@@ -110,16 +76,20 @@ class RelationWriter(object):
     """
 
     def __init__(self, xam_view: XamViewer, seq: DNA):
-        self.xam = xam_view
+        self._xam = xam_view
         self.seq = seq
 
     @property
     def sample(self):
-        return self.xam.sample
+        return self._xam.sample
 
     @property
     def ref(self):
-        return self.xam.ref
+        return self._xam.ref
+
+    @property
+    def num_reads(self):
+        return self._xam.n_reads
 
     def _write_report(self, *, out_dir: Path, **kwargs):
         report = RelateReport(sample=self.sample, ref=self.ref, **kwargs)
@@ -139,7 +109,7 @@ class RelationWriter(object):
                           min_mapq: int,
                           phred_enc: int,
                           min_phred: int,
-                          ambrel: bool,
+                          ambindel: bool,
                           overhangs: bool,
                           brotli_level: int,
                           n_procs: int):
@@ -153,12 +123,12 @@ class RelationWriter(object):
         logger.info(f"Began {self}")
         try:
             # Collect the keyword arguments.
-            disp_kwargs = dict(xam_view=self.xam,
+            disp_kwargs = dict(xam_view=self._xam,
                                out_dir=out_dir,
                                refseq=self.seq,
                                min_mapq=min_mapq,
                                min_qual=encode_phred(min_phred, phred_enc),
-                               ambrel=ambrel,
+                               ambindel=ambindel,
                                overhangs=overhangs,
                                brotli_level=brotli_level)
             # Generate and write relation vectors for each batch.
@@ -166,7 +136,7 @@ class RelationWriter(object):
                                n_procs,
                                parallel=True,
                                pass_n_procs=False,
-                               args=as_list_of_tuples(self.xam.indexes),
+                               args=as_list_of_tuples(self._xam.indexes),
                                kwargs=disp_kwargs)
             if results:
                 nums_reads, relv_checks, name_checks = map(list,
@@ -185,7 +155,7 @@ class RelationWriter(object):
         finally:
             if not keep_temp:
                 # Delete the temporary SAM file before exiting.
-                self.xam.delete_temp_sam()
+                self._xam.delete_temp_sam()
 
     def write(self, *,
               out_dir: Path,
@@ -194,6 +164,9 @@ class RelationWriter(object):
               brotli_level: int,
               force: bool,
               overhangs: bool,
+              min_phred: int,
+              phred_enc: int,
+              ambindel: bool,
               **kwargs):
         """ Compute a relation vector for every record in a BAM file,
         write the vectors into one or more batch files, compute their
@@ -203,6 +176,10 @@ class RelationWriter(object):
                                               ref=self.ref)
         if need_write(report_file, force):
             began = datetime.now()
+            # Determine if there are enough reads.
+            if self.num_reads < min_reads:
+                raise ValueError(f"Insufficient reads in {self._xam}: "
+                                 f"{self.num_reads} < {min_reads}")
             # Write the reference sequence to a file.
             refseq_checksum = self._write_refseq(out_dir, brotli_level)
             # Compute relation vectors and time how long it takes.
@@ -212,13 +189,20 @@ class RelationWriter(object):
                                               brotli_level=brotli_level,
                                               min_mapq=min_mapq,
                                               overhangs=overhangs,
+                                              min_phred=min_phred,
+                                              phred_enc=phred_enc,
+                                              ambindel=ambindel,
                                               **kwargs)
             ended = datetime.now()
             # Write a report of the relation step.
             self._write_report(out_dir=out_dir,
                                min_mapq=min_mapq,
+                               min_phred=min_phred,
+                               phred_enc=phred_enc,
                                overhangs=overhangs,
+                               ambindel=ambindel,
                                min_reads=min_reads,
+                               n_reads_xam=self.num_reads,
                                n_reads_rel=nreads,
                                n_batches=nbats,
                                checksums=checks,
@@ -228,29 +212,19 @@ class RelationWriter(object):
         return report_file
 
     def __str__(self):
-        return f"Relate {self.xam}"
+        return f"Relate {self._xam}"
 
 
 def write_one(xam_file: Path, *,
               fasta: Path,
               temp_dir: Path,
-              batch_size: float,
-              min_reads: int = 0,
+              batch_size: int,
               **kwargs):
     """ Write the batches of relation vectors for one XAM file. """
-    # Get the reference sequence.
     ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
-    seq = get_fasta_seq(fasta, DNA, ref)
-    # Compute the number of records per batch.
-    rec_per_batch = get_reads_per_batch(mib_to_bytes(batch_size), len(seq))
-    # Determine if there are enough reads.
-    xam = XamViewer(xam_file, temp_dir, rec_per_batch)
-    if min_reads > 0 and xam.n_reads < min_reads:
-        raise ValueError(
-            f"Insufficient reads in {xam}: {xam.n_reads} (< {min_reads})")
-    # Write the batches.
-    writer = RelationWriter(xam, seq)
-    return writer.write(min_reads=min_reads, **kwargs)
+    writer = RelationWriter(XamViewer(xam_file, temp_dir, batch_size),
+                            get_fasta_seq(fasta, DNA, ref))
+    return writer.write(**kwargs)
 
 
 def write_all(xam_files: Iterable[Path],

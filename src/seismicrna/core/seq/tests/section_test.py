@@ -577,7 +577,7 @@ class TestSectionEqual(ut.TestCase):
         section2.add_mask("mask2", [9])
         self.assertNotEqual(section1, section2)
 
-    def test_diff_mask_pos(self):
+    def test_diff_mask_positions(self):
         seq = DNA.random(30)
         section1 = Section(ref="ref",
                            seq=seq,
@@ -772,16 +772,16 @@ class TestSectionMaskNames(ut.TestCase):
             self.assertTrue(np.array_equal(section.get_mask(name), masked))
 
 
-class TestSectionMaskPos(ut.TestCase):
+class TestSectionMaskList(ut.TestCase):
 
-    def test_mask_pos(self):
+    def test_mask_list(self):
         seq = DNA("GAACCGTNACGGATCTCGCAATGT")
         seq5 = 8
         end5 = 17
         end3 = 26
         section = Section("myref", seq, seq5=seq5, end5=end5, end3=end3)
-        section.mask_pos([19, 24, 23, 19])
-        self.assertTrue(np.array_equal(section._masks[section.MASK_POS],
+        section.mask_list([19, 24, 23, 19])
+        self.assertTrue(np.array_equal(section._masks[section.MASK_LIST],
                                        np.array([19, 23, 24])))
 
 

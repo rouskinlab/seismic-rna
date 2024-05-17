@@ -16,7 +16,7 @@ from ..core.arg import (opt_barcode_end,
                         opt_index_tolerence,
                         opt_demulti_overwrite,
                         arg_fasta,
-                        opt_sections_file,
+                        opt_mask_sections_file,
                         opt_fastqx,
                         opt_refs_meta,
                         opt_temp_dir,
@@ -29,7 +29,7 @@ params = [
     # Inputs
     arg_fasta,
     opt_fastqx,
-    opt_sections_file,
+    opt_mask_sections_file,
     opt_barcode_start,
     opt_barcode_end,
 
@@ -459,7 +459,7 @@ def make_dict_from_fasta(fasta_path) -> dict:
 
 
 """
-input csv, sections_file that represents each sequence to be dumultiplexed with many different coloumns 
+input csv, mask_sections_file that represents each sequence to be dumultiplexed with many different coloumns 
 
 workspace directory that demultiplexing is being done in 
 
@@ -1032,7 +1032,7 @@ def create_report(sequence_objects: dict, fq1: str, fq2: str, working_directory:
 
 """
 split is default to 10. disregarding extremes, the higher the split the lighter the memeory load
-sections_file csv 
+mask_sections_file csv 
     each construct must have a secondary signiture start index and len in order to process, 
     barcode given in main arguements 
 """

@@ -54,7 +54,24 @@ from .arg import (opt_phred_enc,
                   opt_fold_mfe,
                   opt_fold_max,
                   opt_fold_percent,
-                  opt_quantile)
+                  opt_quantile,
+                  opt_quick_unbias,
+                  opt_quick_unbias_thresh,
+                  opt_min_finfo_read,
+                  opt_min_mut_gap,
+                  opt_min_ninfo_pos,
+                  opt_max_fmut_pos,
+                  opt_ambindel,
+                  opt_em_runs,
+                  opt_em_thresh,
+                  opt_min_em_iter,
+                  opt_max_em_iter,
+                  opt_max_fmut_read,
+                  opt_max_clusters,
+                  opt_mask_gu,
+                  opt_mask_polya,
+                  opt_mask_discontig,
+                  opt_min_phred)
 from .io import FileIO, ReadBatchIO, RefIO
 from .rel import HalfRelPattern
 from .version import __version__
@@ -165,10 +182,6 @@ def iconv_array_int(nums: list[int]):
     return np.asarray(nums, dtype=int)
 
 
-def iconv_array_float(nums: list[float]):
-    return np.asarray(nums, dtype=float)
-
-
 def oconv_array_int(nums: np.ndarray):
     return list(map(int, nums))
 
@@ -244,24 +257,31 @@ def oconv_datetime(dtime: datetime):
 
 
 # General fields
-
 VersionF = Field("version", "Version of SEISMIC-RNA", str, __version__)
 BranchesF = Field("branches", "Branches", list, list())
-SampleF = Field("sample", "Name of Sample", str)
-RefF = Field("ref", "Name of Reference", str)
-SectF = Field("sect", "Name of Section", str)
-End5F = Field("end5", "5' end of Section", int)
-End3F = Field("end3", "3' end of Section", int)
+SampleF = Field("sample", "Sample", str)
+RefF = Field("ref", "Reference", str)
+SectF = Field("sect", "Section", str)
+End5F = Field("end5", "Section 5' end", int)
+End3F = Field("end3", "Section 3' end", int)
 MinReadsF = OptionField(opt_min_reads)
-TimeBeganF = Field("began", "Time Began", datetime,
-                   iconv=iconv_datetime, oconv=oconv_datetime)
-TimeEndedF = Field("ended", "Time Ended", datetime,
-                   iconv=iconv_datetime, oconv=oconv_datetime)
-TimeTakenF = Field("taken", "Time Taken (minutes)", float, calc_taken,
+TimeBeganF = Field("began",
+                   "Time began",
+                   datetime,
+                   iconv=iconv_datetime,
+                   oconv=oconv_datetime)
+TimeEndedF = Field("ended",
+                   "Time ended",
+                   datetime,
+                   iconv=iconv_datetime,
+                   oconv=oconv_datetime)
+TimeTakenF = Field("taken",
+                   "Time taken (minutes)",
+                   float,
+                   calc_taken,
                    oconv=get_oconv_float(TIME_TAKEN_PRECISION))
 
 # Align fields
-
 IsDemultF = Field("demultiplexed", "Use demultiplexed mode", bool)
 IsPairedEndF = Field("paired_end", "Use paired-end mode", bool)
 PhredEncF = OptionField(opt_phred_enc)
@@ -287,11 +307,11 @@ Bowtie2Contain = OptionField(opt_bt2_contain)
 Bowtie2Mixed = OptionField(opt_bt2_mixed)
 Bowtie2Un = OptionField(opt_bt2_un)
 Bowtie2ScoreMin = Field("bt2_score_min",
-                        "Minimum score for a valid alignment with Bowtie2",
+                        "Discard alignments that score below this threshold",
                         str)
-Bowtie2MinLength = OptionField(opt_bt2_i)
-Bowtie2MaxLength = OptionField(opt_bt2_x)
-Bowtie2GBar = OptionField(opt_bt2_gbar)
+Bowtie2MinLengthF = OptionField(opt_bt2_i)
+Bowtie2MaxLengthF = OptionField(opt_bt2_x)
+Bowtie2GBarF = OptionField(opt_bt2_gbar)
 Bowtie2SeedLength = OptionField(opt_bt2_l)
 Bowtie2SeedInterval = OptionField(opt_bt2_s)
 Bowtie2ExtTries = OptionField(opt_bt2_d)
@@ -300,202 +320,192 @@ Bowtie2Dpad = OptionField(opt_bt2_dpad)
 Bowtie2Orient = OptionField(opt_bt2_orient)
 MinMapQualF = OptionField(opt_min_mapq)
 CramOutF = OptionField(opt_cram)
-ReadsInitF = Field("reads_init", "Number of reads initially", int)
+AlignReadsInitF = Field("align_reads_init", "Number of reads in the FASTQ file(s)", int)
 ReadsTrimF = Field("reads_trim", "Number of reads after trimming", int)
-ReadsAlignF = Field("reads_align", "Number of reads after alignment", dict,
+ReadsAlignF = Field("reads_align",
+                    "Number of reads after alignment",
+                    dict,
                     iconv=iconv_dict_str_int)
 ReadsDedupF = Field("reads_filter",
                     "Number of reads after filtering",
                     dict,
                     iconv=iconv_dict_str_int)
-ReadsRefs = Field("reads_refs",
-                  "Number of reads aligned by reference",
-                  dict,
-                  iconv=iconv_dict_str_int)
+ReadsRefsF = Field("reads_refs",
+                   "Number of reads aligned to each reference",
+                   dict,
+                   iconv=iconv_dict_str_int)
 
 # Relate fields
-NumReadsRelF = Field("n_reads_rel", "Number of Reads", int)
-NumBatchF = Field("n_batches", "Number of Batches", int)
-ChecksumsF = Field("checksums", "MD5 Checksums of Batches", dict)
+NumReadsXamF = Field("n_reads_xam", "Number of reads in SAM/BAM/CRAM file", int)
+NumReadsRelF = Field("n_reads_rel", "Number of reads processed by relate", int)
+NumBatchF = Field("n_batches", "Number of batches", int)
+ChecksumsF = Field("checksums", "MD5 checksums of batches", dict)
 RefseqChecksumF = Field("refseq_checksum",
-                        "MD5 Checksum of Reference Sequence File",
+                        "MD5 checksum of reference sequence",
                         str)
+AmbindelF = OptionField(opt_ambindel)
 OverhangsF = OptionField(opt_overhangs)
+MinPhredF = OptionField(opt_min_phred)
 
 # Pool fields
-
-PooledSamplesF = Field("pooled_samples", "Pooled Samples", list)
+PooledSamplesF = Field("pooled_samples", "Pooled samples", list)
 
 # Mask fields
 CountMutsF = Field("count_muts",
-                   "Count the Following as Mutations",
+                   "Count as mutations",
                    HalfRelPattern,
                    iconv=HalfRelPattern.from_report_format,
                    oconv=HalfRelPattern.to_report_format)
 CountRefsF = Field("count_refs",
-                   "Count the Following as Matches",
+                   "Count as matches",
                    HalfRelPattern,
                    iconv=HalfRelPattern.from_report_format,
                    oconv=HalfRelPattern.to_report_format)
-ExclPolyAF = Field("exclude_polya",
-                   "Exclude Poly(A) Sequences of at Least This Length (nt)",
-                   int)
-ExclGUF = Field("exclude_gu", "Exclude G/U Bases", bool)
-ExclUserPosF = Field("exclude_pos",
-                     "Exclude User-Defined Positions",
+ExclPolyAF = OptionField(opt_mask_polya)
+ExclGUF = OptionField(opt_mask_gu)
+ExclUserPosF = Field("mask_pos",
+                     "Mask additional positions from a list",
                      np.ndarray,
                      iconv=iconv_array_int,
                      oconv=oconv_array_int)
-MinInfoPosF = Field("min_ninfo_pos",
-                    "Minimum Number of Informative Reads per Position",
-                    int)
-MinMutPosF = Field("min_fmut_pos",
-                   "Minimum Fraction of Mutations per Position",
-                   float,
-                   oconv=get_oconv_float())
-MaxMutPosF = Field("max_fmut_pos",
-                   "Maximum Fraction of Mutations per Position",
-                   float,
-                   oconv=get_oconv_float())
+MinNInfoPosF = OptionField(opt_min_ninfo_pos)
+MaxFMutPosF = OptionField(opt_max_fmut_pos)
 MinNCovReadF = OptionField(opt_min_ncov_read)
-MinMutGapF = Field("min_mut_gap",
-                   "Minimum Gap Between Mutations (nt)",
-                   int)
-MinInfoReadF = Field("min_finfo_read",
-                     "Minimum Fraction of Informative Positions per Read",
-                     float,
-                     oconv=get_oconv_float())
-MaxMutReadF = Field("max_fmut_read",
-                    "Maximum Fraction of Mutations per Read",
-                    float,
-                    oconv=get_oconv_float())
-PosInitF = Field("pos_init",
-                 "Positions Initially Given",
-                 np.ndarray,
-                 iconv=iconv_array_int,
-                 oconv=oconv_array_int)
+DiscontigF = OptionField(opt_mask_discontig)
+MinMutGapF = OptionField(opt_min_mut_gap)
+QuickUnbiasF = OptionField(opt_quick_unbias)
+QuickUnbiasThreshF = OptionField(opt_quick_unbias_thresh)
+MinFInfoReadF = OptionField(opt_min_finfo_read)
+MaxFMutReadF = OptionField(opt_max_fmut_read)
 PosCutPolyAF = Field("pos_polya",
-                     "Positions Cut -- Poly(A) Sequence",
+                     "Positions in stretches of consecutive A bases",
                      np.ndarray,
                      iconv=iconv_array_int,
                      oconv=oconv_array_int)
 PosCutGUF = Field("pos_gu",
-                  "Positions Cut -- G/U Base",
+                  "Positions with G or U bases",
                   np.ndarray,
                   iconv=iconv_array_int,
                   oconv=oconv_array_int)
-PosCutUserF = Field("pos_user",
-                    "Positions Cut -- User-Specified",
+PosCutListF = Field("pos_list",
+                    "Positions masked from a list",
                     np.ndarray,
                     iconv=iconv_array_int,
                     oconv=oconv_array_int)
 PosCutLoInfoF = Field("pos_min_ninfo",
-                      "Positions Cut -- Too Few Informative Reads",
+                      "Positions with too few unambiguous base calls",
                       np.ndarray,
                       iconv=iconv_array_int,
                       oconv=oconv_array_int)
-PosCutLoMutF = Field("pos_min_fmut",
-                     "Positions Cut -- Too Few Mutations",
-                     np.ndarray,
-                     iconv=iconv_array_int,
-                     oconv=oconv_array_int)
 PosCutHiMutF = Field("pos_max_fmut",
-                     "Positions Cut -- Too Many Mutations",
+                     "Positions with too many mutations",
                      np.ndarray,
                      iconv=iconv_array_int,
                      oconv=oconv_array_int)
 PosKeptF = Field("pos_kept",
-                 "Positions Ultimately Kept",
+                 "Positions kept after masking",
                  np.ndarray,
                  iconv=iconv_array_int,
                  oconv=oconv_array_int)
 NumPosInitF = Field("n_pos_init",
-                    "Number of Positions Initially Given",
+                    "Total number of positions in the section",
                     int)
 NumPosCutPolyAF = Field("n_pos_polya",
-                        "Number of Positions Cut -- Poly(A) Sequence",
+                        "Number of positions in stretches of consecutive A "
+                        "bases",
                         int)
 NumPosCutGUF = Field("n_pos_gu",
-                     "Number of Positions Cut -- G/U Base",
+                     "Number of positions with G or U bases",
                      int)
-NumPosCutUserF = Field("n_pos_user",
-                       "Number of Positions Cut -- User-Specified",
+NumPosCutListF = Field("n_pos_user",
+                       "Number of positions masked from a list",
                        int)
 NumPosCutLoInfoF = Field("n_pos_min_ninfo",
-                         "Number of Positions Cut -- Too Few Informative Reads",
+                         "Number of positions with too few unambiguous base "
+                         "calls",
                          int)
-NumPosCutLoMutF = Field("n_pos_min_fmut",
-                        "Number of Positions Cut -- Too Few Mutations",
-                        int)
 NumPosCutHiMutF = Field("n_pos_max_fmut",
-                        "Number of Positions Cut -- Too Many Mutations",
+                        "Number of positions with too many mutations",
                         int)
 NumPosKeptF = Field("n_pos_kept",
-                    "Number of Positions Ultimately Kept",
+                    "Number of positions kept after masking",
                     int)
-NumReadsInitF = Field("n_reads_init",
-                      "Number of Reads Initially Given",
+NumReadsInitF = Field("n_reads_premask",
+                      "Total number of reads before masking",
                       int)
 NumReadsLoNCovF = Field("n_reads_min_ncov",
-                        "Number of Reads Cut -- Too Few Covered Positions",
-                        int,
-                        default=0)  # compatibility
-NumReadsDiscontigF = Field("n_reads_discontig",
-                           "Number of Reads Cut -- Discontiguous Mates",
-                           int,
-                           default=0)  # compatibility
+                        "Number of reads with too few bases covering the "
+                        "section",
+                        int)
+NumDiscontigF = Field("n_reads_discontig",
+                      "Number of reads with discontiguous mates",
+                      int)
 NumReadsLoInfoF = Field("n_reads_min_finfo",
-                        "Number of Reads Cut -- Too Few Informative Positions",
+                        "Number of reads with too few unambiguous base calls",
                         int)
 NumReadsHiMutF = Field("n_reads_max_fmut",
-                       "Number of Reads Cut -- Too Many Mutations",
+                       "Number of reads with too many mutations",
                        int)
 NumReadsCloseMutF = Field("n_reads_min_gap",
-                          "Number of Reads Cut -- Mutations Too Close Together",
+                          "Number of reads with two mutations too close",
                           int)
 NumReadsKeptF = Field("n_reads_kept",
-                      "Number of Reads Ultimately Kept",
+                      "Number of reads kept after masking",
                       int)
-NumUniqReadKeptF = Field("n_uniq_reads",
-                         "Number of Unique Reads",
-                         int,
-                         default=0)  # compatibility
 
 # Cluster fields
 
-MinIterClustF = Field("min_iter", "Minimum EM Iterations per Cluster", int)
-MaxIterClustF = Field("max_iter", "Maximum EM Iterations per Cluster", int)
-ClustConvThreshF = Field("conv_thresh",
-                         "Convergence Threshold for Log Likelihood",
-                         float,
-                         oconv=get_oconv_float())
-MaxClustsF = Field("max_order", "Maximum Number of Clusters", int)
-ClustNumRunsF = Field("num_runs", "Number of Independent EM Runs", int)
-ClustsConvF = Field("converged", "Iterations Until Convergence per Run", dict,
+NumUniqReadKeptF = Field("n_uniq_reads",
+                         "Number of unique reads",
+                         int)
+MinIterClustF = OptionField(opt_min_em_iter)
+MaxIterClustF = OptionField(opt_max_em_iter)
+ClustConvThreshF = OptionField(opt_em_thresh)
+MaxClustsF = OptionField(opt_max_clusters)
+ClustNumRunsF = OptionField(opt_em_runs)
+NON_CONVERGED = -1  # Number indicating a run did not converge
+ClustsConvF = Field("converged",
+                    f"Iterations for each run ({NON_CONVERGED} if unconverged)",
+                    dict,
+                    dict(),
                     iconv=iconv_int_keys)
-ClustsLogLikesF = Field("log_likes", "Log Likelihood per Run", dict,
+ClustsLogLikesF = Field("log_likes",
+                        "Final log likelihood for each run",
+                        dict,
+                        dict(),
                         iconv=iconv_int_keys,
                         oconv=get_oconv_dict_list_float())
-ClustsRMSDsF = Field("clusts_rmsds", "NRMSD from Run 0", dict, dict(),
+ClustsRMSDsF = Field("clusts_rmsds",
+                     "NRMSD of each run versus run 0",
+                     dict,
+                     dict(),
                      iconv=iconv_int_keys,
                      oconv=get_oconv_dict_list_float())
-ClustsMeanRsF = Field("clusts_meanr", "Correlation with Run 0", dict, dict(),
+ClustsMeanRsF = Field("clusts_meanr",
+                      "Pearson correlation of each run versus run 0",
+                      dict,
+                      dict(),
                       iconv=iconv_int_keys,
                       oconv=get_oconv_dict_list_float())
-ClustsBicF = Field("bic", "Bayesian Information Criterion per Order", dict,
+ClustsBicF = Field("bic",
+                   "Bayesian information criterion for each number of clusters",
+                   dict,
+                   dict(),
                    iconv=iconv_int_keys,
                    oconv=get_oconv_dict_float())
-NumClustsF = Field("best_order", "Optimal Number of Clusters", int)
+NumClustsF = Field("best_order", "Number of clusters with the best BIC", int)
 
 # Join fields
 
-JoinedSectionsF = Field("joined_sections", "Joined Sections", list)
-JoinedClustersF = Field("joined_clusters", "Joined Clusters", dict,
+JoinedSectionsF = Field("joined_sections", "Joined sections", list)
+JoinedClustersF = Field("joined_clusters",
+                        "Joined clusters",
+                        dict,
                         iconv=iconv_dict_str_dict_int_dict_int_int)
 
 # Fold fields
 
-ProfileF = Field("profile", "Name of Profile", str)
+ProfileF = Field("profile", "Profile", str)
 Quantile = OptionField(opt_quantile)
 FoldTempF = OptionField(opt_fold_temp)
 FoldMaxDistF = OptionField(opt_fold_md)
@@ -514,12 +524,24 @@ def fields():
 
 @cache
 def field_keys() -> dict[str, Field]:
-    return {field.key: field for field in fields()}
+    keys = dict()
+    for field in fields():
+        if field.key:
+            if field.key in keys:
+                raise ValueError(f"Repeated field key: {repr(field.key)}")
+            keys[field.key] = field
+    return keys
 
 
 @cache
 def field_titles() -> dict[str, Field]:
-    return {field.title: field for field in fields() if field.title}
+    titles = dict()
+    for field in fields():
+        if field.title:
+            if field.title in titles:
+                raise ValueError(f"Repeated field title: {repr(field.title)}")
+            titles[field.title] = field
+    return titles
 
 
 def lookup_key(key: str):
@@ -527,7 +549,7 @@ def lookup_key(key: str):
     try:
         return field_keys()[key]
     except KeyError:
-        raise ValueError(f"Invalid report key: {repr(key)}")
+        raise ValueError(f"Invalid field key: {repr(key)}")
 
 
 def lookup_title(title: str):
@@ -537,7 +559,7 @@ def lookup_title(title: str):
     try:
         return field_titles()[title]
     except KeyError:
-        raise ValueError(f"Invalid report field: {repr(title)}")
+        raise ValueError(f"Invalid field title: {repr(title)}")
 
 
 def key_to_title(key: str):

@@ -82,7 +82,7 @@ from typing import Iterable
 import numpy as np
 from numba import jit, NumbaPerformanceWarning
 
-from ..dims import find_dims, triangular
+from ..array import find_dims, triangular
 
 logger = getLogger(__name__)
 
@@ -208,6 +208,47 @@ def _triu_sum(a: np.ndarray):
     for j in range(a.shape[0]):
         a_sum += a[j, j:].sum(axis=0)
     return a_sum
+
+
+@jit()
+def _triu_cumsum(a: np.ndarray):
+    """ Calculate the cumulative sum from the upper right corner of `a`
+    to every other element in the upper right triangle.
+
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function makes assumptions:
+
+    -   `a` has at least 2 dimensions.
+    -   The first two dimensions of `a` have equal length.
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array whose upper triangle to sum.
+
+    Returns
+    -------
+    np.ndarray
+        Cumulative sum, with the same shape as `a`.
+    """
+    a_cumsum = np.empty_like(a)
+    if a_cumsum.size == 0:
+        return a_cumsum
+    npos = a.shape[0]
+    extras = a.shape[2:]
+    # Numba does not (as of v0.59.0) support np.cumsum with the optional
+    # argument "axis", so need to replicate this functionality manually.
+    # First, fill the first row, starting from the top right element.
+    a_cumsum[0, -1] = a[0, -1]
+    for col in range(npos - 2, -1, -1):
+        a_cumsum[0, col] = a[0, col] + a_cumsum[0, col + 1]
+    # Then, fill each subsequent row.
+    for row in range(1, npos):
+        row_cumsum = np.zeros(extras, dtype=a.dtype)
+        for col in range(npos - 1, row - 1, -1):
+            row_cumsum += a[row, col]
+            a_cumsum[row, col] = row_cumsum + a_cumsum[row - 1, col]
+    return a_cumsum
 
 
 @jit()
@@ -647,14 +688,72 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
     return p_mut_given_span_noclose
 
 
+def _slice_p_ends(p_ends: np.ndarray,
+                  p_ends_cumsum: np.ndarray,
+                  end5: int,
+                  end3: int):
+    """ Slice a matrix of end coordinate probabilities. """
+    p_ends_slice = p_ends[end5: end3, end5: end3].copy()
+    if p_ends_slice.size > 0:
+        p_ends_slice[0, :-1] = p_ends[:end5 + 1, end5: end3 - 1].sum(axis=0)
+        p_ends_slice[1:, -1] = p_ends[end5 + 1: end3, end3 - 1:].sum(axis=1)
+        p_ends_slice[0, -1] = p_ends_cumsum[end5, end3 - 1]
+    return p_ends_slice
+
+
+def _find_split_positions(p_mut: np.ndarray, min_gap: int, threshold: float):
+    """ Find the positions (at or below the threshold) at which to split
+    the mutation rates. """
+    npos, _ = p_mut.shape
+    min_gap = _adjust_min_gap(npos, min_gap)
+    if min_gap == 0:
+        return np.array([], dtype=int)
+    cum_pos = np.cumsum(p_mut.max(axis=1) <= threshold)
+    return np.flatnonzero(np.diff(
+        np.asarray(cum_pos[min_gap:] - cum_pos[:-min_gap] == min_gap,
+                   dtype=int)
+    ) == -1) + min_gap
+
+
+def _split_positions(p_mut: np.ndarray,
+                     p_mut_init: np.ndarray,
+                     p_ends: np.ndarray,
+                     split_pos: np.ndarray):
+    """ Split `p_mut` and `p_ends` where at least `min_gap` consecutive
+    positions are no greater than `threshold` in every cluster. """
+    dims = find_dims([(POSITIONS, CLUSTERS),
+                      (POSITIONS, CLUSTERS),
+                      (POSITIONS, POSITIONS)],
+                     [p_mut, p_mut_init, p_ends],
+                     ["p_mut", "p_mut_init", "p_ends"])
+    n_splits, = split_pos.shape
+    if n_splits == 0:
+        return [p_mut], [p_mut_init], [p_ends]
+    npos = dims[POSITIONS]
+    p_mut_split = np.split(p_mut, split_pos)
+    p_mut_init_split = np.split(p_mut_init, split_pos)
+    p_ends_cumsum = _triu_cumsum(p_ends)
+    p_ends_split = [_slice_p_ends(p_ends, p_ends_cumsum, 0, split_pos[0])]
+    for i in range(n_splits - 1):
+        p_ends_split.append(_slice_p_ends(p_ends,
+                                          p_ends_cumsum,
+                                          split_pos[i],
+                                          split_pos[i + 1]))
+    p_ends_split.append(_slice_p_ends(p_ends,
+                                      p_ends_cumsum,
+                                      split_pos[-1],
+                                      npos))
+    return p_mut_split, p_mut_init_split, p_ends_split
+
+
 def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                            min_gap: int,
                            p_ends: np.ndarray,
                            init_p_mut_given_span: np.ndarray, *,
-                           f_tol: float = 5e-1,
-                           f_rtol: float = 5e-1,
-                           x_tol: float = 1e-4,
-                           x_rtol: float = 5e-1):
+                           quick_unbias: bool = True,
+                           quick_unbias_thresh: float = 0.,
+                           f_tol: float = 1.e-4,
+                           x_rtol: float = 1.e-3):
     """ Calculate the underlying mutation rates including for reads with
     two mutations too close based on the observed mutation rates. """
     # Validate the dimensionality of the arguments.
@@ -667,8 +766,6 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
             p_ends,
             init_p_mut_given_span,
             f_tol=f_tol,
-            f_rtol=f_rtol,
-            x_tol=x_tol,
             x_rtol=x_rtol,
         )[:, 0]
     dims = find_dims([(POSITIONS, CLUSTERS)],
@@ -679,6 +776,34 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
     if min_gap == 0:
         # No two mutations can be too close.
         return p_mut_given_span_observed
+
+    if quick_unbias:
+        # Split the mutation rates and end coordinate distributions,
+        # calculate them separately, and reassemble them.
+        p_mut_given_span_list = list()
+        for p_mut_split, p_mut_init_split, p_ends_split in zip(
+                *_split_positions(p_mut_given_span_observed,
+                                  init_p_mut_given_span,
+                                  p_ends,
+                                  _find_split_positions(
+                                      p_mut_given_span_observed,
+                                      min_gap,
+                                      quick_unbias_thresh)),
+                strict=True
+        ):
+            p_mut_given_span_list.append(_calc_p_mut_given_span(
+                p_mut_split,
+                min_gap,
+                p_ends_split,
+                p_mut_init_split,
+                quick_unbias=False,
+                quick_unbias_thresh=quick_unbias_thresh,
+                f_tol=f_tol,
+                x_rtol=x_rtol,
+            ))
+        return (np.concatenate(p_mut_given_span_list, axis=0)
+                if p_mut_given_span_list
+                else np.empty((dims[POSITIONS], dims[CLUSTERS])))
 
     # Use the Newton-Krylov method to solve for the total mutation rates
     # (including reads with two mutations too close) that result in zero
@@ -706,8 +831,6 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
     return _clip(newton_krylov(objective,
                                init_p_mut_given_span,
                                f_tol=f_tol,
-                               f_rtol=f_rtol,
-                               x_tol=x_tol,
                                x_rtol=x_rtol))
 
 
@@ -1211,27 +1334,26 @@ def calc_p_ends_observed(npos: int,
                                     check_values=check_values)[:, :, 0]
     find_dims([(READS,), (READS,), (READS, CLUSTERS)],
               [end5s, end3s, weights],
-              ["end5s", "end3s", "weights"],
-              nonzero=True)
+              ["end5s", "end3s", "weights"])
     if check_values:
         # Validate the values.
-        if np.min(end5s) < 0:
+        if end5s.min(initial=npos - 1) < 0:
             raise ValueError(
                 f"All end5s must be ≥ 0, but got {end5s[end5s < 0]}"
             )
-        if np.max(end5s) >= npos:
+        if end5s.max(initial=0) >= npos:
             raise ValueError(
                 f"All end5s must be < {npos}, but got {end5s[end5s >= npos]}"
             )
-        if np.min(end3s) < 0:
+        if end3s.min(initial=npos - 1) < 0:
             raise ValueError(
                 f"All end3s must be ≥ 0, but got {end3s[end3s < 0]}"
             )
-        if np.max(end3s) >= npos:
+        if end3s.max(initial=0) >= npos:
             raise ValueError(
                 f"All end3s must be < {npos}, but got {end3s[end3s >= npos]}"
             )
-        if np.min(weights) < 0.:
+        if weights.min(initial=1.) < 0.:
             raise ValueError(
                 f"All weights must be ≥ 0, but got {weights[weights < 0.]}"
             )

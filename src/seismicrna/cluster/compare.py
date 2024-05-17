@@ -19,9 +19,9 @@ from .em import EmClustering
 from .names import LOG_EXP_NAME, LOG_OBS_NAME
 from ..core.header import ORDER_NAME
 from ..core.mu import calc_rmsd, calc_nrmsd, calc_pearson
+from ..core.report import NON_CONVERGED
 
 EXP_COUNT_PRECISION = 3  # Number of digits to round expected log counts
-NON_CONVERGED = -1  # Number indicating a run did not converge
 
 
 def get_common_order(runs: list[EmClustering]):

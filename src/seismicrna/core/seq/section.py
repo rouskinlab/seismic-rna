@@ -104,6 +104,12 @@ def get_sect_coords_primers(sects_file: Path):
                 ref = str(ref)
             # The section name may be left blank.
             sect = "" if pd.isnull(sect) else str(sect)
+            if sect.lower() == FULL_NAME.lower():
+                raise ValueError(
+                    f"A section cannot be given the name {repr(FULL_NAME)}, "
+                    "which reserved for when a reference is automatically "
+                    "given a full section in the absence of coordinates/primers"
+                )
             # Check whether coordinates or primers were given.
             has_coords = not (pd.isnull(end5) or pd.isnull(end3))
             has_primers = not (pd.isnull(fwd) or pd.isnull(rev))
@@ -322,7 +328,7 @@ class Section(object):
 
     MASK_POLYA = "pos-polya"
     MASK_GU = "pos-gu"
-    MASK_POS = "pos-user"
+    MASK_LIST = "pos-list"
 
     def __init__(self,
                  ref: str,
@@ -498,7 +504,7 @@ class Section(object):
         """ Number of relevant positions in the section. """
         return self.length - self.masked_int.size
 
-    def copy(self):
+    def copy(self, masks: bool = True):
         """ Return an identical section. """
         copied = self.__class__(ref=self.ref,
                                 seq=self.seq,
@@ -508,8 +514,9 @@ class Section(object):
                                 end5=self.end5,
                                 end3=self.end3,
                                 name=self.name)
-        for name, masked in self._masks.items():
-            copied.add_mask(name, masked)
+        if masks:
+            for name, masked in self._masks.items():
+                copied.add_mask(name, masked)
         return copied
 
     def get_mask(self, name: str):
@@ -518,24 +525,23 @@ class Section(object):
 
     def add_mask(self,
                  name: str,
-                 mask_pos: Iterable[int],
+                 positions: Iterable[int],
                  complement: bool = False):
-        """ Mask the integer positions in the array `mask_pos`.
+        """ Mask the integer positions in the array `positions`.
 
         Parameters
         ----------
         name: str
             Name of the mask.
-        mask_pos: Iterable[int]
+        positions: Iterable[int]
             Positions to mask (1-indexed).
         complement: bool = False
-            If False, then remove the positions in mask_pos. Otherwise,
-            remove all but those positions.
+            If True, then leave only positions in `positions` unmasked.
         """
         if name in self._masks:
             raise ValueError(f"Mask {repr(name)} was already set")
         # Convert positions to a NumPy integer array.
-        p = np.unique(np.asarray(list(mask_pos), dtype=int))
+        p = np.unique(np.asarray(list(positions), dtype=int))
         # Check for positions outside the section.
         if np.any(p < self.end5) or np.any(p > self.end3):
             out = p[np.logical_or(p < self.end5, p > self.end3)]
@@ -548,9 +554,13 @@ class Section(object):
         # Do not log self._masks[name] due to memory leak.
         logger.debug(f"Added mask {repr(name)} to {self}")
 
-    def remove_mask(self, name: str):
+    def remove_mask(self, name: str, missing_ok: bool = False):
         """ Remove the specified mask from the section. """
-        self._masks.pop(name, None)
+        try:
+            self._masks.pop(name)
+        except KeyError:
+            if not missing_ok:
+                raise
 
     def _find_gu(self) -> np.ndarray:
         """ Array of each position whose base is neither A nor C. """
@@ -585,9 +595,9 @@ class Section(object):
         """ Mask poly(A) stretches with length ≥ `min_length`. """
         self.add_mask(self.MASK_POLYA, self._find_polya(min_length))
 
-    def mask_pos(self, pos: Iterable[int]):
-        """ Mask arbitrary positions. """
-        self.add_mask(self.MASK_POS, pos)
+    def mask_list(self, pos: Iterable[int]):
+        """ Mask a list of positions. """
+        self.add_mask(self.MASK_LIST, pos)
 
     def subsection(self,
                    end5: int | None = None,
@@ -627,8 +637,8 @@ class Section(object):
         # Copy any masked positions from this section, offseting them by
         # the difference between the numbering systems.
         offset = renumbered.end5 - self.end5
-        for mask_name, mask_pos in self._masks.items():
-            renumbered.add_mask(mask_name, mask_pos + offset)
+        for mask_name, pos in self._masks.items():
+            renumbered.add_mask(mask_name, pos + offset)
         return renumbered
 
     def __str__(self):
@@ -788,7 +798,7 @@ def unite(*sections: Section,
     for s in sections[1:]:
         unmasked = np.union1d(s.unmasked_int, unmasked)
     if unmasked.size < union.size:
-        union.add_mask("union", unmasked, complement=True)
+        union.add_mask("gaps", unmasked, complement=True)
     return union
 
 
@@ -816,7 +826,8 @@ class SectionFinder(Section):
                  end3: int | None = None,
                  fwd: DNA | None = None,
                  rev: DNA | None = None,
-                 primer_gap: int | None = None,
+                 primer_gap: int = 0,
+                 exclude_primers: bool = False,
                  **kwargs):
         """
         Parameters
@@ -841,7 +852,7 @@ class SectionFinder(Section):
             (For amplicons only) Sequence of the reverse PCR primer
             that was used to generate the amplicon (the actual sequence,
             not its reverse complement)
-        primer_gap: int | None = None
+        primer_gap: int = 1
             (For coordinates specified by fwd/rev only) Number of
             positions 3' of the forward primer and 5' of the reverse
             primer to exclude from the section. Coordinates within 1 - 2
@@ -850,6 +861,8 @@ class SectionFinder(Section):
             respectively, to the coordinates immediately adjacent to
             (i.e. 1 nucleotide 3' and 5' of) the 3' end of the forward
             and reverse primers.
+        exclude_primers: bool = False
+            Whether to exclude the primer sequences from the section.
         """
         if primer_gap < 0:
             raise ValueError(f"primer_gap must be ≥ 0, but got {primer_gap}")
@@ -860,21 +873,29 @@ class SectionFinder(Section):
         if end5 is None:
             # No 5' end coordinate was given.
             if fwd is not None:
-                # A forward primer was given.
-                if primer_gap is None:
-                    raise TypeError("Must give primer_gap if using primers")
-                # Locate the end of the forward primer, then start the
-                # section (primer_gap + 1) positions downstream.
-                end5 = self.locate(seq, fwd, seq5).pos3 + (primer_gap + 1)
+                # Locate the forward primer.
+                primer_site = self.locate(seq, fwd, seq5)
+                if exclude_primers:
+                    # Place the 5' end of the section (primer_gap + 1)
+                    # positions after the 3' end of the reverse primer.
+                    end5 = primer_site.pos3 + (primer_gap + 1)
+                else:
+                    # Place the 5' end of the section at the 5' end of
+                    # the reverse primer.
+                    end5 = primer_site.pos5
         if end3 is None:
             # No 3' end coordinate was given.
             if rev is not None:
-                # A reverse primer was given.
-                if primer_gap is None:
-                    raise TypeError("Must give primer_gap if using primers")
-                # Locate the start of the reverse primer, then end the
-                # section (primer_gap + 1) positions upstream.
-                end3 = self.locate(seq, rev.rc, seq5).pos5 - (primer_gap + 1)
+                # Locate the reverse primer.
+                primer_site = self.locate(seq, rev.rc, seq5)
+                if exclude_primers:
+                    # Place the 3' end of the section (primer_gap + 1)
+                    # positions before the 5' end of the reverse primer.
+                    end3 = primer_site.pos5 - (primer_gap + 1)
+                else:
+                    # Place the 3' end of the section at the 3' end of
+                    # the reverse primer.
+                    end3 = primer_site.pos3
         super().__init__(ref, seq, seq5=seq5, end5=end5, end3=end3, **kwargs)
 
     @staticmethod
@@ -932,7 +953,9 @@ class RefSections(object):
                  sects_file: Path | None = None,
                  coords: Iterable[tuple[str, int, int]] = (),
                  primers: Iterable[tuple[str, DNA, DNA]] = (),
-                 primer_gap: int):
+                 primer_gap: int = 0,
+                 exclude_primers: bool = False,
+                 default_full: bool = True):
         # Get the names of the sections from the sections file, if any.
         sect_coords = dict()
         sect_primers = dict()
@@ -952,30 +975,30 @@ class RefSections(object):
         ref_primers = get_coords_by_ref(primers)
         # For each reference, generate sections from the coordinates.
         self._sections: dict[str, dict[tuple[int, int], Section]] = dict()
-        for ref, seq in RefSeqs(ref_seqs):
+        for ref, refseq in RefSeqs(ref_seqs):
             self._sections[ref] = dict()
             for end5, end3 in ref_coords[ref]:
                 # Add a section for each pair of 5' and 3' coordinates.
+                sect = sect_coords.get((ref, end5, end3))
                 self._add_section(ref,
-                                  seq,
+                                  refseq,
                                   end5=end5,
                                   end3=end3,
-                                  primer_gap=primer_gap,
-                                  name=sect_coords.get((ref, end5, end3)))
+                                  name=sect)
             for fwd, rev in ref_primers[ref]:
                 # Add a section for each pair of fwd and rev primers.
+                sect = sect_primers.get((ref, fwd, rev))
                 self._add_section(ref,
-                                  seq,
+                                  refseq,
                                   fwd=fwd,
                                   rev=rev,
                                   primer_gap=primer_gap,
-                                  name=sect_primers.get((ref, fwd, rev)))
-            if not self._sections[ref]:
+                                  exclude_primers=exclude_primers,
+                                  name=sect)
+            if default_full and not self._sections[ref]:
                 # If no sections were given for the reference, then add
                 # a section that spans the full reference.
-                self._add_section(ref, seq, primer_gap=primer_gap)
-        if extra := (set(ref_coords) | set(ref_primers)) - set(self._sections):
-            logger.warning(f"No sequences given for references {sorted(extra)}")
+                self._add_section(ref, refseq)
 
     def _add_section(self, *args, **kwargs):
         """ Create a section and add it to the object. """
@@ -983,7 +1006,8 @@ class RefSections(object):
             section = SectionFinder(*args, **kwargs)
         except Exception as error:
             logger.error(
-                f"Failed to create section with {args, kwargs}: {error}")
+                f"Failed to create section with {args, kwargs}: {error}"
+            )
         else:
             # Check if the section was seen already.
             if (seen := self._sections[section.ref].get(section.coord)) is None:
@@ -998,8 +1022,19 @@ class RefSections(object):
                              f"Using the first encountered: {seen}")
 
     def list(self, ref: str):
-        """ Return a list of the sections for a given reference. """
+        """ List the sections for a given reference. """
         return list(self._sections[ref].values())
+
+    @property
+    def refs(self):
+        """ Reference names. """
+        return list(self._sections)
+
+    @property
+    def dict(self):
+        """ List the sections for every reference. """
+        return {ref: list(sections.values())
+                for ref, sections in self._sections.items()}
 
     @property
     def count(self):

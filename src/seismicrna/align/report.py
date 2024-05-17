@@ -31,9 +31,9 @@ from ..core.report import (Report,
                            Bowtie2Contain,
                            Bowtie2Un,
                            Bowtie2ScoreMin,
-                           Bowtie2MinLength,
-                           Bowtie2MaxLength,
-                           Bowtie2GBar,
+                           Bowtie2MinLengthF,
+                           Bowtie2MaxLengthF,
+                           Bowtie2GBarF,
                            Bowtie2SeedLength,
                            Bowtie2SeedInterval,
                            Bowtie2ExtTries,
@@ -43,11 +43,11 @@ from ..core.report import (Report,
                            CramOutF,
                            MinMapQualF,
                            MinReadsF,
-                           ReadsInitF,
+                           AlignReadsInitF,
                            ReadsTrimF,
                            ReadsAlignF,
                            ReadsDedupF,
-                           ReadsRefs)
+                           ReadsRefsF)
 
 
 class AlignReport(Report, ABC):
@@ -79,9 +79,9 @@ class AlignReport(Report, ABC):
                 Bowtie2Dovetail,
                 Bowtie2Contain,
                 Bowtie2ScoreMin,
-                Bowtie2MinLength,
-                Bowtie2MaxLength,
-                Bowtie2GBar,
+                Bowtie2MinLengthF,
+                Bowtie2MaxLengthF,
+                Bowtie2GBarF,
                 Bowtie2SeedLength,
                 Bowtie2SeedInterval,
                 Bowtie2ExtTries,
@@ -92,11 +92,11 @@ class AlignReport(Report, ABC):
                 CramOutF,
                 MinMapQualF,
                 MinReadsF,
-                ReadsInitF,
+                AlignReadsInitF,
                 ReadsTrimF,
                 ReadsAlignF,
                 ReadsDedupF,
-                ReadsRefs] + super().fields()
+                ReadsRefsF] + super().fields()
 
     @classmethod
     def dir_seg_types(cls):

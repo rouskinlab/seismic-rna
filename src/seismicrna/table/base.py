@@ -17,14 +17,16 @@ from ..core.header import (REL_NAME,
                            parse_header)
 from ..core.mu import winsorize
 from ..core.rna import RNAProfile
-from ..core.seq import SEQ_INDEX_NAMES, Section, index_to_pos, index_to_seq
+from ..core.seq import DNA, SEQ_INDEX_NAMES, Section, index_to_pos, index_to_seq
+from ..pool.data import load_relate_dataset
+from ..relate.report import RelateReport
 
 # General fields
 READ_TITLE = "Read Name"
 
 # Count relationships
 COVER_REL = "Covered"
-INFOR_REL = "Informed"
+UNAMB_REL = "Unambiguous"
 MATCH_REL = "Matched"
 MUTAT_REL = "Mutated"
 DELET_REL = "Deleted"
@@ -38,8 +40,8 @@ SUB_T_REL = "Subbed-T"
 # One-letter codes for each type of relationship
 REL_CODES = {
     'v': COVER_REL,
-    'n': INFOR_REL,
-    'r': MATCH_REL,
+    'n': UNAMB_REL,
+    'e': MATCH_REL,
     'm': MUTAT_REL,
     's': SUBST_REL,
     'a': SUB_A_REL,
@@ -49,6 +51,7 @@ REL_CODES = {
     'd': DELET_REL,
     'i': INSRT_REL,
 }
+REL_NAMES = {name: code for code, name in REL_CODES.items()}
 
 # Columns of each relation-based table
 TABLE_RELS = list(REL_CODES.values())
@@ -65,7 +68,7 @@ def get_rel_name(rel_code: str):
 
 def _get_denom_rel(rel: str):
     """ Get the relationship that serves as the denominator. """
-    return COVER_REL if rel == COVER_REL or rel == INFOR_REL else INFOR_REL
+    return COVER_REL if rel == COVER_REL or rel == UNAMB_REL else UNAMB_REL
 
 
 def _get_denom_cols(numer_cols: pd.Index):
@@ -153,6 +156,14 @@ class Table(ABC):
     @abstractmethod
     def sect(self) -> str:
         """ Name of the table's section. """
+
+    @cached_property
+    def refseq(self) -> DNA:
+        """ Reference sequence. """
+        dataset = load_relate_dataset(RelateReport.build_path(
+            top=self.top, sample=self.sample, ref=self.ref)
+        )
+        return dataset.refseq
 
     @property
     def path_fields(self) -> dict[str, Any]:
@@ -491,12 +502,12 @@ class PosTable(RelTypeTable, ABC):
             raise ValueError("n_cov must have exactly 1 dimension, "
                              f"but got {n_cov.ndim}")
         resampled = {COVER_REL: n_cov}
-        # Resample informative reads.
-        p_inf = self.fetch_ratio(rel=INFOR_REL,
+        # Resample unambiguous reads.
+        p_inf = self.fetch_ratio(rel=UNAMB_REL,
                                  squeeze=True,
                                  **fetch_kwargs).values
         n_inf = rng.binomial(n_cov, p_inf)
-        resampled[INFOR_REL] = n_inf
+        resampled[UNAMB_REL] = n_inf
         # Resample mutations and matches.
         p_mut = self.fetch_ratio(rel=MUTAT_REL,
                                  squeeze=True,

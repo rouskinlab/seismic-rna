@@ -63,14 +63,24 @@ class HistogramGraph(GraphBase, ABC):
 
     def get_bounds(self, data: pd.DataFrame):
         """ Get the lower and upper bounds of the histogram. """
-        lo = float(np.nanmin(data))
-        if np.isnan(lo) or (self.use_ratio and 0. < lo < self.margin):
-            # If the minimum is near to but more than 0, then make it 0.
+        try:
+            lo = float(np.nanmin(data))
+        except ValueError:
+            # If data contains no non-NaN values, then default to 0.
             lo = 0.
-        up = float(np.nanmax(data))
-        if np.isnan(up) or (self.use_ratio and 0. < 1. - up < self.margin):
-            # If the maximum is near to but less than 1, then make it 1.
+        else:
+            # If the minimum is slightly greater than 0, then make it 0.
+            if self.use_ratio and 0. < lo < self.margin:
+                lo = 0.
+        try:
+            up = float(np.nanmax(data))
+        except ValueError:
+            # If data contains no non-NaN values, then default to 1.
             up = 1.
+        else:
+            # If the maximum is slightly less than 1, then make it 1.
+            if self.use_ratio and 0. < 1. - up < self.margin:
+                up = 1.
         return lo, up
 
     def get_edges(self, data: pd.DataFrame):

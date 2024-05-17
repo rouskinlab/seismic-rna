@@ -64,7 +64,7 @@ params = [
 
 @command(CMD_EXPORT, params=params)
 def cli(*args, **kwargs):
-    """ Export a file of each sample for the seismic-graph web app. """
+    """ Export each sample to SEISMICgraph (https://seismicrna.org). """
     return run(*args, **kwargs)
 
 ########################################################################

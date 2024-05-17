@@ -19,11 +19,10 @@ from .calc import (Tabulator,
                    MaskTabulator,
                    ClustTabulator,
                    tabulate_loader)
-from ..cluster.data import ClusterMutsDataset
 from ..core.data import LoadFunction
 from ..core.write import need_write
-from ..join.data import JoinMaskMutsDataset, JoinClusterMutsDataset
-from ..mask.data import MaskMutsDataset
+from ..cluster.data import ClusterMutsDataset, JoinClusterMutsDataset
+from ..mask.data import MaskMutsDataset, JoinMaskMutsDataset
 from ..pool.data import PoolDataset
 from ..relate.data import RelateDataset
 

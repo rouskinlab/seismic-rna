@@ -6,14 +6,11 @@ import pandas as pd
 
 from .io import QnamesBatchIO, RelateBatchIO
 from .report import RelateReport
-from .write import get_reads_per_batch, mib_to_bytes
 from ..core.batch import (END_COORDS,
                           END5_COORD,
                           END3_COORD,
-                          get_length,
-                          list_naturals,
-                          check_naturals)
-from ..core.dims import triangular
+                          get_length)
+from ..core.array import check_naturals, list_naturals, triangular
 from ..core.io import RefseqIO
 from ..core.rel import SUB_A, SUB_C, SUB_G, SUB_T
 from ..core.seq import (BASEA,
@@ -21,6 +18,7 @@ from ..core.seq import (BASEA,
                         BASEG,
                         BASET,
                         DNA,
+                        Section,
                         index_to_pos,
                         index_to_seq,
                         seq_pos_to_index)
@@ -56,7 +54,7 @@ def choose_clusters(p_clust: pd.Series, n_reads: int):
     if not isinstance(p_clust, pd.Series):
         raise TypeError("p_clust must be Series, "
                         f"but got {type(p_clust).__name__}")
-    clusters = check_naturals(p_clust.index, "clusters")
+    clusters = check_naturals(p_clust.index.values, "clusters")
     # Choose a cluster for each read.
     return rng.choice(clusters, n_reads, p=p_clust.values)
 
@@ -130,12 +128,12 @@ def simulate_relate_batch(sample: str,
         raise TypeError("p_mut must be DataFrame, "
                         f"but got {type(p_mut).__name__}")
     refseq, positions = index_to_refseq_pos(p_mut.index)
-    clusters = check_naturals(p_mut.columns, "clusters")
+    clusters = check_naturals(p_mut.columns.values, "clusters")
     # Validate the end coordinates.
     if not isinstance(p_ends, pd.Series):
         raise TypeError("p_ends must be Series, "
                         f"but got {type(p_ends).__name__}")
-    if tuple(p_ends.index.names) != END_COORDS:
+    if p_ends.index.names != END_COORDS:
         raise ValueError(f"p_ends index must have names {END_COORDS}, "
                          f"but got {p_ends.index.names}")
     n_reads = get_length(cluster_choices)
@@ -178,13 +176,10 @@ def simulate_relate_batch(sample: str,
                                             read_choices[sub_choices == sub]])
     # Assemble a simulated RelateBatchIO.
     return RelateBatchIO(sample=sample,
-                         ref=ref,
-                         reflen=len(refseq),
+                         section=Section(ref, refseq),
                          batch=batch,
-                         end5s=end5_choices,
-                         mid5s=end5_choices,
-                         mid3s=end3_choices,
-                         end3s=end3_choices,
+                         seg_end5s=end5_choices[:, np.newaxis],
+                         seg_end3s=end3_choices[:, np.newaxis],
                          muts=muts)
 
 
@@ -210,39 +205,34 @@ def generate_batch(out_dir: Path, brotli_level: int, *args, **kwargs):
     return qnames_check, relate_check
 
 
-def generate_batches(refseq: DNA,
-                     n_reads: int,
-                     batch_size: float,
+def generate_batches(n_reads: int,
+                     batch_size: int,
                      cluster_choices: np.ndarray,
                      *args,
                      **kwargs):
     qnames_checks = list()
     relate_checks = list()
     # Determine the numbers of batches and reads per batch.
-    n_reads_per_batch = get_reads_per_batch(mib_to_bytes(batch_size),
-                                            len(refseq))
-    n_batches_full, n_reads_extra = divmod(n_reads, n_reads_per_batch)
+    n_batches_full = n_reads // batch_size
     # Generate every full-size batch.
     for batch in range(n_batches_full):
-        first = n_reads_per_batch * batch
-        last = n_reads_per_batch + first
+        first = batch_size * batch
+        last = batch_size + first
         qnames_check, relate_check = generate_batch(
             *args,
             batch=batch,
-            n_reads=n_reads_per_batch,
             cluster_choices=cluster_choices[first: last],
             **kwargs
         )
         qnames_checks.append(qnames_check)
         relate_checks.append(relate_check)
     # Generate the last batch, which may have fewer reads.
-    if n_reads_extra:
-        first = n_reads_per_batch * n_batches_full
-        last = n_reads
+    first = batch_size * n_batches_full
+    last = n_reads
+    if last - first > 0:
         qnames_check, relate_check = generate_batch(
             *args,
             batch=n_batches_full,
-            n_reads=n_reads_extra,
             cluster_choices=cluster_choices[first: last],
             **kwargs
         )
@@ -276,7 +266,6 @@ def simulate_relate(out_dir: Path,
         checksums = generate_batches(out_dir=out_dir,
                                      sample=sample,
                                      ref=ref,
-                                     refseq=refseq,
                                      n_reads=n_reads,
                                      brotli_level=brotli_level,
                                      *args,
@@ -291,7 +280,11 @@ def simulate_relate(out_dir: Path,
         report = RelateReport(sample=sample,
                               ref=ref,
                               min_mapq=-1,
+                              phred_enc=0,
+                              min_phred=0,
+                              ambindel=False,
                               min_reads=n_reads,
+                              n_reads_xam=n_reads,
                               n_reads_rel=n_reads,
                               n_batches=n_batches,
                               checksums=checksums,

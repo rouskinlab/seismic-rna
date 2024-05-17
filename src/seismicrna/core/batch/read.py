@@ -4,7 +4,8 @@ from functools import cached_property
 import numpy as np
 import pandas as pd
 
-from .index import RB_INDEX_NAMES, NO_READ, get_inverse, get_length
+from .index import RB_INDEX_NAMES
+from ..array import calc_inverse, get_length
 from ..types import fit_uint_type
 
 
@@ -17,18 +18,18 @@ class ReadBatch(ABC):
 
     @cached_property
     @abstractmethod
-    def read_nums(self) -> np.ndarray:
-        """ Read numbers in use. """
-
-    @cached_property
-    @abstractmethod
     def max_read(self) -> int:
         """ Maximum possible value for a read index. """
 
     @cached_property
     @abstractmethod
     def num_reads(self) -> int | pd.Series:
-        """ Number of reads that are actually in use. """
+        """ Number of reads. """
+
+    @cached_property
+    @abstractmethod
+    def read_nums(self) -> np.ndarray:
+        """ Read numbers. """
 
     @cached_property
     def read_dtype(self):
@@ -72,16 +73,12 @@ class AllReadBatch(ReadBatch, ABC):
 class PartialReadBatch(ReadBatch, ABC):
 
     @cached_property
-    def num_reads(self):
-        return get_length(self.read_nums, "read_nums")
-
-    @cached_property
     def max_read(self):
-        return self.read_nums.max(initial=NO_READ)
+        return self.read_nums.max(initial=0)
 
     @cached_property
     def read_indexes(self):
-        return get_inverse(self.read_nums, "read_nums")
+        return calc_inverse(self.read_nums, what="read_nums", verify=False)
 
 ########################################################################
 #                                                                      #

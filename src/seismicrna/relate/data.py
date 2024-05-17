@@ -1,4 +1,4 @@
-from .batch import RelateRefseqBatch
+from .batch import RelateBatch
 from .io import RelateBatchIO
 from .report import RelateReport
 from ..core.data import LoadedMutsDataset
@@ -21,16 +21,12 @@ class RelateDataset(LoadedMutsDataset):
 
     def get_batch(self, batch: int):
         relate_batch = super().get_batch(batch)
-        # Add the reference sequence to the batch.
-        if (batch_nt := getattr(relate_batch, "max_pos")) != len(self.refseq):
-            raise ValueError(f"Reference sequence is {len(self.refseq)} nt, "
-                             f"but {relate_batch} has {batch_nt} nt")
-        # Add the other attributes to the batch.
-        kwargs = {
-            key: getattr(relate_batch, key)
-            for key in ["batch", "muts", "end5s", "mid5s", "mid3s", "end3s"]
-        }
-        return RelateRefseqBatch(refseq=self.refseq, sanitize=False, **kwargs)
+        return RelateBatch(batch=relate_batch.batch,
+                           seg_end5s=relate_batch.seg_end5s,
+                           seg_end3s=relate_batch.seg_end3s,
+                           muts=relate_batch.muts,
+                           section=self.section,
+                           sanitize=False)
 
 ########################################################################
 #                                                                      #

@@ -4,9 +4,11 @@ from typing import Any, Iterable
 
 import numpy as np
 
-from .batch import QnamesBatch, RelateReflenBatch
+from .batch import QnamesBatch, RelateBatch
 from ..core import path
 from ..core.io import MutsBatchIO, ReadBatchIO, RefIO
+from ..core.seq import DNA, Section
+from ..core.types import fit_uint_type
 
 
 class RelateIO(RefIO, ABC):
@@ -16,7 +18,7 @@ class RelateIO(RefIO, ABC):
         return super().auto_fields() | {path.CMD: path.CMD_REL_DIR}
 
 
-class QnamesBatchIO(RelateIO, ReadBatchIO, QnamesBatch):
+class QnamesBatchIO(ReadBatchIO, RelateIO, QnamesBatch):
 
     @classmethod
     def file_seg_type(cls):
@@ -34,55 +36,42 @@ class QnamesBatchIO(RelateIO, ReadBatchIO, QnamesBatch):
         self.names = np.char.decode(state["names"])
 
 
-class RelateBatchIO(RelateIO, MutsBatchIO, RelateReflenBatch):
+class RelateBatchIO(MutsBatchIO, RelateIO, RelateBatch):
 
     @classmethod
     def file_seg_type(cls):
         return path.RelateBatSeg
 
 
-def from_reads(reads: Iterable[tuple[str, int, int, int, int, dict[int, int]]],
+def from_reads(reads: Iterable[tuple[str, tuple[list[int], [list[int]]], dict[int, int]]],
                sample: str,
                ref: str,
-               reflen: int,
+               refseq: DNA,
                batch: int):
     """ Accumulate reads into relation vectors. """
     # Initialize empty data.
     names = list()
-    end5s = list()
-    mid5s = list()
-    mid3s = list()
-    end3s = list()
-    muts = defaultdict(lambda: defaultdict(list))
+    seg_end5s = list()
+    seg_end3s = list()
+    muts = {pos: defaultdict(list) for pos in range(1, len(refseq) + 1)}
     # Collect the mutation data from the reads.
-    for read, (name, end5, mid5, mid3, end3, poss) in enumerate(reads):
+    for read, (name, (end5s, end3s), poss) in enumerate(reads):
         names.append(name)
-        end5s.append(end5)
-        mid5s.append(mid5)
-        mid3s.append(mid3)
-        end3s.append(end3)
+        seg_end5s.append(end5s)
+        seg_end3s.append(end3s)
         for pos, rel in poss.items():
             muts[pos][rel].append(read)
-    # Validate the positions.
-    if min(muts) < 1:
-        raise ValueError(f"All positions must be ≥ 1, but got "
-                         f"{[x for x in sorted(muts) if x < 1]}")
-    if max(muts) > reflen:
-        raise ValueError(f"All positions must be ≤ {reflen}, but got "
-                         f"{[x for x in sorted(muts) if x > reflen]}")
     # Assemble and return the batches.
+    pos_dtype = fit_uint_type(max(muts))
     name_batch = QnamesBatchIO(sample=sample,
                                ref=ref,
                                batch=batch,
                                names=names)
     rel_batch = RelateBatchIO(sample=sample,
-                              ref=ref,
-                              reflen=reflen,
                               batch=batch,
-                              end5s=np.asarray(end5s),
-                              mid5s=np.asarray(mid5s),
-                              mid3s=np.asarray(mid3s),
-                              end3s=np.asarray(end3s),
+                              section=Section(ref, refseq),
+                              seg_end5s=np.array(seg_end5s, dtype=pos_dtype),
+                              seg_end3s=np.array(seg_end3s, dtype=pos_dtype),
                               muts=muts)
     return name_batch, rel_batch
 

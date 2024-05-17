@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from .ambrel import Deletion, Insertion, find_ambrels
+from .ambindel import Deletion, Insertion, find_ambindels
 from .cigar import (CIG_ALIGN,
                     CIG_MATCH,
                     CIG_SUBST,
@@ -78,7 +78,7 @@ class SamRead(object):
         return f"Read {repr(self.qname)} {attrs}"
 
 
-def _find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambrel: bool):
+def _find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambindel: bool):
     """
     Find the relationships between a read and a reference.
 
@@ -90,7 +90,7 @@ def _find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambrel: bool):
         Reference sequence; refseq and muts must have the same length.
     min_qual: int
         ASCII encoding of the minimum Phred score to accept a base call
-    ambrel: bool
+    ambindel: bool
         Whether to find and label all ambiguous insertions and deletions
 
     Returns
@@ -213,14 +213,15 @@ def _find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambrel: bool):
     # operation was added to read_pos.
     if read_pos != len(read.seq):
         raise RelateValueError(
-            f"CIGAR string '{read.cigar}' consumed {read_pos} bases "
-            f"from read, but read is {len(read.seq)} bases long.")
+            f"CIGAR string {repr(read.cigar)} consumed {read_pos} bases "
+            f"from read, but read is {len(read.seq)} bases long."
+        )
     # Add insertions to muts.
     for ins in inns:
         ins.stamp(rels, len(refseq))
     # Find and label all relationships that are ambiguous due to indels.
-    if ambrel and (dels or inns):
-        find_ambrels(rels, refseq, read.seq, read.qual, min_qual, dels, inns)
+    if ambindel and (dels or inns):
+        find_ambindels(rels, refseq, read.seq, read.qual, min_qual, dels, inns)
     return read.pos, ref_pos, dict(rels)
 
 
@@ -254,67 +255,45 @@ def _validate_pair(read1: SamRead, read2: SamRead):
                                "mates 1 and 2 facing the same way")
 
 
-def _merge_ends(end51: int,
-                end31: int,
-                end52: int,
-                end32: int,
-                overhangs: bool,
-                read2: SamRead):
-    if not overhangs:
-        if ((read2.flag.rev and end51 > end32) or
-            (not read2.flag.rev and end31 < end52)):
-            raise ValueError(f"Mate orientation for {repr(read2.qname)} cannot"
-                             " be merged with --no-overhangs")
-        end5, end3 = (end51, end32) if read2.flag.rev else (end52, end31)
-        mid5, mid3 = ((max(end5, end52),
-                      min(end3, end31)) if read2.flag.rev
-                                        else (max(end5, end51),
-                                              min(end3, end32)))
-    else:
-        end5, mid5, mid3, end3  = (min(end51, end52),
-                                   max(end51, end52),
-                                   min(end31, end32),
-                                   max(end31, end32))
-    return end5, mid5, mid3, end3
-
-
-def _merge_rels(end51: int,
-                end31: int,
-                rels1: dict[int, int],
-                end52: int,
-                end32: int,
-                rels2: dict[int, int],
-                valid_pos: list):
+def _merge_rels(end5f: int,
+                end3f: int,
+                relsf: dict[int, int],
+                end5r: int,
+                end3r: int,
+                relsr: dict[int, int]):
     merged_rels = dict()
-    for pos in valid_pos:
-        rel1 = rels1.get(pos, MATCH if end51 <= pos <= end31 else NOCOV)
-        rel2 = rels2.get(pos, MATCH if end52 <= pos <= end32 else NOCOV)
-        rel = rel1 & rel2
+    for pos in relsf | relsr:
+        relf = relsf.get(pos, MATCH if end5f <= pos <= end3f else NOCOV)
+        relr = relsr.get(pos, MATCH if end5r <= pos <= end3r else NOCOV)
+        rel = relf & relr
         if rel != MATCH:
             if rel == NOCOV:
                 raise ValueError(f"Cannot merge two blanks at position {pos}")
             merged_rels[pos] = rel
     return merged_rels
 
-def _merge_mates(end51: int,
-                 end31: int,
-                 rels1: dict[int, int],
-                 end52: int,
-                 end32: int,
-                 rels2: dict[int, int],
-                 overhangs: bool,
-                 read2: SamRead):
-    end5, mid5, mid3, end3 = _merge_ends(end51, end31, end52,
-                                         end32, overhangs, read2)
-    valid_pos = [pos for pos in rels1 | rels2 if end5 <= pos <= end3]
-    rels = _merge_rels(end51,
-                       end31,
-                       rels1,
-                       end52,
-                       end32,
-                       rels2,
-                       valid_pos)
-    return rels, (end5, mid5, mid3, end3)
+
+def _merge_mates(end5f: int,
+                 end3f: int,
+                 relsf: dict[int, int],
+                 end5r: int,
+                 end3r: int,
+                 relsr: dict[int, int],
+                 overhangs: bool):
+    if not overhangs:
+        # The 5' end of the reverse mate cannot extend past the 5' end
+        # of the forward mate.
+        if end5r < end5f:
+            end5r = end5f
+            relsr = {pos: rel for pos, rel in relsr.items() if pos >= end5r}
+        # The 3' end of the forward mate cannot extend past the 3' end
+        # of the reverse mate.
+        if end3f > end3r:
+            end3f = end3r
+            relsf = {pos: rel for pos, rel in relsf.items() if pos <= end3f}
+    rels = _merge_rels(end5f, end3f, relsf, end5r, end3r, relsr)
+    return ([end5f, end5r], [end3f, end3r]), rels
+
 
 def find_rels_line(line1: str,
                    line2: str,
@@ -322,22 +301,34 @@ def find_rels_line(line1: str,
                    refseq: DNA,
                    min_mapq: int,
                    qmin: str,
-                   ambrel: bool,
+                   ambindel: bool,
                    overhangs: bool):
+    # Generate the relationships for read 1.
     read1 = SamRead(line1)
     _validate_read(read1, ref, min_mapq)
-    end5, end3, rels = _find_rels_read(read1, refseq, qmin, ambrel)
+    end51, end31, rels1 = _find_rels_read(read1, refseq, qmin, ambindel)
     if line2:
+        # Generate the relationships for read 2.
         read2 = SamRead(line2)
         _validate_read(read2, ref, min_mapq)
         _validate_pair(read1, read2)
-        end52, end32, rels2 = _find_rels_read(read2, refseq, qmin, ambrel)
-        rels, (end5, mid5, mid3, end3) = _merge_mates(end5, end3, rels, end52,
-                                                     end32, rels2, overhangs,
-                                                     read2)
+        end52, end32, rels2 = _find_rels_read(read2, refseq, qmin, ambindel)
+        # Determine which read (1 or 2) faces forward and reverse.
+        if read2.flag.rev:
+            end5f, end3f, relsf = end51, end31, rels1
+            end5r, end3r, relsr = end52, end32, rels2
+        else:
+            end5f, end3f, relsf = end52, end32, rels2
+            end5r, end3r, relsr = end51, end31, rels1
+        # Merge the relationships and end coordinates.
+        ends, rels = _merge_mates(
+            end5f, end3f, relsf, end5r, end3r, relsr, overhangs,
+        )
     else:
-        mid5, mid3 = end5, end3
-    return read1.qname, end5, mid5, mid3, end3, rels
+        # The read is single-ended.
+        ends = [end51], [end31]
+        rels = rels1
+    return read1.qname, ends, rels
 
 ########################################################################
 #                                                                      #

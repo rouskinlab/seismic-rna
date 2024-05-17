@@ -87,5 +87,5 @@ params = [
 
 @command(CMD_LISTPOS, params=params)
 def cli(*args, **kwargs):
-    """ Add more clusters to a dataset that was already clustered. """
+    """ List positions meeting specific criteria. """
     return run(*args, **kwargs)

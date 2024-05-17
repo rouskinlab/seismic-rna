@@ -6,24 +6,24 @@ from typing import Iterable
 
 from click import command
 
-from .clusts import parse_join_clusts_file
-from .data import JoinMutsDataset, JoinMaskMutsDataset, JoinClusterMutsDataset
-from .report import JoinMaskReport, JoinClusterReport
-from ..cluster.data import ClusterMutsDataset
-from ..cluster.report import ClusterReport
-from ..core.arg import (CMD_JOIN,
-                        docdef,
-                        arg_input_path,
-                        opt_joined,
-                        opt_join_clusts,
-                        opt_max_procs,
-                        opt_parallel,
-                        opt_force)
-from ..core.data import LoadFunction, load_datasets
-from ..core.parallel import dispatch
-from ..core.write import need_write
-from ..mask.data import MaskMutsDataset
-from ..mask.report import MaskReport
+from .cluster.data import load_cluster_dataset
+from .cluster.report import ClusterReport
+from .core.arg import (CMD_JOIN,
+                       docdef,
+                       arg_input_path,
+                       opt_joined,
+                       opt_join_clusts,
+                       opt_max_procs,
+                       opt_parallel,
+                       opt_force)
+from .core.data import load_datasets
+from .core.parallel import dispatch
+from .core.write import need_write
+from .joinbase.cluster import parse_join_clusts_file
+from .joinbase.data import JoinMutsDataset
+from .joinbase.report import JoinMaskReport, JoinClusterReport
+from .mask.data import load_mask_dataset
+from .mask.report import MaskReport
 
 logger = getLogger(__name__)
 
@@ -145,10 +145,8 @@ def run(input_path: tuple[str, ...], *,
         clusts = dict()
     # Group the datasets by output directory, sample, and reference.
     joins = defaultdict(list)
-    load_funcs = {False: LoadFunction(MaskMutsDataset,
-                                      JoinMaskMutsDataset),
-                  True: LoadFunction(ClusterMutsDataset,
-                                     JoinClusterMutsDataset)}
+    load_funcs = {False: load_mask_dataset,
+                  True: load_cluster_dataset}
     for clustered, load_func in load_funcs.items():
         for dataset in load_datasets(input_path, load_func):
             # Check whether the dataset was joined.

@@ -7,8 +7,9 @@ from click import command
 from plotly import graph_objects as go
 
 from .base import PosGraphWriter, PosGraphRunner
-from .onestruct import StructOneTableGraph, StructOneTableRunner
-from .onetable import OneTableWriter
+from .onestruct import (StructOneTableGraph,
+                        StructOneTableRunner,
+                        StructOneTableWriter)
 from .roc import PROFILE_NAME, rename_columns
 from .roll import RollingGraph
 from .trace import iter_rolling_auc_traces
@@ -42,6 +43,8 @@ class RollingAUCGraph(StructOneTableGraph, RollingGraph):
             if key in data:
                 raise ValueError(f"Duplicate RNA state: {key}")
             data[key] = state.rolling_auc(self._size, self._min_count)
+        if not data:
+            raise ValueError(f"Got no data for {self}")
         # Covert the data into a DataFrame and rename the column levels.
         return rename_columns(pd.DataFrame.from_dict(data))
 
@@ -61,7 +64,7 @@ class RollingAUCGraph(StructOneTableGraph, RollingGraph):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class RollingAUCWriter(OneTableWriter, PosGraphWriter):
+class RollingAUCWriter(StructOneTableWriter, PosGraphWriter):
 
     def get_graph(self, rels_group: str, **kwargs):
         return RollingAUCGraph(table=self.table, rel=rels_group, **kwargs)

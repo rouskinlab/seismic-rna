@@ -15,10 +15,10 @@ from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
 from ..mask.data import MaskMutsDataset
 from ..mask.report import MaskReport
-from ..pool.data import load_relate_pool_dataset
+from ..pool.data import load_relate_dataset
 from ..relate.report import RelateReport
 from ..table.base import (COVER_REL,
-                          INFOR_REL,
+                          UNAMB_REL,
                           SUBST_REL,
                           SUB_A_REL,
                           SUB_C_REL,
@@ -42,7 +42,7 @@ SECT_END3 = "section_end"
 SECT_POS = "positions"
 POS_DATA = {
     "cov": COVER_REL,
-    "info": INFOR_REL,
+    "info": UNAMB_REL,
     "sub_N": SUBST_REL,
     "sub_A": SUB_A_REL,
     "sub_C": SUB_C_REL,
@@ -77,9 +77,9 @@ def get_ref_metadata(top: Path,
                      sample: str,
                      ref: str,
                      refs_metadata: dict[str, dict]):
-    dataset = load_relate_pool_dataset(RelateReport.build_path(top=top,
-                                                               sample=sample,
-                                                               ref=ref))
+    dataset = load_relate_dataset(RelateReport.build_path(top=top,
+                                                          sample=sample,
+                                                          ref=ref))
     ref_metadata = {REF_SEQ: str(dataset.refseq),
                     REF_NUM_ALIGN: dataset.num_reads}
     return format_metadata(combine_metadata(ref_metadata,
