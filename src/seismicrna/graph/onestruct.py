@@ -111,8 +111,10 @@ class StructOneTableWriter(OneTableWriter, ABC):
             if ref == self.table.ref:
                 struct_files.append(file)
             else:
-                logger.error(f"Reference names differ in CT file ({ref}) "
-                             f"and table file ({self.table.ref})")
+                logger.warning(f"Skipped CT file {file} in section directory "
+                               f"{path.SECT} in reference directory {ref}, "
+                               f"which differs from the reference name of "
+                               f"the table file ({self.table.ref})")
         # Add the sections from the given coordinates/primers.
         ref_sections = RefSections([(self.table.ref, self.table.refseq)],
                                    sects_file=(Path(fold_sections_file)
