@@ -1,27 +1,27 @@
 import os
-from functools import cached_property
-from logging import getLogger
 
 import numpy as np
 import pandas as pd
 from click import command
-from plotly import graph_objects as go
 
-from .base import PosGraphWriter, PosGraphRunner
-from .onetable import OneTableGraph, OneTableRunner, OneTableWriter
-from .rel import OneRelGraph
-from .roll import RollingGraph, RollingRunner
-from .trace import iter_rolling_gini_traces
-from ..core.header import format_clust_name
+from .statroll import RollingStatGraph, RollingStatRunner, RollingStatWriter
 from ..core.mu import calc_signal_noise
-from ..core.seq import BASEA, BASEC, BASE_NAME, iter_windows
-
-logger = getLogger(__name__)
+from ..core.seq import BASEA, BASEC, BASE_NAME
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-class RollingSNRGraph(OneTableGraph, OneRelGraph, RollingGraph):
+class RollingSNRGraph(RollingStatGraph):
+
+    @classmethod
+    def stat_func(cls):
+
+        def calc_snr(data: pd.Series):
+            bases = data.index.get_level_values(BASE_NAME)
+            signal = np.logical_or(bases == BASEA, bases == BASEC)
+            return calc_signal_noise(data, signal)
+
+        return calc_snr
 
     @classmethod
     def graph_kind(cls):
@@ -35,45 +35,15 @@ class RollingSNRGraph(OneTableGraph, OneRelGraph, RollingGraph):
     def y_title(self):
         return "Signal-to-noise ratio"
 
-    @cached_property
-    def data(self):
-        data = self._fetch_data(self.table,
-                                order=self.order,
-                                clust=self.clust)
-        snr = pd.DataFrame(index=data.index, dtype=float)
-        for cluster, cluster_data in data.items():
-            cluster_snr = pd.Series(index=snr.index, dtype=float)
-            for center, (window,) in iter_windows(cluster_data,
-                                                  size=self._size,
-                                                  min_count=self._min_count):
-                seq = window.index.get_level_values(BASE_NAME)
-                signal = np.logical_or(seq == BASEA, seq == BASEC)
-                cluster_snr.loc[center] = calc_signal_noise(window, signal)
-            if isinstance(cluster, tuple):
-                _, order, clust = cluster
-                label = format_clust_name(order, clust)
-            else:
-                label = cluster
-            snr[label] = cluster_snr
-        return snr
 
-    def get_traces(self):
-        for row, trace in enumerate(iter_rolling_gini_traces(self.data),
-                                    start=1):
-            yield (row, 1), trace
+class RollingSNRWriter(RollingStatWriter):
 
-    def _figure_layout(self, fig: go.Figure):
-        super()._figure_layout(fig)
-        fig.update_yaxes(gridcolor="#d0d0d0")
+    @classmethod
+    def get_graph_type(cls):
+        return RollingSNRGraph
 
 
-class RollingSNRWriter(OneTableWriter, PosGraphWriter):
-
-    def get_graph(self, rels_group: str, **kwargs):
-        return RollingSNRGraph(table=self.table, rel=rels_group, **kwargs)
-
-
-class RollingSNRRunner(RollingRunner, OneTableRunner, PosGraphRunner):
+class RollingSNRRunner(RollingStatRunner):
 
     @classmethod
     def get_writer_type(cls):

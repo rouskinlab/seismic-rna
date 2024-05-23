@@ -3,7 +3,7 @@ from .dim import *
 from .frame import *
 from .nan import *
 from .scale import *
-from .trends import *
+from .measure import *
 from .unbias import *
 
 ########################################################################

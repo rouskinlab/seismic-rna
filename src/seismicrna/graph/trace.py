@@ -175,15 +175,15 @@ def iter_rolling_auc_traces(aucs: pd.DataFrame, profile: str):
         yield get_rolling_auc_trace(auc, profile, str(struct))
 
 
-def get_rolling_gini_trace(gini: pd.Series, cluster: str):
+def get_line_trace(gini: pd.Series, cluster: str):
     return go.Scatter(x=gini.index.get_level_values(POS_NAME),
                       y=gini,
                       name=cluster)
 
 
-def iter_rolling_gini_traces(ginis: pd.DataFrame):
-    for cluster, gini in ginis.items():
-        yield get_rolling_gini_trace(gini, str(cluster))
+def iter_line_traces(lines: pd.DataFrame):
+    for cluster, line in lines.items():
+        yield get_line_trace(line, str(cluster))
 
 ########################################################################
 #                                                                      #

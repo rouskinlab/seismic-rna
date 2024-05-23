@@ -1,26 +1,18 @@
 import os
-from functools import cached_property
-from logging import getLogger
 
-import pandas as pd
 from click import command
-from plotly import graph_objects as go
 
-from .base import PosGraphWriter, PosGraphRunner
-from .onetable import OneTableGraph, OneTableRunner, OneTableWriter
-from .rel import OneRelGraph
-from .roll import RollingGraph, RollingRunner
-from .trace import iter_rolling_gini_traces
-from ..core.header import format_clust_name
+from .statroll import RollingStatGraph, RollingStatRunner, RollingStatWriter
 from ..core.mu import calc_gini
-from ..core.seq import iter_windows
-
-logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-class RollingGiniGraph(OneTableGraph, OneRelGraph, RollingGraph):
+class RollingGiniGraph(RollingStatGraph):
+
+    @classmethod
+    def stat_func(cls):
+        return calc_gini
 
     @classmethod
     def graph_kind(cls):
@@ -32,45 +24,17 @@ class RollingGiniGraph(OneTableGraph, OneRelGraph, RollingGraph):
 
     @property
     def y_title(self):
-        return "Gini"
-
-    @cached_property
-    def data(self):
-        data = self._fetch_data(self.table,
-                                order=self.order,
-                                clust=self.clust)
-        gini = pd.DataFrame(index=data.index, dtype=float)
-        for cluster, cluster_data in data.items():
-            cluster_gini = pd.Series(index=gini.index, dtype=float)
-            for center, (window,) in iter_windows(cluster_data,
-                                                  size=self._size,
-                                                  min_count=self._min_count):
-                cluster_gini.loc[center] = calc_gini(window)
-            if isinstance(cluster, tuple):
-                _, order, clust = cluster
-                label = format_clust_name(order, clust)
-            else:
-                label = cluster
-            gini[label] = cluster_gini
-        return gini
-
-    def get_traces(self):
-        for row, trace in enumerate(iter_rolling_gini_traces(self.data),
-                                    start=1):
-            yield (row, 1), trace
-
-    def _figure_layout(self, fig: go.Figure):
-        super()._figure_layout(fig)
-        fig.update_yaxes(gridcolor="#d0d0d0")
+        return "Gini coefficient"
 
 
-class RollingGiniWriter(OneTableWriter, PosGraphWriter):
+class RollingGiniWriter(RollingStatWriter):
 
-    def get_graph(self, rels_group: str, **kwargs):
-        return RollingGiniGraph(table=self.table, rel=rels_group, **kwargs)
+    @classmethod
+    def get_graph_type(cls):
+        return RollingGiniGraph
 
 
-class RollingGiniRunner(RollingRunner, OneTableRunner, PosGraphRunner):
+class RollingGiniRunner(RollingStatRunner):
 
     @classmethod
     def get_writer_type(cls):

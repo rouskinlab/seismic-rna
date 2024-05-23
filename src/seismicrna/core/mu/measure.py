@@ -15,8 +15,7 @@ from .nan import auto_remove_nan
 def _calc_sum_abs_diff(x: np.ndarray):
     """ Sum the absolute difference along axis 0. """
     n = x.shape[0]
-    dims = x.shape[1:]
-    sum_abs_diff = np.zeros(dims)
+    sum_abs_diff = np.zeros(x.shape[1:])
     for i in range(n):
         for j in range(i + 1, n):
             sum_abs_diff += np.abs(x[i] - x[j])
