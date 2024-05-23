@@ -12,7 +12,7 @@ from .report import ClusterReport
 from .save import write_batches
 from .uniq import UniqReads
 from ..core.io import recast_file_path
-from ..core.parallel import dispatch
+from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.types import get_max_uint
 from ..core.write import need_write
 from ..mask.data import load_mask_dataset
@@ -35,9 +35,9 @@ def run_order(uniq_reads: UniqReads,
                   for _ in range(n_runs)]
     # Run independent replicates of the clustering algorithm.
     rng = np.random.default_rng()
-    seeds = list(map(tuple, list(rng.integers(get_max_uint(SEED_DTYPE),
-                                              size=(n_runs, 2),
-                                              dtype=SEED_DTYPE))))
+    seeds = as_list_of_tuples(rng.integers(get_max_uint(SEED_DTYPE),
+                                           size=n_runs,
+                                           dtype=SEED_DTYPE))
     replicates = dispatch([rep.run for rep in replicates],
                           n_procs,
                           parallel=True,
