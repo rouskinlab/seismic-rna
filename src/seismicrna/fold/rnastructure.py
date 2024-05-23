@@ -11,6 +11,7 @@ from logging import getLogger
 from pathlib import Path
 
 from ..core import path
+from ..core.arg import docdef
 from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
                            RNASTRUCTURE_DOT2CT_CMD,
                            RNASTRUCTURE_FOLD_CMD,
@@ -308,9 +309,10 @@ def require_data_path():
     return ""
 
 
+@docdef.auto()
 def fold(rna: RNAProfile, *,
          fold_temp: float,
-         fold_constraint: Path | None,
+         fold_constraint: Path | None = None,
          fold_md: int,
          fold_mfe: bool,
          fold_max: int,
@@ -360,13 +362,14 @@ def fold(rna: RNAProfile, *,
             # Renumber the CT file so that it has the same numbering
             # scheme as the section, rather than always starting at 1,
             # the latter of which is always output by the Fold program.
-            renumber_ct(ct_temp, ct_file, rna.section.end5, force)
+            renumber_ct(ct_temp, ct_file, rna.section.end5, force=True)
         finally:
             if not keep_temp:
                 # Delete the temporary files.
                 fasta.unlink(missing_ok=True)
                 dms_file.unlink(missing_ok=True)
-                ct_temp.unlink(missing_ok=True)
+                if ct_temp != ct_file:
+                    ct_temp.unlink(missing_ok=True)
     return ct_file
 
 
