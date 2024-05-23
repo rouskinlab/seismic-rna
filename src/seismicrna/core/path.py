@@ -672,6 +672,11 @@ def buildpar(*segment_types: Segment, **field_values: Any):
     return path
 
 
+def randname(length: int):
+    """ Generate a random name with valid path characters. """
+    return "".join(random.choices(STR_CHARS, k=length))
+
+
 def randdir(parent: str | pl.Path | None = None,
             prefix: str = "",
             suffix: str = "",
@@ -691,7 +696,7 @@ def randdir(parent: str | pl.Path | None = None,
         raise ValueError(f"length must be ≥ 1, but got {length}")
     for i in range(max_tries):
         # Make a random name for the new directory.
-        name = f"{prefix}{''.join(random.choices(STR_CHARS, k=length))}{suffix}"
+        name = f"{prefix}{randname(length)}{suffix}"
         path = parent.joinpath(name)
         try:
             # Create the new directory if it does not already exist.
