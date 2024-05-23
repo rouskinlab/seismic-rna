@@ -7,20 +7,20 @@ from click import command
 from plotly import graph_objects as go
 
 from .base import PosGraphWriter, PosGraphRunner
-from .onestruct import (StructOneTableGraph,
-                        StructOneTableRunner,
-                        StructOneTableWriter)
-from .roc import PROFILE_NAME, rename_columns
+from .onetable import OneTableGraph, OneTableRunner, OneTableWriter
+from .rel import OneRelGraph
 from .roll import RollingGraph, RollingRunner
-from .trace import iter_rolling_auc_traces
-from ..core.arg import opt_window, opt_winmin
+from .trace import iter_rolling_gini_traces
+from ..core.header import format_clust_name
+from ..core.mu import calc_gini
+from ..core.seq import iter_windows
 
 logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-class RollingAUCGraph(StructOneTableGraph, RollingGraph):
+class RollingGiniGraph(OneTableGraph, OneRelGraph, RollingGraph):
 
     @classmethod
     def graph_kind(cls):
@@ -28,59 +28,59 @@ class RollingAUCGraph(StructOneTableGraph, RollingGraph):
 
     @classmethod
     def what(cls):
-        return "Rolling AUC-ROC"
+        return "Rolling Gini coefficient"
 
     @property
     def y_title(self):
-        return "AUC-ROC"
+        return "Gini"
 
     @cached_property
     def data(self):
-        # Collect the rolling AUC-ROC from every RNA state.
-        data = dict()
-        for state in self.iter_states():
-            key = state.data_name, state.title
-            if key in data:
-                raise ValueError(f"Duplicate RNA state: {key}")
-            data[key] = state.rolling_auc(self._size, self._min_count)
-        if not data:
-            raise ValueError(f"Got no data for {self}")
-        # Covert the data into a DataFrame and rename the column levels.
-        return rename_columns(pd.DataFrame.from_dict(data))
-
-    @cached_property
-    def profile_names(self):
-        """ Names of the profiles as they appear in the data. """
-        return self.data.columns.unique(PROFILE_NAME)
+        data = self._fetch_data(self.table,
+                                order=self.order,
+                                clust=self.clust)
+        gini = pd.DataFrame(index=data.index, dtype=float)
+        for cluster, cluster_data in data.items():
+            cluster_gini = pd.Series(index=gini.index, dtype=float)
+            for center, (window,) in iter_windows(cluster_data,
+                                                  size=self._size,
+                                                  min_count=self._min_count):
+                cluster_gini.loc[center] = calc_gini(window)
+            if isinstance(cluster, tuple):
+                _, order, clust = cluster
+                label = format_clust_name(order, clust)
+            else:
+                label = cluster
+            gini[label] = cluster_gini
+        return gini
 
     def get_traces(self):
-        for row, profile in enumerate(self.profile_names, start=1):
-            for trace in iter_rolling_auc_traces(self.data.loc[:, profile],
-                                                 profile):
-                yield (row, 1), trace
+        for row, trace in enumerate(iter_rolling_gini_traces(self.data),
+                                    start=1):
+            yield (row, 1), trace
 
     def _figure_layout(self, fig: go.Figure):
         super()._figure_layout(fig)
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class RollingAUCWriter(StructOneTableWriter, PosGraphWriter):
+class RollingGiniWriter(OneTableWriter, PosGraphWriter):
 
     def get_graph(self, rels_group: str, **kwargs):
-        return RollingAUCGraph(table=self.table, rel=rels_group, **kwargs)
+        return RollingGiniGraph(table=self.table, rel=rels_group, **kwargs)
 
 
-class RollingAUCRunner(RollingRunner, StructOneTableRunner, PosGraphRunner):
+class RollingGiniRunner(RollingRunner, OneTableRunner, PosGraphRunner):
 
     @classmethod
     def get_writer_type(cls):
-        return RollingAUCWriter
+        return RollingGiniWriter
 
 
-@command(COMMAND, params=RollingAUCRunner.params())
+@command(COMMAND, params=RollingGiniRunner.params())
 def cli(*args, **kwargs):
-    """ Rolling AUC-ROC comparing a profile to a structure. """
-    return RollingAUCRunner.run(*args, **kwargs)
+    """ Rolling Gini coefficient. """
+    return RollingGiniRunner.run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

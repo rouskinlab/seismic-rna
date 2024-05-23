@@ -6,10 +6,10 @@ from click import command
 from plotly import graph_objects as go
 
 from .base import PosGraphWriter, PosGraphRunner
-from .roll import RollingGraph
-from .twotable import TwoTableMergedGraph, TwoTableRunner, TwoTableWriter
+from .roll import RollingGraph, RollingRunner
 from .trace import iter_seq_line_traces
-from ..core.arg import opt_metric, opt_window, opt_winmin
+from .twotable import TwoTableMergedGraph, TwoTableRunner, TwoTableWriter
+from ..core.arg import opt_metric
 from ..core.mu import compare_windows, get_comp_name
 
 logger = getLogger(__name__)
@@ -66,11 +66,11 @@ class RollingCorrelationWriter(TwoTableWriter, PosGraphWriter):
         return RollingCorrelationGraph
 
 
-class RollingCorrelationRunner(TwoTableRunner, PosGraphRunner):
+class RollingCorrelationRunner(RollingRunner, TwoTableRunner, PosGraphRunner):
 
     @classmethod
     def var_params(cls):
-        return super().var_params() + [opt_metric, opt_window, opt_winmin]
+        return super().var_params() + [opt_metric]
 
     @classmethod
     def get_writer_type(cls):
