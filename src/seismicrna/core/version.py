@@ -7,7 +7,7 @@ from logging import getLogger
 
 logger = getLogger(__name__)
 
-__version__ = "0.16.4"
+__version__ = "0.16.5"
 
 
 def parse_version(version: str = __version__):
