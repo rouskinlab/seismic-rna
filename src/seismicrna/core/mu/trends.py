@@ -18,7 +18,7 @@ def _calc_sum_abs_diff(x: np.ndarray):
     dims = x.shape[1:]
     sum_abs_diff = np.zeros(dims)
     for i in range(n):
-        for j in range(i, n):
+        for j in range(i + 1, n):
             sum_abs_diff += np.abs(x[i] - x[j])
     return sum_abs_diff
 
