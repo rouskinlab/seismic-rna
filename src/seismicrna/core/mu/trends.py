@@ -43,7 +43,8 @@ def calc_gini(mus: np.ndarray | pd.Series | pd.DataFrame):
         # If there are no positions, then return an all-NaN array with
         # the same dimensions as the input but without axis 0.
         return np.full(mus.shape[1:], np.nan)
-    return _calc_sum_abs_diff(mus) / (npos * npos * mus.mean(axis=0))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return _calc_sum_abs_diff(mus) / (npos * npos * mus.mean(axis=0))
 
 
 @auto_remove_nan
@@ -72,7 +73,8 @@ def calc_signal_noise(mus: np.ndarray | pd.Series | pd.DataFrame,
         # then return an all-NaN array with the same dimensions as the
         # input but without axis 0.
         return np.full(mus.shape[1:], np.nan)
-    return signal.mean(axis=0) / noise.mean(axis=0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return signal.mean(axis=0) / noise.mean(axis=0)
 
 ########################################################################
 #                                                                      #

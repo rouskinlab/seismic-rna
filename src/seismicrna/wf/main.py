@@ -39,6 +39,7 @@ from ..core.arg import (CMD_WORKFLOW,
                         opt_png)
 from ..core.seq import DNA
 from ..graph.aucroll import RollingAUCRunner
+from ..graph.giniroll import RollingGiniRunner
 from ..graph.histread import ReadHistogramRunner
 from ..graph.profile import ProfileRunner
 from ..graph.roc import ROCRunner
@@ -436,6 +437,23 @@ def run(*,
                             max_procs=max_procs,
                             parallel=parallel,
                             force=force)
+    # Graph Gini coefficient.
+    RollingGiniRunner.run(input_path=input_path,
+                          rels=(REL_NAMES[MUTAT_REL],),
+                          use_ratio=True,
+                          quantile=0.,
+                          window=window,
+                          winmin=winmin,
+                          cgroup=cgroup,
+                          out_dir=out_dir,
+                          csv=csv,
+                          html=html,
+                          svg=svg,
+                          pdf=pdf,
+                          png=png,
+                          max_procs=max_procs,
+                          parallel=parallel,
+                          force=force)
     if fold:
         # Graph ROC curves.
         ROCRunner.run(input_path=input_path,
