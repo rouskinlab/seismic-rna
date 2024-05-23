@@ -39,7 +39,7 @@ from ..core.arg import (CMD_WORKFLOW,
                         opt_png)
 from ..core.seq import DNA
 from ..graph.aucroll import RollingAUCRunner
-from ..graph.giniroll import RollingStatRunner
+from ..graph.giniroll import RollingGiniRunner
 from ..graph.histread import ReadHistogramRunner
 from ..graph.profile import ProfileRunner
 from ..graph.roc import ROCRunner
@@ -438,7 +438,7 @@ def run(*,
                             parallel=parallel,
                             force=force)
     # Graph Gini coefficient.
-    RollingStatRunner.run(input_path=input_path,
+    RollingGiniRunner.run(input_path=input_path,
                           rels=(REL_NAMES[MUTAT_REL],),
                           use_ratio=True,
                           quantile=0.,
