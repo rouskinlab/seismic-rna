@@ -1,7 +1,8 @@
 from abc import ABC
 from functools import cached_property
 
-from .base import GraphBase
+from .base import GraphBase, GraphRunner
+from ..core.arg import opt_window, opt_winmin
 from ..core.seq import POS_NAME
 
 
@@ -27,6 +28,13 @@ class RollingGraph(GraphBase, ABC):
             [super().predicate,
              "-".join(map(str, [self._size, self._min_count]))]
         )
+
+
+class RollingRunner(GraphRunner, ABC):
+
+    @classmethod
+    def var_params(cls):
+        return super().var_params() + [opt_window, opt_winmin]
 
 ########################################################################
 #                                                                      #
