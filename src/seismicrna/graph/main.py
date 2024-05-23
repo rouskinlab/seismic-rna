@@ -8,7 +8,8 @@ from . import (aucroll,
                histread,
                profile,
                roc,
-               scatter)
+               scatter,
+               snrroll)
 from ..core.arg import CMD_GRAPH
 
 
@@ -27,7 +28,8 @@ for module in (aucroll,
                histread,
                profile,
                roc,
-               scatter):
+               scatter,
+               snrroll):
     cli.add_command(module.cli)
 
 ########################################################################
