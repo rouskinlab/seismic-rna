@@ -10,7 +10,6 @@ from ..core.header import format_clust_name, index_order_clusts
 from ..core.rel import (MATCH,
                         NOCOV,
                         DELET,
-                        INDEL,
                         SUB_A,
                         SUB_C,
                         SUB_G,
@@ -240,11 +239,13 @@ def make_pmut_means(*,
     # Mutations at N bases.
     n = pd.Series({DELET: pnm * ptd,
                    ANY_N: 1. - pnm * pnd})
-    return pd.DataFrame.from_dict({BASEA: a,
-                                   BASEC: c,
-                                   BASEG: g,
-                                   BASET: t,
-                                   BASEN: n}).fillna(0.)
+    pmut_means = pd.DataFrame.from_dict({BASEA: a,
+                                         BASEC: c,
+                                         BASEG: g,
+                                         BASET: t,
+                                         BASEN: n}).fillna(0.)
+    pmut_means.loc[MATCH] = 1. - pmut_means.sum(axis=0)
+    return pmut_means
 
 
 def make_pmut_means_paired(pam: float = 0.004,
@@ -320,22 +321,12 @@ def sim_pmut(is_paired: pd.Series,
     bases = is_paired.index.get_level_values(BASE_NAME)
     # Determine the types of relationships.
     rels = pd.Index.union(pm.index, um.index).astype(REL_TYPE, copy=False)
-    if MATCH in rels:
-        raise ValueError(f"Matches cannot be a relationship to simulate")
     if NOCOV in rels:
-        raise ValueError(f"No coverage cannot be a relationship to simulate")
-    rels = rels.append(pd.Index([MATCH]))
+        raise ValueError(f"Mutation types include no coverage: {rels}")
     # Copy the mean mutation rates to prevent the originals from being
     # modified, and set their indexes to that of all relationships.
     pm = pm.reindex(index=rels, columns=DNA.alph(), fill_value=0.)
     um = um.reindex(index=rels, columns=DNA.alph(), fill_value=0.)
-    # Simulate matches as the default category.
-    if ((pm_sum := pm.sum(axis=0)) > 1.).any():
-        raise ValueError(f"The sum of pm must be ≤ 1, but got {pm_sum}")
-    if ((um_sum := um.sum(axis=0)) > 1.).any():
-        raise ValueError(f"The sum of um must be ≤ 1, but got {um_sum}")
-    pm.loc[MATCH] = 1. - pm_sum
-    um.loc[MATCH] = 1. - um_sum
     # Simulate mutation rates for paired/unpaired bases of each kind.
     pmut = pd.DataFrame(0., index=is_paired.index, columns=rels)
     for base in DNA.alph():
@@ -378,8 +369,7 @@ def sim_pmut(is_paired: pd.Series,
             upmut = np.broadcast_to(um_nonzero.values[np.newaxis, :],
                                     (base_num_unpaired, um_nonzero.size))
         pmut.loc[base_index[~base_is_paired], um_nonzero.index] = upmut
-    # Delete the column for matches.
-    return pmut.drop(columns=MATCH)
+    return pmut
 
 
 def sim_props(order: int, sort: bool = True):

@@ -1,8 +1,12 @@
 import numpy as np
+import pandas as pd
 
 from ..core.array import stochastic_round
-from ..core.seq import Section
+from ..core.batch import match_reads_segments
+from ..core.rel import NOCOV, REL_TYPE
+from ..core.seq import Section, index_to_pos
 from ..core.stats import calc_dirichlet_params
+from ..core.types import fit_uint_type
 
 rng = np.random.default_rng()
 
@@ -68,17 +72,51 @@ def sim_ends(end5: int,
     else:
         end5s = np.full(num_reads, end3_mean - (read_mean - 1))
         end3s = np.full(num_reads, end3_mean)
-    return end5s, end3s
+    return end5s[:, np.newaxis], end3s[:, np.newaxis]
 
 
-def sim_muts(section: Section,
-             num_reads: int):
+def sim_muts(pmut: pd.DataFrame,
+             seg_end5s: np.ndarray,
+             seg_end3s: np.ndarray):
     """ Simulate mutation data.
 
     Parameters
     ----------
-    section: Section
-        Section over which to simulate data.
-    num_reads: int
-        Number of reads to simulate.
+    pmut: Section
+        Rate of each type of mutation at each position.
+    seg_end5s:
+        5' end coordinate of each segment.
+    seg_end3s:
+        3' end coordinate of each segment.
     """
+    num_reads, _ = match_reads_segments(seg_end5s, seg_end3s)
+    read_nums = np.arange(num_reads, dtype=fit_uint_type(num_reads))
+    rels = np.asarray(pmut.columns, dtype=REL_TYPE)
+    if NOCOV in rels:
+        raise ValueError(f"Mutation types include no coverage: {rels}")
+    muts = dict()
+    for pos in index_to_pos(pmut.index):
+        muts[pos] = dict()
+        # Find the reads that cover this position.
+        usable_reads = read_nums[np.any(np.logical_and(seg_end5s <= pos,
+                                                       pos <= seg_end3s),
+                                        axis=1)]
+        # Choose a number of reads for each type of relationship.
+        num_reads_pos_rels = pd.Series(rng.multinomial(usable_reads.size,
+                                                       pmut.loc[pos])[0],
+                                       index=rels)
+        for rel in rels:
+            num_reads_pos_rel = num_reads_pos_rels[rel]
+            if num_reads_pos_rel > 0:
+                # Randomly select reads with this relationship.
+                reads_pos_rel = rng.choice(usable_reads,
+                                           num_reads_pos_rel,
+                                           replace=False,
+                                           shuffle=False)
+                muts[pos][rel] = reads_pos_rel
+                # Prevent those reads from being chosen for another
+                # relationship.
+                usable_reads = np.setdiff1d(usable_reads,
+                                            reads_pos_rel,
+                                            assume_unique=True)
+    return muts
