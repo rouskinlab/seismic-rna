@@ -6,6 +6,8 @@ from numba import jit
 
 from .types import UINT_NBYTES, fit_uint_type, get_uint_type
 
+rng = np.random.default_rng()
+
 
 def _unpack_tuple(items: Any):
     """ If items is a length-1 tuple, then return its single item;
@@ -212,6 +214,14 @@ def sanitize_values(values: Iterable[int],
                          f"{array[array > upper_limit]}")
     # Return the array as the smallest data type that will fit the data.
     return np.asarray(array, dtype=fit_uint_type(max_value))
+
+
+def stochastic_round(values: np.ndarray):
+    """ Round values to integers stochastically, so that the probability
+    of rounding up equals the mantissa. """
+    ints = np.floor(values)
+    mantissas = values - ints
+    return np.asarray(ints, dtype=int) + (rng.random(values.shape) < mantissas)
 
 
 def find_dims(dims: Sequence[Sequence[str | None]],

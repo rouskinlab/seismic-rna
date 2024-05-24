@@ -248,7 +248,8 @@ def get_shared_index(indexes: Iterable[pd.MultiIndex], empty_ok: bool = False):
     # 'Base'.
     if tuple(index.names) != SEQ_INDEX_NAMES:
         raise ValueError(
-            f"Expected levels named {SEQ_INDEX_NAMES}, but got {index.names}")
+            f"Expected levels named {SEQ_INDEX_NAMES}, but got {index.names}"
+        )
     # Ensure all indexes are identical.
     for i, other in enumerate(indexes[1:], start=1):
         if not index.equals(other) or not index.equal_levels(other):

@@ -680,7 +680,7 @@ def randname(length: int):
 def randdir(parent: str | pl.Path | None = None,
             prefix: str = "",
             suffix: str = "",
-            length: int = 6,
+            length: int = 8,
             max_tries: int = 256):
     """ Build a path of a new directory that does not exist and create
     it on the file system. """
