@@ -1,12 +1,48 @@
 from functools import cached_property
+from typing import Callable
 
 import numpy as np
+import pandas as pd
 
-from ..core.array import get_length
-from ..core.batch import AllReadBatch, SectionMutsBatch
+from ..core.array import check_naturals, get_length
+from ..core.batch import (AllReadBatch,
+                          SectionMutsBatch,
+                          sim_muts,
+                          sim_segment_ends)
+from ..core.seq import Section, index_to_pos, index_to_seq
+
+
+def format_read_name(batch: int, read: int):
+    """ Format a read name. """
+    return f"batch-{batch}_read-{read}"
 
 
 class QnamesBatch(AllReadBatch):
+
+    @classmethod
+    def simulate(cls,
+                 batch: int,
+                 num_reads: int,
+                 formatter: Callable[[int, int], str] = format_read_name):
+        """ Simulate a batch.
+
+        Parameters
+        ----------
+        batch: int
+            Batch number.
+        num_reads: int
+            Number of reads in the batch.
+        formatter: Callable[[int, int], str]
+            Function to generate the name of each read: must accept the
+            batch number and the read number and return a string.
+
+        Returns
+        -------
+        QnamesBatch
+            Simulated batch.
+        """
+        return cls(batch=batch,
+                   names=[formatter(batch, read) for read in range(num_reads)])
 
     def __init__(self, *, names: list[str] | np.ndarray, **kwargs):
         super().__init__(**kwargs)
@@ -18,6 +54,50 @@ class QnamesBatch(AllReadBatch):
 
 
 class RelateBatch(SectionMutsBatch, AllReadBatch):
+
+    @classmethod
+    def simulate(cls,
+                 batch: int,
+                 ref: str,
+                 pmut: pd.DataFrame,
+                 uniq_end5s: np.ndarray,
+                 uniq_end3s: np.ndarray,
+                 pends: np.ndarray,
+                 num_reads: int):
+        """ Simulate a batch.
+
+        Parameters
+        ----------
+        batch: int
+            Batch number.
+        ref: str
+            Name of the reference.
+        pmut: pd.DataFrame
+            Rate of each type of mutation at each position.
+        uniq_end5s: np.ndarray
+            Unique segment 5' end coordinates.
+        uniq_end3s: np.ndarray
+            Unique segment 3' end coordinates.
+        pends: np.ndarray
+            Probability of each set of unique end coordinates.
+        num_reads: int
+            Number of reads in the batch.
+
+        Returns
+        -------
+        RelateBatch
+            Simulated batch.
+        """
+        check_naturals(index_to_pos(pmut.index), "positions")
+        seg_end5s, seg_end3s = sim_segment_ends(uniq_end5s,
+                                                uniq_end3s,
+                                                pends,
+                                                num_reads)
+        return cls(batch=batch,
+                   section=Section(ref, index_to_seq(pmut.index)),
+                   seg_end5s=seg_end5s,
+                   seg_end3s=seg_end3s,
+                   muts=sim_muts(pmut, seg_end5s, seg_end3s))
 
     @property
     def read_weights(self):

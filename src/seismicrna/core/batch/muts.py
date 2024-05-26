@@ -43,7 +43,7 @@ def sim_muts(pmut: pd.DataFrame,
 
     Parameters
     ----------
-    pmut: Section
+    pmut: pd.DataFrame
         Rate of each type of mutation at each position.
     seg_end5s:
         5' end coordinate of each segment.
