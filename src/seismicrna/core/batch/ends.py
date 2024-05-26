@@ -241,10 +241,10 @@ def find_contiguous_reads(seg_end5s: np.ndarray, seg_end3s: np.ndarray):
     return np.logical_not(np.count_nonzero(is_contig_end3[:, :-1], axis=1))
 
 
-def sim_segment_ends(uniq_end5s: np.ndarray,
-                     uniq_end3s: np.ndarray,
-                     pends: np.ndarray,
-                     num_reads: int):
+def simulate_segment_ends(uniq_end5s: np.ndarray,
+                          uniq_end3s: np.ndarray,
+                          pends: np.ndarray,
+                          num_reads: int):
     """ Simulate segment end coordinates from their probabilities.
 
     Parameters

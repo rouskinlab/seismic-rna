@@ -36,9 +36,9 @@ def sanitize_muts(muts: dict[int, dict[int, list[int] | np.ndarray]],
             for pos in section.unmasked_int}
 
 
-def sim_muts(pmut: pd.DataFrame,
-             seg_end5s: np.ndarray,
-             seg_end3s: np.ndarray):
+def simulate_muts(pmut: pd.DataFrame,
+                  seg_end5s: np.ndarray,
+                  seg_end3s: np.ndarray):
     """ Simulate mutation data.
 
     Parameters

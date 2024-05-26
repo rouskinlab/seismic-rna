@@ -7,8 +7,8 @@ import pandas as pd
 from ..core.array import check_naturals, get_length
 from ..core.batch import (AllReadBatch,
                           SectionMutsBatch,
-                          sim_muts,
-                          sim_segment_ends)
+                          simulate_muts,
+                          simulate_segment_ends)
 from ..core.seq import Section, index_to_pos, index_to_seq
 
 
@@ -23,7 +23,8 @@ class QnamesBatch(AllReadBatch):
     def simulate(cls,
                  batch: int,
                  num_reads: int,
-                 formatter: Callable[[int, int], str] = format_read_name):
+                 formatter: Callable[[int, int], str] = format_read_name,
+                 **kwargs):
         """ Simulate a batch.
 
         Parameters
@@ -35,14 +36,10 @@ class QnamesBatch(AllReadBatch):
         formatter: Callable[[int, int], str]
             Function to generate the name of each read: must accept the
             batch number and the read number and return a string.
-
-        Returns
-        -------
-        QnamesBatch
-            Simulated batch.
         """
         return cls(batch=batch,
-                   names=[formatter(batch, read) for read in range(num_reads)])
+                   names=[formatter(batch, read) for read in range(num_reads)],
+                   **kwargs)
 
     def __init__(self, *, names: list[str] | np.ndarray, **kwargs):
         super().__init__(**kwargs)
@@ -63,7 +60,8 @@ class RelateBatch(SectionMutsBatch, AllReadBatch):
                  uniq_end5s: np.ndarray,
                  uniq_end3s: np.ndarray,
                  pends: np.ndarray,
-                 num_reads: int):
+                 num_reads: int,
+                 **kwargs):
         """ Simulate a batch.
 
         Parameters
@@ -82,22 +80,18 @@ class RelateBatch(SectionMutsBatch, AllReadBatch):
             Probability of each set of unique end coordinates.
         num_reads: int
             Number of reads in the batch.
-
-        Returns
-        -------
-        RelateBatch
-            Simulated batch.
         """
         check_naturals(index_to_pos(pmut.index), "positions")
-        seg_end5s, seg_end3s = sim_segment_ends(uniq_end5s,
-                                                uniq_end3s,
-                                                pends,
-                                                num_reads)
+        seg_end5s, seg_end3s = simulate_segment_ends(uniq_end5s,
+                                                     uniq_end3s,
+                                                     pends,
+                                                     num_reads)
         return cls(batch=batch,
                    section=Section(ref, index_to_seq(pmut.index)),
                    seg_end5s=seg_end5s,
                    seg_end3s=seg_end3s,
-                   muts=sim_muts(pmut, seg_end5s, seg_end3s))
+                   muts=simulate_muts(pmut, seg_end5s, seg_end3s),
+                   **kwargs)
 
     @property
     def read_weights(self):

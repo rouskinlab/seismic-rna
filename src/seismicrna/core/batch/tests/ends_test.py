@@ -13,7 +13,7 @@ from seismicrna.core.batch.ends import (_check_no_coverage_reads,
                                         merge_read_ends,
                                         merge_segment_ends,
                                         sort_segment_ends,
-                                        sim_segment_ends)
+                                        simulate_segment_ends)
 
 rng = np.random.default_rng(0)
 
@@ -647,8 +647,8 @@ class TestSimSegmentEnds(ut.TestCase):
                                           read_mean=meanr,
                                           variance=var)
                             with self.subTest(**kwargs):
-                                end5s, end3s = sim_segment_ends(num_reads=num_reads,
-                                                                **kwargs)
+                                end5s, end3s = simulate_segment_ends(num_reads=num_reads,
+                                                                     **kwargs)
                                 lengths = end3s - end5s + 1
                                 mean5 = mean3 - meanr + 1
                                 self.assertEqual(round(end5s.mean()), mean5)
@@ -668,8 +668,8 @@ class TestSimSegmentEnds(ut.TestCase):
                                       read_mean=meanr,
                                       variance=var)
                         with self.subTest(**kwargs):
-                            end5s, end3s = sim_segment_ends(num_reads=num_reads,
-                                                            **kwargs)
+                            end5s, end3s = simulate_segment_ends(num_reads=num_reads,
+                                                                 **kwargs)
                             lengths = end3s - end5s + 1
                             mean5 = mean3 - meanr + 1
                             self.assertEqual(round(end5s.mean()), mean5)
@@ -689,8 +689,8 @@ class TestSimSegmentEnds(ut.TestCase):
                                       read_mean=meanr,
                                       variance=var)
                         with self.subTest(**kwargs):
-                            end5s, end3s = sim_segment_ends(num_reads=num_reads,
-                                                            **kwargs)
+                            end5s, end3s = simulate_segment_ends(num_reads=num_reads,
+                                                                 **kwargs)
                             lengths = end3s - end5s + 1
                             mean5 = mean3 - meanr + 1
                             self.assertEqual(round(end5s.mean()), mean5)
@@ -710,8 +710,8 @@ class TestSimSegmentEnds(ut.TestCase):
                                       read_mean=meanr,
                                       variance=var)
                         with self.subTest(**kwargs):
-                            end5s, end3s = sim_segment_ends(num_reads=num_reads,
-                                                            **kwargs)
+                            end5s, end3s = simulate_segment_ends(num_reads=num_reads,
+                                                                 **kwargs)
                             lengths = end3s - end5s + 1
                             mean5 = mean3 - meanr + 1
                             self.assertEqual(round(end5s.mean()), mean5)
@@ -731,8 +731,8 @@ class TestSimSegmentEnds(ut.TestCase):
                                       read_mean=meanr,
                                       variance=var)
                         with self.subTest(**kwargs):
-                            end5s, end3s = sim_segment_ends(num_reads=num_reads,
-                                                            **kwargs)
+                            end5s, end3s = simulate_segment_ends(num_reads=num_reads,
+                                                                 **kwargs)
                             lengths = end3s - end5s + 1
                             mean5 = mean3 - meanr + 1
                             self.assertEqual(round(end5s.mean()), mean5)

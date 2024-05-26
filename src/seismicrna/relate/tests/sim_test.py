@@ -144,7 +144,7 @@ class TestSimulateRelate(ut.TestCase):
                                           ref="ref",
                                           refseq=refseq,
                                           batch_size=batch_size,
-                                          n_reads=nreads,
+                                          num_reads=nreads,
                                           p_mut=p_mut,
                                           p_ends=p_ends,
                                           cluster_choices=cluster_choices,
