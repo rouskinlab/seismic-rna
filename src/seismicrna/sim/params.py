@@ -323,8 +323,10 @@ def sim_pmut(is_paired: pd.Series,
     bases = is_paired.index.get_level_values(BASE_NAME)
     # Determine the types of relationships.
     rels = pd.Index.union(pm.index, um.index).astype(REL_TYPE, copy=False)
+    if MATCH not in rels:
+        raise ValueError(f"Relationships omit matches ({MATCH}): {rels}")
     if NOCOV in rels:
-        raise ValueError(f"Mutation types include no coverage: {rels}")
+        raise ValueError(f"Relationships include no coverage ({NOCOV}): {rels}")
     # Copy the mean mutation rates to prevent the originals from being
     # modified, and set their indexes to that of all relationships.
     pm = pm.reindex(index=rels, columns=DNA.alph(), fill_value=0.)
@@ -503,7 +505,7 @@ def sim_pclust(order: int, sort: bool = True):
     if order < 1:
         raise ValueError(f"order must be ≥ 1, but got {order}")
     # Simulate cluster proportions with a Dirichlet distribution.
-    props = rng.dirichlet(1. - rng.random(order))
+    props = rng.dirichlet(np.ones(order))
     if sort:
         props = np.sort(props)[::-1]
     return pd.Series(props, index=index_order_clusts(order))

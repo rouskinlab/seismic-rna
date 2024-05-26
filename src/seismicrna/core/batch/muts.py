@@ -54,9 +54,9 @@ def simulate_muts(pmut: pd.DataFrame,
     read_nums = np.arange(num_reads, dtype=fit_uint_type(num_reads))
     rels = np.asarray(pmut.columns, dtype=REL_TYPE)
     if MATCH not in rels:
-        raise ValueError(f"Mutation types omit matches: {rels}")
+        raise ValueError(f"Relationships omit matches ({MATCH}): {rels}")
     if NOCOV in rels:
-        raise ValueError(f"Mutation types include no coverage: {rels}")
+        raise ValueError(f"Relationships include no coverage ({NOCOV}): {rels}")
     muts = dict()
     for pos in index_to_pos(pmut.index):
         muts[pos] = dict()

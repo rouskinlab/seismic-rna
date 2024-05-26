@@ -1448,7 +1448,10 @@ def calc_params_observed(n_pos_total: int,
         n_muts_per_pos[j] = counts_per_uniq[mut_reads] @ membership[mut_reads]
     # Calculate the observed mutation rate at each position.
     # 2D (all positions x clusters)
-    p_mut_observed = n_muts_per_pos / n_reads_per_pos
+    with np.errstate(invalid="ignore"):
+        # For any positions with 0 divided by 0, replace the quotient
+        # with 0.
+        p_mut_observed = np.nan_to_num(n_muts_per_pos / n_reads_per_pos)
     return p_mut_observed, p_ends_observed, p_clust_observed
 
 ########################################################################

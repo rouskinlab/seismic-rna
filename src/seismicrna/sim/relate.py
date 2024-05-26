@@ -12,15 +12,16 @@ from ..relate.sim import simulate_relate
 
 def test_simulate():
     sample = "mysample"
-    num_reads = 100000
-    batch_size = 10000
+    num_reads = 2**20
+    batch_size = 2**16
     ref = "myref"
-    seq = DNA.random(100)
+    seq = DNA.random(500)
     nclust = 3
     paired = sim_paired(seq, nclust)
     pclust = sim_pclust(nclust)
+    print(pclust)
 
-    u5s, u3s, pends = sim_pends(1, len(seq), len(seq) * 0.9, len(seq) * 0.8, 0.1)
+    u5s, u3s, pends = sim_pends(1, len(seq), len(seq) * 0.8, 250, 0.1)
     pm = make_pmut_means_paired()
     um = make_pmut_means_unpaired()
 
