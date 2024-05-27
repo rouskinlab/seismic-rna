@@ -16,6 +16,7 @@ from .count import (calc_count_per_pos,
 from .ends import EndCoords, match_reads_segments
 from .index import iter_windows
 from .read import ReadBatch, PartialReadBatch
+from ..array import calc_inverse
 from ..rel import MATCH, NOCOV, REL_TYPE, RelPattern
 from ..seq import Section, index_to_pos
 from ..types import fit_uint_type
@@ -175,6 +176,33 @@ class SectionMutsBatch(MutsBatch, ABC):
                                   self.pos_index,
                                   self.cover_per_read,
                                   self.read_indexes)
+
+    @cached_property
+    def matrix(self):
+        """ Matrix of relationships at each position in each read. """
+        matrix = np.full((self.num_reads, self.section.length), NOCOV)
+        # Map each 5'/3' end coordinate to its index in the section.
+        pos_indexes = calc_inverse(self.section.range_int)
+        j5s = pos_indexes[np.asarray(self.seg_end5s)]
+        j3s = pos_indexes[np.asarray(self.seg_end3s)] + 1
+        # Fill all covered positions with matches.
+        for s in range(self.num_segments):
+            for i, (j5, j3) in enumerate(zip(j5s[:, s],
+                                             j3s[:, s],
+                                             strict=True)):
+                matrix[i, j5: j3] = MATCH
+        # Overlay the mutation data.
+        for pos, muts in self.muts.items():
+            j = pos_indexes[pos]
+            for rel, reads in muts.items():
+                matrix[self.read_indexes[reads], j] = rel
+        # Remove masked positions.
+        unmasked_bool = self.section.unmasked_bool
+        if not unmasked_bool.all():
+            # Copy the unmasked positions so that they become contiguous
+            # in C-order and so the original array can be deallocated.
+            matrix = np.copy(matrix[:, unmasked_bool], order="C")
+        return pd.DataFrame(matrix, self.read_nums, self.section.unmasked)
 
     def reads_per_pos(self, pattern: RelPattern):
         """ For each position, find all reads matching a relationship
