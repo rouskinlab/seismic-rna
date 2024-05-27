@@ -1,11 +1,27 @@
 from .batch import RelateBatch
-from .io import RelateBatchIO
+from .io import QnamesBatchIO, RelateBatchIO
 from .report import RelateReport
-from ..core.data import LoadedMutsDataset
+from ..core.data import LoadedDataset, LoadedMutsDataset
+
+
+class QnamesDataset(LoadedDataset):
+    """ Dataset of read names from the Relate step. """
+
+    @classmethod
+    def get_batch_type(cls):
+        return QnamesBatchIO
+
+    @classmethod
+    def get_report_type(cls):
+        return RelateReport
+
+    @property
+    def pattern(self):
+        return None
 
 
 class RelateDataset(LoadedMutsDataset):
-    """ Dataset from the Relate step. """
+    """ Dataset of mutations from the Relate step. """
 
     @classmethod
     def get_batch_type(cls):
