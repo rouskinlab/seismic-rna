@@ -5,6 +5,7 @@ from logging import getLogger
 
 import numpy as np
 import pandas as pd
+from numba import jit
 
 from .count import (calc_count_per_pos,
                     calc_count_per_read,
@@ -16,7 +17,7 @@ from .count import (calc_count_per_pos,
 from .ends import EndCoords, match_reads_segments
 from .index import iter_windows
 from .read import ReadBatch, PartialReadBatch
-from ..array import calc_inverse
+from ..array import calc_inverse, find_dims
 from ..rel import MATCH, NOCOV, REL_TYPE, RelPattern
 from ..seq import Section, index_to_pos
 from ..types import fit_uint_type
@@ -24,6 +25,9 @@ from ..types import fit_uint_type
 rng = np.random.default_rng()
 
 logger = getLogger(__name__)
+
+NUM_READS = "reads"
+NUM_SEGMENTS = "segments"
 
 
 def sanitize_muts(muts: dict[int, dict[int, list[int] | np.ndarray]],
@@ -84,6 +88,49 @@ def simulate_muts(pmut: pd.DataFrame,
                                                 reads_pos_rel,
                                                 assume_unique=True)
     return muts
+
+
+@jit()
+def _fill_matches(matrix: np.ndarray, j5s: np.ndarray, j3s: np.ndarray):
+    """ Fill all covered positions with matches. """
+    for i in range(matrix.shape[0]):
+        matrix[i, j5s[i]: j3s[i]] = MATCH
+
+
+def calc_muts_matrix(section: Section,
+                     read_nums: np.ndarray,
+                     seg_end5s: np.ndarray,
+                     seg_end3s: np.ndarray,
+                     muts: dict[int, dict[int, np.ndarray]]):
+    """ Matrix of relationships at each position in each read. """
+    dims = find_dims([(NUM_READS,),
+                      (NUM_READS, NUM_SEGMENTS),
+                      (NUM_READS, NUM_SEGMENTS)],
+                     [read_nums, seg_end5s, seg_end3s],
+                     ["read_nums", "seg_end5s", "seg_end3s"])
+    num_reads = dims[NUM_READS]
+    num_segments = dims[NUM_SEGMENTS]
+    matrix = np.full((num_reads, section.length), NOCOV)
+    # Map each 5'/3' end coordinate to its index in the section.
+    pos_indexes = calc_inverse(section.range_int)
+    j5s = pos_indexes[np.asarray(seg_end5s)]
+    j3s = pos_indexes[np.asarray(seg_end3s)] + 1
+    # Fill all covered positions with matches.
+    for s in range(num_segments):
+        _fill_matches(matrix, j5s[:, s], j3s[:, s])
+    # Overlay the mutation data.
+    read_indexes = calc_inverse(read_nums)
+    for pos, muts in muts.items():
+        j = pos_indexes[pos]
+        for rel, reads in muts.items():
+            matrix[read_indexes[reads], j] = rel
+    # Remove masked positions.
+    unmasked_bool = section.unmasked_bool
+    if not unmasked_bool.all():
+        # Copy the unmasked positions so that they become contiguous
+        # in C-order and so the original array can be deallocated.
+        matrix = np.copy(matrix[:, unmasked_bool], order="C")
+    return pd.DataFrame(matrix, read_nums, section.unmasked)
 
 
 class MutsBatch(EndCoords, ReadBatch, ABC):
@@ -180,29 +227,11 @@ class SectionMutsBatch(MutsBatch, ABC):
     @cached_property
     def matrix(self):
         """ Matrix of relationships at each position in each read. """
-        matrix = np.full((self.num_reads, self.section.length), NOCOV)
-        # Map each 5'/3' end coordinate to its index in the section.
-        pos_indexes = calc_inverse(self.section.range_int)
-        j5s = pos_indexes[np.asarray(self.seg_end5s)]
-        j3s = pos_indexes[np.asarray(self.seg_end3s)] + 1
-        # Fill all covered positions with matches.
-        for s in range(self.num_segments):
-            for i, (j5, j3) in enumerate(zip(j5s[:, s],
-                                             j3s[:, s],
-                                             strict=True)):
-                matrix[i, j5: j3] = MATCH
-        # Overlay the mutation data.
-        for pos, muts in self.muts.items():
-            j = pos_indexes[pos]
-            for rel, reads in muts.items():
-                matrix[self.read_indexes[reads], j] = rel
-        # Remove masked positions.
-        unmasked_bool = self.section.unmasked_bool
-        if not unmasked_bool.all():
-            # Copy the unmasked positions so that they become contiguous
-            # in C-order and so the original array can be deallocated.
-            matrix = np.copy(matrix[:, unmasked_bool], order="C")
-        return pd.DataFrame(matrix, self.read_nums, self.section.unmasked)
+        return calc_muts_matrix(self.section,
+                                self.read_nums,
+                                self.seg_end5s,
+                                self.seg_end3s,
+                                self.muts)
 
     def reads_per_pos(self, pattern: RelPattern):
         """ For each position, find all reads matching a relationship
