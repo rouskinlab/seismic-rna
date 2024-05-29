@@ -1,7 +1,7 @@
 import os
+from logging import getLogger
 from pathlib import Path
 
-import numpy as np
 from click import command
 
 from ..core import path
@@ -14,9 +14,9 @@ from ..core.arg import (docdef,
 from ..core.seq import DNA, write_fasta
 from ..core.write import need_write
 
-rng = np.random.default_rng()
-
 COMMAND = __name__.split(os.path.extsep)[-1]
+
+logger = getLogger(__name__)
 
 
 @docdef.auto()
@@ -25,12 +25,15 @@ def run(sim_dir: str,
         ref: str,
         reflen: int,
         force: bool):
-    fasta = Path(sim_dir).joinpath(refs).with_suffix(path.FASTA_EXTS[0])
-    if need_write(fasta, force):
-        seq = DNA.random(reflen)
-        fasta.parent.mkdir(parents=True, exist_ok=True)
-        write_fasta(fasta, [(ref, seq)], force)
-    return fasta
+    try:
+        fasta = Path(sim_dir).joinpath(refs).with_suffix(path.FASTA_EXTS[0])
+        if need_write(fasta, force):
+            seq = DNA.random(reflen)
+            fasta.parent.mkdir(parents=True, exist_ok=True)
+            write_fasta(fasta, [(ref, seq)], force=force)
+        return fasta
+    except Exception as error:
+        logger.critical(f"Failed to create {repr(ref)} ({reflen} nt): {error}")
 
 
 params = [
