@@ -19,21 +19,25 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 logger = getLogger(__name__)
 
 
+def get_fasta_path(top: Path, ref: str):
+    """ Get the path of a FASTA file. """
+    return path.buildpar(path.FastaSeg,
+                         top=top,
+                         ref=ref,
+                         ext=path.FASTA_EXTS[0])
+
+
 @docdef.auto()
 def run(sim_dir: str,
         refs: str,
         ref: str,
         reflen: int,
         force: bool):
-    try:
-        fasta = Path(sim_dir).joinpath(refs).with_suffix(path.FASTA_EXTS[0])
-        if need_write(fasta, force):
-            seq = DNA.random(reflen)
-            fasta.parent.mkdir(parents=True, exist_ok=True)
-            write_fasta(fasta, [(ref, seq)], force=force)
-        return fasta
-    except Exception as error:
-        logger.critical(f"Failed to create {repr(ref)} ({reflen} nt): {error}")
+    fasta = get_fasta_path(Path(sim_dir), refs)
+    if need_write(fasta, force):
+        seq = DNA.random(reflen)
+        write_fasta(fasta, [(ref, seq)], force=force)
+    return fasta
 
 
 params = [
@@ -48,4 +52,7 @@ params = [
 @command(COMMAND, params=params)
 def cli(*args, **kwargs):
     """ Simulate a FASTA file of a reference sequence. """
-    run(*args, **kwargs)
+    try:
+        run(*args, **kwargs)
+    except Exception as error:
+        logger.error(error)

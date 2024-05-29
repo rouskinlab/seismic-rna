@@ -309,6 +309,48 @@ def require_data_path():
     return ""
 
 
+def make_fold_cmd(fasta_file: Path,
+                  ct_file: Path, *,
+                  dms_file: Path | None,
+                  fold_constraint: Path | None,
+                  fold_temp: float,
+                  fold_md: int,
+                  fold_mfe: bool,
+                  fold_max: int,
+                  fold_percent: float,
+                  n_procs: int = 1):
+    if n_procs > 1:
+        # Fold with multiple threads using the Fold-smp program.
+        cmd = [RNASTRUCTURE_FOLD_SMP_CMD]
+        os.environ[FOLD_SMP_NUM_THREADS] = str(n_procs)
+    else:
+        # Fold with one thread using the Fold program.
+        cmd = [RNASTRUCTURE_FOLD_CMD]
+    if dms_file is not None:
+        # File of DMS reactivities.
+        cmd.extend(["--DMS", dms_file])
+    if fold_constraint is not None:
+        # File of constraints.
+        cmd.extend(["--constraint", fold_constraint])
+    # Temperature of folding (Kelvin).
+    cmd.extend(["--temperature", fold_temp])
+    if fold_md > 0:
+        # Maximum distance between paired bases.
+        cmd.extend(["--maxdistance", fold_md])
+    if fold_mfe:
+        # Predict only the minimum free energy structure.
+        cmd.append("--MFE")
+    else:
+        # Maximum number of structures.
+        cmd.extend(["--maximum", fold_max])
+        # Maximum % difference between free energies of structures.
+        cmd.extend(["--percent", fold_percent])
+    # Input and output files.
+    cmd.append(fasta_file)
+    cmd.append(ct_file)
+    return cmd
+
+
 @docdef.auto()
 def fold(rna: RNAProfile, *,
          fold_temp: float,
@@ -325,38 +367,24 @@ def fold(rna: RNAProfile, *,
     """ Run the 'Fold' or 'Fold-smp' program of RNAstructure. """
     ct_file = rna.get_ct_file(out_dir)
     if need_write(ct_file, force):
-        if n_procs > 1:
-            # Fold with multiple threads using the Fold-smp program.
-            cmd = [RNASTRUCTURE_FOLD_SMP_CMD]
-            os.environ[FOLD_SMP_NUM_THREADS] = str(n_procs)
-        else:
-            # Fold with one thread using the Fold program.
-            cmd = [RNASTRUCTURE_FOLD_CMD]
-        # Temperature of folding (Kelvin).
-        cmd.extend(["--temperature", fold_temp])
-        if fold_constraint is not None:
-            # File of constraints.
-            cmd.extend(["--constraint", fold_constraint])
-        if fold_md > 0:
-            # Maximum distance between paired bases.
-            cmd.extend(["--maxdistance", fold_md])
-        if fold_mfe:
-            # Predict only the minimum free energy structure.
-            cmd.append("--MFE")
-        else:
-            # Maximum number of structures.
-            cmd.extend(["--maximum", fold_max])
-            # Maximum % difference between free energies of structures.
-            cmd.extend(["--percent", fold_percent])
-        # DMS reactivities file for the RNA.
-        cmd.extend(["--DMS", dms_file := rna.to_dms(temp_dir)])
         # Temporary FASTA file for the RNA.
-        cmd.append(fasta := rna.to_fasta(temp_dir))
+        fasta_temp = rna.to_fasta(temp_dir)
         # Path of the temporary CT file.
-        cmd.append(ct_temp := rna.get_ct_file(temp_dir))
+        ct_temp = rna.get_ct_file(temp_dir)
+        # DMS reactivities file for the RNA.
+        dms_file = rna.to_dms(temp_dir)
         try:
             # Run the command.
-            run_cmd(args_to_cmd(cmd))
+            run_cmd(args_to_cmd(make_fold_cmd(fasta_temp,
+                                              ct_file,
+                                              dms_file=dms_file,
+                                              fold_constraint=fold_constraint,
+                                              fold_temp=fold_temp,
+                                              fold_md=fold_md,
+                                              fold_mfe=fold_mfe,
+                                              fold_max=fold_max,
+                                              fold_percent=fold_percent,
+                                              n_procs=n_procs)))
             # Reformat the CT file title lines so that each is unique.
             retitle_ct_structures(ct_temp, ct_temp, force=True)
             # Renumber the CT file so that it has the same numbering
@@ -366,7 +394,7 @@ def fold(rna: RNAProfile, *,
         finally:
             if not keep_temp:
                 # Delete the temporary files.
-                fasta.unlink(missing_ok=True)
+                fasta_temp.unlink(missing_ok=True)
                 dms_file.unlink(missing_ok=True)
                 if ct_temp != ct_file:
                     ct_temp.unlink(missing_ok=True)

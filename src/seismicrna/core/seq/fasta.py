@@ -68,7 +68,7 @@ def parse_fasta(fasta: Path,
                 # Determine the name of the current reference.
                 name = valid_fasta_seqname(line)
                 if name in names:
-                    raise ValueError(f"Duplicate name '{name}' in {fasta}")
+                    raise ValueError(f"Duplicate name {repr(name)} in {fasta}")
                 names.add(name)
             except Exception as error:
                 # Determining the name failed.
