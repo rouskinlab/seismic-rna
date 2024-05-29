@@ -30,6 +30,7 @@ from . import (wf,
                graph,
                export,
                test,
+               sim,
                cleanfa,
                renumct,
                __version__)
@@ -101,6 +102,7 @@ for module in (wf,
                graph,
                export,
                test,
+               sim,
                cleanfa,
                renumct):
     cli.add_command(module.cli)

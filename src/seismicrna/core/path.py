@@ -71,6 +71,7 @@ CMD_TABLE_DIR = "table"
 CMD_LIST_DIR = "list"
 CMD_FOLD_DIR = "fold"
 CMD_GRAPH_DIR = "graph"
+CMD_FASTQ_DIR = "fastq"
 
 # Directories for steps
 
@@ -291,7 +292,8 @@ CmdField = Field(str, [CMD_QC_DIR,
                        CMD_TABLE_DIR,
                        CMD_LIST_DIR,
                        CMD_FOLD_DIR,
-                       CMD_GRAPH_DIR])
+                       CMD_GRAPH_DIR,
+                       CMD_FASTQ_DIR])
 StepField = Field(str, STEPS)
 IntField = Field(int)
 ClustTabField = Field(str, CLUST_TABLES)

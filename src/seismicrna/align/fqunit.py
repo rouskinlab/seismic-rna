@@ -118,8 +118,7 @@ class FastqUnit(object):
         self.one_ref = one_ref
         self.sample, self.ref, self.exts = self.get_sample_ref_exts()
         logger.debug(f"Instantiated a {type(self).__name__} with "
-                     + ", ".join(f"{k} = {v} (type '{type(v).__name__}')"
-                                 for k, v in self.paths.items())
+                     + ", ".join(f"{k} = {v}" for k, v in self.paths.items())
                      + f", phred_enc = {phred_enc}, one_ref = {one_ref}")
 
     @property
@@ -216,8 +215,11 @@ class FastqUnit(object):
                               one_ref=self.one_ref)
 
     @classmethod
-    def _from_files(cls, /, *, phred_enc: int, one_ref: bool,
-                    fqs: list[Path], key: str):
+    def _from_files(cls, /, *,
+                    phred_enc: int,
+                    one_ref: bool,
+                    fqs: list[Path],
+                    key: str):
         if key not in (cls.KEY_SINGLE, cls.KEY_INTER):
             raise ValueError(f"Invalid key: '{key}'")
         segs = path.DMFASTQ_SEGS if one_ref else path.FASTQ_SEGS
@@ -228,7 +230,9 @@ class FastqUnit(object):
                 logger.error(f"Failed to load FASTQ file {fq}: {error}")
 
     @classmethod
-    def _from_mates(cls, /, *, phred_enc: int, one_ref: bool,
+    def _from_mates(cls, /, *,
+                    phred_enc: int,
+                    one_ref: bool,
                     fqs: list[Path]):
         # Determine the key and segments based on whether the FASTQs are
         # demultiplexed
@@ -300,26 +304,32 @@ class FastqUnit(object):
         """
         # List all FASTQ files.
         # single-end
-        yield from cls._from_files(phred_enc=phred_enc, one_ref=False,
+        yield from cls._from_files(phred_enc=phred_enc,
+                                   one_ref=False,
                                    fqs=fastq_args.get(cls.KEY_SINGLE, ()),
                                    key=cls.KEY_SINGLE)
         # interleaved paired-end
-        yield from cls._from_files(phred_enc=phred_enc, one_ref=False,
+        yield from cls._from_files(phred_enc=phred_enc,
+                                   one_ref=False,
                                    fqs=fastq_args.get(cls.KEY_INTER, ()),
                                    key=cls.KEY_INTER)
         # mated paired-end
-        yield from cls._from_mates(phred_enc=phred_enc, one_ref=False,
+        yield from cls._from_mates(phred_enc=phred_enc,
+                                   one_ref=False,
                                    fqs=fastq_args.get(cls.KEY_MATED, ()))
         # demultiplexed single-end
-        yield from cls._from_files(phred_enc=phred_enc, one_ref=True,
+        yield from cls._from_files(phred_enc=phred_enc,
+                                   one_ref=True,
                                    fqs=fastq_args.get(cls.KEY_DSINGLE, ()),
                                    key=cls.KEY_SINGLE)
         # demultiplexed interleaved paired-end
-        yield from cls._from_files(phred_enc=phred_enc, one_ref=True,
+        yield from cls._from_files(phred_enc=phred_enc,
+                                   one_ref=True,
                                    fqs=fastq_args.get(cls.KEY_DINTER, ()),
                                    key=cls.KEY_INTER)
         # demultiplexed mated paired-end
-        yield from cls._from_mates(phred_enc=phred_enc, one_ref=True,
+        yield from cls._from_mates(phred_enc=phred_enc,
+                                   one_ref=True,
                                    fqs=fastq_args.get(cls.KEY_DMATED, ()))
 
     def __str__(self):

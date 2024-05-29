@@ -12,11 +12,11 @@ from ..relate.sim import simulate_relate
 
 def test_simulate():
     sample = "mysample"
-    num_reads = 2 ** 18
+    num_reads = 2 ** 16
     batch_size = 2 ** 16
     ref = "myref"
-    seq = DNA.random(500)
-    nclust = 3
+    seq = DNA.random(2000)
+    nclust = 2
     paired = sim_paired(seq, nclust)
     pclust = sim_pclust(nclust)
 
@@ -24,7 +24,7 @@ def test_simulate():
     pm = make_pmut_means_paired()
     um = make_pmut_means_unpaired()
 
-    pmut = [sim_pmut(paired[cluster], pm, um, 0.05, 0.05) for cluster in paired.columns]
+    pmut = [sim_pmut(paired[cluster], pm, um, 0.001, 0.04) for cluster in paired.columns]
 
     out_dir = Path.cwd().joinpath("out")
     return simulate_relate(out_dir, sample, ref, seq, batch_size, num_reads, pmut, u5s, u3s, pends, pclust.values,

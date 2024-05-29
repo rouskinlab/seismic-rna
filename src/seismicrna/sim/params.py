@@ -250,11 +250,26 @@ def make_pmut_means(*,
     return pmut_means
 
 
+def make_pmut_means_nodms(pam: float = 0.002,
+                          pcm: float = 0.002,
+                          pgm: float = 0.003,
+                          ptm: float = 0.001,
+                          pnm: float = 0.002,
+                          **kwargs):
+    """ Generate mean mutation rates for non-DMS-treated samples. """
+    return make_pmut_means(pam=pam,
+                           pcm=pcm,
+                           pgm=pgm,
+                           ptm=ptm,
+                           pnm=pnm,
+                           **kwargs)
+
+
 def make_pmut_means_paired(pam: float = 0.004,
                            pcm: float = 0.003,
-                           pgm: float = 0.005,
-                           ptm: float = 0.002,
-                           pnm: float = 0.005,
+                           pgm: float = 0.003,
+                           ptm: float = 0.001,
+                           pnm: float = 0.002,
                            **kwargs):
     """ Generate mean mutation rates for paired bases. """
     return make_pmut_means(pam=pam,
@@ -267,9 +282,9 @@ def make_pmut_means_paired(pam: float = 0.004,
 
 def make_pmut_means_unpaired(pam: float = 0.040,
                              pcm: float = 0.030,
-                             pgm: float = 0.005,
-                             ptm: float = 0.002,
-                             pnm: float = 0.005,
+                             pgm: float = 0.003,
+                             ptm: float = 0.001,
+                             pnm: float = 0.002,
                              **kwargs):
     """ Generate mean mutation rates for unpaired bases. """
     return make_pmut_means(pam=pam,

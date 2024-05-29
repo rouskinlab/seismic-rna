@@ -1,4 +1,18 @@
-from .main import cli
+from click import group
+
+from . import (fastq)
+from ..core.arg import CMD_SIM
+
+
+# Group for all graph commands
+@group(CMD_SIM)
+def cli():
+    """ Simulate samples and their parameters. """
+
+
+# Add simulation commands to the CLI.
+for module in (fastq,):
+    cli.add_command(module.cli)
 
 ########################################################################
 #                                                                      #
