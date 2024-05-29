@@ -1014,6 +1014,43 @@ opt_all_pos = Option(
     help="Export all positions (not just unmasked positions)"
 )
 
+# Simulation
+
+opt_sim_dir = Option(
+    ("--sim-dir", "-o"),
+    type=Path(file_okay=False),
+    default=os.path.join(".", "sim"),
+    help="Write all simulated files to this directory"
+)
+
+opt_sample = Option(
+    ("--sample", "-s"),
+    type=str,
+    default="sim-sample",
+    help="Give this name to the simulated sample"
+)
+
+opt_refs = Option(
+    ("--refs", "-R"),
+    type=str,
+    default="sim-refs",
+    help="Give this name to the file of simulated references"
+)
+
+opt_ref = Option(
+    ("--ref", "-r"),
+    type=str,
+    default="sim-ref",
+    help="Give this name to the simulated reference"
+)
+
+opt_reflen = Option(
+    ("--reflen", "-n"),
+    type=int,
+    default=300,
+    help="Simulate a reference sequence with this many bases"
+)
+
 # Logging options
 opt_verbose = Option(
     ("--verbose", "-v"),

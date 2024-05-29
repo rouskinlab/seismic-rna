@@ -1,6 +1,6 @@
 from click import group
 
-from . import (fastq)
+from . import (ref, fastq, )
 from ..core.arg import CMD_SIM
 
 
@@ -11,7 +11,7 @@ def cli():
 
 
 # Add simulation commands to the CLI.
-for module in (fastq,):
+for module in (ref, fastq,):
     cli.add_command(module.cli)
 
 ########################################################################

@@ -121,7 +121,7 @@ def get_fasta_seq(fasta: Path, seq_type: type[XNA], name: str):
         pass
     else:
         return seq
-    raise ValueError(f"Sequence {repr(name)} was not found in {fasta}")
+    raise ValueError(f"Sequence {repr(name)} is not in {fasta}")
 
 
 def write_fasta(fasta: Path,
@@ -149,7 +149,7 @@ def write_fasta(fasta: Path,
                     raise ValueError(f"Duplicate reference name: '{name}'")
                 f.write(format_fasta_record(name, seq, wrap))
                 logger.info(f"Wrote reference '{name}' ({len(seq)} nt) "
-                             f"to {fasta}")
+                            f"to {fasta}")
                 names.add(name)
             except Exception as error:
                 logger.error(
