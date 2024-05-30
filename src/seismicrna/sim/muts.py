@@ -1,14 +1,24 @@
+import os
 from logging import getLogger
-from shutil import rmtree
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
+from click import command
 
 from ..core import path
-from ..core.array import stochastic_round
-from ..core.batch import match_reads_segments
-from ..core.header import format_clust_name, index_order_clusts
+from ..core.arg import (docdef,
+                        opt_ct_file,
+                        opt_pmut_paired,
+                        opt_pmut_unpaired,
+                        opt_vmut_paired,
+                        opt_vmut_unpaired,
+                        opt_force,
+                        opt_parallel,
+                        opt_max_procs)
+from ..core.header import make_header
+from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rel import (MATCH,
                         NOCOV,
                         DELET,
@@ -22,19 +32,20 @@ from ..core.rel import (MATCH,
                         ANY_V,
                         ANY_N,
                         REL_TYPE)
-from ..core.rna import RNAProfile, from_ct
+from ..core.rna import from_ct
 from ..core.seq import (BASE_NAME,
                         BASEA,
                         BASEC,
                         BASEG,
                         BASET,
                         BASEN,
-                        DNA,
-                        Section)
+                        DNA)
 from ..core.stats import calc_beta_params, calc_dirichlet_params
-from ..fold.rnastructure import fold
+from ..core.write import need_write
 
 logger = getLogger(__name__)
+
+COMMAND = __name__.split(os.path.extsep)[-1]
 
 rng = np.random.default_rng()
 
@@ -62,66 +73,23 @@ def verify_proportions(p: Any):
                          f"but maximum is {max_p}")
 
 
-def sim_paired(refseq: DNA,
-               structures: int,
-               use_fold: bool = True,
-               f_paired: float = 0.5):
-    """ Simulate whether each base in paired in one or more structures.
+def get_paired(ct_file: Path):
+    """ Determine whether each base in paired in one or more structures.
 
     Parameters
     ----------
-    refseq: DNA
-        Reference sequence.
-    structures: int
-        Number of structures to simulate; must be ≥ 1.
-    use_fold: bool = True
-        Use RNAstructure Fold to predict the structure(s); on failure,
-        default to False.
-    f_paired: float = 0.5
-        If `fold` is False, the fraction of bases to make paired.
+    ct_file: DNA
+        File of RNA structures in connectivity table (CT) format.
 
     Returns
     -------
     pd.DataFrame
         Whether each base at each position is paired in each structure.
     """
-    ref = path.randname(8)
-    section = Section(ref, refseq)
-    is_paired = pd.DataFrame(index=section.range, dtype=bool)
-    if use_fold:
-        temp_dir = None
-        try:
-            sample = path.randname(8)
-            data_name = path.randname(8)
-            section = Section(ref, refseq)
-            data = pd.Series(np.nan, index=is_paired.index)
-            profile = RNAProfile(sample=sample,
-                                 section=section,
-                                 data_sect=section.name,
-                                 data_name=data_name,
-                                 data=data)
-            temp_dir = path.randdir()
-            ct_file = fold(profile, out_dir=temp_dir, temp_dir=temp_dir)
-            for number, structure in zip(range(structures),
-                                         from_ct(ct_file),
-                                         strict=False):
-                name = format_clust_name(structures, number + 1)
-                is_paired[name] = structure.is_paired
-        except Exception as error:
-            logger.warning(f"Failed to simulate {refseq} with use_fold=True; "
-                           f"defaulting to use_fold=False:\n{error}")
-            return sim_paired(refseq, structures, False, f_paired)
-        finally:
-            # Always delete the temporary directory, if it exists.
-            if temp_dir is not None:
-                rmtree(temp_dir, ignore_errors=True)
-    # If use_fold is False or an insufficient number of structures were
-    # modeled, then add random structures.
-    while (number := is_paired.columns.size) < structures:
-        name = format_clust_name(structures, number + 1)
-        is_paired[name] = pd.Series(rng.random(is_paired.index.size) < f_paired,
-                                    index=is_paired.index)
-    return is_paired
+    return pd.DataFrame.from_dict({
+        number: structure.is_paired
+        for number, structure in enumerate(from_ct(ct_file), start=1)
+    })
 
 
 def make_pmut_means(*,
@@ -250,21 +218,6 @@ def make_pmut_means(*,
     return pmut_means
 
 
-def make_pmut_means_nodms(pam: float = 0.002,
-                          pcm: float = 0.002,
-                          pgm: float = 0.003,
-                          ptm: float = 0.001,
-                          pnm: float = 0.002,
-                          **kwargs):
-    """ Generate mean mutation rates for non-DMS-treated samples. """
-    return make_pmut_means(pam=pam,
-                           pcm=pcm,
-                           pgm=pgm,
-                           ptm=ptm,
-                           pnm=pnm,
-                           **kwargs)
-
-
 def make_pmut_means_paired(pam: float = 0.004,
                            pcm: float = 0.003,
                            pgm: float = 0.003,
@@ -391,136 +344,76 @@ def sim_pmut(is_paired: pd.Series,
     return pmut
 
 
-def _sim_ends(end5: int,
-              end3: int,
-              end3_mean: float,
-              read_mean: float,
-              variance: float,
-              num_reads: int):
-    """ Simulate segment end coordinates using a Dirichlet distribution.
-
-    Parameters
-    ----------
-    end5: int
-        5' end of the section (minimum allowed 5' end coordinate).
-    end3: int
-        3' end of the section (maximum allowed 5' end coordinate).
-    end3_mean: float
-        Mean 3' end coordinate; must be ≥ `end5` and ≤ `end3`.
-    read_mean: float
-        Mean read length.
-    variance: float
-        Variance as a fraction of its supremum; must be ≥ 0 and < 1.
-    num_reads: int
-        Number of reads to simulate.
-
-    Returns
-    -------
-    tuple[np.ndarray, np.ndarray]
-        5' and 3' end coordinates of each read.
-    """
-    if not 1 <= end5 <= end3_mean <= end3:
-        raise ValueError("Must have 1 ≤ end5 ≤ end3_mean ≤ end3, but got "
-                         f"end5={end5}, end3_mean={end3_mean}, end3={end3}")
-    gap3_mean = end3 - end3_mean
-    if not 0 <= read_mean <= end3_mean - (end5 - 1):
-        raise ValueError("Must have 1 ≤ read_mean ≤ (end3_mean - (end5 - 1)), "
-                         f"but got read_mean={read_mean}")
-    gap5_mean = end3_mean - (end5 - 1) - read_mean
-    interval = end3 - (end5 - 1)
-    means = np.array([gap5_mean, read_mean, gap3_mean]) / interval
-    variances = variance * (means * (1. - means))
-    is_nonzero = variances != 0.
-    if is_nonzero.any():
-        alpha = calc_dirichlet_params(means[is_nonzero],
-                                      variances[is_nonzero])
-        sample = rng.dirichlet(alpha, size=num_reads).T * interval
-        if is_nonzero.all():
-            gap5s, _, gap3s = sample
-        elif not is_nonzero[0]:
-            diffs, gap3s = sample
-            gap5s = np.zeros(num_reads)
-        elif not is_nonzero[1]:
-            gap5s, gap3s = sample
-        elif not is_nonzero[2]:
-            gap5s, diffs = sample
-            gap3s = np.full(num_reads, gap3_mean)
-        else:
-            raise
-        end5s = stochastic_round(gap5s) + end5
-        end3s = end3 - stochastic_round(gap3s)
-    else:
-        end5s = np.full(num_reads, end3_mean - (read_mean - 1))
-        end3s = np.full(num_reads, end3_mean)
-    return end5s[:, np.newaxis], end3s[:, np.newaxis]
+def _make_pmut_means_kwargs(pmut: tuple[tuple[str, float], ...]):
+    """ Make keyword arguments for `make_pmut_means`. """
+    return {f"p{mut}": p for mut, p in pmut}
 
 
-def sim_pends(end5: int,
-              end3: int,
-              end3_mean: float,
-              read_mean: float,
-              variance: float,
-              num_reads: int | None = None):
-    """ Simulate segment end coordinate probabilities.
-
-    Parameters
-    ----------
-    end5: int
-        5' end of the section (minimum allowed 5' end coordinate).
-    end3: int
-        3' end of the section (maximum allowed 5' end coordinate).
-    end3_mean: float
-        Mean 3' end coordinate; must be ≥ `end5` and ≤ `end3`.
-    read_mean: float
-        Mean read length.
-    variance: float
-        Variance as a fraction of its supremum; must be ≥ 0 and < 1.
-    num_reads: int | None = None
-        Number of reads to use for simulation; if omitted, will
-
-    Returns
-    -------
-    tuple[np.ndarray, np.ndarray, np.ndarray]
-        5' and 3' coordinates and their probabilities.
-    """
-    if num_reads is None:
-        num_reads = 100_000
-    elif num_reads < 1:
-        raise ValueError(f"num_reads must be ≥ 1, but got {num_reads}")
-    end5s, end3s = _sim_ends(end5,
-                             end3,
-                             end3_mean,
-                             read_mean,
-                             variance,
-                             num_reads)
-    _, num_segs = match_reads_segments(end5s, end3s)
-    ends = np.hstack([end5s, end3s])
-    uniq_ends, counts = np.unique(ends, return_counts=True, axis=0)
-    uniq_end5s = uniq_ends[:, :num_segs]
-    uniq_end3s = uniq_ends[:, num_segs:]
-    pends = counts / num_reads
-    return uniq_end5s, uniq_end3s, pends
+def run_struct(ct_file: Path,
+               pmut_paired: tuple[tuple[str, float], ...],
+               pmut_unpaired: tuple[tuple[str, float], ...],
+               vmut_paired: float,
+               vmut_unpaired: float,
+               force: bool):
+    pmut_file = ct_file.with_suffix(f".muts{path.CSV_EXT}")
+    if need_write(pmut_file, force):
+        is_paired = get_paired(ct_file)
+        num_structs = is_paired.columns.size
+        if num_structs == 0:
+            raise ValueError(f"No structures in {ct_file}")
+        pm = make_pmut_means_paired(**_make_pmut_means_kwargs(pmut_paired))
+        um = make_pmut_means_unpaired(**_make_pmut_means_kwargs(pmut_unpaired))
+        # Simulate mutation rates for each structure.
+        pmut = {i: sim_pmut(is_paired_i, pm, um, vmut_paired, vmut_unpaired)
+                for i, is_paired_i in is_paired.items()}
+        # Assemble the mutation rates into one DataFrame.
+        rels = list(pmut.values())[0].columns
+        header = make_header(rels=map(str, rels),
+                             max_order=num_structs,
+                             min_order=num_structs)
+        pmut_whole = pd.DataFrame(np.nan, is_paired.index, header.index)
+        for rel in rels:
+            for i, pmut_number in pmut.items():
+                pmut_whole[str(rel), num_structs, i] = pmut_number[rel]
+        pmut_whole.to_csv(pmut_file)
+    return pmut_file
 
 
-def sim_pclust(order: int, sort: bool = True):
-    """ Simulate the proportions of clusters.
+@docdef.auto()
+def run(ct_file: tuple[str, ...],
+        pmut_paired: tuple[tuple[str, float], ...],
+        pmut_unpaired: tuple[tuple[str, float], ...],
+        vmut_paired: float,
+        vmut_unpaired: float,
+        force: bool,
+        parallel: bool,
+        max_procs: int):
+    """ Simulate the rate of each kind of mutation at each position. """
+    return dispatch(run_struct,
+                    max_procs=max_procs,
+                    parallel=parallel,
+                    pass_n_procs=False,
+                    args=as_list_of_tuples(map(Path, ct_file)),
+                    kwargs=dict(pmut_paired=pmut_paired,
+                                pmut_unpaired=pmut_unpaired,
+                                vmut_paired=vmut_paired,
+                                vmut_unpaired=vmut_unpaired,
+                                force=force))
 
-    Parameters
-    ----------
-    order: int
-        Number of clusters to simulate; must be ≥ 1.
-    sort: bool = False
-        Sort the cluster proportions from greatest to least.
 
-    Returns
-    -------
-    pd.Series
-        Simulated proportion of each cluster.
-    """
-    if order < 1:
-        raise ValueError(f"order must be ≥ 1, but got {order}")
-    # Simulate cluster proportions with a Dirichlet distribution.
-    props = rng.dirichlet(np.ones(order))
-    if sort:
-        props = np.sort(props)[::-1]
-    return pd.Series(props, index=index_order_clusts(order))
+params = [
+    opt_ct_file,
+    opt_pmut_paired,
+    opt_pmut_unpaired,
+    opt_vmut_paired,
+    opt_vmut_unpaired,
+    opt_force,
+    opt_parallel,
+    opt_max_procs
+]
+
+
+@command(COMMAND, params=params)
+def cli(*args, **kwargs):
+    """ Simulate the rate of each kind of mutation at each position. """
+    run(*args, **kwargs)

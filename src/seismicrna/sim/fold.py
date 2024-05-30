@@ -64,7 +64,7 @@ def fold_ref(ref: str,
         ct_tmp = get_ct_path(temp_dir, ref)
         try:
             # Write a temporary FASTA file for this reference only.
-            write_fasta(fasta_tmp, [(ref, refseq)], force=force)
+            write_fasta(fasta_tmp, [(ref, refseq.tr())], force=force)
             # Predict the RNA structure.
             run_cmd(args_to_cmd(make_fold_cmd(fasta_tmp,
                                               ct_tmp,

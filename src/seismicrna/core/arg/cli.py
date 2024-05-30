@@ -1051,6 +1051,43 @@ opt_reflen = Option(
     help="Simulate a reference sequence with this many bases"
 )
 
+opt_ct_file = Option(
+    ("--ct-file", "-c"),
+    type=click.Path(exists=True, dir_okay=False),
+    multiple=True,
+    help="Simulate mutation rates using the structure(s) in this CT file"
+)
+
+opt_pmut_paired = Option(
+    ("--pmut-paired", "-p"),
+    type=(str, float),
+    multiple=True,
+    default=(),
+    help="Set the mean rate of each kind of mutation for paired bases"
+)
+
+opt_pmut_unpaired = Option(
+    ("--pmut-unpaired", "-u"),
+    type=(str, float),
+    multiple=True,
+    default=(),
+    help="Set the mean rate of each kind of mutation for unpaired bases"
+)
+
+opt_vmut_paired = Option(
+    ("--vmut-paired", "-v"),
+    type=float,
+    default=0.001,
+    help="Set the relative variance of mutation rates of paired bases"
+)
+
+opt_vmut_unpaired = Option(
+    ("--vmut-unpaired", "-w"),
+    type=float,
+    default=0.04,
+    help="Set the relative variance of mutation rates of unpaired bases"
+)
+
 # Logging options
 opt_verbose = Option(
     ("--verbose", "-v"),

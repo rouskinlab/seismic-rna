@@ -1,11 +1,11 @@
 from pathlib import Path
 
-from .params import (sim_pmut,
-                     sim_paired,
-                     make_pmut_means_paired,
-                     make_pmut_means_unpaired,
-                     sim_pends,
-                     sim_pclust)
+from .muts import (sim_pmut,
+                   get_paired,
+                   make_pmut_means_paired,
+                   make_pmut_means_unpaired,
+                   sim_pends,
+                   sim_pclust)
 from ..core.seq import DNA
 from ..relate.sim import simulate_relate
 
@@ -17,7 +17,7 @@ def test_simulate():
     ref = "myref"
     seq = DNA.random(2000)
     nclust = 2
-    paired = sim_paired(seq, nclust)
+    paired = get_paired(seq, nclust)
     pclust = sim_pclust(nclust)
 
     u5s, u3s, pends = sim_pends(1, len(seq), len(seq) * 0.8, 250, 0.1)
