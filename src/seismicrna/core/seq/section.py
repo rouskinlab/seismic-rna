@@ -1038,6 +1038,12 @@ class RefSections(object):
                 for ref, sections in self._sections.items()}
 
     @property
+    def sections(self):
+        """ List all sections. """
+        return [section for sections in self._sections.values()
+                for section in sections.values()]
+
+    @property
     def count(self):
         """ Total number of sections. """
         return sum(map(len, self._sections.values()))

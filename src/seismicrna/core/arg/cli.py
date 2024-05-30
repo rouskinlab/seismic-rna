@@ -1055,7 +1055,7 @@ opt_ct_file = Option(
     ("--ct-file", "-c"),
     type=click.Path(exists=True, dir_okay=False),
     multiple=True,
-    help="Simulate mutation rates using the structure(s) in this CT file"
+    help="Simulate parameters using the structure(s) in this CT file"
 )
 
 opt_pmut_paired = Option(
@@ -1086,6 +1086,27 @@ opt_vmut_unpaired = Option(
     type=float,
     default=0.04,
     help="Set the relative variance of mutation rates of unpaired bases"
+)
+
+opt_end3_fmean = Option(
+    ("--end3-fmean", "-3"),
+    type=float,
+    default=0.75,
+    help="Set the mean 3' end as a fraction of the section length"
+)
+
+opt_read_fmean = Option(
+    ("--read-fmean", "-l"),
+    type=float,
+    default=0.5,
+    help="Set the mean read length as a fraction of the section length"
+)
+
+opt_ends_var = Option(
+    ("--ends-var", "-e"),
+    type=float,
+    default=0.25,
+    help="Set the variance of end coordinates as a fraction of its supremum"
 )
 
 # Logging options

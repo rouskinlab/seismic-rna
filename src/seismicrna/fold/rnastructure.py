@@ -390,7 +390,7 @@ def fold(rna: RNAProfile, *,
             # Renumber the CT file so that it has the same numbering
             # scheme as the section, rather than always starting at 1,
             # the latter of which is always output by the Fold program.
-            renumber_ct(ct_temp, ct_file, rna.section.end5, force=True)
+            renumber_ct(ct_temp, ct_file, rna.section.end5, force=force)
         finally:
             if not keep_temp:
                 # Delete the temporary files.

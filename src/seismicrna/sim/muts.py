@@ -283,9 +283,9 @@ def sim_pmut(is_paired: pd.Series,
         raise TypeError(f"pm must be a DataFrame, but got {type(pm).__name__}")
     if not isinstance(um, pd.DataFrame):
         raise TypeError(f"um must be a DataFrame, but got {type(um).__name__}")
-    if pm.values.min() < 0.:
+    if pm.values.min(initial=1.) < 0.:
         raise ValueError(f"All pm must be ≥ 0, but got {pm}")
-    if um.values.min() < 0.:
+    if um.values.min(initial=1.) < 0.:
         raise ValueError(f"All um must be ≥ 0, but got {um}")
     is_paired = is_paired.astype(bool, copy=False)
     bases = is_paired.index.get_level_values(BASE_NAME)
