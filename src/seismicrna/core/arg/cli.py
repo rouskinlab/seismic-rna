@@ -1051,7 +1051,7 @@ opt_reflen = Option(
 )
 
 opt_ct_file = Option(
-    ("--ct-file", "-c"),
+    ("--ct-file", "-i"),
     type=click.Path(exists=True, dir_okay=False),
     multiple=True,
     help="Simulate parameters using the structure(s) in this CT file"
@@ -1106,6 +1106,13 @@ opt_ends_var = Option(
     type=float,
     default=0.25,
     help="Set the variance of end coordinates as a fraction of its supremum"
+)
+
+opt_clust_conc = Option(
+    ("--clust-conc", "-c"),
+    type=float,
+    default=0.,
+    help="Set the concentration parameter for simulating cluster proportions"
 )
 
 # Logging options

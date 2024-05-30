@@ -1,6 +1,6 @@
 from click import group
 
-from . import ends, fastq, fold, muts, ref
+from . import clusts, ends, fastq, fold, muts, ref
 from ..core.arg import CMD_SIM
 
 
@@ -11,7 +11,7 @@ def cli():
 
 
 # Add simulation commands to the CLI.
-for module in (ends, fastq, fold, muts, ref):
+for module in (clusts, ends, fastq, fold, muts, ref):
     cli.add_command(module.cli)
 
 ########################################################################
