@@ -772,8 +772,7 @@ opt_fold = Option(
 
 opt_fold_sections_file = Option(
     ("--fold-sections-file", "-f"),
-    type=Path(dir_okay=False),
-    default="",
+    type=Path(exists=True, dir_okay=False),
     help="Fold sections of references from coordinates/primers in a CSV file"
 )
 

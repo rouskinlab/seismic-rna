@@ -181,7 +181,7 @@ def run(input_path: tuple[str, ...], *,
                                            fold_temp=fold_temp,
                                            fold_constraint=(
                                                Path(fold_constraint)
-                                               if fold_constraint is not None
+                                               if fold_constraint
                                                else None
                                            ),
                                            fold_md=fold_md,

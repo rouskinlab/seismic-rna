@@ -116,7 +116,7 @@ def run(fasta: str, *,
         # List the sections.
         sections = RefSections(parse_fasta(Path(fasta), DNA),
                                sects_file=(Path(fold_sections_file)
-                                           if fold_sections_file is not None
+                                           if fold_sections_file
                                            else None),
                                coords=fold_coords,
                                primers=fold_primers)
@@ -132,7 +132,7 @@ def run(fasta: str, *,
                     kwargs=dict(sim_dir=Path(sim_dir),
                                 temp_dir=Path(temp_dir),
                                 fold_constraint=(Path(fold_constraint)
-                                                 if fold_constraint is not None
+                                                 if fold_constraint
                                                  else None),
                                 fold_temp=fold_temp,
                                 fold_md=fold_md,
