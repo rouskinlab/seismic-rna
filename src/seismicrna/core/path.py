@@ -155,6 +155,9 @@ SVG_EXT = ".svg"
 PDF_EXT = ".pdf"
 PNG_EXT = ".png"
 GRAPH_EXTS = CSV_EXT, HTML_EXT, SVG_EXT, PDF_EXT, PNG_EXT
+PARAM_MUTS_EXT = f".muts{CSV_EXT}"
+PARAM_ENDS_EXT = f".ends{CSV_EXT}"
+PARAM_CLUSTS_EXT = f".clusts{CSV_EXT}"
 
 
 # Path Exceptions ######################################################

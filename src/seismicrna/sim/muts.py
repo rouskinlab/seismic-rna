@@ -17,7 +17,7 @@ from ..core.arg import (docdef,
                         opt_force,
                         opt_parallel,
                         opt_max_procs)
-from ..core.header import make_header
+from ..core.header import RelClustHeader, make_header
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rel import (MATCH,
                         NOCOV,
@@ -355,7 +355,7 @@ def run_struct(ct_file: Path,
                vmut_paired: float,
                vmut_unpaired: float,
                force: bool):
-    pmut_file = ct_file.with_suffix(f".muts{path.CSV_EXT}")
+    pmut_file = ct_file.with_suffix(path.PARAM_MUTS_EXT)
     if need_write(pmut_file, force):
         is_paired = get_paired(ct_file)
         num_structs = is_paired.columns.size
@@ -377,6 +377,20 @@ def run_struct(ct_file: Path,
                 pmut_whole[str(rel), num_structs, i] = pmut_number[rel]
         pmut_whole.to_csv(pmut_file)
     return pmut_file
+
+
+def load_pmut(pmut_file: Path):
+    """ Load mutation rates from a file. """
+    pmut = pd.read_csv(pmut_file,
+                       index_col=list(range(2)),
+                       header=list(range(RelClustHeader.num_levels())))
+    # Convert the columns from strings to integers.
+    pmut.columns = pd.MultiIndex.from_arrays(
+        [pmut.columns.get_level_values(level).astype(int)
+         for level in pmut.columns.names],
+        names=pmut.columns.names
+    )
+    return pmut
 
 
 @docdef.auto()

@@ -5,6 +5,7 @@ from typing import Iterable
 
 from .ct import parse_ct
 from .struct import RNAStructure
+from ..seq import Section
 from ..write import need_write, write_mode
 
 logger = getLogger(__name__)
@@ -31,6 +32,20 @@ def from_ct(ct_path: Path):
         else:
             titles.add(title)
         yield RNAStructure(title=title, section=section, pairs=pairs)
+
+
+def find_ct_section(ct_path: Path) -> Section:
+    """ Section shared among all structures in a CT file. """
+    structures = iter(from_ct(ct_path))
+    try:
+        structure = next(structures)
+    except StopIteration:
+        raise ValueError(f"No structures in {ct_path}")
+    section = structure.section
+    for structure in structures:
+        if structure.section != section:
+            raise ValueError(f"Got > 1 unique section in {ct_path}")
+    return section
 
 
 def to_ct(structures: Iterable[RNAStructure],

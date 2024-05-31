@@ -12,7 +12,7 @@ from ..core.arg import (docdef,
                         opt_force,
                         opt_parallel,
                         opt_max_procs)
-from ..core.header import index_order_clusts
+from ..core.header import ClustHeader, index_order_clusts
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rna import from_ct
 from ..core.write import need_write
@@ -20,6 +20,8 @@ from ..core.write import need_write
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 rng = np.random.default_rng()
+
+PROPORTION = "Proportion"
 
 
 def sim_pclust(num_clusters: int,
@@ -52,18 +54,28 @@ def sim_pclust(num_clusters: int,
         props = rng.dirichlet(np.full(num_clusters, concentration))
         if sort:
             props = np.sort(props)[::-1]
-    return pd.Series(props, index=index_order_clusts(num_clusters))
+    return pd.Series(props,
+                     index=index_order_clusts(num_clusters),
+                     name=PROPORTION)
 
 
 def sim_pclust_ct(ct_file: Path, *,
                   concentration: float,
                   force: bool):
-    pclust_file = ct_file.with_suffix(f".clusts{path.CSV_EXT}")
+    pclust_file = ct_file.with_suffix(path.PARAM_CLUSTS_EXT)
     if need_write(pclust_file, force):
         num_structures = sum(1 for _ in from_ct(ct_file))
         pclust = sim_pclust(num_structures, concentration)
         pclust.to_csv(pclust_file)
     return pclust_file
+
+
+def load_pclust(pclust_file: Path):
+    """ Load cluster proportions from a file. """
+    return pd.read_csv(
+        pclust_file,
+        index_col=list(range(ClustHeader.num_levels()))
+    )[PROPORTION]
 
 
 @docdef.auto()

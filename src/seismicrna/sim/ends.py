@@ -17,13 +17,15 @@ from ..core.arg import (docdef,
 from ..core.array import stochastic_round
 from ..core.batch import END5_COORD, END3_COORD, match_reads_segments
 from ..core.parallel import as_list_of_tuples, dispatch
-from ..core.rna import from_ct
+from ..core.rna import find_ct_section
 from ..core.stats import calc_dirichlet_params
 from ..core.write import need_write
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 rng = np.random.default_rng()
+
+PROPORTION = "Proportion"
 
 
 def _sim_ends(end5: int,
@@ -137,18 +139,18 @@ def sim_pends(end5: int,
     return uniq_end5s, uniq_end3s, pends
 
 
+def _format_coord_name(end: str, segment: int):
+    return f"{end} {segment + 1}"
+
+
 def sim_pends_ct(ct_file: Path, *,
                  end3_fmean: float,
                  read_fmean: float,
                  ends_var: float,
                  force: bool):
-    pends_file = ct_file.with_suffix(f".ends{path.CSV_EXT}")
+    pends_file = ct_file.with_suffix(path.PARAM_ENDS_EXT)
     if need_write(pends_file, force):
-        try:
-            structure = next(iter(from_ct(ct_file)))
-        except StopIteration:
-            raise ValueError(f"No structures in {ct_file}")
-        section = structure.section
+        section = find_ct_section(ct_file)
         end3_mean = end3_fmean * (section.length - 1) + section.end5
         read_mean = read_fmean * section.length
         uniq_end5s, uniq_end3s, pends = sim_pends(section.end5,
@@ -157,15 +159,38 @@ def sim_pends_ct(ct_file: Path, *,
                                                   read_mean,
                                                   ends_var)
         _, num_segs = match_reads_segments(uniq_end5s, uniq_end3s)
-        uniq_ends = {f"{end} {i + 1}": coords[:, i]
+        uniq_ends = {_format_coord_name(end, i): coords[:, i]
                      for end, coords in [(END5_COORD, uniq_end5s),
                                          (END3_COORD, uniq_end3s)]
                      for i in range(num_segs)}
         pends = pd.Series(pends,
                           pd.MultiIndex.from_arrays(list(uniq_ends.values()),
-                                                    names=list(uniq_ends)))
+                                                    names=list(uniq_ends)),
+                          name=PROPORTION)
         pends.to_csv(pends_file)
     return pends_file
+
+
+def load_pends(pends_file: Path):
+    """ Load end coordinate proportions from a file. """
+    data = pd.read_csv(pends_file, index_col=list(range(2)))[PROPORTION]
+    index = data.index
+    num_segments, odd = divmod(index.nlevels, 2)
+    if odd:
+        raise ValueError("Number of end coordinates must be even, "
+                         f"but got {index.nlevels}")
+    uniq_end5s = np.stack(
+        [index.get_level_values(_format_coord_name(END5_COORD, i)).values
+         for i in range(num_segments)],
+        axis=1
+    )
+    uniq_end3s = np.stack(
+        [index.get_level_values(_format_coord_name(END3_COORD, i)).values
+         for i in range(num_segments)],
+        axis=1
+    )
+    pends = data.values
+    return uniq_end5s, uniq_end3s, pends
 
 
 @docdef.auto()

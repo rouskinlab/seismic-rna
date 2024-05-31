@@ -10,6 +10,7 @@ from ..core.arg import (docdef,
                         arg_fasta,
                         opt_sim_dir,
                         opt_temp_dir,
+                        opt_profile_name,
                         opt_fold_sections_file,
                         opt_fold_coords,
                         opt_fold_primers,
@@ -34,10 +35,8 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 logger = getLogger(__name__)
 
-PROFILE = "simulated"
 
-
-def get_ct_path(top: Path, section: Section):
+def get_ct_path(top: Path, section: Section, profile: str):
     """ Get the path of a connectivity table (CT) file. """
     return path.buildpar(path.RefSeg,
                          path.SectSeg,
@@ -45,13 +44,14 @@ def get_ct_path(top: Path, section: Section):
                          top=top,
                          ref=section.ref,
                          sect=section.name,
-                         profile=PROFILE,
+                         profile=profile,
                          ext=path.CT_EXT)
 
 
 def fold_section(section: Section, *,
                  sim_dir: Path,
                  temp_dir: Path,
+                 profile_name: str,
                  fold_constraint: Path | None,
                  fold_temp: float,
                  fold_md: int,
@@ -61,10 +61,10 @@ def fold_section(section: Section, *,
                  keep_temp: bool,
                  force: bool,
                  n_procs: int):
-    ct_sim = get_ct_path(sim_dir, section)
+    ct_sim = get_ct_path(sim_dir, section, profile_name)
     if need_write(ct_sim, force):
         fasta_tmp = get_fasta_path(temp_dir, section.ref)
-        ct_tmp = get_ct_path(temp_dir, section)
+        ct_tmp = get_ct_path(temp_dir, section, profile_name)
         try:
             # Write a temporary FASTA file for this section only.
             write_fasta(fasta_tmp,
@@ -99,6 +99,7 @@ def fold_section(section: Section, *,
 def run(fasta: str, *,
         sim_dir: str,
         temp_dir: str,
+        profile_name: str,
         fold_coords: tuple[tuple[str, int, int], ...],
         fold_primers: tuple[tuple[str, DNA, DNA], ...],
         fold_sections_file: str | None,
@@ -131,6 +132,7 @@ def run(fasta: str, *,
                     args=as_list_of_tuples(sections.sections),
                     kwargs=dict(sim_dir=Path(sim_dir),
                                 temp_dir=Path(temp_dir),
+                                profile_name=profile_name,
                                 fold_constraint=(Path(fold_constraint)
                                                  if fold_constraint
                                                  else None),
@@ -146,6 +148,7 @@ def run(fasta: str, *,
 params = [arg_fasta,
           opt_sim_dir,
           opt_temp_dir,
+          opt_profile_name,
           opt_fold_sections_file,
           opt_fold_coords,
           opt_fold_primers,

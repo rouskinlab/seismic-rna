@@ -1,7 +1,7 @@
 import gzip
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 import numpy as np
 from click import command
@@ -10,6 +10,7 @@ from numba import jit
 from ..core import path
 from ..core.arg import (docdef,
                         arg_input_path,
+opt_param_dir,
                         opt_max_procs,
                         opt_parallel,
                         opt_force)
@@ -22,10 +23,13 @@ from ..core.rel import (MATCH,
                         SUB_G,
                         SUB_T,
                         DELET)
+from ..core.report import RefF, SampleF
 from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
 from ..core.write import need_write, write_mode
 from ..pool.data import load_relate_dataset
+from ..relate.batch import QnamesBatch, RelateBatch
 from ..relate.data import QnamesDataset, RelateDataset
+from ..relate.report import RelateReport
 
 rng = np.random.default_rng()
 
@@ -107,30 +111,29 @@ def _get_common_attr(a: Any, b: Any, attr: str):
     return rval
 
 
-def generate_fastq(rdata: RelateDataset,
-                   ndata: QnamesDataset,
+def generate_fastq(top: Path,
+                   sample: str,
+                   ref: str,
+                   seq: DNA,
+                   rbatches: Iterable[RelateBatch],
+                   nbatches: Iterable[QnamesBatch],
                    force: bool = False):
     """ Generate FASTQ file(s) from a dataset. """
-    top = _get_common_attr(rdata, ndata, "top")
-    sample = _get_common_attr(rdata, ndata, "sample")
-    ref = _get_common_attr(rdata, ndata, "ref")
     fastq = path.buildpar(*path.DMFASTQ_SEGS,
                           top=top,
                           sample=sample,
                           ref=ref,
                           ext=path.FQ_EXTS[0])
     if need_write(fastq, force):
-        seq = str(rdata.section.seq)
         if fastq.suffix.endswith(".gz"):
             open_func = gzip.open
             binary = True
         else:
             open_func = open
             binary = False
+        seq_str = str(seq)
         with open_func(fastq, write_mode(force, binary=binary)) as fq:
-            for rbatch, nbatch in zip(rdata.iter_batches(),
-                                      ndata.iter_batches(),
-                                      strict=True):
+            for rbatch, nbatch in zip(rbatches, nbatches, strict=True):
                 num_reads = _get_common_attr(rbatch, nbatch, "num_reads")
                 reverse = rng.integers(2, size=num_reads).astype(bool,
                                                                  copy=False)
@@ -138,29 +141,59 @@ def generate_fastq(rdata: RelateDataset,
                                            nbatch.names,
                                            reverse,
                                            strict=True):
-                    record = generate_fastq_record(seq, name, rels, rev)
+                    record = generate_fastq_record(seq_str, name, rels, rev)
                     if binary:
                         record = record.encode()
                     fq.write(record)
     return fastq
 
 
-def run_report(report_file: Path, force: bool):
+def from_report(report_file: Path, force: bool):
+    """ Generate a FASTQ file from a Relate report. """
+    report = RelateReport.load(report_file)
+    sample = report.get_field(SampleF)
     rdata = RelateDataset.load(report_file)
     ndata = QnamesDataset.load(report_file)
-    return generate_fastq(rdata, ndata, force)
+    top = _get_common_attr(rdata, ndata, "top")
+    section = _get_common_attr(rdata, ndata, "section")
+    return generate_fastq(top,
+                          sample,
+                          section.ref,
+                          section.seq,
+                          rdata.iter_batches(),
+                          ndata.iter_batches(),
+                          force)
+
+
+def from_params(param_dir: Path, force: bool):
+    """ Generate a FASTQ file directly from parameters. """
+    report = RelateReport.load(report_file)
+    sample = report.get_field(SampleF)
+    rdata = RelateDataset.load(report_file)
+    ndata = QnamesDataset.load(report_file)
+    top = _get_common_attr(rdata, ndata, "top")
+    section = _get_common_attr(rdata, ndata, "section")
+    return generate_fastq(top,
+                          sample,
+                          section.ref,
+                          section.seq,
+                          rdata.iter_batches(),
+                          ndata.iter_batches(),
+                          force)
 
 
 @docdef.auto()
 def run(input_path: tuple[str, ...],
+        param_dir: tuple[str, ...],
         max_procs: int,
         parallel: bool,
         force: bool):
-    report_files = path.find_files_chain(
+    report_files = as_list_of_tuples(path.find_files_chain(
         input_path,
         load_relate_dataset.report_path_seg_types
-    )
-    return list(map(Path, dispatch(run_report,
+    ))
+    funcs = [from_report] * len(report_files) + []
+    return list(map(Path, dispatch(from_report,
                                    max_procs=max_procs,
                                    parallel=parallel,
                                    pass_n_procs=False,
@@ -169,6 +202,7 @@ def run(input_path: tuple[str, ...],
 
 
 params = [arg_input_path,
+          opt_param_dir,
           opt_max_procs,
           opt_parallel,
           opt_force]

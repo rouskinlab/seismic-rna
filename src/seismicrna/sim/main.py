@@ -1,17 +1,17 @@
 from click import group
 
-from . import clusts, ends, fastq, fold, muts, ref
+from . import clusts, ends, fastq, fold, muts, ref, relate
 from ..core.arg import CMD_SIM
 
 
-# Group for all graph commands
+# Group for all sim commands
 @group(CMD_SIM)
 def cli():
-    """ Simulate samples and their parameters. """
+    """ Simulate sequences, structures, and samples. """
 
 
 # Add simulation commands to the CLI.
-for module in (clusts, ends, fastq, fold, muts, ref):
+for module in (clusts, ends, fastq, fold, muts, ref, relate):
     cli.add_command(module.cli)
 
 ########################################################################

@@ -24,9 +24,7 @@ def _update_checksums(current_checksums: dict[str, list[str]],
             current_checksums[key] = values
 
 
-def simulate_batch(out_dir: Path,
-                   brotli_level: int,
-                   sample: str,
+def simulate_batch(sample: str,
                    ref: str,
                    batch: int,
                    pmut: pd.DataFrame,
@@ -50,10 +48,7 @@ def simulate_batch(out_dir: Path,
                                           uniq_end3s=uniq_end3s,
                                           pends=pends,
                                           num_reads=num_reads)
-    _, relate_check = relate_batch.save(out_dir, brotli_level, force=True)
-    _, qnames_check = qnames_batch.save(out_dir, brotli_level, force=True)
-    return {RelateBatchIO.btype(): [relate_check],
-            QnamesBatchIO.btype(): [qnames_check]}
+    return relate_batch, qnames_batch
 
 
 def simulate_cluster(first_batch: int,
@@ -61,46 +56,41 @@ def simulate_cluster(first_batch: int,
                      num_reads: int,
                      **kwargs):
     """ Simulate all batches for one cluster. """
-    checksums = dict()
     # Determine the numbers of batches and reads per batch.
     num_full_batches, last_batch_size = divmod(int(num_reads), int(batch_size))
     last_batch = first_batch + num_full_batches
     # Simulate every full-size batch.
     for batch in range(first_batch, last_batch):
-        _update_checksums(checksums,
-                          simulate_batch(batch=batch,
-                                         num_reads=batch_size,
-                                         **kwargs))
+        yield simulate_batch(batch=batch,
+                             num_reads=batch_size,
+                             **kwargs)
     # Simulate the last batch, which may have fewer reads.
     if last_batch_size > 0:
-        _update_checksums(checksums,
-                          simulate_batch(batch=last_batch,
-                                         num_reads=last_batch_size,
-                                         **kwargs))
-    return checksums
+        yield simulate_batch(batch=last_batch,
+                             num_reads=last_batch_size,
+                             **kwargs)
 
 
 def simulate_batches(batch_size: int,
-                     pmut: list[pd.DataFrame],
-                     pclust: np.ndarray,
+                     pmut: pd.DataFrame,
+                     pclust: pd.Series,
                      num_reads: int,
                      **kwargs):
     # Simulate the number of reads per cluster.
-    num_reads_clusters = rng.multinomial(num_reads, pclust)
+    num_reads_clusters = pd.Series(rng.multinomial(num_reads, pclust),
+                                   pclust.index)
     # Simulate batches for each cluster.
     first_batch = 0
-    checksums = dict()
-    for num_reads_cluster, pmut_cluster in zip(num_reads_clusters,
-                                               pmut,
-                                               strict=True):
-        _update_checksums(checksums,
-                          simulate_cluster(first_batch,
-                                           batch_size,
-                                           num_reads_cluster,
-                                           pmut=pmut_cluster,
-                                           **kwargs))
-        first_batch = len(checksums[RelateBatchIO.btype()])
-    return checksums
+    for order, cluster in pclust.index:
+        num_reads_cluster = num_reads_clusters.loc[(order, cluster)]
+        pmut_cluster = pmut.loc[:, (slice(None), order, cluster)]
+        for batch in simulate_cluster(first_batch,
+                                      batch_size,
+                                      num_reads_cluster,
+                                      pmut=pmut_cluster,
+                                      **kwargs):
+            yield batch
+            first_batch += 1
 
 
 def simulate_relate(out_dir: Path,
@@ -113,7 +103,7 @@ def simulate_relate(out_dir: Path,
                     uniq_end5s: np.ndarray,
                     uniq_end3s: np.ndarray,
                     pends: np.ndarray,
-                    pclust: np.ndarray,
+                    pclust: pd.Series,
                     brotli_level: int,
                     force: bool,
                     **kwargs):
@@ -125,25 +115,32 @@ def simulate_relate(out_dir: Path,
         began = datetime.now()
         # Write the reference sequence to a file.
         refseq_file = RefseqIO(sample=sample, ref=ref, refseq=refseq)
-        _, refseq_checksum = refseq_file.save(out_dir, brotli_level, force=True)
+        _, refseq_checksum = refseq_file.save(out_dir,
+                                              brotli_level=brotli_level,
+                                              force=True)
         # Simulate and write the batches.
-        checksums = simulate_batches(out_dir=out_dir,
-                                     sample=sample,
-                                     ref=ref,
-                                     batch_size=batch_size,
-                                     num_reads=num_reads,
-                                     pmut=pmut,
-                                     uniq_end5s=uniq_end5s,
-                                     uniq_end3s=uniq_end3s,
-                                     pends=pends,
-                                     pclust=pclust,
-                                     brotli_level=brotli_level,
-                                     **kwargs)
-        ns_batches = sorted(set(map(len, checksums.values())))
-        if len(ns_batches) != 1:
-            raise ValueError("Expected exactly 1 number of batches, "
-                             f"but got {ns_batches}")
-        n_batches = ns_batches[0]
+        checksums = {RelateBatchIO.btype(): list(),
+                     QnamesBatchIO.btype(): list()}
+        n_batches = 0
+        for rbatch, nbatch in simulate_batches(sample=sample,
+                                               ref=ref,
+                                               batch_size=batch_size,
+                                               num_reads=num_reads,
+                                               pmut=pmut,
+                                               uniq_end5s=uniq_end5s,
+                                               uniq_end3s=uniq_end3s,
+                                               pends=pends,
+                                               pclust=pclust,
+                                               **kwargs):
+            _, rcheck = rbatch.save(out_dir,
+                                    brotli_level=brotli_level,
+                                    force=True)
+            _, ncheck = nbatch.save(out_dir,
+                                    brotli_level=brotli_level,
+                                    force=True)
+            checksums[RelateBatchIO.btype()].append(rcheck)
+            checksums[QnamesBatchIO.btype()].append(ncheck)
+            n_batches += 1
         ended = datetime.now()
         # Write the report.
         report = RelateReport(sample=sample,

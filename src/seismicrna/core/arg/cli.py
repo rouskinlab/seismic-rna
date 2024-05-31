@@ -1044,10 +1044,17 @@ opt_ref = Option(
 )
 
 opt_reflen = Option(
-    ("--reflen", "-n"),
+    ("--reflen", "-N"),
     type=int,
     default=300,
     help="Simulate a reference sequence with this many bases"
+)
+
+opt_profile_name = Option(
+    ("--profile-name", "-P"),
+    type=str,
+    default="simulated",
+    help="Give the simulated structure and parameters this profile name"
 )
 
 opt_ct_file = Option(
@@ -1113,6 +1120,21 @@ opt_clust_conc = Option(
     type=float,
     default=0.,
     help="Set the concentration parameter for simulating cluster proportions"
+)
+
+opt_param_dir = Option(
+    ("--param-dir", "-d"),
+    type=click.Path(exists=True, file_okay=False),
+    multiple=True,
+    default=(),
+    help="Simulate data using parameter files in this directory"
+)
+
+opt_num_reads = Option(
+    ("--num-reads", "-n"),
+    type=int,
+    default=2**16,
+    help="Simulate this many reads"
 )
 
 # Logging options

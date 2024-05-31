@@ -18,6 +18,7 @@ from .ends import EndCoords, match_reads_segments
 from .index import iter_windows
 from .read import ReadBatch, PartialReadBatch
 from ..array import calc_inverse, find_dims
+from ..header import REL_NAME
 from ..rel import MATCH, NOCOV, REL_TYPE, RelPattern
 from ..seq import Section, index_to_pos
 from ..types import fit_uint_type
@@ -57,7 +58,7 @@ def simulate_muts(pmut: pd.DataFrame,
     """
     num_reads, _ = match_reads_segments(seg_end5s, seg_end3s)
     read_nums = np.arange(num_reads, dtype=fit_uint_type(num_reads))
-    rels = np.asarray(pmut.columns, dtype=REL_TYPE)
+    rels = np.asarray(pmut.columns.get_level_values(REL_NAME), dtype=REL_TYPE)
     if MATCH not in rels:
         raise ValueError(f"Relationships omit matches ({MATCH}): {rels}")
     if NOCOV in rels:
