@@ -1,5 +1,6 @@
 import gzip
 import os
+from logging import getLogger
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -7,10 +8,15 @@ import numpy as np
 from click import command
 from numba import jit
 
+from .relate import get_param_dir_fields, load_param_dir
 from ..core import path
 from ..core.arg import (docdef,
                         arg_input_path,
-opt_param_dir,
+                        opt_param_dir,
+                        opt_profile_name,
+                        opt_sample,
+                        opt_num_reads,
+                        opt_batch_size,
                         opt_max_procs,
                         opt_parallel,
                         opt_force)
@@ -23,13 +29,16 @@ from ..core.rel import (MATCH,
                         SUB_G,
                         SUB_T,
                         DELET)
-from ..core.report import RefF, SampleF
+from ..core.report import SampleF
 from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
 from ..core.write import need_write, write_mode
 from ..pool.data import load_relate_dataset
 from ..relate.batch import QnamesBatch, RelateBatch
 from ..relate.data import QnamesDataset, RelateDataset
 from ..relate.report import RelateReport
+from ..relate.sim import simulate_batches
+
+logger = getLogger(__name__)
 
 rng = np.random.default_rng()
 
@@ -115,8 +124,7 @@ def generate_fastq(top: Path,
                    sample: str,
                    ref: str,
                    seq: DNA,
-                   rbatches: Iterable[RelateBatch],
-                   nbatches: Iterable[QnamesBatch],
+                   batches: Iterable[tuple[RelateBatch, QnamesBatch]],
                    force: bool = False):
     """ Generate FASTQ file(s) from a dataset. """
     fastq = path.buildpar(*path.DMFASTQ_SEGS,
@@ -133,7 +141,7 @@ def generate_fastq(top: Path,
             binary = False
         seq_str = str(seq)
         with open_func(fastq, write_mode(force, binary=binary)) as fq:
-            for rbatch, nbatch in zip(rbatches, nbatches, strict=True):
+            for rbatch, nbatch in batches:
                 num_reads = _get_common_attr(rbatch, nbatch, "num_reads")
                 reverse = rng.integers(2, size=num_reads).astype(bool,
                                                                  copy=False)
@@ -154,37 +162,48 @@ def from_report(report_file: Path, force: bool):
     sample = report.get_field(SampleF)
     rdata = RelateDataset.load(report_file)
     ndata = QnamesDataset.load(report_file)
-    top = _get_common_attr(rdata, ndata, "top")
-    section = _get_common_attr(rdata, ndata, "section")
-    return generate_fastq(top,
+    sim_dir = _get_common_attr(rdata, ndata, "top")
+    section = rdata.section
+    batches = zip(rdata.iter_batches(), ndata.iter_batches())
+    return generate_fastq(sim_dir,
                           sample,
                           section.ref,
                           section.seq,
-                          rdata.iter_batches(),
-                          ndata.iter_batches(),
+                          batches,
                           force)
 
 
-def from_params(param_dir: Path, force: bool):
-    """ Generate a FASTQ file directly from parameters. """
-    report = RelateReport.load(report_file)
-    sample = report.get_field(SampleF)
-    rdata = RelateDataset.load(report_file)
-    ndata = QnamesDataset.load(report_file)
-    top = _get_common_attr(rdata, ndata, "top")
-    section = _get_common_attr(rdata, ndata, "section")
-    return generate_fastq(top,
+def from_param_dir(param_dir: Path,
+                   profile: str, *,
+                   sample: str,
+                   force: bool,
+                   **kwargs):
+    """ Simulate a FASTQ file given parameter files. """
+    sim_dir, _, _ = get_param_dir_fields(param_dir)
+    section, pmut, u5s, u3s, pends, pclust = load_param_dir(param_dir, profile)
+    batches = simulate_batches(sample=sample,
+                               ref=section.ref,
+                               pmut=pmut,
+                               uniq_end5s=u5s,
+                               uniq_end3s=u3s,
+                               pends=pends,
+                               pclust=pclust,
+                               batch_size=opt_batch_size.default,
+                               **kwargs)
+    return generate_fastq(sim_dir,
                           sample,
                           section.ref,
                           section.seq,
-                          rdata.iter_batches(),
-                          ndata.iter_batches(),
+                          batches,
                           force)
 
 
 @docdef.auto()
 def run(input_path: tuple[str, ...],
         param_dir: tuple[str, ...],
+        profile_name: str,
+        sample: str,
+        num_reads: int,
         max_procs: int,
         parallel: bool,
         force: bool):
@@ -192,17 +211,35 @@ def run(input_path: tuple[str, ...],
         input_path,
         load_relate_dataset.report_path_seg_types
     ))
-    funcs = [from_report] * len(report_files) + []
-    return list(map(Path, dispatch(from_report,
-                                   max_procs=max_procs,
-                                   parallel=parallel,
-                                   pass_n_procs=False,
-                                   args=as_list_of_tuples(report_files),
-                                   kwargs=dict(force=force))))
+    param_dirs = as_list_of_tuples(map(Path, param_dir))
+    fastqs = list()
+    if report_files:
+        fastqs.extend(dispatch(from_report,
+                               max_procs=max_procs,
+                               parallel=parallel,
+                               pass_n_procs=False,
+                               args=report_files,
+                               kwargs=dict(force=force)))
+    if param_dirs:
+        fastqs.extend(dispatch(from_param_dir,
+                               max_procs=max_procs,
+                               parallel=parallel,
+                               pass_n_procs=False,
+                               args=param_dirs,
+                               kwargs=dict(profile=profile_name,
+                                           sample=sample,
+                                           num_reads=num_reads,
+                                           force=force)))
+    if not fastqs:
+        logger.warning("No FASTQ files were generated")
+    return fastqs
 
 
 params = [arg_input_path,
           opt_param_dir,
+          opt_profile_name,
+          opt_sample,
+          opt_num_reads,
           opt_max_procs,
           opt_parallel,
           opt_force]

@@ -3,20 +3,6 @@ from pathlib import Path
 
 from click import command
 
-from .muts import (sim_pmut,
-                   get_paired,
-                   make_pmut_means_paired,
-                   make_pmut_means_unpaired)
-from ..core.seq import DNA
-from ..relate.sim import simulate_relate
-
-import os
-from pathlib import Path
-
-import numpy as np
-import pandas as pd
-from click import command
-
 from .clusts import load_pclust
 from .ends import load_pends
 from .muts import load_pmut
@@ -31,33 +17,11 @@ from ..core.arg import (docdef,
                         opt_force,
                         opt_parallel,
                         opt_max_procs)
-from ..core.header import index_order_clusts
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rna import find_ct_section
-from ..core.write import need_write
+from ..relate.sim import simulate_relate
 
 COMMAND = __name__.split(os.path.extsep)[-1]
-
-
-def test_simulate():
-    sample = "mysample"
-    num_reads = 2 ** 16
-    batch_size = 2 ** 16
-    ref = "myref"
-    seq = DNA.random(2000)
-    nclust = 2
-    paired = get_paired(seq, nclust)
-    pclust = sim_pclust(nclust)
-
-    u5s, u3s, pends = sim_pends(1, len(seq), len(seq) * 0.8, 250, 0.1)
-    pm = make_pmut_means_paired()
-    um = make_pmut_means_unpaired()
-
-    pmut = [sim_pmut(paired[cluster], pm, um, 0.001, 0.04) for cluster in paired.columns]
-
-    out_dir = Path.cwd().joinpath("out")
-    return simulate_relate(out_dir, sample, ref, seq, batch_size, num_reads, pmut, u5s, u3s, pends, pclust.values,
-                           brotli_level=10, force=True)
 
 
 def get_param_dir_fields(param_dir: Path):
