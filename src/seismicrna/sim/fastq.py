@@ -156,8 +156,8 @@ def generate_fastq(top: Path,
     return fastq
 
 
-def from_report(report_file: Path, force: bool):
-    """ Generate a FASTQ file from a Relate report. """
+def from_report(report_file: Path, force: bool = False):
+    """ Simulate a FASTQ file from a Relate report. """
     report = RelateReport.load(report_file)
     sample = report.get_field(SampleF)
     rdata = RelateDataset.load(report_file)
@@ -173,12 +173,12 @@ def from_report(report_file: Path, force: bool):
                           force)
 
 
-def from_param_dir(param_dir: Path,
-                   profile: str, *,
+def from_param_dir(param_dir: Path, *,
                    sample: str,
-                   force: bool,
+                   profile: str,
+                   force: bool = False,
                    **kwargs):
-    """ Simulate a FASTQ file given parameter files. """
+    """ Simulate a FASTQ file from parameter files. """
     sim_dir, _, _ = get_param_dir_fields(param_dir)
     section, pmut, u5s, u3s, pends, pclust = load_param_dir(param_dir, profile)
     batches = simulate_batches(sample=sample,
@@ -226,8 +226,8 @@ def run(input_path: tuple[str, ...],
                                parallel=parallel,
                                pass_n_procs=False,
                                args=param_dirs,
-                               kwargs=dict(profile=profile_name,
-                                           sample=sample,
+                               kwargs=dict(sample=sample,
+                                           profile=profile_name,
                                            num_reads=num_reads,
                                            force=force)))
     if not fastqs:

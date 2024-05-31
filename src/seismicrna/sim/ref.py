@@ -55,4 +55,4 @@ def cli(*args, **kwargs):
     try:
         run(*args, **kwargs)
     except Exception as error:
-        logger.error(error)
+        logger.critical(error)

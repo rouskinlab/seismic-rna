@@ -25,7 +25,7 @@ from ..core.arg import (docdef,
                         opt_max_procs,
                         opt_parallel)
 from ..core.extern import args_to_cmd, run_cmd
-from ..core.parallel import as_list_of_tuples, dispatch
+from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
 from ..core.rna import renumber_ct
 from ..core.seq import DNA, RefSections, Section, parse_fasta, write_fasta
 from ..core.write import need_write
@@ -95,6 +95,7 @@ def fold_section(section: Section, *,
     return ct_sim
 
 
+@lock_temp_dir
 @docdef.auto()
 def run(fasta: str, *,
         sim_dir: str,

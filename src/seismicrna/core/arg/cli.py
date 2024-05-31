@@ -10,6 +10,7 @@ import logging
 import math
 import os
 from datetime import datetime
+from typing import Iterable
 
 import click
 from click import Argument, Choice, Option, Parameter, Path
@@ -1174,13 +1175,15 @@ opt_profile = Option(
 )
 
 
-def merge_params(*param_lists: list[Parameter]):
+def merge_params(*param_lists: list[Parameter],
+                 exclude: Iterable[Parameter] = ()):
     """ Merge lists of Click parameters, dropping duplicates. """
+    exclude_names = {param.name for param in exclude}
     params = list()
     names = set()
     for param_list in param_lists:
         for param in param_list:
-            if param.name not in names:
+            if param.name not in names and param.name not in exclude_names:
                 params.append(param)
                 names.add(param.name)
     return params

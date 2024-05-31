@@ -15,16 +15,13 @@ def lock_temp_dir(run: Callable):
     @wraps(run)
     def wrapper(*args, temp_dir: str | Path, keep_temp: bool, **kwargs):
         lock_error = (f"The directory {temp_dir} is currently being used by "
-                      f"another instance of SEISMIC-RNA. If possible, please "
-                      f"name a temporary directory that does not yet exist "
-                      f"with '--temp-dir /path/to/new/temp-dir/'. If a former "
-                      f"run of SEISMIC-RNA failed to unlock this directory, "
-                      f"then please delete it with 'rm -r {temp_dir}'.")
-        temp_error = (f"The temporary directory {temp_dir} exists. If any "
-                      f"needed files reside in {temp_dir}, then please "
-                      f"specify a nonexistent temporary directory with "
-                      f"'--temp-dir /new/temp/dir'. Otherwise, please delete "
-                      f"the directory with 'rm -r {temp_dir}' and then force.")
+                      "another instance of SEISMIC-RNA. If SEISMIC-RNA is not "
+                      "actually running, then please delete the directory with "
+                      f"'rm -r {temp_dir}'. Otherwise, please name another "
+                      "directory with '-t /new/temp/dir'.")
+        temp_error = (f"The directory {temp_dir} exists. Please either delete "
+                      f"it with 'rm -r {temp_dir}' or name another directory "
+                      f"with '-t /new/temp/dir'.")
         # Determine whether the temporary directory and the lock exist.
         lock = os.path.join(temp_dir, LOCK_DIR)
         try:
