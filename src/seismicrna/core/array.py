@@ -8,6 +8,8 @@ from .types import UINT_NBYTES, fit_uint_type, get_uint_type
 
 rng = np.random.default_rng()
 
+MISSING = -1
+
 
 def _unpack_tuple(items: Any):
     """ If items is a length-1 tuple, then return its single item;
@@ -43,9 +45,37 @@ def get_length(array: np.ndarray, what: str = "array") -> int:
     return length
 
 
+@jit()
+def _fill_inverse_fwd(inverse: np.ndarray, default: int):
+    """ Fill missing indexes in `inverse` in forward order. """
+    fill = default
+    for i in range(inverse.size):
+        inv = inverse[i]
+        if inv == MISSING:
+            inverse[i] = fill
+        else:
+            fill = inv
+
+
+@jit()
+def _fill_inverse_rev(inverse: np.ndarray, default: int):
+    """ Fill missing indexes in `inverse` in reverse order. """
+    fill = default
+    for i in range(inverse.size - 1, -1, -1):
+        inv = inverse[i]
+        if inv == MISSING:
+            inverse[i] = fill
+        else:
+            fill = inv
+
+
 def calc_inverse(target: np.ndarray,
-                 what: str = "array",
-                 verify: bool = True):
+                 require: int = -1,
+                 fill: bool = False,
+                 fill_rev: bool = False,
+                 fill_default: int | None = None,
+                 verify: bool = True,
+                 what: str = "array"):
     """ Calculate the inverse of `target`, such that if element i of
     `target` has value x, then element x of the inverse has value i.
 
@@ -59,14 +89,27 @@ def calc_inverse(target: np.ndarray,
     target: np.ndarray
         Target values; must be a 1-dimensional array of non-negative
         integers with no duplicate values.
-    what: str = "array"
-        What to name the array (only used for error messages).
+    require: int = -1
+        Require the inverse to contain all indexes up to and including
+        `require` (i.e. that its length is at least `require` + 1);
+        ignored if `require` is -1; must be ≥ -1.
+    fill: bool = False
+        Fill missing indexes (that do not appear in `target`).
+    fill_rev: bool = False
+        Fill missing indexes in reverse order instead of forward order;
+        only used if `fill` is True.
+    fill_default: int | None = None
+        Value with which to fill before the first non-missing value has
+        been encountered; if `fill_rev` is True, defaults to the length
+        of `target`, otherwise to -1.
     verify: bool = True
         Verify that all target values are unique, non-negative integers.
         If this is incorrect, then if `verify` is True, then ValueError
         will be raised; and if False, then the results of this function
         will be incorrect. Always set to True unless you have already
         verified that `target` is unique, non-negative integers.
+    what: str = "array"
+        What to name the array (only used for error messages).
 
     Returns
     -------
@@ -76,7 +119,7 @@ def calc_inverse(target: np.ndarray,
     length = get_length(target, what)
     if length == 0:
         # If target is empty, then return an empty inverse.
-        return np.full(0, -1)
+        return np.full(require + 1, -1)
     if verify:
         uniq, counts = np.unique(target, return_counts=True)
         if uniq.size > 0:
@@ -92,11 +135,24 @@ def calc_inverse(target: np.ndarray,
                 )
     # Create a 1-dimensional array whose length is one greater than the
     # maximum value of target, so that the array has every index in the
-    # range [0, max(target)]; initialize all elements to placeholder -1.
-    inverse = np.full(target.max() + 1, -1)
+    # range [0, max(target)]; initialize all elements to be missing.
+    max_value = max(target.max(), require)
+    inverse = np.full(max_value + 1, MISSING)
     # For each value n with index i in target, set the value at index n
     # of inverse to i.
     inverse[target] = np.arange(length)
+    if fill:
+        # Fill missing values in inverse.
+        if fill_rev:
+            _fill_inverse_rev(inverse,
+                              (fill_default
+                               if fill_default is not None
+                               else length))
+        else:
+            _fill_inverse_fwd(inverse,
+                              (fill_default
+                               if fill_default is not None
+                               else -1))
     return inverse
 
 

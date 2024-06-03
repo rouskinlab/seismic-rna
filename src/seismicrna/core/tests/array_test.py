@@ -73,21 +73,95 @@ class TestEnsureSameLength(ut.TestCase):
 
 class TestCalcInverse(ut.TestCase):
 
+    def test_empty(self):
+        target = np.array([])
+        expect = np.array([])
+        self.assertTrue(np.array_equal(calc_inverse(target), expect))
+
+    def test_empty_max(self):
+        target = np.array([])
+        for maximum in range(5):
+            expect = np.full(maximum + 1, -1)
+            self.assertTrue(np.array_equal(
+                calc_inverse(target, require=maximum),
+                expect
+            ))
+
     def test_calc_inverse(self):
         """ Invert an array with a known inverse. """
         target = np.array([4, 7, 3, 8, 1])
         expect = np.array([-1, 4, -1, 2, 0, -1, -1, 1, 3])
         self.assertTrue(np.array_equal(calc_inverse(target), expect))
 
+    def test_calc_inverse_max(self):
+        """ Invert an array with a known inverse. """
+        target = np.array([4, 7, 3, 8, 1])
+        expect = np.array([-1, 4, -1, 2, 0, -1, -1, 1, 3, -1])
+        self.assertTrue(np.array_equal(calc_inverse(target, require=9),
+                                       expect))
+
+    def test_calc_inverse_fill_fwd(self):
+        """ Invert an array with a known inverse; fill forward. """
+        target = np.array([4, 7, 3, 8, 1])
+        expect = np.array([-1, 4, 4, 2, 0, 0, 0, 1, 3])
+        self.assertTrue(np.array_equal(calc_inverse(target, fill=True),
+                                       expect))
+
+    def test_calc_inverse_fill_fwd_max(self):
+        target = np.array([4, 7, 3, 8, 1])
+        expect = np.array([-1, 4, 4, 2, 0, 0, 0, 1, 3, 3])
+        self.assertTrue(np.array_equal(
+            calc_inverse(target, require=9, fill=True),
+            expect
+        ))
+
+    def test_calc_inverse_fill_fwd_max_default(self):
+        target = np.array([4, 7, 3, 8, 1])
+        expect = np.array([23, 4, 4, 2, 0, 0, 0, 1, 3, 3])
+        self.assertTrue(np.array_equal(
+            calc_inverse(target, require=9, fill=True, fill_default=23),
+            expect
+        ))
+
+    def test_calc_inverse_fill_rev(self):
+        """ Invert an array with a known inverse; fill reverse. """
+        target = np.array([4, 7, 3, 8, 1])
+        expect = np.array([4, 4, 2, 2, 0, 1, 1, 1, 3])
+        self.assertTrue(np.array_equal(
+            calc_inverse(target, fill=True, fill_rev=True),
+            expect
+        ))
+
+    def test_calc_inverse_fill_rev_max(self):
+        target = np.array([4, 7, 3, 8, 1])
+        expect = np.array([4, 4, 2, 2, 0, 1, 1, 1, 3, 5])
+        self.assertTrue(np.array_equal(
+            calc_inverse(target, require=9, fill=True, fill_rev=True),
+            expect
+        ))
+
+    def test_calc_inverse_fill_rev_max_default(self):
+        target = np.array([4, 7, 3, 8, 1])
+        expect = np.array([4, 4, 2, 2, 0, 1, 1, 1, 3, 23])
+        self.assertTrue(np.array_equal(
+            calc_inverse(target,
+                         require=9,
+                         fill=True,
+                         fill_rev=True,
+                         fill_default=23),
+            expect
+        ))
+
     def test_is_inverse(self):
         """ Verify every position in the inverse of a random array. """
         target = rng.choice(16, 8, replace=False)
-        inverse = calc_inverse(target)
-        for i, inv in enumerate(inverse):
-            if inv == -1:
-                self.assertNotIn(i, target)
-            else:
-                self.assertEqual(i, target[inv])
+        for maximum in [-1, 0, 1, 20]:
+            inverse = calc_inverse(target, require=maximum)
+            for i, inv in enumerate(inverse):
+                if inv == -1:
+                    self.assertNotIn(i, target)
+                else:
+                    self.assertEqual(i, target[inv])
 
     def test_negative(self):
         """ Negative values in the target are not permitted. """
