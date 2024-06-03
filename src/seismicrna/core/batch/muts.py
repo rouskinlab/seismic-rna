@@ -92,10 +92,13 @@ def simulate_muts(pmut: pd.DataFrame,
 
 
 @jit()
-def _fill_matches(matrix: np.ndarray, end5s: np.ndarray, end3s: np.ndarray):
+def _fill_matches(matrix: np.ndarray,
+                  index5s: np.ndarray,
+                  index3s: np.ndarray,
+                  unmasked_read_indexes: np.ndarray):
     """ Fill all covered positions with matches. """
-    for read in range(matrix.shape[0]):
-        matrix[read, end5s[read]: end3s[read]] = MATCH
+    for i, read_index in enumerate(unmasked_read_indexes):
+        matrix[read_index, index5s[i]: index3s[i]] = MATCH
 
 
 def calc_muts_matrix(section: Section,
@@ -113,46 +116,33 @@ def calc_muts_matrix(section: Section,
     num_segments = dims[NUM_SEGMENTS]
     section_unmasked = section.unmasked_int
     matrix = np.full((num_reads, section_unmasked.size), NOCOV)
-    if section.length > 0:
-        # Validate the coordinates; any out-of-bounds coordinates will
-        # cause undefined behavior, possibly a segmentation fault.
-        if (min5 := seg_end5s.min(initial=section.end3)) < section.end5:
-            raise ValueError(f"All 5' ends must be ≥ {section.end5}, "
-                             f"but their minimum is {min5}")
-        if (max5 := seg_end5s.max(initial=section.end5)) > (section.end3 + 1):
-            raise ValueError(f"All 5' ends must be ≤ {section.end3 + 1}, "
-                             f"but their maximum is {max5}")
-        if (min3 := seg_end3s.min(initial=section.end3)) < (section.end5 - 1):
-            raise ValueError(f"All 3' ends must be ≥ {section.end5 - 1}, "
-                             f"but their minimum is {min3}")
-        if (max3 := seg_end3s.max(initial=section.end5)) > section.end3:
-            raise ValueError(f"All 3' ends must be ≤ {section.end3}, "
-                             f"but their maximum is {max3}")
+    if matrix.size > 0:
         # Map each 5' and 3' end coordinate to its index in the unmasked
         # positions of the section.
         pos5_indexes = calc_inverse(section_unmasked,
-                                    require=max5,
+                                    require=(section.end3 + 1),
                                     fill=True,
                                     fill_rev=True)
         pos3_indexes = calc_inverse(section_unmasked,
-                                    require=max3,
+                                    require=section.end3,
                                     fill=True,
-                                    fill_rev=False)
+                                    fill_rev=False) + 1
         # Fill all covered positions with matches.
+        read_indexes = np.arange(num_reads)
         for s in range(num_segments):
             end5s = seg_end5s[:, s]
             end3s = seg_end3s[:, s]
             if np.ma.is_masked(end5s) or np.ma.is_masked(end3s):
-                unmasked = np.logical_not(np.logical_or(end5s.mask,
-                                                        end3s.mask))
-                end5s = end5s[unmasked]
-                end3s = end3s[unmasked]
-                reads = matrix[unmasked]
+                unmasked_read_indexes = read_indexes[~(end5s.mask | end3s.mask)]
+                end5s = end5s.data[unmasked_read_indexes]
+                end3s = end3s.data[unmasked_read_indexes]
             else:
-                reads = matrix
-            _fill_matches(reads,
-                          pos5_indexes[np.asarray(end5s)],
-                          pos3_indexes[np.asarray(end3s)] + 1)
+                unmasked_read_indexes = read_indexes
+            if unmasked_read_indexes.size > 0:
+                _fill_matches(matrix,
+                              pos5_indexes[end5s],
+                              pos3_indexes[end3s],
+                              unmasked_read_indexes)
         # Overlay the mutation data.
         read_indexes = calc_inverse(read_nums)
         for pos in section_unmasked:

@@ -3,6 +3,7 @@ import unittest as ut
 import numpy as np
 import pandas as pd
 
+from seismicrna.core.batch.ends import mask_segment_ends
 from seismicrna.core.batch.muts import calc_muts_matrix
 from seismicrna.core.rel.code import (DELET,
                                       MATCH,
@@ -124,6 +125,35 @@ class TestCalcMutsMatrix(ut.TestCase):
                                [NOCOV, MATCH, NOCOV, NOCOV, MATCH],
                                [NOCOV, NOCOV, MATCH, NOCOV, MATCH],
                                [NOCOV, NOCOV, NOCOV, MATCH, MATCH],
+                               [NOCOV, NOCOV, NOCOV, NOCOV, MATCH]],
+                              read_nums,
+                              section.unmasked)
+        self.assertTrue(expect.equals(result))
+
+    def test_paired_reads_masked_segments(self):
+        section = Section("myref", DNA.random(5))
+        muts = dict()
+        read_nums = np.array([2, 3, 5, 7, 8, 9, 12, 13, 16])
+        seg_end5s = np.array([[1, 1, 1, 1, 1, 2, 3, 4, 5],
+                              [1, 2, 3, 4, 5, 5, 5, 5, 5]]).T
+        seg_end3s = np.array([[1, 0, 1, 0, 1, 0, 3, 0, 5],
+                              [0, 2, 0, 4, 0, 5, 0, 5, 0]]).T
+        seg_end5s, seg_end3s = mask_segment_ends(seg_end5s, seg_end3s)
+        self.assertTrue(np.ma.is_masked(seg_end5s))
+        self.assertTrue(np.ma.is_masked(seg_end3s))
+        result = calc_muts_matrix(section,
+                                  read_nums,
+                                  seg_end5s,
+                                  seg_end3s,
+                                  muts)
+        expect = pd.DataFrame([[MATCH, NOCOV, NOCOV, NOCOV, NOCOV],
+                               [NOCOV, MATCH, NOCOV, NOCOV, NOCOV],
+                               [MATCH, NOCOV, NOCOV, NOCOV, NOCOV],
+                               [NOCOV, NOCOV, NOCOV, MATCH, NOCOV],
+                               [MATCH, NOCOV, NOCOV, NOCOV, NOCOV],
+                               [NOCOV, NOCOV, NOCOV, NOCOV, MATCH],
+                               [NOCOV, NOCOV, MATCH, NOCOV, NOCOV],
+                               [NOCOV, NOCOV, NOCOV, NOCOV, MATCH],
                                [NOCOV, NOCOV, NOCOV, NOCOV, MATCH]],
                               read_nums,
                               section.unmasked)
