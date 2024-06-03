@@ -110,7 +110,8 @@ class TestDNA(ut.TestCase):
         """ Test whether invalid characters raise ValueError. """
         for char in printable:
             if char not in "ACGTNacgtn":
-                self.assertRaisesRegex(ValueError, f"Invalid DNA bases:",
+                self.assertRaisesRegex(ValueError,
+                                       "Invalid DNA bases:",
                                        DNA, char)
 
     def test_bool(self):
@@ -121,6 +122,11 @@ class TestDNA(ut.TestCase):
 
     def test_kmers(self):
         seq = DNA("")
+        with self.subTest(n=0, k=-1):
+            k = -1
+            self.assertRaisesRegex(ValueError,
+                                   f"k must be ≥ 0, but got {k}",
+                                   lambda: list(seq.kmers(k)))
         with self.subTest(n=0, k=0):
             k = 0
             expect = [DNA("")]

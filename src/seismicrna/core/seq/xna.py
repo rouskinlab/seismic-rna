@@ -205,6 +205,8 @@ class XNA(ABC):
 
     def kmers(self, k: int):
         """ Every subsequence of length k (k-mer). """
+        if k < 0:
+            raise ValueError(f"k must be ≥ 0, but got {k}")
         for i in range(len(self) + 1 - k):
             yield self[i: i + k]
 
