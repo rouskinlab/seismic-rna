@@ -203,6 +203,11 @@ class XNA(ABC):
         """ Compress the sequence. """
         return CompressedSeq(self)
 
+    def kmers(self, k: int):
+        """ Every subsequence of length k (k-mer). """
+        for i in range(len(self) + 1 - k):
+            yield self[i: i + k]
+
     def __str__(self):
         return self._seq
 
