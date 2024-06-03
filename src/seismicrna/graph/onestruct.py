@@ -30,10 +30,25 @@ class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
         self._struct_file = struct_file
         self._struct_sect = struct_sect
 
+    @property
+    def struct_sect(self):
+        """ Name of the section from which the structure comes. """
+        if self._struct_file is not None:
+            # Use the section from the given structure file.
+            fields = path.parse(self._struct_file,
+                                path.RefSeg,
+                                path.SectSeg,
+                                path.ConnectTableSeg)
+            return fields[path.SECT]
+        if self._struct_sect is None:
+            raise ValueError("A structure section is required if no structure "
+                             "file is given")
+        return self._struct_sect
+
     def get_path_fields(self):
         fields = super().get_path_fields()
         # Replace the section with the structure section.
-        fields[path.SECT] = self._struct_sect
+        fields[path.SECT] = self.struct_sect
         return fields
 
     def _get_struct_files(self, profile: str):
@@ -43,15 +58,12 @@ class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
             # Use the given structure file for every profile.
             return self._struct_file
         # Determine the path of the structure file from the profile.
-        if not self._struct_sect:
-            raise ValueError("A structure section is required if no structure "
-                             "file is given")
         return path.build(*path.CT_FILE_SEGS,
                           top=self.top,
                           sample=self.sample,
                           cmd=path.CMD_FOLD_DIR,
                           ref=self.ref,
-                          sect=self._struct_sect,
+                          sect=self.struct_sect,
                           profile=profile,
                           ext=path.CT_EXT)
 
