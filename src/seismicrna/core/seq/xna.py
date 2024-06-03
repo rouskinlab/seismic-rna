@@ -207,7 +207,7 @@ class XNA(ABC):
         """ Every subsequence of length k (k-mer). """
         if k < 0:
             raise ValueError(f"k must be ≥ 0, but got {k}")
-        for i in range(len(self) + 1 - k):
+        for i in range(len(self) - k + 1):
             yield self[i: i + k]
 
     def __str__(self):
@@ -228,8 +228,12 @@ class XNA(ABC):
         value = str(self).__getitem__(item)
         return self.__class__(value) if isinstance(item, slice) else value
 
+    def __contains__(self, item):
+        """ Check if a sequence is contained in this sequence. """
+        return isinstance(item, type(self)) and str(item) in str(self)
+
     def __iter__(self):
-        return self._seq.__iter__()
+        return str(self).__iter__()
 
     def __len__(self):
         return len(str(self))

@@ -188,6 +188,13 @@ class TestDNA(ut.TestCase):
             expect = [DNA("CATG")]
             self.assertEqual(list(seq.kmers(k)), expect)
 
+    def test_contains(self):
+        ref = DNA.random(20)
+        for k in range(5):
+            for query in expand_degenerate_seq(DNA("N" * k)):
+                self.assertEqual(query in ref, str(query) in str(ref))
+                self.assertFalse(str(query) in ref)
+
 
 class TestRNA(ut.TestCase):
     """ Test class `RNA`. """
