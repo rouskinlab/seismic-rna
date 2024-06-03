@@ -119,11 +119,11 @@ def calc_muts_matrix(section: Section,
         if (min5 := seg_end5s.min(initial=section.end3)) < section.end5:
             raise ValueError(f"All 5' ends must be ≥ {section.end5}, "
                              f"but their minimum is {min5}")
-        if (max5 := seg_end5s.max(initial=section.end5)) > section.end3:
-            raise ValueError(f"All 5' ends must be ≤ {section.end3}, "
+        if (max5 := seg_end5s.max(initial=section.end5)) > (section.end3 + 1):
+            raise ValueError(f"All 5' ends must be ≤ {section.end3 + 1}, "
                              f"but their maximum is {max5}")
-        if (min3 := seg_end3s.min(initial=section.end3)) < section.end5:
-            raise ValueError(f"All 3' ends must be ≥ {section.end5}, "
+        if (min3 := seg_end3s.min(initial=section.end3)) < (section.end5 - 1):
+            raise ValueError(f"All 3' ends must be ≥ {section.end5 - 1}, "
                              f"but their minimum is {min3}")
         if (max3 := seg_end3s.max(initial=section.end5)) > section.end3:
             raise ValueError(f"All 3' ends must be ≤ {section.end3}, "
@@ -131,11 +131,11 @@ def calc_muts_matrix(section: Section,
         # Map each 5' and 3' end coordinate to its index in the unmasked
         # positions of the section.
         pos5_indexes = calc_inverse(section_unmasked,
-                                    require=section.end3,
+                                    require=max5,
                                     fill=True,
                                     fill_rev=True)
         pos3_indexes = calc_inverse(section_unmasked,
-                                    require=section.end3,
+                                    require=max3,
                                     fill=True,
                                     fill_rev=False)
         # Fill all covered positions with matches.
