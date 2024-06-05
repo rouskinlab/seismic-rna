@@ -10,7 +10,8 @@ from numba import jit
 
 from .relate import get_param_dir_fields, load_param_dir
 from ..core import path
-from ..core.arg import (docdef,
+from ..core.arg import (ADAPTER_SEQ_ILLUMINA_3P,
+                        docdef,
                         arg_input_path,
                         opt_param_dir,
                         opt_profile_name,
@@ -71,9 +72,7 @@ def _generate_fastq_read_qual(rels: np.ndarray,
                               lo_qual: str):
     """ Generate a FASTQ line for a read. """
     ref_length, = rels.shape
-    read = np.full(read_length, BASEG)
-    qual = np.full(read_length, hi_qual)
-    read_pos = 0
+    # Map each type of relationship to a type of base in the read.
     if revcomp:
         ref_pos = ref_length - 1
         ref_inc = -1
@@ -88,6 +87,11 @@ def _generate_fastq_read_qual(rels: np.ndarray,
         sub_c = BASEC
         sub_g = BASEG
         sub_t = BASET
+    # Fill the read with high-quality Gs (the default base in Illumina).
+    read = np.full(read_length, BASEG)
+    qual = np.full(read_length, hi_qual)
+    # Add bases from the read.
+    read_pos = 0
     while read_pos < read_length and 0 <= ref_pos < ref_length:
         rel = rels[ref_pos]
         if rel == MATCH:
@@ -116,6 +120,13 @@ def _generate_fastq_read_qual(rels: np.ndarray,
             qual[read_pos] = lo_qual
             read_pos += 1
         ref_pos += ref_inc
+    # Add the adapter to the end of the read.
+    adapter_pos = 0
+    adapter_length = len(ADAPTER_SEQ_ILLUMINA_3P)
+    while read_pos < read_length and adapter_pos < adapter_length:
+        read[read_pos] = ADAPTER_SEQ_ILLUMINA_3P[adapter_pos]
+        read_pos += 1
+        adapter_pos += 1
     return "".join(read), "".join(qual)
 
 
@@ -127,9 +138,9 @@ def generate_fastq_record(name: str,
                           hi_qual: str = HI_QUAL,
                           lo_qual: str = LO_QUAL):
     """ Generate a FASTQ line for a read. """
-    if len(refseq) != get_length(rels, "rels"):
-        raise ValueError(f"Lengths differ between seq ({len(refseq)}) "
-                         f"and rels ({get_length(rels)})")
+    if len(refseq) < get_length(rels, "rels"):
+        raise ValueError(f"Length of the reference sequence ({len(refseq)}) "
+                         f"is less than that of rels ({get_length(rels)})")
     if np.any(rels == NOCOV):
         raise ValueError(f"rels contains {NOCOV}: {rels}")
     read, qual = _generate_fastq_read_qual(rels,
