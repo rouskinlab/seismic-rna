@@ -248,99 +248,59 @@ def make_pmut_means_unpaired(pam: float = 0.040,
                            **kwargs)
 
 
-def sim_pmut(is_paired: pd.Series,
-             pm: pd.DataFrame,
-             um: pd.DataFrame,
-             pv: float,
-             uv: float):
-    """ Simulate mutation rates using two Dirichlet distributions for
-    the paired and unpaired bases.
+def sim_pmut(positions: pd.Index,
+             mean: pd.DataFrame,
+             relative_variance: float):
+    """ Simulate mutation rates using a Dirichlet distribution.
 
     Parameters
     ----------
-    is_paired: pd.Series
-        Whether each base is paired.
-    pm: pd.DataFrame
-        Mean of the mutation rates for each type of paired base.
-    um: pd.DataFrame
-        Mean of the mutation rates for each type of unpaired base.
-    pv: float
-        Variance of the mutation rates for paired bases, as a fraction
-        of its supremum.
-    uv: float
-        Variance of the mutation rates for unpaired bases, as a fraction
-        of its supremum.
+    positions: pd.Index
+        Index of positions and bases.
+    mean: pd.DataFrame
+        Mean of the mutation rates for each type of base.
+    relative_variance: float
+        Variance of the mutation rates, as a fraction of its supremum.
 
     Returns
     -------
     pd.DataFrame
         Mutation rates, with the same index as
     """
-    if not isinstance(is_paired, pd.Series):
-        raise TypeError(f"is_paired must be a Series, "
-                        f"but got {type(is_paired).__name__}")
-    if not isinstance(pm, pd.DataFrame):
-        raise TypeError(f"pm must be a DataFrame, but got {type(pm).__name__}")
-    if not isinstance(um, pd.DataFrame):
-        raise TypeError(f"um must be a DataFrame, but got {type(um).__name__}")
-    if pm.values.min(initial=1.) < 0.:
-        raise ValueError(f"All pm must be ≥ 0, but got {pm}")
-    if um.values.min(initial=1.) < 0.:
-        raise ValueError(f"All um must be ≥ 0, but got {um}")
-    is_paired = is_paired.astype(bool, copy=False)
-    bases = is_paired.index.get_level_values(BASE_NAME)
+    if not isinstance(positions, pd.MultiIndex):
+        raise TypeError(f"positions must be a MultiIndex, "
+                        f"but got {type(mean).__name__}")
+    if not isinstance(mean, pd.DataFrame):
+        raise TypeError(f"mean must be a DataFrame, "
+                        f"but got {type(mean).__name__}")
+    if mean.values.min(initial=1.) < 0.:
+        raise ValueError(f"All mean mutation rates must be ≥ 0, but got {mean}")
     # Determine the types of relationships.
-    rels = pd.Index.union(pm.index, um.index).astype(REL_TYPE, copy=False)
+    rels = mean.index.astype(REL_TYPE, copy=False)
     if MATCH not in rels:
         raise ValueError(f"Relationships omit matches ({MATCH}): {rels}")
     if NOCOV in rels:
         raise ValueError(f"Relationships include no coverage ({NOCOV}): {rels}")
-    # Copy the mean mutation rates to prevent the originals from being
-    # modified, and set their indexes to that of all relationships.
-    pm = pm.reindex(index=rels, columns=DNA.alph(), fill_value=0.)
-    um = um.reindex(index=rels, columns=DNA.alph(), fill_value=0.)
-    # Simulate mutation rates for paired/unpaired bases of each kind.
-    pmut = pd.DataFrame(0., index=is_paired.index, columns=rels)
+    # Simulate mutation rates for each kind of base.
+    pmut = pd.DataFrame(0., index=positions, columns=rels)
     for base in DNA.alph():
-        # Determine which bases of this kind are paired, and count them.
-        base_is_paired = is_paired.loc[bases == base]
-        if base_is_paired.size == 0:
-            continue
-        base_index = base_is_paired.index
-        base_num_paired = np.count_nonzero(base_is_paired)
-        base_num_unpaired = base_is_paired.size - base_num_paired
+        base_pos = positions[positions.get_level_values(BASE_NAME) == base]
         # Determine which mean mutation rates are not zero.
-        pm_nonzero = pm.loc[pm[base] != 0., base]
-        um_nonzero = um.loc[um[base] != 0., base]
-        pv_nonzero = pv * (pm_nonzero * (1. - pm_nonzero))
-        uv_nonzero = uv * (um_nonzero * (1. - um_nonzero))
-        # Simulate the mutation rates for the paired/unpaired bases.
-        if (num_pv_nz := np.count_nonzero(pv_nonzero)) > 1:
-
-            ppmut = rng.dirichlet(calc_dirichlet_params(pm_nonzero.values,
-                                                        pv_nonzero.values),
-                                  size=base_num_paired)
-        elif num_pv_nz == 1:
-            ppmut = rng.beta(*calc_beta_params(pm_nonzero.values[0],
-                                               pv_nonzero.values[0]),
-                             size=base_num_paired)
+        mean_nonzero = mean.loc[mean[base] != 0., base]
+        var_nonzero = relative_variance * (mean_nonzero * (1. - mean_nonzero))
+        # Simulate the mutation rates.
+        if (num_nonzero := np.count_nonzero(mean_nonzero)) > 1:
+            pmut_base = rng.dirichlet(calc_dirichlet_params(mean_nonzero.values,
+                                                            var_nonzero.values),
+                                      size=base_pos.size)
+        elif num_nonzero == 1:
+            pmut_base = rng.beta(*calc_beta_params(mean_nonzero.values[0],
+                                                   var_nonzero.values[0]),
+                                 size=base_pos.size)
         else:
-            ppmut = np.broadcast_to(pm_nonzero.values[np.newaxis, :],
-                                    (base_num_paired, pm_nonzero.size))
-        pmut.loc[base_index[base_is_paired], pm_nonzero.index] = ppmut
-        if (num_uv_nz := np.count_nonzero(uv_nonzero)) > 1:
-
-            upmut = rng.dirichlet(calc_dirichlet_params(um_nonzero.values,
-                                                        uv_nonzero.values),
-                                  size=base_num_unpaired)
-        elif num_uv_nz == 1:
-            upmut = rng.beta(*calc_beta_params(um_nonzero.values[0],
-                                               uv_nonzero.values[0]),
-                             size=base_num_unpaired)
-        else:
-            upmut = np.broadcast_to(um_nonzero.values[np.newaxis, :],
-                                    (base_num_unpaired, um_nonzero.size))
-        pmut.loc[base_index[~base_is_paired], um_nonzero.index] = upmut
+            pmut_base = np.broadcast_to(mean_nonzero.values[np.newaxis, :],
+                                        (base_pos.size, mean_nonzero.size))
+        pmut.loc[base_pos, mean_nonzero.index] = pmut_base
     return pmut
 
 
@@ -361,21 +321,28 @@ def run_struct(ct_file: Path,
         num_structs = is_paired.columns.size
         if num_structs == 0:
             raise ValueError(f"No structures in {ct_file}")
+        # Simulate mutation rates for paired and unpaired bases.
         pm = make_pmut_means_paired(**_make_pmut_means_kwargs(pmut_paired))
         um = make_pmut_means_unpaired(**_make_pmut_means_kwargs(pmut_unpaired))
+        mu_paired = sim_pmut(is_paired.index, pm, vmut_paired)
+        mu_unpaired = sim_pmut(is_paired.index, um, vmut_unpaired)
+        if not mu_paired.index.equals(mu_unpaired.index):
+            raise ValueError(f"indexes do not match: "
+                             f"{mu_paired.index} ≠ {mu_unpaired.index}")
+        if not mu_paired.columns.equals(mu_unpaired.columns):
+            raise ValueError(f"columns do not match: "
+                             f"{mu_paired.columns} ≠ {mu_unpaired.columns}")
         # Simulate mutation rates for each structure.
-        pmut = {i: sim_pmut(is_paired_i, pm, um, vmut_paired, vmut_unpaired)
-                for i, is_paired_i in is_paired.items()}
-        # Assemble the mutation rates into one DataFrame.
-        rels = list(pmut.values())[0].columns
-        header = make_header(rels=map(str, rels),
+        header = make_header(rels=map(str, mu_paired.columns),
                              max_order=num_structs,
                              min_order=num_structs)
-        pmut_whole = pd.DataFrame(np.nan, is_paired.index, header.index)
-        for rel in rels:
-            for i, pmut_number in pmut.items():
-                pmut_whole[str(rel), num_structs, i] = pmut_number[rel]
-        pmut_whole.to_csv(pmut_file)
+        pmut = pd.DataFrame(np.nan, is_paired.index, header.index)
+        for rel in mu_paired.columns:
+            for i, is_paired_i in is_paired.items():
+                pmut[str(rel), num_structs, i] = np.where(is_paired_i,
+                                                          mu_paired[rel],
+                                                          mu_unpaired[rel])
+        pmut.to_csv(pmut_file)
     return pmut_file
 
 
