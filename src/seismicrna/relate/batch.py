@@ -123,7 +123,9 @@ class RelateBatch(SectionMutsBatch, AllReadBatch):
                    section=section,
                    seg_end5s=seg_end5s[reads_noclose],
                    seg_end3s=seg_end3s[reads_noclose],
-                   muts={pos: {rel: renumber[np.setdiff1d(reads, reads_exclude)]
+                   muts={pos: {rel: renumber[np.setdiff1d(reads,
+                                                          reads_exclude,
+                                                          assume_unique=True)]
                                for rel, reads in rels.items()}
                          for pos, rels in simulated_all.muts.items()},
                    **kwargs)
