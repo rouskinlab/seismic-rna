@@ -3,7 +3,9 @@ from logging import Filter, LogRecord
 from pathlib import Path
 from tempfile import mkdtemp
 
-from ..temp import LOCK_DIR, lock_temp_dir, logger as temp_logger
+from seismicrna.core.parallel.temp import (LOCK_DIR,
+                                           lock_temp_dir,
+                                           logger as temp_logger)
 
 
 def get_lock(temp_dir: Path):
@@ -73,7 +75,7 @@ class TestLockTempDir(ut.TestCase):
     class TempErrFilter(Filter):
 
         def filter(self, record: LogRecord):
-            return "If any needed files" not in record.msg
+            return "Please either delete it" not in record.msg
 
     def test_wraps(self):
         self.assertEqual(run_func.__name__, "run_func")
@@ -160,6 +162,10 @@ class TestLockTempDir(ut.TestCase):
         finally:
             temp_logger.removeFilter(lock_err)
             rm_temp(temp_dir)
+
+
+if __name__ == "__main__":
+    ut.main()
 
 ########################################################################
 #                                                                      #
