@@ -4,12 +4,13 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 
-from ..core.array import check_naturals, get_length
+from ..core.array import calc_inverse, check_naturals, get_length
 from ..core.batch import (AllReadBatch,
                           SectionMutsBatch,
                           simulate_muts,
                           simulate_segment_ends)
 from ..core.seq import Section, index_to_pos, index_to_seq
+from ..core.rel import RelPattern
 
 
 def format_read_name(batch: int, read: int):
@@ -63,6 +64,7 @@ class RelateBatch(SectionMutsBatch, AllReadBatch):
                  paired: bool,
                  read_length: int,
                  p_rev: float,
+                 min_mut_gap: int,
                  num_reads: int,
                  **kwargs):
         """ Simulate a batch.
@@ -87,10 +89,14 @@ class RelateBatch(SectionMutsBatch, AllReadBatch):
             Length of each read segment (paired-end reads only).
         p_rev: float
             Probability that mate 1 is reversed (paired-end reads only).
+        min_mut_gap: int
+            Minimum number of positions between two mutations.
         num_reads: int
             Number of reads in the batch.
         """
         check_naturals(index_to_pos(pmut.index), "positions")
+        section = Section(ref, index_to_seq(pmut.index))
+        # Simulate a batch, ignoring min_mut_gap.
         seg_end5s, seg_end3s = simulate_segment_ends(uniq_end5s,
                                                      uniq_end3s,
                                                      pends,
@@ -98,11 +104,28 @@ class RelateBatch(SectionMutsBatch, AllReadBatch):
                                                      (read_length if paired
                                                       else 0),
                                                      p_rev)
+        simulated_all = cls(batch=batch,
+                            section=section,
+                            seg_end5s=seg_end5s,
+                            seg_end3s=seg_end3s,
+                            muts=simulate_muts(pmut, seg_end5s, seg_end3s),
+                            **kwargs)
+        if min_mut_gap == 0:
+            return simulated_all
+        # Remove reads with two mutations too close.
+        reads_noclose = simulated_all.reads_noclose_muts(RelPattern.muts(),
+                                                         min_mut_gap)
+        reads_exclude = np.setdiff1d(simulated_all.read_nums,
+                                     reads_noclose,
+                                     assume_unique=True)
+        renumber = calc_inverse(reads_noclose, what="reads_noclose")
         return cls(batch=batch,
-                   section=Section(ref, index_to_seq(pmut.index)),
-                   seg_end5s=seg_end5s,
-                   seg_end3s=seg_end3s,
-                   muts=simulate_muts(pmut, seg_end5s, seg_end3s),
+                   section=section,
+                   seg_end5s=seg_end5s[reads_noclose],
+                   seg_end3s=seg_end3s[reads_noclose],
+                   muts={pos: {rel: renumber[np.setdiff1d(reads, reads_exclude)]
+                               for rel, reads in rels.items()}
+                         for pos, rels in simulated_all.muts.items()},
                    **kwargs)
 
     @property

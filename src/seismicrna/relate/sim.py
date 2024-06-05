@@ -34,14 +34,10 @@ def simulate_batch(sample: str,
                    paired: bool,
                    read_length: int,
                    p_rev: float,
+                   min_mut_gap: int,
                    num_reads: int,
                    formatter: Callable[[int, int], str] = format_read_name):
-    """ Simulate a pair of a QnamesBatchIO and RelateBatchIO. """
-    qnames_batch = QnamesBatchIO.simulate(sample=sample,
-                                          ref=ref,
-                                          batch=batch,
-                                          num_reads=num_reads,
-                                          formatter=formatter)
+    """ Simulate a pair of RelateBatchIO and QnamesBatchIO. """
     relate_batch = RelateBatchIO.simulate(sample=sample,
                                           ref=ref,
                                           batch=batch,
@@ -52,7 +48,13 @@ def simulate_batch(sample: str,
                                           paired=paired,
                                           read_length=read_length,
                                           p_rev=p_rev,
+                                          min_mut_gap=min_mut_gap,
                                           num_reads=num_reads)
+    qnames_batch = QnamesBatchIO.simulate(sample=sample,
+                                          ref=ref,
+                                          batch=batch,
+                                          num_reads=relate_batch.num_reads,
+                                          formatter=formatter)
     return relate_batch, qnames_batch
 
 

@@ -14,6 +14,7 @@ from ..core.arg import (docdef,
                         opt_paired_end,
                         opt_read_length,
                         opt_reverse_fraction,
+                        opt_min_mut_gap,
                         opt_num_reads,
                         opt_batch_size,
                         opt_brotli_level,
@@ -50,6 +51,7 @@ def load_param_dir(param_dir: Path, profile: str):
 
 def from_param_dir(param_dir: Path,
                    profile: str,
+                   min_mut_gap: int,
                    **kwargs):
     """ Simulate a Relate dataset given parameter files. """
     sim_dir, _, _ = get_param_dir_fields(param_dir)
@@ -62,6 +64,7 @@ def from_param_dir(param_dir: Path,
                            uniq_end3s=u3s,
                            pends=pends,
                            pclust=pclust,
+                           min_mut_gap=min_mut_gap,
                            **kwargs)
 
 
@@ -72,6 +75,7 @@ def run(param_dir: tuple[str, ...],
         paired_end: bool,
         read_length: int,
         reverse_fraction: float,
+        min_mut_gap: int,
         num_reads: int,
         batch_size: int,
         brotli_level: int,
@@ -89,6 +93,7 @@ def run(param_dir: tuple[str, ...],
                                 paired=paired_end,
                                 read_length=read_length,
                                 p_rev=reverse_fraction,
+                                min_mut_gap=min_mut_gap,
                                 num_reads=num_reads,
                                 batch_size=batch_size,
                                 brotli_level=brotli_level,
@@ -102,6 +107,7 @@ params = [
     opt_paired_end,
     opt_read_length,
     opt_reverse_fraction,
+    opt_min_mut_gap,
     opt_num_reads,
     opt_batch_size,
     opt_brotli_level,
