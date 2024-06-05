@@ -1159,6 +1159,13 @@ opt_reverse_fraction = Option(
     help="Simulate this fraction of reverse-oriented reads"
 )
 
+opt_fq_gzip = Option(
+    ("--fq-gzip/--fq-text",),
+    type=bool,
+    default=True,
+    help="Simulate FASTQ files with gzip compression or as plain text"
+)
+
 # Logging options
 opt_verbose = Option(
     ("--verbose", "-v"),

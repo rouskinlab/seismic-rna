@@ -113,6 +113,7 @@ TABLES = (RELATE_TABLE, MASK_TABLE, CLUST_TABLE)
 
 # File extensions
 
+GZIP_EXT = ".gz"
 TXT_EXT = ".txt"
 CSV_EXT = ".csv"
 CSVZIP_EXT = ".csv.gz"

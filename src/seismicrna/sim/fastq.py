@@ -16,10 +16,11 @@ from ..core.arg import (ADAPTER_SEQ_ILLUMINA_3P,
                         opt_param_dir,
                         opt_profile_name,
                         opt_sample,
-                        opt_num_reads,
                         opt_read_length,
                         opt_paired_end,
                         opt_reverse_fraction,
+                        opt_fq_gzip,
+                        opt_num_reads,
                         opt_batch_size,
                         opt_max_procs,
                         opt_parallel,
@@ -161,16 +162,6 @@ def _get_common_attr(a: Any, b: Any, attr: str):
     return rval
 
 
-def _open_fastq(fastq: Path, force: bool):
-    if fastq.suffix.endswith(".gz"):
-        open_func = gzip.open
-        binary = True
-    else:
-        open_func = open
-        binary = False
-    return open_func(fastq, write_mode(force, binary=binary))
-
-
 def generate_fastq(top: Path,
                    sample: str,
                    ref: str,
@@ -179,6 +170,7 @@ def generate_fastq(top: Path,
                    read_length: int,
                    batches: Iterable[tuple[RelateBatch, QnamesBatch]],
                    p_rev: float = 0.5,
+                   fq_gzip=True,
                    force: bool = False):
     """ Generate FASTQ file(s) from a dataset. """
     seq_str = str(refseq)
@@ -188,13 +180,23 @@ def generate_fastq(top: Path,
     else:
         segs = [path.DMFASTQ_SEGS]
         exts = [path.FQ_EXTS[0]]
+    if fq_gzip:
+        exts = [(ext if ext.endswith(path.GZIP_EXT)
+                 else f"{ext}{path.GZIP_EXT}")
+                for ext in exts]
+        open_func = gzip.open
+    else:
+        exts = [(ext if not ext.endswith(path.GZIP_EXT)
+                 else ext[:-len(path.GZIP_EXT)])
+                for ext in exts]
+        open_func = open
     fastq_paths = [path.buildpar(*seg, top=top, sample=sample, ref=ref, ext=ext)
                    for seg, ext in zip(segs, exts, strict=True)]
     if any(need_write(fastq, force, warn=False) for fastq in fastq_paths):
         fastq_files = list()
         try:
             for fastq in fastq_paths:
-                fastq_files.append(_open_fastq(fastq, force))
+                fastq_files.append(open_func(fastq, write_mode(force, fq_gzip)))
             for rbatch, nbatch in batches:
                 num_reads = _get_common_attr(rbatch, nbatch, "num_reads")
                 seg_end5s = np.asarray(rbatch.seg_end5s)
@@ -221,9 +223,7 @@ def generate_fastq(top: Path,
                                                        seq_str[end5 - 1: end3],
                                                        read_length,
                                                        bool((rev + i) % 2))
-                        fq.write(record.encode()
-                                 if isinstance(fq.mode, int)
-                                 else record)
+                        fq.write(record.encode() if fq_gzip else record)
         finally:
             # Close the FASTQ files.
             for fq in fastq_files:
@@ -241,6 +241,7 @@ def generate_fastq(top: Path,
 def from_report(report_file: Path, *,
                 read_length: int,
                 p_rev: float,
+                fq_gzip: bool,
                 force: bool):
     """ Simulate a FASTQ file from a Relate report. """
     report = RelateReport.load(report_file)
@@ -258,6 +259,7 @@ def from_report(report_file: Path, *,
                           read_length,
                           batches,
                           p_rev=p_rev,
+                          fq_gzip=fq_gzip,
                           force=force)
 
 
@@ -267,6 +269,7 @@ def from_param_dir(param_dir: Path, *,
                    read_length: int,
                    paired: bool,
                    p_rev: float,
+                   fq_gzip: bool,
                    force: bool,
                    **kwargs):
     """ Simulate a FASTQ file from parameter files. """
@@ -292,6 +295,7 @@ def from_param_dir(param_dir: Path, *,
                           read_length,
                           batches,
                           p_rev=p_rev,
+                          fq_gzip=fq_gzip,
                           force=force)
 
 
@@ -303,6 +307,7 @@ def run(input_path: tuple[str, ...],
         paired_end: bool,
         read_length: int,
         reverse_fraction: float,
+        fq_gzip: bool,
         num_reads: int,
         max_procs: int,
         parallel: bool,
@@ -321,6 +326,7 @@ def run(input_path: tuple[str, ...],
                                args=report_files,
                                kwargs=dict(read_length=read_length,
                                            p_rev=reverse_fraction,
+                                           fq_gzip=fq_gzip,
                                            force=force)))
     if param_dirs:
         fastqs.extend(dispatch(from_param_dir,
@@ -333,6 +339,7 @@ def run(input_path: tuple[str, ...],
                                            paired=paired_end,
                                            read_length=read_length,
                                            p_rev=reverse_fraction,
+                                           fq_gzip=fq_gzip,
                                            num_reads=num_reads,
                                            force=force)))
     if not fastqs:
@@ -347,6 +354,7 @@ params = [arg_input_path,
           opt_paired_end,
           opt_read_length,
           opt_reverse_fraction,
+          opt_fq_gzip,
           opt_num_reads,
           opt_max_procs,
           opt_parallel,
