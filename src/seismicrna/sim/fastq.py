@@ -170,7 +170,7 @@ def generate_fastq(top: Path,
                    read_length: int,
                    batches: Iterable[tuple[RelateBatch, QnamesBatch]],
                    p_rev: float = 0.5,
-                   fq_gzip=True,
+                   fq_gzip: bool = True,
                    force: bool = False):
     """ Generate FASTQ file(s) from a dataset. """
     seq_str = str(refseq)
@@ -287,7 +287,7 @@ def from_param_dir(param_dir: Path, *,
                                p_rev=p_rev,
                                batch_size=opt_batch_size.default,
                                **kwargs)
-    return generate_fastq(sim_dir,
+    return generate_fastq(sim_dir.joinpath(path.SIM_SAMPLES_DIR),
                           sample,
                           section.ref,
                           section.seq,

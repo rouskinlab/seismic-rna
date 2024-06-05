@@ -29,7 +29,13 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 def get_param_dir_fields(param_dir: Path):
     fields = path.parse(param_dir, path.RefSeg, path.SectSeg)
-    return fields[path.TOP], fields[path.REF], fields[path.SECT]
+    params_dir = fields[path.TOP]
+    if params_dir.name != path.SIM_PARAM_DIR:
+        raise ValueError(
+            f"Expected parameter directory named {repr(path.SIM_PARAM_DIR)}, "
+            f"but got {repr(params_dir.name)}"
+        )
+    return params_dir.parent, fields[path.REF], fields[path.SECT]
 
 
 def load_param_dir(param_dir: Path, profile: str):
@@ -48,7 +54,7 @@ def from_param_dir(param_dir: Path,
     """ Simulate a Relate dataset given parameter files. """
     sim_dir, _, _ = get_param_dir_fields(param_dir)
     section, pmut, u5s, u3s, pends, pclust = load_param_dir(param_dir, profile)
-    return simulate_relate(out_dir=sim_dir,
+    return simulate_relate(out_dir=sim_dir.joinpath(path.SIM_SAMPLES_DIR),
                            ref=section.ref,
                            refseq=section.seq,
                            pmut=pmut,

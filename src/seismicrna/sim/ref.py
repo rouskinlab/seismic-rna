@@ -11,6 +11,7 @@ from ..core.arg import (docdef,
                         opt_refs,
                         opt_reflen,
                         opt_force)
+from ..core.logs import MAX_VERBOSE, get_config
 from ..core.seq import DNA, write_fasta
 from ..core.write import need_write
 
@@ -33,7 +34,9 @@ def run(sim_dir: str,
         ref: str,
         reflen: int,
         force: bool):
-    fasta = get_fasta_path(Path(sim_dir), refs)
+    top = Path(sim_dir).joinpath(path.SIM_REFS_DIR)
+    top.mkdir(parents=True, exist_ok=True)
+    fasta = get_fasta_path(top, refs)
     if need_write(fasta, force):
         seq = DNA.random(reflen)
         write_fasta(fasta, [(ref, seq)], force=force)
@@ -55,4 +58,5 @@ def cli(*args, **kwargs):
     try:
         run(*args, **kwargs)
     except Exception as error:
-        logger.critical(error)
+        verbose, _, _, _ = get_config()
+        logger.critical(error, exc_info=(verbose == MAX_VERBOSE))

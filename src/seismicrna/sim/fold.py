@@ -41,7 +41,7 @@ def get_ct_path(top: Path, section: Section, profile: str):
     return path.buildpar(path.RefSeg,
                          path.SectSeg,
                          path.ConnectTableSeg,
-                         top=top,
+                         top=top.joinpath(path.SIM_PARAM_DIR),
                          ref=section.ref,
                          sect=section.name,
                          profile=profile,
