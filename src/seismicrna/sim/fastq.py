@@ -16,10 +16,14 @@ from ..core.arg import (docdef,
                         opt_profile_name,
                         opt_sample,
                         opt_num_reads,
+                        opt_read_length,
+                        opt_paired_end,
+                        opt_reverse_fraction,
                         opt_batch_size,
                         opt_max_procs,
                         opt_parallel,
                         opt_force)
+from ..core.array import get_length
 from ..core.ngs import HI_QUAL, LO_QUAL
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rel import (MATCH,
@@ -46,68 +50,94 @@ COMMAND = __name__.split(os.path.extsep)[-1]
 
 
 @jit()
-def _generate_fastq_read_qual(seq: str,
-                              rels: np.ndarray,
+def _complement(base: str):
+    if base == BASEA:
+        return BASET
+    if base == BASEC:
+        return BASEG
+    if base == BASEG:
+        return BASEC
+    if base == BASET:
+        return BASEA
+    return BASEN
+
+
+@jit()
+def _generate_fastq_read_qual(rels: np.ndarray,
+                              refseq: str,
+                              read_length: int,
+                              revcomp: bool,
                               hi_qual: str,
                               lo_qual: str):
     """ Generate a FASTQ line for a read. """
-    length = rels.size
-    read = np.empty(length, dtype="U1")
-    qual = np.empty(length, dtype="U1")
-    empty = chr(0)
-    for i in range(length):
-        rel = rels[i]
+    ref_length, = rels.shape
+    read = np.full(read_length, BASEG)
+    qual = np.full(read_length, hi_qual)
+    read_pos = 0
+    if revcomp:
+        ref_pos = ref_length - 1
+        ref_inc = -1
+        sub_a = BASET
+        sub_c = BASEG
+        sub_g = BASEC
+        sub_t = BASEA
+    else:
+        ref_pos = 0
+        ref_inc = 1
+        sub_a = BASEA
+        sub_c = BASEC
+        sub_g = BASEG
+        sub_t = BASET
+    while read_pos < read_length and 0 <= ref_pos < ref_length:
+        rel = rels[ref_pos]
         if rel == MATCH:
-            read[i] = seq[i]
-            qual[i] = hi_qual
+            ref_base = refseq[ref_pos]
+            read[read_pos] = _complement(ref_base) if revcomp else ref_base
+            qual[read_pos] = hi_qual
+            read_pos += 1
         elif rel == SUB_T:
-            read[i] = BASET
-            qual[i] = hi_qual
+            read[read_pos] = sub_t
+            qual[read_pos] = hi_qual
+            read_pos += 1
         elif rel == SUB_G:
-            read[i] = BASEG
-            qual[i] = hi_qual
+            read[read_pos] = sub_g
+            qual[read_pos] = hi_qual
+            read_pos += 1
         elif rel == SUB_C:
-            read[i] = BASEC
-            qual[i] = hi_qual
+            read[read_pos] = sub_c
+            qual[read_pos] = hi_qual
+            read_pos += 1
         elif rel == SUB_A:
-            read[i] = BASEA
-            qual[i] = hi_qual
-        elif rel == DELET:
-            read[i] = empty
-            qual[i] = empty
-        else:
-            read[i] = BASEN
-            qual[i] = lo_qual
-    nonzero = np.flatnonzero(read)
-    if nonzero.size != length:
-        read = read[nonzero]
-        qual = qual[nonzero]
+            read[read_pos] = sub_a
+            qual[read_pos] = hi_qual
+            read_pos += 1
+        elif rel != DELET:
+            read[read_pos] = BASEN
+            qual[read_pos] = lo_qual
+            read_pos += 1
+        ref_pos += ref_inc
     return "".join(read), "".join(qual)
 
 
-def generate_fastq_record(seq: str,
-                          name: str,
+def generate_fastq_record(name: str,
                           rels: np.ndarray,
+                          refseq: str,
+                          read_length: int,
                           reverse: bool = False,
                           hi_qual: str = HI_QUAL,
                           lo_qual: str = LO_QUAL):
     """ Generate a FASTQ line for a read. """
-    # Find the first and last positions with coverage.
-    covered, = np.where(rels != NOCOV)
-    try:
-        first = covered[0]
-        last = covered[-1]
-    except IndexError:
-        read = ""
-        qual = ""
-    else:
-        read, qual = _generate_fastq_read_qual(seq[first: last + 1],
-                                               rels[first: last + 1],
-                                               hi_qual,
-                                               lo_qual)
-        if reverse:
-            read = str(DNA(read).rc)
-            qual = qual[::-1]
+    if len(refseq) != get_length(rels, "rels"):
+        raise ValueError(f"Lengths differ between seq ({len(refseq)}) "
+                         f"and rels ({get_length(rels)})")
+    if np.any(rels == NOCOV):
+        raise ValueError(f"rels contains {NOCOV}: {rels}")
+    read, qual = _generate_fastq_read_qual(rels,
+                                           refseq,
+                                           read_length,
+                                           reverse,
+                                           hi_qual,
+                                           lo_qual)
     return f"@{name}\n{read}\n+\n{qual}\n"
 
 
@@ -120,43 +150,87 @@ def _get_common_attr(a: Any, b: Any, attr: str):
     return rval
 
 
+def _open_fastq(fastq: Path, force: bool):
+    if fastq.suffix.endswith(".gz"):
+        open_func = gzip.open
+        binary = True
+    else:
+        open_func = open
+        binary = False
+    return open_func(fastq, write_mode(force, binary=binary))
+
+
 def generate_fastq(top: Path,
                    sample: str,
                    ref: str,
-                   seq: DNA,
+                   refseq: DNA,
+                   paired: bool,
+                   read_length: int,
                    batches: Iterable[tuple[RelateBatch, QnamesBatch]],
+                   p_rev: float = 0.5,
                    force: bool = False):
     """ Generate FASTQ file(s) from a dataset. """
-    fastq = path.buildpar(*path.DMFASTQ_SEGS,
-                          top=top,
-                          sample=sample,
-                          ref=ref,
-                          ext=path.FQ_EXTS[0])
-    if need_write(fastq, force):
-        if fastq.suffix.endswith(".gz"):
-            open_func = gzip.open
-            binary = True
-        else:
-            open_func = open
-            binary = False
-        seq_str = str(seq)
-        with open_func(fastq, write_mode(force, binary=binary)) as fq:
+    seq_str = str(refseq)
+    if paired:
+        segs = [path.DMFASTQ1_SEGS, path.DMFASTQ2_SEGS]
+        exts = [path.FQ1_EXTS[0], path.FQ2_EXTS[0]]
+    else:
+        segs = [path.DMFASTQ_SEGS]
+        exts = [path.FQ_EXTS[0]]
+    fastq_paths = [path.buildpar(*seg, top=top, sample=sample, ref=ref, ext=ext)
+                   for seg, ext in zip(segs, exts, strict=True)]
+    if any(need_write(fastq, force, warn=False) for fastq in fastq_paths):
+        fastq_files = list()
+        try:
+            for fastq in fastq_paths:
+                fastq_files.append(_open_fastq(fastq, force))
             for rbatch, nbatch in batches:
                 num_reads = _get_common_attr(rbatch, nbatch, "num_reads")
-                reverse = rng.integers(2, size=num_reads).astype(bool,
-                                                                 copy=False)
-                for rels, name, rev in zip(rbatch.matrix.values,
-                                           nbatch.names,
-                                           reverse,
-                                           strict=True):
-                    record = generate_fastq_record(seq_str, name, rels, rev)
-                    if binary:
-                        record = record.encode()
-                    fq.write(record)
-    return fastq
+                seg_end5s = np.asarray(rbatch.seg_end5s)
+                seg_end3s = np.asarray(rbatch.seg_end3s)
+                if rbatch.num_segments == 1:
+                    reverse = rng.random(num_reads) < p_rev
+                elif rbatch.num_segments == 2:
+                    reverse = seg_end5s[:, 0] > seg_end5s[:, 1]
+                else:
+                    raise ValueError(f"Each batch must have 1 or 2 segments, "
+                                     f"but got {rbatch.num_segments}")
+                for rels, end5s, end3s, name, rev in zip(rbatch.matrix.values,
+                                                         seg_end5s,
+                                                         seg_end3s,
+                                                         nbatch.names,
+                                                         reverse,
+                                                         strict=True):
+                    for i, (fq, end5, end3) in enumerate(zip(fastq_files,
+                                                             end5s,
+                                                             end3s,
+                                                             strict=True)):
+                        record = generate_fastq_record(name,
+                                                       rels[end5 - 1: end3],
+                                                       seq_str[end5 - 1: end3],
+                                                       read_length,
+                                                       bool((rev + i) % 2))
+                        fq.write(record.encode()
+                                 if isinstance(fq.mode, int)
+                                 else record)
+        finally:
+            # Close the FASTQ files.
+            for fq in fastq_files:
+                try:
+                    fq.close()
+                except Exception as error:
+                    logger.warning(f"Failed to close file {fq}: {error}")
+    else:
+        # Warn that the FASTQ file(s) already exist(s).
+        for fastq in fastq_paths:
+            need_write(fastq, force, warn=True)
+    return fastq_paths
 
 
-def from_report(report_file: Path, force: bool = False):
+def from_report(report_file: Path, *,
+                read_length: int,
+                p_rev: float,
+                force: bool):
     """ Simulate a FASTQ file from a Relate report. """
     report = RelateReport.load(report_file)
     sample = report.get_field(SampleF)
@@ -169,14 +243,20 @@ def from_report(report_file: Path, force: bool = False):
                           sample,
                           section.ref,
                           section.seq,
+                          rdata.paired,
+                          read_length,
                           batches,
-                          force)
+                          p_rev=p_rev,
+                          force=force)
 
 
 def from_param_dir(param_dir: Path, *,
                    sample: str,
                    profile: str,
-                   force: bool = False,
+                   read_length: int,
+                   paired: bool,
+                   p_rev: float,
+                   force: bool,
                    **kwargs):
     """ Simulate a FASTQ file from parameter files. """
     sim_dir, _, _ = get_param_dir_fields(param_dir)
@@ -188,14 +268,20 @@ def from_param_dir(param_dir: Path, *,
                                uniq_end3s=u3s,
                                pends=pends,
                                pclust=pclust,
+                               paired=paired,
+                               read_length=read_length,
+                               p_rev=p_rev,
                                batch_size=opt_batch_size.default,
                                **kwargs)
     return generate_fastq(sim_dir,
                           sample,
                           section.ref,
                           section.seq,
+                          paired,
+                          read_length,
                           batches,
-                          force)
+                          p_rev=p_rev,
+                          force=force)
 
 
 @docdef.auto()
@@ -203,6 +289,9 @@ def run(input_path: tuple[str, ...],
         param_dir: tuple[str, ...],
         profile_name: str,
         sample: str,
+        paired_end: bool,
+        read_length: int,
+        reverse_fraction: float,
         num_reads: int,
         max_procs: int,
         parallel: bool,
@@ -219,7 +308,9 @@ def run(input_path: tuple[str, ...],
                                parallel=parallel,
                                pass_n_procs=False,
                                args=report_files,
-                               kwargs=dict(force=force)))
+                               kwargs=dict(read_length=read_length,
+                                           p_rev=reverse_fraction,
+                                           force=force)))
     if param_dirs:
         fastqs.extend(dispatch(from_param_dir,
                                max_procs=max_procs,
@@ -228,6 +319,9 @@ def run(input_path: tuple[str, ...],
                                args=param_dirs,
                                kwargs=dict(sample=sample,
                                            profile=profile_name,
+                                           paired=paired_end,
+                                           read_length=read_length,
+                                           p_rev=reverse_fraction,
                                            num_reads=num_reads,
                                            force=force)))
     if not fastqs:
@@ -239,6 +333,9 @@ params = [arg_input_path,
           opt_param_dir,
           opt_profile_name,
           opt_sample,
+          opt_paired_end,
+          opt_read_length,
+          opt_reverse_fraction,
           opt_num_reads,
           opt_max_procs,
           opt_parallel,

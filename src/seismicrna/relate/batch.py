@@ -60,6 +60,9 @@ class RelateBatch(SectionMutsBatch, AllReadBatch):
                  uniq_end5s: np.ndarray,
                  uniq_end3s: np.ndarray,
                  pends: np.ndarray,
+                 paired: bool,
+                 read_length: int,
+                 p_rev: float,
                  num_reads: int,
                  **kwargs):
         """ Simulate a batch.
@@ -73,11 +76,17 @@ class RelateBatch(SectionMutsBatch, AllReadBatch):
         pmut: pd.DataFrame
             Rate of each type of mutation at each position.
         uniq_end5s: np.ndarray
-            Unique segment 5' end coordinates.
+            Unique read 5' end coordinates.
         uniq_end3s: np.ndarray
-            Unique segment 3' end coordinates.
+            Unique read 3' end coordinates.
         pends: np.ndarray
             Probability of each set of unique end coordinates.
+        paired: bool
+            Whether to simulate paired-end or single-end reads.
+        read_length: int
+            Length of each read segment (paired-end reads only).
+        p_rev: float
+            Probability that mate 1 is reversed (paired-end reads only).
         num_reads: int
             Number of reads in the batch.
         """
@@ -85,7 +94,10 @@ class RelateBatch(SectionMutsBatch, AllReadBatch):
         seg_end5s, seg_end3s = simulate_segment_ends(uniq_end5s,
                                                      uniq_end3s,
                                                      pends,
-                                                     num_reads)
+                                                     num_reads,
+                                                     (read_length if paired
+                                                      else 0),
+                                                     p_rev)
         return cls(batch=batch,
                    section=Section(ref, index_to_seq(pmut.index)),
                    seg_end5s=seg_end5s,

@@ -31,10 +31,12 @@ def simulate_batch(sample: str,
                    uniq_end5s: np.ndarray,
                    uniq_end3s: np.ndarray,
                    pends: np.ndarray,
+                   paired: bool,
+                   read_length: int,
+                   p_rev: float,
                    num_reads: int,
                    formatter: Callable[[int, int], str] = format_read_name):
-    """ Simulate a pair of a QnamesBatchIO and RelateBatchIO, save them,
-    and return their checksums. """
+    """ Simulate a pair of a QnamesBatchIO and RelateBatchIO. """
     qnames_batch = QnamesBatchIO.simulate(sample=sample,
                                           ref=ref,
                                           batch=batch,
@@ -47,6 +49,9 @@ def simulate_batch(sample: str,
                                           uniq_end5s=uniq_end5s,
                                           uniq_end3s=uniq_end3s,
                                           pends=pends,
+                                          paired=paired,
+                                          read_length=read_length,
+                                          p_rev=p_rev,
                                           num_reads=num_reads)
     return relate_batch, qnames_batch
 

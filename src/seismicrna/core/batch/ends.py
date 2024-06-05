@@ -244,33 +244,59 @@ def find_contiguous_reads(seg_end5s: np.ndarray, seg_end3s: np.ndarray):
 def simulate_segment_ends(uniq_end5s: np.ndarray,
                           uniq_end3s: np.ndarray,
                           pends: np.ndarray,
-                          num_reads: int):
+                          num_reads: int,
+                          read_length: int = 0,
+                          p_rev: float = 0.5):
     """ Simulate segment end coordinates from their probabilities.
 
     Parameters
     ----------
     uniq_end5s: np.ndarray
-        Unique segment 5' end coordinates.
+        Unique read 5' end coordinates.
     uniq_end3s: np.ndarray
-        Unique segment 3' end coordinates.
+        Unique read 3' end coordinates.
     pends: np.ndarray
         Probability of each set of unique end coordinates.
     num_reads: int
         Number of reads to simulate.
+    read_length: int = 0
+        If == 0, then generate single-end reads (1 segment per read);
+        if > 0, then generate paired-end reads (2 segments per read)
+        with at most this number of base calls in each segment.
+    p_rev: float = 0.5
+        For paired-end reads, the probability that mate 1 aligns in the
 
     Returns
     -------
     tuple[np.ndarray, np.ndarray]
         5' and 3' segment end coordinates of the simulated reads.
     """
-    dims = find_dims([(NUM_READS, NUM_SEGS),
-                      (NUM_READS, NUM_SEGS),
-                      (NUM_READS,)],
+    dims = find_dims([(NUM_READS,), (NUM_READS,), (NUM_READS,)],
                      [uniq_end5s, uniq_end3s, pends],
                      ["end5s", "end3s", "pends"])
     # Choose reads based on their probabilities.
     indexes = rng.choice(dims[NUM_READS], num_reads, p=pends)
-    return uniq_end5s[indexes], uniq_end3s[indexes]
+    read_end5s = uniq_end5s[indexes]
+    read_end3s = uniq_end3s[indexes]
+    if read_length < 0:
+        raise ValueError(f"read_length must be ≥ 0, but got {read_length}")
+    if read_length > 0:
+        diff = read_length - 1
+        seg_end5s = np.stack([read_end5s,
+                              np.maximum(read_end3s - diff, read_end5s)],
+                             axis=1)
+        seg_end3s = np.stack([np.minimum(read_end5s + diff, read_end3s),
+                              read_end3s],
+                             axis=1)
+        # For reverse reads, swap mates 1 and 2.
+        reverse = rng.random(num_reads) < p_rev
+        indices = np.stack([reverse, ~reverse], axis=1, dtype=int)
+        seg_end5s = np.take_along_axis(seg_end5s, indices, axis=1)
+        seg_end3s = np.take_along_axis(seg_end3s, indices, axis=1)
+    else:
+        seg_end5s = read_end5s[:, np.newaxis]
+        seg_end3s = read_end3s[:, np.newaxis]
+    return seg_end5s, seg_end3s
 
 
 class EndCoords(object):

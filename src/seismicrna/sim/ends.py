@@ -9,13 +9,13 @@ from ..core import path
 from ..core.arg import (docdef,
                         opt_ct_file,
                         opt_end3_fmean,
-                        opt_read_fmean,
+                        opt_insert_fmean,
                         opt_ends_var,
                         opt_force,
                         opt_parallel,
                         opt_max_procs)
 from ..core.array import stochastic_round
-from ..core.batch import END5_COORD, END3_COORD, match_reads_segments
+from ..core.batch import END5_COORD, END3_COORD
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rna import find_ct_section
 from ..core.stats import calc_dirichlet_params
@@ -89,7 +89,7 @@ def _sim_ends(end5: int,
     else:
         end5s = np.full(num_reads, end3_mean - (read_mean - 1))
         end3s = np.full(num_reads, end3_mean)
-    return end5s[:, np.newaxis], end3s[:, np.newaxis]
+    return end5s, end3s
 
 
 def sim_pends(end5: int,
@@ -130,39 +130,29 @@ def sim_pends(end5: int,
                              read_mean,
                              variance,
                              num_reads)
-    _, num_segs = match_reads_segments(end5s, end3s)
-    ends = np.hstack([end5s, end3s])
+    ends = np.stack([end5s, end3s], axis=1)
     uniq_ends, counts = np.unique(ends, return_counts=True, axis=0)
-    uniq_end5s = uniq_ends[:, :num_segs]
-    uniq_end3s = uniq_ends[:, num_segs:]
+    uniq_end5s, uniq_end3s = uniq_ends.T
     pends = counts / num_reads
     return uniq_end5s, uniq_end3s, pends
 
 
-def _format_coord_name(end: str, segment: int):
-    return f"{end} {segment + 1}"
-
-
 def sim_pends_ct(ct_file: Path, *,
                  end3_fmean: float,
-                 read_fmean: float,
+                 insert_fmean: float,
                  ends_var: float,
                  force: bool):
     pends_file = ct_file.with_suffix(path.PARAM_ENDS_EXT)
     if need_write(pends_file, force):
         section = find_ct_section(ct_file)
         end3_mean = end3_fmean * (section.length - 1) + section.end5
-        read_mean = read_fmean * section.length
+        read_mean = insert_fmean * section.length
         uniq_end5s, uniq_end3s, pends = sim_pends(section.end5,
                                                   section.end3,
                                                   end3_mean,
                                                   read_mean,
                                                   ends_var)
-        _, num_segs = match_reads_segments(uniq_end5s, uniq_end3s)
-        uniq_ends = {_format_coord_name(end, i): coords[:, i]
-                     for end, coords in [(END5_COORD, uniq_end5s),
-                                         (END3_COORD, uniq_end3s)]
-                     for i in range(num_segs)}
+        uniq_ends = {END5_COORD: uniq_end5s, END3_COORD: uniq_end3s}
         pends = pd.Series(pends,
                           pd.MultiIndex.from_arrays(list(uniq_ends.values()),
                                                     names=list(uniq_ends)),
@@ -179,16 +169,8 @@ def load_pends(pends_file: Path):
     if odd:
         raise ValueError("Number of end coordinates must be even, "
                          f"but got {index.nlevels}")
-    uniq_end5s = np.stack(
-        [index.get_level_values(_format_coord_name(END5_COORD, i)).values
-         for i in range(num_segments)],
-        axis=1
-    )
-    uniq_end3s = np.stack(
-        [index.get_level_values(_format_coord_name(END3_COORD, i)).values
-         for i in range(num_segments)],
-        axis=1
-    )
+    uniq_end5s = index.get_level_values(END5_COORD).values
+    uniq_end3s = index.get_level_values(END3_COORD).values
     pends = data.values
     return uniq_end5s, uniq_end3s, pends
 
@@ -196,7 +178,7 @@ def load_pends(pends_file: Path):
 @docdef.auto()
 def run(ct_file: tuple[str, ...],
         end3_fmean: float,
-        read_fmean: float,
+        insert_fmean: float,
         ends_var: float,
         force: bool,
         parallel: bool,
@@ -208,7 +190,7 @@ def run(ct_file: tuple[str, ...],
                     pass_n_procs=False,
                     args=as_list_of_tuples(map(Path, ct_file)),
                     kwargs=dict(end3_fmean=end3_fmean,
-                                read_fmean=read_fmean,
+                                insert_fmean=insert_fmean,
                                 ends_var=ends_var,
                                 force=force))
 
@@ -216,7 +198,7 @@ def run(ct_file: tuple[str, ...],
 params = [
     opt_ct_file,
     opt_end3_fmean,
-    opt_read_fmean,
+    opt_insert_fmean,
     opt_ends_var,
     opt_force,
     opt_parallel,

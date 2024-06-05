@@ -1,3 +1,5 @@
+from functools import cached_property
+
 from .batch import RelateBatch
 from .io import QnamesBatchIO, RelateBatchIO
 from .report import RelateReport
@@ -34,6 +36,13 @@ class RelateDataset(LoadedMutsDataset):
     @property
     def pattern(self):
         return None
+
+    @cached_property
+    def paired(self):
+        """ Whether the reads are paired-end. """
+        if self.num_batches == 0:
+            return False
+        return self.get_batch(0).num_segments == 2
 
     def get_batch(self, batch: int):
         relate_batch = super().get_batch(batch)

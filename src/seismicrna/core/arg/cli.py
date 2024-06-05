@@ -1102,8 +1102,8 @@ opt_end3_fmean = Option(
     help="Set the mean 3' end as a fraction of the section length"
 )
 
-opt_read_fmean = Option(
-    ("--read-fmean", "-l"),
+opt_insert_fmean = Option(
+    ("--insert-fmean", "-l"),
     type=float,
     default=0.5,
     help="Set the mean read length as a fraction of the section length"
@@ -1134,8 +1134,29 @@ opt_param_dir = Option(
 opt_num_reads = Option(
     ("--num-reads", "-n"),
     type=int,
-    default=2**16,
+    default=(opt_batch_size.default * 2),
     help="Simulate this many reads"
+)
+
+opt_read_length = Option(
+    ("--read-length",),
+    type=int,
+    default=151,
+    help="Simulate reads with this many base calls"
+)
+
+opt_paired_end = Option(
+    ("--paired-end/--single-end",),
+    type=bool,
+    default=True,
+    help="Simulate paired-end or single-end reads"
+)
+
+opt_reverse_fraction = Option(
+    ("--reverse-fraction",),
+    type=float,
+    default=0.5,
+    help="Simulate this fraction of reverse-oriented reads"
 )
 
 # Logging options
