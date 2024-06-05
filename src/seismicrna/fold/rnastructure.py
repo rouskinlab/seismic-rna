@@ -368,15 +368,15 @@ def fold(rna: RNAProfile, *,
     ct_file = rna.get_ct_file(out_dir)
     if need_write(ct_file, force):
         # Temporary FASTA file for the RNA.
-        fasta_temp = rna.to_fasta(temp_dir)
+        fasta_tmp = rna.to_fasta(temp_dir)
         # Path of the temporary CT file.
-        ct_temp = rna.get_ct_file(temp_dir)
+        ct_tmp = rna.get_ct_file(temp_dir)
         # DMS reactivities file for the RNA.
         dms_file = rna.to_dms(temp_dir)
         try:
             # Run the command.
-            run_cmd(args_to_cmd(make_fold_cmd(fasta_temp,
-                                              ct_file,
+            run_cmd(args_to_cmd(make_fold_cmd(fasta_tmp,
+                                              ct_tmp,
                                               dms_file=dms_file,
                                               fold_constraint=fold_constraint,
                                               fold_temp=fold_temp,
@@ -386,18 +386,18 @@ def fold(rna: RNAProfile, *,
                                               fold_percent=fold_percent,
                                               n_procs=n_procs)))
             # Reformat the CT file title lines so that each is unique.
-            retitle_ct_structures(ct_temp, ct_temp, force=True)
+            retitle_ct_structures(ct_tmp, ct_tmp, force=True)
             # Renumber the CT file so that it has the same numbering
             # scheme as the section, rather than always starting at 1,
             # the latter of which is always output by the Fold program.
-            renumber_ct(ct_temp, ct_file, rna.section.end5, force=force)
+            renumber_ct(ct_tmp, ct_file, rna.section.end5, force=force)
         finally:
             if not keep_temp:
                 # Delete the temporary files.
-                fasta_temp.unlink(missing_ok=True)
+                fasta_tmp.unlink(missing_ok=True)
                 dms_file.unlink(missing_ok=True)
-                if ct_temp != ct_file:
-                    ct_temp.unlink(missing_ok=True)
+                if ct_tmp != ct_file:
+                    ct_tmp.unlink(missing_ok=True)
     return ct_file
 
 
