@@ -125,3 +125,34 @@ Extra Utilities
 
 .. click:: seismicrna.test:cli
     :prog: seismic +test
+
+seismic +sim
+--------------------------------------------------------------------------------
+
+.. click:: seismicrna.sim.total:cli
+    :prog: seismic +sim total
+
+.. click:: seismicrna.sim.ref:cli
+    :prog: seismic +sim ref
+
+.. click:: seismicrna.sim.fold:cli
+    :prog: seismic +sim fold
+
+.. click:: seismicrna.sim.params:cli
+    :prog: seismic +sim params
+
+.. click:: seismicrna.sim.muts:cli
+    :prog: seismic +sim muts
+
+.. click:: seismicrna.sim.ends:cli
+    :prog: seismic +sim ends
+
+.. click:: seismicrna.sim.clusts:cli
+    :prog: seismic +sim clusts
+   
+.. click:: seismicrna.sim.relate:cli
+    :prog: seismic +sim relate
+
+.. click:: seismicrna.sim.fastq:cli
+    :prog: seismic +sim fastq
+

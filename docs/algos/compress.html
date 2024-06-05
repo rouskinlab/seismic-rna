@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Algorithm for Sequence Compression/Decompression &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -99,18 +100,14 @@
            <div itemprop="articleBody">
              
   <section id="algorithm-for-sequence-compression-decompression">
-<h1>Algorithm for Sequence Compression/Decompression<a class="headerlink" href="#algorithm-for-sequence-compression-decompression" title="Permalink to this headline"></a></h1>
+<h1>Algorithm for Sequence Compression/Decompression<a class="headerlink" href="#algorithm-for-sequence-compression-decompression" title="Link to this heading"></a></h1>
 <section id="background-on-sequence-compression-decompression">
-<h2>Background on Sequence Compression/Decompression<a class="headerlink" href="#background-on-sequence-compression-decompression" title="Permalink to this headline"></a></h2>
+<h2>Background on Sequence Compression/Decompression<a class="headerlink" href="#background-on-sequence-compression-decompression" title="Link to this heading"></a></h2>
 <p>In a nucleic acid sequence, each base is represented by one character in
 <a class="reference external" href="https://en.wikipedia.org/wiki/ASCII">ASCII code</a> and hence occupies 1 byte (8 bits).
 But because each base has only 4 possibilities, each base requires only
 log<sub>2</sub>(4) = 2 bits, shown in the following table:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 19%" />
-<col style="width: 81%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Base</p></th>
 <th class="head"><p>2-Bit Binary Code</p></th>
@@ -136,9 +133,9 @@ algorithm compresses 4 bases (= 8 bits/byte ÷ 2 bits/nt) in each byte,
 and then restores the original sequence when needed.</p>
 </section>
 <section id="algorithm-for-sequence-compression">
-<h2>Algorithm for Sequence Compression<a class="headerlink" href="#algorithm-for-sequence-compression" title="Permalink to this headline"></a></h2>
+<h2>Algorithm for Sequence Compression<a class="headerlink" href="#algorithm-for-sequence-compression" title="Link to this heading"></a></h2>
 <section id="algorithm-for-sequence-compression-procedure">
-<h3>Algorithm for Sequence Compression: Procedure<a class="headerlink" href="#algorithm-for-sequence-compression-procedure" title="Permalink to this headline"></a></h3>
+<h3>Algorithm for Sequence Compression: Procedure<a class="headerlink" href="#algorithm-for-sequence-compression-procedure" title="Link to this heading"></a></h3>
 <p>First, attributes of the nucleic acid sequence are recorded:</p>
 <ul class="simple">
 <li><p>rna (<code class="docutils literal notranslate"><span class="pre">bool</span></code>): whether the sequence is RNA</p></li>
@@ -161,7 +158,7 @@ of 4, the sequence is padded on its 3’ side with <code class="docutils literal
 choice) until its length is a multiple of 4.</p>
 </section>
 <section id="algorithm-for-sequence-compression-example">
-<h3>Algorithm for Sequence Compression: Example<a class="headerlink" href="#algorithm-for-sequence-compression-example" title="Permalink to this headline"></a></h3>
+<h3>Algorithm for Sequence Compression: Example<a class="headerlink" href="#algorithm-for-sequence-compression-example" title="Link to this heading"></a></h3>
 <p>Given the DNA sequence <code class="docutils literal notranslate"><span class="pre">CAGNTTCGAN</span></code>, the attributes are extracted:</p>
 <ul class="simple">
 <li><p>rna: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
@@ -174,19 +171,6 @@ becomes a multiple of 4 (in this case, length 12):</p>
 <p>Then, each 4-base segment is transformed into one byte by encoding each
 base and concatenating the codes in order from code 4 to code 1:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 9%" />
-<col style="width: 11%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 11%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Number</p></th>
 <th class="head"><p>Sequence</p></th>
@@ -246,9 +230,9 @@ As a <code class="docutils literal notranslate"><span class="pre">bytes</span></
 </section>
 </section>
 <section id="algorithm-for-sequence-decompression">
-<h2>Algorithm for Sequence Decompression<a class="headerlink" href="#algorithm-for-sequence-decompression" title="Permalink to this headline"></a></h2>
+<h2>Algorithm for Sequence Decompression<a class="headerlink" href="#algorithm-for-sequence-decompression" title="Link to this heading"></a></h2>
 <section id="algorithm-for-sequence-decompression-procedure">
-<h3>Algorithm for Sequence Decompression: Procedure<a class="headerlink" href="#algorithm-for-sequence-decompression-procedure" title="Permalink to this headline"></a></h3>
+<h3>Algorithm for Sequence Decompression: Procedure<a class="headerlink" href="#algorithm-for-sequence-decompression-procedure" title="Link to this heading"></a></h3>
 <p>Beginning with a compressed sequence of bytes, each byte is transformed
 into four bases by decoding each 2-bit chunk to a base using the above
 table, then reversing the order of the four bases.
@@ -259,7 +243,7 @@ It is cut to the correct number of bases using the <cite>length</cite> attribute
 Finally, every position in the attribute <cite>ns</cite> is masked to <code class="docutils literal notranslate"><span class="pre">N</span></code>.</p>
 </section>
 <section id="algorithm-for-sequence-decompression-example">
-<h3>Algorithm for Sequence Decompression: Example<a class="headerlink" href="#algorithm-for-sequence-decompression-example" title="Permalink to this headline"></a></h3>
+<h3>Algorithm for Sequence Decompression: Example<a class="headerlink" href="#algorithm-for-sequence-decompression-example" title="Link to this heading"></a></h3>
 <p>Suppose that a compressed sequence has the following attributes:</p>
 <ul class="simple">
 <li><p>compressed byte string: <code class="docutils literal notranslate"><span class="pre">[00100001,</span> <span class="pre">10011111,</span> <span class="pre">00000000]</span></code></p></li>
@@ -270,19 +254,6 @@ Finally, every position in the attribute <cite>ns</cite> is masked to <code clas
 <p>To decompress the sequence, each byte is split into four 2-bit segments,
 decoded, reversed, and reassembled:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 9%" />
-<col style="width: 11%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 9%" />
-<col style="width: 11%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Number</p></th>
 <th class="head"><p>Byte</p></th>

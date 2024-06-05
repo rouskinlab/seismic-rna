@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Join: Merge sections (horizontally) from the Mask or Cluster step &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -116,11 +117,11 @@
            <div itemprop="articleBody">
              
   <section id="join-merge-sections-horizontally-from-the-mask-or-cluster-step">
-<h1>Join: Merge sections (horizontally) from the Mask or Cluster step<a class="headerlink" href="#join-merge-sections-horizontally-from-the-mask-or-cluster-step" title="Permalink to this headline"></a></h1>
+<h1>Join: Merge sections (horizontally) from the Mask or Cluster step<a class="headerlink" href="#join-merge-sections-horizontally-from-the-mask-or-cluster-step" title="Link to this heading"></a></h1>
 <section id="join-input-files">
-<h2>Join: Input files<a class="headerlink" href="#join-input-files" title="Permalink to this headline"></a></h2>
+<h2>Join: Input files<a class="headerlink" href="#join-input-files" title="Link to this heading"></a></h2>
 <section id="join-input-file-mask-cluster-join-report">
-<h3>Join input file: Mask/Cluster/Join report<a class="headerlink" href="#join-input-file-mask-cluster-join-report" title="Permalink to this headline"></a></h3>
+<h3>Join input file: Mask/Cluster/Join report<a class="headerlink" href="#join-input-file-mask-cluster-join-report" title="Link to this heading"></a></h3>
 <p>You can give any number of Mask or Cluster reports as inputs for the Join step.
 You can also give Join report files, to join sections that were themselves made
 by joining other sections.
@@ -169,15 +170,15 @@ sections named <code class="docutils literal notranslate"><span class="pre">{joi
 </section>
 </section>
 <section id="join-settings">
-<h2>Join: Settings<a class="headerlink" href="#join-settings" title="Permalink to this headline"></a></h2>
+<h2>Join: Settings<a class="headerlink" href="#join-settings" title="Link to this heading"></a></h2>
 <section id="join-setting-name-of-joined-section">
-<h3>Join setting: Name of joined section<a class="headerlink" href="#join-setting-name-of-joined-section" title="Permalink to this headline"></a></h3>
+<h3>Join setting: Name of joined section<a class="headerlink" href="#join-setting-name-of-joined-section" title="Link to this heading"></a></h3>
 <p>You can choose the name of your joined section(s) using <code class="docutils literal notranslate"><span class="pre">--joined</span></code> (<code class="docutils literal notranslate"><span class="pre">-J</span></code>).
 If you omit this option in <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">join</span></code>, then it will default to <code class="docutils literal notranslate"><span class="pre">joined</span></code>.
 If you omit this option in <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code>, then the Join step will not run.</p>
 </section>
 <section id="join-setting-clusters-to-join">
-<h3>Join setting: Clusters to join<a class="headerlink" href="#join-setting-clusters-to-join" title="Permalink to this headline"></a></h3>
+<h3>Join setting: Clusters to join<a class="headerlink" href="#join-setting-clusters-to-join" title="Link to this heading"></a></h3>
 <p>When joining cluster reports specifically, you may specify which cluster of each
 section should be joined.
 For example, if you are joining three sections, each of which you have clustered
@@ -199,13 +200,13 @@ See <a class="reference internal" href="../../formats/meta/joined.html"><span cl
 </section>
 </section>
 <section id="join-output-files">
-<h2>Join: Output files<a class="headerlink" href="#join-output-files" title="Permalink to this headline"></a></h2>
+<h2>Join: Output files<a class="headerlink" href="#join-output-files" title="Link to this heading"></a></h2>
 <p>All output files go into the directories <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/mask/{ref}/{joined}</span></code>
 and/or <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/cluster/{ref}/{joined}</span></code>, where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output
 directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample name, <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is the reference name,
 and <code class="docutils literal notranslate"><span class="pre">{joined}</span></code> is the joined section name.</p>
 <section id="join-output-file-join-report">
-<h3>Join output file: Join report<a class="headerlink" href="#join-output-file-join-report" title="Permalink to this headline"></a></h3>
+<h3>Join output file: Join report<a class="headerlink" href="#join-output-file-join-report" title="Link to this heading"></a></h3>
 <p>SEISMIC-RNA writes a Join report file called either <code class="docutils literal notranslate"><span class="pre">mask-report.json</span></code> or
 <code class="docutils literal notranslate"><span class="pre">cluster-report.json</span></code>, depending on whether the joined sections came from Mask
 or Cluster reports.
@@ -219,9 +220,9 @@ reports.</p>
 </section>
 </section>
 <section id="join-troubleshoot-and-optimize">
-<h2>Join: Troubleshoot and optimize<a class="headerlink" href="#join-troubleshoot-and-optimize" title="Permalink to this headline"></a></h2>
+<h2>Join: Troubleshoot and optimize<a class="headerlink" href="#join-troubleshoot-and-optimize" title="Link to this heading"></a></h2>
 <section id="joined-section-got-duplicate-sections">
-<h3>Joined section … got duplicate sections …<a class="headerlink" href="#joined-section-got-duplicate-sections" title="Permalink to this headline"></a></h3>
+<h3>Joined section … got duplicate sections …<a class="headerlink" href="#joined-section-got-duplicate-sections" title="Link to this heading"></a></h3>
 <p>This warning means that an original (unjoined) section appeared more than once
 in the report files you are joining.</p>
 <p>For example, suppose that you join <code class="docutils literal notranslate"><span class="pre">section-A</span></code> and <code class="docutils literal notranslate"><span class="pre">section-B</span></code>:</p>
@@ -238,7 +239,7 @@ appears in both the report files for <code class="docutils literal notranslate">
 it contains all the samples you want and none that you don’t.</p>
 </section>
 <section id="overwriting-would-cause-data-loss">
-<h3>Overwriting … would cause data loss<a class="headerlink" href="#overwriting-would-cause-data-loss" title="Permalink to this headline"></a></h3>
+<h3>Overwriting … would cause data loss<a class="headerlink" href="#overwriting-would-cause-data-loss" title="Link to this heading"></a></h3>
 <p>This error means that you attempted to create a joined section with the same
 name as an existing non-joined section while using <code class="docutils literal notranslate"><span class="pre">--force</span></code>, e.g.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">join</span> <span class="o">--</span><span class="n">force</span> <span class="o">-</span><span class="n">J</span> <span class="n">section</span><span class="o">-</span><span class="n">A</span> <span class="n">out</span>

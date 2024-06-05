@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Brickle: Compressed Python Objects &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -105,9 +106,9 @@
            <div itemprop="articleBody">
              
   <section id="brickle-compressed-python-objects">
-<h1>Brickle: Compressed Python Objects<a class="headerlink" href="#brickle-compressed-python-objects" title="Permalink to this headline"></a></h1>
+<h1>Brickle: Compressed Python Objects<a class="headerlink" href="#brickle-compressed-python-objects" title="Link to this heading"></a></h1>
 <section id="brickle-file-content-format">
-<h2>Brickle file: Content format<a class="headerlink" href="#brickle-file-content-format" title="Permalink to this headline"></a></h2>
+<h2>Brickle file: Content format<a class="headerlink" href="#brickle-file-content-format" title="Link to this heading"></a></h2>
 <p>Brickle is not technically a data format.
 It is rather a file containing a <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled Python object</a> that has been
 compressed with <a class="reference external" href="https://brotli.org/">brotli</a>.
@@ -123,16 +124,16 @@ object’s data itself is of more interest than the file format.
 See <a class="reference internal" href="../../data/index.html"><span class="doc">Data Structures</span></a> for information on the data structures.</p>
 </section>
 <section id="brickle-file-path-format">
-<h2>Brickle file: Path format<a class="headerlink" href="#brickle-file-path-format" title="Permalink to this headline"></a></h2>
+<h2>Brickle file: Path format<a class="headerlink" href="#brickle-file-path-format" title="Link to this heading"></a></h2>
 <section id="brickle-file-extensions">
-<h3>Brickle file extensions<a class="headerlink" href="#brickle-file-extensions" title="Permalink to this headline"></a></h3>
+<h3>Brickle file extensions<a class="headerlink" href="#brickle-file-extensions" title="Link to this heading"></a></h3>
 <p>SEISMIC-RNA accepts the following extensions for brickle files:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">.brickle</span></code></p></li>
 </ul>
 </section>
 <section id="brickle-path-parsing">
-<h3>Brickle path parsing<a class="headerlink" href="#brickle-path-parsing" title="Permalink to this headline"></a></h3>
+<h3>Brickle path parsing<a class="headerlink" href="#brickle-path-parsing" title="Link to this heading"></a></h3>
 <p>Brickle files use a variety of path structures throughout SEISMIC-RNA.
 They are most commonly used to store batches of data, in which case the
 file name follows the format <code class="docutils literal notranslate"><span class="pre">{btype}-batch-{bnum}.brickle</span></code>, where
@@ -141,9 +142,9 @@ batch (the first batch in each set is numbered 0).</p>
 </section>
 </section>
 <section id="brickle-file-uses">
-<h2>Brickle file: Uses<a class="headerlink" href="#brickle-file-uses" title="Permalink to this headline"></a></h2>
+<h2>Brickle file: Uses<a class="headerlink" href="#brickle-file-uses" title="Link to this heading"></a></h2>
 <section id="brickle-as-input-file">
-<h3>Brickle as input file<a class="headerlink" href="#brickle-as-input-file" title="Permalink to this headline"></a></h3>
+<h3>Brickle as input file<a class="headerlink" href="#brickle-as-input-file" title="Link to this heading"></a></h3>
 <p>Brickle files are not explicitly passed as input files via the command
 line, but when a report file that is associated with brickle files is
 passed as an input file, the brickle files will be read.
@@ -156,14 +157,14 @@ This process happens during the following commands:</p>
 </ul>
 </section>
 <section id="brickle-as-output-file">
-<h3>Brickle as output file<a class="headerlink" href="#brickle-as-output-file" title="Permalink to this headline"></a></h3>
+<h3>Brickle as output file<a class="headerlink" href="#brickle-as-output-file" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">relate</span></code>, <code class="docutils literal notranslate"><span class="pre">mask</span></code>, and <code class="docutils literal notranslate"><span class="pre">cluster</span></code> commands all output brickle
 files containing data along with their report files.</p></li>
 </ul>
 </section>
 <section id="brickle-as-temporary-file">
-<h3>Brickle as temporary file<a class="headerlink" href="#brickle-as-temporary-file" title="Permalink to this headline"></a></h3>
+<h3>Brickle as temporary file<a class="headerlink" href="#brickle-as-temporary-file" title="Link to this heading"></a></h3>
 <p>Brickle files are not used as temporary files by any command.</p>
 </section>
 </section>

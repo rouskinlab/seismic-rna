@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reference Sequence &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -97,10 +98,10 @@
            <div itemprop="articleBody">
              
   <section id="reference-sequence">
-<h1>Reference Sequence<a class="headerlink" href="#reference-sequence" title="Permalink to this headline"></a></h1>
+<h1>Reference Sequence<a class="headerlink" href="#reference-sequence" title="Link to this heading"></a></h1>
 <p>The reference sequence is saved as a <code class="docutils literal notranslate"><span class="pre">RefseqIO</span></code> object.</p>
 <section id="reference-sequence-structure">
-<h2>Reference sequence: Structure<a class="headerlink" href="#reference-sequence-structure" title="Permalink to this headline"></a></h2>
+<h2>Reference sequence: Structure<a class="headerlink" href="#reference-sequence-structure" title="Link to this heading"></a></h2>
 <p>A <code class="docutils literal notranslate"><span class="pre">RefseqIO</span></code> object stores a reference sequence as a space-efficient
 <code class="docutils literal notranslate"><span class="pre">CompressedSeq</span></code> object in the private attribute <code class="docutils literal notranslate"><span class="pre">_s</span></code>.
 (The original sequence is available via the cached property <code class="docutils literal notranslate"><span class="pre">refseq</span></code>.)
@@ -113,7 +114,7 @@ A <code class="docutils literal notranslate"><span class="pre">CompressedSeq</sp
 </ul>
 </section>
 <section id="reference-sequence-example">
-<h2>Reference sequence: Example<a class="headerlink" href="#reference-sequence-example" title="Permalink to this headline"></a></h2>
+<h2>Reference sequence: Example<a class="headerlink" href="#reference-sequence-example" title="Link to this heading"></a></h2>
 <p>Suppose that a DNA sequence is <code class="docutils literal notranslate"><span class="pre">CAGNTTCGAN</span></code>.
 This sequence would be compressed into</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">b</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;!</span><span class="se">\x9f\x00</span><span class="s1">&#39;</span>

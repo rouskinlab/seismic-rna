@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Relate: Compute relationships between references and aligned reads &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -116,18 +117,18 @@
            <div itemprop="articleBody">
              
   <section id="relate-compute-relationships-between-references-and-aligned-reads">
-<h1>Relate: Compute relationships between references and aligned reads<a class="headerlink" href="#relate-compute-relationships-between-references-and-aligned-reads" title="Permalink to this headline"></a></h1>
+<h1>Relate: Compute relationships between references and aligned reads<a class="headerlink" href="#relate-compute-relationships-between-references-and-aligned-reads" title="Link to this heading"></a></h1>
 <section id="relate-input-files">
-<h2>Relate: Input files<a class="headerlink" href="#relate-input-files" title="Permalink to this headline"></a></h2>
+<h2>Relate: Input files<a class="headerlink" href="#relate-input-files" title="Link to this heading"></a></h2>
 <section id="relate-input-file-reference-sequences">
-<span id="relate-refs"></span><h3>Relate input file: Reference sequences<a class="headerlink" href="#relate-input-file-reference-sequences" title="Permalink to this headline"></a></h3>
+<span id="relate-refs"></span><h3>Relate input file: Reference sequences<a class="headerlink" href="#relate-input-file-reference-sequences" title="Link to this heading"></a></h3>
 <p>You need one file of reference sequences in FASTA format (for details on this
 format, see <a class="reference internal" href="../../formats/data/fasta.html"><span class="doc">FASTA: Reference sequences</span></a>).
 If your file has characters or formatting incompatible with SEISMIC-RNA, then
 you can fix it using the <a class="reference internal" href="../cleanfa.html"><span class="doc">Clean FASTA Files</span></a> tool.</p>
 </section>
 <section id="relate-input-file-alignment-maps">
-<h3>Relate input file: Alignment maps<a class="headerlink" href="#relate-input-file-alignment-maps" title="Permalink to this headline"></a></h3>
+<h3>Relate input file: Alignment maps<a class="headerlink" href="#relate-input-file-alignment-maps" title="Link to this heading"></a></h3>
 <p>You can give any number of alignment map files, each of which must be in SAM,
 BAM, or CRAM (collectively, “XAM”) format.
 See <a class="reference internal" href="../../formats/data/xam.html"><span class="doc">SAM, BAM, and CRAM: Alignment Maps</span></a> for more information.</p>
@@ -152,16 +153,16 @@ references <code class="docutils literal notranslate"><span class="pre">ref-1</s
 </section>
 </section>
 <section id="relate-settings">
-<h2>Relate: Settings<a class="headerlink" href="#relate-settings" title="Permalink to this headline"></a></h2>
+<h2>Relate: Settings<a class="headerlink" href="#relate-settings" title="Link to this heading"></a></h2>
 <section id="relate-settings-shared-with-alignment">
-<h3>Relate settings shared with alignment<a class="headerlink" href="#relate-settings-shared-with-alignment" title="Permalink to this headline"></a></h3>
+<h3>Relate settings shared with alignment<a class="headerlink" href="#relate-settings-shared-with-alignment" title="Link to this heading"></a></h3>
 <p>Because you can begin the SEISMIC-RNA workflow at <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">align</span></code> or, if you
 already have alignment map files, can begin at <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">relate</span></code>, these two
 commands share the options <code class="docutils literal notranslate"><span class="pre">--phred-enc</span></code>, <code class="docutils literal notranslate"><span class="pre">--min-mapq</span></code>, <code class="docutils literal notranslate"><span class="pre">--min-reads</span></code>, and
 <code class="docutils literal notranslate"><span class="pre">--out-dir</span></code>.</p>
 </section>
 <section id="relate-setting-minimum-phred-score">
-<h3>Relate setting: Minimum Phred score<a class="headerlink" href="#relate-setting-minimum-phred-score" title="Permalink to this headline"></a></h3>
+<h3>Relate setting: Minimum Phred score<a class="headerlink" href="#relate-setting-minimum-phred-score" title="Link to this heading"></a></h3>
 <p>In the Relate step, you can flag bases with low quality scores as ambiguous, as
 if they were <code class="docutils literal notranslate"><span class="pre">N</span></code>s.
 This step serves a purpose similar to that of quality trimming during the Align
@@ -178,7 +179,7 @@ For example, if a <code class="docutils literal notranslate"><span class="pre">T
 would be flagged as possibly a match and possibly a subsitution to A, C, or G.</p>
 </section>
 <section id="relate-setting-ambiguous-insertions-and-deletions">
-<h3>Relate setting: Ambiguous insertions and deletions<a class="headerlink" href="#relate-setting-ambiguous-insertions-and-deletions" title="Permalink to this headline"></a></h3>
+<h3>Relate setting: Ambiguous insertions and deletions<a class="headerlink" href="#relate-setting-ambiguous-insertions-and-deletions" title="Link to this heading"></a></h3>
 <p>When insertions and deletions (indels) occur in repetitive regions, determining
 which base(s) were inserted or deleted can be impossible due to the repetitive
 reference sequence itself, even if the reads were perfectly free of errors.
@@ -191,7 +192,7 @@ algorithm with <code class="docutils literal notranslate"><span class="pre">--no
 of reducing its accuracy on indels.</p>
 </section>
 <section id="relate-setting-batch-size">
-<h3>Relate setting: Batch size<a class="headerlink" href="#relate-setting-batch-size" title="Permalink to this headline"></a></h3>
+<h3>Relate setting: Batch size<a class="headerlink" href="#relate-setting-batch-size" title="Link to this heading"></a></h3>
 <p>In the Relate step, you can divide up your data into batches to speed up the
 analysis and reduce the amount of memory needed.
 For an explanation of batching and how to use it, see <a class="reference internal" href="../parallel.html#batches"><span class="std std-ref">Batches and Benefits</span></a>.
@@ -215,7 +216,7 @@ extreme case that only one read aligned in every mate pair.</p>
 </div>
 </section>
 <section id="relate-setting-overhangs">
-<h3>Relate setting: Overhangs<a class="headerlink" href="#relate-setting-overhangs" title="Permalink to this headline"></a></h3>
+<h3>Relate setting: Overhangs<a class="headerlink" href="#relate-setting-overhangs" title="Link to this heading"></a></h3>
 <p>When relating sequencing reads, SEISMIC-RNA will by default compute
 relationships for all base calls between the smallest 5’ aligned position and
 the greatest 3’ aligned position.
@@ -233,19 +234,19 @@ the 5’ mate start and less than the 3’ mate start positions
 </section>
 </section>
 <section id="relate-output-files">
-<h2>Relate: Output files<a class="headerlink" href="#relate-output-files" title="Permalink to this headline"></a></h2>
+<h2>Relate: Output files<a class="headerlink" href="#relate-output-files" title="Link to this heading"></a></h2>
 <p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/relate/{ref}</span></code>, where
 <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, and <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is
 the name of the reference.</p>
 <section id="relate-output-file-batch-of-relation-vectors">
-<h3>Relate output file: Batch of relation vectors<a class="headerlink" href="#relate-output-file-batch-of-relation-vectors" title="Permalink to this headline"></a></h3>
+<h3>Relate output file: Batch of relation vectors<a class="headerlink" href="#relate-output-file-batch-of-relation-vectors" title="Link to this heading"></a></h3>
 <p>Each batch of relation vectors contains a <code class="docutils literal notranslate"><span class="pre">RelateBatchIO</span></code> object and is saved
 to the file <code class="docutils literal notranslate"><span class="pre">relate-batch-{num}.brickle</span></code>, where <code class="docutils literal notranslate"><span class="pre">{num}</span></code> is the batch number.
 See <a class="reference internal" href="../../data/relate/relate.html"><span class="doc">Relate Batch</span></a> for details on the data structure.
 See <a class="reference internal" href="../../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for more information on brickle files.</p>
 </section>
 <section id="relate-output-file-batch-of-read-names">
-<h3>Relate output file: Batch of read names<a class="headerlink" href="#relate-output-file-batch-of-read-names" title="Permalink to this headline"></a></h3>
+<h3>Relate output file: Batch of read names<a class="headerlink" href="#relate-output-file-batch-of-read-names" title="Link to this heading"></a></h3>
 <p>Within each batch, the relate step assigns an index (a nonnegative integer) to
 each read and writes a file mapping the indexes to the read names.
 Each batch of read names contains a <code class="docutils literal notranslate"><span class="pre">QnamesBatchIO</span></code> object and is saved to the
@@ -254,26 +255,26 @@ See <a class="reference internal" href="../../data/relate/qnames.html"><span cla
 See <a class="reference internal" href="../../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for more information on brickle files.</p>
 </section>
 <section id="relate-output-file-reference-sequence">
-<h3>Relate output file: Reference sequence<a class="headerlink" href="#relate-output-file-reference-sequence" title="Permalink to this headline"></a></h3>
+<h3>Relate output file: Reference sequence<a class="headerlink" href="#relate-output-file-reference-sequence" title="Link to this heading"></a></h3>
 <p>The relate step writes the reference sequence as a <code class="docutils literal notranslate"><span class="pre">RefseqIO</span></code> object to the
 file <code class="docutils literal notranslate"><span class="pre">refseq.brickle</span></code>.
 See <a class="reference internal" href="../../data/relate/refseq.html"><span class="doc">Reference Sequence</span></a> for details on the data structure.
 See <a class="reference internal" href="../../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for more information on brickle files.</p>
 </section>
 <section id="relate-output-file-relate-report">
-<h3>Relate output file: Relate report<a class="headerlink" href="#relate-output-file-relate-report" title="Permalink to this headline"></a></h3>
+<h3>Relate output file: Relate report<a class="headerlink" href="#relate-output-file-relate-report" title="Link to this heading"></a></h3>
 <p>SEISMIC-RNA also writes a report file, <code class="docutils literal notranslate"><span class="pre">relate-report.json</span></code>, that records the
 settings you used for running the Relate step and summarizes the results.
 See <a class="reference internal" href="../../formats/report/relate.html"><span class="doc">Relate Report</span></a> for more information.</p>
 </section>
 </section>
 <section id="relate-troubleshoot-and-optimize">
-<h2>Relate: Troubleshoot and optimize<a class="headerlink" href="#relate-troubleshoot-and-optimize" title="Permalink to this headline"></a></h2>
+<h2>Relate: Troubleshoot and optimize<a class="headerlink" href="#relate-troubleshoot-and-optimize" title="Link to this heading"></a></h2>
 <p>If you encounted errors during the Relate step, then the most likely cause is
 that the FASTA file or settings you used for the Relate step differ from those
 that you used during alignment.</p>
 <section id="insufficient-reads-in-file">
-<h3>Insufficient reads in {file} …<a class="headerlink" href="#insufficient-reads-in-file" title="Permalink to this headline"></a></h3>
+<h3>Insufficient reads in {file} …<a class="headerlink" href="#insufficient-reads-in-file" title="Link to this heading"></a></h3>
 <p>This error means that you provided a SAM/BAM/CRAM file containing fewer reads
 than the minimum number set by <code class="docutils literal notranslate"><span class="pre">--min-reads</span></code> (<code class="docutils literal notranslate"><span class="pre">-N</span></code>).
 There are two common causes of this error:</p>
@@ -295,7 +296,7 @@ since these messages just indicate that SEISMIC-RNA is skipping alignment maps
 with insufficient reads, which is exactly what you want to happen.</p>
 </section>
 <section id="read-read-mapped-with-a-quality-score-score">
-<h3>Read {read} mapped with a quality score {score} …<a class="headerlink" href="#read-read-mapped-with-a-quality-score-score" title="Permalink to this headline"></a></h3>
+<h3>Read {read} mapped with a quality score {score} …<a class="headerlink" href="#read-read-mapped-with-a-quality-score-score" title="Link to this heading"></a></h3>
 <p>This error means that a read inside an alignment file aligned with a mapping
 quality lower than the minimum set by <code class="docutils literal notranslate"><span class="pre">--min-mapq</span></code>.
 There are two common causes of this error:</p>
@@ -318,7 +319,7 @@ since these messages just indicate that SEISMIC-RNA is skipping reads with
 with insufficient mapping quality, which is exactly what you want to happen.</p>
 </section>
 <section id="read-read-mapped-to-a-reference-named-name">
-<h3>Read {read} mapped to a reference named {name} …<a class="headerlink" href="#read-read-mapped-to-a-reference-named-name" title="Permalink to this headline"></a></h3>
+<h3>Read {read} mapped to a reference named {name} …<a class="headerlink" href="#read-read-mapped-to-a-reference-named-name" title="Link to this heading"></a></h3>
 <p>This error means that a read inside an alignment file aligned to a reference
 whose name does not match the name of the alignment file (minus the extension).
 For example, if your alignment map file <code class="docutils literal notranslate"><span class="pre">azure.cram</span></code> contains a read that
@@ -334,7 +335,7 @@ one reference to which all of the reads aligned.</p></li>
 </ul>
 </section>
 <section id="relate-crashes-or-hangs-while-producing-few-or-no-batch-files">
-<h3>Relate crashes or hangs while producing few or no batch files<a class="headerlink" href="#relate-crashes-or-hangs-while-producing-few-or-no-batch-files" title="Permalink to this headline"></a></h3>
+<h3>Relate crashes or hangs while producing few or no batch files<a class="headerlink" href="#relate-crashes-or-hangs-while-producing-few-or-no-batch-files" title="Link to this heading"></a></h3>
 <p>Most likely, your system has run out of memory.
 You can confirm using a program that monitors memory usage (such as <code class="docutils literal notranslate"><span class="pre">top</span></code> in a
 Linux/macOS terminal, Activity Monitor on macOS, or Task Manager on Windows).

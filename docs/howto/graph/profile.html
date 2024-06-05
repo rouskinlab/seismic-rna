@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Profile: Bar graph of relationships(s) per position &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -106,9 +107,9 @@
            <div itemprop="articleBody">
              
   <section id="profile-bar-graph-of-relationships-s-per-position">
-<h1>Profile: Bar graph of relationships(s) per position<a class="headerlink" href="#profile-bar-graph-of-relationships-s-per-position" title="Permalink to this headline"></a></h1>
+<h1>Profile: Bar graph of relationships(s) per position<a class="headerlink" href="#profile-bar-graph-of-relationships-s-per-position" title="Link to this heading"></a></h1>
 <section id="profile-input-files">
-<h2>Profile: Input files<a class="headerlink" href="#profile-input-files" title="Permalink to this headline"></a></h2>
+<h2>Profile: Input files<a class="headerlink" href="#profile-input-files" title="Link to this heading"></a></h2>
 <p>You can give any number of positional table files:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">relate-per-pos.csv</span></code></p></li>
@@ -118,18 +119,18 @@
 <p>See <a class="reference internal" href="params.html#graph-inputs"><span class="std std-ref">General parameters for graphing: Input files</span></a> for more information on input files.</p>
 </section>
 <section id="profile-settings">
-<h2>Profile: Settings<a class="headerlink" href="#profile-settings" title="Permalink to this headline"></a></h2>
+<h2>Profile: Settings<a class="headerlink" href="#profile-settings" title="Link to this heading"></a></h2>
 <p>See <a class="reference internal" href="params.html#graph-data"><span class="std std-ref">General parameters for graphing: Input data</span></a> for more information on graph options.</p>
 </section>
 <section id="profile-output-files">
-<h2>Profile: Output files<a class="headerlink" href="#profile-output-files" title="Permalink to this headline"></a></h2>
+<h2>Profile: Output files<a class="headerlink" href="#profile-output-files" title="Link to this heading"></a></h2>
 <p>See <a class="reference internal" href="params.html#graph-outputs"><span class="std std-ref">General parameters for graphing: Output files</span></a> for more information on output files.</p>
 </section>
 <section id="profile-examples">
-<h2>Profile: Examples<a class="headerlink" href="#profile-examples" title="Permalink to this headline"></a></h2>
+<h2>Profile: Examples<a class="headerlink" href="#profile-examples" title="Link to this heading"></a></h2>
 <p>Assume your output files are in the directory <code class="docutils literal notranslate"><span class="pre">out</span></code>.</p>
 <section id="graph-the-fraction-of-reads-mutated-the-mutation-rate-at-each-position">
-<h3>Graph the fraction of reads mutated (the mutation rate) at each position<a class="headerlink" href="#graph-the-fraction-of-reads-mutated-the-mutation-rate-at-each-position" title="Permalink to this headline"></a></h3>
+<h3>Graph the fraction of reads mutated (the mutation rate) at each position<a class="headerlink" href="#graph-the-fraction-of-reads-mutated-the-mutation-rate-at-each-position" title="Link to this heading"></a></h3>
 <p>Command:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">graph</span> <span class="n">profile</span> <span class="n">out</span>
 </pre></div>
@@ -157,7 +158,7 @@
 </div></blockquote>
 </section>
 <section id="graph-the-fraction-each-type-of-mutation-at-each-position">
-<h3>Graph the fraction each type of mutation at each position<a class="headerlink" href="#graph-the-fraction-each-type-of-mutation-at-each-position" title="Permalink to this headline"></a></h3>
+<h3>Graph the fraction each type of mutation at each position<a class="headerlink" href="#graph-the-fraction-each-type-of-mutation-at-each-position" title="Link to this heading"></a></h3>
 <p>Command:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">graph</span> <span class="n">profile</span> <span class="o">-</span><span class="n">r</span> <span class="n">acgtdi</span> <span class="n">out</span>
 </pre></div>
@@ -185,7 +186,7 @@
 </div></blockquote>
 </section>
 <section id="graph-the-number-of-informative-reads-at-each-position">
-<h3>Graph the number of informative reads at each position<a class="headerlink" href="#graph-the-number-of-informative-reads-at-each-position" title="Permalink to this headline"></a></h3>
+<h3>Graph the number of informative reads at each position<a class="headerlink" href="#graph-the-number-of-informative-reads-at-each-position" title="Link to this heading"></a></h3>
 <p>Command:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">graph</span> <span class="n">profile</span> <span class="o">-</span><span class="n">r</span> <span class="n">n</span> <span class="o">--</span><span class="n">use</span><span class="o">-</span><span class="n">count</span> <span class="n">out</span>
 </pre></div>

@@ -36,6 +36,12 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.core.mu.measure
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.core.mu.nan
    :members:
    :undoc-members:

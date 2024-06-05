@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fold: Predict RNA secondary structures using mutation rates &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -116,11 +117,11 @@
            <div itemprop="articleBody">
              
   <section id="fold-predict-rna-secondary-structures-using-mutation-rates">
-<h1>Fold: Predict RNA secondary structures using mutation rates<a class="headerlink" href="#fold-predict-rna-secondary-structures-using-mutation-rates" title="Permalink to this headline"></a></h1>
+<h1>Fold: Predict RNA secondary structures using mutation rates<a class="headerlink" href="#fold-predict-rna-secondary-structures-using-mutation-rates" title="Link to this heading"></a></h1>
 <section id="fold-input-files">
-<h2>Fold: Input files<a class="headerlink" href="#fold-input-files" title="Permalink to this headline"></a></h2>
+<h2>Fold: Input files<a class="headerlink" href="#fold-input-files" title="Link to this heading"></a></h2>
 <section id="fold-input-file-mask-or-cluster-positional-table">
-<h3>Fold input file: Mask or Cluster positional table<a class="headerlink" href="#fold-input-file-mask-or-cluster-positional-table" title="Permalink to this headline"></a></h3>
+<h3>Fold input file: Mask or Cluster positional table<a class="headerlink" href="#fold-input-file-mask-or-cluster-positional-table" title="Link to this heading"></a></h3>
 <p>You can give any number of positional table files of masked or clustered reads
 (<code class="docutils literal notranslate"><span class="pre">mask-per-pos.csv</span></code> or <code class="docutils literal notranslate"><span class="pre">clust-per-pos.csv</span></code>, respectively) as inputs.
 See <a class="reference internal" href="../inputs.html"><span class="doc">List Input Files</span></a> for ways to list multiple files.
@@ -134,9 +135,9 @@ directory <code class="docutils literal notranslate"><span class="pre">{out}</sp
 </section>
 </section>
 <section id="fold-settings">
-<h2>Fold: Settings<a class="headerlink" href="#fold-settings" title="Permalink to this headline"></a></h2>
+<h2>Fold: Settings<a class="headerlink" href="#fold-settings" title="Link to this heading"></a></h2>
 <section id="fold-setting-define-sections">
-<h3>Fold setting: Define sections<a class="headerlink" href="#fold-setting-define-sections" title="Permalink to this headline"></a></h3>
+<h3>Fold setting: Define sections<a class="headerlink" href="#fold-setting-define-sections" title="Link to this heading"></a></h3>
 <p>You can predict structures of the full reference sequences or specific sections.
 See <a class="reference internal" href="../sections.html"><span class="doc">Define Sections</span></a> for ways to define sections.</p>
 <p>Defining sections in <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">fold</span></code> works identically to <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">mask</span></code> but
@@ -166,20 +167,15 @@ reasonably sure does not interact with any other part of the transcript.</p></li
 </ul>
 </section>
 <section id="fold-setting-quantile-for-normalization">
-<h3>Fold setting: Quantile for normalization<a class="headerlink" href="#fold-setting-quantile-for-normalization" title="Permalink to this headline"></a></h3>
+<h3>Fold setting: Quantile for normalization<a class="headerlink" href="#fold-setting-quantile-for-normalization" title="Link to this heading"></a></h3>
 <p>Folding requires that the mutation rates be normalized to the interval [0, 1].
 See <a class="reference internal" href="../normalize.html"><span class="doc">Normalize Mutation Rates</span></a> for ways to normalize mutation rates.</p>
 </section>
 <section id="fold-setting-rnastructure-parameters">
-<h3>Fold setting: RNAstructure parameters<a class="headerlink" href="#fold-setting-rnastructure-parameters" title="Permalink to this headline"></a></h3>
+<h3>Fold setting: RNAstructure parameters<a class="headerlink" href="#fold-setting-rnastructure-parameters" title="Link to this heading"></a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">fold</span></code> exposes several options for the RNAstructure Fold program (see
 the <a class="reference external" href="https://rna.urmc.rochester.edu/Text/Fold.html">documentation for Fold</a> for details on each option):</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 18%" />
-<col style="width: 18%" />
-<col style="width: 64%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Option in <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">fold</span></code></p></th>
 <th class="head"><p>Option in RNAstructure Fold</p></th>
@@ -216,7 +212,7 @@ the <a class="reference external" href="https://rna.urmc.rochester.edu/Text/Fold
 </section>
 </section>
 <section id="fold-output-files">
-<h2>Fold: Output files<a class="headerlink" href="#fold-output-files" title="Permalink to this headline"></a></h2>
+<h2>Fold: Output files<a class="headerlink" href="#fold-output-files" title="Link to this heading"></a></h2>
 <p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/fold/{ref}/{sect}</span></code>,
 where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, <code class="docutils literal notranslate"><span class="pre">{ref}</span></code>
 is the reference, and <code class="docutils literal notranslate"><span class="pre">{sect}</span></code> is the section you <em>folded</em> (<strong>not</strong> that from
@@ -227,31 +223,31 @@ folded) and <code class="docutils literal notranslate"><span class="pre">{profil
 <code class="docutils literal notranslate"><span class="pre">average</span></code> (ensemble average) or <code class="docutils literal notranslate"><span class="pre">cluster-{n}-{i}</span></code> (where <code class="docutils literal notranslate"><span class="pre">{n}</span></code> is the
 number of clusters and <code class="docutils literal notranslate"><span class="pre">{i}</span></code> is the cluster number).</p>
 <section id="fold-output-file-fold-report">
-<h3>Fold output file: Fold report<a class="headerlink" href="#fold-output-file-fold-report" title="Permalink to this headline"></a></h3>
+<h3>Fold output file: Fold report<a class="headerlink" href="#fold-output-file-fold-report" title="Link to this heading"></a></h3>
 <p>SEISMIC-RNA writes a report file, <code class="docutils literal notranslate"><span class="pre">fold-report.json</span></code>, to record the settings
 you used for running the Fold step.
 See <a class="reference internal" href="../../formats/report/fold.html"><span class="doc">Fold Report</span></a> for more information.</p>
 </section>
 <section id="fold-output-file-connectivity-table">
-<h3>Fold output file: Connectivity table<a class="headerlink" href="#fold-output-file-connectivity-table" title="Permalink to this headline"></a></h3>
+<h3>Fold output file: Connectivity table<a class="headerlink" href="#fold-output-file-connectivity-table" title="Link to this heading"></a></h3>
 <p>The primary output is a connectivity table file.
 For details on this format, see <a class="reference internal" href="../../formats/data/ct.html"><span class="doc">Connectivity Table (CT): RNA secondary structures</span></a>.</p>
 </section>
 <section id="fold-output-file-dot-bracket-structure">
-<span id="fold-db"></span><h3>Fold output file: Dot-bracket structure<a class="headerlink" href="#fold-output-file-dot-bracket-structure" title="Permalink to this headline"></a></h3>
+<span id="fold-db"></span><h3>Fold output file: Dot-bracket structure<a class="headerlink" href="#fold-output-file-dot-bracket-structure" title="Link to this heading"></a></h3>
 <p>The Fold step also outputs the structures in dot-bracket format, which you can
 copy-paste into RNA drawing software such as <a class="reference external" href="https://varna.lisn.upsaclay.fr/">VARNA</a>.
 For details on this format, see <a class="reference internal" href="../../formats/data/db.html"><span class="doc">Dot-bracket (DB): RNA secondary structures</span></a>.</p>
 </section>
 <section id="fold-output-file-varna-color-file">
-<h3>Fold output file: VARNA color file<a class="headerlink" href="#fold-output-file-varna-color-file" title="Permalink to this headline"></a></h3>
+<h3>Fold output file: VARNA color file<a class="headerlink" href="#fold-output-file-varna-color-file" title="Link to this heading"></a></h3>
 <p>The Fold step also outputs the normalized mutation rates in VARNA color format,
 which you can import into the RNA drawing software <a class="reference external" href="https://varna.lisn.upsaclay.fr/">VARNA</a>.
 For details on this format, see <a class="reference internal" href="../../formats/data/varna-color.html"><span class="doc">VARNA Color: Color codes for VARNA</span></a>.</p>
 </section>
 </section>
 <section id="fold-visualize-structures-in-varna">
-<h2>Fold: Visualize structures in VARNA<a class="headerlink" href="#fold-visualize-structures-in-varna" title="Permalink to this headline"></a></h2>
+<h2>Fold: Visualize structures in VARNA<a class="headerlink" href="#fold-visualize-structures-in-varna" title="Link to this heading"></a></h2>
 <p><a class="reference external" href="https://varna.lisn.upsaclay.fr/">VARNA</a> is a third-party application for drawing RNA structures.
 To draw a structure from SEISMIC-RNA in VARNA:</p>
 <ol class="arabic">

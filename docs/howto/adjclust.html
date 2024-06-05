@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Add/Delete Orders to/from an Already-Clustered Dataset &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -107,14 +108,14 @@
            <div itemprop="articleBody">
              
   <section id="add-delete-orders-to-from-an-already-clustered-dataset">
-<h1>Add/Delete Orders to/from an Already-Clustered Dataset<a class="headerlink" href="#add-delete-orders-to-from-an-already-clustered-dataset" title="Permalink to this headline"></a></h1>
+<h1>Add/Delete Orders to/from an Already-Clustered Dataset<a class="headerlink" href="#add-delete-orders-to-from-an-already-clustered-dataset" title="Link to this heading"></a></h1>
 <section id="background-about-adding-deleting-orders-of-clusters">
-<h2>Background about adding/deleting orders of clusters<a class="headerlink" href="#background-about-adding-deleting-orders-of-clusters" title="Permalink to this headline"></a></h2>
+<h2>Background about adding/deleting orders of clusters<a class="headerlink" href="#background-about-adding-deleting-orders-of-clusters" title="Link to this heading"></a></h2>
 <p>You can use <code class="docutils literal notranslate"><span class="pre">+addclust</span></code> and <code class="docutils literal notranslate"><span class="pre">+delclust</span></code> to adjust the maximum number of
 clusters in (i.e. maximum order of) a dataset that you have already clustered
 with <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">cluster</span></code>.</p>
 <section id="purpose-of-adding-clusters">
-<h3>Purpose of adding clusters<a class="headerlink" href="#purpose-of-adding-clusters" title="Permalink to this headline"></a></h3>
+<h3>Purpose of adding clusters<a class="headerlink" href="#purpose-of-adding-clusters" title="Link to this heading"></a></h3>
 <p>After you run <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">cluster</span></code>, you may wish that you had used a higher limit
 for the number of clusters (i.e. maximum order).
 You could increase the maximum order simply by rerunning <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">cluster</span></code>
@@ -127,7 +128,7 @@ which merely tests higher orders of clustering and, if successful, appends them
 to your existing results.</p>
 </section>
 <section id="purpose-of-deleting-clusters">
-<h3>Purpose of deleting clusters<a class="headerlink" href="#purpose-of-deleting-clusters" title="Permalink to this headline"></a></h3>
+<h3>Purpose of deleting clusters<a class="headerlink" href="#purpose-of-deleting-clusters" title="Link to this heading"></a></h3>
 <p>After you run <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">cluster</span></code>, you may realize that higher orders are not
 useful for your analysis or have unwanted artifacts.
 If you simply ignored them, they would still waste space on your file system:
@@ -143,9 +144,9 @@ which merely deletes higher orders of clustering from your results.</p>
 </section>
 </section>
 <section id="how-to-add-delete-orders-to-from-a-cluster-dataset">
-<h2>How to add/delete orders to/from a Cluster dataset<a class="headerlink" href="#how-to-add-delete-orders-to-from-a-cluster-dataset" title="Permalink to this headline"></a></h2>
+<h2>How to add/delete orders to/from a Cluster dataset<a class="headerlink" href="#how-to-add-delete-orders-to-from-a-cluster-dataset" title="Link to this heading"></a></h2>
 <section id="command-line-for-adding-orders">
-<span id="addclust"></span><h3>Command line for adding orders<a class="headerlink" href="#command-line-for-adding-orders" title="Permalink to this headline"></a></h3>
+<span id="addclust"></span><h3>Command line for adding orders<a class="headerlink" href="#command-line-for-adding-orders" title="Link to this heading"></a></h3>
 <p>Suppose you have already run clustering with a maximum order of 3 (<code class="docutils literal notranslate"><span class="pre">-k</span> <span class="pre">3</span></code>):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">cluster</span> <span class="o">-</span><span class="n">k</span> <span class="mi">3</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">sample</span><span class="p">}</span><span class="o">/</span><span class="n">mask</span><span class="o">/</span><span class="p">{</span><span class="n">ref</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">sect</span><span class="p">}</span>
 </pre></div>
@@ -173,7 +174,7 @@ The Cluster report file, the batch files, and the counts file are all updated
 in-place, as if you had run <code class="docutils literal notranslate"><span class="pre">cluster</span></code> the first time with the new <code class="docutils literal notranslate"><span class="pre">-k</span></code>.</p>
 </section>
 <section id="command-line-for-deleting-orders">
-<span id="delclust"></span><h3>Command line for deleting orders<a class="headerlink" href="#command-line-for-deleting-orders" title="Permalink to this headline"></a></h3>
+<span id="delclust"></span><h3>Command line for deleting orders<a class="headerlink" href="#command-line-for-deleting-orders" title="Link to this heading"></a></h3>
 <p>Suppose you have already run clustering with a maximum order of 3 (<code class="docutils literal notranslate"><span class="pre">-k</span> <span class="pre">3</span></code>):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">cluster</span> <span class="o">-</span><span class="n">k</span> <span class="mi">3</span> <span class="p">{</span><span class="n">out</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">sample</span><span class="p">}</span><span class="o">/</span><span class="n">mask</span><span class="o">/</span><span class="p">{</span><span class="n">ref</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">sect</span><span class="p">}</span>
 </pre></div>

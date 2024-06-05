@@ -40,6 +40,12 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.graph.giniroll
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.graph.hist
    :members:
    :undoc-members:
@@ -107,6 +113,18 @@ Submodules
 
 
 .. automodule:: seismicrna.graph.scatter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.graph.snrroll
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.graph.statroll
    :members:
    :undoc-members:
    :show-inheritance:

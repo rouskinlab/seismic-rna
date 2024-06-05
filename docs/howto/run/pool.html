@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pool: Merge samples (vertically) from the Relate step &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -116,11 +117,11 @@
            <div itemprop="articleBody">
              
   <section id="pool-merge-samples-vertically-from-the-relate-step">
-<h1>Pool: Merge samples (vertically) from the Relate step<a class="headerlink" href="#pool-merge-samples-vertically-from-the-relate-step" title="Permalink to this headline"></a></h1>
+<h1>Pool: Merge samples (vertically) from the Relate step<a class="headerlink" href="#pool-merge-samples-vertically-from-the-relate-step" title="Link to this heading"></a></h1>
 <section id="pool-input-files">
-<h2>Pool: Input files<a class="headerlink" href="#pool-input-files" title="Permalink to this headline"></a></h2>
+<h2>Pool: Input files<a class="headerlink" href="#pool-input-files" title="Link to this heading"></a></h2>
 <section id="pool-input-file-relate-pool-report">
-<h3>Pool input file: Relate/Pool report<a class="headerlink" href="#pool-input-file-relate-pool-report" title="Permalink to this headline"></a></h3>
+<h3>Pool input file: Relate/Pool report<a class="headerlink" href="#pool-input-file-relate-pool-report" title="Link to this heading"></a></h3>
 <p>You can give any number of Relate report files as inputs for the Pool step.
 You can also give Pool report files, to pool samples that were themselves made
 by pooling other samples.
@@ -163,21 +164,21 @@ named <code class="docutils literal notranslate"><span class="pre">{pooled}</spa
 </section>
 </section>
 <section id="pool-settings">
-<h2>Pool: Settings<a class="headerlink" href="#pool-settings" title="Permalink to this headline"></a></h2>
+<h2>Pool: Settings<a class="headerlink" href="#pool-settings" title="Link to this heading"></a></h2>
 <section id="pool-setting-name-of-pooled-sample">
-<h3>Pool setting: Name of pooled sample<a class="headerlink" href="#pool-setting-name-of-pooled-sample" title="Permalink to this headline"></a></h3>
+<h3>Pool setting: Name of pooled sample<a class="headerlink" href="#pool-setting-name-of-pooled-sample" title="Link to this heading"></a></h3>
 <p>You can choose the name of your pooled sample(s) using <code class="docutils literal notranslate"><span class="pre">--pool</span></code> (<code class="docutils literal notranslate"><span class="pre">-P</span></code>).
 If you omit this option in <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">pool</span></code>, then it will default to <code class="docutils literal notranslate"><span class="pre">pooled</span></code>.
 If you omit this option in <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">wf</span></code>, then the Pool step will not run.</p>
 </section>
 </section>
 <section id="pool-output-files">
-<h2>Pool: Output files<a class="headerlink" href="#pool-output-files" title="Permalink to this headline"></a></h2>
+<h2>Pool: Output files<a class="headerlink" href="#pool-output-files" title="Link to this heading"></a></h2>
 <p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{pooled}/relate/{ref}</span></code>, where
 <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{pooled}</span></code> is the pooled sample name, and
 <code class="docutils literal notranslate"><span class="pre">{ref}</span></code> is the name of the reference.</p>
 <section id="pool-output-file-pool-report">
-<h3>Pool output file: Pool report<a class="headerlink" href="#pool-output-file-pool-report" title="Permalink to this headline"></a></h3>
+<h3>Pool output file: Pool report<a class="headerlink" href="#pool-output-file-pool-report" title="Link to this heading"></a></h3>
 <p>SEISMIC-RNA writes a Pool report file, <code class="docutils literal notranslate"><span class="pre">relate-report.json</span></code>, that records the
 names of the samples you pooled.
 See <a class="reference internal" href="../../formats/report/pool.html"><span class="doc">Pool Report</span></a> for more information.
@@ -189,9 +190,9 @@ You can pass both Relate and Pool report files into the Mask and Table steps.</p
 </section>
 </section>
 <section id="pool-troubleshoot-and-optimize">
-<h2>Pool: Troubleshoot and optimize<a class="headerlink" href="#pool-troubleshoot-and-optimize" title="Permalink to this headline"></a></h2>
+<h2>Pool: Troubleshoot and optimize<a class="headerlink" href="#pool-troubleshoot-and-optimize" title="Link to this heading"></a></h2>
 <section id="pool-got-duplicate-samples">
-<h3>Pool … got duplicate samples<a class="headerlink" href="#pool-got-duplicate-samples" title="Permalink to this headline"></a></h3>
+<h3>Pool … got duplicate samples<a class="headerlink" href="#pool-got-duplicate-samples" title="Link to this heading"></a></h3>
 <p>This warning means that an original (unpooled) sample appeared more than once in
 the report files you are pooling.</p>
 <p>For example, suppose that you pool <code class="docutils literal notranslate"><span class="pre">sample-A</span></code> and <code class="docutils literal notranslate"><span class="pre">sample-B</span></code>:</p>
@@ -208,7 +209,7 @@ in both the report files for <code class="docutils literal notranslate"><span cl
 it contains all the samples you want and none that you don’t.</p>
 </section>
 <section id="overwriting-would-cause-data-loss">
-<h3>Overwriting … would cause data loss<a class="headerlink" href="#overwriting-would-cause-data-loss" title="Permalink to this headline"></a></h3>
+<h3>Overwriting … would cause data loss<a class="headerlink" href="#overwriting-would-cause-data-loss" title="Link to this heading"></a></h3>
 <p>This error means that you attempted to create a pooled sample with the same name
 as an existing non-pooled sample while using <code class="docutils literal notranslate"><span class="pre">--force</span></code>, e.g.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="n">pool</span> <span class="o">--</span><span class="n">force</span> <span class="o">-</span><span class="n">P</span> <span class="n">sample</span><span class="o">-</span><span class="n">A</span> <span class="n">out</span>

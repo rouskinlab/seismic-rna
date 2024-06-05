@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Table: Count mutations for each read and position &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -115,11 +116,11 @@
            <div itemprop="articleBody">
              
   <section id="table-count-mutations-for-each-read-and-position">
-<h1>Table: Count mutations for each read and position<a class="headerlink" href="#table-count-mutations-for-each-read-and-position" title="Permalink to this headline"></a></h1>
+<h1>Table: Count mutations for each read and position<a class="headerlink" href="#table-count-mutations-for-each-read-and-position" title="Link to this heading"></a></h1>
 <section id="table-input-files">
-<h2>Table: Input files<a class="headerlink" href="#table-input-files" title="Permalink to this headline"></a></h2>
+<h2>Table: Input files<a class="headerlink" href="#table-input-files" title="Link to this heading"></a></h2>
 <section id="table-input-file-report">
-<h3>Table input file: Report<a class="headerlink" href="#table-input-file-report" title="Permalink to this headline"></a></h3>
+<h3>Table input file: Report<a class="headerlink" href="#table-input-file-report" title="Link to this heading"></a></h3>
 <p>You can give any number of report files from the Relate, Mask, and Cluster steps
 as inputs for the Table step.
 See <a class="reference internal" href="../inputs.html"><span class="doc">List Input Files</span></a> for ways to list multiple files.</p>
@@ -130,33 +131,33 @@ See <a class="reference internal" href="../inputs.html"><span class="doc">List I
 </section>
 </section>
 <section id="table-settings">
-<h2>Table: Settings<a class="headerlink" href="#table-settings" title="Permalink to this headline"></a></h2>
+<h2>Table: Settings<a class="headerlink" href="#table-settings" title="Link to this heading"></a></h2>
 <section id="table-setting-suppress-per-position-and-per-read-tables">
-<h3>Table setting: Suppress per-position and per-read tables<a class="headerlink" href="#table-setting-suppress-per-position-and-per-read-tables" title="Permalink to this headline"></a></h3>
+<h3>Table setting: Suppress per-position and per-read tables<a class="headerlink" href="#table-setting-suppress-per-position-and-per-read-tables" title="Link to this heading"></a></h3>
 <p>SEISMIC-RNA outputs all possible tables by default.
 To suppress per-position and per-read tables, use <code class="docutils literal notranslate"><span class="pre">--no-table-pos</span></code> and
 <code class="docutils literal notranslate"><span class="pre">--no-table-read</span></code>, respectively.</p>
 </section>
 </section>
 <section id="table-output-files">
-<h2>Table: Output files<a class="headerlink" href="#table-output-files" title="Permalink to this headline"></a></h2>
+<h2>Table: Output files<a class="headerlink" href="#table-output-files" title="Link to this heading"></a></h2>
 <p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/table/{ref}/{sect}</span></code>,
 where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, <code class="docutils literal notranslate"><span class="pre">{ref}</span></code>
 is the reference, and <code class="docutils literal notranslate"><span class="pre">{sect}</span></code> is the section.
 Each output file from Relate, Mask, and Cluster reports are prefixed with
 <code class="docutils literal notranslate"><span class="pre">relate-</span></code>, <code class="docutils literal notranslate"><span class="pre">mask-</span></code>, and <code class="docutils literal notranslate"><span class="pre">clust-</span></code>, respectively.</p>
 <section id="table-output-file-relationships-per-position">
-<h3>Table output file: Relationships per position<a class="headerlink" href="#table-output-file-relationships-per-position" title="Permalink to this headline"></a></h3>
+<h3>Table output file: Relationships per position<a class="headerlink" href="#table-output-file-relationships-per-position" title="Link to this heading"></a></h3>
 <p>SEISMIC-RNA outputs the number of relationships at each position to a CSV file
 named <code class="docutils literal notranslate"><span class="pre">{step}-per-pos.csv</span></code>, where <code class="docutils literal notranslate"><span class="pre">{step}</span></code> is <code class="docutils literal notranslate"><span class="pre">relate</span></code>/<code class="docutils literal notranslate"><span class="pre">mask</span></code>/<code class="docutils literal notranslate"><span class="pre">clust</span></code>.</p>
 </section>
 <section id="table-output-file-relationships-per-read">
-<h3>Table output file: Relationships per read<a class="headerlink" href="#table-output-file-relationships-per-read" title="Permalink to this headline"></a></h3>
+<h3>Table output file: Relationships per read<a class="headerlink" href="#table-output-file-relationships-per-read" title="Link to this heading"></a></h3>
 <p>SEISMIC-RNA outputs the number of relationships in each read to a CSV file named
 <code class="docutils literal notranslate"><span class="pre">{step}-per-read.csv.gz</span></code>, where <code class="docutils literal notranslate"><span class="pre">{step}</span></code> is <code class="docutils literal notranslate"><span class="pre">relate</span></code>/<code class="docutils literal notranslate"><span class="pre">mask</span></code>/<code class="docutils literal notranslate"><span class="pre">clust</span></code>.</p>
 </section>
 <section id="table-output-file-reads-per-cluster">
-<h3>Table output file: Reads per cluster<a class="headerlink" href="#table-output-file-reads-per-cluster" title="Permalink to this headline"></a></h3>
+<h3>Table output file: Reads per cluster<a class="headerlink" href="#table-output-file-reads-per-cluster" title="Link to this heading"></a></h3>
 <p>For Cluster reports, SEISMIC-RNA outputs the number of reads in each cluster to
 a CSV file named <code class="docutils literal notranslate"><span class="pre">clust-freq.csv</span></code>.</p>
 </section>

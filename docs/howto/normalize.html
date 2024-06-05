@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Normalize Mutation Rates &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -98,11 +99,11 @@
            <div itemprop="articleBody">
              
   <section id="normalize-mutation-rates">
-<h1>Normalize Mutation Rates<a class="headerlink" href="#normalize-mutation-rates" title="Permalink to this headline"></a></h1>
+<h1>Normalize Mutation Rates<a class="headerlink" href="#normalize-mutation-rates" title="Link to this heading"></a></h1>
 <p>Some applications (e.g. predicting structures, computing differences between
 mutation rates) require that the mutation rates be normalized first.</p>
 <section id="how-to-normalize-mutation-rates-to-a-quantile">
-<span id="norm-quantile"></span><h2>How to normalize mutation rates to a quantile<a class="headerlink" href="#how-to-normalize-mutation-rates-to-a-quantile" title="Permalink to this headline"></a></h2>
+<span id="norm-quantile"></span><h2>How to normalize mutation rates to a quantile<a class="headerlink" href="#how-to-normalize-mutation-rates-to-a-quantile" title="Link to this heading"></a></h2>
 <p>You can normalize a mutational profile by choosing a quantile of the mutation
 rates to set to 1 using <code class="docutils literal notranslate"><span class="pre">--quantile</span></code> (<code class="docutils literal notranslate"><span class="pre">-q</span></code>).
 All mutation rates less than that quantile will then be scaled up linearly,

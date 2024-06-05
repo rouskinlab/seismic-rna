@@ -64,6 +64,12 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.core.stats
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.core.types
    :members:
    :undoc-members:

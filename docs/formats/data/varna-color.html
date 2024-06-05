@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VARNA Color: Color codes for VARNA &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -105,11 +106,11 @@
            <div itemprop="articleBody">
              
   <section id="varna-color-color-codes-for-varna">
-<h1>VARNA Color: Color codes for VARNA<a class="headerlink" href="#varna-color-color-codes-for-varna" title="Permalink to this headline"></a></h1>
+<h1>VARNA Color: Color codes for VARNA<a class="headerlink" href="#varna-color-color-codes-for-varna" title="Link to this heading"></a></h1>
 <p>If you draw RNA structures using the software <a class="reference external" href="https://varna.lisn.upsaclay.fr/">VARNA</a>, then you can use
 VARNA color files to color the bases by their mutation rates.</p>
 <section id="varna-color-file-content-format">
-<h2>VARNA color file: Content format<a class="headerlink" href="#varna-color-file-content-format" title="Permalink to this headline"></a></h2>
+<h2>VARNA color file: Content format<a class="headerlink" href="#varna-color-file-content-format" title="Link to this heading"></a></h2>
 <p>Each line of a VARNA color file corresponds to one position in the RNA
 sequence you folded.
 For each position that has data (i.e. is within the section from which
@@ -118,24 +119,24 @@ rate, which is a decimal number between 0 and 1 (inclusive).
 For every position without data, the line just has the value -1.</p>
 </section>
 <section id="varna-color-file-path-format">
-<h2>VARNA color file: Path format<a class="headerlink" href="#varna-color-file-path-format" title="Permalink to this headline"></a></h2>
+<h2>VARNA color file: Path format<a class="headerlink" href="#varna-color-file-path-format" title="Link to this heading"></a></h2>
 <section id="varna-color-file-extensions">
-<h3>VARNA color file extensions<a class="headerlink" href="#varna-color-file-extensions" title="Permalink to this headline"></a></h3>
+<h3>VARNA color file extensions<a class="headerlink" href="#varna-color-file-extensions" title="Link to this heading"></a></h3>
 <p>SEISMIC-RNA accepts the following extensions for VARNA color files:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">.txt</span></code></p></li>
 </ul>
 </section>
 <section id="varna-color-path-parsing">
-<h3>VARNA color path parsing<a class="headerlink" href="#varna-color-path-parsing" title="Permalink to this headline"></a></h3>
+<h3>VARNA color path parsing<a class="headerlink" href="#varna-color-path-parsing" title="Link to this heading"></a></h3>
 <p>Every output VARNA color file is named after its mutational profile,
 plus <code class="docutils literal notranslate"><span class="pre">__varna-color.txt</span></code> at the end.</p>
 </section>
 </section>
 <section id="varna-color-file-uses">
-<h2>VARNA color file: Uses<a class="headerlink" href="#varna-color-file-uses" title="Permalink to this headline"></a></h2>
+<h2>VARNA color file: Uses<a class="headerlink" href="#varna-color-file-uses" title="Link to this heading"></a></h2>
 <section id="varna-color-as-output-file">
-<h3>VARNA color as output file<a class="headerlink" href="#varna-color-as-output-file" title="Permalink to this headline"></a></h3>
+<h3>VARNA color as output file<a class="headerlink" href="#varna-color-as-output-file" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>The Fold step outputs a VARNA color file for each predicted structure.</p></li>
 </ul>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clean FASTA Files &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -110,13 +111,13 @@
            <div itemprop="articleBody">
              
   <section id="clean-fasta-files">
-<h1>Clean FASTA Files<a class="headerlink" href="#clean-fasta-files" title="Permalink to this headline"></a></h1>
+<h1>Clean FASTA Files<a class="headerlink" href="#clean-fasta-files" title="Link to this heading"></a></h1>
 <p>The FASTA file cleaner modifies FASTA files so that they are compatible
 with SEISMIC-RNA.</p>
 <section id="background-about-cleaning-fasta-files">
-<h2>Background about cleaning FASTA files<a class="headerlink" href="#background-about-cleaning-fasta-files" title="Permalink to this headline"></a></h2>
+<h2>Background about cleaning FASTA files<a class="headerlink" href="#background-about-cleaning-fasta-files" title="Link to this heading"></a></h2>
 <section id="purpose-of-cleaning-fasta-files">
-<h3>Purpose of cleaning FASTA files<a class="headerlink" href="#purpose-of-cleaning-fasta-files" title="Permalink to this headline"></a></h3>
+<h3>Purpose of cleaning FASTA files<a class="headerlink" href="#purpose-of-cleaning-fasta-files" title="Link to this heading"></a></h3>
 <p>Variants of FASTA format exist that are not compatible with SEISMIC-RNA.
 FASTA files from databases such as <a class="reference external" href="https://www.ncbi.nlm.nih.gov/">NCBI</a> and <a class="reference external" href="https://www.gencodegenes.org/">Gencode</a> often encode
 metadata in their header lines, which SEISMIC-RNA cannot handle.
@@ -126,7 +127,7 @@ For details on the valid FASTA format for SEISMIC-RNA and the rationale
 behind it, see <a class="reference internal" href="../formats/data/fasta.html"><span class="doc">FASTA: Reference sequences</span></a>.</p>
 </section>
 <section id="algorithm-for-cleaning-fasta-files">
-<h3>Algorithm for cleaning FASTA files<a class="headerlink" href="#algorithm-for-cleaning-fasta-files" title="Permalink to this headline"></a></h3>
+<h3>Algorithm for cleaning FASTA files<a class="headerlink" href="#algorithm-for-cleaning-fasta-files" title="Link to this heading"></a></h3>
 <p>The FASTA file cleaner of SEISMIC-RNA follows the following procedure:</p>
 <ul class="simple">
 <li><p>If a line begins with <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, then it is assumed to be a header line;
@@ -145,9 +146,9 @@ If any illegal characters remain after that, then an error is raised.</p></li>
 </section>
 </section>
 <section id="how-to-clean-fasta-files">
-<h2>How to clean FASTA files<a class="headerlink" href="#how-to-clean-fasta-files" title="Permalink to this headline"></a></h2>
+<h2>How to clean FASTA files<a class="headerlink" href="#how-to-clean-fasta-files" title="Link to this heading"></a></h2>
 <section id="command-line-for-cleaning-fasta-files">
-<h3>Command line for cleaning FASTA files<a class="headerlink" href="#command-line-for-cleaning-fasta-files" title="Permalink to this headline"></a></h3>
+<h3>Command line for cleaning FASTA files<a class="headerlink" href="#command-line-for-cleaning-fasta-files" title="Link to this heading"></a></h3>
 <p>Clean the FASTA file <code class="docutils literal notranslate"><span class="pre">refs.fa</span></code>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seismic</span> <span class="o">+</span><span class="n">cleanfa</span> <span class="n">refs</span><span class="o">.</span><span class="n">fa</span>
 </pre></div>
@@ -168,9 +169,9 @@ To force overwriting, use the option <code class="docutils literal notranslate">
 </section>
 </section>
 <section id="troubleshooting-cleaning-fasta-files">
-<h2>Troubleshooting cleaning FASTA files<a class="headerlink" href="#troubleshooting-cleaning-fasta-files" title="Permalink to this headline"></a></h2>
+<h2>Troubleshooting cleaning FASTA files<a class="headerlink" href="#troubleshooting-cleaning-fasta-files" title="Link to this heading"></a></h2>
 <section id="errors-while-cleaning-fasta-files">
-<h3>Errors while cleaning FASTA files<a class="headerlink" href="#errors-while-cleaning-fasta-files" title="Permalink to this headline"></a></h3>
+<h3>Errors while cleaning FASTA files<a class="headerlink" href="#errors-while-cleaning-fasta-files" title="Link to this heading"></a></h3>
 <p><em>Line contains sequence characters other than whitespace or IUPAC codes</em></p>
 <p>This error means that the sequence contains characters that cannot be
 cleaned because they do not belong in FASTA files, so it is unclear how

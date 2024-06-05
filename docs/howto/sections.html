@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Define Sections &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -110,13 +111,13 @@
            <div itemprop="articleBody">
              
   <section id="define-sections">
-<h1>Define Sections<a class="headerlink" href="#define-sections" title="Permalink to this headline"></a></h1>
+<h1>Define Sections<a class="headerlink" href="#define-sections" title="Link to this heading"></a></h1>
 <p>Reference sequences can be divided into (possibly overlapping) sections,
 each of which is a contiguous range of positions in one sequence.</p>
 <section id="how-to-define-sections-using-coordinates-or-primers">
-<span id="sections-coords"></span><h2>How to define sections using coordinates or primers<a class="headerlink" href="#how-to-define-sections-using-coordinates-or-primers" title="Permalink to this headline"></a></h2>
+<span id="sections-coords"></span><h2>How to define sections using coordinates or primers<a class="headerlink" href="#how-to-define-sections-using-coordinates-or-primers" title="Link to this heading"></a></h2>
 <section id="how-to-define-sections-using-coordinates">
-<h3>How to define sections using coordinates<a class="headerlink" href="#how-to-define-sections-using-coordinates" title="Permalink to this headline"></a></h3>
+<h3>How to define sections using coordinates<a class="headerlink" href="#how-to-define-sections-using-coordinates" title="Link to this heading"></a></h3>
 <p>A section can be defined by specifying its first and last coordinates,
 with respect to the numbering of positions in the reference sequence.
 SEISMIC-RNA uses the following conventions:</p>
@@ -145,7 +146,7 @@ For example, <code class="docutils literal notranslate"><span class="pre">-c</sp
 34 to 71 of reference “refA”.</p>
 </section>
 <section id="how-to-define-sections-using-primer-sequences">
-<h3>How to define sections using primer sequences<a class="headerlink" href="#how-to-define-sections-using-primer-sequences" title="Permalink to this headline"></a></h3>
+<h3>How to define sections using primer sequences<a class="headerlink" href="#how-to-define-sections-using-primer-sequences" title="Link to this heading"></a></h3>
 <p>For samples that were prepared as amplicons (using <a class="reference external" href="https://en.wikipedia.org/wiki/Reverse_transcription_polymerase_chain_reaction">RT-PCR</a> with a pair
 of primers flanking a specific sequence), it is usually easier to define
 sections using the sequences of the forward and reverse primers compared
@@ -180,7 +181,7 @@ spanning these positions:</p>
 </ul>
 </section>
 <section id="how-to-define-sections-using-a-file-of-coordinates-and-or-primers">
-<h3>How to define sections using a file of coordinates and/or primers<a class="headerlink" href="#how-to-define-sections-using-a-file-of-coordinates-and-or-primers" title="Permalink to this headline"></a></h3>
+<h3>How to define sections using a file of coordinates and/or primers<a class="headerlink" href="#how-to-define-sections-using-a-file-of-coordinates-and-or-primers" title="Link to this heading"></a></h3>
 <p>To create many sections at once, and to do so reproducibly, it is more
 convenient to define them in a file than on the command line.
 For information on this file, see <a class="reference internal" href="../formats/meta/sections.html"><span class="doc">Metadata for Sections</span></a>.
@@ -189,9 +190,9 @@ Provide a file defining sections using the option <code class="docutils literal 
 </section>
 </section>
 <section id="how-to-define-multiple-sections-simultaneously">
-<h2>How to define multiple sections simultaneously<a class="headerlink" href="#how-to-define-multiple-sections-simultaneously" title="Permalink to this headline"></a></h2>
+<h2>How to define multiple sections simultaneously<a class="headerlink" href="#how-to-define-multiple-sections-simultaneously" title="Link to this heading"></a></h2>
 <section id="how-to-define-multiple-sections-for-one-reference">
-<h3>How to define multiple sections for one reference<a class="headerlink" href="#how-to-define-multiple-sections-for-one-reference" title="Permalink to this headline"></a></h3>
+<h3>How to define multiple sections for one reference<a class="headerlink" href="#how-to-define-multiple-sections-for-one-reference" title="Link to this heading"></a></h3>
 <p>On the command line, the <code class="docutils literal notranslate"><span class="pre">-c</span></code> and <code class="docutils literal notranslate"><span class="pre">-p</span></code> options can be given multiple
 times to define more than one section for a reference.
 In a sections file (<code class="docutils literal notranslate"><span class="pre">-s</span></code>), each reference can be given multiple times,
@@ -207,7 +208,7 @@ the command would make three sections for reference “refA”:</p>
 34-71 and 56-89.</p>
 </section>
 <section id="how-to-define-sections-for-multiple-references">
-<h3>How to define sections for multiple references<a class="headerlink" href="#how-to-define-sections-for-multiple-references" title="Permalink to this headline"></a></h3>
+<h3>How to define sections for multiple references<a class="headerlink" href="#how-to-define-sections-for-multiple-references" title="Link to this heading"></a></h3>
 <p>Sections are defined for each reference sequence separately and have no
 effect on sections of any other reference sequence.
 For example, suppose that for three references, “refA”, “refB”, and
@@ -226,7 +227,7 @@ This applies to sections given as coordinates or primers on the command
 line (with <code class="docutils literal notranslate"><span class="pre">-c</span></code> and <code class="docutils literal notranslate"><span class="pre">-p</span></code>) as well as in a file (with <code class="docutils literal notranslate"><span class="pre">-s</span></code>).</p>
 </section>
 <section id="how-to-use-the-full-length-of-a-reference-sequence-automatically">
-<h3>How to use the full length of a reference sequence automatically<a class="headerlink" href="#how-to-use-the-full-length-of-a-reference-sequence-automatically" title="Permalink to this headline"></a></h3>
+<h3>How to use the full length of a reference sequence automatically<a class="headerlink" href="#how-to-use-the-full-length-of-a-reference-sequence-automatically" title="Link to this heading"></a></h3>
 <p>To use the full length of a reference sequence, simply avoid specifying
 any coordinates or primers for that reference on the command line or in
 a sections file.
@@ -235,7 +236,7 @@ references, since all references are sectioned separately.</p>
 </section>
 </section>
 <section id="how-to-name-sections">
-<h2>How to name sections<a class="headerlink" href="#how-to-name-sections" title="Permalink to this headline"></a></h2>
+<h2>How to name sections<a class="headerlink" href="#how-to-name-sections" title="Link to this heading"></a></h2>
 <p>Sections are named as follows:</p>
 <ul class="simple">
 <li><p>If the section is defined in a file, then its name is taken from the

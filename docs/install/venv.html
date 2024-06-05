@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Virtual Environments &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -94,13 +95,13 @@
            <div itemprop="articleBody">
              
   <section id="virtual-environments">
-<span id="virtual-envs"></span><h1>Virtual Environments<a class="headerlink" href="#virtual-environments" title="Permalink to this headline"></a></h1>
+<span id="virtual-envs"></span><h1>Virtual Environments<a class="headerlink" href="#virtual-environments" title="Link to this heading"></a></h1>
 <p>We <em>highly</em> recommend installing SEISMIC-RNA into a virtual environment.
 Doing so will likely spare you much frustration well into the future.
 If you are not familiar with creating and managing virtual environments,
 then we recommend that you read this brief primer.</p>
 <section id="why-a-virtual-environment-is-worth-the-effort-of-setting-it-up">
-<h2>Why a virtual environment is worth the effort of setting it up<a class="headerlink" href="#why-a-virtual-environment-is-worth-the-effort-of-setting-it-up" title="Permalink to this headline"></a></h2>
+<h2>Why a virtual environment is worth the effort of setting it up<a class="headerlink" href="#why-a-virtual-environment-is-worth-the-effort-of-setting-it-up" title="Link to this heading"></a></h2>
 <p>Virtually every piece of software that you use requires other pieces of
 software to be installed. Why? Because software developers want to focus
 on implementing their own ideas, rather than “re-inventing the wheel” by
@@ -127,7 +128,7 @@ installed simultaneously: Cv1 for Av1, and Cv2 for Bv2. How can you
 accomplish this feat without mixing up the two versions?</p>
 </section>
 <section id="how-a-virtual-environment-lets-conflicting-sofware-versions-coexist">
-<h2>How a virtual environment lets conflicting sofware versions coexist<a class="headerlink" href="#how-a-virtual-environment-lets-conflicting-sofware-versions-coexist" title="Permalink to this headline"></a></h2>
+<h2>How a virtual environment lets conflicting sofware versions coexist<a class="headerlink" href="#how-a-virtual-environment-lets-conflicting-sofware-versions-coexist" title="Link to this heading"></a></h2>
 <p>Virtual environments let you keep more than one version of a piece of
 software on one computer system, without uninstalling and reinstalling
 the software every time you needed to use a different version (which
@@ -148,7 +149,7 @@ software B, you would activate <cite>venv2</cite> so that you could run Bv2 and 
 could see Cv2 (but not Cv1).</p>
 </section>
 <section id="creating-activating-and-deactivating-virtual-environments">
-<span id="venv-environment-managers"></span><h2>Creating, activating, and deactivating virtual environments<a class="headerlink" href="#creating-activating-and-deactivating-virtual-environments" title="Permalink to this headline"></a></h2>
+<span id="venv-environment-managers"></span><h2>Creating, activating, and deactivating virtual environments<a class="headerlink" href="#creating-activating-and-deactivating-virtual-environments" title="Link to this heading"></a></h2>
 <p>Creation, deletion, activation, and deactivation of virtual environments
 is performed by a piece of software called an “environment manager”. Two
 popular environment managers for Python are <a class="reference external" href="https://docs.python.org/3/library/venv.html">venv</a> (Python’s built-in
@@ -179,7 +180,7 @@ enter the following command:</p>
 that is currently active.</p>
 </section>
 <section id="managing-software-in-a-virtual-environment">
-<span id="venv-package-managers"></span><h2>Managing software in a virtual environment<a class="headerlink" href="#managing-software-in-a-virtual-environment" title="Permalink to this headline"></a></h2>
+<span id="venv-package-managers"></span><h2>Managing software in a virtual environment<a class="headerlink" href="#managing-software-in-a-virtual-environment" title="Link to this heading"></a></h2>
 <p>It would be tedious (and risky) to install, uninstall, upgrade, and
 downgrade, and all of your software manually. Every time you changed a
 piece of software, you would need to install a compatible version of

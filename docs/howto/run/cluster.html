@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cluster: Infer alternative structures by clustering reads’ mutations &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -117,11 +118,11 @@
            <div itemprop="articleBody">
              
   <section id="cluster-infer-alternative-structures-by-clustering-reads-mutations">
-<h1>Cluster: Infer alternative structures by clustering reads’ mutations<a class="headerlink" href="#cluster-infer-alternative-structures-by-clustering-reads-mutations" title="Permalink to this headline"></a></h1>
+<h1>Cluster: Infer alternative structures by clustering reads’ mutations<a class="headerlink" href="#cluster-infer-alternative-structures-by-clustering-reads-mutations" title="Link to this heading"></a></h1>
 <section id="cluster-input-files">
-<h2>Cluster: Input files<a class="headerlink" href="#cluster-input-files" title="Permalink to this headline"></a></h2>
+<h2>Cluster: Input files<a class="headerlink" href="#cluster-input-files" title="Link to this heading"></a></h2>
 <section id="cluster-input-file-mask-report">
-<h3>Cluster input file: Mask report<a class="headerlink" href="#cluster-input-file-mask-report" title="Permalink to this headline"></a></h3>
+<h3>Cluster input file: Mask report<a class="headerlink" href="#cluster-input-file-mask-report" title="Link to this heading"></a></h3>
 <p>You can give any number of Mask report files as inputs for the Cluster step.
 See <a class="reference internal" href="../inputs.html"><span class="doc">List Input Files</span></a> for ways to list multiple files.</p>
 <p>Cluster all masked reads in <code class="docutils literal notranslate"><span class="pre">out</span></code>:</p>
@@ -136,9 +137,9 @@ section <code class="docutils literal notranslate"><span class="pre">abc</span><
 </section>
 </section>
 <section id="cluster-settings">
-<h2>Cluster: Settings<a class="headerlink" href="#cluster-settings" title="Permalink to this headline"></a></h2>
+<h2>Cluster: Settings<a class="headerlink" href="#cluster-settings" title="Link to this heading"></a></h2>
 <section id="cluster-setting-maximum-order-number-of-clusters">
-<span id="cluster-max"></span><h3>Cluster setting: Maximum order (number of clusters)<a class="headerlink" href="#cluster-setting-maximum-order-number-of-clusters" title="Permalink to this headline"></a></h3>
+<span id="cluster-max"></span><h3>Cluster setting: Maximum order (number of clusters)<a class="headerlink" href="#cluster-setting-maximum-order-number-of-clusters" title="Link to this heading"></a></h3>
 <p>To infer alternative RNA structures, SEISMIC-RNA uses an optimized version of
 our original DREEM algorithm [<a class="reference external" href="https://doi.org/10.1038/s41586-020-2253-5">Tomezsko et al. (2020)</a>], which is a type of
 <a class="reference external" href="https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm">expectation-maximization</a> (EM).
@@ -173,7 +174,7 @@ using <code class="docutils literal notranslate"><span class="pre">+addclust</sp
 </div>
 </section>
 <section id="cluster-setting-expectation-maximization-iterations">
-<h3>Cluster setting: Expectation-maximization iterations<a class="headerlink" href="#cluster-setting-expectation-maximization-iterations" title="Permalink to this headline"></a></h3>
+<h3>Cluster setting: Expectation-maximization iterations<a class="headerlink" href="#cluster-setting-expectation-maximization-iterations" title="Link to this heading"></a></h3>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm">Expectation-maximization</a> is an iterative algorithm, meaning that it begins by
 guessing an initial solution and then calculates progressively better solutions,
 halting once successive solutions cease changing, which is called convergence.</p>
@@ -199,7 +200,7 @@ difference in log-likelihood between iterations 40 and 39 would be 0.09, which
 would be below the threshold.</p>
 </section>
 <section id="cluster-setting-expectation-maximization-runs">
-<h3>Cluster setting: Expectation-maximization runs<a class="headerlink" href="#cluster-setting-expectation-maximization-runs" title="Permalink to this headline"></a></h3>
+<h3>Cluster setting: Expectation-maximization runs<a class="headerlink" href="#cluster-setting-expectation-maximization-runs" title="Link to this heading"></a></h3>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm">Expectation-maximization</a> is guaranteed to return a locally optimal solution,
 but there is no guarantee that the solution will be globally optimal.
 To improve the odds of finding the global optimum, SEISMIC-RNA runs EM multiple
@@ -210,17 +211,17 @@ You can set the number of independent EM runs using <code class="docutils litera
 </section>
 </section>
 <section id="cluster-output-files">
-<h2>Cluster: Output files<a class="headerlink" href="#cluster-output-files" title="Permalink to this headline"></a></h2>
+<h2>Cluster: Output files<a class="headerlink" href="#cluster-output-files" title="Link to this heading"></a></h2>
 <p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">OUT/SAMPLE/cluster/REFERENCE/SECTION</span></code>.</p>
 <section id="cluster-output-file-batch-of-cluster-memberships">
-<h3>Cluster output file: Batch of cluster memberships<a class="headerlink" href="#cluster-output-file-batch-of-cluster-memberships" title="Permalink to this headline"></a></h3>
+<h3>Cluster output file: Batch of cluster memberships<a class="headerlink" href="#cluster-output-file-batch-of-cluster-memberships" title="Link to this heading"></a></h3>
 <p>Each batch of clustered reads contains a <code class="docutils literal notranslate"><span class="pre">ClustBatchIO</span></code> object and is saved to
 the file <code class="docutils literal notranslate"><span class="pre">cluster-batch-{num}.brickle</span></code>, where <code class="docutils literal notranslate"><span class="pre">{num}</span></code> is the batch number.
 See <span class="xref std std-doc">../../data/cluster/cluster</span> for details on the data structure.
 See <a class="reference internal" href="../../formats/data/brickle.html"><span class="doc">Brickle: Compressed Python Objects</span></a> for more information on brickle files.</p>
 </section>
 <section id="cluster-output-file-cluster-report">
-<h3>Cluster output file: Cluster report<a class="headerlink" href="#cluster-output-file-cluster-report" title="Permalink to this headline"></a></h3>
+<h3>Cluster output file: Cluster report<a class="headerlink" href="#cluster-output-file-cluster-report" title="Link to this heading"></a></h3>
 <p>SEISMIC-RNA also writes a report file, <code class="docutils literal notranslate"><span class="pre">cluster-report.json</span></code>, that records the
 settings you used for running the Cluster step and summarizes the results, such
 as the number of clusters, number of iterations, and the BIC scores.
@@ -234,7 +235,7 @@ See <a class="reference internal" href="#clust-verify"><span class="std std-ref"
 </section>
 </section>
 <section id="cluster-verify-clusters">
-<span id="clust-verify"></span><h2>Cluster: Verify clusters<a class="headerlink" href="#cluster-verify-clusters" title="Permalink to this headline"></a></h2>
+<span id="clust-verify"></span><h2>Cluster: Verify clusters<a class="headerlink" href="#cluster-verify-clusters" title="Link to this heading"></a></h2>
 <p>You <strong>must</strong> check whether your clusters are real or artifacts.</p>
 <p>In your cluster report:</p>
 <ul class="simple">
@@ -278,17 +279,17 @@ independent runs to increase the chances of finding the global optimum.</p></li>
 </ul>
 </section>
 <section id="cluster-troubleshoot-and-optimize">
-<h2>Cluster: Troubleshoot and optimize<a class="headerlink" href="#cluster-troubleshoot-and-optimize" title="Permalink to this headline"></a></h2>
+<h2>Cluster: Troubleshoot and optimize<a class="headerlink" href="#cluster-troubleshoot-and-optimize" title="Link to this heading"></a></h2>
 <section id="run-cluster-with-higher-orders-without-repeating-the-work-already-done">
-<h3>Run Cluster with higher orders, without repeating the work already done<a class="headerlink" href="#run-cluster-with-higher-orders-without-repeating-the-work-already-done" title="Permalink to this headline"></a></h3>
+<h3>Run Cluster with higher orders, without repeating the work already done<a class="headerlink" href="#run-cluster-with-higher-orders-without-repeating-the-work-already-done" title="Link to this heading"></a></h3>
 <p>The tool <code class="docutils literal notranslate"><span class="pre">+addclust</span></code> exists for this purpose: see <a class="reference internal" href="../adjclust.html#addclust"><span class="std std-ref">Command line for adding orders</span></a>.</p>
 </section>
 <section id="delete-unnecessary-higher-orders-without-repeating-the-work-already-done">
-<h3>Delete unnecessary higher orders, without repeating the work already done<a class="headerlink" href="#delete-unnecessary-higher-orders-without-repeating-the-work-already-done" title="Permalink to this headline"></a></h3>
+<h3>Delete unnecessary higher orders, without repeating the work already done<a class="headerlink" href="#delete-unnecessary-higher-orders-without-repeating-the-work-already-done" title="Link to this heading"></a></h3>
 <p>The tool <code class="docutils literal notranslate"><span class="pre">+delclust</span></code> exists for this purpose: see <a class="reference internal" href="../adjclust.html#delclust"><span class="std std-ref">Command line for deleting orders</span></a>.</p>
 </section>
 <section id="cluster-takes-too-long-to-finish">
-<h3>Cluster takes too long to finish<a class="headerlink" href="#cluster-takes-too-long-to-finish" title="Permalink to this headline"></a></h3>
+<h3>Cluster takes too long to finish<a class="headerlink" href="#cluster-takes-too-long-to-finish" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>Adjust the settings of <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">cluster</span></code>:</p>
 <ul>

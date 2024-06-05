@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sample results: Export data from SEISMIC-RNA to SEISMIC-GRAPH &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -105,19 +106,19 @@
            <div itemprop="articleBody">
              
   <section id="sample-results-export-data-from-seismic-rna-to-seismic-graph">
-<h1>Sample results: Export data from SEISMIC-RNA to <a class="reference external" href="https://rouskinlab.github.io/seismic-graph/">SEISMIC-GRAPH</a><a class="headerlink" href="#sample-results-export-data-from-seismic-rna-to-seismic-graph" title="Permalink to this headline"></a></h1>
+<h1>Sample results: Export data from SEISMIC-RNA to <a class="reference external" href="https://rouskinlab.github.io/seismic-graph/">SEISMIC-GRAPH</a><a class="headerlink" href="#sample-results-export-data-from-seismic-rna-to-seismic-graph" title="Link to this heading"></a></h1>
 <section id="sample-results-content-format">
-<h2>Sample results: Content format<a class="headerlink" href="#sample-results-content-format" title="Permalink to this headline"></a></h2>
+<h2>Sample results: Content format<a class="headerlink" href="#sample-results-content-format" title="Link to this heading"></a></h2>
 <p>Sample results files are in <a class="reference external" href="https://en.wikipedia.org/wiki/JSON">JSON</a> format.
 Each file contains information about one sample in four nested layers:</p>
 <img alt="../../_images/sample.png" src="../../_images/sample.png" />
 <p>Each layer contains data and metadata.
 Metadata fields begin with <code class="docutils literal notranslate"><span class="pre">#</span></code>, while data fields do not.</p>
 <section id="sample-layer">
-<h3>Sample layer<a class="headerlink" href="#sample-layer" title="Permalink to this headline"></a></h3>
+<h3>Sample layer<a class="headerlink" href="#sample-layer" title="Link to this heading"></a></h3>
 <p>The top layer describes the entire sample.</p>
 <section id="sample-metadata">
-<h4>Sample metadata<a class="headerlink" href="#sample-metadata" title="Permalink to this headline"></a></h4>
+<h4>Sample metadata<a class="headerlink" href="#sample-metadata" title="Link to this heading"></a></h4>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#sample</span></code>: Name of the sample.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">#...</span></code>: Additional fields from the sample metadata file (see
@@ -125,17 +126,17 @@ Metadata fields begin with <code class="docutils literal notranslate"><span clas
 </ul>
 </section>
 <section id="sample-data">
-<h4>Sample data<a class="headerlink" href="#sample-data" title="Permalink to this headline"></a></h4>
+<h4>Sample data<a class="headerlink" href="#sample-data" title="Link to this heading"></a></h4>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">{ref}</span></code>: Reference layer, keyed by the name of the reference.</p></li>
 </ul>
 </section>
 </section>
 <section id="reference-layer">
-<h3>Reference layer<a class="headerlink" href="#reference-layer" title="Permalink to this headline"></a></h3>
+<h3>Reference layer<a class="headerlink" href="#reference-layer" title="Link to this heading"></a></h3>
 <p>The next layer describes one reference to which you aligned the sample.</p>
 <section id="reference-metadata">
-<h4>Reference metadata<a class="headerlink" href="#reference-metadata" title="Permalink to this headline"></a></h4>
+<h4>Reference metadata<a class="headerlink" href="#reference-metadata" title="Link to this heading"></a></h4>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#sequence</span></code>: DNA sequence of the reference.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">#num_aligned</span></code>: Number of reads that aligned to the reference.</p></li>
@@ -144,17 +145,17 @@ Metadata fields begin with <code class="docutils literal notranslate"><span clas
 </ul>
 </section>
 <section id="reference-data">
-<h4>Reference data<a class="headerlink" href="#reference-data" title="Permalink to this headline"></a></h4>
+<h4>Reference data<a class="headerlink" href="#reference-data" title="Link to this heading"></a></h4>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">{sect}</span></code>: Section layer, keyed by the name of the section.</p></li>
 </ul>
 </section>
 </section>
 <section id="section-layer">
-<h3>Section layer<a class="headerlink" href="#section-layer" title="Permalink to this headline"></a></h3>
+<h3>Section layer<a class="headerlink" href="#section-layer" title="Link to this heading"></a></h3>
 <p>The next layer describes one section of the reference sequence.</p>
 <section id="section-metadata">
-<h4>Section metadata<a class="headerlink" href="#section-metadata" title="Permalink to this headline"></a></h4>
+<h4>Section metadata<a class="headerlink" href="#section-metadata" title="Link to this heading"></a></h4>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">#section_start</span></code>: 5’ coordinate of the section.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">#section_end</span></code>: 3’ coordinate of the section.</p></li>
@@ -163,19 +164,19 @@ positions if you use <code class="docutils literal notranslate"><span class="pre
 </ul>
 </section>
 <section id="section-data">
-<h4>Section data<a class="headerlink" href="#section-data" title="Permalink to this headline"></a></h4>
+<h4>Section data<a class="headerlink" href="#section-data" title="Link to this heading"></a></h4>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">{profile}</span></code>: Profile layer.</p></li>
 </ul>
 </section>
 </section>
 <section id="profile-layer">
-<h3>Profile layer<a class="headerlink" href="#profile-layer" title="Permalink to this headline"></a></h3>
+<h3>Profile layer<a class="headerlink" href="#profile-layer" title="Link to this heading"></a></h3>
 <p>The deepest layer describes one profile made from the section (a profile
 is a series of relationship data, from either the ensemble average or
 from one cluster).</p>
 <section id="profile-data-per-position">
-<h4>Profile data (per position)<a class="headerlink" href="#profile-data-per-position" title="Permalink to this headline"></a></h4>
+<h4>Profile data (per position)<a class="headerlink" href="#profile-data-per-position" title="Link to this heading"></a></h4>
 <p>Most fields of the profile are lists of decimal numbers, each number
 corresponding to one position in the section’s <code class="docutils literal notranslate"><span class="pre">#positions</span></code> field.</p>
 <ul class="simple">
@@ -198,7 +199,7 @@ position (ending in <code class="docutils literal notranslate"><span class="pre"
 </div>
 </section>
 <section id="profile-data-per-read">
-<h4>Profile data (per read)<a class="headerlink" href="#profile-data-per-read" title="Permalink to this headline"></a></h4>
+<h4>Profile data (per read)<a class="headerlink" href="#profile-data-per-read" title="Link to this heading"></a></h4>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">sub_hist</span></code>: Histogram of substitutions per read: the first element
 is the number of reads with 0 substititions, the second the number of
@@ -211,7 +212,7 @@ read (ending in <code class="docutils literal notranslate"><span class="pre">per
 </div>
 </section>
 <section id="profile-data-per-cluster">
-<h4>Profile data (per cluster)<a class="headerlink" href="#profile-data-per-cluster" title="Permalink to this headline"></a></h4>
+<h4>Profile data (per cluster)<a class="headerlink" href="#profile-data-per-cluster" title="Link to this heading"></a></h4>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">proportion</span></code>: Proportion of the profile in the ensemble (only for
 profiles of clusters, not ensemble averages).</p></li>
@@ -225,29 +226,29 @@ cluster (<code class="docutils literal notranslate"><span class="pre">clust-freq
 </section>
 </section>
 <section id="sample-results-file-path-format">
-<h2>Sample results file: Path format<a class="headerlink" href="#sample-results-file-path-format" title="Permalink to this headline"></a></h2>
+<h2>Sample results file: Path format<a class="headerlink" href="#sample-results-file-path-format" title="Link to this heading"></a></h2>
 <section id="sample-results-file-extensions">
-<h3>Sample results file extensions<a class="headerlink" href="#sample-results-file-extensions" title="Permalink to this headline"></a></h3>
+<h3>Sample results file extensions<a class="headerlink" href="#sample-results-file-extensions" title="Link to this heading"></a></h3>
 <p>SEISMIC-RNA accepts the following extensions for sample results files:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">.json</span></code></p></li>
 </ul>
 </section>
 <section id="sample-results-path-parsing">
-<h3>Sample results path parsing<a class="headerlink" href="#sample-results-path-parsing" title="Permalink to this headline"></a></h3>
+<h3>Sample results path parsing<a class="headerlink" href="#sample-results-path-parsing" title="Link to this heading"></a></h3>
 <p>Sample results files are output in the main output directory with the
 name <code class="docutils literal notranslate"><span class="pre">{sample}__webapp.json</span></code>, where <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample name.</p>
 </section>
 </section>
 <section id="sample-results-file-uses">
-<h2>Sample results file: Uses<a class="headerlink" href="#sample-results-file-uses" title="Permalink to this headline"></a></h2>
+<h2>Sample results file: Uses<a class="headerlink" href="#sample-results-file-uses" title="Link to this heading"></a></h2>
 <section id="sample-results-as-input-file">
-<h3>Sample results as input file<a class="headerlink" href="#sample-results-as-input-file" title="Permalink to this headline"></a></h3>
+<h3>Sample results as input file<a class="headerlink" href="#sample-results-as-input-file" title="Link to this heading"></a></h3>
 <p>Sample results are input files for the <a class="reference external" href="https://rouskinlab.github.io/seismic-graph/">seismic-graph</a> web app, which
 provides additional graphing utilities beyond those in SEISMIC-RNA.</p>
 </section>
 <section id="sample-results-as-output-file">
-<h3>Sample results as output file<a class="headerlink" href="#sample-results-as-output-file" title="Permalink to this headline"></a></h3>
+<h3>Sample results as output file<a class="headerlink" href="#sample-results-as-output-file" title="Link to this heading"></a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">export</span></code> outputs a sample results file for each sample.</p>
 </section>
 </section>

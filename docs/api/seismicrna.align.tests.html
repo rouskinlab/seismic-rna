@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>seismicrna.align.tests package &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -113,138 +114,138 @@
            <div itemprop="articleBody">
              
   <section id="module-seismicrna.align.tests">
-<span id="seismicrna-align-tests-package"></span><h1>seismicrna.align.tests package<a class="headerlink" href="#module-seismicrna.align.tests" title="Permalink to this headline"></a></h1>
+<span id="seismicrna-align-tests-package"></span><h1>seismicrna.align.tests package<a class="headerlink" href="#module-seismicrna.align.tests" title="Link to this heading"></a></h1>
 <section id="module-seismicrna.align.tests.fqutil_test">
-<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.align.tests.fqutil_test" title="Permalink to this headline"></a></h2>
+<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-seismicrna.align.tests.fqutil_test" title="Link to this heading"></a></h2>
 <p>Tests for Alignment FASTQ Utilities Module</p>
 <hr class="docutils" />
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.align.tests.fqutil_test.TestRunFASTQC">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.align.tests.fqutil_test.</span></span><span class="sig-name descname"><span class="pre">TestRunFASTQC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.fqutil_test.TestRunFASTQC" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.align.tests.fqutil_test.</span></span><span class="sig-name descname"><span class="pre">TestRunFASTQC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.fqutil_test.TestRunFASTQC" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
 <p>Test function <cite>run_fastqc</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.fqutil_test.TestRunFASTQC.setUp">
-<span class="sig-name descname"><span class="pre">setUp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.fqutil_test.TestRunFASTQC.setUp" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">setUp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.fqutil_test.TestRunFASTQC.setUp" title="Link to this definition"></a></dt>
 <dd><p>Make temporary FASTQ file(s) on which to run FASTQC.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.fqutil_test.TestRunFASTQC.tearDown">
-<span class="sig-name descname"><span class="pre">tearDown</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.fqutil_test.TestRunFASTQC.tearDown" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">tearDown</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.fqutil_test.TestRunFASTQC.tearDown" title="Link to this definition"></a></dt>
 <dd><p>Delete the test files and directories.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="seismicrna.align.tests.fqutil_test.TestRunFASTQC.temp_fq">
-<span class="sig-name descname"><span class="pre">temp_fq</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'test-sample.fq'</span></em><a class="headerlink" href="#seismicrna.align.tests.fqutil_test.TestRunFASTQC.temp_fq" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">temp_fq</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'test-sample.fq'</span></em><a class="headerlink" href="#seismicrna.align.tests.fqutil_test.TestRunFASTQC.temp_fq" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="seismicrna.align.tests.fqutil_test.TestRunFASTQC.temp_fq1">
-<span class="sig-name descname"><span class="pre">temp_fq1</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'test-sample_R1.fq'</span></em><a class="headerlink" href="#seismicrna.align.tests.fqutil_test.TestRunFASTQC.temp_fq1" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">temp_fq1</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'test-sample_R1.fq'</span></em><a class="headerlink" href="#seismicrna.align.tests.fqutil_test.TestRunFASTQC.temp_fq1" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="seismicrna.align.tests.fqutil_test.TestRunFASTQC.temp_fq2">
-<span class="sig-name descname"><span class="pre">temp_fq2</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'test-sample_R2.fq'</span></em><a class="headerlink" href="#seismicrna.align.tests.fqutil_test.TestRunFASTQC.temp_fq2" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">temp_fq2</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'test-sample_R2.fq'</span></em><a class="headerlink" href="#seismicrna.align.tests.fqutil_test.TestRunFASTQC.temp_fq2" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
-<span class="target" id="module-seismicrna.align.tests.sim_test"></span><dl class="py class">
+<dl class="py class" id="module-seismicrna.align.tests.sim_test">
 <dt class="sig sig-object py" id="seismicrna.align.tests.sim_test.TestAsSam">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.align.tests.sim_test.</span></span><span class="sig-name descname"><span class="pre">TestAsSam</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestAsSam" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.align.tests.sim_test.</span></span><span class="sig-name descname"><span class="pre">TestAsSam</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestAsSam" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
 <p>Test function <cite>as_sam</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.sim_test.TestAsSam.test_line_in_sam_format">
-<span class="sig-name descname"><span class="pre">test_line_in_sam_format</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestAsSam.test_line_in_sam_format" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_line_in_sam_format</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestAsSam.test_line_in_sam_format" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.align.tests.sim_test.TestFindBlankRange">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.align.tests.sim_test.</span></span><span class="sig-name descname"><span class="pre">TestFindBlankRange</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.align.tests.sim_test.</span></span><span class="sig-name descname"><span class="pre">TestFindBlankRange</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
 <p>Test function <cite>_find_blank_range</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_equal_length">
-<span class="sig-name descname"><span class="pre">test_side3_equal_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_equal_length" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_side3_equal_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_equal_length" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_neg_length">
-<span class="sig-name descname"><span class="pre">test_side3_neg_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_neg_length" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_side3_neg_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_neg_length" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_over_length">
-<span class="sig-name descname"><span class="pre">test_side3_over_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_over_length" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_side3_over_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_over_length" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_under_length">
-<span class="sig-name descname"><span class="pre">test_side3_under_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_under_length" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_side3_under_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_under_length" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_zero_length">
-<span class="sig-name descname"><span class="pre">test_side3_zero_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_zero_length" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_side3_zero_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side3_zero_length" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_equal_length">
-<span class="sig-name descname"><span class="pre">test_side5_equal_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_equal_length" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_side5_equal_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_equal_length" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_neg_length">
-<span class="sig-name descname"><span class="pre">test_side5_neg_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_neg_length" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_side5_neg_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_neg_length" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_over_length">
-<span class="sig-name descname"><span class="pre">test_side5_over_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_over_length" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_side5_over_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_over_length" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_under_length">
-<span class="sig-name descname"><span class="pre">test_side5_under_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_under_length" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_side5_under_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_under_length" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_zero_length">
-<span class="sig-name descname"><span class="pre">test_side5_zero_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_zero_length" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_side5_zero_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.sim_test.TestFindBlankRange.test_side5_zero_length" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
-<span class="target" id="module-seismicrna.align.tests.xamgen_test"></span><p>Tests for Alignment XAM Generation Module</p>
+<p id="module-seismicrna.align.tests.xamgen_test">Tests for Alignment XAM Generation Module</p>
 <hr class="docutils" />
 <dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.align.tests.xamgen_test.</span></span><span class="sig-name descname"><span class="pre">TestAlignmentScoreParams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.align.tests.xamgen_test.</span></span><span class="sig-name descname"><span class="pre">TestAlignmentScoreParams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
 <p>Test that the bonuses and penalties satisfy both inequalities
 described in the docstring of <cite>fqutil.py</cite> and repeated below.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.parse_all_scores">
-<span class="sig-name descname"><span class="pre">parse_all_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.parse_all_scores" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">parse_all_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.parse_all_scores" title="Link to this definition"></a></dt>
 <dd><p>Parse all scores.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.parse_scores">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parse_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.parse_scores" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parse_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.parse_scores" title="Link to this definition"></a></dt>
 <dd><p>Parse Bowtie2 scores (strings of comma-separated integers)
 into tuples of integers.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.test_inequality_min_num_edits">
-<span class="sig-name descname"><span class="pre">test_inequality_min_num_edits</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.test_inequality_min_num_edits" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_inequality_min_num_edits</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.test_inequality_min_num_edits" title="Link to this definition"></a></dt>
 <dd><p>Test that alignments with two closely separated deletions would
 score better than alignments with two consecutive deletions and
 one substitution.</p>
@@ -265,7 +266,7 @@ from the reference: [A/G/] which gets an alignment score of
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.test_inequality_subst_vs_indel">
-<span class="sig-name descname"><span class="pre">test_inequality_subst_vs_indel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.test_inequality_subst_vs_indel" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_inequality_subst_vs_indel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.test_inequality_subst_vs_indel" title="Link to this definition"></a></dt>
 <dd><p>Test that alignments with two adjacent substitutions would score
 better than alignments with an insertion and a deletion flanking
 a match.</p>
@@ -286,7 +287,7 @@ both have two mutations).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.test_score_consistency">
-<span class="sig-name descname"><span class="pre">test_score_consistency</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.test_score_consistency" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">test_score_consistency</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.align.tests.xamgen_test.TestAlignmentScoreParams.test_score_consistency" title="Link to this definition"></a></dt>
 <dd><p>Test the self-consistency of the scores.</p>
 </dd></dl>
 

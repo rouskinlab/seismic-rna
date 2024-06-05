@@ -26,3 +26,9 @@ Submodules
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+.. automodule:: seismicrna.core.batch.tests.muts_test
+   :members:
+   :undoc-members:
+   :show-inheritance:

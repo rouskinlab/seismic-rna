@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>General parameters for graphing &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -105,10 +106,10 @@
            <div itemprop="articleBody">
              
   <section id="general-parameters-for-graphing">
-<h1>General parameters for graphing<a class="headerlink" href="#general-parameters-for-graphing" title="Permalink to this headline"></a></h1>
+<h1>General parameters for graphing<a class="headerlink" href="#general-parameters-for-graphing" title="Link to this heading"></a></h1>
 <p>Many subcommands of <code class="docutils literal notranslate"><span class="pre">seismic</span> <span class="pre">graph</span></code> share the same arguments and options.</p>
 <section id="general-parameters-for-graphing-input-files">
-<span id="graph-inputs"></span><h2>General parameters for graphing: Input files<a class="headerlink" href="#general-parameters-for-graphing-input-files" title="Permalink to this headline"></a></h2>
+<span id="graph-inputs"></span><h2>General parameters for graphing: Input files<a class="headerlink" href="#general-parameters-for-graphing-input-files" title="Link to this heading"></a></h2>
 <p>All graph subcommands accept any number of table files.
 See <a class="reference internal" href="../inputs.html"><span class="doc">List Input Files</span></a> for ways to list multiple files.</p>
 <p>Some subcommands accept only positional tables (<code class="docutils literal notranslate"><span class="pre">per-pos</span></code>), some only per-read
@@ -118,9 +119,9 @@ If you give any table files that are not accepted, then SEISMIC-RNA will simply
 ignore them.</p>
 </section>
 <section id="general-parameters-for-graphing-input-data">
-<span id="graph-data"></span><h2>General parameters for graphing: Input data<a class="headerlink" href="#general-parameters-for-graphing-input-data" title="Permalink to this headline"></a></h2>
+<span id="graph-data"></span><h2>General parameters for graphing: Input data<a class="headerlink" href="#general-parameters-for-graphing-input-data" title="Link to this heading"></a></h2>
 <section id="rels-r-relationship-s-to-graph">
-<h3><code class="docutils literal notranslate"><span class="pre">--rels</span></code> (<code class="docutils literal notranslate"><span class="pre">-r</span></code>): Relationship(s) to graph<a class="headerlink" href="#rels-r-relationship-s-to-graph" title="Permalink to this headline"></a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">--rels</span></code> (<code class="docutils literal notranslate"><span class="pre">-r</span></code>): Relationship(s) to graph<a class="headerlink" href="#rels-r-relationship-s-to-graph" title="Link to this heading"></a></h3>
 <p>For tables where each column is a type of relationship (i.e. <code class="docutils literal notranslate"><span class="pre">per-pos</span></code> and
 <code class="docutils literal notranslate"><span class="pre">per-read</span></code> tables), this option selects relationships.
 Each type of relationship has a one-letter code:</p>
@@ -160,7 +161,7 @@ For example, <code class="docutils literal notranslate"><span class="pre">-r</sp
 </ol>
 </section>
 <section id="use-ratio-use-count-graph-ratios-or-counts">
-<h3><code class="docutils literal notranslate"><span class="pre">--use-ratio/--use-count</span></code>: Graph ratios or counts<a class="headerlink" href="#use-ratio-use-count-graph-ratios-or-counts" title="Permalink to this headline"></a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">--use-ratio/--use-count</span></code>: Graph ratios or counts<a class="headerlink" href="#use-ratio-use-count-graph-ratios-or-counts" title="Link to this heading"></a></h3>
 <p>All tables contain counts.
 You can graph either the counts themselves (<code class="docutils literal notranslate"><span class="pre">--use-count</span></code>) or ratios of one
 count to another (<code class="docutils literal notranslate"><span class="pre">--use-ratio</span></code>).</p>
@@ -178,7 +179,7 @@ For example, <code class="docutils literal notranslate"><span class="pre">-r</sp
 <code class="docutils literal notranslate"><span class="pre">-r</span> <span class="pre">n</span></code> would use the ratio of Informed (<code class="docutils literal notranslate"><span class="pre">n</span></code>) to Covered.</p>
 </section>
 <section id="quantile-q-quantile-for-normalizing-ratios">
-<h3><code class="docutils literal notranslate"><span class="pre">--quantile</span></code> (<code class="docutils literal notranslate"><span class="pre">-q</span></code>): Quantile for normalizing ratios<a class="headerlink" href="#quantile-q-quantile-for-normalizing-ratios" title="Permalink to this headline"></a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">--quantile</span></code> (<code class="docutils literal notranslate"><span class="pre">-q</span></code>): Quantile for normalizing ratios<a class="headerlink" href="#quantile-q-quantile-for-normalizing-ratios" title="Link to this heading"></a></h3>
 <p>Some graphs (e.g. <code class="docutils literal notranslate"><span class="pre">delprof</span></code>) work best when the data are normalized.
 Use <code class="docutils literal notranslate"><span class="pre">-q</span></code> to normalize ratios to a quantile.
 See <a class="reference internal" href="../normalize.html"><span class="doc">Normalize Mutation Rates</span></a> for more information.
@@ -186,13 +187,13 @@ With <code class="docutils literal notranslate"><span class="pre">-q</span></cod
 </section>
 </section>
 <section id="general-parameters-for-graphing-output-files">
-<span id="graph-outputs"></span><h2>General parameters for graphing: Output files<a class="headerlink" href="#general-parameters-for-graphing-output-files" title="Permalink to this headline"></a></h2>
+<span id="graph-outputs"></span><h2>General parameters for graphing: Output files<a class="headerlink" href="#general-parameters-for-graphing-output-files" title="Link to this heading"></a></h2>
 <p>All output files go into the directory <code class="docutils literal notranslate"><span class="pre">{out}/{sample}/graph/{ref}/{sect}</span></code>,
 where <code class="docutils literal notranslate"><span class="pre">{out}</span></code> is the output directory, <code class="docutils literal notranslate"><span class="pre">{sample}</span></code> is the sample, <code class="docutils literal notranslate"><span class="pre">{ref}</span></code>
 is the reference, and <code class="docutils literal notranslate"><span class="pre">{sect}</span></code> is the section.
 Each output file is prefixed with the name of the subcommand that produced it.</p>
 <section id="cgroup-group-orders-and-clusters-into-output-files">
-<h3><code class="docutils literal notranslate"><span class="pre">--cgroup</span></code>: Group orders and clusters into output files<a class="headerlink" href="#cgroup-group-orders-and-clusters-into-output-files" title="Permalink to this headline"></a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">--cgroup</span></code>: Group orders and clusters into output files<a class="headerlink" href="#cgroup-group-orders-and-clusters-into-output-files" title="Link to this heading"></a></h3>
 <p>When graphing tables containing multiple clusters, you can group</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--cgroup</span> <span class="pre">indiv</span></code>: Each cluster individually in its own file.
@@ -208,7 +209,7 @@ e.g. <code class="docutils literal notranslate"><span class="pre">x-x</span></co
 </ul>
 </section>
 <section id="out-dir-o-destination-for-all-new-output-files">
-<h3><code class="docutils literal notranslate"><span class="pre">--out-dir</span></code> (<code class="docutils literal notranslate"><span class="pre">-o</span></code>): Destination for all new output files<a class="headerlink" href="#out-dir-o-destination-for-all-new-output-files" title="Permalink to this headline"></a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">--out-dir</span></code> (<code class="docutils literal notranslate"><span class="pre">-o</span></code>): Destination for all new output files<a class="headerlink" href="#out-dir-o-destination-for-all-new-output-files" title="Link to this heading"></a></h3>
 <p>All graph files will be written into this output directory.
 Graph subcommands need you to specify an output directory because (unlike with
 most other commands) the data can come from multiple sources (e.g. table files
@@ -217,7 +218,7 @@ As a result, where the output files should go could be ambiguous in some cases
 if you did not specify an output directory.</p>
 </section>
 <section id="types-of-graph-output-files">
-<h3>Types of graph output files<a class="headerlink" href="#types-of-graph-output-files" title="Permalink to this headline"></a></h3>
+<h3>Types of graph output files<a class="headerlink" href="#types-of-graph-output-files" title="Link to this heading"></a></h3>
 <p>Each graph subcommand can output graphs in several formats:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--csv/--no-csv</span></code>: <strong>Output the raw data as a CSV file.</strong>

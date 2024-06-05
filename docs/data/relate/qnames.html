@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Read Names Batch &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -97,23 +98,19 @@
            <div itemprop="articleBody">
              
   <section id="read-names-batch">
-<h1>Read Names Batch<a class="headerlink" href="#read-names-batch" title="Permalink to this headline"></a></h1>
+<h1>Read Names Batch<a class="headerlink" href="#read-names-batch" title="Link to this heading"></a></h1>
 <p>Each batch of relation vectors is a <code class="docutils literal notranslate"><span class="pre">QnamesBatchIO</span></code> object.</p>
 <section id="read-names-batch-structure">
-<h2>Read names batch: Structure<a class="headerlink" href="#read-names-batch-structure" title="Permalink to this headline"></a></h2>
+<h2>Read names batch: Structure<a class="headerlink" href="#read-names-batch-structure" title="Link to this heading"></a></h2>
 <p>The read names are in the attribute <code class="docutils literal notranslate"><span class="pre">names</span></code>, a <code class="docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> with
 data type <code class="docutils literal notranslate"><span class="pre">str</span></code>.
 The name of the read with number <code class="docutils literal notranslate"><span class="pre">i</span></code> (see <a class="reference internal" href="relate.html#relate-read-nums"><span class="std std-ref">Relate batch: Structure of read numbers</span></a> for
 more information) is at index <code class="docutils literal notranslate"><span class="pre">i</span></code> of the <code class="docutils literal notranslate"><span class="pre">names</span></code> array.</p>
 </section>
 <section id="read-names-batch-example">
-<h2>Read names batch: Example<a class="headerlink" href="#read-names-batch-example" title="Permalink to this headline"></a></h2>
+<h2>Read names batch: Example<a class="headerlink" href="#read-names-batch-example" title="Link to this heading"></a></h2>
 <p>Suppose a XAM file contains five reads:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 20%" />
-<col style="width: 80%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Read Number</p></th>
 <th class="head"><p>Read Name</p></th>

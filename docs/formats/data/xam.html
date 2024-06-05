@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SAM, BAM, and CRAM: Alignment Maps &mdash; seismic-rna  documentation</title>
@@ -12,10 +12,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -105,25 +106,17 @@
            <div itemprop="articleBody">
              
   <section id="sam-bam-and-cram-alignment-maps">
-<h1>SAM, BAM, and CRAM: Alignment Maps<a class="headerlink" href="#sam-bam-and-cram-alignment-maps" title="Permalink to this headline"></a></h1>
+<h1>SAM, BAM, and CRAM: Alignment Maps<a class="headerlink" href="#sam-bam-and-cram-alignment-maps" title="Link to this heading"></a></h1>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>These three file formats are closely related and collectively called “XAM”
 format whenever the specific format is irrelevant.</p>
 </div>
 <section id="xam-file-content-format">
-<h2>XAM file: Content format<a class="headerlink" href="#xam-file-content-format" title="Permalink to this headline"></a></h2>
+<h2>XAM file: Content format<a class="headerlink" href="#xam-file-content-format" title="Link to this heading"></a></h2>
 <section id="comparison-of-sam-bam-and-cram-formats">
-<h3>Comparison of SAM, BAM, and CRAM formats<a class="headerlink" href="#comparison-of-sam-bam-and-cram-formats" title="Permalink to this headline"></a></h3>
+<h3>Comparison of SAM, BAM, and CRAM formats<a class="headerlink" href="#comparison-of-sam-bam-and-cram-formats" title="Link to this heading"></a></h3>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 32%" />
-<col style="width: 8%" />
-<col style="width: 13%" />
-<col style="width: 11%" />
-<col style="width: 12%" />
-<col style="width: 25%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Format</p></th>
 <th class="head"><p>Type</p></th>
@@ -165,7 +158,7 @@ format whenever the specific format is irrelevant.</p>
 <p>See the <a class="reference external" href="https://samtools.github.io/hts-specs/">Samtools website</a> for more information on SAM, BAM, and CRAM.</p>
 </section>
 <section id="xam-file-endedness">
-<h3>XAM file: Endedness<a class="headerlink" href="#xam-file-endedness" title="Permalink to this headline"></a></h3>
+<h3>XAM file: Endedness<a class="headerlink" href="#xam-file-endedness" title="Link to this heading"></a></h3>
 <p>Similar to read endedness in FASTQ files (see <a class="reference internal" href="fastq.html#fastq-endedness"><span class="std std-ref">Endedness: single-end and paired-end reads</span></a>), reads in
 XAM files are also single- or paired-end.
 SEISMIC-RNA also requires that each XAM file contain only single-end or only
@@ -174,16 +167,16 @@ Unlike with FASTQ files, paired-end XAM files must be interleaved; SEISMIC-RNA
 cannot process XAM files with only 1st or only 2nd mates.</p>
 </section>
 <section id="xam-file-quality-score-encodings">
-<h3>XAM file: Quality score encodings<a class="headerlink" href="#xam-file-quality-score-encodings" title="Permalink to this headline"></a></h3>
+<h3>XAM file: Quality score encodings<a class="headerlink" href="#xam-file-quality-score-encodings" title="Link to this heading"></a></h3>
 <p>SAM files encode <a class="reference external" href="https://en.wikipedia.org/wiki/Phred_quality_score">Phred quality scores</a> in the same manner as FASTQ files (see
 <a class="reference internal" href="fastq.html#phred-encodings"><span class="std std-ref">Phred quality score encodings</span></a>).
 BAM and CRAM files also encode Phred scores, but in a binary format.</p>
 </section>
 </section>
 <section id="xam-file-path-format">
-<h2>XAM file: Path format<a class="headerlink" href="#xam-file-path-format" title="Permalink to this headline"></a></h2>
+<h2>XAM file: Path format<a class="headerlink" href="#xam-file-path-format" title="Link to this heading"></a></h2>
 <section id="xam-file-extensions">
-<h3>XAM file extensions<a class="headerlink" href="#xam-file-extensions" title="Permalink to this headline"></a></h3>
+<h3>XAM file extensions<a class="headerlink" href="#xam-file-extensions" title="Link to this heading"></a></h3>
 <p>SEISMIC-RNA accepts the following extensions for XAM files:</p>
 <ul class="simple">
 <li><p>SAM: <code class="docutils literal notranslate"><span class="pre">.sam</span></code></p></li>
@@ -192,7 +185,7 @@ BAM and CRAM files also encode Phred scores, but in a binary format.</p>
 </ul>
 </section>
 <section id="xam-path-parsing">
-<h3>XAM path parsing<a class="headerlink" href="#xam-path-parsing" title="Permalink to this headline"></a></h3>
+<h3>XAM path parsing<a class="headerlink" href="#xam-path-parsing" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>The file name is the reference.</p></li>
 <li><p>The file must be in a directory named <code class="docutils literal notranslate"><span class="pre">align</span></code>.</p></li>
@@ -203,20 +196,20 @@ to the sample <code class="docutils literal notranslate"><span class="pre">umber
 </section>
 </section>
 <section id="xam-file-uses">
-<h2>XAM file: Uses<a class="headerlink" href="#xam-file-uses" title="Permalink to this headline"></a></h2>
+<h2>XAM file: Uses<a class="headerlink" href="#xam-file-uses" title="Link to this heading"></a></h2>
 <section id="xam-as-input-file">
-<h3>XAM as input file<a class="headerlink" href="#xam-as-input-file" title="Permalink to this headline"></a></h3>
+<h3>XAM as input file<a class="headerlink" href="#xam-as-input-file" title="Link to this heading"></a></h3>
 <p>Alignment maps for the Relate step must be input as XAM files.</p>
 </section>
 <section id="xam-as-output-file">
-<h3>XAM as output file<a class="headerlink" href="#xam-as-output-file" title="Permalink to this headline"></a></h3>
+<h3>XAM as output file<a class="headerlink" href="#xam-as-output-file" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>The Align step outputs a file in CRAM (with option <code class="docutils literal notranslate"><span class="pre">--cram</span></code>) or BAM (with
 option <code class="docutils literal notranslate"><span class="pre">--bam</span></code>) format for each reference to which each sample was aligned.</p></li>
 </ul>
 </section>
 <section id="xam-as-temporary-file">
-<h3>XAM as temporary file<a class="headerlink" href="#xam-as-temporary-file" title="Permalink to this headline"></a></h3>
+<h3>XAM as temporary file<a class="headerlink" href="#xam-as-temporary-file" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>The Align step writes a temporary BAM file for each input FASTQ, then splits
 that file into one BAM/CRAM file for each reference.</p></li>
