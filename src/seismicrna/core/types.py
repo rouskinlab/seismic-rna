@@ -4,10 +4,9 @@ import numpy as np
 
 # Constants
 BITS_PER_BYTE = 8
-UINT_CODE = 'u'
-BYTE_CODE = 'S'
-ENDIAN_STR = "little"
-ENDIAN_TYP = '<'
+UINT_CODE = "u"
+BYTE_CODE = "S"
+ENDIAN_TYP = "<"
 UINT_NBYTES = 1, 2, 4, 8
 
 

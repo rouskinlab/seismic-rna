@@ -170,6 +170,7 @@ class JoinClusterMutsDataset(ClusterDataset,
         attrs = super()._get_batch_attrs(batch, sect)
         # Adjust the cluster labels based on the section.
         attrs[RESPS] = self._sect_resps(sect, attrs[RESPS])
+        return attrs
 
     def _join_attrs(self, attrs: dict[str, Any], add_attrs: dict[str, Any]):
         super()._join_attrs(attrs, add_attrs)
@@ -178,9 +179,11 @@ class JoinClusterMutsDataset(ClusterDataset,
 
     def _finalize_attrs(self, attrs: dict[str, Any]):
         # Ensure that cluster memberships for each read sum to 1.
-        attrs[RESPS] /= attrs[RESPS].T.groupby(level=ORDER_NAME).sum(axis=1).T
+        attrs[RESPS] /= attrs[RESPS].T.groupby(level=ORDER_NAME).sum().T
         # Fill any missing values with 0 and sort the read numbers.
         attrs[RESPS] = attrs[RESPS].fillna(0.).sort_index()
+        # Delete read_nums (which is the index of resps).
+        attrs.pop(READ_NUMS)
 
 
 load_cluster_dataset = LoadFunction(ClusterMutsDataset, JoinClusterMutsDataset)
