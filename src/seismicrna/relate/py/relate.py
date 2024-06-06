@@ -78,7 +78,12 @@ class SamRead(object):
         return f"Read {repr(self.qname)} {attrs}"
 
 
-def _find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambindel: bool):
+def _find_rels_read(read: SamRead,
+                    refseq: DNA,
+                    min_qual: str,
+                    ambindel: bool,
+                    clip_end5: int,
+                    clip_end3: int):
     """
     Find the relationships between a read and a reference.
 
@@ -92,6 +97,10 @@ def _find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambindel: bool):
         ASCII encoding of the minimum Phred score to accept a base call
     ambindel: bool
         Whether to find and label all ambiguous insertions and deletions
+    clip_end5: int
+        Number of bases to clip from the 5' end of the read.
+    clip_end3: int
+        Number of bases to clip from the 3' end of the read.
 
     Returns
     -------
@@ -192,8 +201,8 @@ def _find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambindel: bool):
                     raise ValueError(f"Insertion in {read}, pos {read_pos}")
                 inns.append(Insertion(read_pos, ref_pos))
             # Insertions do not consume the reference, so do not add
-            # any information to mut_vectors yet; it will be added later
-            # via the method Insertion.stamp().
+            # any information to rels yet; it will be added later via
+            # the method Insertion.stamp().
             ref_pos -= 1  # 0-indexed now
         elif cigar_op == CIG_SCLIP:
             # Bases were soft-clipped from the 5' or 3' end of the
@@ -222,7 +231,18 @@ def _find_rels_read(read: SamRead, refseq: DNA, min_qual: str, ambindel: bool):
     # Find and label all relationships that are ambiguous due to indels.
     if ambindel and (dels or inns):
         find_ambindels(rels, refseq, read.seq, read.qual, min_qual, dels, inns)
-    return read.pos, ref_pos, dict(rels)
+    # Clip bases from the 5' end.
+    end5 = read.pos
+    for _ in range(clip_end5):
+        if end5 in rels:
+            rels.pop(end5)
+        end5 += 1
+    # Clip bases from the 3' end.
+    for _ in range(clip_end3):
+        if ref_pos in rels:
+            rels.pop(ref_pos)
+        ref_pos -= 1
+    return end5, ref_pos, dict(rels)
 
 
 def _validate_read(read: SamRead, ref: str, min_mapq: int):
@@ -302,17 +322,29 @@ def find_rels_line(line1: str,
                    min_mapq: int,
                    qmin: str,
                    ambindel: bool,
-                   overhangs: bool):
+                   overhangs: bool,
+                   clip_end5: int = 0,
+                   clip_end3: int = 0):
     # Generate the relationships for read 1.
     read1 = SamRead(line1)
     _validate_read(read1, ref, min_mapq)
-    end51, end31, rels1 = _find_rels_read(read1, refseq, qmin, ambindel)
+    end51, end31, rels1 = _find_rels_read(read1,
+                                          refseq,
+                                          qmin,
+                                          ambindel,
+                                          clip_end5,
+                                          clip_end3)
     if line2:
         # Generate the relationships for read 2.
         read2 = SamRead(line2)
         _validate_read(read2, ref, min_mapq)
         _validate_pair(read1, read2)
-        end52, end32, rels2 = _find_rels_read(read2, refseq, qmin, ambindel)
+        end52, end32, rels2 = _find_rels_read(read2,
+                                              refseq,
+                                              qmin,
+                                              ambindel,
+                                              clip_end5,
+                                              clip_end3)
         # Determine which read (1 or 2) faces forward and reverse.
         if read2.flag.rev:
             end5f, end3f, relsf = end51, end31, rels1

@@ -10,12 +10,14 @@ from ..core.report import (BatchedRefseqReport,
                            SampleF,
                            MinMapQualF,
                            MinReadsF,
-NumReadsXamF,
+                           NumReadsXamF,
                            NumReadsRelF,
                            AmbindelF,
                            MinPhredF,
                            PhredEncF,
-                           OverhangsF)
+                           OverhangsF,
+                           ClipEnd5F,
+                           ClipEnd3F)
 
 BATCH_INDEX_COL = "Read Name"
 
@@ -31,6 +33,8 @@ class RelateReport(BatchedRefseqReport, RelateIO):
                 MinPhredF,
                 AmbindelF,
                 OverhangsF,
+                ClipEnd5F,
+                ClipEnd3F,
                 MinReadsF,
                 NumReadsXamF,
                 NumReadsRelF] + super().fields()

@@ -36,6 +36,8 @@ def generate_batch(batch: int, *,
                    min_qual: str,
                    ambindel: bool,
                    overhangs: bool,
+                   clip_end5: int,
+                   clip_end3: int,
                    brotli_level: int):
     """ Compute relation vectors for every SAM record in one batch,
     write the vectors to a batch file, and return its MD5 checksum
@@ -53,7 +55,9 @@ def generate_batch(batch: int, *,
                                      min_mapq,
                                      min_qual,
                                      ambindel,
-                                     overhangs)
+                                     overhangs,
+                                     clip_end5,
+                                     clip_end3)
             except Exception as error:
                 logger.error(f"Failed to compute relation vector: {error}")
 
@@ -111,6 +115,8 @@ class RelationWriter(object):
                           min_phred: int,
                           ambindel: bool,
                           overhangs: bool,
+                          clip_end5: int,
+                          clip_end3: int,
                           brotli_level: int,
                           n_procs: int):
         """ Compute a relation vector for every record in a XAM file,
@@ -123,21 +129,23 @@ class RelationWriter(object):
         logger.info(f"Began {self}")
         try:
             # Collect the keyword arguments.
-            disp_kwargs = dict(xam_view=self._xam,
-                               out_dir=out_dir,
-                               refseq=self.seq,
-                               min_mapq=min_mapq,
-                               min_qual=encode_phred(min_phred, phred_enc),
-                               ambindel=ambindel,
-                               overhangs=overhangs,
-                               brotli_level=brotli_level)
+            kwargs = dict(xam_view=self._xam,
+                          out_dir=out_dir,
+                          refseq=self.seq,
+                          min_mapq=min_mapq,
+                          min_qual=encode_phred(min_phred, phred_enc),
+                          ambindel=ambindel,
+                          overhangs=overhangs,
+                          clip_end5=clip_end5,
+                          clip_end3=clip_end3,
+                          brotli_level=brotli_level)
             # Generate and write relation vectors for each batch.
             results = dispatch(generate_batch,
                                n_procs,
                                parallel=True,
                                pass_n_procs=False,
                                args=as_list_of_tuples(self._xam.indexes),
-                               kwargs=disp_kwargs)
+                               kwargs=kwargs)
             if results:
                 nums_reads, relv_checks, name_checks = map(list,
                                                            zip(*results,
@@ -167,6 +175,8 @@ class RelationWriter(object):
               min_phred: int,
               phred_enc: int,
               ambindel: bool,
+              clip_end5: int,
+              clip_end3: int,
               **kwargs):
         """ Compute a relation vector for every record in a BAM file,
         write the vectors into one or more batch files, compute their
@@ -192,6 +202,8 @@ class RelationWriter(object):
                                               min_phred=min_phred,
                                               phred_enc=phred_enc,
                                               ambindel=ambindel,
+                                              clip_end5=clip_end5,
+                                              clip_end3=clip_end3,
                                               **kwargs)
             ended = datetime.now()
             # Write a report of the relation step.
@@ -201,6 +213,8 @@ class RelationWriter(object):
                                phred_enc=phred_enc,
                                overhangs=overhangs,
                                ambindel=ambindel,
+                               clip_end5=clip_end5,
+                               clip_end3=clip_end3,
                                min_reads=min_reads,
                                n_reads_xam=self.num_reads,
                                n_reads_rel=nreads,

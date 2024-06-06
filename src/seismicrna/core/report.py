@@ -49,6 +49,8 @@ from .arg import (opt_phred_enc,
                   opt_min_mapq,
                   opt_min_ncov_read,
                   opt_overhangs,
+                  opt_clip_end5,
+                  opt_clip_end3,
                   opt_fold_temp,
                   opt_fold_md,
                   opt_fold_mfe,
@@ -346,6 +348,8 @@ RefseqChecksumF = Field("refseq_checksum",
 AmbindelF = OptionField(opt_ambindel)
 OverhangsF = OptionField(opt_overhangs)
 MinPhredF = OptionField(opt_min_phred)
+ClipEnd5F = OptionField(opt_clip_end5)
+ClipEnd3F = OptionField(opt_clip_end3)
 
 # Pool fields
 PooledSamplesF = Field("pooled_samples", "Pooled samples", list)

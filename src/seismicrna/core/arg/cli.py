@@ -528,6 +528,20 @@ opt_overhangs = Option(
     help="Retain the overhangs of paired-end mates that dovetail"
 )
 
+opt_clip_end5 = Option(
+    ("--clip-end5", "-5"),
+    type=int,
+    default=max(opt_bt2_gbar.default, 3),
+    help="Clip this many bases from the 5' end of each read"
+)
+
+opt_clip_end3 = Option(
+    ("--clip-end3", "-3"),
+    type=int,
+    default=max(opt_bt2_gbar.default, 6),
+    help="Clip this many bases from the 3' end of each read"
+)
+
 # Pool
 
 opt_pool = Option(
