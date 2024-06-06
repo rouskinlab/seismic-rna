@@ -26,10 +26,10 @@ from ..core.seq import DNA, parse_fasta, write_fasta
 logger = getLogger(__name__)
 
 
-def write_temp_ref_files(temp_dir: Path,
-                         refset_path: Path,
-                         refs: set[str],
-                         n_procs: int = 1):
+def write_tmp_ref_files(tmp_dir: Path,
+                        refset_path: Path,
+                        refs: set[str],
+                        n_procs: int = 1):
     """ Write temporary FASTA files, each containing one reference that
     corresponds to a FASTQ file from demultiplexing. """
     ref_paths: dict[str, tuple[Path, Path]] = dict()
@@ -40,7 +40,7 @@ def write_temp_ref_files(temp_dir: Path,
             if ref in refs:
                 # Write the reference sequence to a temporary FASTA file
                 # only if at least one demultiplexed FASTQ file uses it.
-                ref_path = path.build(*path.FASTA_STEP_SEGS, top=temp_dir,
+                ref_path = path.build(*path.FASTA_STEP_SEGS, top=tmp_dir,
                                       step=path.STEP_ALIGN_INDEX_DEMULT,
                                       ref=ref, ext=refset_path.suffix)
                 # Create the parent directory.
@@ -68,8 +68,8 @@ def fq_pipeline(fq_inp: FastqUnit,
                 fasta: Path,
                 bowtie2_index: Path, *,
                 out_dir: Path,
-                temp_dir: Path,
-                keep_temp: bool,
+                tmp_dir: Path,
+                keep_tmp: bool,
                 fastqc: bool,
                 qc_extract: bool,
                 cut: bool,
@@ -147,7 +147,7 @@ def fq_pipeline(fq_inp: FastqUnit,
     if cut:
         # Trim adapters and low-quality bases with Cutadapt.
         fq_cut = fq_inp.to_new(path.StepSeg,
-                               top=temp_dir,
+                               top=tmp_dir,
                                sample=sample,
                                step=path.STEP_ALIGN_TRIM)
         run_cutadapt(fq_inp, fq_cut,
@@ -176,7 +176,7 @@ def fq_pipeline(fq_inp: FastqUnit,
         fq_cut = None
     # Align the FASTQ to the reference sequence using Bowtie2.
     xam_whole = path.build(*path.XAM_STEP_SEGS,
-                           top=temp_dir,
+                           top=tmp_dir,
                            sample=sample,
                            cmd=CMD_ALIGN,
                            step=path.STEP_ALIGN_MAP,
@@ -185,11 +185,11 @@ def fq_pipeline(fq_inp: FastqUnit,
     reads_align = run_xamgen(fq_inp if fq_cut is None else fq_cut,
                              xam_whole,
                              index_pfx=bowtie2_index,
-                             temp_dir=path.builddir(
+                             tmp_dir=path.builddir(
                                  path.SampSeg,
                                  path.CmdSeg,
                                  path.StepSeg,
-                                 top=temp_dir,
+                                 top=tmp_dir,
                                  sample=sample,
                                  cmd=path.CMD_ALIGN_DIR,
                                  step=path.STEP_ALIGN_MAP
@@ -224,7 +224,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                                                  ext=path.FQ_EXTS[0])
                                       if bt2_un
                                       else None))
-    if not keep_temp and fq_cut is not None:
+    if not keep_tmp and fq_cut is not None:
         # Delete the trimmed FASTQ file (do not delete the input FASTQ
         # file even if trimming was not performed).
         for fq_file in fq_cut.paths.values():
@@ -292,15 +292,15 @@ def fq_pipeline(fq_inp: FastqUnit,
             exp_kwargs = dict(
                 ref=ref,
                 header=ref_headers[ref],
-                temp_dir=path.builddir(path.SampSeg,
-                                       path.CmdSeg,
-                                       path.StepSeg,
-                                       path.RefSeg,
-                                       top=temp_dir,
-                                       sample=sample,
-                                       cmd=path.CMD_ALIGN_DIR,
-                                       step=path.STEP_ALIGN_SORT,
-                                       ref=ref),
+                tmp_dir=path.builddir(path.SampSeg,
+                                      path.CmdSeg,
+                                      path.StepSeg,
+                                      path.RefSeg,
+                                      top=tmp_dir,
+                                      sample=sample,
+                                      cmd=path.CMD_ALIGN_DIR,
+                                      step=path.STEP_ALIGN_SORT,
+                                      ref=ref),
                 n_procs=n_procs
             )
             if cram:
@@ -330,7 +330,7 @@ def fq_pipeline(fq_inp: FastqUnit,
             refs_file.unlink(missing_ok=True)
             refs_file_index.unlink(missing_ok=True)
     # The whole XAM file is no longer needed.
-    if not keep_temp:
+    if not keep_tmp:
         xam_whole.unlink()
     if cram:
         try:
@@ -404,8 +404,8 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                  max_procs: int,
                  parallel: bool,
                  out_dir: Path,
-                 temp_dir: Path,
-                 keep_temp: bool,
+                 tmp_dir: Path,
+                 keep_tmp: bool,
                  **kwargs) -> list[Path]:
     """ Run all steps of alignment for one or more FASTQ files or pairs
     of mated FASTQ files. """
@@ -414,13 +414,13 @@ def fqs_pipeline(fq_units: list[FastqUnit],
         logger.warning("Maximum CPUs must be ≥ 1: setting to 1")
         max_procs = 1
     # Get the name of the reference for every demultiplexed FASTQ.
-    temp_refs = set(filter(None, (fq_unit.ref for fq_unit in fq_units)))
+    tmp_refs = set(filter(None, (fq_unit.ref for fq_unit in fq_units)))
     # Write a temporary FASTA file and Bowtie2 index for each
     # demultiplexed FASTQ.
-    temp_fasta_paths = write_temp_ref_files(temp_dir,
-                                            main_fasta,
-                                            temp_refs,
-                                            max_procs)
+    tmp_fasta_paths = write_tmp_ref_files(tmp_dir,
+                                          main_fasta,
+                                          tmp_refs,
+                                          max_procs)
     # Check if the main FASTA file already has a Bowtie2 index.
     main_index = main_fasta.with_suffix("")
     if not all(index.is_file() for index in get_bowtie2_index_paths(main_index)):
@@ -435,18 +435,19 @@ def fqs_pipeline(fq_units: list[FastqUnit],
             # reads from only one reference), then align to the
             # temporary FASTA file containing only that reference.
             try:
-                temp_fasta, temp_index = temp_fasta_paths[fq_unit.ref]
+                tmp_fasta, tmp_index = tmp_fasta_paths[fq_unit.ref]
             except KeyError:
                 # If the FASTA with that reference does not exist,
                 # then log an error and skip this FASTQ.
                 logger.error(
-                    f"Skipped {fq_unit} because reference '{fq_unit.ref}' "
-                    f"was not found in FASTA file {main_fasta}")
+                    f"Skipped {fq_unit} because reference {repr(fq_unit.ref)} "
+                    f"was not found in FASTA file {main_fasta}"
+                )
                 continue
             # Add these arguments to the lists of arguments that
             # will be passed to fq_pipeline.
-            iter_args.append((fq_unit, temp_fasta, temp_index))
-            logger.debug(f"Added task: align {fq_unit} to {temp_index}")
+            iter_args.append((fq_unit, tmp_fasta, tmp_index))
+            logger.debug(f"Added task: align {fq_unit} to {tmp_index}")
         else:
             # If the FASTQ may contain reads from ≥ 1 references,
             # then align to the FASTA file with all references.
@@ -458,7 +459,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                 # Determine the path of the temporary Bowtie2 index
                 # of the main FASTA file.
                 main_index = path.build(*path.FASTA_INDEX_DIR_STEP_SEGS,
-                                        top=temp_dir,
+                                        top=tmp_dir,
                                         step=path.STEP_ALIGN_INDEX,
                                         ref=refset)
                 # Make its parent directory if it does not exist.
@@ -476,7 +477,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                     # Add the FASTA link and the Bowtie2 index to the
                     # set of files to delete after alignment finishes.
                     # Being deleted is the only purpose of fasta_link.
-                    temp_fasta_paths[refset] = fasta_link, main_index
+                    tmp_fasta_paths[refset] = fasta_link, main_index
                 except Exception as error:
                     logger.critical(
                         f"Failed to index {main_fasta} with Bowtie2: {error}")
@@ -488,7 +489,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
             # could be a pre-built index in the same directory as
             # main_fasta or a temporary index that is deleted when
             # alignment finishes; but only in the latter case is it
-            # added to temp_fasta_paths.
+            # added to tmp_fasta_paths.
             iter_args.append((fq_unit, main_fasta, main_index))
             logger.debug(f"Added task: align {fq_unit} to {main_index}")
     # Generate alignment map (XAM) files.
@@ -498,13 +499,13 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                          hybrid=True,
                          args=iter_args,
                          kwargs=dict(out_dir=out_dir,
-                                     temp_dir=temp_dir,
-                                     keep_temp=keep_temp,
+                                     tmp_dir=tmp_dir,
+                                     keep_tmp=keep_tmp,
                                      **kwargs))
     xams = list(chain(*xam_lists))
-    if not keep_temp:
+    if not keep_tmp:
         # Delete the temporary files.
-        for ref_file, index_prefix in temp_fasta_paths.values():
+        for ref_file, index_prefix in tmp_fasta_paths.values():
             # Reference file
             ref_file.unlink(missing_ok=True)
             logger.debug(f"Deleted temporary reference file: {ref_file}")

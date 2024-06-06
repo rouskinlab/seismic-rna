@@ -109,7 +109,7 @@ class RelationWriter(object):
 
     def _generate_batches(self, *,
                           out_dir: Path,
-                          keep_temp: bool,
+                          keep_tmp: bool,
                           min_mapq: int,
                           phred_enc: int,
                           min_phred: int,
@@ -161,9 +161,9 @@ class RelationWriter(object):
             logger.info(f"Ended {self}: {n_reads} reads in {n_batches} batches")
             return n_reads, n_batches, checksums
         finally:
-            if not keep_temp:
+            if not keep_tmp:
                 # Delete the temporary SAM file before exiting.
-                self._xam.delete_temp_sam()
+                self._xam.delete_tmp_sam()
 
     def write(self, *,
               out_dir: Path,
@@ -231,12 +231,12 @@ class RelationWriter(object):
 
 def write_one(xam_file: Path, *,
               fasta: Path,
-              temp_dir: Path,
+              tmp_dir: Path,
               batch_size: int,
               **kwargs):
     """ Write the batches of relation vectors for one XAM file. """
     ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
-    writer = RelationWriter(XamViewer(xam_file, temp_dir, batch_size),
+    writer = RelationWriter(XamViewer(xam_file, tmp_dir, batch_size),
                             get_fasta_seq(fasta, DNA, ref))
     return writer.write(**kwargs)
 

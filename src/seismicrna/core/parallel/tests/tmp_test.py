@@ -3,76 +3,76 @@ from logging import Filter, LogRecord
 from pathlib import Path
 from tempfile import mkdtemp
 
-from seismicrna.core.parallel.temp import (LOCK_DIR,
-                                           lock_temp_dir,
-                                           logger as temp_logger)
+from seismicrna.core.parallel.tmp import (LOCK_DIR,
+                                          lock_tmp_dir,
+                                          logger as tmp_logger)
 
 
-def get_lock(temp_dir: Path):
-    return temp_dir.joinpath(LOCK_DIR)
+def get_lock(tmp_dir: Path):
+    return tmp_dir.joinpath(LOCK_DIR)
 
 
-def lock(temp_dir: Path):
-    lock_dir = get_lock(temp_dir)
+def lock(tmp_dir: Path):
+    lock_dir = get_lock(tmp_dir)
     lock_dir.mkdir(parents=False, exist_ok=False)
     return lock_dir
 
 
-def unlock(temp_dir: Path):
+def unlock(tmp_dir: Path):
     try:
-        get_lock(temp_dir).rmdir()
+        get_lock(tmp_dir).rmdir()
     except FileNotFoundError:
         pass
 
 
-def make_temp(*args, **kwargs):
+def make_tmp(*args, **kwargs):
     """ Make a new temporary directory with a random path. """
     return Path(mkdtemp(*args, **kwargs))
 
 
-def rm_temp(temp_dir: Path):
+def rm_tmp(tmp_dir: Path):
     """ Remove a temporary directory, if it exists. """
-    unlock(temp_dir)
+    unlock(tmp_dir)
     try:
-        temp_dir.rmdir()
+        tmp_dir.rmdir()
     except FileNotFoundError:
         return False
     return True
 
 
-def name_temp(*args, **kwargs):
+def name_tmp(*args, **kwargs):
     """ Get the path of a temporary directory that does not exist. """
-    temp_dir = make_temp(*args, **kwargs)
-    rm_temp(temp_dir)
-    return temp_dir
+    tmp_dir = make_tmp(*args, **kwargs)
+    rm_tmp(tmp_dir)
+    return tmp_dir
 
 
-def make_lock_temp(*args, **kwargs):
+def make_lock_tmp(*args, **kwargs):
     """ Make and lock a new temporary directory. """
-    temp_dir = make_temp(*args, **kwargs)
-    return temp_dir, lock(temp_dir)
+    tmp_dir = make_tmp(*args, **kwargs)
+    return tmp_dir, lock(tmp_dir)
 
 
-def name_lock_temp(*args, **kwargs):
-    temp_dir = name_temp(*args, **kwargs)
-    return temp_dir, get_lock(temp_dir)
+def name_lock_tmp(*args, **kwargs):
+    tmp_dir = name_tmp(*args, **kwargs)
+    return tmp_dir, get_lock(tmp_dir)
 
 
-@lock_temp_dir
-def run_func(*_, temp_dir: Path, keep_temp: bool, **__):
+@lock_tmp_dir
+def run_func(*_, tmp_dir: Path, keep_tmp: bool, **__):
     """ Placeholder for run() function. """
-    return keep_temp, temp_dir.is_dir(), get_lock(temp_dir).is_dir()
+    return keep_tmp, tmp_dir.is_dir(), get_lock(tmp_dir).is_dir()
 
 
-class TestLockTempDir(ut.TestCase):
-    """ Test decorator `lock_temp_dir`. """
+class TestLockTmpDir(ut.TestCase):
+    """ Test decorator `lock_tmp_dir`. """
 
     class LockErrFilter(Filter):
 
         def filter(self, record: LogRecord):
             return "currently being used" not in record.msg
 
-    class TempErrFilter(Filter):
+    class TmpErrFilter(Filter):
 
         def filter(self, record: LogRecord):
             return "Please either delete it" not in record.msg
@@ -81,87 +81,87 @@ class TestLockTempDir(ut.TestCase):
         self.assertEqual(run_func.__name__, "run_func")
         self.assertEqual(run_func.__doc__, " Placeholder for run() function. ")
 
-    def test_new_keep_temp(self):
-        temp_dir, lock_dir = name_lock_temp()
+    def test_new_keep_tmp(self):
+        tmp_dir, lock_dir = name_lock_tmp()
         try:
             # The directory should not exist initially.
-            self.assertFalse(temp_dir.is_dir())
+            self.assertFalse(tmp_dir.is_dir())
             self.assertFalse(lock_dir.is_dir())
-            # The directory should be created by lock_temp_dir().
-            self.assertEqual(run_func(temp_dir=temp_dir, keep_temp=True),
+            # The directory should be created by lock_tmp_dir().
+            self.assertEqual(run_func(tmp_dir=tmp_dir, keep_tmp=True),
                              (True, True, True))
-            # The directory should not be deleted by lock_temp_dir().
-            self.assertTrue(temp_dir.is_dir())
+            # The directory should not be deleted by lock_tmp_dir().
+            self.assertTrue(tmp_dir.is_dir())
             self.assertFalse(lock_dir.is_dir())
         finally:
-            rm_temp(temp_dir)
+            rm_tmp(tmp_dir)
 
-    def test_new_erase_temp(self):
-        temp_dir, lock_dir = name_lock_temp()
+    def test_new_erase_tmp(self):
+        tmp_dir, lock_dir = name_lock_tmp()
         try:
             # The directory should not exist initially.
-            self.assertFalse(temp_dir.is_dir())
+            self.assertFalse(tmp_dir.is_dir())
             self.assertFalse(lock_dir.is_dir())
-            # The directory should be created by lock_temp_dir().
-            self.assertEqual(run_func(temp_dir=temp_dir, keep_temp=False),
+            # The directory should be created by lock_tmp_dir().
+            self.assertEqual(run_func(tmp_dir=tmp_dir, keep_tmp=False),
                              (False, True, True))
-            # The directory should be deleted by lock_temp_dir().
-            self.assertFalse(temp_dir.is_dir())
+            # The directory should be deleted by lock_tmp_dir().
+            self.assertFalse(tmp_dir.is_dir())
             self.assertFalse(lock_dir.is_dir())
         finally:
-            rm_temp(temp_dir)
+            rm_tmp(tmp_dir)
 
-    def test_exists_keep_temp(self):
-        temp_dir = make_temp()
-        lock_dir = get_lock(temp_dir)
+    def test_exists_keep_tmp(self):
+        tmp_dir = make_tmp()
+        lock_dir = get_lock(tmp_dir)
         try:
             # The directory should exist initially.
-            self.assertTrue(temp_dir.is_dir())
+            self.assertTrue(tmp_dir.is_dir())
             self.assertFalse(lock_dir.is_dir())
             # The function should run normally.
-            self.assertEqual(run_func(temp_dir=temp_dir, keep_temp=True),
+            self.assertEqual(run_func(tmp_dir=tmp_dir, keep_tmp=True),
                              (True, True, True))
-            # The directory should not be deleted by lock_temp_dir().
-            self.assertTrue(temp_dir.is_dir())
+            # The directory should not be deleted by lock_tmp_dir().
+            self.assertTrue(tmp_dir.is_dir())
             self.assertFalse(lock_dir.is_dir())
         finally:
-            rm_temp(temp_dir)
+            rm_tmp(tmp_dir)
 
-    def test_exists_erase_temp(self):
-        temp_dir = make_temp()
-        lock_dir = get_lock(temp_dir)
-        temp_logger.addFilter(temp_err := self.TempErrFilter())
+    def test_exists_erase_tmp(self):
+        tmp_dir = make_tmp()
+        lock_dir = get_lock(tmp_dir)
+        tmp_logger.addFilter(tmp_err := self.TmpErrFilter())
         try:
             # The directory should exist initially.
-            self.assertTrue(temp_dir.is_dir())
+            self.assertTrue(tmp_dir.is_dir())
             self.assertFalse(lock_dir.is_dir())
             # The function should fail.
             self.assertRaises(SystemExit, run_func,
-                              temp_dir=temp_dir, keep_temp=False)
-            # The directory should not be deleted by lock_temp_dir.
-            self.assertTrue(temp_dir.is_dir())
+                              tmp_dir=tmp_dir, keep_tmp=False)
+            # The directory should not be deleted by lock_tmp_dir.
+            self.assertTrue(tmp_dir.is_dir())
             self.assertFalse(lock_dir.is_dir())
         finally:
-            temp_logger.removeFilter(temp_err)
-            rm_temp(temp_dir)
+            tmp_logger.removeFilter(tmp_err)
+            rm_tmp(tmp_dir)
 
     def test_locked(self):
-        temp_dir, lock_dir = make_lock_temp()
-        temp_logger.addFilter(lock_err := self.LockErrFilter())
+        tmp_dir, lock_dir = make_lock_tmp()
+        tmp_logger.addFilter(lock_err := self.LockErrFilter())
         try:
-            for keep_temp in (True, False):
+            for keep_tmp in (True, False):
                 # The directory should exist initially.
-                self.assertTrue(temp_dir.is_dir())
+                self.assertTrue(tmp_dir.is_dir())
                 self.assertTrue(lock_dir.is_dir())
                 # The function should fail.
                 self.assertRaises(SystemExit, run_func,
-                                  temp_dir=temp_dir, keep_temp=keep_temp)
-                # The directory should not be deleted by lock_temp_dir.
-                self.assertTrue(temp_dir.is_dir())
+                                  tmp_dir=tmp_dir, keep_tmp=keep_tmp)
+                # The directory should not be deleted by lock_tmp_dir.
+                self.assertTrue(tmp_dir.is_dir())
                 self.assertTrue(lock_dir.is_dir())
         finally:
-            temp_logger.removeFilter(lock_err)
-            rm_temp(temp_dir)
+            tmp_logger.removeFilter(lock_err)
+            rm_tmp(tmp_dir)
 
 
 if __name__ == "__main__":

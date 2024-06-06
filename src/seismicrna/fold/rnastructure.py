@@ -360,19 +360,19 @@ def fold(rna: RNAProfile, *,
          fold_max: int,
          fold_percent: float,
          out_dir: Path,
-         temp_dir: Path,
-         keep_temp: bool,
+         tmp_dir: Path,
+         keep_tmp: bool,
          force: bool,
          n_procs: int):
     """ Run the 'Fold' or 'Fold-smp' program of RNAstructure. """
-    ct_file = rna.get_ct_file(out_dir)
-    if need_write(ct_file, force):
+    ct_out = rna.get_ct_file(out_dir)
+    if need_write(ct_out, force):
         # Temporary FASTA file for the RNA.
-        fasta_tmp = rna.to_fasta(temp_dir)
+        fasta_tmp = rna.to_fasta(tmp_dir)
         # Path of the temporary CT file.
-        ct_tmp = rna.get_ct_file(temp_dir)
+        ct_tmp = rna.get_ct_file(tmp_dir)
         # DMS reactivities file for the RNA.
-        dms_file = rna.to_dms(temp_dir)
+        dms_file = rna.to_dms(tmp_dir)
         try:
             # Run the command.
             run_cmd(args_to_cmd(make_fold_cmd(fasta_tmp,
@@ -390,15 +390,15 @@ def fold(rna: RNAProfile, *,
             # Renumber the CT file so that it has the same numbering
             # scheme as the section, rather than always starting at 1,
             # the latter of which is always output by the Fold program.
-            renumber_ct(ct_tmp, ct_file, rna.section.end5, force=force)
+            renumber_ct(ct_tmp, ct_out, rna.section.end5, force=force)
         finally:
-            if not keep_temp:
+            if not keep_tmp:
                 # Delete the temporary files.
                 fasta_tmp.unlink(missing_ok=True)
                 dms_file.unlink(missing_ok=True)
-                if ct_tmp != ct_file:
+                if ct_tmp != ct_out:
                     ct_tmp.unlink(missing_ok=True)
-    return ct_file
+    return ct_out
 
 
 def ct2dot(ct_file: Path, number: int | str = "all"):

@@ -11,19 +11,19 @@ logger = getLogger(__name__)
 LOCK_DIR = ".seismic-rna_lock"
 
 
-def lock_temp_dir(run: Callable):
+def lock_tmp_dir(run: Callable):
     @wraps(run)
-    def wrapper(*args, temp_dir: str | Path, keep_temp: bool, **kwargs):
-        lock_error = (f"The directory {temp_dir} is currently being used by "
+    def wrapper(*args, tmp_dir: str | Path, keep_tmp: bool, **kwargs):
+        lock_error = (f"The directory {tmp_dir} is currently being used by "
                       "another instance of SEISMIC-RNA. If SEISMIC-RNA is not "
                       "actually running, then please delete the directory with "
-                      f"'rm -r {temp_dir}'. Otherwise, please name another "
-                      "directory with '-t /new/temp/dir'.")
-        temp_error = (f"The directory {temp_dir} exists. Please either delete "
-                      f"it with 'rm -r {temp_dir}' or name another directory "
-                      f"with '-t /new/temp/dir'.")
+                      f"'rm -r {tmp_dir}'. Otherwise, please name another "
+                      "directory with '-t /new/tmp/dir'.")
+        tmp_error = (f"The directory {tmp_dir} exists. Please either delete "
+                     f"it with 'rm -r {tmp_dir}' or name another directory "
+                     f"with '-t /new/tmp/dir'.")
         # Determine whether the temporary directory and the lock exist.
-        lock = os.path.join(temp_dir, LOCK_DIR)
+        lock = os.path.join(tmp_dir, LOCK_DIR)
         try:
             os.mkdir(lock)
         except FileExistsError:
@@ -46,37 +46,37 @@ def lock_temp_dir(run: Callable):
                 # because the directory was created moments before.
                 logger.critical(lock_error)
                 raise SystemExit()
-            temp_dir_existed_before = False
-            logger.debug(f"Created and locked temporary directory: {temp_dir}")
+            tmp_dir_existed_before = False
+            logger.debug(f"Created and locked temporary directory: {tmp_dir}")
         else:
             # The temporary directory had existed, but the lock had not.
-            temp_dir_existed_before = True
-            logger.debug(f"Locked temporary directory: {temp_dir}")
+            tmp_dir_existed_before = True
+            logger.debug(f"Locked temporary directory: {tmp_dir}")
         # The lock now exists, so any other instance of SEISMIC-RNA that
         # tries to use the same lock will exit before it can use the
         # temporary directory or delete the lock. Thus, this run must
         # delete the lock upon exiting, regardless of the circumstances.
         try:
-            if temp_dir_existed_before and not keep_temp:
-                logger.critical(temp_error)
+            if tmp_dir_existed_before and not keep_tmp:
+                logger.critical(tmp_error)
                 raise SystemExit()
             try:
                 # Run the wrapped function and return its result.
                 return run(*args, **kwargs,
-                           temp_dir=temp_dir,
-                           keep_temp=keep_temp)
+                           tmp_dir=tmp_dir,
+                           keep_tmp=keep_tmp)
             finally:
                 # Delete the temporary directory unless the option to
                 # save it was enabled.
-                if not keep_temp:
-                    rmtree(temp_dir, ignore_errors=True)
-                    logger.debug(f"Deleted temporary directory: {temp_dir}")
+                if not keep_tmp:
+                    rmtree(tmp_dir, ignore_errors=True)
+                    logger.debug(f"Deleted temporary directory: {tmp_dir}")
         finally:
             # Always ensure that the temporary directory is unlocked
             # upon exiting.
             try:
                 os.rmdir(lock)
-                logger.debug(f"Unlocked temporary directory: {temp_dir}")
+                logger.debug(f"Unlocked temporary directory: {tmp_dir}")
             except FileNotFoundError:
                 pass
 

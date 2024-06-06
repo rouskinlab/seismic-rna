@@ -80,15 +80,15 @@ opt_out_dir = Option(
     help="Write all output files to this directory"
 )
 
-opt_temp_dir = Option(
-    ("--temp-dir", "-t"),
+opt_tmp_dir = Option(
+    ("--tmp-dir", "-t"),
     type=Path(file_okay=False),
-    default=os.path.join(".", "temp"),
+    default=os.path.join(".", "tmp"),
     help="Write all temporary files to this directory"
 )
 
-opt_keep_temp = Option(
-    ("--keep-temp/--erase-temp",),
+opt_keep_tmp = Option(
+    ("--keep-tmp/--erase-tmp",),
     type=bool,
     default=False,
     help="Keep temporary files after finishing"

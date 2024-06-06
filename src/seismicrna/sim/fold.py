@@ -9,7 +9,7 @@ from ..core import path
 from ..core.arg import (docdef,
                         arg_fasta,
                         opt_sim_dir,
-                        opt_temp_dir,
+                        opt_tmp_dir,
                         opt_profile_name,
                         opt_fold_sections_file,
                         opt_fold_coords,
@@ -20,12 +20,12 @@ from ..core.arg import (docdef,
                         opt_fold_mfe,
                         opt_fold_max,
                         opt_fold_percent,
-                        opt_keep_temp,
+                        opt_keep_tmp,
                         opt_force,
                         opt_max_procs,
                         opt_parallel)
 from ..core.extern import args_to_cmd, run_cmd
-from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
+from ..core.parallel import as_list_of_tuples, dispatch, lock_tmp_dir
 from ..core.rna import renumber_ct
 from ..core.seq import DNA, RefSections, Section, parse_fasta, write_fasta
 from ..core.write import need_write
@@ -50,7 +50,7 @@ def get_ct_path(top: Path, section: Section, profile: str):
 
 def fold_section(section: Section, *,
                  sim_dir: Path,
-                 temp_dir: Path,
+                 tmp_dir: Path,
                  profile_name: str,
                  fold_constraint: Path | None,
                  fold_temp: float,
@@ -58,13 +58,13 @@ def fold_section(section: Section, *,
                  fold_mfe: bool,
                  fold_max: int,
                  fold_percent: float,
-                 keep_temp: bool,
+                 keep_tmp: bool,
                  force: bool,
                  n_procs: int):
     ct_sim = get_ct_path(sim_dir, section, profile_name)
     if need_write(ct_sim, force):
-        fasta_tmp = get_fasta_path(temp_dir, section.ref)
-        ct_tmp = get_ct_path(temp_dir, section, profile_name)
+        fasta_tmp = get_fasta_path(tmp_dir, section.ref)
+        ct_tmp = get_ct_path(tmp_dir, section, profile_name)
         try:
             # Write a temporary FASTA file for this section only.
             write_fasta(fasta_tmp,
@@ -88,18 +88,18 @@ def fold_section(section: Section, *,
             # the latter of which is always output by the Fold program.
             renumber_ct(ct_tmp, ct_sim, section.end5, force=force)
         finally:
-            if not keep_temp:
+            if not keep_tmp:
                 fasta_tmp.unlink(missing_ok=True)
                 if ct_tmp != ct_sim:
                     ct_tmp.unlink(missing_ok=True)
     return ct_sim
 
 
-@lock_temp_dir
+@lock_tmp_dir
 @docdef.auto()
 def run(fasta: str, *,
         sim_dir: str,
-        temp_dir: str,
+        tmp_dir: str,
         profile_name: str,
         fold_coords: tuple[tuple[str, int, int], ...],
         fold_primers: tuple[tuple[str, DNA, DNA], ...],
@@ -110,7 +110,7 @@ def run(fasta: str, *,
         fold_mfe: bool,
         fold_max: int,
         fold_percent: float,
-        keep_temp: bool,
+        keep_tmp: bool,
         force: bool,
         max_procs: int,
         parallel: bool):
@@ -132,7 +132,7 @@ def run(fasta: str, *,
                     pass_n_procs=True,
                     args=as_list_of_tuples(sections.sections),
                     kwargs=dict(sim_dir=Path(sim_dir),
-                                temp_dir=Path(temp_dir),
+                                tmp_dir=Path(tmp_dir),
                                 profile_name=profile_name,
                                 fold_constraint=(Path(fold_constraint)
                                                  if fold_constraint
@@ -142,13 +142,13 @@ def run(fasta: str, *,
                                 fold_mfe=fold_mfe,
                                 fold_max=fold_max,
                                 fold_percent=fold_percent,
-                                keep_temp=keep_temp,
+                                keep_tmp=keep_tmp,
                                 force=force))
 
 
 params = [arg_fasta,
           opt_sim_dir,
-          opt_temp_dir,
+          opt_tmp_dir,
           opt_profile_name,
           opt_fold_sections_file,
           opt_fold_coords,
@@ -159,7 +159,7 @@ params = [arg_fasta,
           opt_fold_mfe,
           opt_fold_max,
           opt_fold_percent,
-          opt_keep_temp,
+          opt_keep_tmp,
           opt_force,
           opt_max_procs,
           opt_parallel]

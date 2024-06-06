@@ -19,7 +19,7 @@ from ..core.arg import (CMD_REL,
                         arg_input_path,
                         arg_fasta,
                         opt_out_dir,
-                        opt_temp_dir,
+                        opt_tmp_dir,
                         opt_min_mapq,
                         opt_min_reads,
                         opt_batch_size,
@@ -33,19 +33,19 @@ from ..core.arg import (CMD_REL,
                         opt_parallel,
                         opt_max_procs,
                         opt_force,
-                        opt_keep_temp)
-from ..core.parallel import lock_temp_dir
+                        opt_keep_tmp)
+from ..core.parallel import lock_tmp_dir
 
 logger = getLogger(__name__)
 
 
-@lock_temp_dir
+@lock_tmp_dir
 @docdef.auto()
 def run(fasta: str,
         input_path: tuple[str, ...],
         *,
         out_dir: str,
-        temp_dir: str,
+        tmp_dir: str,
         min_reads: int,
         min_mapq: int,
         phred_enc: int,
@@ -59,13 +59,13 @@ def run(fasta: str,
         parallel: bool,
         brotli_level: int,
         force: bool,
-        keep_temp: bool):
+        keep_tmp: bool):
     """ Compute relationships between references and aligned reads. """
     return write_all(xam_files=path.find_files_chain(map(Path, input_path),
                                                      path.XAM_SEGS),
                      fasta=Path(fasta),
                      out_dir=Path(out_dir),
-                     temp_dir=Path(temp_dir),
+                     tmp_dir=Path(tmp_dir),
                      min_reads=min_reads,
                      min_mapq=min_mapq,
                      phred_enc=phred_enc,
@@ -79,7 +79,7 @@ def run(fasta: str,
                      parallel=parallel,
                      brotli_level=brotli_level,
                      force=force,
-                     keep_temp=keep_temp)
+                     keep_tmp=keep_tmp)
 
 
 # Parameters for command line interface
@@ -89,7 +89,7 @@ params = [
     arg_input_path,
     # Output directories
     opt_out_dir,
-    opt_temp_dir,
+    opt_tmp_dir,
     # SAM options
     opt_min_mapq,
     opt_phred_enc,
@@ -107,7 +107,7 @@ params = [
     opt_parallel,
     # File generation
     opt_force,
-    opt_keep_temp,
+    opt_keep_tmp,
 ]
 
 

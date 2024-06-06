@@ -86,9 +86,9 @@ def _iter_records_paired(sam_file: TextIO):
 
 class XamViewer(object):
 
-    def __init__(self, xam_input: Path, temp_dir: Path, batch_size: int):
+    def __init__(self, xam_input: Path, tmp_dir: Path, batch_size: int):
         self.xam_input = xam_input
-        self.temp_dir = temp_dir
+        self.tmp_dir = tmp_dir
         self.batch_size = batch_size
 
     @cached_property
@@ -123,30 +123,30 @@ class XamViewer(object):
         return count_total_reads(self.flagstats)
 
     @cached_property
-    def temp_sam_path(self):
+    def tmp_sam_path(self):
         """ Get the path to the temporary SAM file. """
         return path.build(*path.XAM_STEP_SEGS,
-                          top=self.temp_dir,
+                          top=self.tmp_dir,
                           sample=self.sample,
                           cmd=path.CMD_REL_DIR,
                           step=path.STEPS_REL_SAMS,
                           ref=self.ref,
                           ext=path.SAM_EXT)
 
-    def create_temp_sam(self):
+    def create_tmp_sam(self):
         """ Create the temporary SAM file. """
-        run_view_xam(self.xam_input, self.temp_sam_path)
+        run_view_xam(self.xam_input, self.tmp_sam_path)
 
-    def delete_temp_sam(self):
+    def delete_tmp_sam(self):
         """ Delete the temporary SAM file. """
-        self.temp_sam_path.unlink(missing_ok=True)
+        self.tmp_sam_path.unlink(missing_ok=True)
 
-    def open_temp_sam(self):
+    def open_tmp_sam(self):
         """ Open the temporary SAM file as a file object. """
-        if not self.temp_sam_path.is_file():
+        if not self.tmp_sam_path.is_file():
             # Create the temporary SAM file if it does not yet exist.
-            self.create_temp_sam()
-        return open(self.temp_sam_path)
+            self.create_tmp_sam()
+        return open(self.tmp_sam_path)
 
     def _iter_batch_indexes(self):
         """ Yield the start and end positions of every batch in the SAM
@@ -167,7 +167,7 @@ class XamViewer(object):
         n_skip = (self.batch_size - 1) * (self.paired + 1)
         # Count the batches.
         batch = 0
-        with self.open_temp_sam() as sam_file:
+        with self.open_tmp_sam() as sam_file:
             # Current position in the SAM file.
             position = sam_file.tell()
             while line := sam_file.readline():
@@ -208,7 +208,7 @@ class XamViewer(object):
     def iter_records(self, batch: int):
         """ Iterate through the records of the batch. """
         start, stop = self.indexes[batch]
-        with self.open_temp_sam() as sam_file:
+        with self.open_tmp_sam() as sam_file:
             if self.paired:
                 yield from _iter_records_paired(sam_file, start, stop)
             else:

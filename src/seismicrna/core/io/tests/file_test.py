@@ -5,8 +5,8 @@ from tempfile import mkdtemp, mkstemp
 
 import numpy as np
 
-from seismicrna.core.io.file import (make_temp_backup,
-                                     restore_temp_backup)
+from seismicrna.core.io.file import (make_tmp_backup,
+                                     restore_tmp_backup)
 
 rng = np.random.default_rng()
 
@@ -46,7 +46,7 @@ class SourceBackupDirs(object):
         self._backup_dir = None
 
 
-class TestMakeTempBackup(ut.TestCase):
+class TestMakeTmpBackup(ut.TestCase):
 
     @staticmethod
     def make_file(in_dir: Path):
@@ -62,9 +62,9 @@ class TestMakeTempBackup(ut.TestCase):
     def test_backup_file(self):
         with SourceBackupDirs() as (source_dir, backup_dir):
             source_file, content = self.make_file(source_dir)
-            backup_file = make_temp_backup(source_file,
-                                           source_dir,
-                                           backup_dir)
+            backup_file = make_tmp_backup(source_file,
+                                          source_dir,
+                                          backup_dir)
             self.assertEqual(backup_file.parent, backup_dir)
             self.assertEqual(backup_file.name, source_file.name)
             with open(backup_file, "rb") as f:
@@ -75,9 +75,9 @@ class TestMakeTempBackup(ut.TestCase):
             source_subdir = self.make_dir(source_dir)
             source_file1, content1 = self.make_file(source_subdir)
             source_file2, content2 = self.make_file(source_subdir)
-            backup_subdir = make_temp_backup(source_subdir,
-                                             source_dir,
-                                             backup_dir)
+            backup_subdir = make_tmp_backup(source_subdir,
+                                            source_dir,
+                                            backup_dir)
             self.assertEqual(backup_subdir,
                              backup_dir.joinpath(source_subdir.name))
             backup_file1 = backup_subdir.joinpath(source_file1.name)
@@ -90,15 +90,15 @@ class TestMakeTempBackup(ut.TestCase):
     def test_restore_file(self):
         with SourceBackupDirs() as (source_dir, backup_dir):
             source_file, content = self.make_file(source_dir)
-            backup_file = make_temp_backup(source_file,
-                                           source_dir,
-                                           backup_dir)
+            backup_file = make_tmp_backup(source_file,
+                                          source_dir,
+                                          backup_dir)
             self.assertTrue(source_file.is_file())
             source_file.unlink()
             self.assertFalse(source_file.is_file())
-            self.assertEqual(restore_temp_backup(source_file,
-                                                 source_dir,
-                                                 backup_dir),
+            self.assertEqual(restore_tmp_backup(source_file,
+                                                source_dir,
+                                                backup_dir),
                              backup_file)
             self.assertTrue(source_file.is_file())
             with open(source_file, "rb") as f:
@@ -109,9 +109,9 @@ class TestMakeTempBackup(ut.TestCase):
             source_subdir = self.make_dir(source_dir)
             source_file1, content1 = self.make_file(source_subdir)
             source_file2, content2 = self.make_file(source_subdir)
-            backup_subdir = make_temp_backup(source_subdir,
-                                             source_dir,
-                                             backup_dir)
+            backup_subdir = make_tmp_backup(source_subdir,
+                                            source_dir,
+                                            backup_dir)
             self.assertTrue(source_subdir.is_dir())
             self.assertTrue(source_file1.is_file())
             self.assertTrue(source_file2.is_file())
@@ -119,9 +119,9 @@ class TestMakeTempBackup(ut.TestCase):
             self.assertFalse(source_subdir.is_dir())
             self.assertFalse(source_file1.is_file())
             self.assertFalse(source_file2.is_file())
-            self.assertEqual(restore_temp_backup(source_subdir,
-                                                 source_dir,
-                                                 backup_dir),
+            self.assertEqual(restore_tmp_backup(source_subdir,
+                                                source_dir,
+                                                backup_dir),
                              backup_subdir)
             self.assertTrue(source_subdir.is_dir())
             self.assertTrue(source_file1.is_file())

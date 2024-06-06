@@ -11,8 +11,8 @@ from .rnastructure import ct2dot, fold, require_data_path
 from ..core.arg import (CMD_FOLD,
                         docdef,
                         arg_input_path,
-                        opt_temp_dir,
-                        opt_keep_temp,
+                        opt_tmp_dir,
+                        opt_keep_tmp,
                         opt_fold_sections_file,
                         opt_fold_coords,
                         opt_fold_primers,
@@ -30,7 +30,7 @@ from ..core.arg import (CMD_FOLD,
 from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
                            RNASTRUCTURE_FOLD_CMD,
                            require_dependency)
-from ..core.parallel import as_list_of_tuples, dispatch, lock_temp_dir
+from ..core.parallel import as_list_of_tuples, dispatch, lock_tmp_dir
 from ..core.rna import RNAProfile
 from ..core.seq import DNA, RefSections, RefSeqs, Section
 from ..table.base import MaskPosTable, ClustPosTable
@@ -115,7 +115,7 @@ def fold_profile(table: MaskPosTable | ClustPosTable,
                                 **kwargs))
 
 
-@lock_temp_dir
+@lock_tmp_dir
 @docdef.auto()
 def run(input_path: tuple[str, ...], *,
         fold_coords: tuple[tuple[str, int, int], ...],
@@ -129,8 +129,8 @@ def run(input_path: tuple[str, ...], *,
         fold_mfe: bool,
         fold_max: int,
         fold_percent: float,
-        temp_dir: str,
-        keep_temp: bool,
+        tmp_dir: str,
+        keep_tmp: bool,
         max_procs: int,
         parallel: bool,
         force: bool):
@@ -175,8 +175,8 @@ def run(input_path: tuple[str, ...], *,
                                parallel,
                                pass_n_procs=True,
                                args=args,
-                               kwargs=dict(temp_dir=Path(temp_dir),
-                                           keep_temp=keep_temp,
+                               kwargs=dict(tmp_dir=Path(tmp_dir),
+                                           keep_tmp=keep_tmp,
                                            quantile=quantile,
                                            fold_temp=fold_temp,
                                            fold_constraint=(
@@ -204,8 +204,8 @@ params = [
     opt_fold_mfe,
     opt_fold_max,
     opt_fold_percent,
-    opt_temp_dir,
-    opt_keep_temp,
+    opt_tmp_dir,
+    opt_keep_tmp,
     opt_max_procs,
     opt_parallel,
     opt_force,

@@ -16,9 +16,9 @@ from ..core.arg import (CMD_ALIGN,
                         opt_dmfastqx,
                         opt_phred_enc,
                         opt_out_dir,
-                        opt_temp_dir,
+                        opt_tmp_dir,
                         opt_force,
-                        opt_keep_temp,
+                        opt_keep_tmp,
                         opt_parallel,
                         opt_max_procs,
                         opt_fastqc,
@@ -63,12 +63,12 @@ from ..core.extern import (BOWTIE2_CMD,
                            FASTQC_CMD,
                            SAMTOOLS_CMD,
                            require_dependency)
-from ..core.parallel import lock_temp_dir
+from ..core.parallel import lock_tmp_dir
 
 logger = getLogger(__name__)
 
 
-@lock_temp_dir
+@lock_tmp_dir
 @docdef.auto()
 def run(*,
         # Inputs
@@ -82,8 +82,8 @@ def run(*,
         phred_enc: int,
         # Outputs
         out_dir: str,
-        temp_dir: str,
-        keep_temp: bool,
+        tmp_dir: str,
+        keep_tmp: bool,
         force: bool,
         # Parallelization
         max_procs: int,
@@ -161,8 +161,8 @@ def run(*,
     return align_samples(fq_units=fq_units,
                          fasta=Path(fasta),
                          out_dir=Path(out_dir),
-                         temp_dir=Path(temp_dir),
-                         keep_temp=keep_temp,
+                         tmp_dir=Path(tmp_dir),
+                         keep_tmp=keep_tmp,
                          force=force,
                          max_procs=max_procs,
                          parallel=parallel,
@@ -217,9 +217,9 @@ params = [
     opt_phred_enc,
     # Outputs
     opt_out_dir,
-    opt_temp_dir,
+    opt_tmp_dir,
     opt_force,
-    opt_keep_temp,
+    opt_keep_tmp,
     # Parallelization
     opt_parallel,
     opt_max_procs,

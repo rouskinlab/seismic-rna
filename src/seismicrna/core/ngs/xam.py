@@ -63,7 +63,7 @@ run_index_fasta = ShellCommand("indexing reference file",
 
 def sort_xam_cmd(xam_inp: Path | None,
                  xam_out: Path | None, *,
-                 temp_dir: Path | None = None,
+                 tmp_dir: Path | None = None,
                  name: bool = False,
                  n_procs: int = 1):
     """ Sort a SAM or BAM file using `samtools sort`. """
@@ -71,9 +71,9 @@ def sort_xam_cmd(xam_inp: Path | None,
     if name:
         # Sort by name instead of coordinate.
         args.append("-n")
-    if temp_dir:
+    if tmp_dir:
         # Write temporary files to this directory.
-        args.extend(["-T", temp_dir])
+        args.extend(["-T", tmp_dir])
     if xam_out:
         args.extend(["-o", xam_out])
     else:

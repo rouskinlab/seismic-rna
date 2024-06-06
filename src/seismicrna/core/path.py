@@ -45,9 +45,9 @@ logger = getLogger(__name__)
 
 # Constants ############################################################
 
-IN_TEST_DIR = pl.Path.cwd().joinpath("test-in")
+INP_TEST_DIR = pl.Path.cwd().joinpath("test-inp")
 OUT_TEST_DIR = pl.Path.cwd().joinpath("test-out")
-TEMP_TEST_DIR = pl.Path.cwd().joinpath("test-temp")
+TMP_TEST_DIR = pl.Path.cwd().joinpath("test-tmp")
 
 # Valid/invalid characters in fields
 

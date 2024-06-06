@@ -19,8 +19,8 @@ from ..core.arg import (opt_barcode_end,
                         opt_mask_sections_file,
                         opt_fastqx,
                         opt_refs_meta,
-                        opt_temp_dir,
-                        opt_keep_temp, )
+                        opt_tmp_dir,
+                        opt_keep_tmp, )
 
 # from scipy import signal
 
@@ -40,8 +40,8 @@ params = [
     opt_index_tolerence,
     opt_demulti_overwrite,
     opt_refs_meta,
-    opt_temp_dir,
-    opt_keep_temp,
+    opt_tmp_dir,
+    opt_keep_tmp,
 
 ]
 
@@ -1046,7 +1046,7 @@ mask_sections_file csv
 
 def demultiplex_run(refs_file_csv, demulti_workspace, report_folder, fq_unit: FastqUnit, fasta, barcode_start=0,
                     barcode_end=0, split: int = 10, clipped: int = 0, rev_clipped: int = 0, index_tolerance: int = 0,
-                    parallel: bool = False, mismatch_tolerence: int = 0, overwrite: bool = False, keep_temp:bool=True):
+                    parallel: bool = False, mismatch_tolerence: int = 0, overwrite: bool = False, keep_tmp:bool=True):
     sample_name = fq_unit.sample
     mixed_fastq1, mixed_fastq2 = (fq_unit.paths.values())  # only works if the FASTQ has paired-end reads in two separate files
     mixed_fastq1=str(mixed_fastq1)

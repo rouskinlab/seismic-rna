@@ -170,12 +170,12 @@ def recast_file_path(input_path: Path,
                           **(override | output_type.auto_fields()))
 
 
-def make_temp_backup(source_path: str | Path,
-                     out_dir: str | Path,
-                     temp_dir: str | Path):
-    """ Make a temporary backup of `source_path` in `temp_dir`. """
+def make_tmp_backup(source_path: str | Path,
+                    out_dir: str | Path,
+                    tmp_dir: str | Path):
+    """ Make a temporary backup of `source_path` in `tmp_dir`. """
     # Determine the path of the backup.
-    backup_path = path.transpath(temp_dir, out_dir, source_path)
+    backup_path = path.transpath(tmp_dir, out_dir, source_path)
     # Copy the source files to the backup.
     if source_path.is_dir():
         if backup_path.exists():
@@ -191,12 +191,12 @@ def make_temp_backup(source_path: str | Path,
     return backup_path
 
 
-def restore_temp_backup(source_path: str | Path,
-                        out_dir: str | Path,
-                        temp_dir: str | Path):
+def restore_tmp_backup(source_path: str | Path,
+                       out_dir: str | Path,
+                       tmp_dir: str | Path):
     """ Restore the original files from a temporary backup. """
     # Determine the path of the backup.
-    backup_path = path.transpath(temp_dir, out_dir, source_path)
+    backup_path = path.transpath(tmp_dir, out_dir, source_path)
     # Replace the source files with the backup.
     if backup_path.is_dir():
         if source_path.exists():
