@@ -190,7 +190,7 @@ def locate_elements(collection: np.ndarray,
         for e in elements:
             if get_length(extras := e[np.isin(e, collection, invert=True)]):
                 raise ValueError(f"Elements {extras} are not in {what}")
-    inverse = calc_inverse(collection, what, verify)
+    inverse = calc_inverse(collection, verify=verify, what=what)
     return _unpack_tuple(tuple(inverse[e] for e in elements))
 
 

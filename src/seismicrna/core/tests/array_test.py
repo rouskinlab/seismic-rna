@@ -6,6 +6,7 @@ from seismicrna.core.array import (calc_inverse,
                                    ensure_same_length,
                                    find_dims,
                                    get_length,
+                                   locate_elements,
                                    triangular)
 
 rng = np.random.default_rng()
@@ -180,6 +181,37 @@ class TestCalcInverse(ut.TestCase):
                                calc_inverse,
                                target,
                                what="test_repeated")
+
+
+class TestLocateElements(ut.TestCase):
+
+    def test_locate_0(self):
+        collection = np.array([4, 1, 2, 7, 5, 3])
+        self.assertEqual(locate_elements(collection), ())
+
+    def test_locate_1(self):
+        collection = np.array([4, 1, 2, 7, 5, 3])
+        elements = np.array([5, 2, 5])
+        expect = np.array([4, 2, 4])
+        self.assertTrue(np.array_equal(locate_elements(collection, elements),
+                                       expect))
+
+    def test_locate_2(self):
+        collection = np.array([4, 1, 2, 7, 5, 3])
+        elements = np.array([3, 7, 4]), np.array([1, 5])
+        expect = (np.array([5, 3, 0]), np.array([1, 4]))
+        result = locate_elements(collection, *elements)
+        self.assertTrue(all(np.array_equal(res, exp)
+                            for res, exp in zip(result, expect, strict=True)))
+
+    def test_locate_invalid(self):
+        collection = np.array([4, 1, 2, 7, 5, 3])
+        elements = np.array([5, 2, 6])
+        self.assertRaisesRegex(ValueError,
+                               r"Elements \[6\] are not in collection",
+                               locate_elements,
+                               collection,
+                               elements)
 
 
 class TestFindDims(ut.TestCase):
