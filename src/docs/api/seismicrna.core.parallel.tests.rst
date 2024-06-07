@@ -10,7 +10,7 @@ Submodules
 ----------
 
 
-.. automodule:: seismicrna.core.parallel.tests.temp_test
+.. automodule:: seismicrna.core.parallel.tests.tmp_test
    :members:
    :undoc-members:
    :show-inheritance:

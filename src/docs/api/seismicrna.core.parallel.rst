@@ -24,7 +24,7 @@ Submodules
    :show-inheritance:
 
 
-.. automodule:: seismicrna.core.parallel.temp
+.. automodule:: seismicrna.core.parallel.tmp
    :members:
    :undoc-members:
    :show-inheritance:

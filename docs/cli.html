@@ -222,13 +222,13 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-t">
-<span id="cmdoption-seismic-wf-temp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--temp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;temp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-t" title="Link to this definition"></a></dt>
+<span id="cmdoption-seismic-wf-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-t" title="Link to this definition"></a></dt>
 <dd><p>Write all temporary files to this directory</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-keep-temp">
-<span id="cmdoption-seismic-wf-erase-temp"></span><span class="sig-name descname"><span class="pre">--keep-temp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-temp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-keep-temp" title="Link to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-keep-tmp">
+<span id="cmdoption-seismic-wf-erase-tmp"></span><span class="sig-name descname"><span class="pre">--keep-tmp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-tmp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-keep-tmp" title="Link to this definition"></a></dt>
 <dd><p>Keep temporary files after finishing</p>
 </dd></dl>
 
@@ -529,6 +529,18 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-overhangs">
 <span id="cmdoption-seismic-wf-no-overhangs"></span><span class="sig-name descname"><span class="pre">--overhangs</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-overhangs</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-overhangs" title="Link to this definition"></a></dt>
 <dd><p>Retain the overhangs of paired-end mates that dovetail</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-5">
+<span id="cmdoption-seismic-wf-clip-end5"></span><span class="sig-name descname"><span class="pre">-5</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--clip-end5</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;clip_end5&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-5" title="Link to this definition"></a></dt>
+<dd><p>Clip this many bases from the 5’ end of each read</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-3">
+<span id="cmdoption-seismic-wf-clip-end3"></span><span class="sig-name descname"><span class="pre">-3</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--clip-end3</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;clip_end3&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-3" title="Link to this definition"></a></dt>
+<dd><p>Clip this many bases from the 3’ end of each read</p>
 </dd></dl>
 
 <dl class="std option">
@@ -970,13 +982,13 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-demult-t">
-<span id="cmdoption-seismic-demult-temp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--temp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;temp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-t" title="Link to this definition"></a></dt>
+<span id="cmdoption-seismic-demult-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-t" title="Link to this definition"></a></dt>
 <dd><p>Write all temporary files to this directory</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-demult-keep-temp">
-<span id="cmdoption-seismic-demult-erase-temp"></span><span class="sig-name descname"><span class="pre">--keep-temp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-temp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-demult-keep-temp" title="Link to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-demult-keep-tmp">
+<span id="cmdoption-seismic-demult-erase-tmp"></span><span class="sig-name descname"><span class="pre">--keep-tmp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-tmp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-demult-keep-tmp" title="Link to this definition"></a></dt>
 <dd><p>Keep temporary files after finishing</p>
 </dd></dl>
 
@@ -1051,7 +1063,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-align-t">
-<span id="cmdoption-seismic-align-temp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--temp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;temp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-t" title="Link to this definition"></a></dt>
+<span id="cmdoption-seismic-align-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-t" title="Link to this definition"></a></dt>
 <dd><p>Write all temporary files to this directory</p>
 </dd></dl>
 
@@ -1062,8 +1074,8 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-align-keep-temp">
-<span id="cmdoption-seismic-align-erase-temp"></span><span class="sig-name descname"><span class="pre">--keep-temp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-temp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-keep-temp" title="Link to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-align-keep-tmp">
+<span id="cmdoption-seismic-align-erase-tmp"></span><span class="sig-name descname"><span class="pre">--keep-tmp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-tmp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-keep-tmp" title="Link to this definition"></a></dt>
 <dd><p>Keep temporary files after finishing</p>
 </dd></dl>
 
@@ -1323,7 +1335,7 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-relate-t">
-<span id="cmdoption-seismic-relate-temp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--temp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;temp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-t" title="Link to this definition"></a></dt>
+<span id="cmdoption-seismic-relate-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-t" title="Link to this definition"></a></dt>
 <dd><p>Write all temporary files to this directory</p>
 </dd></dl>
 
@@ -1370,6 +1382,18 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-5">
+<span id="cmdoption-seismic-relate-clip-end5"></span><span class="sig-name descname"><span class="pre">-5</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--clip-end5</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;clip_end5&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-5" title="Link to this definition"></a></dt>
+<dd><p>Clip this many bases from the 5’ end of each read</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-3">
+<span id="cmdoption-seismic-relate-clip-end3"></span><span class="sig-name descname"><span class="pre">-3</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--clip-end3</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;clip_end3&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-3" title="Link to this definition"></a></dt>
+<dd><p>Clip this many bases from the 3’ end of each read</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-relate-brotli-level">
 <span class="sig-name descname"><span class="pre">--brotli-level</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;brotli_level&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-brotli-level" title="Link to this definition"></a></dt>
 <dd><p>Compress pickle files with this level of Brotli (0 - 11)</p>
@@ -1394,8 +1418,8 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-relate-keep-temp">
-<span id="cmdoption-seismic-relate-erase-temp"></span><span class="sig-name descname"><span class="pre">--keep-temp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-temp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-relate-keep-temp" title="Link to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-keep-tmp">
+<span id="cmdoption-seismic-relate-erase-tmp"></span><span class="sig-name descname"><span class="pre">--keep-tmp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-tmp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-relate-keep-tmp" title="Link to this definition"></a></dt>
 <dd><p>Keep temporary files after finishing</p>
 </dd></dl>
 
@@ -1767,13 +1791,13 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-fold-t">
-<span id="cmdoption-seismic-fold-temp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--temp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;temp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-t" title="Link to this definition"></a></dt>
+<span id="cmdoption-seismic-fold-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-t" title="Link to this definition"></a></dt>
 <dd><p>Write all temporary files to this directory</p>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-fold-keep-temp">
-<span id="cmdoption-seismic-fold-erase-temp"></span><span class="sig-name descname"><span class="pre">--keep-temp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-temp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-keep-temp" title="Link to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-fold-keep-tmp">
+<span id="cmdoption-seismic-fold-erase-tmp"></span><span class="sig-name descname"><span class="pre">--keep-tmp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-tmp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-fold-keep-tmp" title="Link to this definition"></a></dt>
 <dd><p>Keep temporary files after finishing</p>
 </dd></dl>
 
@@ -3062,7 +3086,7 @@ begins with <code class="docutils literal notranslate"><span class="pre">+</span
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-sim-total-t">
-<span id="cmdoption-seismic-sim-total-temp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--temp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;temp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-sim-total-t" title="Link to this definition"></a></dt>
+<span id="cmdoption-seismic-sim-total-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-sim-total-t" title="Link to this definition"></a></dt>
 <dd><p>Write all temporary files to this directory</p>
 </dd></dl>
 
@@ -3121,8 +3145,8 @@ begins with <code class="docutils literal notranslate"><span class="pre">+</span
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-sim-total-keep-temp">
-<span id="cmdoption-seismic-sim-total-erase-temp"></span><span class="sig-name descname"><span class="pre">--keep-temp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-temp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-sim-total-keep-temp" title="Link to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-sim-total-keep-tmp">
+<span id="cmdoption-seismic-sim-total-erase-tmp"></span><span class="sig-name descname"><span class="pre">--keep-tmp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-tmp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-sim-total-keep-tmp" title="Link to this definition"></a></dt>
 <dd><p>Keep temporary files after finishing</p>
 </dd></dl>
 
@@ -3246,7 +3270,7 @@ begins with <code class="docutils literal notranslate"><span class="pre">+</span
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-sim-fold-t">
-<span id="cmdoption-seismic-sim-fold-temp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--temp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;temp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-sim-fold-t" title="Link to this definition"></a></dt>
+<span id="cmdoption-seismic-sim-fold-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-sim-fold-t" title="Link to this definition"></a></dt>
 <dd><p>Write all temporary files to this directory</p>
 </dd></dl>
 
@@ -3311,8 +3335,8 @@ begins with <code class="docutils literal notranslate"><span class="pre">+</span
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-sim-fold-keep-temp">
-<span id="cmdoption-seismic-sim-fold-erase-temp"></span><span class="sig-name descname"><span class="pre">--keep-temp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-temp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-sim-fold-keep-temp" title="Link to this definition"></a></dt>
+<dt class="sig sig-object std" id="cmdoption-seismic-sim-fold-keep-tmp">
+<span id="cmdoption-seismic-sim-fold-erase-tmp"></span><span class="sig-name descname"><span class="pre">--keep-tmp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-tmp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-sim-fold-keep-tmp" title="Link to this definition"></a></dt>
 <dd><p>Keep temporary files after finishing</p>
 </dd></dl>
 
