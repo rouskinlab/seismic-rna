@@ -244,7 +244,6 @@ def get_uniq_reads(pos_nums: Iterable[int],
     batch_to_uniq = _batch_to_uniq_read_num(read_nums_per_batch,
                                             uniq_reads.values())
     count_per_uniq = _count_uniq_reads(uniq_reads.values())
-    print("READ ENDS", reads_ends[0])
     return reads_ends, muts_per_pos, batch_to_uniq, count_per_uniq
 
 ########################################################################
