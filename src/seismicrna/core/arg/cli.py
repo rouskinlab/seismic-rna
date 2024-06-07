@@ -236,21 +236,21 @@ opt_demulti_overwrite = Option(
 
 opt_dmfastqz = Option(
     ("--dmfastqz", "-Z"),
-    type=Path(exists=True, file_okay=False),
+    type=Path(exists=True, file_okay=True),
     multiple=True,
     help="Demultiplexed FASTQ files of single-end reads"
 )
 
 opt_dmfastqy = Option(
     ("--dmfastqy", "-Y"),
-    type=Path(exists=True, file_okay=False),
+    type=Path(exists=True, file_okay=True),
     multiple=True,
     help="Demultiplexed FASTQ files of paired-end reads interleaved in one file"
 )
 
 opt_dmfastqx = Option(
     ("--dmfastqx", "-X"),
-    type=Path(exists=True, file_okay=False),
+    type=Path(exists=True, file_okay=True),
     multiple=True,
     help="Demultiplexed FASTQ files of mate 1 and mate 2 reads"
 )
