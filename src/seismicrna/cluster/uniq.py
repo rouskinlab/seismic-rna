@@ -189,8 +189,8 @@ def _uniq_reads_to_ends_muts(uniq_reads: Iterable[tuple[tuple, tuple]],
         end3s.append(end3)
         for pos in read_muts:
             muts[pos].append(uniq_read_num)
-    end5s = np.array(end5s)
-    end3s = np.array(end3s)
+    end5s = np.array(end5s) if end5s else np.empty((0, 1), dtype=int)
+    end3s = np.array(end3s) if end3s else np.empty((0, 1), dtype=int)
     muts = [np.array(muts[pos], dtype=int) for pos in pos_nums]
     return (end5s, end3s), muts
 
@@ -244,6 +244,7 @@ def get_uniq_reads(pos_nums: Iterable[int],
     batch_to_uniq = _batch_to_uniq_read_num(read_nums_per_batch,
                                             uniq_reads.values())
     count_per_uniq = _count_uniq_reads(uniq_reads.values())
+    print("READ ENDS", reads_ends[0])
     return reads_ends, muts_per_pos, batch_to_uniq, count_per_uniq
 
 ########################################################################

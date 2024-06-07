@@ -53,6 +53,15 @@ def _calc_bic(n_params: int,
     float
         Bayesian Information Criterion (BIC)
     """
+    if log_like > 0.:
+        raise ValueError(f"log_like must be ≤ 0, but got {log_like}")
+    if n_params < 0:
+        raise ValueError(f"n_params must be ≥ 0, but got {n_params}")
+    if n_data < 0:
+        raise ValueError(f"n_data must be ≥ 0, but got {n_data}")
+    if n_data == 0:
+        logger.warning("The Bayesian Information Criterion (BIC) is undefined "
+                       "for 0 data points")
     if n_data < min_data_param_ratio * n_params:
         logger.warning(f"The Bayesian Information Criterion (BIC) uses an "
                        f"approximation that is valid only when the size of the "
@@ -60,7 +69,8 @@ def _calc_bic(n_params: int,
                        f"of parameters being estimated (p = {n_params}). "
                        f"This model does not meet this criterion, so the BIC "
                        f"may not indicate the model's complexity accurately.")
-    return n_params * np.log(n_data) - 2. * log_like
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return n_params * np.log(n_data) - 2. * log_like
 
 
 def _zero_masked(p_mut: np.ndarray, unmasked: np.ndarray):
@@ -305,9 +315,9 @@ class EmClustering(object):
         # the number of non-zero proportions (which are the only ones
         # that can be estimated) minus one because of the constraint
         # that the proportions of all end coordinates must sum to 1.
-        df_ends = np.count_nonzero(
+        df_ends = max(0, np.count_nonzero(
             self.p_ends[np.triu_indices_from(self.p_ends)]
-        ) - 1
+        ) - 1)
         # The degrees of freedom of the cluster proportions equals the
         # number of clusters minus one because of the constraint that
         # the proportions of all clusters must sum to 1.
@@ -423,6 +433,14 @@ class EmClustering(object):
         # Initialize cluster membership with a Dirichlet distribution.
         self.membership = rng.dirichlet(alpha=conc_params,
                                         size=self.uniq_reads.num_uniq)
+        if self.uniq_reads.num_uniq == 0:
+            logger.warning(f"{self} got 0 reads: clustering halted")
+            self.log_likes.append(0.)
+            return self
+        if self.n_pos_unmasked == 0:
+            logger.warning(f"{self} got 0 positions: clustering halted")
+            self.log_likes.append(0.)
+            return self
         # Run EM until the log likelihood converges or the number of
         # iterations reaches max_iter, whichever happens first.
         self.converged = False
@@ -463,7 +481,9 @@ class EmClustering(object):
     @property
     def logn_exp(self):
         """ Log number of expected observations of each read. """
-        return np.log(self.uniq_reads.num_nonuniq) + self.logp_marginal
+        return (np.log(self.uniq_reads.num_nonuniq) + self.logp_marginal
+                if self.uniq_reads.num_nonuniq > 0
+                else np.empty(0))
 
     def get_props(self):
         """ Real and observed log proportion of each cluster. """

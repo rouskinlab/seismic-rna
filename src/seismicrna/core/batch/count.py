@@ -125,7 +125,7 @@ def calc_coverage(pos_index: pd.Index,
         cover_per_read = pd.DataFrame.from_dict({base: pd.Series(0, read_nums)
                                                  for base in DNA.alph()})
         return cover_per_pos, cover_per_read
-    if np.diff(positions).min() <= 0:
+    if positions.size > 1 and np.diff(positions).min() <= 0:
         raise ValueError(
             f"positions must increase monotonically, but got {positions}"
         )
