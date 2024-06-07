@@ -262,6 +262,36 @@ class TestCalcCoverage(ut.TestCase):
             self.assertIsInstance(res_per_read[base], pd.Series)
             self.assertTrue(res_per_read[base].equals(exp_per_read[base]))
 
+    def test_1_position(self):
+        pos_index = pd.MultiIndex.from_tuples([(3, "G")],
+                                              names=SEQ_INDEX_NAMES)
+        end5s = np.array([[3],
+                          [3],
+                          [3],
+                          [3]])
+        end3s = np.array([[3],
+                          [3],
+                          [3],
+                          [3]])
+        read_nums = np.arange(4)
+        exp_per_pos = pd.Series([4.], pos_index)
+        exp_per_read = {
+            "A": pd.Series([0, 0, 0, 0], read_nums),
+            "C": pd.Series([0, 0, 0, 0], read_nums),
+            "G": pd.Series([1, 1, 1, 1], read_nums),
+            "T": pd.Series([0, 0, 0, 0], read_nums),
+            "N": pd.Series([0, 0, 0, 0], read_nums)
+        }
+        res_per_pos, res_per_read = calc_coverage(pos_index,
+                                                  read_nums,
+                                                  end5s,
+                                                  end3s)
+        self.assertIsInstance(res_per_pos, pd.Series)
+        self.assertTrue(res_per_pos.equals(exp_per_pos))
+        self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
+        for base in exp_per_read:
+            self.assertIsInstance(res_per_read[base], pd.Series)
+            self.assertTrue(res_per_read[base].equals(exp_per_read[base]))
 
     def test_1_segment(self):
         """
