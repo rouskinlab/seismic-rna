@@ -140,7 +140,7 @@ FQ_EXTS = (".fq.gz",
            "_001.fastq.gz",
            "_001.fq",
            "_001.fastq")
-FQ_PAIRED_EXTS_TEMPLATES = "_R{}{}", "_mate{}{}", "_{}_sequence{}"
+FQ_PAIRED_EXTS_TEMPLATES = "_R{}{}", "_{}", "_mate{}{}", "_{}_sequence{}"
 FQ1_EXTS = tuple(template.format(1, ext) for template, ext in
                  product(FQ_PAIRED_EXTS_TEMPLATES, FQ_EXTS))
 FQ2_EXTS = tuple(template.format(2, ext) for template, ext in
