@@ -982,6 +982,55 @@ opt_png = Option(
     help="Output each graph in a Portable Network Graphics file"
 )
 
+opt_graph_mprof = Option(
+    ("--graph-mprof/--no-graph-mprof",),
+    type=bool,
+    default=True,
+    help="Graph mutational profiles"
+)
+
+opt_graph_tmprof = Option(
+    ("--graph-tmprof/--no-graph-tmprof",),
+    type=bool,
+    default=True,
+    help="Graph typed mutational profiles"
+)
+
+opt_graph_ncov = Option(
+    ("--graph-ncov/--no-graph-ncov",),
+    type=bool,
+    default=True,
+    help="Graph coverages per position"
+)
+
+opt_graph_mhist = Option(
+    ("--graph-mhist/--no-graph-mhist",),
+    type=bool,
+    default=True,
+    help="Graph histograms of mutations per read"
+)
+
+opt_graph_giniroll = Option(
+    ("--graph-giniroll/--no-graph-giniroll",),
+    type=bool,
+    default=False,
+    help="Graph rolling Gini coefficients"
+)
+
+opt_graph_roc = Option(
+    ("--graph-roc/--no-graph-roc",),
+    type=bool,
+    default=True,
+    help="Graph receiver operating characteristic curves"
+)
+
+opt_graph_aucroll = Option(
+    ("--graph-aucroll/--no-graph-aucroll",),
+    type=bool,
+    default=True,
+    help="Graph rolling areas under receiver operating characteristic curves"
+)
+
 # CT renumbering
 
 opt_ct_pos_5 = Option(
