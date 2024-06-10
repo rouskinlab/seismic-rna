@@ -74,7 +74,7 @@ def _check_no_coverage_reads(seg_ends: np.ndarray, what: str = "seg_ends"):
     num_reads, num_segs = count_reads_segments(seg_ends, what)
     if np.ma.isarray(seg_ends):
         # Check if any reads have no coverage (are completely masked).
-        no_coverage = seg_ends.mask.all(axis=1)
+        no_coverage = np.ma.getmaskarray(seg_ends).all(axis=1)
         if np.any(no_coverage):
             raise ValueError(
                 f"Got {np.count_nonzero(no_coverage)} read(s) with no coverage "

@@ -104,6 +104,10 @@ class RelateBatch(SectionMutsBatch, AllReadBatch):
                                                      (read_length if paired
                                                       else 0),
                                                      p_rev)
+        # Drop any reads with zero coverage.
+        has_coverage = np.less_equal(seg_end5s, seg_end3s).any(axis=1)
+        seg_end5s = seg_end5s[has_coverage]
+        seg_end3s = seg_end3s[has_coverage]
         simulated_all = cls(batch=batch,
                             section=section,
                             seg_end5s=seg_end5s,
