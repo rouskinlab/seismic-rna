@@ -124,7 +124,7 @@ def _compare_groups(func: Callable, mus1: np.ndarray, mus2: np.ndarray):
     _, n2 = mus2.shape
     return np.array([[func(mus1[:, cluster1], mus2[:, cluster2])
                       for cluster2 in range(n2)]
-                     for cluster1 in range(n1)])
+                     for cluster1 in range(n1)]).reshape((n1, n2))
 
 
 def calc_rmsd_groups(mus1: np.ndarray, mus2: np.ndarray):
@@ -157,14 +157,15 @@ def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
     # the assignment problem in O(n³) time, and this naive approach runs
     # in O(n!) time, the latter is simpler and still sufficiently fast
     # when n is no more than about 6, which is almost always true.
-    best_assignment = list()
+    ns = np.arange(n)
+    best_assignment = ns
     min_cost = None
-    rows = list(range(n))
-    for columns in permutations(rows):
-        cost = np.sum(costs[rows, columns])
+    for cols in permutations(ns):
+        assignment = np.array(cols, dtype=int)
+        cost = np.sum(costs[ns, assignment])
         if min_cost is None or cost < min_cost:
-            min_cost = float(cost)
-            best_assignment = list(zip(rows, columns))
+            min_cost = cost
+            best_assignment = assignment
     return best_assignment
 
 
@@ -172,14 +173,16 @@ def calc_rms_nrmsd(run1: EmClustering, run2: EmClustering):
     """ Compute the root-mean-square NRMSD between the clusters. """
     costs = np.square(calc_nrmsd_groups(run1.p_mut, run2.p_mut))
     assignment = assign_clusterings(run1.p_mut, run2.p_mut)
-    return float(np.sqrt(np.mean([costs[i, j] for i, j in assignment])))
+    return float(np.sqrt(np.mean([costs[row, col]
+                                  for row, col in enumerate(assignment)])))
 
 
 def calc_mean_pearson(run1: EmClustering, run2: EmClustering):
     """ Compute the mean Pearson correlation between the clusters. """
     correlations = calc_pearson_groups(run1.p_mut, run2.p_mut)
     assignment = assign_clusterings(run1.p_mut, run2.p_mut)
-    return float(np.mean([correlations[i, j] for i, j in assignment]))
+    return float(np.mean([correlations[row, col]
+                          for row, col in enumerate(assignment)]))
 
 ########################################################################
 #                                                                      #
