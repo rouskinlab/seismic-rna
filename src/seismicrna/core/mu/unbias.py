@@ -841,12 +841,16 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
 
     # Import scipy here instead of at the top of this module because
     # its import is slow enough to impact global startup time.
-    from scipy.optimize import newton_krylov
+    from scipy.optimize import newton_krylov, _nonlin
 
-    return _clip(newton_krylov(objective,
-                               init_p_mut_given_span,
-                               f_tol=f_tol,
-                               x_rtol=x_rtol))
+    try:
+        return _clip(newton_krylov(objective,
+                                   init_p_mut_given_span,
+                                   f_tol=f_tol,
+                                   x_rtol=x_rtol))
+    except _nonlin.NoConvergence as error:
+        logger.warning(f"Failed to unbias mutation rates: {error}")
+        return init_p_mut_given_span
 
 
 def _calc_p_ends(p_ends_observed: np.ndarray,
