@@ -6,6 +6,14 @@ seismicrna.core.rna package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   seismicrna.core.rna.tests
+
 Submodules
 ----------
 
