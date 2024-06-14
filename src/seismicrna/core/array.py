@@ -380,3 +380,26 @@ def triangular(n: int):
         of items in the equilateral triangle of side length `n`.
     """
     return (n * n + n) // 2
+
+
+def find_true_dists(booleans: np.ndarray):
+    """ Find the distance to each True element in a boolean array. """
+    # Initialize the distances to the maximum (the length of booleans).
+    length = get_length(booleans, "booleans")
+    dists = np.full(length, length)
+    # Locate each True (nonzero) element of booleans.
+    trues = np.flatnonzero(booleans)
+    if trues.size > 0:
+        n2 = trues[0]
+        dists[:n2] = np.arange(n2, 0, -1)
+        for i in range(trues.size - 1):
+            a = trues[i]
+            b = trues[i + 1]
+            d = b - a
+            n2 = d // 2
+            n1 = b - n2
+            dists[a: n1] = np.arange(d - n2)
+            dists[n1: b] = np.arange(n2, 0, -1)
+        n1 = trues[-1]
+        dists[n1:] = np.arange(length - n1)
+    return dists

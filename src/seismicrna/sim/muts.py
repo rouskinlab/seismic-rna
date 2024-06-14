@@ -8,6 +8,7 @@ import pandas as pd
 from click import command
 
 from ..core import path
+from ..core.array import find_true_dists
 from ..core.arg import (docdef,
                         opt_ct_file,
                         opt_pmut_paired,
@@ -17,7 +18,7 @@ from ..core.arg import (docdef,
                         opt_force,
                         opt_parallel,
                         opt_max_procs)
-from ..core.header import RelClustHeader, make_header
+from ..core.header import RelClustHeader, make_header, list_clusts
 from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rel import (MATCH,
                         NOCOV,
@@ -170,6 +171,11 @@ def make_pmut_means(*,
         Probability that an N is mutated.
     pnd: float
         Probability that a mutated N is a deletion.
+
+    Returns
+    -------
+    pd.DataFrame
+        Mean rate of each type of mutation (column) and each base (row).
     """
     if not 0. <= ploq <= 1.:
         raise ValueError(f"ploq must be ≥ 0 and ≤ 1, but got {ploq}")
@@ -314,6 +320,7 @@ def run_struct(ct_file: Path,
                pmut_unpaired: tuple[tuple[str, float], ...],
                vmut_paired: float,
                vmut_unpaired: float,
+               propagation: float,
                force: bool):
     pmut_file = ct_file.with_suffix(path.PARAM_MUTS_EXT)
     if need_write(pmut_file, force):
@@ -321,25 +328,46 @@ def run_struct(ct_file: Path,
         num_structs = is_paired.columns.size
         if num_structs == 0:
             raise ValueError(f"No structures in {ct_file}")
-        # Simulate mutation rates for paired and unpaired bases.
+        structures = list_clusts(num_structs)
+        # Calculate mean mutation rates.
         pm = make_pmut_means_paired(**_make_pmut_means_kwargs(pmut_paired))
         um = make_pmut_means_unpaired(**_make_pmut_means_kwargs(pmut_unpaired))
-        mu_paired = sim_pmut(is_paired.index, pm, vmut_paired)
-        mu_unpaired = sim_pmut(is_paired.index, um, vmut_unpaired)
-        if not mu_paired.index.equals(mu_unpaired.index):
-            raise ValueError(f"indexes do not match: "
-                             f"{mu_paired.index} ≠ {mu_unpaired.index}")
-        if not mu_paired.columns.equals(mu_unpaired.columns):
-            raise ValueError(f"columns do not match: "
-                             f"{mu_paired.columns} ≠ {mu_unpaired.columns}")
+        # Simulate mutation rates for paired and unpaired bases.
+        mu_paired = {structure: sim_pmut(is_paired.index, pm, vmut_paired)
+                     for structure in structures}
+        mu_unpaired = {cluster: sim_pmut(is_paired.index, um, vmut_unpaired)
+                       for cluster in structures}
+        rels = mu_paired[1].columns
+        for structure in structures:
+            if not rels.equals(mu_paired[structure].columns):
+                raise ValueError(
+                    f"Columns differ: {rels} ≠ {mu_paired[structure].columns}"
+                )
+            if not rels.equals(mu_unpaired[structure].columns):
+                raise ValueError(
+                    f"Columns differ: {rels} ≠ {mu_unpaired[structure].columns}"
+                )
         # Simulate mutation rates for each structure.
-        header = make_header(rels=map(str, mu_paired.columns),
+        header = make_header(rels=map(str, rels),
                              max_order=num_structs,
                              min_order=num_structs)
         pmut = pd.DataFrame(np.nan, is_paired.index, header.index)
-        for rel in mu_paired.columns:
-            for i, is_paired_i in is_paired.items():
-                pmut[str(rel), num_structs, i] = np.where(is_paired_i,
+        for structure, is_paired_structure in is_paired.items():
+            # Determine which bases in this structure differ in pairing
+            # status (paired vs. unpaired) between this structure and
+            # each other structure.
+            is_diff = (is_paired_structure != is_paired.T).T
+            # Find the structure with the fewest such differences.
+            num_diffs = is_diff.sum(axis=0)
+            min_diffs = num_diffs.index[num_diffs == num_diffs.min()][0]
+            is_diff_min = is_diff[min_diffs]
+            # Calculate the distance to each changed base and the
+            distances = pd.Series(find_true_dists(is_diff_min.values),
+                                  is_diff_min.index)
+            # Simulate mutation rates for the structure.
+
+            for rel in rels:
+                pmut[str(rel), num_structs, i] = np.where(is_paired_structure,
                                                           mu_paired[rel],
                                                           mu_unpaired[rel])
         pmut.to_csv(pmut_file)

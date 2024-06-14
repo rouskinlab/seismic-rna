@@ -3,9 +3,11 @@ from typing import Generator, Iterable
 
 import pandas as pd
 
-from ..seq import POS_NAME, Section
+from ..seq import FIELD_END5, FIELD_END3, POS_NAME, Section
 
 logger = getLogger(__name__)
+
+UNPAIRED = 0
 
 
 def pairs_to_dict(pairs: Iterable[tuple[int, int]]):
@@ -15,24 +17,24 @@ def pairs_to_dict(pairs: Iterable[tuple[int, int]]):
     pair_dict: dict[int, int] = dict()
 
     def add_pair(a: int, b: int):
-        """ Add a base pair at position `at` to position `to`. """
+        """ Add a base pair at position `a` to position `b`. """
         if a < 1:
             raise ValueError(f"Position must be ≥ 1, but got {a}")
         # Find the current pairing partner at this position.
-        if (to2 := pair_dict.get(a)) is None:
+        if (b2 := pair_dict.get(a)) is None:
             # There is no pairing partner at this position: add it.
             pair_dict[a] = b
-        elif to2 == b:
+        elif b2 == b:
             logger.warning(f"Pair {a, b} was given multiple times")
         else:
             # A previous partner conflicts with the current partner.
             raise ValueError(f"Position {a} was given pairs with both "
-                             f"{to2} and {b}")
+                             f"{b2} and {b}")
 
     # Add all base pairs (in both directions) to the table.
     for pos1, pos2 in pairs:
         if pos1 == pos2:
-            raise ValueError(f"Base {pos1} is paired with itself")
+            raise ValueError(f"Position {pos1} is paired with itself")
         add_pair(pos1, pos2)
         add_pair(pos2, pos1)
     return pair_dict
@@ -41,37 +43,65 @@ def pairs_to_dict(pairs: Iterable[tuple[int, int]]):
 def dict_to_pairs(pair_dict: dict[int, int]):
     """ Tuples of the 5' and 3' position in each pair. """
     for a, b in pair_dict.items():
+        if a < 1:
+            raise ValueError(f"Position must be ≥ 1, but got {a}")
         if pair_dict.get(b) != a:
             raise ValueError(f"Pair {a, b} is missing its reverse {b, a}")
         if a == b:
-            raise ValueError(f"Base {a} is paired with itself")
+            raise ValueError(f"Position {a} is paired with itself")
         if a < b:
             # Yield only the pairs in which "a" is 5' of "b".
             yield a, b
 
 
 def pairs_to_table(pairs: Iterable[tuple[int, int]], section: Section):
-    """ Return a Series of every position in the section and the base to
-    which it pairs, or 0 if it does not pair. """
-    table = pd.Series(0, index=section.range)
-    for a, b in pairs_to_dict(pairs).items():
-        try:
-            table.loc[a] = b
-        except KeyError:
+    """ Series of every position in the section and the base to which it
+    pairs, or 0 if it does not pair. """
+    table = pd.Series(UNPAIRED, index=section.range)
+    seq = str(section.seq)
+
+    def add_pair(a: int, b: int):
+        """ Add a base pair at position `a` to position `b`. """
+        if not section.end5 <= a <= section.end3:
             raise ValueError(f"Position {a} is not in {section}")
+        # Find the current pairing partner at this position.
+        index = a, seq[a - section.end5]
+        if (b2 := table[index]) == UNPAIRED:
+            # There is no pairing partner at this position: add it.
+            table[index] = b
+        elif b2 == b:
+            logger.warning(f"Pair {a, b} was given multiple times")
+        else:
+            # A previous partner conflicts with the current partner.
+            raise ValueError(f"Position {a} was given pairs with both "
+                             f"{b2} and {b}")
+
+    # Add all base pairs (in both directions) to the table.
+    for pos1, pos2 in pairs:
+        if pos1 == pos2:
+            raise ValueError(f"Position {pos1} is paired with itself")
+        add_pair(pos1, pos2)
+        add_pair(pos2, pos1)
     return table
 
 
-def table_to_dict(table: pd.Series):
-    """ Dictionary of the 5' and 3' position in each pair. """
-    # Select only the positions whose bases are paired.
-    pairs = table[table != 0]
-    return dict(zip(pairs.index.get_level_values(POS_NAME), pairs, strict=True))
+def dict_to_table(pair_dict: dict[int, int], section: Section):
+    """ Series of every position in the section and the base to which it
+    pairs, or 0 if it does not pair. """
+    return pairs_to_table(dict_to_pairs(pair_dict), section)
 
 
 def table_to_pairs(table: pd.Series):
     """ Tuples of the 5' and 3' position in each pair. """
-    return dict_to_pairs(table_to_dict(table))
+    pairs = table[table != UNPAIRED]
+    return dict_to_pairs(dict(zip(pairs.index.get_level_values(POS_NAME),
+                                  pairs,
+                                  strict=True)))
+
+
+def table_to_dict(table: pd.Series):
+    """ Dictionary of the 5' and 3' position in each pair. """
+    return pairs_to_dict(table_to_pairs(table))
 
 
 def renumber_pairs(pairs: Iterable[tuple[int, int]], offset: int):
@@ -96,6 +126,33 @@ def renumber_pairs(pairs: Iterable[tuple[int, int]], offset: int):
         if min(r1, r2) < 0:
             raise ValueError(f"Positions must be ≥ 1, but got {r1, r2}")
         yield r1, r2
+
+
+def find_enclosing_pairs(table: pd.Series):
+    """ Find the base pair that encloses each position. """
+    enclosing = pd.DataFrame(UNPAIRED, table.index, [FIELD_END5, FIELD_END3])
+    stack = list()
+    for (position, _), partner in table.items():
+        if partner != UNPAIRED:
+            if partner == position:
+                raise ValueError(f"Base {position} is paired with itself")
+            if partner > position:
+                # Create a new pair.
+                pair = position, partner
+                stack.append(pair)
+                enclosing.loc[position] = pair
+            else:
+                # Remove the last pair.
+                pair = stack.pop()
+                if pair != (partner, position):
+                    raise ValueError(f"Pairs {partner, position} and {pair} "
+                                     f"are not nested")
+                enclosing.loc[position] = pair
+        elif stack:
+            enclosing.loc[position] = stack[-1]
+    if stack:
+        raise ValueError(f"Remaining base pairs: {stack}")
+    return enclosing
 
 
 def map_nested(pairs: Iterable[tuple[int, int]]):
@@ -142,7 +199,7 @@ def _find_root_pairs_nested(pair_dict: dict[int, int]):
         max_pos = max(pair_dict)
         pos = min(pair_dict)
         while pos <= max_pos:
-            if partner := pair_dict.get(pos, 0):
+            if partner := pair_dict.get(pos, UNPAIRED):
                 if partner == pos:
                     raise ValueError(f"Base {pos} is paired with itself")
                 if partner < pos:
