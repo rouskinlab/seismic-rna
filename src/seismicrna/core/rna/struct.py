@@ -4,7 +4,8 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .pair import (find_root_pairs,
+from .pair import (UNPAIRED,
+                   find_root_pairs,
                    pairs_to_dict,
                    pairs_to_table,
                    renumber_pairs,
@@ -116,7 +117,7 @@ class RNAStructure(RNASection):
     def is_paired(self):
         """ Series where each index is a position and each value is True
         if the corresponding base is paired, otherwise False. """
-        return self.table != 0
+        return self.table != UNPAIRED
 
     def _subsection_kwargs(self,
                            end5: int,
@@ -151,7 +152,7 @@ class RNAStructure(RNASection):
         # Adjust the numbers of the paired bases (i.e. pairs > 0) such
         # that they also index from 1.
         pairs = self.table.values.copy()
-        pairs[pairs > 0] -= self.section.end5 - 1
+        pairs[pairs > UNPAIRED] -= self.section.end5 - 1
         # Generate the data for the connectivity table.
         data = {BASE_FIELD: self.seq.array,
                 PREV_FIELD: index.values - 1,

@@ -1110,7 +1110,7 @@ opt_ref = Option(
 opt_reflen = Option(
     ("--reflen", "-N"),
     type=int,
-    default=300,
+    default=280,
     help="Simulate a reference sequence with this many bases"
 )
 
@@ -1154,7 +1154,7 @@ opt_vmut_paired = Option(
 opt_vmut_unpaired = Option(
     ("--vmut-unpaired", "-w"),
     type=float,
-    default=0.04,
+    default=0.02,
     help="Set the relative variance of mutation rates of unpaired bases"
 )
 

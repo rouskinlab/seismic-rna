@@ -1,4 +1,5 @@
 import os
+from itertools import chain
 from logging import getLogger
 from pathlib import Path
 from typing import Any
@@ -8,7 +9,6 @@ import pandas as pd
 from click import command
 
 from ..core import path
-from ..core.array import find_true_dists
 from ..core.arg import (docdef,
                         opt_ct_file,
                         opt_pmut_paired,
@@ -33,14 +33,16 @@ from ..core.rel import (MATCH,
                         ANY_V,
                         ANY_N,
                         REL_TYPE)
-from ..core.rna import from_ct
+from ..core.rna import UNPAIRED, find_enclosing_pairs, from_ct
 from ..core.seq import (BASE_NAME,
                         BASEA,
                         BASEC,
                         BASEG,
                         BASET,
                         BASEN,
-                        DNA)
+                        DNA,
+                        POS_NAME,
+                        get_shared_index)
 from ..core.stats import calc_beta_params, calc_dirichlet_params
 from ..core.write import need_write
 
@@ -72,25 +74,6 @@ def verify_proportions(p: Any):
     if (max_p := arr.max()) > 1.:
         raise ValueError(f"Every proportion must be ≤ 1, "
                          f"but maximum is {max_p}")
-
-
-def get_paired(ct_file: Path):
-    """ Determine whether each base in paired in one or more structures.
-
-    Parameters
-    ----------
-    ct_file: DNA
-        File of RNA structures in connectivity table (CT) format.
-
-    Returns
-    -------
-    pd.DataFrame
-        Whether each base at each position is paired in each structure.
-    """
-    return pd.DataFrame.from_dict({
-        number: structure.is_paired
-        for number, structure in enumerate(from_ct(ct_file), start=1)
-    })
 
 
 def make_pmut_means(*,
@@ -224,7 +207,7 @@ def make_pmut_means(*,
     return pmut_means
 
 
-def make_pmut_means_paired(pam: float = 0.004,
+def make_pmut_means_paired(pam: float = 0.005,
                            pcm: float = 0.003,
                            pgm: float = 0.003,
                            ptm: float = 0.001,
@@ -239,8 +222,8 @@ def make_pmut_means_paired(pam: float = 0.004,
                            **kwargs)
 
 
-def make_pmut_means_unpaired(pam: float = 0.040,
-                             pcm: float = 0.030,
+def make_pmut_means_unpaired(pam: float = 0.045,
+                             pcm: float = 0.039,
                              pgm: float = 0.003,
                              ptm: float = 0.001,
                              pnm: float = 0.002,
@@ -320,56 +303,61 @@ def run_struct(ct_file: Path,
                pmut_unpaired: tuple[tuple[str, float], ...],
                vmut_paired: float,
                vmut_unpaired: float,
-               propagation: float,
                force: bool):
     pmut_file = ct_file.with_suffix(path.PARAM_MUTS_EXT)
     if need_write(pmut_file, force):
-        is_paired = get_paired(ct_file)
-        num_structs = is_paired.columns.size
-        if num_structs == 0:
-            raise ValueError(f"No structures in {ct_file}")
-        structures = list_clusts(num_structs)
         # Calculate mean mutation rates.
         pm = make_pmut_means_paired(**_make_pmut_means_kwargs(pmut_paired))
         um = make_pmut_means_unpaired(**_make_pmut_means_kwargs(pmut_unpaired))
-        # Simulate mutation rates for paired and unpaired bases.
-        mu_paired = {structure: sim_pmut(is_paired.index, pm, vmut_paired)
-                     for structure in structures}
-        mu_unpaired = {cluster: sim_pmut(is_paired.index, um, vmut_unpaired)
-                       for cluster in structures}
-        rels = mu_paired[1].columns
-        for structure in structures:
-            if not rels.equals(mu_paired[structure].columns):
-                raise ValueError(
-                    f"Columns differ: {rels} ≠ {mu_paired[structure].columns}"
-                )
-            if not rels.equals(mu_unpaired[structure].columns):
-                raise ValueError(
-                    f"Columns differ: {rels} ≠ {mu_unpaired[structure].columns}"
-                )
-        # Simulate mutation rates for each structure.
-        header = make_header(rels=map(str, rels),
-                             max_order=num_structs,
-                             min_order=num_structs)
-        pmut = pd.DataFrame(np.nan, is_paired.index, header.index)
-        for structure, is_paired_structure in is_paired.items():
-            # Determine which bases in this structure differ in pairing
-            # status (paired vs. unpaired) between this structure and
-            # each other structure.
-            is_diff = (is_paired_structure != is_paired.T).T
-            # Find the structure with the fewest such differences.
-            num_diffs = is_diff.sum(axis=0)
-            min_diffs = num_diffs.index[num_diffs == num_diffs.min()][0]
-            is_diff_min = is_diff[min_diffs]
-            # Calculate the distance to each changed base and the
-            distances = pd.Series(find_true_dists(is_diff_min.values),
-                                  is_diff_min.index)
-            # Simulate mutation rates for the structure.
+        # Load the structures.
+        structures = list(from_ct(ct_file))
+        if not structures:
+            raise ValueError(f"No structures in {ct_file}")
+        num_structures = len(structures)
+        index = get_shared_index(structure.table.index
+                                 for structure in structures)
+        # For every unique base pair, simulate paired/unpaied mutation
+        # rates for the bases enclosed by the pair.
+        mu_paired = dict()
+        mu_unpaired = dict()
 
+        def update_mus(pair_: tuple[int, int]):
+            """ Simulate mutation rates for paired/unpaired bases that
+            are enclosed by a given base pair. """
+            end5, end3 = pair_
+            if end5 == UNPAIRED == end3:
+                use_index = index
+            else:
+                use_index = index[np.logical_and(
+                    index.get_level_values(POS_NAME) >= end5,
+                    index.get_level_values(POS_NAME) <= end3
+                )]
+            mu_paired[pair_] = sim_pmut(use_index, pm, vmut_paired)
+            mu_unpaired[pair_] = sim_pmut(use_index, um, vmut_unpaired)
+
+        unpair = UNPAIRED, UNPAIRED
+        update_mus(unpair)
+        for pair in set(chain(*[structure.pairs for structure in structures])):
+            update_mus(pair)
+        # Assemble mutation rates for each structure.
+        rels = mu_paired[unpair].columns
+        header = make_header(rels=map(str, rels),
+                             max_order=num_structures,
+                             min_order=num_structures)
+        pmut = pd.DataFrame(np.nan, index, header.index)
+        for structure, cluster in zip(structures,
+                                      list_clusts(num_structures),
+                                      strict=True):
+            # Find the base pair that encloses each position.
+            enclosing = find_enclosing_pairs(structure.table)
             for rel in rels:
-                pmut[str(rel), num_structs, i] = np.where(is_paired_structure,
-                                                          mu_paired[rel],
-                                                          mu_unpaired[rel])
+                # For each position, select the simulated mutation rates
+                # for its enclosing base pair.
+                for position, paired in structure.is_paired.items():
+                    mu = mu_paired if paired else mu_unpaired
+                    pmut.at[position, (str(rel), num_structures, cluster)] = (
+                        mu[tuple(enclosing.loc[position])].at[position, rel]
+                    )
         pmut.to_csv(pmut_file)
     return pmut_file
 
