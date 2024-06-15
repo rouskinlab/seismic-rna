@@ -129,6 +129,7 @@ def simulate_relate(out_dir: Path,
         checksums = {RelateBatchIO.btype(): list(),
                      QnamesBatchIO.btype(): list()}
         n_batches = 0
+        read_count = 0
         for rbatch, nbatch in simulate_batches(sample=sample,
                                                ref=ref,
                                                batch_size=batch_size,
@@ -148,19 +149,20 @@ def simulate_relate(out_dir: Path,
             checksums[RelateBatchIO.btype()].append(rcheck)
             checksums[QnamesBatchIO.btype()].append(ncheck)
             n_batches += 1
+            read_count += rbatch.num_reads
         ended = datetime.now()
         # Write the report.
         report = RelateReport(sample=sample,
                               ref=ref,
-                              min_mapq=-1,
+                              min_mapq=0,
                               phred_enc=0,
                               min_phred=0,
                               ambindel=False,
                               clip_end5=0,
                               clip_end3=0,
-                              min_reads=num_reads,
-                              n_reads_xam=num_reads,
-                              n_reads_rel=num_reads,
+                              min_reads=0,
+                              n_reads_xam=0,
+                              n_reads_rel=read_count,
                               n_batches=n_batches,
                               checksums=checksums,
                               refseq_checksum=refseq_checksum,
