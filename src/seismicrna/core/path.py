@@ -35,11 +35,11 @@ import pathlib as pl
 import random
 import re
 from collections import Counter
-from functools import cache, cached_property, partial
+from functools import cache, cached_property, partial, wraps
 from itertools import chain, product
 from logging import getLogger
 from string import ascii_letters, digits, printable
-from typing import Any, Iterable, Sequence
+from typing import Any, Callable, Iterable, Sequence
 
 logger = getLogger(__name__)
 
@@ -730,7 +730,7 @@ def get_fields_in_seg_types(*segment_types: Segment) -> dict[str, Field]:
             for field_name, field in segment_type.field_types.items()}
 
 
-def deduplicated(paths: Iterable[str | pl.Path]):
+def deduplicate(paths: Iterable[str | pl.Path]):
     """ Yield the non-redundant paths. """
     seen = set()
     for path in map(sanitize, paths):
@@ -739,6 +739,16 @@ def deduplicated(paths: Iterable[str | pl.Path]):
         else:
             seen.add(path)
             yield path
+
+
+def deduplicated(func: Callable):
+    """ Decorate a Path generator to yield non-redundant paths. """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        yield from deduplicate(func(*args, **kwargs))
+
+    return wrapper
 
 
 def parse(path: str | pl.Path, /, *segment_types: Segment):
@@ -779,6 +789,7 @@ def path_matches(path: str | pl.Path, segments: Sequence[Segment]):
         return True
 
 
+@deduplicated
 def find_files(path: str | pl.Path, segments: Sequence[Segment]):
     """ Yield all files that match a sequence of path segments.
     The behavior depends on what `path` is:
@@ -815,10 +826,11 @@ def find_files(path: str | pl.Path, segments: Sequence[Segment]):
             yield path
 
 
+@deduplicated
 def find_files_chain(paths: Iterable[str | pl.Path],
                      segments: Sequence[Segment]):
     """ Yield from `find_files` called on every path in `paths`. """
-    for path in deduplicated(paths):
+    for path in deduplicate(paths):
         try:
             yield from find_files(path, segments)
         except Exception as error:
