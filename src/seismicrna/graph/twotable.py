@@ -18,7 +18,7 @@ from .base import (LINKER,
                    make_path_subject)
 from .rel import OneRelGraph
 from ..core import path
-from ..core.arg import opt_comppair, opt_compself
+from ..core.arg import opt_comppair, opt_compself, opt_out_dir
 from ..core.parallel import dispatch
 from ..table.base import ClustTable, PosTable, Table
 from ..table.load import find_pos_tables, load_pos_table
@@ -35,6 +35,7 @@ class TwoTableGraph(OneRelGraph, ABC):
     """ Graph of two Tables. """
 
     def __init__(self, *,
+                 out_dir: str | Path,
                  table1: Table | PosTable,
                  order1: int | None,
                  clust1: int | None,
@@ -43,6 +44,7 @@ class TwoTableGraph(OneRelGraph, ABC):
                  clust2: int | None,
                  **kwargs):
         super().__init__(**kwargs)
+        self._top = Path(out_dir)
         self.table1 = table1
         self.order1 = order1
         self.clust1 = clust1
@@ -58,6 +60,10 @@ class TwoTableGraph(OneRelGraph, ABC):
             raise ValueError(f"Attribute {repr(name)} differs between "
                              f"tables 1 ({repr(attr1)}) and 2 ({repr(attr2)})")
         return attr1
+
+    @property
+    def top(self):
+        return self._top
 
     @property
     def sample1(self):
@@ -279,7 +285,7 @@ class TwoTableRunner(GraphRunner, ABC):
 
     @classmethod
     def var_params(cls):
-        return super().var_params() + [opt_comppair, opt_compself]
+        return super().var_params() + [opt_comppair, opt_compself, opt_out_dir]
 
     @classmethod
     def run(cls,

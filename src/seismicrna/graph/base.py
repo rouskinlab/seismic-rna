@@ -19,7 +19,6 @@ from ..core.arg import (CLUST_INDIV,
                         opt_use_ratio,
                         opt_quantile,
                         opt_cgroup,
-                        opt_out_dir,
                         opt_csv,
                         opt_html,
                         opt_svg,
@@ -138,14 +137,11 @@ class GraphBase(ABC):
                 path.GraphSeg)
 
     def __init__(self, *,
-                 out_dir: str | Path,
                  use_ratio: bool,
                  quantile: float):
         """
         Parameters
         ----------
-        out_dir: str | Path
-            Path of the top-level output directory for all graph files.
         use_ratio: bool
             Use the ratio of the number of times the relationship occurs
             to the number of occurrances of another kind of relationship
@@ -156,7 +152,6 @@ class GraphBase(ABC):
             quantile and then winsorize them to the interval [0, 1].
             Passing 0.0 disables normalization and winsorization.
         """
-        self.top = Path(out_dir)
         self.use_ratio = use_ratio
         self.quantile = quantile
 
@@ -174,6 +169,11 @@ class GraphBase(ABC):
     @abstractmethod
     def title_action_sample(self) -> str:
         """ Action and sample for the title. """
+
+    @property
+    @abstractmethod
+    def top(self) -> Path:
+        """ Path of the top-level output directory for all files. """
 
     @property
     @abstractmethod
@@ -492,7 +492,6 @@ class GraphRunner(ABC):
     def universal_output_params(cls):
         """ Universal parameters controlling the output graph. """
         return [opt_cgroup,
-                opt_out_dir,
                 opt_csv,
                 opt_html,
                 opt_svg,
@@ -533,7 +532,6 @@ class GraphRunner(ABC):
             use_ratio: bool,
             quantile: float, *,
             cgroup: str,
-            out_dir: str,
             csv: bool,
             html: bool,
             svg: bool,

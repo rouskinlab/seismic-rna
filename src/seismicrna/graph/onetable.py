@@ -29,6 +29,10 @@ class OneTableGraph(GraphBase, ABC):
         self.clust = clust
 
     @property
+    def top(self):
+        return self.table.top
+
+    @property
     def sample(self):
         return self.table.sample
 

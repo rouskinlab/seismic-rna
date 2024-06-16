@@ -103,7 +103,7 @@ def run(*,
         parallel=parallel,
         max_procs=max_procs
     )
-    param_dir = as_tuple_str(path.deduplicated(map(os.path.dirname, ct_file)))
+    param_dir = as_tuple_str(path.deduplicate(map(os.path.dirname, ct_file)))
     return fastq_mod.run(
         input_path=(),
         param_dir=param_dir,

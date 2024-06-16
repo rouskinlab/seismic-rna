@@ -430,7 +430,7 @@ def mask_section(dataset: RelateDataset | PoolDataset,
         masker.mask()
         ended = datetime.now()
         report = masker.create_report(began, ended)
-        report.save(dataset.top, force=force)
+        report.save(dataset.top, force=True)
     return report_file
 
 ########################################################################

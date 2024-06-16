@@ -160,7 +160,7 @@ def cluster(mask_report_file: Path,
                                              began=began,
                                              ended=ended,
                                              **kwargs)
-        report.save(dataset.top, force=force)
+        report.save(dataset.top, force=True)
         order = find_best_order(orders)
         logger.info(f"Ended clustering {mask_report_file} to order {order}")
     return cluster_report_file

@@ -92,9 +92,9 @@ def join_sections(out_dir: Path,
                                        ref=ref,
                                        sect=name)
     if need_write(report_file, force):
-        # Because Mask and Join report files have the same name, it
-        # would be possible to overwrite a Mask report with a Join
-        # report, rendering the Mask dataset unusable; prevent this.
+        # Because Join report files have the same name as Mask/Cluster
+        # reports, it would be possible to overwrite the latter with a
+        # Join report, rendering their datasets unusable; prevent this.
         if report_file.is_file():
             # Check if the report file contains a Mask/Cluster report.
             try:
@@ -111,7 +111,7 @@ def join_sections(out_dir: Path,
             try:
                 join_type.load(report_file)
             except ValueError:
-                # The report file does not contain a Pool report.
+                # The report file does not contain a Join report.
                 raise TypeError(f"Overwriting {report_file} with "
                                 f"{join_type.__name__} would cause data loss")
         logger.info(f"Began joining sections {sects} into {repr(name)} with "
@@ -119,7 +119,7 @@ def join_sections(out_dir: Path,
                     f"directory {out_dir}")
         ended = datetime.now()
         report = join_type(**report_kwargs, began=began, ended=ended)
-        report.save(out_dir, force=force)
+        report.save(out_dir, force=True)
         logger.info(f"Ended joining sections {sects} into {repr(name)} with "
                     f"sample {repr(sample)}, reference {repr(ref)} in output "
                     f"directory {out_dir}")

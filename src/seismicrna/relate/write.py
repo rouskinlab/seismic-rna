@@ -249,7 +249,7 @@ def write_all(xam_files: Iterable[Path],
     return dispatch(write_one,
                     max_procs,
                     parallel,
-                    args=as_list_of_tuples(path.deduplicated(xam_files)),
+                    args=as_list_of_tuples(path.deduplicate(xam_files)),
                     kwargs=kwargs)
 
 ########################################################################

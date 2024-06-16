@@ -90,7 +90,7 @@ def pool_samples(out_dir: Path,
                             pooled_samples=samples,
                             began=began,
                             ended=ended)
-        report.save(out_dir, force=force)
+        report.save(out_dir, force=True)
         logger.info(f"Ended pooling samples {samples} into {repr(name)} with "
                     f"reference {repr(ref)} in output directory {out_dir}")
     return report_file

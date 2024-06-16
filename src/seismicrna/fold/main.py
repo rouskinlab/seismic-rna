@@ -33,6 +33,7 @@ from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
 from ..core.parallel import as_list_of_tuples, dispatch, lock_tmp_dir
 from ..core.rna import RNAProfile
 from ..core.seq import DNA, RefSections, RefSeqs, Section
+from ..core.write import need_write
 from ..table.base import MaskPosTable, ClustPosTable
 from ..table.load import find_pos_tables, load_pos_table
 
@@ -66,34 +67,40 @@ def fold_section(rna: RNAProfile,
                  n_procs: int,
                  **kwargs):
     """ Fold a section of an RNA from one mutational profile. """
-    began = datetime.now()
-    rna.to_varna_color_file(out_dir)
-    ct_file = fold(rna,
-                   out_dir=out_dir,
-                   fold_temp=fold_temp,
-                   fold_constraint=fold_constraint,
-                   fold_md=fold_md,
-                   fold_mfe=fold_mfe,
-                   fold_max=fold_max,
-                   fold_percent=fold_percent,
-                   force=force,
-                   n_procs=n_procs,
-                   **kwargs)
-    ct2dot(ct_file)
-    ended = datetime.now()
-    report = FoldReport(sample=rna.sample,
-                        ref=rna.ref,
-                        sect=rna.sect,
-                        profile=rna.profile,
-                        quantile=quantile,
-                        fold_temp=fold_temp,
-                        fold_md=fold_md,
-                        fold_mfe=fold_mfe,
-                        fold_max=fold_max,
-                        fold_percent=fold_percent,
-                        began=began,
-                        ended=ended)
-    return report.save(out_dir, force=force)
+    report_file = FoldReport.build_path(top=out_dir,
+                                        sample=rna.sample,
+                                        ref=rna.ref,
+                                        sect=rna.sect,
+                                        profile=rna.profile)
+    if need_write(report_file, force):
+        began = datetime.now()
+        rna.to_varna_color_file(out_dir)
+        ct_file = fold(rna,
+                       out_dir=out_dir,
+                       fold_temp=fold_temp,
+                       fold_constraint=fold_constraint,
+                       fold_md=fold_md,
+                       fold_mfe=fold_mfe,
+                       fold_max=fold_max,
+                       fold_percent=fold_percent,
+                       n_procs=n_procs,
+                       **kwargs)
+        ct2dot(ct_file)
+        ended = datetime.now()
+        report = FoldReport(sample=rna.sample,
+                            ref=rna.ref,
+                            sect=rna.sect,
+                            profile=rna.profile,
+                            quantile=quantile,
+                            fold_temp=fold_temp,
+                            fold_md=fold_md,
+                            fold_mfe=fold_mfe,
+                            fold_max=fold_max,
+                            fold_percent=fold_percent,
+                            began=began,
+                            ended=ended)
+        report.save(out_dir, force=True)
+    return report_file
 
 
 def fold_profile(table: MaskPosTable | ClustPosTable,
