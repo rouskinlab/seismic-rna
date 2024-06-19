@@ -279,34 +279,32 @@ def check_data_path():
     # Get the value of the DATAPATH environment variable, if it exists.
     data_path = os.environ.get(DATAPATH)
     if data_path is None:
-        return f"the {DATAPATH} environment variable is not set"
+        raise ValueError(f"The {DATAPATH} environment variable is not set")
     # Check if the path indicated by DATAPATH exists on the file system.
-    if not os.path.exists(data_path):
-        return f"{DATAPATH} is {repr(data_path)}, which does not exist"
     if not os.path.isdir(data_path):
-        return f"{DATAPATH} is {repr(data_path)}, which is not a directory"
+        raise FileNotFoundError(f"{DATAPATH} is set to {repr(data_path)}, "
+                                f"which is not a directory")
     # Check if all expected files in the DATAPATH directory exist.
     extant_files = set(os.listdir(data_path))
     for expected_file in DATAPATH_FILES.strip().split():
         if expected_file not in extant_files:
-            return (f"{DATAPATH} is {repr(data_path)}, which is missing "
-                    f"the required file {repr(expected_file)}")
-    # All checks succeeded.
-    return ""
+            raise FileNotFoundError(
+                f"{DATAPATH} is set to {repr(data_path)}, which is missing "
+                f"the required file {repr(expected_file)}"
+            )
 
 
 def require_data_path():
     """ Return an error message if the DATAPATH is not valid. """
-    if error := check_data_path():
-        # The DATAPATH is not valid: error message.
-        return (
+    try:
+        check_data_path()
+    except Exception as error:
+        raise RuntimeError(
             f"RNAstructure requires an environment variable called {DATAPATH} "
             f"to point to the directory in which its thermodynamic parameters "
             f"are located, but {error}. For more information, please refer to "
             f"https://rna.urmc.rochester.edu/Text/Thermodynamics.html"
         )
-    # The DATAPATH is valid: no error.
-    return ""
 
 
 def make_fold_cmd(fasta_file: Path,

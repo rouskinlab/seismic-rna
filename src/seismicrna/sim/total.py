@@ -1,4 +1,5 @@
 import os
+from logging import getLogger
 from typing import Iterable
 
 from click import command
@@ -15,9 +16,11 @@ from ..core.arg import (arg_fasta,
                         opt_brotli_level,
                         opt_ct_file,
                         opt_param_dir,
-                        docdef,
                         merge_params)
+from ..core.run import run_func
 from ..core.seq import DNA
+
+logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -26,10 +29,10 @@ def as_tuple_str(items: Iterable):
     return tuple(map(str, items))
 
 
-@docdef.auto()
+@run_func(logger.critical)
 def run(*,
         sim_dir: str,
-        tmp_dir: str,
+        tmp_pfx: str,
         sample: str,
         refs: str,
         ref: str,
@@ -73,7 +76,7 @@ def run(*,
     ct_file = as_tuple_str(fold_mod.run(
         fasta=fasta,
         sim_dir=sim_dir,
-        tmp_dir=tmp_dir,
+        tmp_pfx=tmp_pfx,
         profile_name=profile_name,
         fold_coords=fold_coords,
         fold_primers=fold_primers,

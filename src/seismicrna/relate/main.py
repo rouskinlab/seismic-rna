@@ -15,11 +15,10 @@ from click import command
 from .write import write_all
 from ..core import path
 from ..core.arg import (CMD_REL,
-                        docdef,
                         arg_input_path,
                         arg_fasta,
                         opt_out_dir,
-                        opt_tmp_dir,
+                        opt_tmp_pfx,
                         opt_min_mapq,
                         opt_min_reads,
                         opt_batch_size,
@@ -34,18 +33,16 @@ from ..core.arg import (CMD_REL,
                         opt_max_procs,
                         opt_force,
                         opt_keep_tmp)
-from ..core.parallel import lock_tmp_dir
+from ..core.run import run_func
 
 logger = getLogger(__name__)
 
 
-@lock_tmp_dir
-@docdef.auto()
+@run_func(logger.critical, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str,
-        input_path: tuple[str, ...],
-        *,
+        input_path: tuple[str, ...], *,
         out_dir: str,
-        tmp_dir: str,
+        tmp_dir: Path,
         min_reads: int,
         min_mapq: int,
         phred_enc: int,
@@ -65,7 +62,7 @@ def run(fasta: str,
                                                      path.XAM_SEGS),
                      fasta=Path(fasta),
                      out_dir=Path(out_dir),
-                     tmp_dir=Path(tmp_dir),
+                     tmp_dir=tmp_dir,
                      min_reads=min_reads,
                      min_mapq=min_mapq,
                      phred_enc=phred_enc,
@@ -89,7 +86,7 @@ params = [
     arg_input_path,
     # Output directories
     opt_out_dir,
-    opt_tmp_dir,
+    opt_tmp_pfx,
     # SAM options
     opt_min_mapq,
     opt_phred_enc,

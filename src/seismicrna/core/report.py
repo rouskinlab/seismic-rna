@@ -44,7 +44,6 @@ from .arg import (opt_phred_enc,
                   opt_bt2_dovetail,
                   opt_bt2_contain,
                   opt_bt2_local,
-                  opt_cram,
                   opt_min_reads,
                   opt_min_mapq,
                   opt_min_ncov_read,
@@ -321,7 +320,6 @@ Bowtie2Reseed = OptionField(opt_bt2_r)
 Bowtie2Dpad = OptionField(opt_bt2_dpad)
 Bowtie2Orient = OptionField(opt_bt2_orient)
 MinMapQualF = OptionField(opt_min_mapq)
-CramOutF = OptionField(opt_cram)
 AlignReadsInitF = Field("align_reads_init", "Number of reads in the FASTQ file(s)", int)
 ReadsTrimF = Field("reads_trim", "Number of reads after trimming", int)
 ReadsAlignF = Field("reads_align",

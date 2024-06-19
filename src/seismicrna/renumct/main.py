@@ -14,36 +14,22 @@ from click import command
 
 from ..core import path
 from ..core.arg import (CMD_RENUMCT,
-                        docdef,
                         opt_ct_pos_5,
                         opt_inplace,
                         opt_out_dir,
                         opt_force,
                         opt_max_procs,
                         opt_parallel)
-from ..core.parallel import dispatch
 from ..core.rna import renumber_ct as renumber_ct
+from ..core.run import run_func
+from ..core.task import dispatch
 
 logger = getLogger(__name__)
 
-params = [
-    opt_ct_pos_5,
-    opt_inplace,
-    opt_out_dir,
-    opt_force,
-    opt_max_procs,
-    opt_parallel
-]
 
-
-@command(CMD_RENUMCT, params=params)
-def cli(*args, **kwargs):
-    """ Renumber connectivity table (CT) files given a 5' position. """
-    return run(*args, **kwargs)
-
-
-@docdef.auto()
-def run(ct_pos_5: tuple[tuple[str, int], ...],
+@run_func(logger.critical)
+def run(*,
+        ct_pos_5: tuple[tuple[str, int], ...],
         inplace: bool,
         out_dir: str,
         force: bool,
@@ -86,6 +72,22 @@ def run(ct_pos_5: tuple[tuple[str, int], ...],
                     args=args,
                     kwargs=dict(force=force or inplace),
                     pass_n_procs=False)
+
+
+params = [
+    opt_ct_pos_5,
+    opt_inplace,
+    opt_out_dir,
+    opt_force,
+    opt_max_procs,
+    opt_parallel
+]
+
+
+@command(CMD_RENUMCT, params=params)
+def cli(*args, **kwargs):
+    """ Renumber connectivity table (CT) files given a 5' position. """
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #

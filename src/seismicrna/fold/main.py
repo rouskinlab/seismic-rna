@@ -9,9 +9,8 @@ from click import command
 from .report import FoldReport
 from .rnastructure import ct2dot, fold, require_data_path
 from ..core.arg import (CMD_FOLD,
-                        docdef,
                         arg_input_path,
-                        opt_tmp_dir,
+                        opt_tmp_pfx,
                         opt_keep_tmp,
                         opt_fold_sections_file,
                         opt_fold_coords,
@@ -26,13 +25,16 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_percent,
                         opt_max_procs,
                         opt_parallel,
-                        opt_force)
+                        opt_force,
+                        optional_path)
 from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
                            RNASTRUCTURE_FOLD_CMD,
                            require_dependency)
-from ..core.parallel import as_list_of_tuples, dispatch, lock_tmp_dir
 from ..core.rna import RNAProfile
+from ..core.run import run_func
 from ..core.seq import DNA, RefSections, RefSeqs, Section
+from ..core.task import as_list_of_tuples, dispatch
+from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.write import need_write
 from ..table.base import MaskPosTable, ClustPosTable
 from ..table.load import find_pos_tables, load_pos_table
@@ -54,8 +56,9 @@ def find_foldable_tables(input_path: Iterable[str | Path]):
                 yield file, table
 
 
-def fold_section(rna: RNAProfile,
+def fold_section(rna: RNAProfile, *,
                  out_dir: Path,
+                 tmp_dir: Path,
                  quantile: float,
                  fold_temp: float,
                  fold_constraint: Path | None,
@@ -74,9 +77,11 @@ def fold_section(rna: RNAProfile,
                                         profile=rna.profile)
     if need_write(report_file, force):
         began = datetime.now()
-        rna.to_varna_color_file(out_dir)
+        release_dir, working_dir = get_release_working_dirs(tmp_dir)
+        rna.to_varna_color_file(release_dir)
         ct_file = fold(rna,
-                       out_dir=out_dir,
+                       out_dir=release_dir,
+                       tmp_dir=working_dir,
                        fold_temp=fold_temp,
                        fold_constraint=fold_constraint,
                        fold_md=fold_md,
@@ -99,7 +104,8 @@ def fold_section(rna: RNAProfile,
                             fold_percent=fold_percent,
                             began=began,
                             ended=ended)
-        report.save(out_dir, force=True)
+        report_saved = report.save(release_dir)
+        release_to_out(out_dir, release_dir, report_saved.parent)
     return report_file
 
 
@@ -122,8 +128,7 @@ def fold_profile(table: MaskPosTable | ClustPosTable,
                                 **kwargs))
 
 
-@lock_tmp_dir
-@docdef.auto()
+@run_func(logger.critical, with_tmp=True, pass_keep_tmp=True)
 def run(input_path: tuple[str, ...], *,
         fold_coords: tuple[tuple[str, int, int], ...],
         fold_primers: tuple[tuple[str, DNA, DNA], ...],
@@ -136,22 +141,16 @@ def run(input_path: tuple[str, ...], *,
         fold_mfe: bool,
         fold_max: int,
         fold_percent: float,
-        tmp_dir: str,
+        tmp_dir: Path,
         keep_tmp: bool,
         max_procs: int,
         parallel: bool,
         force: bool):
     """ Predict RNA secondary structures using mutation rates. """
     # Check for the dependencies and the DATAPATH environment variable.
-    if error := require_dependency(RNASTRUCTURE_FOLD_CMD, __name__):
-        logger.critical(error)
-        return list()
-    if error := require_dependency(RNASTRUCTURE_CT2DOT_CMD, __name__):
-        logger.critical(error)
-        return list()
-    if error := require_data_path():
-        logger.critical(error)
-        return list()
+    require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
+    require_dependency(RNASTRUCTURE_CT2DOT_CMD, __name__)
+    require_data_path()
     # Reactivities must be normalized before using them to fold.
     if quantile <= 0.:
         logger.warning("Fold needs normalized mutation rates, but got quantile "
@@ -164,9 +163,7 @@ def run(input_path: tuple[str, ...], *,
     for table in tables:
         ref_seqs.add(table.ref, table.refseq)
     fold_sections = RefSections(ref_seqs,
-                                sects_file=(Path(fold_sections_file)
-                                            if fold_sections_file
-                                            else None),
+                                sects_file=optional_path(fold_sections_file),
                                 coords=fold_coords,
                                 primers=fold_primers,
                                 default_full=fold_full).dict
@@ -177,25 +174,23 @@ def run(input_path: tuple[str, ...], *,
                      else [table.section]))
             for table in tables]
     # Fold the RNA profiles.
-    return list(chain(dispatch(fold_profile,
-                               max_procs,
-                               parallel,
-                               pass_n_procs=True,
-                               args=args,
-                               kwargs=dict(tmp_dir=Path(tmp_dir),
-                                           keep_tmp=keep_tmp,
-                                           quantile=quantile,
-                                           fold_temp=fold_temp,
-                                           fold_constraint=(
-                                               Path(fold_constraint)
-                                               if fold_constraint
-                                               else None
-                                           ),
-                                           fold_md=fold_md,
-                                           fold_mfe=fold_mfe,
-                                           fold_max=fold_max,
-                                           fold_percent=fold_percent,
-                                           force=force))))
+    return list(chain(dispatch(
+        fold_profile,
+        max_procs,
+        parallel,
+        pass_n_procs=True,
+        args=args,
+        kwargs=dict(tmp_dir=tmp_dir,
+                    keep_tmp=keep_tmp,
+                    quantile=quantile,
+                    fold_temp=fold_temp,
+                    fold_constraint=optional_path(fold_constraint),
+                    fold_md=fold_md,
+                    fold_mfe=fold_mfe,
+                    fold_max=fold_max,
+                    fold_percent=fold_percent,
+                    force=force)
+    )))
 
 
 params = [
@@ -211,7 +206,7 @@ params = [
     opt_fold_mfe,
     opt_fold_max,
     opt_fold_percent,
-    opt_tmp_dir,
+    opt_tmp_pfx,
     opt_keep_tmp,
     opt_max_procs,
     opt_parallel,

@@ -1,6 +1,10 @@
 from shutil import which
 
 
+class DependencyError(RuntimeError):
+    """ A required dependency is missing. """
+
+
 def dependency_exists(dependency: str) -> bool:
     """ Check whether a dependency exists. """
     return which(dependency) is not None
@@ -8,14 +12,12 @@ def dependency_exists(dependency: str) -> bool:
 
 def require_dependency(dependency: str, module: str = ""):
     """ If a dependency does not exist, return an error message. """
-    if dependency_exists(dependency):
-        # The dependency exists: no error message.
-        return ""
-    # The dependency is missing: error message.
-    by = f"by '{module}' " if module else ""
-    return (f"{repr(dependency)} is required {by}but was not found. "
-            f"Please install it (if not yet) and place the executable for "
-            f"{repr(dependency)} in your PATH.")
+    if not dependency_exists(dependency):
+        by = f"by '{module}' " if module else ""
+        message = (f"{repr(dependency)} is required {by}but was not found. "
+                   f"Please install it (if not yet) and place the executable "
+                   f"for {repr(dependency)} in your PATH.")
+        raise DependencyError(message)
 
 ########################################################################
 #                                                                      #

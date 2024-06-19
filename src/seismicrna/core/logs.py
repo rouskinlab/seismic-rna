@@ -7,8 +7,9 @@ Central manager of logging.
 """
 
 import logging
-from functools import cache
+from functools import cache, wraps
 from itertools import chain
+from typing import Callable
 
 MAX_VERBOSE = 2
 MAX_QUIET = 2
@@ -100,7 +101,6 @@ def get_verbosity(verbose: int = 0, quiet: int = 0):
     Giving both `verbose` and `quiet` flags causes the verbosity
     to default to `verbose=0`, `quiet=0`.
     """
-
     # Limit verbose and quiet to 2.
     if verbose > MAX_VERBOSE:
         logging.warning(f"Setting 'verbose' to {MAX_VERBOSE} (got {verbose})")
@@ -108,7 +108,6 @@ def get_verbosity(verbose: int = 0, quiet: int = 0):
     if quiet > MAX_QUIET:
         logging.warning(f"Setting 'quiet' to {MAX_QUIET} (got {quiet})")
         quiet = MAX_QUIET
-
     # Set logging level based on verbose and quiet.
     try:
         return LEVELS[verbose, quiet]
@@ -140,10 +139,9 @@ def set_config(verbose: int,
         logger.addHandler(file_handler)
 
 
-def get_config(logger: logging.Logger | None = None):
+def get_config():
     """ Get the configuration parameters of a logger. """
-    if logger is None:
-        logger = get_top_logger()
+    logger = get_top_logger()
     verbose = 0
     quiet = 0
     log_file = None
@@ -156,6 +154,41 @@ def get_config(logger: logging.Logger | None = None):
             if isinstance(handler.formatter, ColorFormatter):
                 log_color = True
     return verbose, quiet, log_file, log_color
+
+
+def exc_info():
+    """ Whether to log exception information. """
+    verbose, _, _, _ = get_config()
+    return verbose == MAX_VERBOSE
+
+
+def log_exceptions(logging_method: Callable):
+    """ If any exception occurs, catch it and return an empty list. """
+    try:
+        logger = getattr(logging_method, "__self__")
+    except AttributeError:
+        raise TypeError("logging_method is not an instance method")
+    if not isinstance(logger, logging.Logger):
+        raise TypeError("logging_method must be instance method of a Logger, "
+                        f"but got {logging_method}")
+    if logging_method not in [logger.critical, logger.error, logger.warning]:
+        raise ValueError("logging_method must be critical, error, or warning, "
+                         f"but got {logging_method}")
+
+    def decorator(func: Callable):
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                result = func(*args, **kwargs)
+                return result if isinstance(result, list) else list(result)
+            except Exception as error:
+                logging_method(error, exc_info=exc_info())
+                return list()
+
+        return wrapper
+
+    return decorator
 
 ########################################################################
 #                                                                      #

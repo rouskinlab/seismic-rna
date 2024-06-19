@@ -1,5 +1,6 @@
 from logging import getLogger
 from pathlib import Path
+from shutil import copy2
 from typing import Callable
 
 import pandas as pd
@@ -107,6 +108,47 @@ def write_log_counts(orders: list[RunOrderResults],
     # Write the log counts to the file.
     log_counts.to_csv(file)
     return file
+
+
+def copy_single_run_table(to_dir: Path,
+                          from_dir: Path,
+                          sample: str,
+                          ref: str,
+                          sect: str,
+                          table: str,
+                          k: int,
+                          run: int):
+    """ Hard-link (if possible -- otherwise, copy) a table for a single
+    run to a new directory. """
+    src = get_table_path(from_dir, sample, ref, sect, table, k, run)
+    dst = get_table_path(to_dir, sample, ref, sect, table, k, run)
+    try:
+        # First, attempt to hard-link the table.
+        dst.hardlink_to(src)
+    except OSError:
+        # If that fails, then default to copying the table.
+        copy2(src, dst)
+    return dst
+
+
+def copy_all_run_tables(to_dir: Path,
+                        from_dir: Path,
+                        sample: str,
+                        ref: str,
+                        sect: str,
+                        max_k: int,
+                        num_runs: int):
+    return [copy_single_run_table(to_dir,
+                                  from_dir,
+                                  sample,
+                                  ref,
+                                  sect,
+                                  table,
+                                  k,
+                                  run)
+            for k in range(1, max_k + 1)
+            for run in range(num_runs if k > 1 else 1)
+            for table in (path.CLUST_MUS_RUN_TABLE, path.CLUST_PROP_RUN_TABLE)]
 
 ########################################################################
 #                                                                      #

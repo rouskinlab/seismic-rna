@@ -7,7 +7,7 @@ import pandas as pd
 from click import command
 
 from .compare import format_exp_count_col
-from .csv import get_count_path
+from .csv import copy_all_run_tables, get_count_path
 from .data import ClusterMutsDataset
 from .data import load_cluster_dataset
 from .io import ClusterBatchIO
@@ -15,13 +15,12 @@ from .names import BIT_VECTOR_NAME, LOG_OBS_NAME
 from .report import ClusterReport
 from ..core import path
 from ..core.arg import (CMD_DELCLUST,
-                        docdef,
                         arg_input_path,
+                        opt_tmp_pfx,
                         opt_max_clusters,
                         opt_brotli_level,
                         opt_parallel,
                         opt_max_procs)
-from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.report import (calc_dt_minutes,
                            Field,
                            ChecksumsF,
@@ -39,6 +38,9 @@ from ..core.report import (calc_dt_minutes,
                            ClustsMeanRsF,
                            ClustsBicF,
                            NumClustsF)
+from ..core.run import run_func
+from ..core.task import as_list_of_tuples, dispatch
+from ..core.tmp import release_to_out
 
 logger = getLogger(__name__)
 
@@ -46,30 +48,32 @@ BTYPE = ClusterBatchIO.btype()
 
 
 def update_log_counts(best_order: int,
-                      top: Path,
+                      tmp_dir: Path,
+                      out_dir: Path,
                       sample: str,
                       ref: str,
                       sect: str):
     """ Update the expected log counts of unique bit vectors. """
     if best_order < 1:
         raise ValueError(f"Best order must be ≥ 1, but got {best_order}")
-    # Build the path for the output file.
-    file = get_count_path(top, sample, ref, sect)
-    # Load the existing counts.
-    original_log_counts = pd.read_csv(file, index_col=BIT_VECTOR_NAME)
+    # Load the original log-counts.
+    orig_file = get_count_path(out_dir, sample, ref, sect)
+    orig_log_counts = pd.read_csv(orig_file, index_col=BIT_VECTOR_NAME)
     # Copy the observed counts.
-    new_log_counts = original_log_counts[LOG_OBS_NAME].to_frame()
+    new_log_counts = orig_log_counts[LOG_OBS_NAME].to_frame()
     # Copy the expected counts for the orders up to max_order.
     for order in range(1, best_order + 1):
         col = format_exp_count_col(order)
-        new_log_counts[col] = original_log_counts[col]
+        new_log_counts[col] = orig_log_counts[col]
     # Write the updated log counts to the file.
-    new_log_counts.to_csv(file)
-    return file
+    new_file = get_count_path(tmp_dir, sample, ref, sect)
+    new_log_counts.to_csv(new_file)
+    return new_file
 
 
 def update_batches(dataset: ClusterMutsDataset,
                    best_order: int,
+                   tmp_dir: Path,
                    brotli_level: int):
     """ Update the cluster memberships in batches. """
     if best_order < 1:
@@ -82,9 +86,7 @@ def update_batches(dataset: ClusterMutsDataset,
                                    sect=dataset.sect,
                                    batch=original_batch.batch,
                                    resps=original_batch.resps.loc[:, orders])
-        _, checksum = new_batch.save(top=dataset.top,
-                                     brotli_level=brotli_level,
-                                     force=True)
+        _, checksum = new_batch.save(tmp_dir, brotli_level=brotli_level)
         checksums.append(checksum)
     return checksums
 
@@ -141,12 +143,12 @@ def update_report(original_report: ClusterReport,
         taken=(original_report.get_field(TimeTakenF)
                + calc_dt_minutes(began, ended)),
     )
-    new_report.save(top, force=True)
-    return new_report
+    return new_report.save(top)
 
 
 def del_orders(report_file: Path,
                max_order: int, *,
+               tmp_dir: Path,
                brotli_level: int):
     """ Delete orders from an existing report and dataset. """
     if max_order < 1:
@@ -160,29 +162,41 @@ def del_orders(report_file: Path,
                     f"order {max_order}")
         dataset = load_cluster_dataset(report_file)
         original_best_order = report.get_field(NumClustsF)
+        num_runs = report.get_field(ClustNumRunsF)
         if max_order < original_best_order:
             # Delete all orders greater than max_order.
             best_order = max_order
             update_log_counts(best_order,
-                              top=dataset.top,
+                              tmp_dir=tmp_dir,
+                              out_dir=dataset.top,
                               sample=dataset.sample,
                               ref=dataset.ref,
                               sect=dataset.sect)
             checksums = update_batches(dataset,
                                        best_order,
+                                       tmp_dir,
                                        brotli_level)
         else:
             # There is nothing to delete.
             best_order = original_best_order
             checksums = report.get_field(ChecksumsF)[BTYPE]
+        # Copy the mutation rates and cluster proportion tables.
+        copy_all_run_tables(tmp_dir,
+                            dataset.top,
+                            dataset.sample,
+                            dataset.ref,
+                            dataset.sect,
+                            min(max_order, original_best_order),
+                            num_runs)
         ended = datetime.now()
-        update_report(report,
-                      max_order,
-                      best_order,
-                      checksums,
-                      began,
-                      ended,
-                      dataset.top)
+        report_saved = update_report(report,
+                                     max_order,
+                                     best_order,
+                                     checksums,
+                                     began,
+                                     ended,
+                                     tmp_dir)
+        release_to_out(dataset.top, tmp_dir, report_saved.parent)
         logger.info(f"Ended deleting clusters from {report_file} down to "
                     f"order {max_order}")
     else:
@@ -191,8 +205,9 @@ def del_orders(report_file: Path,
     return report_file
 
 
-@docdef.auto()
+@run_func(logger.critical, with_tmp=True)
 def run(input_path: tuple[str, ...], *,
+        tmp_dir: Path,
         max_clusters: int,
         brotli_level: int,
         max_procs: int,
@@ -212,12 +227,14 @@ def run(input_path: tuple[str, ...], *,
                     pass_n_procs=False,
                     args=as_list_of_tuples(report_files),
                     kwargs=dict(max_order=max_clusters,
+                                tmp_dir=tmp_dir,
                                 brotli_level=brotli_level))
 
 
 params = [
     # Input files
     arg_input_path,
+    opt_tmp_pfx,
     # Clustering options
     opt_max_clusters,
     # Compression

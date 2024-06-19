@@ -1,3 +1,4 @@
+from logging import getLogger
 from pathlib import Path
 
 from click import command
@@ -17,9 +18,11 @@ from ..core.arg import (CMD_DEMULT,
                         opt_out_dir,
                         opt_phred_enc,
                         opt_refs_meta,
-                        opt_tmp_dir,
+                        opt_tmp_pfx,
                         opt_keep_tmp, )
-from ..core.parallel import lock_tmp_dir
+from ..core.run import run_func
+
+logger = getLogger(__name__)
 
 params = [
     # Inputs
@@ -35,13 +38,13 @@ params = [
     opt_mismatch_tolerence,
     opt_index_tolerence,
     opt_demulti_overwrite,
-    opt_tmp_dir,
+    opt_tmp_pfx,
     opt_keep_tmp,
     opt_refs_meta,
 ]
 
 
-# Turn into DREEM command.
+# Turn into command.
 
 @command(CMD_DEMULT, params=params)
 def cli(*args, **kwargs):
@@ -49,13 +52,13 @@ def cli(*args, **kwargs):
     return run(*args, **kwargs)
 
 
-@lock_tmp_dir
-def run(refs_meta: str,
+@run_func(logger.critical, pass_keep_tmp=True)
+def run(fasta: str, *,
+        refs_meta: str,
         out_dir: str,
         tmp_dir: str,
         fastqx: tuple[str, ...],
         phred_enc: int,
-        fasta: str,
         barcode_start=0,
         barcode_end=0,
         clipped: int = 0,

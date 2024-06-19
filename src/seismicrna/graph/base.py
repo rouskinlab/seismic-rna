@@ -527,10 +527,10 @@ class GraphRunner(ABC):
     @classmethod
     @abstractmethod
     def run(cls,
-            input_path: tuple[str, ...],
+            input_path: tuple[str, ...], *,
             rels: tuple[str, ...],
             use_ratio: bool,
-            quantile: float, *,
+            quantile: float,
             cgroup: str,
             csv: bool,
             html: bool,

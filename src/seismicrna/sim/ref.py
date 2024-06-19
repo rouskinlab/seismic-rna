@@ -5,13 +5,13 @@ from pathlib import Path
 from click import command
 
 from ..core import path
-from ..core.arg import (docdef,
-                        opt_sim_dir,
+from ..core.arg import (opt_sim_dir,
                         opt_ref,
                         opt_refs,
                         opt_reflen,
                         opt_force)
 from ..core.logs import MAX_VERBOSE, get_config
+from ..core.run import run_func
 from ..core.seq import DNA, write_fasta
 from ..core.write import need_write
 
@@ -28,8 +28,9 @@ def get_fasta_path(top: Path, ref: str):
                          ext=path.FASTA_EXTS[0])
 
 
-@docdef.auto()
-def run(sim_dir: str,
+@run_func(logger.critical)
+def run(*,
+        sim_dir: str,
         refs: str,
         ref: str,
         reflen: int,

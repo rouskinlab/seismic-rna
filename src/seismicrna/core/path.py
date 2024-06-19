@@ -31,7 +31,7 @@ This module defines all file path conventions for all other modules.
 from __future__ import annotations
 
 import os
-import pathlib as pl
+import pathlib
 import random
 import re
 from collections import Counter
@@ -45,24 +45,26 @@ logger = getLogger(__name__)
 
 # Constants ############################################################
 
-INP_TEST_DIR = pl.Path.cwd().joinpath("test-inp")
-OUT_TEST_DIR = pl.Path.cwd().joinpath("test-out")
-TMP_TEST_DIR = pl.Path.cwd().joinpath("test-tmp")
+INP_TEST_DIR = pathlib.Path.cwd().joinpath("test-inp")
+OUT_TEST_DIR = pathlib.Path.cwd().joinpath("test-out")
+TMP_TEST_DIR = pathlib.Path.cwd().joinpath("test-tmp")
 
 # Valid/invalid characters in fields
 
 PATH_CHARS = printable
-STR_CHARS = ascii_letters + digits + "_.=+-"
+ALPHANUM_CHARS = ascii_letters + digits
+STR_CHARS = ALPHANUM_CHARS + "_.=+-"
 STR_CHARS_SET = frozenset(STR_CHARS)
 INT_CHARS = digits
 PATH_PATTERN = f"([{PATH_CHARS}]+)"
 STR_PATTERN = f"([{STR_CHARS}]+)"
 INT_PATTERN = f"([{INT_CHARS}]+)"
-RE_PATTERNS = {str: STR_PATTERN, int: INT_PATTERN, pl.Path: PATH_PATTERN}
+RE_PATTERNS = {str: STR_PATTERN, int: INT_PATTERN, pathlib.Path: PATH_PATTERN}
 
 # Directories for commands
 
-CMD_QC_DIR = "qc"
+QC_INIT_DIR = "qc-initial"
+QC_TRIM_DIR = "qc-trimmed"
 CMD_ALIGN_DIR = "align"
 CMD_REL_DIR = "relate"
 CMD_MASK_DIR = "mask"
@@ -78,27 +80,22 @@ SIM_REFS_DIR = "refs"
 SIM_PARAM_DIR = "params"
 SIM_SAMPLES_DIR = "samples"
 
-# Directories for steps
+# Directories for stages
 
-STEP_QC_INIT = "initial"
-STEP_QC_TRIM = "trimmed"
+STAGE_ALIGN_INDEX = "index"
+STAGE_ALIGN_INDEX_DEMULT = "index-demult"
+STAGE_ALIGN_TRIM = "trim"
+STAGE_ALIGN_MAP = "map"
+STAGE_ALIGN_SORT = "sort"
 
-STEP_ALIGN_INDEX = "index"
-STEP_ALIGN_INDEX_DEMULT = "index-demult"
-STEP_ALIGN_TRIM = "trim"
-STEP_ALIGN_MAP = "map"
-STEP_ALIGN_SORT = "sort"
+STAGE_REL_SAMS = "sams"
 
-STEPS_REL_SAMS = "sams"
-
-STEPS = (STEP_QC_INIT,
-         STEP_QC_TRIM,
-         STEP_ALIGN_INDEX,
-         STEP_ALIGN_INDEX_DEMULT,
-         STEP_ALIGN_TRIM,
-         STEP_ALIGN_MAP,
-         STEP_ALIGN_SORT,
-         STEPS_REL_SAMS)
+STAGES = (STAGE_ALIGN_INDEX,
+          STAGE_ALIGN_INDEX_DEMULT,
+          STAGE_ALIGN_TRIM,
+          STAGE_ALIGN_MAP,
+          STAGE_ALIGN_SORT,
+          STAGE_REL_SAMS)
 
 # Tables
 
@@ -187,7 +184,7 @@ def fill_whitespace(path: str | Path, fill: str = "_"):
     return path.__class__(fill.join(str(path).split()))
 
 
-def sanitize(path: str | pl.Path, strict: bool = False):
+def sanitize(path: str | pathlib.Path, strict: bool = False):
     """ Sanitize a path-like object by ensuring it is an absolute path,
     eliminating symbolic links and redundant path separators/references,
     and returning a Path object.
@@ -204,7 +201,7 @@ def sanitize(path: str | pl.Path, strict: bool = False):
     pathlib.Path
         Absolute, normalized, symlink-free path.
     """
-    return pl.Path(path).resolve(strict=strict)
+    return pathlib.Path(path).resolve(strict=strict)
 
 
 # Path Fields ##########################################################
@@ -222,8 +219,8 @@ def validate_str(txt: str):
         raise PathValueError(f"{repr(txt)} has illegal characters: {illegal}")
 
 
-def validate_top(top: pl.Path):
-    if not isinstance(top, pl.Path):
+def validate_top(top: pathlib.Path):
+    if not isinstance(top, pathlib.Path):
         raise PathTypeError(
             f"Expected {Path.__name__}, but got {type(top).__name__}"
         )
@@ -240,14 +237,14 @@ def validate_int(num: int):
 
 VALIDATE = {int: validate_int,
             str: validate_str,
-            pl.Path: validate_top}
+            pathlib.Path: validate_top}
 
 
 # Field class
 
 class Field(object):
     def __init__(self,
-                 dtype: type[str | int | pl.Path],
+                 dtype: type[str | int | pathlib.Path],
                  options: Iterable = (),
                  is_ext: bool = False):
         self.dtype = dtype
@@ -291,9 +288,10 @@ class Field(object):
 
 
 # Fields
-TopField = Field(pl.Path)
+TopField = Field(pathlib.Path)
 NameField = Field(str)
-CmdField = Field(str, [CMD_QC_DIR,
+CmdField = Field(str, [QC_INIT_DIR,
+                       QC_TRIM_DIR,
                        CMD_ALIGN_DIR,
                        CMD_REL_DIR,
                        CMD_MASK_DIR,
@@ -302,7 +300,7 @@ CmdField = Field(str, [CMD_QC_DIR,
                        CMD_LIST_DIR,
                        CMD_FOLD_DIR,
                        CMD_GRAPH_DIR])
-StepField = Field(str, STEPS)
+StageField = Field(str, STAGES)
 IntField = Field(int)
 ClustTabField = Field(str, CLUST_TABLES)
 PosTableField = Field(str, TABLES)
@@ -353,7 +351,8 @@ class Segment(object):
                     raise PathValueError(f"Field '{EXT}' is not an extension")
                 if i != len(self.field_types):
                     raise PathValueError(
-                        f"Extension of {self} is not the last field")
+                        f"Extension of {self} is not the last field"
+                    )
                 if order != 0:
                     raise ValueError("Segments with extensions must have order "
                                      f"= 0, but {self.name} has order {order}")
@@ -445,7 +444,7 @@ class Segment(object):
 # Field names
 
 TOP = "top"
-STEP = "step"
+STAGE = "stage"
 CMD = "cmd"
 SAMP = "sample"
 REF = "ref"
@@ -461,9 +460,9 @@ EXT = "ext"
 # Directory segments
 
 TopSeg = Segment("top-dir", {TOP: TopField}, order=-1)
+StageSeg = Segment("stage-dir", {STAGE: StageField}, order=70)
 SampSeg = Segment("sample-dir", {SAMP: NameField}, order=60)
 CmdSeg = Segment("command-dir", {CMD: CmdField}, order=50)
-StepSeg = Segment("step-dir", {STEP: StepField}, order=40)
 RefSeg = Segment("ref-dir", {REF: NameField}, order=30)
 SectSeg = Segment("section-dir", {SECT: NameField}, order=20)
 
@@ -554,27 +553,27 @@ WebAppFileSeg = Segment("webapp",
                         frmt="{sample}__webapp{ext}")
 
 # Path segment patterns
-REF_DIR_SEGS = SampSeg, CmdSeg, RefSeg
-SECT_DIR_SEGS = (*REF_DIR_SEGS, SectSeg)
-FASTA_STEP_SEGS = StepSeg, FastaSeg
-FASTA_INDEX_DIR_STEP_SEGS = StepSeg, RefSeg
+CMD_DIR_SEGS = SampSeg, CmdSeg
+REF_DIR_SEGS = CMD_DIR_SEGS + (RefSeg,)
+SECT_DIR_SEGS = REF_DIR_SEGS + (SectSeg,)
+STAGE_DIR_SEGS = SampSeg, CmdSeg, StageSeg
+FASTA_STAGE_SEGS = StageSeg, FastaSeg
+FASTA_INDEX_DIR_STAGE_SEGS = StageSeg, RefSeg
 FASTQ_SEGS = FastqSeg,
 FASTQ1_SEGS = Fastq1Seg,
 FASTQ2_SEGS = Fastq2Seg,
 DMFASTQ_SEGS = SampSeg, DmFastqSeg
 DMFASTQ1_SEGS = SampSeg, DmFastq1Seg
 DMFASTQ2_SEGS = SampSeg, DmFastq2Seg
-FASTQC_SEGS = CmdSeg, StepSeg, SampSeg
-FASTQC_DEMULT_SEGS = CmdSeg, StepSeg, SampSeg, RefSeg
-XAM_SEGS = SampSeg, CmdSeg, XamSeg
-XAM_STEP_SEGS = SampSeg, CmdSeg, StepSeg, XamSeg
-CLUST_TAB_SEGS = (*SECT_DIR_SEGS, ClustTabSeg)
-CLUST_COUNT_SEGS = (*SECT_DIR_SEGS, ClustCountSeg)
-POS_TABLE_SEGS = (*SECT_DIR_SEGS, PosTableSeg)
-READ_TABLE_SEGS = (*SECT_DIR_SEGS, ReadTableSeg)
-FREQ_TABLE_SEGS = (*SECT_DIR_SEGS, FreqTableSeg)
-CT_FILE_SEGS = (*SECT_DIR_SEGS, ConnectTableSeg)
-DB_FILE_SEGS = (*SECT_DIR_SEGS, DotBracketSeg)
+XAM_SEGS = CMD_DIR_SEGS + (XamSeg,)
+XAM_STAGE_SEGS = STAGE_DIR_SEGS + (XamSeg,)
+CLUST_TAB_SEGS = SECT_DIR_SEGS + (ClustTabSeg,)
+CLUST_COUNT_SEGS = SECT_DIR_SEGS + (ClustCountSeg,)
+POS_TABLE_SEGS = SECT_DIR_SEGS + (PosTableSeg,)
+READ_TABLE_SEGS = SECT_DIR_SEGS + (ReadTableSeg,)
+FREQ_TABLE_SEGS = SECT_DIR_SEGS + (FreqTableSeg,)
+CT_FILE_SEGS = SECT_DIR_SEGS + (ConnectTableSeg,)
+DB_FILE_SEGS = SECT_DIR_SEGS + (DotBracketSeg,)
 
 
 # Paths ################################################################
@@ -620,10 +619,10 @@ class Path(object):
             raise PathValueError(f"Unexpected fields: {fields}; expected "
                                  f"fields {exp} for segment types {segs}")
         # Assemble the segment strings into a path, and return it.
-        path = pl.Path(*segments)
+        path = pathlib.Path(*segments)
         return path
 
-    def parse(self, path: str | pl.Path):
+    def parse(self, path: str | pathlib.Path):
         """ Return the field names and values from a given path. """
         # Convert the given path into a canonical, absolute path.
         path = str(sanitize(path))
@@ -684,24 +683,18 @@ def buildpar(*segment_types: Segment, **field_values: Any):
 
 def randname(length: int):
     """ Generate a random name with valid path characters. """
-    return "".join(random.choices(STR_CHARS, k=length))
+    return "".join(random.choices(ALPHANUM_CHARS, k=length))
 
 
-def randdir(parent: str | pl.Path | None = None,
+def randdir(parent: str | pathlib.Path | None = None,
             prefix: str = "",
             suffix: str = "",
             length: int = 8,
-            max_tries: int = 256):
+            max_tries: int = 1000):
     """ Build a path of a new directory that does not exist and create
     it on the file system. """
-    if parent is None:
-        # Use the current directory as the default parent directory.
-        parent = pl.Path.cwd()
-    elif isinstance(parent, str):
-        parent = pl.Path(parent)
-    elif not isinstance(parent, pl.Path):
-        raise TypeError(f"parent must be pathlib.Path, str, or None, "
-                        f"but got {type(parent).__name__}")
+    # Use the current directory as the default parent directory.
+    parent = sanitize(parent) if parent is not None else pathlib.Path.cwd()
     if length < 1:
         raise ValueError(f"length must be ≥ 1, but got {length}")
     for i in range(max_tries):
@@ -717,8 +710,8 @@ def randdir(parent: str | pl.Path | None = None,
         else:
             # If making the directory succeeded, then return the path.
             return path
-    raise ValueError(f"Failed to create random directory in {parent} "
-                     f"within {max_tries} attempts")
+    raise FileExistsError(f"Failed to create new, unique directory in {parent} "
+                          f"within {max_tries} attempts")
 
 
 # Path parsing routines
@@ -730,7 +723,7 @@ def get_fields_in_seg_types(*segment_types: Segment) -> dict[str, Field]:
             for field_name, field in segment_type.field_types.items()}
 
 
-def deduplicate(paths: Iterable[str | pl.Path]):
+def deduplicate(paths: Iterable[str | pathlib.Path]):
     """ Yield the non-redundant paths. """
     seen = set()
     for path in map(sanitize, paths):
@@ -751,18 +744,18 @@ def deduplicated(func: Callable):
     return wrapper
 
 
-def parse(path: str | pl.Path, /, *segment_types: Segment):
+def parse(path: str | pathlib.Path, /, *segment_types: Segment):
     """ Return the fields of a path based on the segment types. """
     return create_path_type(*segment_types).parse(path)
 
 
-def parse_top_separate(path: str | pl.Path, /, *segment_types: Segment):
+def parse_top_separate(path: str | pathlib.Path, /, *segment_types: Segment):
     """ Return the fields of a path, and the `top` field separately. """
     fields = parse(path, *segment_types)
     return fields.pop(TOP), fields
 
 
-def path_matches(path: str | pl.Path, segments: Sequence[Segment]):
+def path_matches(path: str | pathlib.Path, segments: Sequence[Segment]):
     """ Check if a path matches a sequence of path segments.
 
     Parameters
@@ -790,7 +783,7 @@ def path_matches(path: str | pl.Path, segments: Sequence[Segment]):
 
 
 @deduplicated
-def find_files(path: str | pl.Path, segments: Sequence[Segment]):
+def find_files(path: str | pathlib.Path, segments: Sequence[Segment]):
     """ Yield all files that match a sequence of path segments.
     The behavior depends on what `path` is:
 
@@ -827,7 +820,7 @@ def find_files(path: str | pl.Path, segments: Sequence[Segment]):
 
 
 @deduplicated
-def find_files_chain(paths: Iterable[str | pl.Path],
+def find_files_chain(paths: Iterable[str | pathlib.Path],
                      segments: Sequence[Segment]):
     """ Yield from `find_files` called on every path in `paths`. """
     for path in deduplicate(paths):
@@ -840,7 +833,7 @@ def find_files_chain(paths: Iterable[str | pl.Path],
 # Path transformation routines
 
 
-def cast_path(input_path: pl.Path,
+def cast_path(input_path: pathlib.Path,
               input_segments: Sequence[Segment],
               output_segments: Sequence[Segment],
               **override: Any):
@@ -875,9 +868,9 @@ def cast_path(input_path: pl.Path,
     return build(*output_segments, top=top, **fields)
 
 
-def transpath(to_dir: str | pl.Path,
-              from_dir: str | pl.Path,
-              path: str | pl.Path,
+def transpath(to_dir: str | pathlib.Path,
+              from_dir: str | pathlib.Path,
+              path: str | pathlib.Path,
               strict: bool = False):
     """ Return the path that would be produced by moving `path` from
     `from_dir` to `to_dir` (but do not actually move the path on the
@@ -905,7 +898,7 @@ def transpath(to_dir: str | pl.Path,
     from_dir = sanitize(from_dir, strict)
     # Find the part of the given path relative to from_dir.
     relpath = sanitize(path, strict).relative_to(from_dir)
-    if relpath == pl.Path():
+    if relpath == pathlib.Path():
         # If the relative path is empty, then use the parent directory
         # of from_dir instead.
         return transpath(to_dir, from_dir.parent, path, strict)
@@ -913,8 +906,8 @@ def transpath(to_dir: str | pl.Path,
     return sanitize(to_dir, strict).joinpath(relpath)
 
 
-def transpaths(to_dir: str | pl.Path,
-               *paths: str | pl.Path,
+def transpaths(to_dir: str | pathlib.Path,
+               *paths: str | pathlib.Path,
                strict: bool = False):
     """ Return all paths that would be produced by moving all paths in
     `paths` from their longest common sub-path to `to_dir` (but do not

@@ -26,11 +26,10 @@ def get_param_default(param: Parameter,
     if param.name in reserved_params:
         return param
     try:
-        default = defaults[param.name]
+        # Return a copy of the parameter with a new default value.
+        return param.replace(default=defaults[param.name])
     except KeyError:
         return param
-    # Return a copy of the parameter with a new default value.
-    return param.replace(default=default)
 
 
 def param_defaults(defaults: dict[str, Any], exclude_defaults: tuple[str, ...]):
@@ -99,8 +98,8 @@ def get_param_lines(func: Callable, docstrs: dict[str, str]):
             # in brackets after the documentation of the parameter.
             docstr = (f"{docstr} [{param.kind.description}]"
                       if param.default is param.empty
-                      else f"{docstr} [{param.kind.description}, "
-                           f"default: {repr(param.default)}]")
+                      else (f"{docstr} [{param.kind.description}, "
+                            f"default: {repr(param.default)}]"))
             # Add the parameter's name, type, kind, and documentation to
             # the docstring.
             param_lines.extend([f"{name_type}",

@@ -9,14 +9,14 @@ from click import command
 from .data import PoolDataset, load_relate_dataset
 from .report import PoolReport
 from ..core.arg import (CMD_POOL,
-                        docdef,
                         arg_input_path,
                         opt_pool,
                         opt_max_procs,
                         opt_parallel,
                         opt_force)
 from ..core.data import load_datasets
-from ..core.parallel import dispatch
+from ..core.run import run_func
+from ..core.task import dispatch
 from ..core.write import need_write
 from ..relate.report import RelateReport
 
@@ -96,7 +96,7 @@ def pool_samples(out_dir: Path,
     return report_file
 
 
-@docdef.auto()
+@run_func(logger.critical)
 def run(input_path: tuple[str, ...], *,
         pool: str,
         # Parallelization

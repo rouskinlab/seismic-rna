@@ -9,7 +9,6 @@ from click import command
 from .cluster.data import load_cluster_dataset
 from .cluster.report import ClusterReport
 from .core.arg import (CMD_JOIN,
-                       docdef,
                        arg_input_path,
                        opt_joined,
                        opt_join_clusts,
@@ -17,7 +16,8 @@ from .core.arg import (CMD_JOIN,
                        opt_parallel,
                        opt_force)
 from .core.data import load_datasets
-from .core.parallel import dispatch
+from .core.run import run_func
+from .core.task import dispatch
 from .core.write import need_write
 from .joinbase.cluster import parse_join_clusts_file
 from .joinbase.data import JoinMutsDataset
@@ -126,7 +126,7 @@ def join_sections(out_dir: Path,
     return report_file
 
 
-@docdef.auto()
+@run_func(logger.critical)
 def run(input_path: tuple[str, ...], *,
         joined: str,
         join_clusts: str | None,

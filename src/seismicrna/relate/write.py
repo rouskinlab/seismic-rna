@@ -21,7 +21,8 @@ from .sam import XamViewer
 from ..core import path
 from ..core.io import RefseqIO
 from ..core.ngs import encode_phred
-from ..core.parallel import as_list_of_tuples, dispatch
+from ..core.task import as_list_of_tuples, dispatch
+from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.seq import DNA, get_fasta_seq
 from ..core.write import need_write
 
@@ -30,7 +31,7 @@ logger = getLogger(__name__)
 
 def generate_batch(batch: int, *,
                    xam_view: XamViewer,
-                   out_dir: Path,
+                   top: Path,
                    refseq: DNA,
                    min_mapq: int,
                    min_qual: str,
@@ -68,8 +69,8 @@ def generate_batch(batch: int, *,
                                 batch)
     logger.info(f"Ended computing relation vectors for batch {batch} "
                 f"of {xam_view}")
-    _, relv_check = relvecs.save(out_dir, brotli_level, force=True)
-    _, name_check = names.save(out_dir, brotli_level, force=True)
+    _, relv_check = relvecs.save(top, brotli_level)
+    _, name_check = names.save(top, brotli_level)
     return relvecs.num_reads, relv_check, name_check
 
 
@@ -95,20 +96,20 @@ class RelationWriter(object):
     def num_reads(self):
         return self._xam.n_reads
 
-    def _write_report(self, *, out_dir: Path, **kwargs):
+    def _write_report(self, *, top: Path, **kwargs):
         report = RelateReport(sample=self.sample, ref=self.ref, **kwargs)
-        return report.save(out_dir, force=True)
+        return report.save(top)
 
-    def _write_refseq(self, out_dir: Path, brotli_level: int):
+    def _write_refseq(self, top: Path, brotli_level: int):
         """ Write the reference sequence to a file. """
         refseq_file = RefseqIO(sample=self.sample,
                                ref=self.ref,
                                refseq=self.seq)
-        _, checksum = refseq_file.save(out_dir, brotli_level, force=True)
+        _, checksum = refseq_file.save(top, brotli_level)
         return checksum
 
     def _generate_batches(self, *,
-                          out_dir: Path,
+                          top: Path,
                           keep_tmp: bool,
                           min_mapq: int,
                           phred_enc: int,
@@ -122,15 +123,11 @@ class RelationWriter(object):
         """ Compute a relation vector for every record in a XAM file,
         split among one or more batches. For each batch, write a matrix
         of the vectors to one batch file, and compute its checksum. """
-        # Open the primary SAM file reader to write the subset of SAM
-        # records to a temporary SAM file and determine the number and
-        # start/stop indexes of each batch of records in the file.
-        # The SAM file will remain open until exiting the with block.
         logger.info(f"Began {self}")
         try:
             # Collect the keyword arguments.
             kwargs = dict(xam_view=self._xam,
-                          out_dir=out_dir,
+                          top=top,
                           refseq=self.seq,
                           min_mapq=min_mapq,
                           min_qual=encode_phred(min_phred, phred_enc),
@@ -167,6 +164,7 @@ class RelationWriter(object):
 
     def write(self, *,
               out_dir: Path,
+              release_dir: Path,
               min_mapq: int,
               min_reads: int,
               brotli_level: int,
@@ -191,11 +189,11 @@ class RelationWriter(object):
                 raise ValueError(f"Insufficient reads in {self._xam}: "
                                  f"{self.num_reads} < {min_reads}")
             # Write the reference sequence to a file.
-            refseq_checksum = self._write_refseq(out_dir, brotli_level)
+            refseq_checksum = self._write_refseq(release_dir, brotli_level)
             # Compute relation vectors and time how long it takes.
             (nreads,
              nbats,
-             checks) = self._generate_batches(out_dir=out_dir,
+             checks) = self._generate_batches(top=release_dir,
                                               brotli_level=brotli_level,
                                               min_mapq=min_mapq,
                                               overhangs=overhangs,
@@ -207,22 +205,23 @@ class RelationWriter(object):
                                               **kwargs)
             ended = datetime.now()
             # Write a report of the relation step.
-            self._write_report(out_dir=out_dir,
-                               min_mapq=min_mapq,
-                               min_phred=min_phred,
-                               phred_enc=phred_enc,
-                               overhangs=overhangs,
-                               ambindel=ambindel,
-                               clip_end5=clip_end5,
-                               clip_end3=clip_end3,
-                               min_reads=min_reads,
-                               n_reads_xam=self.num_reads,
-                               n_reads_rel=nreads,
-                               n_batches=nbats,
-                               checksums=checks,
-                               refseq_checksum=refseq_checksum,
-                               began=began,
-                               ended=ended)
+            report_saved = self._write_report(top=release_dir,
+                                              min_mapq=min_mapq,
+                                              min_phred=min_phred,
+                                              phred_enc=phred_enc,
+                                              overhangs=overhangs,
+                                              ambindel=ambindel,
+                                              clip_end5=clip_end5,
+                                              clip_end3=clip_end3,
+                                              min_reads=min_reads,
+                                              n_reads_xam=self.num_reads,
+                                              n_reads_rel=nreads,
+                                              n_batches=nbats,
+                                              checksums=checks,
+                                              refseq_checksum=refseq_checksum,
+                                              began=began,
+                                              ended=ended)
+            release_to_out(out_dir, release_dir, report_saved.parent)
         return report_file
 
     def __str__(self):
@@ -235,10 +234,11 @@ def write_one(xam_file: Path, *,
               batch_size: int,
               **kwargs):
     """ Write the batches of relation vectors for one XAM file. """
+    release_dir, working_dir = get_release_working_dirs(tmp_dir)
     ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
-    writer = RelationWriter(XamViewer(xam_file, tmp_dir, batch_size),
+    writer = RelationWriter(XamViewer(xam_file, working_dir, batch_size),
                             get_fasta_seq(fasta, DNA, ref))
-    return writer.write(**kwargs)
+    return writer.write(**kwargs, release_dir=release_dir)
 
 
 def write_all(xam_files: Iterable[Path],

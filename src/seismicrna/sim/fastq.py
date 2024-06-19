@@ -11,7 +11,6 @@ from numba import jit
 from .relate import get_param_dir_fields, load_param_dir
 from ..core import path
 from ..core.arg import (ADAPTER_SEQ_ILLUMINA_3P,
-                        docdef,
                         arg_input_path,
                         opt_param_dir,
                         opt_profile_name,
@@ -28,7 +27,6 @@ from ..core.arg import (ADAPTER_SEQ_ILLUMINA_3P,
                         opt_force)
 from ..core.array import get_length
 from ..core.ngs import HI_QUAL, LO_QUAL
-from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rel import (MATCH,
                         NOCOV,
                         SUB_A,
@@ -37,7 +35,9 @@ from ..core.rel import (MATCH,
                         SUB_T,
                         DELET)
 from ..core.report import SampleF
+from ..core.run import run_func
 from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
+from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write, write_mode
 from ..pool.data import load_relate_dataset
 from ..relate.batch import QnamesBatch, RelateBatch
@@ -300,8 +300,9 @@ def from_param_dir(param_dir: Path, *,
                           force=force)
 
 
-@docdef.auto()
-def run(input_path: tuple[str, ...],
+@run_func(logger.critical)
+def run(*,
+        input_path: tuple[str, ...],
         param_dir: tuple[str, ...],
         profile_name: str,
         sample: str,

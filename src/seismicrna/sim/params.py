@@ -1,16 +1,20 @@
 import os
+from logging import getLogger
 
 from click import command
 
 from . import (clusts as clusts_mod,
                ends as ends_mod,
                muts as muts_mod)
-from ..core.arg import docdef, merge_params
+from ..core.arg import merge_params
+from ..core.run import run_func
+
+logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-@docdef.auto()
+@run_func(logger.critical)
 def run(*,
         ct_file: tuple[str, ...],
         pmut_paired: tuple[tuple[str, float], ...],

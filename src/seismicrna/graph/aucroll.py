@@ -13,7 +13,6 @@ from .onestruct import (StructOneTableGraph,
 from .roc import PROFILE_NAME, rename_columns
 from .roll import RollingGraph, RollingRunner
 from .trace import iter_rolling_auc_traces
-from ..core.arg import opt_window, opt_winmin
 
 logger = getLogger(__name__)
 

@@ -1,4 +1,5 @@
 from collections import defaultdict
+from logging import getLogger
 from pathlib import Path
 
 from click import command
@@ -6,7 +7,6 @@ from click import command
 from .meta import parse_refs_metadata, parse_samples_metadata
 from .web import export_sample
 from ..core.arg import (CMD_EXPORT,
-                        docdef,
                         arg_input_path,
                         opt_samples_meta,
                         opt_refs_meta,
@@ -14,14 +14,17 @@ from ..core.arg import (CMD_EXPORT,
                         opt_force,
                         opt_max_procs,
                         opt_parallel)
-from ..core.parallel import dispatch
+from ..core.run import run_func
+from ..core.task import dispatch
 from ..table.base import (MaskTable,
                           ClustTable,
                           ClustFreqTable)
 from ..table.load import load_all_tables
 
+logger = getLogger(__name__)
 
-@docdef.auto()
+
+@run_func(logger.critical)
 def run(input_path: tuple[str, ...], *,
         samples_meta: str,
         refs_meta: str,

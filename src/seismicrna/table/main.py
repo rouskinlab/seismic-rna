@@ -4,9 +4,9 @@ from logging import getLogger
 from click import command
 
 from .write import write
+from ..cluster.data import load_cluster_dataset
 from ..core import path
 from ..core.arg import (CMD_TABLE,
-                        docdef,
                         arg_input_path,
                         opt_table_pos,
                         opt_table_read,
@@ -14,15 +14,15 @@ from ..core.arg import (CMD_TABLE,
                         opt_max_procs,
                         opt_parallel,
                         opt_force)
-from ..core.parallel import as_list_of_tuples, dispatch
-from ..cluster.data import load_cluster_dataset
+from ..core.run import run_func
+from ..core.task import as_list_of_tuples, dispatch
 from ..mask.data import load_mask_dataset
 from ..pool.data import load_relate_dataset
 
 logger = getLogger(__name__)
 
 
-@docdef.auto()
+@run_func(logger.critical)
 def run(input_path: tuple[str, ...], *,
         table_pos: bool,
         table_read: bool,

@@ -21,7 +21,7 @@ from ..core.arg import (docdef,
                         opt_force,
                         opt_parallel,
                         opt_max_procs)
-from ..core.parallel import as_list_of_tuples, dispatch
+from ..core.task import as_list_of_tuples, dispatch
 from ..core.rna import find_ct_section
 from ..relate.sim import simulate_relate
 
@@ -69,7 +69,8 @@ def from_param_dir(param_dir: Path,
 
 
 @docdef.auto()
-def run(param_dir: tuple[str, ...],
+def run(*,
+        param_dir: tuple[str, ...],
         profile_name: str,
         sample: str,
         paired_end: bool,

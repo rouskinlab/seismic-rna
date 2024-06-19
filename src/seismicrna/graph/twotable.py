@@ -19,7 +19,7 @@ from .base import (LINKER,
 from .rel import OneRelGraph
 from ..core import path
 from ..core.arg import opt_comppair, opt_compself, opt_out_dir
-from ..core.parallel import dispatch
+from ..core.task import dispatch
 from ..table.base import ClustTable, PosTable, Table
 from ..table.load import find_pos_tables, load_pos_table
 

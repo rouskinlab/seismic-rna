@@ -5,6 +5,7 @@ Whole Pipeline Main Module
 
 """
 
+from logging import getLogger
 from typing import Iterable
 
 from click import command
@@ -20,7 +21,6 @@ from .. import (demult as demultiplex_mod,
                 fold as fold_mod,
                 export as export_mod)
 from ..core.arg import (CMD_WORKFLOW,
-                        docdef,
                         merge_params,
                         opt_demultiplex,
                         opt_fold,
@@ -44,6 +44,7 @@ from ..core.arg import (CMD_WORKFLOW,
                         opt_graph_giniroll,
                         opt_graph_roc,
                         opt_graph_aucroll)
+from ..core.run import run_func
 from ..core.seq import DNA
 from ..graph.aucroll import RollingAUCRunner
 from ..graph.giniroll import RollingGiniRunner
@@ -60,6 +61,8 @@ from ..table.base import (DELET_REL,
                           SUB_T_REL,
                           UNAMB_REL)
 
+logger = getLogger(__name__)
+
 MUTAT_RELS = "".join(REL_NAMES[code] for code in [SUB_A_REL,
                                                   SUB_C_REL,
                                                   SUB_G_REL,
@@ -72,20 +75,18 @@ def as_tuple_str(items: Iterable):
     return tuple(map(str, items))
 
 
-@docdef.auto()
-def run(*,
-        # Arguments
-        input_path: tuple[str, ...],
+@run_func(logger.critical)
+def run(fasta: str,
+        input_path: tuple[str, ...], *,
         # General options
         out_dir: str,
-        tmp_dir: str,
+        tmp_pfx: str,
         keep_tmp: bool,
         brotli_level: int,
         force: bool,
         max_procs: int,
         parallel: bool,
         # FASTQ options
-        fasta: str,
         fastqz: tuple[str, ...],
         fastqy: tuple[str, ...],
         fastqx: tuple[str, ...],
@@ -137,7 +138,6 @@ def run(*,
         bt2_orient: str,
         bt2_un: bool,
         min_mapq: int,
-        cram: bool,
         # Relate options
         min_phred: int,
         min_reads: int,
@@ -226,7 +226,7 @@ def run(*,
                 fasta=fasta,
                 refs_meta=refs_meta,
                 out_dir=out_dir,
-                tmp_dir=tmp_dir,
+                tmp_pfx=tmp_pfx,
                 demulti_overwrite=demulti_overwrite,
                 fastqx=fastqx,
                 clipped=clipped,
@@ -248,7 +248,7 @@ def run(*,
     # Align
     input_path += as_tuple_str(align_mod.run(
         out_dir=out_dir,
-        tmp_dir=tmp_dir,
+        tmp_pfx=tmp_pfx,
         keep_tmp=keep_tmp,
         force=force,
         max_procs=max_procs,
@@ -296,14 +296,13 @@ def run(*,
         bt2_un=bt2_un,
         min_mapq=min_mapq,
         min_reads=min_reads,
-        cram=cram,
     ))
     # Relate
     input_path += as_tuple_str(relate_mod.run(
         fasta=fasta,
         input_path=input_path,
         out_dir=out_dir,
-        tmp_dir=tmp_dir,
+        tmp_pfx=tmp_pfx,
         min_mapq=min_mapq,
         min_reads=min_reads,
         batch_size=batch_size,
@@ -330,6 +329,7 @@ def run(*,
     # Mask
     input_path += as_tuple_str(mask_mod.run(
         input_path=input_path,
+        tmp_pfx=tmp_pfx,
         mask_coords=mask_coords,
         mask_primers=mask_primers,
         primer_gap=primer_gap,
@@ -358,6 +358,7 @@ def run(*,
     # Cluster
     input_path += as_tuple_str(cluster_mod.run(
         input_path=input_path,
+        tmp_pfx=tmp_pfx,
         max_clusters=max_clusters,
         em_runs=em_runs,
         min_em_iter=min_em_iter,
@@ -402,7 +403,7 @@ def run(*,
             fold_mfe=fold_mfe,
             fold_max=fold_max,
             fold_percent=fold_percent,
-            tmp_dir=tmp_dir,
+            tmp_pfx=tmp_pfx,
             keep_tmp=keep_tmp,
             max_procs=max_procs,
             parallel=parallel,
@@ -531,6 +532,7 @@ def run(*,
             parallel=parallel,
             force=force,
         )
+    return list(input_path)
 
 
 graph_options = [opt_cgroup,

@@ -11,7 +11,7 @@ from .base import (GraphBase,
                    make_index,
                    make_path_subject,
                    make_title_action_sample)
-from ..core.parallel import dispatch
+from ..core.task import dispatch
 from ..table.base import Table, PosTable
 
 

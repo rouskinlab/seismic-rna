@@ -3,7 +3,7 @@ from itertools import chain, filterfalse, repeat
 from logging import getLogger
 from typing import Any, Callable, Iterable
 
-from ..logs import MAX_VERBOSE, set_config, get_config
+from .logs import exc_info, get_config, set_config
 
 logger = getLogger(__name__)
 
@@ -95,14 +95,9 @@ class Task(object):
         self._func = func
         self._config = get_config()
 
-    @property
-    def verbosity(self):
-        verbose, quiet, log_file, log_color = self._config
-        return verbose - quiet
-
     def __call__(self, *args, **kwargs):
         """ Call the task's function in a try-except block, return the
-        result if it succeeds, and return `None` otherwise. """
+        result if it succeeds, and return None otherwise. """
         if get_config() != self._config:
             # Tasks running in parallel may not have the same top logger
             # as the parent process (this seems to be system dependent).
@@ -110,13 +105,11 @@ class Task(object):
             # match the configuration of the parent process.
             set_config(*self._config)
         task = fmt_func_args(self._func, *args, **kwargs)
-        logger.debug(f"Began task {task}")
         try:
+            logger.debug(f"Began task {task}")
             result = self._func(*args, **kwargs)
         except Exception as error:
-            # Print a traceback if the logging level is at the maximum.
-            exc_info = self.verbosity >= MAX_VERBOSE
-            logger.error(f"Failed task {task}:\n{error}\n", exc_info=exc_info)
+            logger.error(f"Failed task {task}:\n{error}\n", exc_info=exc_info())
         else:
             logger.debug(f"Ended task {task}:\n{result}\n")
             return result
@@ -126,7 +119,6 @@ def dispatch(funcs: list[Callable] | Callable,
              max_procs: int, parallel: bool, *,
              hybrid: bool = False,
              pass_n_procs: bool = True,
-             drop_failed: bool = True,
              args: list[tuple] | tuple = (),
              kwargs: dict[str, Any] | None = None):
     """
@@ -151,9 +143,6 @@ def dispatch(funcs: list[Callable] | Callable,
     pass_n_procs: bool = True
         Whether to pass the number of processes to the function as the
         keyword argument `n_procs`.
-    drop_failed: bool = True
-        If True, remove any failed runs from the results, where failure
-        is indicated by the run returning a value of `None`.
     args: list[tuple] | tuple = ()
         Positional arguments to pass to each function in `funcs`. Can be
         a list of tuples of positional arguments or a single tuple that
@@ -215,7 +204,8 @@ def dispatch(funcs: list[Callable] | Callable,
             tasks: list[Future] = list()
             for func, task_args in zip(funcs, args, strict=True):
                 # Create a new task and submit it to the process pool.
-                tasks.append(pool.submit(Task(func), *task_args, **kwargs))
+                task = Task(func)
+                tasks.append(pool.submit(task, *task_args, **kwargs))
             # Run all the tasks in parallel and collect the results as
             # they become available.
             logger.info(f"Waiting for {n_tasks} tasks to finish")
@@ -229,20 +219,20 @@ def dispatch(funcs: list[Callable] | Callable,
         for func, task_args in zip(funcs, args, strict=True):
             # Create a new task, run it in the current process, and add
             # its result to the list of results.
-            results.append(Task(func)(*task_args, **kwargs))
+            task = Task(func)
+            results.append(task(*task_args, **kwargs))
         logger.info(f"Ended running {n_tasks} task(s) in series")
-    if drop_failed:
-        # Remove any failed runs (None values) from results.
-        results = [result for result in results if result is not None]
-        n_pass = len(results)
-        n_fail = n_tasks - n_pass
-        if n_fail:
-            p_fail = n_fail / n_tasks * 100.
-            logger.warning(
-                f"Failed {n_fail} of {n_tasks} task(s) ({round(p_fail, 1)} %)"
-            )
-        else:
-            logger.info(f"All {n_tasks} task(s) completed successfully")
+    # Remove any failed runs (None values) from results.
+    results = [result for result in results if result is not None]
+    n_pass = len(results)
+    n_fail = n_tasks - n_pass
+    if n_fail:
+        p_fail = n_fail / n_tasks * 100.
+        logger.warning(
+            f"Failed {n_fail} of {n_tasks} task(s) ({round(p_fail, 1)} %)"
+        )
+    else:
+        logger.info(f"All {n_tasks} task(s) completed successfully")
     return results
 
 

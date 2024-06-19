@@ -8,8 +8,9 @@ from click import command
 
 from .write import mask_section
 from ..core.arg import (CMD_MASK,
-                        docdef,
                         arg_input_path,
+                        opt_tmp_pfx,
+                        opt_keep_tmp,
                         opt_mask_coords,
                         opt_mask_primers,
                         opt_primer_gap,
@@ -33,10 +34,12 @@ from ..core.arg import (CMD_MASK,
                         opt_brotli_level,
                         opt_max_procs,
                         opt_parallel,
-                        opt_force)
+                        opt_force,
+                        optional_path)
 from ..core.data import load_datasets
-from ..core.parallel import dispatch
+from ..core.run import run_func
 from ..core.seq import DNA, RefSections
+from ..core.task import dispatch
 from ..pool.data import load_relate_dataset
 
 logger = getLogger(__name__)
@@ -63,8 +66,9 @@ def load_sections(input_path: Iterable[str | Path],
     return datasets, sections
 
 
-@docdef.auto()
+@run_func(logger.critical, with_tmp=True)
 def run(input_path: tuple[str, ...], *,
+        tmp_dir: Path,
         # Sections
         mask_coords: tuple[tuple[str, int, int], ...],
         mask_primers: tuple[tuple[str, DNA, DNA], ...],
@@ -98,27 +102,26 @@ def run(input_path: tuple[str, ...], *,
         force: bool) -> list[Path]:
     """ Define mutations and sections to filter reads and positions. """
     # Load all Relate datasets and get the sections for each.
-    datasets, sections = load_sections(input_path,
-                                       coords=mask_coords,
-                                       primers=mask_primers,
-                                       primer_gap=primer_gap,
-                                       sections_file=(Path(mask_sections_file)
-                                                      if mask_sections_file
-                                                      else None))
+    datasets, sections = load_sections(
+        input_path,
+        coords=mask_coords,
+        primers=mask_primers,
+        primer_gap=primer_gap,
+        sections_file=optional_path(mask_sections_file)
+    )
     # List the datasets and their sections.
     args = [(dataset, section)
             for ref, ref_datasets in datasets.items()
             for dataset, section in product(ref_datasets, sections.list(ref))]
     # Define the keyword arguments.
-    kwargs = dict(mask_del=mask_del,
+    kwargs = dict(tmp_dir=tmp_dir,
+                  mask_del=mask_del,
                   mask_ins=mask_ins,
                   mask_mut=mask_mut,
                   mask_polya=mask_polya,
                   mask_gu=mask_gu,
                   mask_pos=list(mask_pos),
-                  mask_pos_file=(Path(mask_pos_file)
-                                 if mask_pos_file
-                                 else None),
+                  mask_pos_file=optional_path(mask_pos_file),
                   mask_discontig=mask_discontig,
                   min_ncov_read=min_ncov_read,
                   min_finfo_read=min_finfo_read,
@@ -131,18 +134,19 @@ def run(input_path: tuple[str, ...], *,
                   brotli_level=brotli_level,
                   force=force)
     # Call the mutations and filter the relation vectors.
-    reports = dispatch(mask_section,
-                       max_procs=max_procs,
-                       parallel=parallel,
-                       pass_n_procs=False,
-                       args=args,
-                       kwargs=kwargs)
-    return list(map(Path, reports))
+    return dispatch(mask_section,
+                    max_procs=max_procs,
+                    parallel=parallel,
+                    pass_n_procs=False,
+                    args=args,
+                    kwargs=kwargs)
 
 
 params = [
     # Input/output paths
     arg_input_path,
+    opt_tmp_pfx,
+    opt_keep_tmp,
     # Sections
     opt_mask_coords,
     opt_mask_primers,

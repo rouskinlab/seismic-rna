@@ -17,10 +17,12 @@ from os.path import dirname
 
 from click import command
 
-from seismicrna.core.arg import CMD_TEST, docdef, opt_verbose
+from seismicrna.core.arg import CMD_TEST, opt_verbose
+from seismicrna.core.logs import get_top_logger
+from seismicrna.core.run import run_func
 
 
-@docdef.auto()
+@run_func(get_top_logger().critical)
 def run(verbose: int):
     """ Run all unit tests. """
     # Discover all unit test modules.
@@ -34,6 +36,7 @@ def run(verbose: int):
     # Run all unit tests.
     runner = ut.TextTestRunner(verbosity=verbose)
     runner.run(suite)
+    return list()
 
 
 # Parameters for command line interface

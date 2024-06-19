@@ -1,4 +1,5 @@
 import os
+from logging import getLogger
 from pathlib import Path
 
 import numpy as np
@@ -6,8 +7,7 @@ import pandas as pd
 from click import command
 
 from ..core import path
-from ..core.arg import (docdef,
-                        opt_ct_file,
+from ..core.arg import (opt_ct_file,
                         opt_end3_fmean,
                         opt_insert_fmean,
                         opt_ends_var,
@@ -16,10 +16,13 @@ from ..core.arg import (docdef,
                         opt_max_procs)
 from ..core.array import stochastic_round
 from ..core.batch import END5_COORD, END3_COORD
-from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rna import find_ct_section
+from ..core.run import run_func
 from ..core.stats import calc_dirichlet_params
+from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
+
+logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -175,8 +178,9 @@ def load_pends(pends_file: Path):
     return uniq_end5s, uniq_end3s, pends
 
 
-@docdef.auto()
-def run(ct_file: tuple[str, ...],
+@run_func(logger.critical)
+def run(*,
+        ct_file: tuple[str, ...],
         end3_fmean: float,
         insert_fmean: float,
         ends_var: float,

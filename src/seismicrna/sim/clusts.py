@@ -1,4 +1,5 @@
 import os
+from logging import getLogger
 from pathlib import Path
 
 import numpy as np
@@ -6,16 +7,18 @@ import pandas as pd
 from click import command
 
 from ..core import path
-from ..core.arg import (docdef,
-                        opt_ct_file,
+from ..core.arg import (opt_ct_file,
                         opt_clust_conc,
                         opt_force,
                         opt_parallel,
                         opt_max_procs)
 from ..core.header import ClustHeader, index_order_clusts
-from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rna import from_ct
+from ..core.run import run_func
+from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
+
+logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -78,8 +81,9 @@ def load_pclust(pclust_file: Path):
     )[PROPORTION]
 
 
-@docdef.auto()
-def run(ct_file: tuple[str, ...],
+@run_func(logger.critical)
+def run(*,
+        ct_file: tuple[str, ...],
         clust_conc: float,
         force: bool,
         parallel: bool,

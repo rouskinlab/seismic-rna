@@ -6,10 +6,9 @@ from click import command
 
 from .ref import get_fasta_path
 from ..core import path
-from ..core.arg import (docdef,
-                        arg_fasta,
+from ..core.arg import (arg_fasta,
                         opt_sim_dir,
-                        opt_tmp_dir,
+                        opt_tmp_pfx,
                         opt_profile_name,
                         opt_fold_sections_file,
                         opt_fold_coords,
@@ -25,9 +24,10 @@ from ..core.arg import (docdef,
                         opt_max_procs,
                         opt_parallel)
 from ..core.extern import args_to_cmd, run_cmd
-from ..core.parallel import as_list_of_tuples, dispatch, lock_tmp_dir
 from ..core.rna import renumber_ct
+from ..core.run import run_func
 from ..core.seq import DNA, RefSections, Section, parse_fasta, write_fasta
+from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
 from ..fold.rnastructure import make_fold_cmd, retitle_ct_structures
 
@@ -95,11 +95,10 @@ def fold_section(section: Section, *,
     return ct_sim
 
 
-@lock_tmp_dir
-@docdef.auto()
+@run_func(logger.critical, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str, *,
         sim_dir: str,
-        tmp_dir: str,
+        tmp_dir: Path,
         profile_name: str,
         fold_coords: tuple[tuple[str, int, int], ...],
         fold_primers: tuple[tuple[str, DNA, DNA], ...],
@@ -114,17 +113,13 @@ def run(fasta: str, *,
         force: bool,
         max_procs: int,
         parallel: bool):
-    try:
-        # List the sections.
-        sections = RefSections(parse_fasta(Path(fasta), DNA),
-                               sects_file=(Path(fold_sections_file)
-                                           if fold_sections_file
-                                           else None),
-                               coords=fold_coords,
-                               primers=fold_primers)
-    except Exception as error:
-        logger.critical(error)
-        return list()
+    # List the sections.
+    sections = RefSections(parse_fasta(Path(fasta), DNA),
+                           sects_file=(Path(fold_sections_file)
+                                       if fold_sections_file
+                                       else None),
+                           coords=fold_coords,
+                           primers=fold_primers)
     return dispatch(fold_section,
                     max_procs=max_procs,
                     parallel=parallel,
@@ -148,7 +143,7 @@ def run(fasta: str, *,
 
 params = [arg_fasta,
           opt_sim_dir,
-          opt_tmp_dir,
+          opt_tmp_pfx,
           opt_profile_name,
           opt_fold_sections_file,
           opt_fold_coords,

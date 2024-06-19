@@ -13,14 +13,14 @@ from click import command
 from .cleanfa import clean_fasta
 from ..core import path
 from ..core.arg import (CMD_CLEANFA,
-                        docdef,
                         arg_input_path,
                         opt_inplace,
                         opt_out_dir,
                         opt_force,
                         opt_max_procs,
                         opt_parallel)
-from ..core.parallel import dispatch
+from ..core.run import run_func
+from ..core.task import dispatch
 
 logger = getLogger(__name__)
 
@@ -40,8 +40,8 @@ def cli(*args, **kwargs):
     return run(*args, **kwargs)
 
 
-@docdef.auto()
-def run(input_path: tuple[str, ...],
+@run_func(logger.critical)
+def run(input_path: tuple[str, ...], *,
         inplace: bool,
         out_dir: str,
         force: bool,

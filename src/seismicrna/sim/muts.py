@@ -9,8 +9,7 @@ import pandas as pd
 from click import command
 
 from ..core import path
-from ..core.arg import (docdef,
-                        opt_ct_file,
+from ..core.arg import (opt_ct_file,
                         opt_pmut_paired,
                         opt_pmut_unpaired,
                         opt_vmut_paired,
@@ -19,7 +18,6 @@ from ..core.arg import (docdef,
                         opt_parallel,
                         opt_max_procs)
 from ..core.header import RelClustHeader, make_header, list_clusts
-from ..core.parallel import as_list_of_tuples, dispatch
 from ..core.rel import (MATCH,
                         NOCOV,
                         DELET,
@@ -34,6 +32,7 @@ from ..core.rel import (MATCH,
                         ANY_N,
                         REL_TYPE)
 from ..core.rna import UNPAIRED, find_enclosing_pairs, from_ct
+from ..core.run import run_func
 from ..core.seq import (BASE_NAME,
                         BASEA,
                         BASEC,
@@ -44,6 +43,7 @@ from ..core.seq import (BASE_NAME,
                         POS_NAME,
                         get_shared_index)
 from ..core.stats import calc_beta_params, calc_dirichlet_params
+from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
 
 logger = getLogger(__name__)
@@ -376,8 +376,9 @@ def load_pmut(pmut_file: Path):
     return pmut
 
 
-@docdef.auto()
-def run(ct_file: tuple[str, ...],
+@run_func(logger.critical)
+def run(*,
+        ct_file: tuple[str, ...],
         pmut_paired: tuple[tuple[str, float], ...],
         pmut_unpaired: tuple[tuple[str, float], ...],
         vmut_paired: float,

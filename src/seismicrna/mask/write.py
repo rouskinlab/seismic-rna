@@ -18,6 +18,7 @@ from ..core.arg import docdef
 from ..core.batch import SectionMutsBatch, accum_per_pos
 from ..core.rel import RelPattern
 from ..core.seq import FIELD_REF, POS_NAME, Section, index_to_pos
+from ..core.tmp import release_to_out
 from ..core.write import need_write
 from ..pool.data import PoolDataset
 from ..relate.data import RelateDataset
@@ -58,17 +59,8 @@ class Masker(object):
                  max_fmut_pos: float,
                  quick_unbias: bool,
                  quick_unbias_thresh: float,
-                 brotli_level: int):
-        """
-        Parameters
-        ----------
-        dataset: RelateDataset | PoolDataset
-            Relation vector loader
-        section: Section
-            The section over which to mask
-        pattern: RelPattern
-            Relationship pattern
-        """
+                 brotli_level: int,
+                 top: Path):
         # Set the general parameters.
         self.dataset = dataset
         self.section = Section(dataset.ref,
@@ -107,7 +99,7 @@ class Masker(object):
         self.quick_unbias = quick_unbias
         self.quick_unbias_thresh = quick_unbias_thresh
         # Set the parameters for saving files.
-        self.top = dataset.top
+        self.top = top
         self.brotli_level = brotli_level
         self.checksums = list()
 
@@ -415,6 +407,7 @@ def mask_section(dataset: RelateDataset | PoolDataset,
                  mask_del: bool,
                  mask_ins: bool,
                  mask_mut: Iterable[str], *,
+                 tmp_dir: Path,
                  force: bool,
                  **kwargs):
     """ Filter a section of a set of bit vectors. """
@@ -426,11 +419,16 @@ def mask_section(dataset: RelateDataset | PoolDataset,
     if need_write(report_file, force):
         began = datetime.now()
         pattern = RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
-        masker = Masker(dataset, section, pattern, **kwargs)
+        masker = Masker(dataset,
+                        section,
+                        pattern,
+                        top=tmp_dir,
+                        **kwargs)
         masker.mask()
         ended = datetime.now()
         report = masker.create_report(began, ended)
-        report.save(dataset.top, force=True)
+        report_saved = report.save(tmp_dir)
+        release_to_out(dataset.top, tmp_dir, report_saved.parent)
     return report_file
 
 ########################################################################

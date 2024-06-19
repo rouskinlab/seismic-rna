@@ -6,8 +6,9 @@ from click import command
 from .write import cluster
 from ..core import path
 from ..core.arg import (CMD_CLUSTER,
-                        docdef,
                         arg_input_path,
+opt_tmp_pfx,
+opt_keep_tmp,
                         opt_max_clusters,
                         opt_em_runs,
                         opt_em_thresh,
@@ -17,7 +18,8 @@ from ..core.arg import (CMD_CLUSTER,
                         opt_parallel,
                         opt_max_procs,
                         opt_force)
-from ..core.parallel import as_list_of_tuples, dispatch
+from ..core.run import run_func
+from ..core.task import as_list_of_tuples, dispatch
 from ..mask.data import load_mask_dataset
 
 logger = getLogger(__name__)
@@ -25,7 +27,7 @@ logger = getLogger(__name__)
 DEFAULT_ORDER = 2
 
 
-@docdef.auto()
+@run_func(logger.critical, with_tmp=True)
 def run(input_path: tuple[str, ...], *,
         max_clusters: int,
         em_runs: int,
@@ -35,7 +37,8 @@ def run(input_path: tuple[str, ...], *,
         brotli_level: int,
         max_procs: int,
         parallel: bool,
-        force: bool) -> list[Path]:
+        force: bool,
+        tmp_dir: Path) -> list[Path]:
     """ Infer alternative structures by clustering reads' mutations. """
     if max_clusters == 0:
         # Exit immediately if the maximum number of clusters is 0.
@@ -56,7 +59,8 @@ def run(input_path: tuple[str, ...], *,
                                 max_iter=max_em_iter,
                                 em_thresh=em_thresh,
                                 brotli_level=brotli_level,
-                                force=force))
+                                force=force,
+                                tmp_dir=tmp_dir))
 
 
 params = [
@@ -75,6 +79,8 @@ params = [
     opt_parallel,
     # Effort
     opt_force,
+    opt_tmp_pfx,
+    opt_keep_tmp,
 ]
 
 

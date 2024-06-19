@@ -9,10 +9,10 @@ Define all command line interface (CLI) options and their defaults.
 import logging
 import math
 import os
+import pathlib
 from datetime import datetime
 from typing import Iterable
 
-import click
 from click import Argument, Choice, Option, Parameter, Path
 
 from ..io import DEFAULT_BROTLI_LEVEL
@@ -80,11 +80,11 @@ opt_out_dir = Option(
     help="Write all output files to this directory"
 )
 
-opt_tmp_dir = Option(
-    ("--tmp-dir", "-t"),
+opt_tmp_pfx = Option(
+    ("--tmp-pfx", "-t"),
     type=Path(file_okay=False),
-    default=os.path.join(".", "tmp"),
-    help="Write all temporary files to this directory"
+    default=os.path.join(".", "tmp-"),
+    help="Write all temporary files to a directory with this prefix"
 )
 
 opt_keep_tmp = Option(
@@ -123,6 +123,7 @@ opt_fastqz = Option(
     ("--fastqz", "-z"),
     type=Path(exists=True),
     multiple=True,
+    default=(),
     help="FASTQ file(s) of single-end reads"
 )
 
@@ -130,6 +131,7 @@ opt_fastqy = Option(
     ("--fastqy", "-y"),
     type=Path(exists=True),
     multiple=True,
+    default=(),
     help="FASTQ file(s) of paired-end reads with mates 1 and 2 interleaved"
 )
 
@@ -137,6 +139,7 @@ opt_fastqx = Option(
     ("--fastqx", "-x"),
     type=Path(exists=True),
     multiple=True,
+    default=(),
     help="FASTQ files of paired-end reads with mates 1 and 2 in separate files"
 )
 
@@ -238,6 +241,7 @@ opt_dmfastqz = Option(
     ("--dmfastqz", "-Z"),
     type=Path(exists=True, file_okay=True),
     multiple=True,
+    default=(),
     help="Demultiplexed FASTQ files of single-end reads"
 )
 
@@ -245,6 +249,7 @@ opt_dmfastqy = Option(
     ("--dmfastqy", "-Y"),
     type=Path(exists=True, file_okay=True),
     multiple=True,
+    default=(),
     help="Demultiplexed FASTQ files of paired-end reads interleaved in one file"
 )
 
@@ -252,6 +257,7 @@ opt_dmfastqx = Option(
     ("--dmfastqx", "-X"),
     type=Path(exists=True, file_okay=True),
     multiple=True,
+    default=(),
     help="Demultiplexed FASTQ files of mate 1 and mate 2 reads"
 )
 
@@ -484,13 +490,6 @@ opt_min_mapq = Option(
     help="Discard reads with mapping qualities below this threshold"
 )
 
-opt_cram = Option(
-    ("--cram/--bam",),
-    type=bool,
-    default=False,
-    help="Compress alignment maps in CRAM format"
-)
-
 opt_min_reads = Option(
     ("--min-reads", "-N"),
     type=int,
@@ -556,7 +555,6 @@ opt_pool = Option(
 opt_mask_sections_file = Option(
     ("--mask-sections-file", "-s"),
     type=Path(dir_okay=False),
-    default="",
     help="Mask sections of references from coordinates/primers in a CSV file"
 )
 
@@ -564,6 +562,7 @@ opt_mask_coords = Option(
     ("--mask-coords", "-c"),
     type=(str, int, int),
     multiple=True,
+    default=(),
     help="Mask a section of a reference given its 5' and 3' end coordinates"
 )
 
@@ -571,6 +570,7 @@ opt_mask_primers = Option(
     ("--mask-primers", "-p"),
     type=(str, DNA, DNA),
     multiple=True,
+    default=(),
     help="Mask a section of a reference given its forward and reverse primers"
 )
 
@@ -599,6 +599,7 @@ opt_mask_mut = Option(
     ("--mask-mut",),
     type=str,
     multiple=True,
+    default=(),
     help="Mask this type of mutation"
 )
 
@@ -620,6 +621,7 @@ opt_mask_pos = Option(
     ("--mask-pos",),
     type=(str, int),
     multiple=True,
+    default=(),
     help="Mask this position in this reference"
 )
 
@@ -795,6 +797,7 @@ opt_fold_coords = Option(
     ("--fold-coords",),
     type=(str, int, int),
     multiple=True,
+    default=(),
     help="Fold a section of a reference given its 5' and 3' end coordinates"
 )
 
@@ -802,6 +805,7 @@ opt_fold_primers = Option(
     ("--fold-primers",),
     type=(str, DNA, DNA),
     multiple=True,
+    default=(),
     help="Fold a section of a reference given its forward and reverse primers"
 )
 
@@ -821,7 +825,7 @@ opt_fold_temp = Option(
 
 opt_fold_constraint = Option(
     ("--fold-constraint",),
-    type=click.Path(exists=True, dir_okay=False),
+    type=Path(exists=True, dir_okay=False),
     help="Force bases to be paired/unpaired from a file of constraints"
 )
 
@@ -920,8 +924,9 @@ opt_metric = Option(
 
 opt_struct_file = Option(
     ("--struct-file",),
-    type=click.Path(exists=True, dir_okay=False),
+    type=Path(exists=True, dir_okay=False),
     multiple=True,
+    default=(),
     help="Compare mutational profiles to the structure(s) in this CT file"
 )
 
@@ -1035,8 +1040,9 @@ opt_graph_aucroll = Option(
 
 opt_ct_pos_5 = Option(
     ("--ct-pos-5", "-c"),
-    type=(click.Path(exists=True), int),
+    type=(Path(exists=True), int),
     multiple=True,
+    default=(),
     help="Connectivity table (CT) file or directory of CT files "
          "and the 5' position to assign to each file"
 )
@@ -1123,8 +1129,9 @@ opt_profile_name = Option(
 
 opt_ct_file = Option(
     ("--ct-file", "-i"),
-    type=click.Path(exists=True, dir_okay=False),
+    type=Path(exists=True, dir_okay=False),
     multiple=True,
+    default=(),
     help="Simulate parameters using the structure(s) in this CT file"
 )
 
@@ -1188,7 +1195,7 @@ opt_clust_conc = Option(
 
 opt_param_dir = Option(
     ("--param-dir", "-d"),
-    type=click.Path(exists=True, file_okay=False),
+    type=Path(exists=True, file_okay=False),
     multiple=True,
     default=(),
     help="Simulate data using parameter files in this directory"
@@ -1197,7 +1204,7 @@ opt_param_dir = Option(
 opt_num_reads = Option(
     ("--num-reads", "-n"),
     type=int,
-    default=(opt_batch_size.default * 2),
+    default=opt_batch_size.default,
     help="Simulate this many reads"
 )
 
@@ -1278,6 +1285,14 @@ def merge_params(*param_lists: list[Parameter],
                 params.append(param)
                 names.add(param.name)
     return params
+
+
+def optional_path(param: str | pathlib.Path | None):
+    if isinstance(param, pathlib.Path):
+        return param
+    if param:
+        return pathlib.Path(param)
+    return None
 
 ########################################################################
 #                                                                      #

@@ -12,7 +12,8 @@ from .report import ClusterReport
 from .save import write_batches
 from .uniq import UniqReads
 from ..core.io import recast_file_path
-from ..core.parallel import as_list_of_tuples, dispatch
+from ..core.task import as_list_of_tuples, dispatch
+from ..core.tmp import release_to_out
 from ..core.types import get_max_uint
 from ..core.write import need_write
 from ..mask.data import load_mask_dataset
@@ -119,6 +120,7 @@ def cluster(mask_report_file: Path,
             n_procs: int,
             brotli_level: int,
             force: bool,
+            tmp_dir: Path,
             **kwargs):
     """ Cluster unique reads from one mask dataset. """
     # Check if the cluster report file already exists.
@@ -141,16 +143,16 @@ def cluster(mask_report_file: Path,
                                     max_order=max_order,
                                     n_runs=n_runs,
                                     n_procs=n_procs,
-                                    top=dataset.top,
+                                    top=tmp_dir,
                                     **kwargs))
         # Output the observed and expected counts for every best run.
         write_log_counts(orders,
-                         top=dataset.top,
+                         top=tmp_dir,
                          sample=dataset.sample,
                          ref=dataset.ref,
                          sect=dataset.sect)
         # Output the cluster memberships in batches of reads.
-        checksums = write_batches(dataset, orders, brotli_level)
+        checksums = write_batches(dataset, orders, brotli_level, tmp_dir)
         ended = datetime.now()
         report = ClusterReport.from_clusters(orders,
                                              uniq_reads,
@@ -160,7 +162,8 @@ def cluster(mask_report_file: Path,
                                              began=began,
                                              ended=ended,
                                              **kwargs)
-        report.save(dataset.top, force=True)
+        report_saved = report.save(tmp_dir)
+        release_to_out(dataset.top, tmp_dir, report_saved.parent)
         order = find_best_order(orders)
         logger.info(f"Ended clustering {mask_report_file} to order {order}")
     return cluster_report_file

@@ -125,11 +125,11 @@ class XamViewer(object):
     @cached_property
     def tmp_sam_path(self):
         """ Get the path to the temporary SAM file. """
-        return path.build(*path.XAM_STEP_SEGS,
+        return path.build(*path.XAM_STAGE_SEGS,
                           top=self.tmp_dir,
                           sample=self.sample,
                           cmd=path.CMD_REL_DIR,
-                          step=path.STEPS_REL_SAMS,
+                          stage=path.STAGE_REL_SAMS,
                           ref=self.ref,
                           ext=path.SAM_EXT)
 
