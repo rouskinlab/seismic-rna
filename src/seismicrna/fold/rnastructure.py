@@ -9,6 +9,7 @@ import os
 import re
 from logging import getLogger
 from pathlib import Path
+from shutil import which
 
 from ..core import path
 from ..core.arg import docdef
@@ -273,38 +274,91 @@ tstackm.dh
 """
 
 
-def check_data_path():
+def check_data_path(data_path: str | Path | None = None) -> Path:
     """ Confirm the DATAPATH environment variable indicates the correct
     directory. """
-    # Get the value of the DATAPATH environment variable, if it exists.
-    data_path = os.environ.get(DATAPATH)
     if data_path is None:
-        raise ValueError(f"The {DATAPATH} environment variable is not set")
+        data_path = os.environ.get(DATAPATH)
+    if data_path is None:
+        raise OSError(f"The {DATAPATH} environment variable is not set")
+    if not isinstance(data_path, Path):
+        data_path = Path(data_path)
     # Check if the path indicated by DATAPATH exists on the file system.
-    if not os.path.isdir(data_path):
-        raise FileNotFoundError(f"{DATAPATH} is set to {repr(data_path)}, "
-                                f"which is not a directory")
+    if not data_path.is_dir():
+        raise FileNotFoundError(f"{data_path} is not a directory")
     # Check if all expected files in the DATAPATH directory exist.
     extant_files = set(os.listdir(data_path))
     for expected_file in DATAPATH_FILES.strip().split():
         if expected_file not in extant_files:
-            raise FileNotFoundError(
-                f"{DATAPATH} is set to {repr(data_path)}, which is missing "
-                f"the required file {repr(expected_file)}"
-            )
+            raise FileNotFoundError(f"{data_path} is missing the required "
+                                    f"file {repr(expected_file)}")
+    return data_path
+
+
+def _guess_data_path_conda():
+    """ Guess the DATAPATH if RNAstructure was installed with Conda. """
+    fold_path = which(RNASTRUCTURE_FOLD_CMD)
+    if fold_path is None:
+        raise OSError(
+            f"RNAstructure not seem to be installed: {RNASTRUCTURE_FOLD_CMD}"
+        )
+    fold_path = Path(fold_path)
+    conda_dir = fold_path.parent.parent.parent.parent
+    if conda_dir.name != "conda":
+        raise OSError(
+            f"RNAstructure not seem to be installed with Conda: {fold_path}"
+        )
+    pkgs_dir = conda_dir.joinpath("pkgs")
+    rnastructure_pkgs = list()
+    for pkg in pkgs_dir.iterdir():
+        if pkg.name.startswith("rnastructure"):
+            rnastructure_pkgs.append(pkg)
+    if not rnastructure_pkgs:
+        raise OSError(
+            f"RNAstructure not seem to be installed with Conda: {pkgs_dir}"
+        )
+    rnastructure_pkg = sorted(rnastructure_pkgs)[-1]
+    data_path = rnastructure_pkg.joinpath("share",
+                                          "rnastructure",
+                                          "data_tables")
+    check_data_path(data_path)
+    logger.debug(f"Successfully guessed {DATAPATH}: {data_path}")
+    return data_path
+
+
+def guess_data_path():
+    """ Guess the DATAPATH. """
+    errors = list()
+    try:
+        return check_data_path()
+    except OSError as error:
+        errors.append(error)
+        logger.warning(f"The {DATAPATH} environment variable is not valid; "
+                       f"attempting to guess it")
+    for attempt in [_guess_data_path_conda]:
+        try:
+            return attempt()
+        except OSError as error:
+            errors.append(error)
+    raise OSError("\n".join(f" -> {error}" for error in errors))
 
 
 def require_data_path():
     """ Return an error message if the DATAPATH is not valid. """
     try:
-        check_data_path()
-    except Exception as error:
-        raise RuntimeError(
+        data_path = guess_data_path()
+    except OSError as error:
+        raise OSError(
             f"RNAstructure requires an environment variable called {DATAPATH} "
             f"to point to the directory in which its thermodynamic parameters "
-            f"are located, but {error}. For more information, please refer to "
+            f"are located, but\n{error}\nFor more information, please refer to "
             f"https://rna.urmc.rochester.edu/Text/Thermodynamics.html"
-        )
+        ) from None
+    # Set the DATAPATH environment variable if it is not already set.
+    data_path_str = str(data_path)
+    if os.environ.get(DATAPATH) != data_path_str:
+        os.environ[DATAPATH] = data_path_str
+    return data_path
 
 
 def make_fold_cmd(fasta_file: Path,
