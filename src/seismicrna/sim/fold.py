@@ -29,7 +29,7 @@ from ..core.run import run_func
 from ..core.seq import DNA, RefSections, Section, parse_fasta, write_fasta
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
-from ..fold.rnastructure import make_fold_cmd, retitle_ct_structures
+from ..fold.rnastructure import make_fold_cmd, retitle_ct
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -82,7 +82,7 @@ def fold_section(section: Section, *,
                                               fold_percent=fold_percent,
                                               n_procs=n_procs)))
             # Reformat the CT file title lines so that each is unique.
-            retitle_ct_structures(ct_tmp, ct_tmp, force=True)
+            retitle_ct(ct_tmp, ct_tmp, force=True)
             # Renumber the CT file so that it has the same numbering
             # scheme as the section, rather than always starting at 1,
             # the latter of which is always output by the Fold program.

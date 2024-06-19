@@ -446,7 +446,7 @@ def fold(rna: RNAProfile, *,
             )
             run_cmd(fold_cmds[False])
         # Reformat the CT file title lines so that each is unique.
-        retitle_ct_structures(ct_tmp, ct_tmp, force=True)
+        retitle_ct(ct_tmp, ct_tmp, force=True)
         # Renumber the CT file so that it has the same numbering scheme
         # as the section, rather than always starting at 1, the latter
         # of which is always output by the Fold program.
@@ -568,7 +568,7 @@ def format_retitled_ct_line(length: int, ref: str, uniqid: int, energy: float):
     return f"{length}\t{ref} #{uniqid}: {energy}\n"
 
 
-def retitle_ct_structures(ct_input: Path, ct_output: Path, force: bool = False):
+def retitle_ct(ct_input: Path, ct_output: Path, force: bool = False):
     """ Retitle the structures in a CT file produced by RNAstructure.
 
     The default titles follow this format:
@@ -613,7 +613,7 @@ def retitle_ct_structures(ct_input: Path, ct_output: Path, force: bool = False):
         with open(ct_output, write_mode(force=True)) as f:
             f.write(text)
         logger.info(f"Retitled CT file {ct_input}"
-                    + f" to {ct_output}" if ct_input != ct_output else "")
+                    + (f" to {ct_output}" if ct_input != ct_output else ""))
 
 
 def parse_energy(line: str):
