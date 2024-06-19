@@ -371,16 +371,26 @@ def fold(rna: RNAProfile, *,
     dms_file = rna.to_dms(tmp_dir)
     try:
         # Run the command.
-        run_cmd(args_to_cmd(make_fold_cmd(fasta_tmp,
-                                          ct_tmp,
-                                          dms_file=dms_file,
-                                          fold_constraint=fold_constraint,
-                                          fold_temp=fold_temp,
-                                          fold_md=fold_md,
-                                          fold_mfe=fold_mfe,
-                                          fold_max=fold_max,
-                                          fold_percent=fold_percent,
-                                          n_procs=n_procs)))
+        fold_cmds = {
+            smp: args_to_cmd(make_fold_cmd(fasta_tmp,
+                                           ct_tmp,
+                                           dms_file=dms_file,
+                                           fold_constraint=fold_constraint,
+                                           fold_temp=fold_temp,
+                                           fold_md=fold_md,
+                                           fold_mfe=fold_mfe,
+                                           fold_max=fold_max,
+                                           fold_percent=fold_percent,
+                                           n_procs=(n_procs if smp else 1)))
+            for smp in [True, False]
+        }
+        try:
+            run_cmd(fold_cmds[True])
+        except RuntimeError as error:
+            logger.warning(
+                f"Unable to fold using {RNASTRUCTURE_FOLD_SMP_CMD}:\n{error}"
+            )
+            run_cmd(fold_cmds[False])
         # Reformat the CT file title lines so that each is unique.
         retitle_ct_structures(ct_tmp, ct_tmp, force=True)
         # Renumber the CT file so that it has the same numbering scheme

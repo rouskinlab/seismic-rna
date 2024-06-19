@@ -171,7 +171,7 @@ def run(input_path: tuple[str, ...], *,
                      else [table.section]))
             for table in tables]
     # Fold the RNA profiles.
-    return list(chain(dispatch(
+    return list(chain(*dispatch(
         fold_profile,
         max_procs,
         parallel,
