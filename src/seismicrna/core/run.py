@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Optional
 
 from .arg import docdef
 from .logs import log_exceptions
@@ -6,6 +6,7 @@ from .tmp import with_tmp_dir
 
 
 def run_func(logging_method: Callable,
+             default: Optional[Callable] = list,
              with_tmp: bool = False,
              pass_keep_tmp: bool = False,
              *args,
@@ -14,7 +15,7 @@ def run_func(logging_method: Callable,
 
     docdef_decorator = docdef.auto(*args, **kwargs)
     tmp_decorator = with_tmp_dir(pass_keep_tmp) if with_tmp else None
-    exceptions_decorator = log_exceptions(logging_method)
+    exceptions_decorator = log_exceptions(logging_method, default)
 
     def decorator(func: Callable):
         # Apply each decorator to the run function.

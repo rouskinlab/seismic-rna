@@ -394,6 +394,7 @@ def fold(rna: RNAProfile, *,
             dms_file.unlink(missing_ok=True)
             if ct_tmp != ct_out:
                 ct_tmp.unlink(missing_ok=True)
+    logger.info(f"Predicted structure of {rna} to {ct_out}")
     return ct_out
 
 
@@ -545,8 +546,10 @@ def retitle_ct_structures(ct_input: Path, ct_output: Path, force: bool = False):
                 uniqid += 1
         # Write the reformatted lines to the output file.
         text = "".join(lines)
-        with open(ct_output, write_mode(force)) as f:
+        with open(ct_output, write_mode(force=True)) as f:
             f.write(text)
+        logger.info(f"Retitled CT file {ct_input}"
+                    + f" to {ct_output}" if ct_input != ct_output else "")
 
 
 def parse_energy(line: str):

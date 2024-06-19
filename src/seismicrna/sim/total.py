@@ -29,7 +29,7 @@ def as_tuple_str(items: Iterable):
     return tuple(map(str, items))
 
 
-@run_func(logger.critical)
+@run_func(logger.critical, default=None)
 def run(*,
         sim_dir: str,
         tmp_pfx: str,

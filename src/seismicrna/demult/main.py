@@ -52,7 +52,7 @@ def cli(*args, **kwargs):
     return run(*args, **kwargs)
 
 
-@run_func(logger.critical, pass_keep_tmp=True)
+@run_func(logger.critical, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str, *,
         refs_meta: str,
         out_dir: str,

@@ -10,56 +10,56 @@ from typing import Iterable
 
 from click import command
 
-from .. import (demult as demultiplex_mod,
-                align as align_mod,
-                relate as relate_mod,
-                pool as pool_mod,
-                mask as mask_mod,
-                cluster as cluster_mod,
-                join as join_mod,
-                table as table_mod,
-                fold as fold_mod,
-                export as export_mod)
-from ..core.arg import (CMD_WORKFLOW,
-                        merge_params,
-                        opt_demultiplex,
-                        opt_fold,
-                        opt_export,
-                        opt_cgroup,
-                        opt_hist_bins,
-                        opt_hist_margin,
-                        opt_struct_file,
-                        opt_fold_full,
-                        opt_window,
-                        opt_winmin,
-                        opt_csv,
-                        opt_html,
-                        opt_svg,
-                        opt_pdf,
-                        opt_png,
-                        opt_graph_mprof,
-                        opt_graph_tmprof,
-                        opt_graph_ncov,
-                        opt_graph_mhist,
-                        opt_graph_giniroll,
-                        opt_graph_roc,
-                        opt_graph_aucroll)
-from ..core.run import run_func
-from ..core.seq import DNA
-from ..graph.aucroll import RollingAUCRunner
-from ..graph.giniroll import RollingGiniRunner
-from ..graph.histread import ReadHistogramRunner
-from ..graph.profile import ProfileRunner
-from ..graph.roc import ROCRunner
-from ..table.base import (DELET_REL,
-                          INSRT_REL,
-                          MUTAT_REL,
-                          REL_NAMES,
-                          SUB_A_REL,
-                          SUB_C_REL,
-                          SUB_G_REL,
-                          SUB_T_REL,
-                          UNAMB_REL)
+from . import (demult as demultiplex_mod,
+               align as align_mod,
+               relate as relate_mod,
+               pool as pool_mod,
+               mask as mask_mod,
+               cluster as cluster_mod,
+               join as join_mod,
+               table as table_mod,
+               fold as fold_mod,
+               export as export_mod)
+from .core.arg import (CMD_WORKFLOW,
+                       merge_params,
+                       opt_demultiplex,
+                       opt_fold,
+                       opt_export,
+                       opt_cgroup,
+                       opt_hist_bins,
+                       opt_hist_margin,
+                       opt_struct_file,
+                       opt_fold_full,
+                       opt_window,
+                       opt_winmin,
+                       opt_csv,
+                       opt_html,
+                       opt_svg,
+                       opt_pdf,
+                       opt_png,
+                       opt_graph_mprof,
+                       opt_graph_tmprof,
+                       opt_graph_ncov,
+                       opt_graph_mhist,
+                       opt_graph_giniroll,
+                       opt_graph_roc,
+                       opt_graph_aucroll)
+from .core.run import run_func
+from .core.seq import DNA
+from .graph.aucroll import RollingAUCRunner
+from .graph.giniroll import RollingGiniRunner
+from .graph.histread import ReadHistogramRunner
+from .graph.profile import ProfileRunner
+from .graph.roc import ROCRunner
+from .table.base import (DELET_REL,
+                         INSRT_REL,
+                         MUTAT_REL,
+                         REL_NAMES,
+                         SUB_A_REL,
+                         SUB_C_REL,
+                         SUB_G_REL,
+                         SUB_T_REL,
+                         UNAMB_REL)
 
 logger = getLogger(__name__)
 
@@ -75,7 +75,7 @@ def as_tuple_str(items: Iterable):
     return tuple(map(str, items))
 
 
-@run_func(logger.critical)
+@run_func(logger.critical, default=None)
 def run(fasta: str,
         input_path: tuple[str, ...], *,
         # General options
@@ -243,8 +243,6 @@ def run(fasta: str,
         # Clear the input FASTQ files once the demultiplexed FASTQ files
         # have been generated.
         fastqx = tuple()
-        fastqy = tuple()
-        fastqz = tuple()
     # Align
     input_path += as_tuple_str(align_mod.run(
         out_dir=out_dir,
@@ -532,7 +530,6 @@ def run(fasta: str,
             parallel=parallel,
             force=force,
         )
-    return list(input_path)
 
 
 graph_options = [opt_cgroup,

@@ -70,6 +70,7 @@ def to_ct(structures: Iterable[RNAStructure],
         # Write the numbered structures to the file.
         with open(ct_path, write_mode(force)) as f:
             f.write(text)
+        logger.info(f"Wrote {ct_path}")
 
 
 def renumber_ct(ct_in: Path, ct_out: Path, seq5: int, force: bool = False):
@@ -90,6 +91,7 @@ def renumber_ct(ct_in: Path, ct_out: Path, seq5: int, force: bool = False):
               from_ct(ct_in)),
           ct_out,
           force)
+    logger.info(f"Renumbered {ct_in} to {ct_out} starting at position {seq5}")
 
 ########################################################################
 #                                                                      #

@@ -28,7 +28,7 @@ def get_fasta_path(top: Path, ref: str):
                          ext=path.FASTA_EXTS[0])
 
 
-@run_func(logger.critical)
+@run_func(logger.critical, default=Path)
 def run(*,
         sim_dir: str,
         refs: str,

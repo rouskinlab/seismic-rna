@@ -72,8 +72,9 @@ def parse_fasta(fasta: Path,
                 names.add(name)
             except Exception as error:
                 # Determining the name failed.
-                logger.error(f"Failed to parse name of reference in {fasta}: "
-                             f"{error}")
+                logger.error(
+                    f"Failed to parse name of reference in {fasta}:\n{error}"
+                )
                 # Advance to the next line to prevent the current line
                 # from being read multiple times.
                 line = f.readline()
@@ -98,16 +99,21 @@ def parse_fasta(fasta: Path,
                                 segments.append(line.rstrip(linesep))
                                 line = f.readline()
                             seq = seq_type("".join(segments))
-                            logger.debug(f"Read {seq_type.__name__} '{name}' "
-                                         f"({len(seq)} nt) from {fasta}")
+                            logger.debug(
+                                f"Read {seq_type.__name__} {repr(name)} "
+                                f"({len(seq)} nt) from {fasta}"
+                            )
                             yield name, seq
                         except Exception as error:
-                            logger.error(f"Failed to read sequence of '{name}' "
-                                         f"in {fasta}: {error}")
+                            logger.error(
+                                f"Failed to read sequence of {repr(name)} "
+                                f"from {fasta}:\n{error}"
+                            )
             # Skip to the next name line if there is one, otherwise to
             # the end of the file. Ignore blank lines.
             while line and not line.startswith(FASTA_NAME_MARK):
                 line = f.readline()
+    logger.info(f"Read {len(names)} sequences(s) from {fasta}")
 
 
 def get_fasta_seq(fasta: Path, seq_type: type[XNA], name: str):
@@ -130,7 +136,6 @@ def write_fasta(fasta: Path,
                 force: bool = False):
     """ Write an iterable of reference names and DNA sequences to a
     FASTA file. """
-    logger.info(f"Began writing FASTA file: {fasta}")
     # Record the names of all the references.
     names = set()
     with open(fasta, write_mode(force)) as f:
@@ -140,20 +145,22 @@ def write_fasta(fasta: Path,
                 if not name:
                     raise ValueError(f"Got blank reference name")
                 # Confirm there are no illegal characters in the name.
-                if illegal := set(name) - set(FASTA_NAME_CHARS):
-                    raise ValueError(f"Reference name '{name}' has illegal "
+                if illegal := (set(name) - set(FASTA_NAME_CHARS)):
+                    raise ValueError(f"Reference name {repr(name)} has illegal "
                                      f"characters: {illegal}")
                 # If there are two or more references with the same name,
                 # then the sequence of only the first is used.
                 if name in names:
-                    raise ValueError(f"Duplicate reference name: '{name}'")
+                    raise ValueError(f"Duplicate reference name: {repr(name)}")
                 f.write(format_fasta_record(name, seq, wrap))
-                logger.info(f"Wrote reference '{name}' ({len(seq)} nt) "
-                            f"to {fasta}")
+                logger.debug(f"Wrote reference {repr(name)} ({len(seq)} nt) "
+                             f"to {fasta}")
                 names.add(name)
             except Exception as error:
                 logger.error(
-                    f"Failed to write reference '{name}' to {fasta}: {error}")
+                    f"Failed to write reference {repr(name)} "
+                    f"to {fasta}:\n{error}"
+                )
     logger.info(f"Wrote {len(names)} sequences(s) to {fasta}")
 
 ########################################################################

@@ -1,4 +1,5 @@
 import os
+from logging import getLogger
 from pathlib import Path
 
 from click import command
@@ -7,8 +8,7 @@ from .clusts import load_pclust
 from .ends import load_pends
 from .muts import load_pmut
 from ..core import path
-from ..core.arg import (docdef,
-                        opt_param_dir,
+from ..core.arg import (opt_param_dir,
                         opt_profile_name,
                         opt_sample,
                         opt_paired_end,
@@ -21,9 +21,12 @@ from ..core.arg import (docdef,
                         opt_force,
                         opt_parallel,
                         opt_max_procs)
-from ..core.task import as_list_of_tuples, dispatch
 from ..core.rna import find_ct_section
+from ..core.run import run_func
+from ..core.task import as_list_of_tuples, dispatch
 from ..relate.sim import simulate_relate
+
+logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -68,7 +71,7 @@ def from_param_dir(param_dir: Path,
                            **kwargs)
 
 
-@docdef.auto()
+@run_func(logger.critical)
 def run(*,
         param_dir: tuple[str, ...],
         profile_name: str,

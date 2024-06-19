@@ -9,7 +9,7 @@ Central manager of logging.
 import logging
 from functools import cache, wraps
 from itertools import chain
-from typing import Callable
+from typing import Callable, Optional
 
 MAX_VERBOSE = 2
 MAX_QUIET = 2
@@ -162,7 +162,7 @@ def exc_info():
     return verbose == MAX_VERBOSE
 
 
-def log_exceptions(logging_method: Callable):
+def log_exceptions(logging_method: Callable, default: Optional[Callable]):
     """ If any exception occurs, catch it and return an empty list. """
     try:
         logger = getattr(logging_method, "__self__")
@@ -180,11 +180,10 @@ def log_exceptions(logging_method: Callable):
         @wraps(func)
         def wrapper(*args, **kwargs):
             try:
-                result = func(*args, **kwargs)
-                return result if isinstance(result, list) else list(result)
+                return func(*args, **kwargs)
             except Exception as error:
                 logging_method(error, exc_info=exc_info())
-                return list()
+                return default() if default is not None else None
 
         return wrapper
 

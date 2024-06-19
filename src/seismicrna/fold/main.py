@@ -34,7 +34,6 @@ from ..core.rna import RNAProfile
 from ..core.run import run_func
 from ..core.seq import DNA, RefSections, RefSeqs, Section
 from ..core.task import as_list_of_tuples, dispatch
-from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.write import need_write
 from ..table.base import MaskPosTable, ClustPosTable
 from ..table.load import find_pos_tables, load_pos_table
@@ -77,11 +76,10 @@ def fold_section(rna: RNAProfile, *,
                                         profile=rna.profile)
     if need_write(report_file, force):
         began = datetime.now()
-        release_dir, working_dir = get_release_working_dirs(tmp_dir)
-        rna.to_varna_color_file(release_dir)
+        rna.to_varna_color_file(out_dir)
         ct_file = fold(rna,
-                       out_dir=release_dir,
-                       tmp_dir=working_dir,
+                       out_dir=out_dir,
+                       tmp_dir=tmp_dir,
                        fold_temp=fold_temp,
                        fold_constraint=fold_constraint,
                        fold_md=fold_md,
@@ -104,8 +102,7 @@ def fold_section(rna: RNAProfile, *,
                             fold_percent=fold_percent,
                             began=began,
                             ended=ended)
-        report_saved = report.save(release_dir)
-        release_to_out(out_dir, release_dir, report_saved.parent)
+        report.save(out_dir)
     return report_file
 
 

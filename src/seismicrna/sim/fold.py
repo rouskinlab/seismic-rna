@@ -127,7 +127,7 @@ def run(fasta: str, *,
                     pass_n_procs=True,
                     args=as_list_of_tuples(sections.sections),
                     kwargs=dict(sim_dir=Path(sim_dir),
-                                tmp_dir=Path(tmp_dir),
+                                tmp_dir=tmp_dir,
                                 profile_name=profile_name,
                                 fold_constraint=(Path(fold_constraint)
                                                  if fold_constraint

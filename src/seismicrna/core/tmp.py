@@ -20,13 +20,21 @@ def release_to_out(out_dir: str | Path,
     out_path = transpath(out_dir, release_dir, initial_path)
     if initial_path.exists():
         # Delete the new path if it already exists.
-        rmtree(out_path, ignore_errors=True)
+        try:
+            rmtree(out_path)
+        except OSError:
+            pass
+        else:
+            logger.info(f"Deleted existing outputs in {out_path}")
         # Ensure the parent directory of the new path exists.
         out_path.parent.mkdir(parents=True, exist_ok=True)
         # Move the temporary path to the new location.
         move(initial_path, out_path.parent)
+    else:
+        logger.debug(f"Skipped releasing non-existent path {initial_path}")
     if not out_path.exists():
         raise FileNotFoundError(out_path)
+    logger.info(f"Released {initial_path} to {out_path}")
     return out_path
 
 
