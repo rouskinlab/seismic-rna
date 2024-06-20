@@ -35,7 +35,8 @@ from ..core.arg import (CMD_MASK,
                         opt_max_procs,
                         opt_parallel,
                         opt_force,
-                        optional_path)
+                        optional_path,
+                        extra_defaults)
 from ..core.data import load_datasets
 from ..core.run import run_func
 from ..core.seq import DNA, RefSections
@@ -66,14 +67,14 @@ def load_sections(input_path: Iterable[str | Path],
     return datasets, sections
 
 
-@run_func(logger.critical, with_tmp=True)
+@run_func(logger.critical, with_tmp=True, extra_defaults=extra_defaults)
 def run(input_path: tuple[str, ...], *,
         tmp_dir: Path,
         # Sections
         mask_coords: tuple[tuple[str, int, int], ...],
         mask_primers: tuple[tuple[str, DNA, DNA], ...],
         primer_gap: int,
-        mask_sections_file: str,
+        mask_sections_file: str | None,
         # Mutation counting
         mask_del: bool,
         mask_ins: bool,
