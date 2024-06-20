@@ -13,6 +13,14 @@ cli_defaults = {param.name: param.default
                 for param in (cli_args | cli_opts).values()
                 if param.default is not None}
 
+extra_defaults = dict(mask_sections_file=None,
+                      mask_pos_file=None,
+                      join_clusts=None,
+                      fold_sections_file=None,
+                      fold_constraint=None,
+                      samples_meta=None,
+                      refs_meta=None)
+
 ########################################################################
 #                                                                      #
 # © Copyright 2024, the Rouskin Lab.                                   #

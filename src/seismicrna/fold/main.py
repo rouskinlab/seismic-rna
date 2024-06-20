@@ -26,7 +26,8 @@ from ..core.arg import (CMD_FOLD,
                         opt_max_procs,
                         opt_parallel,
                         opt_force,
-                        optional_path)
+                        optional_path,
+                        extra_defaults)
 from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
                            RNASTRUCTURE_FOLD_CMD,
                            require_dependency)
@@ -125,7 +126,10 @@ def fold_profile(table: MaskPosTable | ClustPosTable,
                                 **kwargs))
 
 
-@run_func(logger.critical, with_tmp=True, pass_keep_tmp=True)
+@run_func(logger.critical,
+          with_tmp=True,
+          pass_keep_tmp=True,
+          extra_defaults=extra_defaults)
 def run(input_path: tuple[str, ...], *,
         fold_coords: tuple[tuple[str, int, int], ...],
         fold_primers: tuple[tuple[str, DNA, DNA], ...],

@@ -13,15 +13,15 @@ def run_func(logging_method: Callable,
              **kwargs):
     """ Decorator for a run function. """
 
-    docdef_decorator = docdef.auto(*args, **kwargs)
     tmp_decorator = with_tmp_dir(pass_keep_tmp) if with_tmp else None
+    docdef_decorator = docdef.auto(*args, **kwargs)
     exceptions_decorator = log_exceptions(logging_method, default)
 
     def decorator(func: Callable):
         # Apply each decorator to the run function.
-        func = docdef_decorator(func)
         if tmp_decorator is not None:
             func = tmp_decorator(func)
+        func = docdef_decorator(func)
         func = exceptions_decorator(func)
         return func
 

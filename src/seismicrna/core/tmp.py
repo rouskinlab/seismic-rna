@@ -1,4 +1,5 @@
 from functools import wraps
+from inspect import Parameter, Signature
 from logging import getLogger
 from pathlib import Path
 from shutil import move, rmtree
@@ -54,7 +55,7 @@ def with_tmp_dir(pass_keep_tmp: bool):
         @wraps(func)
         def wrapper(*args,
                     tmp_pfx: str | Path,
-                    keep_tmp: bool = False,
+                    keep_tmp: bool,
                     **kwargs):
             tmp_dir = None
             try:
@@ -74,6 +75,13 @@ def with_tmp_dir(pass_keep_tmp: bool):
                     else:
                         logger.debug(f"Deleted temporary directory {tmp_dir}")
 
+        # Add tmp_pfx and keep_tmp to the signature of the wrapper
+        # (functools.wraps does not add them automatically).
+        params = dict(Signature.from_callable(func).parameters)
+        for param in ["tmp_pfx", "keep_tmp"]:
+            if param not in params:
+                params[param] = Parameter(param, Parameter.KEYWORD_ONLY)
+        wrapper.__signature__ = Signature(parameters=list(params.values()))
         return wrapper
 
     return decorator

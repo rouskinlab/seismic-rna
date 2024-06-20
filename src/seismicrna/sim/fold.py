@@ -22,7 +22,9 @@ from ..core.arg import (arg_fasta,
                         opt_keep_tmp,
                         opt_force,
                         opt_max_procs,
-                        opt_parallel)
+                        opt_parallel,
+                        optional_path,
+                        extra_defaults)
 from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
                            RNASTRUCTURE_FOLD_CMD,
                            require_dependency,
@@ -99,10 +101,12 @@ def fold_section(section: Section, *,
     return ct_sim
 
 
-@run_func(logger.critical, with_tmp=True, pass_keep_tmp=True)
+@run_func(logger.critical,
+          with_tmp=True,
+          pass_keep_tmp=True,
+          extra_defaults=extra_defaults)
 def run(fasta: str, *,
         sim_dir: str,
-        tmp_dir: Path,
         profile_name: str,
         fold_coords: tuple[tuple[str, int, int], ...],
         fold_primers: tuple[tuple[str, DNA, DNA], ...],
@@ -114,6 +118,7 @@ def run(fasta: str, *,
         fold_max: int,
         fold_percent: float,
         keep_tmp: bool,
+        tmp_dir: Path,
         force: bool,
         max_procs: int,
         parallel: bool):
@@ -137,9 +142,7 @@ def run(fasta: str, *,
                     kwargs=dict(sim_dir=Path(sim_dir),
                                 tmp_dir=tmp_dir,
                                 profile_name=profile_name,
-                                fold_constraint=(Path(fold_constraint)
-                                                 if fold_constraint
-                                                 else None),
+                                fold_constraint=optional_path(fold_constraint),
                                 fold_temp=fold_temp,
                                 fold_md=fold_md,
                                 fold_mfe=fold_mfe,

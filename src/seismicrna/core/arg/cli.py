@@ -1032,7 +1032,7 @@ opt_graph_roc = Option(
 opt_graph_aucroll = Option(
     ("--graph-aucroll/--no-graph-aucroll",),
     type=bool,
-    default=True,
+    default=False,
     help="Graph rolling areas under receiver operating characteristic curves"
 )
 

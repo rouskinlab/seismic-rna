@@ -19,9 +19,9 @@ cli_docstrs = {option.name: option.help for option in cli_opts.values()}
 
 def get_param_default(param: Parameter,
                       defaults: dict[str, Any],
-                      exclude_defs: tuple[str, ...]) -> Parameter:
+                      exclude_defaults: tuple[str, ...]):
     """ Return the parameter, possibly with a new default value. """
-    if param.name in exclude_defs:
+    if param.name in exclude_defaults:
         return param
     if param.name in reserved_params:
         return param
@@ -32,10 +32,9 @@ def get_param_default(param: Parameter,
         return param
 
 
-def param_defaults(defaults: dict[str, Any], exclude_defaults: tuple[str, ...]):
+def param_defaults(defaults: dict[str, Any],
+                   exclude_defaults: tuple[str, ...]):
     """ Give the keyword argments of a function default values. """
-    if defaults is None:
-        defaults = dict()
 
     def decorator(func: Callable):
         # List all the parameters of the function, replacing the default
@@ -43,7 +42,6 @@ def param_defaults(defaults: dict[str, Any], exclude_defaults: tuple[str, ...]):
         sig = Signature.from_callable(func)
         new_params = [get_param_default(param, defaults, exclude_defaults)
                       for param in sig.parameters.values()]
-
         # Update the help text (does not affect actual default values).
         try:
             func.__signature__ = Signature(parameters=new_params)
@@ -54,7 +52,8 @@ def param_defaults(defaults: dict[str, Any], exclude_defaults: tuple[str, ...]):
         # Update the actual default values of keyword-only arguments
         # (does not affect help text).
         default_kwargs = {param.name: param.default for param in new_params
-                          if param.kind == Parameter.KEYWORD_ONLY}
+                          if param.kind == Parameter.KEYWORD_ONLY
+                          and param.default is not Parameter.empty}
 
         @wraps(func)
         def new_func(*args, **kwargs):
