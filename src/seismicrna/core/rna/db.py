@@ -1,23 +1,30 @@
+from collections import defaultdict
 from logging import getLogger
 from pathlib import Path
 from typing import TextIO
 
-from ..seq import RNA
+from .. import path
+from ..seq import RNA, Section
 
 logger = getLogger(__name__)
 
-
 DB_NAME_MARK = ">"
+UNPAIRED_MARK = "."
+OPENING_MARKS = {"(": ")",
+                 "[": "]",
+                 "{": "}",
+                 "<": ">"}
+CLOSING_MARKS = {c: o for o, c in OPENING_MARKS.items()}
 
 
 def _parse_db_header(header_line: str):
     if not header_line.startswith(DB_NAME_MARK):
         raise ValueError(f"Header line {repr(header_line)} does not start with "
                          f"{repr(DB_NAME_MARK)}")
-    return header_line[len(DB_NAME_MARK):]
+    return header_line[len(DB_NAME_MARK):].rstrip("\n")
 
 
-def _parse_db_structure(db_file: TextIO, seq: RNA | None):
+def _parse_db_string(db_file: TextIO, seq: RNA | None):
     if seq is None:
         seq = RNA(db_file.readline().rstrip("\n"))
     struct = db_file.readline().rstrip("\n")
@@ -36,11 +43,72 @@ def parse_db_strings(db_path: Path):
             # Get the header of the current structure.
             header = _parse_db_header(header_line)
             # Determine the sequence and base pairs.
-            seq, struct = _parse_db_structure(file, seq)
+            seq, struct = _parse_db_string(file, seq)
             structs[header] = struct
     if seq is None:
         raise ValueError(f"File {db_path} contained no sequence")
     return seq, structs
+
+
+def _parse_db_structure(db_file: TextIO, seq: RNA | None, seq5: int = 1):
+    seq, struct = _parse_db_string(db_file, seq)
+    stacks = defaultdict(list)
+    pairs = list()
+    for pos, (base, mark) in enumerate(zip(seq, struct, strict=True),
+                                       start=seq5):
+        if mark != UNPAIRED_MARK:
+            if mark in OPENING_MARKS:
+                stacks[mark].append(pos)
+            elif omark := CLOSING_MARKS.get(mark):
+                try:
+                    pairs.append((stacks[omark].pop(), pos))
+                except IndexError:
+                    raise ValueError(f"{db_file} has unmatched {repr(mark)} "
+                                     f"at position {pos}") from None
+            else:
+                raise ValueError(f"{db_file} has invalid mark at position "
+                                 f"{pos}: {repr(mark)}")
+    for omark, positions in stacks.items():
+        if positions:
+            raise ValueError(f"{db_file} has unmatched {repr(omark)} "
+                             f"at position {positions[0]}")
+    return seq, pairs
+
+
+def parse_db(db_path: Path, seq5: int = 1):
+    """ Yield the title, section, and base pairs for each structure in a
+    dot-bracket (DB) file.
+
+    Parameters
+    ----------
+    db_path: Path
+        Path of the DB file.
+    seq5: int = 1
+        Number to give the 5' position of the sequence.
+
+    Returns
+    -------
+    Generator[tuple[str, Section, list[tuple[int, int]]], Any, None]
+    """
+    # Determine the reference and section names from the path.
+    fields = path.parse(db_path,
+                        path.RefSeg,
+                        path.SectSeg,
+                        path.DotBracketSeg)
+    ref = fields[path.REF]
+    sect = fields[path.SECT]
+    # Parse each structure in the CT file.
+    seq = None
+    with open(db_path) as file:
+        while header_line := file.readline():
+            # Get the header of the current structure.
+            title = _parse_db_header(header_line)
+            # Determine the sequence and base pairs.
+            seq, pairs = _parse_db_structure(file, seq, seq5)
+            # Make a section from the sequence.
+            section = Section(ref, seq.rt(), seq5=seq5, name=sect)
+            # Yield the title, section, and base pairs.
+            yield title, section, pairs
 
 ########################################################################
 #                                                                      #

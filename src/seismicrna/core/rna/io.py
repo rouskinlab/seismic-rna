@@ -1,14 +1,25 @@
 from functools import partial
 from logging import getLogger
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 from .ct import parse_ct
+from .db import parse_db
 from .struct import RNAStructure
 from ..seq import Section
 from ..write import need_write, write_mode
 
 logger = getLogger(__name__)
+
+
+def _from_file(file: Path, parser: Callable, *args, **kwargs):
+    titles: set[str] = set()
+    for title, section, pairs in parser(file, *args, **kwargs):
+        if title in titles:
+            logger.warning(f"Title {repr(title)} is repeated in {file}")
+        else:
+            titles.add(title)
+        yield RNAStructure(title=title, section=section, pairs=pairs)
 
 
 def from_ct(ct_path: Path):
@@ -25,13 +36,26 @@ def from_ct(ct_path: Path):
     Generator[RNAStructure, Any, None]
         RNA secondary structures from the CT file.
     """
-    titles: set[str] = set()
-    for title, section, pairs in parse_ct(ct_path):
-        if title in titles:
-            logger.warning(f"Title {repr(title)} is repeated in {ct_path}")
-        else:
-            titles.add(title)
-        yield RNAStructure(title=title, section=section, pairs=pairs)
+    yield from _from_file(ct_path, parse_ct)
+
+
+def from_db(db_path: Path, seq5: int = 1):
+    """ Yield an instance of an RNAStructure for each structure in a
+    dot-bracket (DB) file.
+
+    Parameters
+    ----------
+    db_path: Path
+        Path of the DB file.
+    seq5: int = 1
+        Number to give the 5' position of the sequence.
+
+    Returns
+    -------
+    Generator[RNAStructure, Any, None]
+        RNA secondary structures from the CT file.
+    """
+    yield from _from_file(db_path, parse_db, seq5=seq5)
 
 
 def find_ct_section(ct_path: Path) -> Section:
