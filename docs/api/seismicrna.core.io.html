@@ -74,7 +74,6 @@
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.sim.html">seismicrna.sim package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.table.html">seismicrna.table package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.test.html">seismicrna.test package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.wf.html">seismicrna.wf package</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="seismicrna.html#module-seismicrna.join">Submodules</a></li>
@@ -120,23 +119,7 @@
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="seismicrna.core.io.tests.html">seismicrna.core.io.tests package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="seismicrna.core.io.tests.html#module-seismicrna.core.io.tests.file_test">Submodules</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.io.tests.html#seismicrna.core.io.tests.file_test.SourceBackupDirs"><code class="docutils literal notranslate"><span class="pre">SourceBackupDirs</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.io.tests.html#seismicrna.core.io.tests.file_test.SourceBackupDirs.backup_dir"><code class="docutils literal notranslate"><span class="pre">SourceBackupDirs.backup_dir</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.io.tests.html#seismicrna.core.io.tests.file_test.SourceBackupDirs.source_dir"><code class="docutils literal notranslate"><span class="pre">SourceBackupDirs.source_dir</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.io.tests.html#seismicrna.core.io.tests.file_test.TestMakeTmpBackup"><code class="docutils literal notranslate"><span class="pre">TestMakeTmpBackup</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.io.tests.html#seismicrna.core.io.tests.file_test.TestMakeTmpBackup.make_dir"><code class="docutils literal notranslate"><span class="pre">TestMakeTmpBackup.make_dir()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.io.tests.html#seismicrna.core.io.tests.file_test.TestMakeTmpBackup.make_file"><code class="docutils literal notranslate"><span class="pre">TestMakeTmpBackup.make_file()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.io.tests.html#seismicrna.core.io.tests.file_test.TestMakeTmpBackup.test_backup_dir"><code class="docutils literal notranslate"><span class="pre">TestMakeTmpBackup.test_backup_dir()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.io.tests.html#seismicrna.core.io.tests.file_test.TestMakeTmpBackup.test_backup_file"><code class="docutils literal notranslate"><span class="pre">TestMakeTmpBackup.test_backup_file()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.io.tests.html#seismicrna.core.io.tests.file_test.TestMakeTmpBackup.test_restore_dir"><code class="docutils literal notranslate"><span class="pre">TestMakeTmpBackup.test_restore_dir()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.core.io.tests.html#seismicrna.core.io.tests.file_test.TestMakeTmpBackup.test_restore_file"><code class="docutils literal notranslate"><span class="pre">TestMakeTmpBackup.test_restore_file()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="seismicrna.core.io.tests.html#module-seismicrna.core.io.tests.file_test">Submodules</a></li>
 </ul>
 </li>
 </ul>
@@ -300,12 +283,6 @@
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.core.io.file.make_tmp_backup">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.io.file.</span></span><span class="sig-name descname"><span class="pre">make_tmp_backup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tmp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.io.file.make_tmp_backup" title="Link to this definition"></a></dt>
-<dd><p>Make a temporary backup of <cite>source_path</cite> in <cite>tmp_dir</cite>.</p>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="seismicrna.core.io.file.recast_file_path">
 <span class="sig-prename descclassname"><span class="pre">seismicrna.core.io.file.</span></span><span class="sig-name descname"><span class="pre">recast_file_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.io.file.FileIO" title="seismicrna.core.io.file.FileIO"><span class="pre">FileIO</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#seismicrna.core.io.file.FileIO" title="seismicrna.core.io.file.FileIO"><span class="pre">FileIO</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">override</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.io.file.recast_file_path" title="Link to this definition"></a></dt>
 <dd><p>Recast <cite>input_path</cite> from <cite>input_type</cite> to <cite>output_type</cite>.</p>
@@ -327,12 +304,6 @@ new path.</p></li>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></p>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="seismicrna.core.io.file.restore_tmp_backup">
-<span class="sig-prename descclassname"><span class="pre">seismicrna.core.io.file.</span></span><span class="sig-name descname"><span class="pre">restore_tmp_backup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tmp_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.core.io.file.restore_tmp_backup" title="Link to this definition"></a></dt>
-<dd><p>Restore the original files from a temporary backup.</p>
 </dd></dl>
 
 <dl class="py class" id="module-seismicrna.core.io.seq">

@@ -7,8 +7,8 @@ from .write import cluster
 from ..core import path
 from ..core.arg import (CMD_CLUSTER,
                         arg_input_path,
-opt_tmp_pfx,
-opt_keep_tmp,
+                        opt_tmp_pfx,
+                        opt_keep_tmp,
                         opt_max_clusters,
                         opt_em_runs,
                         opt_em_thresh,

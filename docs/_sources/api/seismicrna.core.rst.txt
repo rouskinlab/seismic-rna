@@ -18,7 +18,6 @@ Subpackages
    seismicrna.core.io
    seismicrna.core.mu
    seismicrna.core.ngs
-   seismicrna.core.parallel
    seismicrna.core.rel
    seismicrna.core.rna
    seismicrna.core.seq
@@ -64,7 +63,25 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.core.run
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.core.stats
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.core.task
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.core.tmp
    :members:
    :undoc-members:
    :show-inheritance:

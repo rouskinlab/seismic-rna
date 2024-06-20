@@ -29,7 +29,6 @@ Subpackages
    seismicrna.sim
    seismicrna.table
    seismicrna.test
-   seismicrna.wf
 
 Submodules
 ----------
@@ -42,6 +41,12 @@ Submodules
 
 
 .. automodule:: seismicrna.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.wf
    :members:
    :undoc-members:
    :show-inheritance:

@@ -222,8 +222,8 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-t">
-<span id="cmdoption-seismic-wf-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-t" title="Link to this definition"></a></dt>
-<dd><p>Write all temporary files to this directory</p>
+<span id="cmdoption-seismic-wf-tmp-pfx"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-pfx</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_pfx&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-t" title="Link to this definition"></a></dt>
+<dd><p>Write all temporary files to a directory with this prefix</p>
 </dd></dl>
 
 <dl class="std option">
@@ -499,12 +499,6 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-N">
 <span id="cmdoption-seismic-wf-min-reads"></span><span class="sig-name descname"><span class="pre">-N</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--min-reads</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_reads&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-N" title="Link to this definition"></a></dt>
 <dd><p>Discard alignment maps with fewer than this many reads</p>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-cram">
-<span id="cmdoption-seismic-wf-bam"></span><span class="sig-name descname"><span class="pre">--cram</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--bam</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-cram" title="Link to this definition"></a></dt>
-<dd><p>Compress alignment maps in CRAM format</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1024,8 +1018,8 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-demult-t">
-<span id="cmdoption-seismic-demult-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-t" title="Link to this definition"></a></dt>
-<dd><p>Write all temporary files to this directory</p>
+<span id="cmdoption-seismic-demult-tmp-pfx"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-pfx</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_pfx&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-demult-t" title="Link to this definition"></a></dt>
+<dd><p>Write all temporary files to a directory with this prefix</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1105,8 +1099,8 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-align-t">
-<span id="cmdoption-seismic-align-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-t" title="Link to this definition"></a></dt>
-<dd><p>Write all temporary files to this directory</p>
+<span id="cmdoption-seismic-align-tmp-pfx"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-pfx</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_pfx&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-t" title="Link to this definition"></a></dt>
+<dd><p>Write all temporary files to a directory with this prefix</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1348,12 +1342,6 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dd><p>Discard alignment maps with fewer than this many reads</p>
 </dd></dl>
 
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-align-cram">
-<span id="cmdoption-seismic-align-bam"></span><span class="sig-name descname"><span class="pre">--cram</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--bam</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-cram" title="Link to this definition"></a></dt>
-<dd><p>Compress alignment maps in CRAM format</p>
-</dd></dl>
-
 <p class="rubric">Arguments</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-align-arg-FASTA">
@@ -1377,8 +1365,8 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-relate-t">
-<span id="cmdoption-seismic-relate-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-t" title="Link to this definition"></a></dt>
-<dd><p>Write all temporary files to this directory</p>
+<span id="cmdoption-seismic-relate-tmp-pfx"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-pfx</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_pfx&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-t" title="Link to this definition"></a></dt>
+<dd><p>Write all temporary files to a directory with this prefix</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1486,6 +1474,18 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </pre></div>
 </div>
 <p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-t">
+<span id="cmdoption-seismic-mask-tmp-pfx"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-pfx</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_pfx&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-t" title="Link to this definition"></a></dt>
+<dd><p>Write all temporary files to a directory with this prefix</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-mask-keep-tmp">
+<span id="cmdoption-seismic-mask-erase-tmp"></span><span class="sig-name descname"><span class="pre">--keep-tmp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-tmp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-mask-keep-tmp" title="Link to this definition"></a></dt>
+<dd><p>Keep temporary files after finishing</p>
+</dd></dl>
+
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-mask-c">
 <span id="cmdoption-seismic-mask-mask-coords"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--mask-coords</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;mask_coords&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-mask-c" title="Link to this definition"></a></dt>
@@ -1699,6 +1699,18 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dd><p>Force all tasks to run, overwriting any existing output files</p>
 </dd></dl>
 
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-t">
+<span id="cmdoption-seismic-cluster-tmp-pfx"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-pfx</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_pfx&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-cluster-t" title="Link to this definition"></a></dt>
+<dd><p>Write all temporary files to a directory with this prefix</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-cluster-keep-tmp">
+<span id="cmdoption-seismic-cluster-erase-tmp"></span><span class="sig-name descname"><span class="pre">--keep-tmp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-tmp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-cluster-keep-tmp" title="Link to this definition"></a></dt>
+<dd><p>Keep temporary files after finishing</p>
+</dd></dl>
+
 <p class="rubric">Arguments</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-cluster-arg-INPUT_PATH">
@@ -1833,8 +1845,8 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-fold-t">
-<span id="cmdoption-seismic-fold-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-t" title="Link to this definition"></a></dt>
-<dd><p>Write all temporary files to this directory</p>
+<span id="cmdoption-seismic-fold-tmp-pfx"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-pfx</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_pfx&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-fold-t" title="Link to this definition"></a></dt>
+<dd><p>Write all temporary files to a directory with this prefix</p>
 </dd></dl>
 
 <dl class="std option">
@@ -2842,6 +2854,12 @@ begins with <code class="docutils literal notranslate"><span class="pre">+</span
 </div>
 <p class="rubric">Options</p>
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-addclust-t">
+<span id="cmdoption-seismic-addclust-tmp-pfx"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-pfx</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_pfx&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-addclust-t" title="Link to this definition"></a></dt>
+<dd><p>Write all temporary files to a directory with this prefix</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-addclust-k">
 <span id="cmdoption-seismic-addclust-max-clusters"></span><span class="sig-name descname"><span class="pre">-k</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--max-clusters</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_clusters&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-addclust-k" title="Link to this definition"></a></dt>
 <dd><p>Attempt to find at most this many clusters</p>
@@ -2880,6 +2898,12 @@ begins with <code class="docutils literal notranslate"><span class="pre">+</span
 </pre></div>
 </div>
 <p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-delclust-t">
+<span id="cmdoption-seismic-delclust-tmp-pfx"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-pfx</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_pfx&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-delclust-t" title="Link to this definition"></a></dt>
+<dd><p>Write all temporary files to a directory with this prefix</p>
+</dd></dl>
+
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-delclust-k">
 <span id="cmdoption-seismic-delclust-max-clusters"></span><span class="sig-name descname"><span class="pre">-k</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--max-clusters</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_clusters&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-delclust-k" title="Link to this definition"></a></dt>
@@ -3098,8 +3122,8 @@ begins with <code class="docutils literal notranslate"><span class="pre">+</span
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-sim-total-t">
-<span id="cmdoption-seismic-sim-total-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-sim-total-t" title="Link to this definition"></a></dt>
-<dd><p>Write all temporary files to this directory</p>
+<span id="cmdoption-seismic-sim-total-tmp-pfx"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-pfx</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_pfx&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-sim-total-t" title="Link to this definition"></a></dt>
+<dd><p>Write all temporary files to a directory with this prefix</p>
 </dd></dl>
 
 <dl class="std option">
@@ -3282,8 +3306,8 @@ begins with <code class="docutils literal notranslate"><span class="pre">+</span
 
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-sim-fold-t">
-<span id="cmdoption-seismic-sim-fold-tmp-dir"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-sim-fold-t" title="Link to this definition"></a></dt>
-<dd><p>Write all temporary files to this directory</p>
+<span id="cmdoption-seismic-sim-fold-tmp-pfx"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--tmp-pfx</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;tmp_pfx&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-sim-fold-t" title="Link to this definition"></a></dt>
+<dd><p>Write all temporary files to a directory with this prefix</p>
 </dd></dl>
 
 <dl class="std option">
