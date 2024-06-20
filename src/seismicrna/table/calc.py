@@ -182,13 +182,22 @@ class PartialTabulator(Tabulator, ABC):
 
     @cached_property
     def _adjusted(self):
-        return adjust_counts(super().table_per_pos,
-                             self.p_ends_given_noclose,
-                             self._num_reads,
-                             self.section,
-                             self.dataset.min_mut_gap,
-                             self.dataset.quick_unbias,
-                             self.dataset.quick_unbias_thresh)
+        table_per_pos = super().table_per_pos
+        if self.dataset.min_mut_gap > 0:
+            if self.section.length > np.sqrt(1.e9):
+                logger.warning("Using bias correction on a section with "
+                               f"{self.section.length} positions requires "
+                               ">1 GB of memory. If this is impractical, you "
+                               "can (at the cost of lower accuracy) disable "
+                               "bias correction using --min-mut-gap 0.")
+            return adjust_counts(table_per_pos,
+                                 self.p_ends_given_noclose,
+                                 self._num_reads,
+                                 self.section,
+                                 self.dataset.min_mut_gap,
+                                 self.dataset.quick_unbias,
+                                 self.dataset.quick_unbias_thresh)
+        return table_per_pos, self._num_reads
 
     @cached_property
     def table_per_pos(self):
