@@ -71,7 +71,7 @@ def from_param_dir(param_dir: Path,
                            **kwargs)
 
 
-@run_func(logger.critical)
+@run_func(logger.critical, with_tmp=True)
 def run(*,
         param_dir: tuple[str, ...],
         profile_name: str,
@@ -83,6 +83,7 @@ def run(*,
         num_reads: int,
         batch_size: int,
         brotli_level: int,
+        tmp_dir: Path,
         force: bool,
         parallel: bool,
         max_procs: int):
@@ -101,6 +102,7 @@ def run(*,
                                 num_reads=num_reads,
                                 batch_size=batch_size,
                                 brotli_level=brotli_level,
+                                tmp_dir=tmp_dir,
                                 force=force))
 
 

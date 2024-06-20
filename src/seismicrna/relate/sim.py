@@ -10,6 +10,7 @@ from .io import QnamesBatchIO, RelateBatchIO
 from .report import RelateReport
 from ..core.io import RefseqIO
 from ..core.seq import DNA
+from ..core.tmp import release_to_out
 from ..core.write import need_write
 
 rng = np.random.default_rng()
@@ -100,7 +101,9 @@ def simulate_batches(batch_size: int,
             first_batch += 1
 
 
-def simulate_relate(out_dir: Path,
+def simulate_relate(*,
+                    out_dir: Path,
+                    tmp_dir: Path,
                     sample: str,
                     ref: str,
                     refseq: DNA,
@@ -122,7 +125,7 @@ def simulate_relate(out_dir: Path,
         began = datetime.now()
         # Write the reference sequence to a file.
         refseq_file = RefseqIO(sample=sample, ref=ref, refseq=refseq)
-        _, refseq_checksum = refseq_file.save(out_dir,
+        _, refseq_checksum = refseq_file.save(tmp_dir,
                                               brotli_level=brotli_level,
                                               force=True)
         # Simulate and write the batches.
@@ -140,10 +143,10 @@ def simulate_relate(out_dir: Path,
                                                pends=pends,
                                                pclust=pclust,
                                                **kwargs):
-            _, rcheck = rbatch.save(out_dir,
+            _, rcheck = rbatch.save(tmp_dir,
                                     brotli_level=brotli_level,
                                     force=True)
-            _, ncheck = nbatch.save(out_dir,
+            _, ncheck = nbatch.save(tmp_dir,
                                     brotli_level=brotli_level,
                                     force=True)
             checksums[RelateBatchIO.btype()].append(rcheck)
@@ -169,5 +172,6 @@ def simulate_relate(out_dir: Path,
                               began=began,
                               ended=ended,
                               overhangs=True)
-        report.save(out_dir, force=True)
+        report_saved = report.save(tmp_dir, force=True)
+        release_to_out(out_dir, tmp_dir, report_saved.parent)
     return report_file
