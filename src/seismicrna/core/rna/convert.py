@@ -11,7 +11,7 @@ from ..arg import (CMD_CT2DB,
                    opt_max_procs,
                    opt_parallel)
 from ..run import run_func
-from ..task import dispatch
+from ..task import as_list_of_tuples, dispatch
 
 logger = getLogger(__name__)
 
@@ -23,12 +23,10 @@ def run_ct_to_db(input_path: tuple[str, ...], *,
                  parallel: bool):
     """ Convert connectivity table (CT) to dot-bracket (DB) files. """
     ct_files = list(path.find_files_chain(input_path, [path.ConnectTableSeg]))
-    db_files = [ct_file.with_suffix(path.DB_EXT) for ct_file in ct_files]
-    args = list(zip(ct_files, db_files, strict=True))
     return dispatch(ct_to_db,
                     max_procs,
                     parallel,
-                    args=args,
+                    args=as_list_of_tuples(ct_files),
                     kwargs=dict(force=force),
                     pass_n_procs=False)
 
@@ -40,12 +38,10 @@ def run_db_to_ct(input_path: tuple[str, ...], *,
                  parallel: bool):
     """ Convert dot-bracket (DB) to connectivity table (CT) files. """
     db_files = list(path.find_files_chain(input_path, [path.DotBracketSeg]))
-    ct_files = [db_file.with_suffix(path.CT_EXT) for db_file in db_files]
-    args = list(zip(db_files, ct_files, strict=True))
     return dispatch(db_to_ct,
                     max_procs,
                     parallel,
-                    args=args,
+                    args=as_list_of_tuples(db_files),
                     kwargs=dict(force=force),
                     pass_n_procs=False)
 

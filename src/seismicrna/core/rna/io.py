@@ -6,6 +6,7 @@ from typing import Callable, Iterable
 from .ct import parse_ct
 from .db import parse_db
 from .struct import RNAStructure
+from ..path import CT_EXT, DB_EXT
 from ..seq import Section
 from ..write import need_write, write_mode
 
@@ -144,19 +145,23 @@ def renumber_ct(ct_in: Path, ct_out: Path, seq5: int, force: bool = False):
 
 
 def ct_to_db(ct_path: Path,
-             db_path: Path,
+             db_path: Path | None = None,
              force: bool = False):
     """ Write a dot-bracket (DB) file of structures in a connectivity
     table (CT) file. """
+    if db_path is None:
+        db_path = ct_path.with_suffix(DB_EXT)
     to_db(from_ct(ct_path), db_path, force)
     return db_path
 
 
 def db_to_ct(db_path: Path,
-             ct_path: Path,
+             ct_path: Path | None = None,
              force: bool = False):
     """ Write a connectivity table (CT) file of structures in a
     dot-bracket (DB) file. """
+    if ct_path is None:
+        ct_path = db_path.with_suffix(CT_EXT)
     to_ct(from_db(db_path), ct_path, force)
     return ct_path
 

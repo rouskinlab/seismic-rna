@@ -11,11 +11,8 @@ from logging import getLogger
 from pathlib import Path
 from shutil import which
 
-from ..core import path
 from ..core.arg import docdef
-from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
-                           RNASTRUCTURE_DOT2CT_CMD,
-                           RNASTRUCTURE_FOLD_CMD,
+from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            RNASTRUCTURE_FOLD_SMP_CMD,
                            args_to_cmd,
                            run_cmd)
@@ -460,46 +457,6 @@ def fold(rna: RNAProfile, *,
                 ct_tmp.unlink(missing_ok=True)
     logger.info(f"Predicted structure of {rna} to {ct_out}")
     return ct_out
-
-
-def ct2dot(ct_file: Path, number: int | str = "all"):
-    """ Make a dot-bracket (DB) file of a connectivity-table (CT) file.
-
-    Parameters
-    ----------
-    ct_file: pathlib.Path
-        Path to the CT file.
-    number: int | str = "all"
-        Number of the structure to convert, or "all" to convert all.
-
-    Returns
-    -------
-    pathlib.Path
-        Path to the DB file.
-    """
-    db_file = ct_file.with_suffix(path.DB_EXT)
-    cmd = [RNASTRUCTURE_CT2DOT_CMD, ct_file, number, db_file]
-    run_cmd(args_to_cmd(cmd))
-    return db_file
-
-
-def dot2ct(db_file: Path):
-    """ Make a connectivity-table (CT) file of a dot-bracket (DB) file.
-
-    Parameters
-    ----------
-    db_file: pathlib.Path
-        Path to the DB file.
-
-    Returns
-    -------
-    pathlib.Path
-        Path to the CT file.
-    """
-    ct_file = db_file.with_suffix(path.CT_EXT)
-    cmd = [RNASTRUCTURE_DOT2CT_CMD, db_file, ct_file]
-    run_cmd(args_to_cmd(cmd))
-    return ct_file
 
 
 def parse_rnastructure_ct_title(line: str):

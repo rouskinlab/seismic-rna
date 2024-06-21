@@ -7,7 +7,7 @@ from typing import Iterable
 from click import command
 
 from .report import FoldReport
-from .rnastructure import ct2dot, fold, require_data_path
+from .rnastructure import fold, require_data_path
 from ..core.arg import (CMD_FOLD,
                         arg_input_path,
                         opt_tmp_pfx,
@@ -28,10 +28,9 @@ from ..core.arg import (CMD_FOLD,
                         opt_force,
                         optional_path,
                         extra_defaults)
-from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
-                           RNASTRUCTURE_FOLD_CMD,
+from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            require_dependency)
-from ..core.rna import RNAProfile
+from ..core.rna import RNAProfile, ct_to_db
 from ..core.run import run_func
 from ..core.seq import DNA, RefSections, RefSeqs, Section
 from ..core.task import as_list_of_tuples, dispatch
@@ -89,7 +88,7 @@ def fold_section(rna: RNAProfile, *,
                        fold_percent=fold_percent,
                        n_procs=n_procs,
                        **kwargs)
-        ct2dot(ct_file)
+        ct_to_db(ct_file, force=True)
         ended = datetime.now()
         report = FoldReport(sample=rna.sample,
                             ref=rna.ref,
@@ -150,7 +149,6 @@ def run(input_path: tuple[str, ...], *,
     """ Predict RNA secondary structures using mutation rates. """
     # Check for the dependencies and the DATAPATH environment variable.
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
-    require_dependency(RNASTRUCTURE_CT2DOT_CMD, __name__)
     require_data_path()
     # Reactivities must be normalized before using them to fold.
     if quantile <= 0.:

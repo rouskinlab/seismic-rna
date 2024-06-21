@@ -25,8 +25,7 @@ from ..core.arg import (arg_fasta,
                         opt_parallel,
                         optional_path,
                         extra_defaults)
-from ..core.extern import (RNASTRUCTURE_CT2DOT_CMD,
-                           RNASTRUCTURE_FOLD_CMD,
+from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            require_dependency,
                            args_to_cmd,
                            run_cmd)
@@ -124,7 +123,6 @@ def run(fasta: str, *,
         parallel: bool):
     # Check for the dependencies and the DATAPATH environment variable.
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
-    require_dependency(RNASTRUCTURE_CT2DOT_CMD, __name__)
     require_data_path()
     # List the sections.
     sections = RefSections(parse_fasta(Path(fasta), DNA),

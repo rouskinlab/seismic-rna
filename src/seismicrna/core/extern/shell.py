@@ -10,9 +10,7 @@ logger = logging.getLogger(__name__)
 # Commands for external applications
 BOWTIE2_CMD = "bowtie2"
 BOWTIE2_BUILD_CMD = "bowtie2-build"
-RNASTRUCTURE_CT2DOT_CMD = "ct2dot"
 CUTADAPT_CMD = "cutadapt"
-RNASTRUCTURE_DOT2CT_CMD = "dot2ct"
 ECHO_CMD = "echo"
 FASTQC_CMD = "fastqc"
 RNASTRUCTURE_FOLD_CMD = "Fold"
