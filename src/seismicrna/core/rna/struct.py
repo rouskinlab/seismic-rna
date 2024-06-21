@@ -168,9 +168,14 @@ class RNAStructure(RNASection):
 
     @property
     def ct_text(self):
-        """ Return the connectivity table as text. """
+        """ Connectivity table as text. """
         data = self.ct_data.reset_index()
         return f"{self.ct_title}\n{data.to_string(index=False, header=False)}\n"
+
+    @property
+    def db_text(self):
+        """ Dot-bracket string. """
+
 
 ########################################################################
 #                                                                      #

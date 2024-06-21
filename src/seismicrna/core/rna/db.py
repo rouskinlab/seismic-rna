@@ -1,7 +1,7 @@
 from collections import defaultdict
 from logging import getLogger
 from pathlib import Path
-from typing import TextIO
+from typing import Iterable, TextIO
 
 from .. import path
 from ..seq import RNA, Section
@@ -11,9 +11,9 @@ logger = getLogger(__name__)
 DB_NAME_MARK = ">"
 UNPAIRED_MARK = "."
 PAIRED_MARKS = {")": "(",
+                ">": "<",
                 "]": "[",
-                "}": "{",
-                ">": "<"}
+                "}": "{"}
 
 
 def _parse_db_header(header_line: str):
@@ -49,7 +49,8 @@ def parse_db_strings(db_path: Path):
     return seq, structs
 
 
-def _parse_db_structure(struct: str, seq5: int):
+def parse_db_structure(struct: str, seq5: int = 1):
+    """ Parse a dot-bracket structure into a list of base pairs. """
     stacks: dict[str, list[int]] = defaultdict(list)
     pairs = list()
     opening_marks = "".join(PAIRED_MARKS.values())
@@ -78,7 +79,7 @@ def _parse_db_structure(struct: str, seq5: int):
 
 def _parse_db_record(db_file: TextIO, seq: RNA | None, seq5: int):
     seq, struct = _parse_db_string(db_file, seq)
-    return seq, _parse_db_structure(struct, seq5)
+    return seq, parse_db_structure(struct, seq5)
 
 
 def parse_db(db_path: Path, seq5: int = 1):
@@ -115,6 +116,39 @@ def parse_db(db_path: Path, seq5: int = 1):
             section = Section(ref, seq.rt(), seq5=seq5, name=sect)
             # Yield the title, section, and base pairs.
             yield title, section, pairs
+
+
+def format_db_structure(pairs: Iterable[tuple[int, int]],
+                        length: int,
+                        seq5: int = 1):
+    """ Create a dot-bracket string from a list of base pairs. """
+    db = [UNPAIRED_MARK] * length
+    for pos5, pos3 in sorted(pairs):
+        i = pos5 - seq5
+        j = pos3 - seq5
+        if i < 0:
+            raise ValueError(f"5' partner must be ≥ {seq5}, but got {pos5}")
+        if i >= j:
+            raise ValueError("5' partner must be less than 3' partner, "
+                             f"but got {pos5} ≥ {pos3}")
+        if j >= length:
+            raise ValueError(f"3' partner must be ≤ {length + seq5 - 1}, "
+                             f"but got {pos3}")
+        # Determine which mark to use (it must not be used already).
+        used_marks = set(db[i: j])
+        for cmark, omark in PAIRED_MARKS.items():
+            if omark not in used_marks and cmark not in used_marks:
+                if db[i] != UNPAIRED_MARK:
+                    raise ValueError(f"Got >1 base pair for position {pos5}")
+                if db[j] != UNPAIRED_MARK:
+                    raise ValueError(f"Got >1 base pair for position {pos3}")
+                db[i] = omark
+                db[j] = cmark
+                break
+        else:
+            raise ValueError(f"Cannot write base-pair {pos5, pos3} because all "
+                             f"marks are already used in {''.join(db[i: j])}")
+    return "".join(db)
 
 ########################################################################
 #                                                                      #
