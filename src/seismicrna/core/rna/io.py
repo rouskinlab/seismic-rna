@@ -87,14 +87,40 @@ def to_ct(structures: Iterable[RNAStructure],
         Overwrite the output CT file if it already exists.
     """
     if need_write(ct_path, force):
-        # Generate the output text for every renumbered structure.
+        # Generate the output text for every structure.
         text = "".join(structure.ct_text for structure in structures)
         # Make the output directory, if it does not already exist.
         ct_path.parent.mkdir(parents=True, exist_ok=True)
-        # Write the numbered structures to the file.
+        # Write the structures to the file.
         with open(ct_path, write_mode(force)) as f:
             f.write(text)
         logger.info(f"Wrote {ct_path}")
+
+
+def to_db(structures: Iterable[RNAStructure],
+          db_path: Path,
+          force: bool = False):
+    """ Write a dot-bracket (DB) file of RNA structures.
+
+    Parameters
+    ----------
+    structures: Iterable[RNAStructure]
+        RNA structures to write to the CT file.
+    db_path: Path
+        Path of the DB file.
+    force: bool = False
+        Overwrite the output DB file if it already exists.
+    """
+    if need_write(db_path, force):
+        # Generate the output text for every structure.
+        text = "".join(structure.get_db_text(i == 0)
+                       for i, structure in enumerate(structures))
+        # Make the output directory, if it does not already exist.
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        # Write the structures to the file.
+        with open(db_path, write_mode(force)) as f:
+            f.write(text)
+        logger.info(f"Wrote {db_path}")
 
 
 def renumber_ct(ct_in: Path, ct_out: Path, seq5: int, force: bool = False):
@@ -115,7 +141,22 @@ def renumber_ct(ct_in: Path, ct_out: Path, seq5: int, force: bool = False):
               from_ct(ct_in)),
           ct_out,
           force)
-    logger.info(f"Renumbered {ct_in} to {ct_out} starting at position {seq5}")
+
+
+def ct_to_db(ct_path: Path,
+             db_path: Path,
+             force: bool = False):
+    """ Write a dot-bracket (DB) file of structures in a connectivity
+    table (CT) file. """
+    to_db(from_ct(ct_path), db_path, force)
+
+
+def db_to_ct(db_path: Path,
+             ct_path: Path,
+             force: bool = False):
+    """ Write a connectivity table (CT) file of structures in a
+    dot-bracket (DB) file. """
+    to_ct(from_db(db_path), ct_path, force)
 
 ########################################################################
 #                                                                      #

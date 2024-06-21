@@ -4,13 +4,14 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
+from .base import RNASection
+from .db import DB_NAME_MARK, format_db_structure
 from .pair import (UNPAIRED,
                    find_root_pairs,
                    pairs_to_dict,
                    pairs_to_table,
                    renumber_pairs,
                    table_to_pairs)
-from .base import RNASection
 from ..seq import POS_NAME, intersect
 
 IDX_FIELD = "Index"
@@ -145,7 +146,7 @@ class RNAStructure(RNASection):
 
     @cached_property
     def ct_data(self):
-        """ Return the connectivity table as a DataFrame. """
+        """ Convert the connectivity table to a DataFrame. """
         # Make an index the same length as the section and starting
         # from 1 (CT files must start at index 1).
         index = pd.Index(self.section.range_one, name=IDX_FIELD)
@@ -173,9 +174,24 @@ class RNAStructure(RNASection):
         return f"{self.ct_title}\n{data.to_string(index=False, header=False)}\n"
 
     @property
-    def db_text(self):
-        """ Dot-bracket string. """
+    def db_title(self):
+        """ Header line for the DB file. """
+        return f"{DB_NAME_MARK}{self.title}"
 
+    @cached_property
+    def db_structure(self):
+        """ Dot-bracket string (structure only). """
+        return format_db_structure(self.pairs,
+                                   self.section.length,
+                                   self.section.end5)
+
+    def get_db_text(self, sequence: bool):
+        """ Dot-bracket record. """
+        lines = [self.db_title]
+        if sequence:
+            lines.append(str(self.seq))
+        lines.append(self.db_structure)
+        return "".join([f"{line}\n" for line in lines])
 
 ########################################################################
 #                                                                      #
