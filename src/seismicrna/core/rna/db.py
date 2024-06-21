@@ -10,11 +10,10 @@ logger = getLogger(__name__)
 
 DB_NAME_MARK = ">"
 UNPAIRED_MARK = "."
-OPENING_MARKS = {"(": ")",
-                 "[": "]",
-                 "{": "}",
-                 "<": ">"}
-CLOSING_MARKS = {c: o for o, c in OPENING_MARKS.items()}
+PAIRED_MARKS = {")": "(",
+                "]": "[",
+                "}": "{",
+                ">": "<"}
 
 
 def _parse_db_header(header_line: str):
@@ -50,29 +49,36 @@ def parse_db_strings(db_path: Path):
     return seq, structs
 
 
-def _parse_db_structure(db_file: TextIO, seq: RNA | None, seq5: int = 1):
-    seq, struct = _parse_db_string(db_file, seq)
-    stacks = defaultdict(list)
+def _parse_db_structure(struct: str, seq5: int):
+    stacks: dict[str, list[int]] = defaultdict(list)
     pairs = list()
-    for pos, (base, mark) in enumerate(zip(seq, struct, strict=True),
-                                       start=seq5):
+    opening_marks = "".join(PAIRED_MARKS.values())
+    for pos, mark in enumerate(struct, start=seq5):
         if mark != UNPAIRED_MARK:
-            if mark in OPENING_MARKS:
+            if mark in opening_marks:
                 stacks[mark].append(pos)
-            elif omark := CLOSING_MARKS.get(mark):
+            elif omark := PAIRED_MARKS.get(mark):
                 try:
                     pairs.append((stacks[omark].pop(), pos))
                 except IndexError:
-                    raise ValueError(f"{db_file} has unmatched {repr(mark)} "
-                                     f"at position {pos}") from None
+                    raise ValueError(
+                        f"Position {pos} has an unmatched {repr(mark)}"
+                    ) from None
             else:
-                raise ValueError(f"{db_file} has invalid mark at position "
-                                 f"{pos}: {repr(mark)}")
-    for omark, positions in stacks.items():
+                raise ValueError(
+                    f"Position {pos} has an invalid mark: {repr(mark)}"
+                )
+    for mark, positions in stacks.items():
         if positions:
-            raise ValueError(f"{db_file} has unmatched {repr(omark)} "
-                             f"at position {positions[0]}")
-    return seq, pairs
+            raise ValueError(
+                f"Position {positions[0]} has an unmatched {repr(mark)}"
+            )
+    return sorted(pairs)
+
+
+def _parse_db_record(db_file: TextIO, seq: RNA | None, seq5: int):
+    seq, struct = _parse_db_string(db_file, seq)
+    return seq, _parse_db_structure(struct, seq5)
 
 
 def parse_db(db_path: Path, seq5: int = 1):
@@ -104,7 +110,7 @@ def parse_db(db_path: Path, seq5: int = 1):
             # Get the header of the current structure.
             title = _parse_db_header(header_line)
             # Determine the sequence and base pairs.
-            seq, pairs = _parse_db_structure(file, seq, seq5)
+            seq, pairs = _parse_db_record(file, seq, seq5)
             # Make a section from the sequence.
             section = Section(ref, seq.rt(), seq5=seq5, name=sect)
             # Yield the title, section, and base pairs.
