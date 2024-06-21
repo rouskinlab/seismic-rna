@@ -34,6 +34,7 @@ from . import (wf,
                cleanfa,
                renumct,
                __version__)
+from .core import rna
 from .core.arg import (opt_log,
                        opt_log_color,
                        opt_profile,
@@ -109,6 +110,8 @@ for module in (wf,
 cli.add_command(cluster.addclust.cli)
 cli.add_command(cluster.delclust.cli)
 cli.add_command(lists.listpos.cli)
+cli.add_command(rna.convert.cli_ct2db)
+cli.add_command(rna.convert.cli_db2ct)
 
 ########################################################################
 #                                                                      #

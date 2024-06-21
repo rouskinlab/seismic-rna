@@ -149,6 +149,7 @@ def ct_to_db(ct_path: Path,
     """ Write a dot-bracket (DB) file of structures in a connectivity
     table (CT) file. """
     to_db(from_ct(ct_path), db_path, force)
+    return db_path
 
 
 def db_to_ct(db_path: Path,
@@ -157,6 +158,7 @@ def db_to_ct(db_path: Path,
     """ Write a connectivity table (CT) file of structures in a
     dot-bracket (DB) file. """
     to_ct(from_db(db_path), ct_path, force)
+    return ct_path
 
 ########################################################################
 #                                                                      #

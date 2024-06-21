@@ -29,6 +29,8 @@ CMD_EXPORT = "export"
 CMD_LISTPOS = "+listpos"
 CMD_CLEANFA = "+cleanfa"
 CMD_RENUMCT = "+renumct"
+CMD_CT2DB = "+ct2db"
+CMD_DB2CT = "+db2ct"
 CMD_SIM = "+sim"
 CMD_TEST = "+test"
 

@@ -24,21 +24,6 @@ from ..core.task import dispatch
 
 logger = getLogger(__name__)
 
-params = [
-    arg_input_path,
-    opt_inplace,
-    opt_out_dir,
-    opt_force,
-    opt_max_procs,
-    opt_parallel
-]
-
-
-@command(CMD_CLEANFA, params=params)
-def cli(*args, **kwargs):
-    """ Clean the names and sequences in FASTA files. """
-    return run(*args, **kwargs)
-
 
 @run_func(logger.critical)
 def run(input_path: tuple[str, ...], *,
@@ -68,6 +53,22 @@ def run(input_path: tuple[str, ...], *,
                     args=args,
                     kwargs=dict(force=force or inplace),
                     pass_n_procs=False)
+
+
+params = [
+    arg_input_path,
+    opt_inplace,
+    opt_out_dir,
+    opt_force,
+    opt_max_procs,
+    opt_parallel
+]
+
+
+@command(CMD_CLEANFA, params=params)
+def cli(*args, **kwargs):
+    """ Clean the names and sequences in FASTA files. """
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #
