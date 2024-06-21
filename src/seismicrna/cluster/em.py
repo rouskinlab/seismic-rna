@@ -214,19 +214,19 @@ class EmClustering(object):
         self.em_thresh = em_thresh
         # Mutation rates adjusted for observer bias.
         # 2D (all positions x clusters)
-        self.p_mut = np.empty((self.n_pos_total, self.order))
+        self.p_mut = np.zeros((self.n_pos_total, self.order))
         # Read end coordinate proportions adjusted for observer bias.
         # 2D (all positions x all positions)
-        self.p_ends = np.empty((self.n_pos_total, self.n_pos_total))
+        self.p_ends = np.zeros((self.n_pos_total, self.n_pos_total))
         # Cluster proportions adjusted for observer bias.
         # 1D (clusters)
-        self.p_clust = np.empty(self.order)
+        self.p_clust = np.zeros(self.order)
         # Likelihood of each unique read coming from each cluster.
         # 2D (unique reads x clusters)
-        self.membership = np.empty((self.uniq_reads.num_uniq, self.order))
+        self.membership = np.zeros((self.uniq_reads.num_uniq, self.order))
         # Marginal likelihoods of observing each unique read.
         # 1D (unique reads)
-        self.logp_marginal = np.empty(self.uniq_reads.num_uniq)
+        self.logp_marginal = np.zeros(self.uniq_reads.num_uniq)
         # Trajectory of log likelihood values.
         self.log_likes: list[float] = list()
         # Number of iterations.
@@ -433,12 +433,8 @@ class EmClustering(object):
         # Initialize cluster membership with a Dirichlet distribution.
         self.membership = rng.dirichlet(alpha=conc_params,
                                         size=self.uniq_reads.num_uniq)
-        if self.uniq_reads.num_uniq == 0:
-            logger.warning(f"{self} got 0 reads: clustering halted")
-            self.log_likes.append(0.)
-            return self
-        if self.n_pos_unmasked == 0:
-            logger.warning(f"{self} got 0 positions: clustering halted")
+        if self.uniq_reads.num_uniq == 0 or self.n_pos_unmasked == 0:
+            logger.warning(f"{self} got 0 reads or positions: stopping")
             self.log_likes.append(0.)
             return self
         # Run EM until the log likelihood converges or the number of
@@ -483,7 +479,7 @@ class EmClustering(object):
         """ Log number of expected observations of each read. """
         return (np.log(self.uniq_reads.num_nonuniq) + self.logp_marginal
                 if self.uniq_reads.num_nonuniq > 0
-                else np.empty(0))
+                else np.zeros(0))
 
     def get_props(self):
         """ Real and observed log proportion of each cluster. """
