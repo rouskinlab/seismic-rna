@@ -6,6 +6,14 @@ seismicrna.core.extern package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   seismicrna.core.extern.tests
+
 Submodules
 ----------
 
