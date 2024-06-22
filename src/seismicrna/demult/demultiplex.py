@@ -967,7 +967,7 @@ def resolve_or_analyze_multigrepped_reads(union_sets: dict, remove: bool = True,
     pass
 
 
-def create_report(sequence_objects: dict, fq1: str, fq2: str, working_directory: str, unioned_sets: dict):
+def create_report(sequence_objects: dict, fq1: str, fq2: str, working_directory: str, unioned_sets: dict,sample_name:str):
     orginal_len = {}
     mixed_total_dict = {}
 
@@ -1025,7 +1025,7 @@ def create_report(sequence_objects: dict, fq1: str, fq2: str, working_directory:
     df["total_read_count"] = len_col
 
     print(working_directory + "demultiplex_info.csv")
-    df.to_csv(working_directory + "demultiplex_info.csv", index=False)
+    df.to_csv(working_directory + sample_name+"_demultiplex_info.csv", index=False)
 
 
 """
@@ -1142,7 +1142,7 @@ def demultiplex_run(refs_file_csv, demulti_workspace, report_folder, fq_unit: Fa
     """
     # sequence_objects:dict,fq1:str,fq2:str,working_directory:str,unioned_sets:dict)
     print("creating report!!!")
-    create_report(sequence_objects, mixed_fastq1, mixed_fastq2, report_folder, unioned_sets_dictionary)
+    create_report(sequence_objects, mixed_fastq1, mixed_fastq2, report_folder, unioned_sets_dictionary,sample_name)
 
     return (), (), (report_folder + sample_name + "/",)
 
