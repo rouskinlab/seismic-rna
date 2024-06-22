@@ -53,20 +53,20 @@ def cli(*args, **kwargs):
 
 
 @run_func(logger.critical, with_tmp=True, pass_keep_tmp=True)
-def run(fasta: str, *,
-        refs_meta: str,
+def run(refs_meta: str,
         out_dir: str,
-        tmp_dir: str,
+        temp_dir: str,
         fastqx: tuple[str, ...],
         phred_enc: int,
-        barcode_start=0,
-        barcode_end=0,
+        fasta: str,
+        barcode_start=-1,
+        barcode_end=-1,
         clipped: int = 0,
         index_tolerance: int = 0,
         parallel_demultiplexing: bool = False,
         mismatch_tolerence: int = 0,
         demulti_overwrite: bool = False,
-        keep_tmp: bool = True):
+        keep_temp: bool = True):
     """ Split multiplexed FASTQ files by their barcodes. """
     fq_units = list(FastqUnit.from_paths(fastqx=list(map(Path, fastqx)),
                                          phred_enc=phred_enc))

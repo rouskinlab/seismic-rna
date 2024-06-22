@@ -474,10 +474,11 @@ this whole method could be replaced with a dataframe that organizes all of these
 
 def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_end, fasta, fastq1_path, fastq2_path, paired,
                                    workspace) -> dict:
+    
     sequence_object_dict = {}
     fasta_dict = make_dict_from_fasta(fasta)
     if (input_csv == ""):
-
+        print("rip")
         for name in fasta_dict.keys():
             seq = fasta_dict[name]
             rev_seq = reverse_compliment(seq)
@@ -517,7 +518,7 @@ def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_end, fasta,
         # sequence_object_dict={}
         cols = set(df.columns)
 
-        if ("Barcode5" not in cols):
+        if ("Barcode5" not in cols and barcode_start==-1):
             raise Exception("no barcode info given")
 
         for x in df.index:
@@ -526,12 +527,9 @@ def make_sequence_objects_from_csv(input_csv, barcode_start, barcode_end, fasta,
             seq = fasta_dict[name]
             rev_seq = reverse_compliment(seq)
 
-            if (barcode_start == barcode_end):
-                barcode_start = df.at[x, "Barcode5"]
-                barcode_end = df.at[x, "Barcode3"]
-                bc = seq[barcode_start:barcode_end]
-            else:
-                bc = seq[barcode_start:barcode_end]
+            barcode_start = df.at[x, "Barcode5"]
+            barcode_end = df.at[x, "Barcode3"]
+            bc = seq[barcode_start:barcode_end]
             rev_barcode = reverse_compliment(bc)
             rev_bc_start = rev_seq.index(rev_barcode)
             rev_bc_end = rev_bc_start + len(rev_barcode)
