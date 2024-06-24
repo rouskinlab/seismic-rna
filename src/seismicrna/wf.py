@@ -225,7 +225,7 @@ def run(fasta: str,
     """ Run the entire workflow. """
     # Demultiplex
     if demult_on:
-        for dms, dmi, dmm in demultiplex_mod.run(
+        for dms, dmi, dmm in demultiplex_mod.run_dm(
                 fasta=fasta,
                 refs_meta=refs_meta,
                 out_dir=out_dir,

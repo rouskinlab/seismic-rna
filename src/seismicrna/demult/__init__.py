@@ -1,4 +1,4 @@
-from .main import cli, params, run
+from .main import cli, params, run_dm
 
 ########################################################################
 #                                                                      #

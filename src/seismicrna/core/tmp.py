@@ -75,9 +75,10 @@ def with_tmp_dir(pass_keep_tmp: bool):
                     else:
                         logger.debug(f"Deleted temporary directory {tmp_dir}")
 
-        # Add tmp_pfx and keep_tmp to the signature of the wrapper
-        # (functools.wraps does not add them automatically).
+        # Add tmp_pfx and keep_tmp to the signature of the wrapper, and
+        # remove tmp_dir (functools.wraps does not do so automatically).
         params = dict(Signature.from_callable(func).parameters)
+        params.pop("tmp_dir")
         for param in ["tmp_pfx", "keep_tmp"]:
             if param not in params:
                 params[param] = Parameter(param, Parameter.KEYWORD_ONLY)
