@@ -261,11 +261,16 @@ def calc_rels_per_pos(mutations: dict[int, dict[int, np.ndarray]],
         # The number of matches is the coverage minus the number of
         # reads with another kind of relationship that is not the
         # no-coverage relationship (no coverage is counted later).
-        counts[MATCH].loc[pos_base] = (cover_per_pos.loc[pos_base]
-                                       - num_reads_pos)
+        if (num_match := cover_per_pos.loc[pos_base] - num_reads_pos) < 0:
+            raise ValueError("Number of matches must be ≥ 0, "
+                             f"but got {num_match} at position {pos}")
+        counts[MATCH].loc[pos_base] = num_match
         # The number of non-covered positions is the number of reads
         # minus the number that cover the position.
-        counts[NOCOV].loc[pos_base] = num_reads - cover_per_pos.loc[pos_base]
+        if (num_cover := num_reads - cover_per_pos.loc[pos_base]) < 0:
+            raise ValueError("Number of non-covered positions must be ≥ 0, "
+                             f"but got {num_cover} at position {pos}")
+        counts[NOCOV].loc[pos_base] = num_cover
     return dict(counts)
 
 
