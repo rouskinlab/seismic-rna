@@ -9,9 +9,9 @@ from ..extern import SAMTOOLS_CMD, args_to_cmd, ShellCommand
 logger = getLogger(__name__)
 
 # SAM file format specifications
-SAM_HEADER = '@'
-SAM_DELIM = '\t'
-SAM_NOREF = '*'
+SAM_HEADER = "@"
+SAM_DELIM = "\t"
+SAM_NOREF = "*"
 SAM_SEQLINE = "@SQ"
 SAM_SEQNAME = "SN:"
 SAM_SEQLEN = "LN:"
@@ -78,13 +78,40 @@ def sort_xam_cmd(xam_inp: Path | None,
         args.extend(["-o", xam_out])
     else:
         # To increase speed, do not compress on stdout.
-        args.extend(["-l", 0])
+        args.append("-u")
     if xam_inp:
         args.append(xam_inp)
     return args_to_cmd(args)
 
 
 sort_xam = ShellCommand("sorting alignment map", sort_xam_cmd)
+
+
+def collate_xam_cmd(xam_inp: Path | None,
+                    xam_out: Path | None, *,
+                    tmp_dir: Path | None = None,
+                    fast: bool = False,
+                    n_procs: int = 1):
+    """ Collate a SAM or BAM file using `samtools collate`. """
+    args = [SAMTOOLS_CMD, "collate", "-@", n_procs - 1]
+    if fast:
+        # Use fast mode (outputs primary alignments only).
+        args.append("-f")
+    if tmp_dir:
+        # Write temporary files to this directory.
+        args.extend(["-T", tmp_dir])
+    if xam_out:
+        args.extend(["-o", xam_out])
+    else:
+        # To increase speed, do not compress on stdout.
+        args.append("-u")
+    # samtools collate requires an input argument; - means to read from
+    # standard input.
+    args.append(xam_inp if xam_inp else "-")
+    return args_to_cmd(args)
+
+
+collate_xam = ShellCommand("collating alignment map", collate_xam_cmd)
 
 
 def view_xam_cmd(xam_inp: Path | None,
@@ -252,8 +279,11 @@ run_idxstats = ShellCommand("counting reads for each reference",
 
 def ref_header_cmd(xam_inp: Path, *, n_procs: int):
     """ Get the header line for each reference. """
-    return view_xam_cmd(xam_inp, None,
-                        sam=True, only_header=True, n_procs=n_procs)
+    return view_xam_cmd(xam_inp,
+                        None,
+                        sam=True,
+                        only_header=True,
+                        n_procs=n_procs)
 
 
 def parse_ref_header(process: CompletedProcess):
