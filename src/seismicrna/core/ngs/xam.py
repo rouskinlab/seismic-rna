@@ -3,15 +3,14 @@ from logging import getLogger
 from pathlib import Path
 from subprocess import CompletedProcess
 
-from .. import path
 from ..extern import SAMTOOLS_CMD, args_to_cmd, ShellCommand
 
 logger = getLogger(__name__)
 
 # SAM file format specifications
-SAM_HEADER = '@'
-SAM_DELIM = '\t'
-SAM_NOREF = '*'
+SAM_HEADER = "@"
+SAM_DELIM = "\t"
+SAM_NOREF = "*"
 SAM_SEQLINE = "@SQ"
 SAM_SEQNAME = "SN:"
 SAM_SEQLEN = "LN:"
@@ -41,9 +40,26 @@ MAX_FLAG = sum([FLAG_PAIRED,
                 FLAG_SUPPLEMENTARY])
 
 
+def calc_extra_threads(n_procs: int):
+    """ Calculate the number of extra threads to use (option -@). """
+    try:
+        if not isinstance(n_procs, int):
+            raise TypeError(
+                f"n_procs must be int, but got {type(n_procs).__name__}"
+            )
+        if n_procs < 1:
+            raise ValueError(f"n_procs must be ≥ 1, but got {n_procs}")
+        return n_procs - 1
+    except (TypeError, ValueError) as error:
+        logger.warning(error)
+        return 0
+
+
 def index_xam_cmd(bam: Path, *, n_procs: int = 1):
     """ Build an index of a XAM file using `samtools index`. """
-    return args_to_cmd([SAMTOOLS_CMD, "index", "-@", n_procs - 1, bam])
+    return args_to_cmd([SAMTOOLS_CMD, "index",
+                        "-@", calc_extra_threads(n_procs),
+                        bam])
 
 
 run_index_xam = ShellCommand("indexing alignment map",
@@ -67,7 +83,8 @@ def sort_xam_cmd(xam_inp: Path | None,
                  name: bool = False,
                  n_procs: int = 1):
     """ Sort a SAM or BAM file using `samtools sort`. """
-    args = [SAMTOOLS_CMD, "sort", "-@", n_procs - 1]
+    args = [SAMTOOLS_CMD, "sort",
+            "-@", calc_extra_threads(n_procs)]
     if name:
         # Sort by name instead of coordinate.
         args.append("-n")
@@ -78,13 +95,43 @@ def sort_xam_cmd(xam_inp: Path | None,
         args.extend(["-o", xam_out])
     else:
         # To increase speed, do not compress on stdout.
-        args.extend(["-l", 0])
+        args.append("-u")
     if xam_inp:
         args.append(xam_inp)
     return args_to_cmd(args)
 
 
 sort_xam = ShellCommand("sorting alignment map", sort_xam_cmd)
+
+
+def collate_xam_cmd(xam_inp: Path | None,
+                    xam_out: Path | None, *,
+                    tmp_dir: Path | None = None,
+                    fast: bool = False,
+                    n_procs: int = 1):
+    """ Collate a SAM or BAM file using `samtools collate`. """
+    args = [SAMTOOLS_CMD, "collate",
+            "-@", calc_extra_threads(n_procs)]
+    if fast:
+        # Use fast mode (outputs primary alignments only).
+        args.append("-f")
+    if tmp_dir:
+        # Write temporary files to this directory.
+        args.extend(["-T", tmp_dir])
+    if xam_out:
+        args.extend(["-o", xam_out])
+    else:
+        # Output to stdout.
+        args.append("-O")
+        # To increase speed, do not compress on stdout.
+        args.append("-u")
+    # samtools collate requires an input argument; - means to read from
+    # standard input.
+    args.append(xam_inp if xam_inp else "-")
+    return args_to_cmd(args)
+
+
+run_collate_xam = ShellCommand("collating alignment map", collate_xam_cmd)
 
 
 def view_xam_cmd(xam_inp: Path | None,
@@ -105,7 +152,8 @@ def view_xam_cmd(xam_inp: Path | None,
     """ Convert between SAM and BAM formats, extract reads aligning to a
     specific reference/section, and filter by flag and mapping quality
     using `samtools view`. """
-    args = [SAMTOOLS_CMD, "view", "-@", n_procs - 1]
+    args = [SAMTOOLS_CMD, "view",
+            "-@", calc_extra_threads(n_procs)]
     # Read filters
     if min_mapq is not None:
         # Require minimum mapping quality.
@@ -119,6 +167,8 @@ def view_xam_cmd(xam_inp: Path | None,
     # Output format
     if cram:
         args.append("-C")
+        if sam:
+            logger.warning("Both SAM and CRAM flags were set: using CRAM")
         if bam:
             logger.warning("Both BAM and CRAM flags were set: using CRAM")
         if not refs_file:
@@ -164,7 +214,8 @@ run_view_xam = ShellCommand("viewing alignment map", view_xam_cmd)
 
 def flagstat_cmd(xam_inp: Path | None, *, n_procs: int = 1):
     """ Compute the statistics with `samtools flagstat`. """
-    args = [SAMTOOLS_CMD, "flagstat", "-@", n_procs - 1]
+    args = [SAMTOOLS_CMD, "flagstat",
+            "-@", calc_extra_threads(n_procs)]
     if xam_inp:
         args.append(xam_inp)
     return args_to_cmd(args)
@@ -252,8 +303,11 @@ run_idxstats = ShellCommand("counting reads for each reference",
 
 def ref_header_cmd(xam_inp: Path, *, n_procs: int):
     """ Get the header line for each reference. """
-    return view_xam_cmd(xam_inp, None,
-                        sam=True, only_header=True, n_procs=n_procs)
+    return view_xam_cmd(xam_inp,
+                        None,
+                        sam=True,
+                        only_header=True,
+                        n_procs=n_procs)
 
 
 def parse_ref_header(process: CompletedProcess):
@@ -276,33 +330,6 @@ run_ref_header = ShellCommand("getting header line for each reference",
                               ref_header_cmd,
                               parse_ref_header,
                               opath=False)
-
-
-def xam_to_fq_cmd(xam_inp: Path | None,
-                  fq_out: Path | None, *,
-                  interleaved: bool = False,
-                  n_procs: int = 1):
-    """ Convert a XAM file to a FASTQ file using `samtools fastq`. """
-    args = [SAMTOOLS_CMD, "fastq", "-@", n_procs - 1, "-n"]
-    if fq_out:
-        if xam_paired(run_flagstat(xam_inp, n_procs=n_procs)):
-            if interleaved:
-                # Interleave first and second reads in one file.
-                args.extend(["-o", fq_out.with_suffix(path.FQ_EXTS[0])])
-            else:
-                # Output first and second reads in separate files.
-                args.extend(["-1", fq_out.with_suffix(path.FQ1_EXTS[0]),
-                             "-2", fq_out.with_suffix(path.FQ2_EXTS[0])])
-        else:
-            # Output single-end reads in one file.
-            args.extend(["-0", fq_out.with_suffix(path.FQ_EXTS[0])])
-    if xam_inp:
-        args.append(xam_inp)
-    return args_to_cmd(args)
-
-
-run_xam_to_fq = ShellCommand("deconstructing alignment map",
-                             xam_to_fq_cmd)
 
 ########################################################################
 #                                                                      #

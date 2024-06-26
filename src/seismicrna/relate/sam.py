@@ -4,10 +4,13 @@ from pathlib import Path
 from typing import Callable, TextIO
 
 from ..core import path
+from ..core.extern import cmds_to_pipe
 from ..core.ngs import (SAM_DELIM,
+                        ShellCommand,
+                        collate_xam_cmd,
                         count_total_reads,
-                        run_view_xam,
                         run_flagstat,
+                        view_xam_cmd,
                         xam_paired)
 
 logger = getLogger(__name__)
@@ -84,12 +87,34 @@ def _iter_records_paired(sam_file: TextIO):
         yield prev_line, ""
 
 
+def tmp_xam_cmd(xam_in: Path, xam_out: Path, n_procs: int = 1):
+    """ Collate and create a temporary XAM file. """
+    # Collate the XAM file so paired mates are adjacent.
+    collate_step = collate_xam_cmd(xam_in,
+                                   None,
+                                   tmp_dir=xam_out.parent,
+                                   fast=True,
+                                   n_procs=max(n_procs - 1, 1))
+    # Remove the header.
+    view_step = view_xam_cmd(None, xam_out)
+    return cmds_to_pipe([collate_step, view_step])
+
+
+run_tmp_xam = ShellCommand("collating reads and creating temporary SAM file",
+                           tmp_xam_cmd)
+
+
 class XamViewer(object):
 
-    def __init__(self, xam_input: Path, tmp_dir: Path, batch_size: int):
+    def __init__(self,
+                 xam_input: Path,
+                 tmp_dir: Path,
+                 batch_size: int,
+                 n_procs: int = 1):
         self.xam_input = xam_input
         self.tmp_dir = tmp_dir
         self.batch_size = batch_size
+        self.n_procs = n_procs
 
     @cached_property
     def _sample_ref(self):
@@ -135,7 +160,7 @@ class XamViewer(object):
 
     def create_tmp_sam(self):
         """ Create the temporary SAM file. """
-        run_view_xam(self.xam_input, self.tmp_sam_path)
+        run_tmp_xam(self.xam_input, self.tmp_sam_path, n_procs=self.n_procs)
 
     def delete_tmp_sam(self):
         """ Delete the temporary SAM file. """

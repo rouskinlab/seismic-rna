@@ -232,13 +232,17 @@ def write_one(xam_file: Path, *,
               fasta: Path,
               tmp_dir: Path,
               batch_size: int,
+              n_procs: int,
               **kwargs):
     """ Write the batches of relation vectors for one XAM file. """
     release_dir, working_dir = get_release_working_dirs(tmp_dir)
     ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
-    writer = RelationWriter(XamViewer(xam_file, working_dir, batch_size),
+    writer = RelationWriter(XamViewer(xam_file,
+                                      working_dir,
+                                      batch_size,
+                                      n_procs=n_procs),
                             get_fasta_seq(fasta, DNA, ref))
-    return writer.write(**kwargs, release_dir=release_dir)
+    return writer.write(**kwargs, n_procs=n_procs, release_dir=release_dir)
 
 
 def write_all(xam_files: Iterable[Path],
