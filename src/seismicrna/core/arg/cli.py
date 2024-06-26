@@ -365,6 +365,7 @@ opt_cut_m = Option(
 )
 
 # Alignment options with Bowtie2
+
 opt_bt2_local = Option(
     ("--bt2-local/--bt2-end-to-end",),
     type=bool,
@@ -539,6 +540,28 @@ opt_clip_end3 = Option(
     type=int,
     default=max(opt_bt2_gbar.default, 6),
     help="Clip this many bases from the 3' end of each read"
+)
+
+opt_sep_strands = Option(
+    ("--sep-strands/--mix-strands",),
+    type=bool,
+    default=False,
+    help="Separate each alignment map into plus- and minus-strand reads"
+)
+
+opt_minus_label = Option(
+    ("--minus-label",),
+    type=str,
+    default="-minus",
+    help="With --sep-strands, append this label to each minus-strand reference"
+)
+
+opt_f1r2_plus = Option(
+    ("--f1r2-plus/--f1r2-minus",),
+    type=bool,
+    default=False,
+    help=("With --sep-strands, consider forward mate 1s and reverse mate 2s "
+          "to be plus-stranded")
 )
 
 # Pool

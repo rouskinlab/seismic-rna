@@ -67,16 +67,6 @@ run_index_xam = ShellCommand("indexing alignment map",
                              opath=False)
 
 
-def index_fasta_cmd(fasta: Path):
-    """ Build an index of a FASTA file using `samtools faidx`. """
-    return args_to_cmd([SAMTOOLS_CMD, "faidx", fasta])
-
-
-run_index_fasta = ShellCommand("indexing reference file",
-                               index_fasta_cmd,
-                               opath=False)
-
-
 def sort_xam_cmd(xam_inp: Path | None,
                  xam_out: Path | None, *,
                  tmp_dir: Path | None = None,
@@ -99,9 +89,6 @@ def sort_xam_cmd(xam_inp: Path | None,
     if xam_inp:
         args.append(xam_inp)
     return args_to_cmd(args)
-
-
-sort_xam = ShellCommand("sorting alignment map", sort_xam_cmd)
 
 
 def collate_xam_cmd(xam_inp: Path | None,
@@ -129,9 +116,6 @@ def collate_xam_cmd(xam_inp: Path | None,
     # standard input.
     args.append(xam_inp if xam_inp else "-")
     return args_to_cmd(args)
-
-
-run_collate_xam = ShellCommand("collating alignment map", collate_xam_cmd)
 
 
 def view_xam_cmd(xam_inp: Path | None,
@@ -207,9 +191,6 @@ def view_xam_cmd(xam_inp: Path | None,
     elif end5 is not None or end5 is not None:
         logger.warning(f"Options end5 and end3 require a reference name")
     return args_to_cmd(args)
-
-
-run_view_xam = ShellCommand("viewing alignment map", view_xam_cmd)
 
 
 def flagstat_cmd(xam_inp: Path | None, *, n_procs: int = 1):
@@ -330,6 +311,26 @@ run_ref_header = ShellCommand("getting header line for each reference",
                               ref_header_cmd,
                               parse_ref_header,
                               opath=False)
+
+
+def xam_to_fastq_cmd(xam_inp: Path | None,
+                     fq_out: Path | None, *,
+                     flags_req: int | None = None,
+                     flags_exc: int | None = None,
+                     n_procs: int = 1):
+    """ Convert XAM format to FASTQ format, and filter by flags. """
+    args = [SAMTOOLS_CMD, "fastq",
+            "-@", calc_extra_threads(n_procs)]
+    if flags_req is not None:
+        # Require these flags.
+        args.extend(["-f", flags_req])
+    if flags_exc is not None:
+        # Exclude these flags.
+        args.extend(["-F", flags_exc])
+    args.append(xam_inp if xam_inp is not None else "-")
+    if fq_out is not None:
+        args.extend([">", fq_out])
+    return args_to_cmd(args)
 
 ########################################################################
 #                                                                      #

@@ -50,6 +50,7 @@ from logging import getLogger
 from os import linesep
 from pathlib import Path
 from subprocess import CompletedProcess
+from typing import Iterable
 
 from .fqunit import FastqUnit
 from ..core import path
@@ -61,8 +62,10 @@ from ..core.extern import (BOWTIE2_CMD,
                            cmds_to_pipe,
                            cmds_to_subshell,
                            ShellCommand)
-from ..core.ngs import (sort_xam_cmd,
+from ..core.ngs import (collate_xam_cmd,
+                        sort_xam_cmd,
                         view_xam_cmd,
+                        xam_to_fastq_cmd,
                         FLAG_PAIRED,
                         FLAG_UNMAP,
                         FLAG_SECONDARY,
@@ -107,8 +110,16 @@ run_bowtie2_build = ShellCommand("building Bowtie 2 index for",
                                  bowtie2_build_cmd)
 
 
-def bowtie2_cmd(fq_inp: FastqUnit,
+def _get_from_fq_inp(fq_inp: FastqUnit | None, attr: str):
+    if fq_inp is None:
+        raise TypeError(f"{attr} must be specified if fq_inp is None")
+    return getattr(fq_inp, attr)
+
+
+def bowtie2_cmd(fq_inp: FastqUnit | None,
                 sam_out: Path | None, *,
+                paired: bool | None = None,
+                phred_arg: str | None = None,
                 index_pfx: Path,
                 n_procs: int,
                 bt2_local: bool,
@@ -127,7 +138,11 @@ def bowtie2_cmd(fq_inp: FastqUnit,
                 bt2_r: int,
                 bt2_dpad: int,
                 bt2_orient: str,
-                fq_unal: Path | None):
+                fq_unal: Path | None = None):
+    if paired is None:
+        paired = _get_from_fq_inp(fq_inp, "paired")
+    if phred_arg is None:
+        phred_arg = _get_from_fq_inp(fq_inp, "phred_arg")
     args = [BOWTIE2_CMD,
             # Resources
             "--threads", n_procs,
@@ -140,7 +155,7 @@ def bowtie2_cmd(fq_inp: FastqUnit,
             "-D", bt2_d,
             "-R", bt2_r,
             # Scoring
-            fq_inp.phred_arg,
+            phred_arg,
             "--ignore-quals",
             "--ma", MATCH_BONUS if bt2_local else "0",
             "--mp", MISMATCH_PENALTY,
@@ -174,7 +189,7 @@ def bowtie2_cmd(fq_inp: FastqUnit,
     # Input and output files
     if fq_unal is not None:
         opts_unal = ["--un"]
-        if fq_inp.paired:
+        if paired:
             opts_unal.append("conc")
         if fq_unal.suffix.endswith(".gz"):
             opts_unal.append("gz")
@@ -183,7 +198,12 @@ def bowtie2_cmd(fq_inp: FastqUnit,
     if sam_out is not None:
         args.extend(["-S", sam_out])
     args.extend(["-x", index_pfx])
-    args.extend(fq_inp.bowtie2_inputs)
+    if fq_inp is not None:
+        args.extend(fq_inp.bowtie2_inputs)
+    else:
+        # To provide paired-end reads on standard input, SEISMIC-RNA
+        # only supports interleaved mates.
+        args.extend(["--interleaved" if paired else "-U", "-"])
     return args_to_cmd(args)
 
 
@@ -236,9 +256,6 @@ def parse_bowtie2(process: CompletedProcess):
     return n_reads
 
 
-run_bowtie2 = ShellCommand("aligning", bowtie2_cmd, parse_bowtie2)
-
-
 def xamgen_cmd(fq_inp: FastqUnit,
                bam_out: Path, *,
                min_mapq: int | None = None,
@@ -263,18 +280,98 @@ def xamgen_cmd(fq_inp: FastqUnit,
                                  min_mapq=min_mapq,
                                  flags_req=flags_req,
                                  flags_exc=flags_exc,
-                                 bam=True,
-                                 n_procs=1)
+                                 bam=True)
     sort_xam_step = sort_xam_cmd(None,
                                  bam_out,
-                                 tmp_dir=bam_out.parent,
-                                 n_procs=1)
+                                 tmp_dir=bam_out.parent)
     return cmds_to_pipe([bowtie2_step, view_xam_step, sort_xam_step])
 
 
 run_xamgen = ShellCommand("aligning, filtering, and sorting by position",
                           xamgen_cmd,
                           parse_bowtie2)
+
+
+def filter_cmds(xam_inp: Path,
+                xam_out: Path | None, *,
+                tmp_dir: Path | None = None,
+                flags_req: int | Iterable[int] | None = None,
+                flags_exc: int | Iterable[int] | None = None,
+                collate: bool = True,
+                n_procs: int = 1):
+    """ Filter a XAM file based on flags, then collate the output. """
+    cmds = list()
+    if flags_req is not None or flags_exc is not None:
+        # Pre-filter the reads for specific flags.
+        flags_req = ([flags_req] if isinstance(flags_req, int)
+                     else list(flags_req))
+        flags_exc = ([flags_exc] if isinstance(flags_exc, int)
+                     else list(flags_exc))
+        view_xam_cmds = [view_xam_cmd(xam_inp,
+                                      (xam_out
+                                       if (i == len(flags_req) - 1
+                                           and not collate)
+                                       else None),
+                                      sam=True,
+                                      with_header=(i == 0),
+                                      flags_req=req,
+                                      flags_exc=exc)
+                         for i, (req, exc) in enumerate(zip(flags_req,
+                                                            flags_exc,
+                                                            strict=True))]
+        cmds.append(cmds_to_subshell(view_xam_cmds))
+    if collate:
+        # Paired-end reads must first be collated.
+        cmds.append(collate_xam_cmd(None if cmds else xam_inp,
+                                    xam_out,
+                                    tmp_dir=tmp_dir,
+                                    fast=True,
+                                    n_procs=n_procs))
+    return cmds
+
+
+def filter_cmd(*args, **kwargs):
+    """ Filter a XAM file based on flags, then collate the output. """
+    return cmds_to_pipe(filter_cmds(*args, **kwargs))
+
+
+run_filter = ShellCommand("filtering and collating",
+                          filter_cmd)
+
+
+def realign_cmd(xam_inp: Path,
+                xam_out: Path, *,
+                paired: bool,
+                tmp_dir: Path | None = None,
+                flags_req: int | Iterable[int] | None = None,
+                flags_exc: int | Iterable[int] | None = None,
+                n_procs: int = 1,
+                **kwargs):
+    """ Re-align reads that are already in a XAM file. """
+    cmds = filter_cmds(xam_inp,
+                       None,
+                       tmp_dir=tmp_dir,
+                       collate=paired,
+                       flags_req=flags_req,
+                       flags_exc=flags_exc)
+    # Convert the reads to FASTQ format.
+    cmds.append(xam_to_fastq_cmd(None, None))
+    # Re-align the reads from the BAM file using Bowtie2.
+    bowtie2_output = xam_out if xam_out.suffix == path.SAM_EXT else None
+    bowtie2_threads = max(n_procs - len(cmds) - int(bowtie2_output is None), 1)
+    cmds.append(bowtie2_cmd(None,
+                            bowtie2_output,
+                            paired=paired,
+                            n_procs=bowtie2_threads,
+                            **kwargs))
+    if bowtie2_output is None:
+        # Convert the SAM output into XAM format.
+        cmds.append(view_xam_cmd(None, xam_out))
+    return cmds_to_pipe(cmds)
+
+
+run_realign = ShellCommand("filtering, collating, realigning, and formatting",
+                           realign_cmd)
 
 
 def export_cmd(xam_in: Path,

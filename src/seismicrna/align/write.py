@@ -1,6 +1,7 @@
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
+from shutil import rmtree
 from typing import Iterable
 
 from .fqops import FastqUnit, run_fastqc, run_cutadapt
@@ -8,16 +9,20 @@ from .report import AlignRefReport, AlignSampleReport
 from .xamops import (run_bowtie2_build,
                      get_bowtie2_index_paths,
                      run_export,
+                     run_filter,
+                     run_realign,
                      run_xamgen)
 from ..core import path
 from ..core.arg import CMD_ALIGN
-from ..core.ngs import (count_single_paired,
+from ..core.ngs import (FLAG_REVERSE,
+                        FLAG_SECOND,
+                        count_single_paired,
                         count_total_reads,
                         run_flagstat,
                         run_ref_header,
                         run_index_xam,
                         run_idxstats)
-from ..core.seq import DNA, parse_fasta, write_fasta
+from ..core.seq import DNA, get_fasta_seq, parse_fasta, write_fasta
 from ..core.task import dispatch
 from ..core.tmp import get_release_working_dirs, release_to_out
 
@@ -54,7 +59,8 @@ def write_tmp_ref_files(tmp_dir: Path,
                     run_bowtie2_build(ref_path, index_prefix, n_procs=n_procs)
                 except Exception as error:
                     logger.critical(
-                        f"Failed to generate reference {ref_path}: {error}")
+                        f"Failed to generate reference {ref_path}: {error}"
+                    )
                 else:
                     # Record the temporary FASTA and index prefix.
                     ref_paths[ref] = ref_path, index_prefix
@@ -62,6 +68,78 @@ def write_tmp_ref_files(tmp_dir: Path,
         logger.critical(f"Missing references in {refset_path}: "
                         + ", ".join(missing))
     return ref_paths
+
+
+def sep_strands_bam(bam_file: Path,
+                    paired: bool,
+                    fasta: Path,
+                    minus_label: str,
+                    f1r2_plus: bool,
+                    keep_tmp: bool,
+                    n_procs: int = 1,
+                    **kwargs):
+    """ Split reads in a BAM file into each strand. """
+    if bam_file.suffix != path.BAM_EXT:
+        raise ValueError(f"Expected a BAM file, but got {bam_file}")
+    out_dir = bam_file.parent
+    ref = bam_file.stem
+    # Make a temporary directory for all splitting strand operations.
+    tmp_dir = path.randdir(out_dir, f"{ref}-")
+    # Write the minus-strand reference sequence to a FASTA file.
+    if not minus_label:
+        raise ValueError(
+            f"minus_label must have a value, but got {repr(minus_label)}"
+        )
+    ref_minus = f"{ref}{minus_label}"
+    index_dir = tmp_dir.joinpath("index")
+    index_dir.mkdir()
+    fasta_minus = index_dir.joinpath(ref_minus).with_suffix(path.FASTA_EXTS[0])
+    write_fasta(fasta_minus, [(ref_minus, get_fasta_seq(fasta, DNA, ref).rc)])
+    # Index the minus-strand reference.
+    index_minus = fasta_minus.with_suffix("")
+    run_bowtie2_build(fasta_minus, index_minus, n_procs=n_procs)
+    if f1r2_plus:
+        # Align forward read 1s and reverse read 2s to the plus strand.
+        flags_req_plus = [0, FLAG_REVERSE + FLAG_SECOND]
+        flags_exc_plus = [FLAG_REVERSE + FLAG_SECOND, 0]
+        # Align reverse read 1s and forward read 2s to the minus strand.
+        flags_req_minus = [FLAG_REVERSE, FLAG_SECOND]
+        flags_exc_minus = [FLAG_SECOND, FLAG_REVERSE]
+    else:
+        # Align reverse read 1s and forward read 2s to the plus strand.
+        flags_req_plus = [FLAG_REVERSE, FLAG_SECOND]
+        flags_exc_plus = [FLAG_SECOND, FLAG_REVERSE]
+        # Align forward read 1s and reverse read 2s to the minus strand.
+        flags_req_minus = [0, FLAG_REVERSE + FLAG_SECOND]
+        flags_exc_minus = [FLAG_REVERSE + FLAG_SECOND, 0]
+    # Align the minus-strand reads to the minus-strand reference.
+    bam_minus = out_dir.joinpath(ref_minus).with_suffix(path.BAM_EXT)
+    bam_dir = tmp_dir.joinpath("bam")
+    bam_dir.mkdir()
+    run_realign(bam_file,
+                bam_minus,
+                tmp_dir=bam_dir,
+                index_pfx=index_minus,
+                paired=paired,
+                flags_req=flags_req_minus,
+                flags_exc=flags_exc_minus,
+                n_procs=n_procs,
+                **kwargs)
+    if not keep_tmp:
+        rmtree(index_dir)
+    # Extract the plus-strand reads.
+    bam_plus = bam_dir.joinpath(ref).with_suffix(path.BAM_EXT)
+    run_filter(bam_file,
+               bam_plus,
+               tmp_dir=bam_dir,
+               collate=paired,
+               flags_req=flags_req_plus,
+               flags_exc=flags_exc_plus,
+               n_procs=n_procs)
+    bam_plus.rename(bam_file)
+    if not keep_tmp:
+        rmtree(tmp_dir)
+    return bam_minus
 
 
 def fq_pipeline(fq_inp: FastqUnit,
@@ -105,6 +183,9 @@ def fq_pipeline(fq_inp: FastqUnit,
                 bt2_un: bool,
                 min_mapq: int,
                 min_reads: int,
+                sep_strands: bool,
+                f1r2_plus: bool,
+                minus_label: str,
                 n_procs: int = 1) -> list[Path]:
     """ Run all stages of the alignment pipeline for one FASTQ file or
     one pair of mated FASTQ files. """
@@ -267,9 +348,47 @@ def fq_pipeline(fq_inp: FastqUnit,
         except Exception as error:
             logger.error(f"Failed to output {ref}: {error}")
         else:
+            if sep_strands:
+                # Split the XAM file into plus and minus strands.
+                xam_neg = sep_strands_bam(xam_ref,
+                                          fq_inp.paired,
+                                          fasta,
+                                          minus_label,
+                                          f1r2_plus,
+                                          keep_tmp,
+                                          n_procs,
+                                          phred_arg=fq_inp.phred_arg,
+                                          bt2_local=bt2_local,
+                                          bt2_discordant=bt2_discordant,
+                                          bt2_mixed=bt2_mixed,
+                                          bt2_dovetail=bt2_dovetail,
+                                          bt2_contain=bt2_contain,
+                                          bt2_score_min_e2e=bt2_score_min_e2e,
+                                          bt2_score_min_loc=bt2_score_min_loc,
+                                          bt2_i=bt2_i,
+                                          bt2_x=bt2_x,
+                                          bt2_gbar=bt2_gbar,
+                                          bt2_l=bt2_l,
+                                          bt2_s=bt2_s,
+                                          bt2_d=bt2_d,
+                                          bt2_r=bt2_r,
+                                          bt2_dpad=bt2_dpad,
+                                          bt2_orient=bt2_orient)
+                ref_neg = xam_neg.stem
+                # Count the reads aligning to the minus strand.
+                reads_refs[ref_neg] = count_total_reads(run_flagstat(xam_neg))
+                logger.debug(f"{xam_neg} got {reads_refs[ref_neg]} read(s)")
+                if reads_refs[ref_neg] >= min_reads:
+                    xams_out.append(xam_neg)
+                    sufficient_refs.add(ref_neg)
+                else:
+                    # Delete the XAM file if it did not get enough reads.
+                    xam_neg.unlink()
+                    logger.debug(f"Deleted {xam_neg} because it received "
+                                 f"{reads_refs[ref_neg]} reads (< {min_reads})")
             # Count the number of reads accurately and update the guess.
             reads_refs[ref] = count_total_reads(run_flagstat(xam_ref))
-            logger.debug(f"File {xam_ref} received {reads_refs[ref]} reads")
+            logger.debug(f"{xam_ref} got {reads_refs[ref]} read(s)")
             if reads_refs[ref] >= min_reads:
                 xams_out.append(xam_ref)
             else:
@@ -281,7 +400,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                              f"{reads_refs[ref]} reads (< {min_reads})")
     if not keep_tmp:
         # Delete the whole XAM file to free up space.
-        xam_whole.unlink(missing_ok=True)
+        xam_whole.unlink()
     if insufficient_refs := set(reads_refs) - sufficient_refs:
         logger.warning(f"Skipped references with fewer than {min_reads} reads "
                        f"in sample {repr(sample)}: {sorted(insufficient_refs)}")
@@ -324,6 +443,9 @@ def fq_pipeline(fq_inp: FastqUnit,
                          bt2_orient=bt2_orient,
                          bt2_un=bt2_un,
                          min_mapq=min_mapq,
+                         sep_strands=sep_strands,
+                         f1r2_plus=f1r2_plus,
+                         minus_label=minus_label,
                          min_reads=min_reads,
                          align_reads_init=reads_init,
                          reads_trim=reads_trim,

@@ -54,7 +54,10 @@ from ..core.arg import (CMD_ALIGN,
                         opt_bt2_orient,
                         opt_bt2_un,
                         opt_min_mapq,
-                        opt_min_reads)
+                        opt_min_reads,
+                        opt_sep_strands,
+                        opt_minus_label,
+                        opt_f1r2_plus)
 from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
                            CUTADAPT_CMD,
@@ -122,7 +125,10 @@ def run(fasta: str, *,
         bt2_un: bool,
         # Samtools
         min_mapq: int,
-        min_reads: int) -> list[Path]:
+        min_reads: int,
+        sep_strands: bool,
+        f1r2_plus: bool,
+        minus_label: str) -> list[Path]:
     """ Trim FASTQ files and align them to reference sequences. """
     # Check for external dependencies.
     if fastqc:
@@ -186,7 +192,10 @@ def run(fasta: str, *,
                          bt2_dpad=bt2_dpad,
                          bt2_orient=bt2_orient,
                          min_mapq=min_mapq,
-                         min_reads=min_reads)
+                         min_reads=min_reads,
+                         sep_strands=sep_strands,
+                         f1r2_plus=f1r2_plus,
+                         minus_label=minus_label)
 
 
 # Parameters for command line interface
@@ -247,6 +256,9 @@ params = [
     # Samtools
     opt_min_mapq,
     opt_min_reads,
+    opt_sep_strands,
+    opt_f1r2_plus,
+    opt_minus_label,
 ]
 
 
