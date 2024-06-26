@@ -109,14 +109,18 @@ def _find_rels_read(read: SamRead,
         - the 3' coordinate of the read
         - the relationship code for each mutation in the read
     """
+    readlen = len(read.seq)
     reflen = len(refseq)
-    if read.pos > reflen:
-        raise ValueError(f"Position must be ≤ reference length ({reflen}), "
-                         f"but got {read.pos}")
+    if not 1 <= read.pos <= reflen:
+        raise ValueError(f"Mapping position must be ≥ 1 and ≤ reference length "
+                         f"({reflen}), but got {read.pos}")
     # Position in the reference: can be 0- or 1-indexed (initially 0).
     ref_pos = read.pos - 1
     # Position in the read: can be 0- or 1-indexed (initially 0).
     read_pos = 0
+    # Ends of the read, in the read coordinates (1-indexed).
+    end5_read = 1
+    end3_read = readlen
     # Record the relationship for each mutated position.
     rels: dict[int, int] = defaultdict(lambda: MATCH)
     # Record all deletions and insertions.
@@ -212,10 +216,21 @@ def _find_rels_read(read: SamRead,
             # processing or boundary checking.
             if read_pos + op_length > len(read.seq):
                 raise ValueError("CIGAR operation overshot the read")
+            if read_pos == 0:
+                # This is the soft clip from the 5' end of the read.
+                if end5_read != 1:
+                    raise ValueError(f"{repr(read.cigar)} has >1 5' soft clip")
+                end5_read += op_length
+            else:
+                # This is the soft clip from the 3' end of the read.
+                if end3_read != readlen:
+                    raise ValueError(f"{repr(read.cigar)} has >1 3' soft clip")
+                end3_read -= op_length
             read_pos += op_length
         else:
             raise RelateValueError(
-                f"Invalid CIGAR operation: '{cigar_op.decode()}'")
+                f"Invalid CIGAR operation: {repr(cigar_op.decode())}"
+            )
     # Verify that the sum of all CIGAR operations that consumed the read
     # equals the length of the read. The former equals read_pos because
     # for each CIGAR operation that consumed the read, the length of the
@@ -225,24 +240,35 @@ def _find_rels_read(read: SamRead,
             f"CIGAR string {repr(read.cigar)} consumed {read_pos} bases "
             f"from read, but read is {len(read.seq)} bases long."
         )
-    # Add insertions to muts.
+    # Clip bases from the 5' end.
+    if clip_end5 < 0:
+        raise ValueError(f"clip_end5 must be ≥ 0, but got {clip_end5}")
+    if clip_end3 < 0:
+        raise ValueError(f"clip_end3 must be ≥ 0, but got {clip_end3}")
+    # Add insertions to rels.
     for ins in inns:
         ins.stamp(rels, len(refseq))
     # Find and label all relationships that are ambiguous due to indels.
     if ambindel and (dels or inns):
-        find_ambindels(rels, refseq, read.seq, read.qual, min_qual, dels, inns)
-    # Clip bases from the 5' end.
-    end5 = read.pos
-    for _ in range(clip_end5):
-        if end5 in rels:
-            rels.pop(end5)
-        end5 += 1
-    # Clip bases from the 3' end.
-    for _ in range(clip_end3):
-        if ref_pos in rels:
-            rels.pop(ref_pos)
-        ref_pos -= 1
-    return end5, ref_pos, dict(rels)
+        find_ambindels(rels,
+                       read.pos,
+                       ref_pos,
+                       end5_read,
+                       end3_read,
+                       refseq,
+                       read.seq,
+                       read.qual,
+                       min_qual,
+                       dels,
+                       inns)
+    # Ends of the read, in the reference coordinates (1-indexed).
+    end5_ref = min(read.pos + clip_end5, reflen + 1)
+    end3_ref = max(ref_pos - clip_end3, 0)
+    # Convert rels to a non-default dict and select only the positions
+    # between end5_ref and end3_ref.
+    rels = {pos: rel for pos, rel in rels.items()
+            if end5_ref <= pos <= end3_ref}
+    return end5_ref, end3_ref, rels
 
 
 def _validate_read(read: SamRead, ref: str, min_mapq: int):

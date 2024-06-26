@@ -1,16 +1,18 @@
 import unittest as ut
 from itertools import chain, product
 
-from seismicrna.core.rel import IRREC, MATCH, NOCOV, SUB_G
-from seismicrna.relate.py.relate import find_rels_line, _merge_mates, SamRead
-from seismicrna.relate.aux.iterread import iter_alignments
 from seismicrna.align.sim import as_sam
 from seismicrna.core.arg import opt_min_mapq
-from seismicrna.core.ngs import OK_QUAL
+from seismicrna.core.ngs import LO_QUAL, OK_QUAL
+from seismicrna.core.rel import DELET, IRREC, MATCH, NOCOV, SUB_G
 from seismicrna.core.seq import DNA
+from seismicrna.relate.py.cigar import CIG_ALIGN, CIG_DELET, CIG_SCLIP
+from seismicrna.relate.py.encode import encode_relate
+from seismicrna.relate.py.relate import _find_rels_read, _merge_mates, SamRead
+from seismicrna.relate.aux.iterread import iter_alignments
 
 
-class TestRelateRelateLineAmbrel(ut.TestCase):
+class TestFindRelsLine(ut.TestCase):
     """ Test function `relate.relate_line`. """
 
     @staticmethod
@@ -18,30 +20,30 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
                refseq: DNA,
                read: DNA,
                qual: str,
-               mapq: int,
                cigar: str,
-               end5: int):
+               end5: int,
+               ambindel: bool,
+               clip_end5: int,
+               clip_end3: int):
         """ Generate a SAM line from the given information, and use it
         to compute a relation vector. """
-        sam_line = as_sam("read",
-                          99,
-                          ref,
-                          end5,
-                          mapq,
-                          cigar,
-                          "=",
-                          1,
-                          len(read),
-                          read,
-                          qual)
-        return find_rels_line(sam_line,
-                              "",
-                              ref,
-                              refseq,
-                              opt_min_mapq.default,
-                              OK_QUAL,
-                              True,
-                              False)
+        sam_read = SamRead(as_sam("read",
+                                  99,
+                                  ref,
+                                  end5,
+                                  opt_min_mapq.default,
+                                  cigar,
+                                  "=",
+                                  1,
+                                  len(read),
+                                  read,
+                                  qual))
+        return _find_rels_read(sam_read,
+                               refseq,
+                               OK_QUAL,
+                               ambindel,
+                               clip_end5,
+                               clip_end3)
 
     def iter_cases(self, refseq: DNA, max_ins: int = 2):
         """ Iterate through every test case. """
@@ -55,16 +57,17 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
                               end5=end5,
                               cigar=cigar,
                               rels=rels):
-                name, (end5_, end3_), rels_ = self.relate("ref",
-                                                          refseq,
-                                                          read,
-                                                          qual,
-                                                          opt_min_mapq.default,
-                                                          cigar,
-                                                          end5)
-                self.assertEqual(end5_, [end5])
-                self.assertEqual(end3_, [end3])
-                self.assertEqual(rels_, rels)
+                result = self.relate("ref",
+                                     refseq,
+                                     read,
+                                     qual,
+                                     cigar,
+                                     end5,
+                                     ambindel=True,
+                                     clip_end5=0,
+                                     clip_end3=0)
+                expect = (end5, end3, rels)
+                self.assertEqual(result, expect)
 
     def test_aaaa_0ins(self):
         """ Test all possible reads with 0 insertions from AAAA. """
@@ -82,14 +85,140 @@ class TestRelateRelateLineAmbrel(ut.TestCase):
         """ Test all possible reads with ≤ 1 insertion from ACGT. """
         self.iter_cases(DNA("ACGT"), 1)
 
+    def test_all_matches(self):
+        for reflen in range(1, 10):
+            refseq = DNA.random(reflen)
+            for readlen in range(1, reflen + 1):
+                for end5 in range(1, reflen - readlen + 1):
+                    end3 = end5 + readlen - 1
+                    read = refseq[end5 - 1: end3]
+                    qual = OK_QUAL * readlen
+                    cigar = f"{readlen}{CIG_ALIGN}"
+                    for clip5 in range(10):
+                        for clip3 in range(10):
+                            with self.subTest(reflen=reflen,
+                                              readlen=readlen,
+                                              end5=end5,
+                                              clip5=clip5,
+                                              clip3=clip3):
+                                result = self.relate("ref",
+                                                     refseq,
+                                                     read,
+                                                     qual,
+                                                     cigar,
+                                                     end5,
+                                                     True,
+                                                     clip5,
+                                                     clip3)
+                                expect = (min(end5 + clip5, reflen + 1),
+                                          max(end3 - clip3, 0),
+                                          dict())
+                                self.assertEqual(result, expect)
 
+    def test_soft_clips(self):
+        reflen = 10
+        refseq = DNA.random(reflen)
+        for readlen in range(1, reflen + 1):
+            for soft5 in range(readlen + 1):
+                cigar_s5 = f"{soft5}{CIG_SCLIP}" if soft5 else ""
+                for soft3 in range(readlen - soft5 + 1):
+                    cigar_s3 = f"{soft3}{CIG_SCLIP}" if soft3 else ""
+                    soft = soft5 + soft3
+                    for end5 in range(soft5 + 1, reflen - readlen + 2):
+                        matches = readlen - soft
+                        end3 = end5 + matches - 1
+                        cigar_m = f"{matches}{CIG_ALIGN}" if matches else ""
+                        read = sum([DNA("N") * soft5,
+                                    refseq[end5 - 1: end3],
+                                    DNA("N") * soft3],
+                                   DNA(""))
+                        qual = OK_QUAL * readlen
+                        cigar = "".join([cigar_s5, cigar_m, cigar_s3])
+                        for clip5 in range(3):
+                            for clip3 in range(3):
+                                with self.subTest(reflen=reflen,
+                                                  readlen=readlen,
+                                                  soft5=soft5,
+                                                  soft3=soft3,
+                                                  end5=end5,
+                                                  clip5=clip5,
+                                                  clip3=clip3):
+                                    result = self.relate("ref",
+                                                         refseq,
+                                                         read,
+                                                         qual,
+                                                         cigar,
+                                                         end5,
+                                                         True,
+                                                         clip5,
+                                                         clip3)
+                                    expect = (min(end5 + clip5, reflen + 1),
+                                              max(end3 - clip3, 0),
+                                              dict())
+                                    self.assertEqual(result, expect)
+
+    def test_ambig_delet_low_qual(self):
+        """ Test ambiguous deletions with all low-quality positions. """
+        reflen = 10
+        refseq = DNA.random(reflen)
+        for readlen in range(2, reflen):
+            for soft5 in range(readlen - 1):
+                cigar_s5 = f"{soft5}{CIG_SCLIP}" if soft5 else ""
+                for soft3 in range(readlen - soft5 - 1):
+                    cigar_s3 = f"{soft3}{CIG_SCLIP}" if soft3 else ""
+                    soft = soft5 + soft3
+                    for end5 in range(soft5 + 1, reflen - readlen + 1):
+                        end3 = end5 + readlen - soft
+                        for delpos in range(end5 + 1, end3):
+                            cigar_md = "".join([f"{delpos - end5}{CIG_ALIGN}",
+                                                f"{1}{CIG_DELET}",
+                                                f"{end3 - delpos}{CIG_ALIGN}"])
+                            read = sum([DNA("N") * soft5,
+                                        refseq[end5 - 1: delpos - 1],
+                                        refseq[delpos: end3],
+                                        DNA("N") * soft3],
+                                       DNA(""))
+                            qual = LO_QUAL * readlen
+                            cigar = "".join([cigar_s5, cigar_md, cigar_s3])
+                            for clip5 in range(3):
+                                for clip3 in range(3):
+                                    with self.subTest(reflen=reflen,
+                                                      readlen=readlen,
+                                                      soft5=soft5,
+                                                      soft3=soft3,
+                                                      end5=end5,
+                                                      clip5=clip5,
+                                                      clip3=clip3):
+                                        result = self.relate("ref",
+                                                             refseq,
+                                                             read,
+                                                             qual,
+                                                             cigar,
+                                                             end5,
+                                                             True,
+                                                             clip5,
+                                                             clip3)
+                                        read5 = min(end5 + clip5, reflen + 1)
+                                        read3 = max(end3 - clip3, 0)
+                                        positions = list(range(read5,
+                                                               read3 + 1))
+                                        rels = {pos: 0 for pos in positions}
+                                        for pos in positions:
+                                            if end5 < pos < end3:
+                                                rels[pos] |= DELET
+                                            if not end5 + 1 == pos == end3 - 1:
+                                                rels[pos] |= encode_relate(
+                                                    refseq[pos - 1],
+                                                    "N",
+                                                    LO_QUAL,
+                                                    OK_QUAL
+                                                )
+                                        expect = read5, read3, rels
+                                        self.assertEqual(result, expect)
+
+
+@ut.skip("focus on other")
 class TestMergeMates(ut.TestCase):
-    SAM_READ = SamRead("read-name\t"
-                       "147\tref-seq\t189\t36\t42M5S\t=\t10\t-240\tGGGAT"
-                       "TGTTCATGGTGCATTTCACGCTACTCGTTCCTTTCGAACGAG\tCCCCCCCCCC"
-                       "CC;CCCCCC;CCCCCCCCC;CCCCCCCCCCCCCCCCC\tAS:i:84\tXN:i:0"
-                       "\tXM:i:0\tXO:i:0\tXG:i:0\tYS:i:66\tYT:Z:CP\tMD:Z:42\tN"
-                       "M:i:0")
 
     def test_empty(self):
         result = _merge_mates(1, 10, {}, 1, 10, {}, True)

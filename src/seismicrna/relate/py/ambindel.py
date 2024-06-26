@@ -144,8 +144,13 @@ class Indel(ABC):
     def _try_swap(self, *args, **kwargs) -> bool:
         """ Perform a swap if possible. """
 
+    @abstractmethod
     def sweep(self,
               muts: dict[int, int],
+              end5_ref: int,
+              end3_ref: int,
+              end5_read: int,
+              end3_read: int,
               ref: DNA,
               read: DNA,
               qual: str,
@@ -154,18 +159,7 @@ class Indel(ABC):
               inns: list[Insertion],
               from3to5: bool,
               tunnel: bool):
-        # Move the indel as far as possible in the 5' or 3' direction.
-        while self._try_swap(muts,
-                             ref,
-                             read,
-                             qual,
-                             min_qual,
-                             dels,
-                             inns,
-                             from3to5,
-                             tunnel):
-            # All actions happen in _try_swap, so loop body is empty.
-            pass
+        """ Move the indel as far as possible in one direction. """
 
 
 class Deletion(Indel):
@@ -209,6 +203,8 @@ class Deletion(Indel):
 
     def _try_swap(self,
                   muts: dict[int, int],
+                  end5_ref: int,
+                  end3_ref: int,
                   refseq: DNA,
                   read: DNA,
                   qual: str,
@@ -219,7 +215,8 @@ class Deletion(Indel):
                   tunnel: bool):
         swap_pos, tunneled_indels = self._peek_out_of_indel(dels, from3to5)
         read_pos = self.del_pos5 if from3to5 else self.del_pos3
-        if (1 < swap_pos < len(refseq) and 1 < read_pos < len(read)
+        if (end5_ref < swap_pos < end3_ref
+                and 1 < read_pos < len(read)
                 and (tunnel or not self.tunneled)
                 and not self._collisions(inns, swap_pos)):
             relation = self._encode_swap(refseq[self.ins_pos - 1],
@@ -233,6 +230,35 @@ class Deletion(Indel):
                     indel.step_del_pos(swap_pos)
                 return True
         return False
+
+    def sweep(self,
+              muts: dict[int, int],
+              end5_ref: int,
+              end3_ref: int,
+              end5_read: int,
+              end3_read: int,
+              ref: DNA,
+              read: DNA,
+              qual: str,
+              min_qual: str,
+              dels: list[Deletion],
+              inns: list[Insertion],
+              from3to5: bool,
+              tunnel: bool):
+        """ Move the indel as far as possible in one direction. """
+        while self._try_swap(muts,
+                             end5_ref,
+                             end3_ref,
+                             ref,
+                             read,
+                             qual,
+                             min_qual,
+                             dels,
+                             inns,
+                             from3to5,
+                             tunnel):
+            # All actions happen in _try_swap, so loop body is empty.
+            pass
 
 
 class Insertion(Indel):
@@ -288,6 +314,8 @@ class Insertion(Indel):
 
     def _try_swap(self,
                   muts: dict[int, int],
+                  end5_read: int,
+                  end3_read: int,
                   refseq: DNA,
                   read: DNA,
                   qual: str,
@@ -298,7 +326,8 @@ class Insertion(Indel):
                   tunnel: bool):
         swap_pos, tunneled_indels = self._peek_out_of_indel(inns, from3to5)
         ref_pos = self.del_pos5 if from3to5 else self.del_pos3
-        if (1 < swap_pos < len(read) and 1 < ref_pos < len(refseq)
+        if (end5_read < swap_pos < end3_read
+                and 1 < ref_pos < len(refseq)
                 and (tunnel or not self.tunneled)
                 and not self._collisions(dels, swap_pos)):
             relation = self._encode_swap(refseq[ref_pos - 1],
@@ -314,8 +343,41 @@ class Insertion(Indel):
                 return True
         return False
 
+    def sweep(self,
+              muts: dict[int, int],
+              end5_ref: int,
+              end3_ref: int,
+              end5_read: int,
+              end3_read: int,
+              ref: DNA,
+              read: DNA,
+              qual: str,
+              min_qual: str,
+              dels: list[Deletion],
+              inns: list[Insertion],
+              from3to5: bool,
+              tunnel: bool):
+        """ Move the indel as far as possible in one direction. """
+        while self._try_swap(muts,
+                             end5_read,
+                             end3_read,
+                             ref,
+                             read,
+                             qual,
+                             min_qual,
+                             dels,
+                             inns,
+                             from3to5,
+                             tunnel):
+            # All actions happen in _try_swap, so loop body is empty.
+            pass
+
 
 def sweep_indels(muts: dict[int, int],
+                 end5_ref: int,
+                 end3_ref: int,
+                 end5_read: int,
+                 end3_read: int,
                  refseq: DNA,
                  read: DNA,
                  qual: str,
@@ -331,19 +393,31 @@ def sweep_indels(muts: dict[int, int],
     ----------
     muts: dict
         Mutations
-    refseq: bytes
+    end5_ref: int
+        5' most position of the read that is not soft-clipped, using
+        reference coordinates.
+    end3_ref: int
+        3' most position of the read that is not soft-clipped, using
+        reference coordinates.
+    end5_read: int
+        5' most position of the read that is not soft-clipped, using
+        read coordinates.
+    end3_read: int
+        3' most position of the read that is not soft-clipped, using
+        read coordinates.
+    refseq: DNA
         Reference sequence
-    read: bytes
+    read: DNA
         Sequence of the read
-    qual: bytes
+    qual: str
         Phred quality scores of the read, encoded as ASCII characters
     min_qual: int
         The minimum Phred quality score needed to consider a base call
         informative: integer value of the ASCII character
     dels: list[Deletion]
-        List of deletions identified by `vectorize_read`
+        List of deletions.
     inns: list[Insertion]
-        List of insertions identified by `vectorize_read`
+        List of insertions.
     from3to5: bool
         Whether to move indels in the 3' -> 5' direction (True) or the
         5' -> 3' direction (False)
@@ -369,6 +443,10 @@ def sweep_indels(muts: dict[int, int],
     while indels:
         indel = indels.pop()
         indel.sweep(muts,
+                    end5_ref,
+                    end3_ref,
+                    end5_read,
+                    end3_read,
                     refseq,
                     read,
                     qual,
@@ -389,12 +467,16 @@ def sweep_indels(muts: dict[int, int],
 
 
 def find_ambindels(muts: dict[int, int],
-                 refseq: DNA,
-                 read: DNA,
-                 qual: str,
-                 min_qual: str,
-                 dels: list[Deletion],
-                 inns: list[Insertion]):
+                   end5_ref: int,
+                   end3_ref: int,
+                   end5_read: int,
+                   end3_read: int,
+                   refseq: DNA,
+                   read: DNA,
+                   qual: str,
+                   min_qual: str,
+                   dels: list[Deletion],
+                   inns: list[Insertion]):
     """
     Find and label all positions in the vector that are ambiguous due to
     insertions and deletions.
@@ -403,6 +485,18 @@ def find_ambindels(muts: dict[int, int],
     ----------
     muts: dict
         Mutations
+    end5_ref: int
+        5' most position of the read that is not soft-clipped, using
+        reference coordinates.
+    end3_ref: int
+        3' most position of the read that is not soft-clipped, using
+        reference coordinates.
+    end5_read: int
+        5' most position of the read that is not soft-clipped, using
+        read coordinates.
+    end3_read: int
+        3' most position of the read that is not soft-clipped, using
+        read coordinates.
     refseq: DNA
         Reference sequence
     read: DNA
@@ -413,9 +507,9 @@ def find_ambindels(muts: dict[int, int],
         The minimum Phred quality score needed to consider a base call
         informative: integer value of the ASCII character
     dels: list[Deletion]
-        List of deletions identified by `vectorize_read`
+        List of deletions.
     inns: list[Insertion]
-        List of insertions identified by `vectorize_read`
+        List of insertions.
 
     """
     # Each indel might be able to be moved in the 5' -> 3' direction
@@ -427,6 +521,10 @@ def find_ambindels(muts: dict[int, int],
         # runs of consecutive insertions or consecutive deletions can
         # effectively move together.
         sweep_indels(muts,
+                     end5_ref,
+                     end3_ref,
+                     end5_read,
+                     end3_read,
                      refseq,
                      read,
                      qual,
@@ -438,6 +536,10 @@ def find_ambindels(muts: dict[int, int],
         if any(d.tunneled for d in dels) or any(i.tunneled for i in inns):
             # If any indel tunneled,
             sweep_indels(muts,
+                         end5_ref,
+                         end3_ref,
+                         end5_read,
+                         end3_read,
                          refseq,
                          read,
                          qual,
