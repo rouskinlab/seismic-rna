@@ -223,7 +223,8 @@ def parse_bowtie2(process: CompletedProcess):
             elif prev != count:
                 # If so, then confirm the count matches the previous.
                 raise ValueError(
-                    f"Inconsistent counts for '{key}': {prev} ≠ {count}")
+                    f"Inconsistent counts for {repr(key)}: {prev} ≠ {count}"
+                )
         # Read the next line, defaulting to an empty string.
         line = next(lines, "").rstrip()
         # Try to match the line with each pattern, until one matches.
@@ -239,13 +240,15 @@ run_bowtie2 = ShellCommand("aligning", bowtie2_cmd, parse_bowtie2)
 
 
 def xamgen_cmd(fq_inp: FastqUnit,
-               bam_out: Path | None, *,
-               tmp_dir: Path | None = None,
+               bam_out: Path, *,
                min_mapq: int | None = None,
                n_procs: int = 1,
                **kwargs):
     """ Wrap alignment and post-processing into one pipeline. """
-    bowtie2_step = bowtie2_cmd(fq_inp, None, n_procs=n_procs, **kwargs)
+    bowtie2_step = bowtie2_cmd(fq_inp,
+                               None,
+                               n_procs=max(n_procs - 2, 1),
+                               **kwargs)
     # Filter out any unaligned or otherwise unsuitable reads.
     if fq_inp.paired:
         # Require the paired flag.
@@ -264,7 +267,7 @@ def xamgen_cmd(fq_inp: FastqUnit,
                                  n_procs=1)
     sort_xam_step = sort_xam_cmd(None,
                                  bam_out,
-                                 tmp_dir=tmp_dir,
+                                 tmp_dir=bam_out.parent,
                                  n_procs=1)
     return cmds_to_pipe([bowtie2_step, view_xam_step, sort_xam_step])
 
@@ -274,41 +277,32 @@ run_xamgen = ShellCommand("aligning, filtering, and sorting by position",
                           parse_bowtie2)
 
 
-def export_cmd(xam_in: Path | None,
-               xam_out: Path | None, *,
+def export_cmd(xam_in: Path,
+               xam_out: Path, *,
                ref: str,
                header: str,
                ref_file: Path | None = None,
-               tmp_dir: Path | None = None,
                n_procs: int = 1):
-    """ Wrap selecting, sorting, and exporting into one pipeline. """
-    # Pipe the header line.
+    """ Select and export one reference to its own XAM file. """
+    # Pipe the header line containing only this one reference.
     echo_step = args_to_cmd([ECHO_CMD, header])
-    # Select only the reads that aligned to the reference, and ignore
-    # the original header.
+    # Select only the reads that aligned to the reference; ignore the
+    # original header so that the output XAM file contains only the
+    # one reference in the XAM file.
     ref_step = view_xam_cmd(xam_in,
                             None,
                             sam=True,
                             with_header=False,
                             ref=ref,
-                            n_procs=1)
+                            n_procs=max(n_procs - 1, 1))
     # Merge the one header line and the reads for the reference.
     merge_step = cmds_to_subshell([echo_step, ref_step])
-    # Sort reads by name so that mates are adjacent.
-    sort_step = sort_xam_cmd(None,
-                             None,
-                             tmp_dir=tmp_dir,
-                             name=True,
-                             n_procs=n_procs)
     # Export the reads into a XAM file.
-    export_step = view_xam_cmd(None,
-                               xam_out,
-                               refs_file=ref_file,
-                               n_procs=1)
-    return cmds_to_pipe([merge_step, sort_step, export_step])
+    export_step = view_xam_cmd(None, xam_out, refs_file=ref_file)
+    return cmds_to_pipe([merge_step, export_step])
 
 
-run_export = ShellCommand("selecting reference, sorting by name, and exporting",
+run_export = ShellCommand("selecting reference and exporting",
                           export_cmd)
 
 ########################################################################
