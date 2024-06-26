@@ -3325,6 +3325,8 @@
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.report.calc_dt_minutes">calc_dt_minutes() (in module seismicrna.core.report)</a>
 </li>
+      <li><a href="api/seismicrna.core.ngs.html#seismicrna.core.ngs.xam.calc_extra_threads">calc_extra_threads() (in module seismicrna.core.ngs.xam)</a>
+</li>
       <li><a href="api/seismicrna.core.mu.html#seismicrna.core.mu.measure.calc_gini">calc_gini() (in module seismicrna.core.mu.measure)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.array.calc_inverse">calc_inverse() (in module seismicrna.core.array)</a>
@@ -3516,6 +3518,8 @@
 </li>
       </ul></li>
       <li><a href="api/seismicrna.graph.html#seismicrna.graph.base.GraphBase.col_titles">col_titles (seismicrna.graph.base.GraphBase property)</a>
+</li>
+      <li><a href="api/seismicrna.core.ngs.html#seismicrna.core.ngs.xam.collate_xam_cmd">collate_xam_cmd() (in module seismicrna.core.ngs.xam)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.logs.ColorFormatter">ColorFormatter (class in seismicrna.core.logs)</a>
 </li>
@@ -4783,7 +4787,7 @@
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.data.Dataset.iter_batches">iter_batches() (seismicrna.core.data.Dataset method)</a>
 </li>
-      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.iter_cases">iter_cases() (seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel method)</a>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.iter_cases">iter_cases() (seismicrna.relate.py.tests.relate_test.TestFindRelsLine method)</a>
 </li>
       <li><a href="api/seismicrna.core.html#seismicrna.core.header.Header.iter_clust_indexes">iter_clust_indexes() (seismicrna.core.header.Header method)</a>
 </li>
@@ -6420,7 +6424,7 @@
       </ul></li>
       <li><a href="api/seismicrna.core.mu.tests.html#seismicrna.core.mu.tests.unbias_test.TestQuickUnbias.REL_TOL">REL_TOL (seismicrna.core.mu.tests.unbias_test.TestQuickUnbias attribute)</a>
 </li>
-      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.relate">relate() (seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel static method)</a>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.relate">relate() (seismicrna.relate.py.tests.relate_test.TestFindRelsLine static method)</a>
 </li>
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.batch.RelateBatch">RelateBatch (class in seismicrna.relate.batch)</a>
 </li>
@@ -6705,8 +6709,6 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.align.html#seismicrna.align.sim.sam_header">sam_header() (in module seismicrna.align.sim)</a>
-</li>
-      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestMergeMates.SAM_READ">SAM_READ (seismicrna.relate.py.tests.relate_test.TestMergeMates attribute)</a>
 </li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.relate.SamFlag">SamFlag (class in seismicrna.relate.py.relate)</a>
 </li>
@@ -10595,8 +10597,14 @@
 </li>
       <li><a href="api/seismicrna.demult.html#seismicrna.demult.demultiplex.super_fastq.super_write_fastqs">super_write_fastqs() (seismicrna.demult.demultiplex.super_fastq method)</a>
 </li>
-      <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambindel.Indel.sweep">sweep() (seismicrna.relate.py.ambindel.Indel method)</a>
+      <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambindel.Deletion.sweep">sweep() (seismicrna.relate.py.ambindel.Deletion method)</a>
+
+      <ul>
+        <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambindel.Indel.sweep">(seismicrna.relate.py.ambindel.Indel method)</a>
 </li>
+        <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambindel.Insertion.sweep">(seismicrna.relate.py.ambindel.Insertion method)</a>
+</li>
+      </ul></li>
       <li><a href="api/seismicrna.relate.py.html#seismicrna.relate.py.ambindel.sweep_indels">sweep_indels() (in module seismicrna.relate.py.ambindel)</a>
 </li>
   </ul></td>
@@ -10927,17 +10935,17 @@
 </li>
       <li><a href="api/seismicrna.relate.aux.tests.html#seismicrna.relate.aux.tests.iterrel_test.TestIterRelvecsQ53.test_aa">test_aa() (seismicrna.relate.aux.tests.iterrel_test.TestIterRelvecsQ53 method)</a>
 </li>
-      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.test_aaaa_0ins">test_aaaa_0ins() (seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel method)</a>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_aaaa_0ins">test_aaaa_0ins() (seismicrna.relate.py.tests.relate_test.TestFindRelsLine method)</a>
 </li>
-      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.test_aaaaaa_0ins">test_aaaaaa_0ins() (seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel method)</a>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_aaaaaa_0ins">test_aaaaaa_0ins() (seismicrna.relate.py.tests.relate_test.TestFindRelsLine method)</a>
 </li>
-      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.test_aacc_1ins">test_aacc_1ins() (seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel method)</a>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_aacc_1ins">test_aacc_1ins() (seismicrna.relate.py.tests.relate_test.TestFindRelsLine method)</a>
 </li>
       <li><a href="api/seismicrna.core.tests.html#seismicrna.core.tests.header_test.TestHeader.test_abstract">test_abstract() (seismicrna.core.tests.header_test.TestHeader method)</a>
 </li>
       <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.xna_test.TestXNA.test_abstract_base_class">test_abstract_base_class() (seismicrna.core.seq.tests.xna_test.TestXNA method)</a>
 </li>
-      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.test_acgt_1ins">test_acgt_1ins() (seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel method)</a>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_acgt_1ins">test_acgt_1ins() (seismicrna.relate.py.tests.relate_test.TestFindRelsLine method)</a>
 </li>
       <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.section_test.TestSectionAddMask.test_add_mask">test_add_mask() (seismicrna.core.seq.tests.section_test.TestSectionAddMask method)</a>
 </li>
@@ -10967,6 +10975,8 @@
 </li>
       <li><a href="api/seismicrna.relate.aux.tests.html#seismicrna.relate.aux.tests.infer_test.TestInferRead.test_all_match_n">test_all_match_n() (seismicrna.relate.aux.tests.infer_test.TestInferRead method)</a>
 </li>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_all_matches">test_all_matches() (seismicrna.relate.py.tests.relate_test.TestFindRelsLine method)</a>
+</li>
       <li><a href="api/seismicrna.core.tests.html#seismicrna.core.tests.array_test.TestFindTrueDists.test_all_true">test_all_true() (seismicrna.core.tests.array_test.TestFindTrueDists method)</a>
 </li>
       <li><a href="api/seismicrna.core.mu.tests.html#seismicrna.core.mu.tests.unbias_test.TestTriuSum.test_all_zero">test_all_zero() (seismicrna.core.mu.tests.unbias_test.TestTriuSum method)</a>
@@ -10981,6 +10991,8 @@
         <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.xna_test.TestRNA.test_alph">(seismicrna.core.seq.tests.xna_test.TestRNA method)</a>
 </li>
       </ul></li>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_ambig_delet_low_qual">test_ambig_delet_low_qual() (seismicrna.relate.py.tests.relate_test.TestFindRelsLine method)</a>
+</li>
       <li><a href="api/seismicrna.core.mu.tests.html#seismicrna.core.mu.tests.nan_test.TestAutoRemoveNaN.test_array">test_array() (seismicrna.core.mu.tests.nan_test.TestAutoRemoveNaN method)</a>
 
       <ul>
@@ -12425,6 +12437,8 @@
 </li>
       <li><a href="api/seismicrna.core.seq.tests.html#seismicrna.core.seq.tests.section_test.TestSectionLength.test_slice_lengths">test_slice_lengths() (seismicrna.core.seq.tests.section_test.TestSectionLength method)</a>
 </li>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_soft_clips">test_soft_clips() (seismicrna.relate.py.tests.relate_test.TestFindRelsLine method)</a>
+</li>
       <li><a href="api/seismicrna.relate.aux.tests.html#seismicrna.relate.aux.tests.infer_test.TestInferRead.test_subst_invalid">test_subst_invalid() (seismicrna.relate.aux.tests.infer_test.TestInferRead method)</a>
 </li>
       <li><a href="api/seismicrna.relate.aux.tests.html#seismicrna.relate.aux.tests.infer_test.TestInferRead.test_subst_valid">test_subst_valid() (seismicrna.relate.aux.tests.infer_test.TestInferRead method)</a>
@@ -12797,6 +12811,8 @@
 </li>
       <li><a href="api/seismicrna.core.batch.tests.html#seismicrna.core.batch.tests.ends_test.TestFindReadEnd5s">TestFindReadEnd5s (class in seismicrna.core.batch.tests.ends_test)</a>
 </li>
+      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestFindRelsLine">TestFindRelsLine (class in seismicrna.relate.py.tests.relate_test)</a>
+</li>
       <li><a href="api/seismicrna.core.mu.tests.html#seismicrna.core.mu.tests.unbias_test.TestFindSplitPositions">TestFindSplitPositions (class in seismicrna.core.mu.tests.unbias_test)</a>
 </li>
       <li><a href="api/seismicrna.core.tests.html#seismicrna.core.tests.array_test.TestFindTrueDists">TestFindTrueDists (class in seismicrna.core.tests.array_test)</a>
@@ -12901,8 +12917,6 @@
 </li>
       <li><a href="api/seismicrna.core.mu.tests.html#seismicrna.core.mu.tests.frame_test.TestReframeLike">TestReframeLike (class in seismicrna.core.mu.tests.frame_test)</a>
 </li>
-      <li><a href="api/seismicrna.relate.py.tests.html#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel">TestRelateRelateLineAmbrel (class in seismicrna.relate.py.tests.relate_test)</a>
-</li>
       <li><a href="api/seismicrna.core.tests.html#seismicrna.core.tests.header_test.TestRelClustHeader">TestRelClustHeader (class in seismicrna.core.tests.header_test)</a>
 </li>
       <li><a href="api/seismicrna.core.tests.html#seismicrna.core.tests.header_test.TestRelHeader">TestRelHeader (class in seismicrna.core.tests.header_test)</a>
@@ -13002,6 +13016,8 @@
 </li>
       </ul></li>
       <li><a href="api/seismicrna.relate.html#seismicrna.relate.sam.XamViewer.tmp_sam_path">tmp_sam_path (seismicrna.relate.sam.XamViewer property)</a>
+</li>
+      <li><a href="api/seismicrna.relate.html#seismicrna.relate.sam.tmp_xam_cmd">tmp_xam_cmd() (in module seismicrna.relate.sam)</a>
 </li>
       <li><a href="api/seismicrna.core.rna.html#seismicrna.core.rna.io.to_ct">to_ct() (in module seismicrna.core.rna.io)</a>
 </li>
@@ -13278,8 +13294,6 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/seismicrna.core.ngs.html#seismicrna.core.ngs.xam.xam_paired">xam_paired() (in module seismicrna.core.ngs.xam)</a>
-</li>
-      <li><a href="api/seismicrna.core.ngs.html#seismicrna.core.ngs.xam.xam_to_fq_cmd">xam_to_fq_cmd() (in module seismicrna.core.ngs.xam)</a>
 </li>
       <li><a href="api/seismicrna.align.html#seismicrna.align.xamops.xamgen_cmd">xamgen_cmd() (in module seismicrna.align.xamops)</a>
 </li>

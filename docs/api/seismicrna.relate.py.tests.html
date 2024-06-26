@@ -175,14 +175,69 @@
 </dd></dl>
 
 <dl class="py class" id="module-seismicrna.relate.py.tests.relate_test">
+<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestFindRelsLine">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.py.tests.relate_test.</span></span><span class="sig-name descname"><span class="pre">TestFindRelsLine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestFindRelsLine" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<p>Test function <cite>relate.relate_line</cite>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestFindRelsLine.iter_cases">
+<span class="sig-name descname"><span class="pre">iter_cases</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refseq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.DNA" title="seismicrna.core.seq.xna.DNA"><span class="pre">DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_ins</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.iter_cases" title="Link to this definition"></a></dt>
+<dd><p>Iterate through every test case.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestFindRelsLine.relate">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">relate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">refseq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.DNA" title="seismicrna.core.seq.xna.DNA"><span class="pre">DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">read</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.DNA" title="seismicrna.core.seq.xna.DNA"><span class="pre">DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">qual</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cigar</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">end5</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ambindel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_end5</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_end3</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.relate" title="Link to this definition"></a></dt>
+<dd><p>Generate a SAM line from the given information, and use it
+to compute a relation vector.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_aaaa_0ins">
+<span class="sig-name descname"><span class="pre">test_aaaa_0ins</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_aaaa_0ins" title="Link to this definition"></a></dt>
+<dd><p>Test all possible reads with 0 insertions from AAAA.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_aaaaaa_0ins">
+<span class="sig-name descname"><span class="pre">test_aaaaaa_0ins</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_aaaaaa_0ins" title="Link to this definition"></a></dt>
+<dd><p>Test all possible reads with 0 insertions from AAAAAA.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_aacc_1ins">
+<span class="sig-name descname"><span class="pre">test_aacc_1ins</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_aacc_1ins" title="Link to this definition"></a></dt>
+<dd><p>Test all possible reads with ≤ 1 insertion from AACC.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_acgt_1ins">
+<span class="sig-name descname"><span class="pre">test_acgt_1ins</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_acgt_1ins" title="Link to this definition"></a></dt>
+<dd><p>Test all possible reads with ≤ 1 insertion from ACGT.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_all_matches">
+<span class="sig-name descname"><span class="pre">test_all_matches</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_all_matches" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_ambig_delet_low_qual">
+<span class="sig-name descname"><span class="pre">test_ambig_delet_low_qual</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_ambig_delet_low_qual" title="Link to this definition"></a></dt>
+<dd><p>Test ambiguous deletions with all low-quality positions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_soft_clips">
+<span class="sig-name descname"><span class="pre">test_soft_clips</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestFindRelsLine.test_soft_clips" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestMergeMates">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.py.tests.relate_test.</span></span><span class="sig-name descname"><span class="pre">TestMergeMates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestMergeMates" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestMergeMates.SAM_READ">
-<span class="sig-name descname"><span class="pre">SAM_READ</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;seismicrna.relate.py.relate.SamRead</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestMergeMates.SAM_READ" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestMergeMates.test_both_blank">
 <span class="sig-name descname"><span class="pre">test_both_blank</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestMergeMates.test_both_blank" title="Link to this definition"></a></dt>
@@ -212,50 +267,6 @@
 <dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestMergeMates.test_read2">
 <span class="sig-name descname"><span class="pre">test_read2</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestMergeMates.test_read2" title="Link to this definition"></a></dt>
 <dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seismicrna.relate.py.tests.relate_test.</span></span><span class="sig-name descname"><span class="pre">TestRelateRelateLineAmbrel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel" title="Link to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
-<p>Test function <cite>relate.relate_line</cite>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.iter_cases">
-<span class="sig-name descname"><span class="pre">iter_cases</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refseq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.DNA" title="seismicrna.core.seq.xna.DNA"><span class="pre">DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_ins</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.iter_cases" title="Link to this definition"></a></dt>
-<dd><p>Iterate through every test case.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.relate">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">relate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">refseq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.DNA" title="seismicrna.core.seq.xna.DNA"><span class="pre">DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">read</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="seismicrna.core.seq.html#seismicrna.core.seq.xna.DNA" title="seismicrna.core.seq.xna.DNA"><span class="pre">DNA</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">qual</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mapq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cigar</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">end5</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.relate" title="Link to this definition"></a></dt>
-<dd><p>Generate a SAM line from the given information, and use it
-to compute a relation vector.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.test_aaaa_0ins">
-<span class="sig-name descname"><span class="pre">test_aaaa_0ins</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.test_aaaa_0ins" title="Link to this definition"></a></dt>
-<dd><p>Test all possible reads with 0 insertions from AAAA.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.test_aaaaaa_0ins">
-<span class="sig-name descname"><span class="pre">test_aaaaaa_0ins</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.test_aaaaaa_0ins" title="Link to this definition"></a></dt>
-<dd><p>Test all possible reads with 0 insertions from AAAAAA.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.test_aacc_1ins">
-<span class="sig-name descname"><span class="pre">test_aacc_1ins</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.test_aacc_1ins" title="Link to this definition"></a></dt>
-<dd><p>Test all possible reads with ≤ 1 insertion from AACC.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.test_acgt_1ins">
-<span class="sig-name descname"><span class="pre">test_acgt_1ins</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#seismicrna.relate.py.tests.relate_test.TestRelateRelateLineAmbrel.test_acgt_1ins" title="Link to this definition"></a></dt>
-<dd><p>Test all possible reads with ≤ 1 insertion from ACGT.</p>
-</dd></dl>
 
 </dd></dl>
 
