@@ -217,7 +217,6 @@ class TestFindRelsLine(ut.TestCase):
                                         self.assertEqual(result, expect)
 
 
-@ut.skip("focus on other")
 class TestMergeMates(ut.TestCase):
 
     def test_empty(self):
