@@ -22,7 +22,7 @@ from ..core.ngs import (FLAG_REVERSE,
                         run_ref_header,
                         run_index_xam,
                         run_idxstats)
-from ..core.seq import DNA, get_fasta_seq, parse_fasta, write_fasta
+from ..core.seq import DNA, parse_fasta, write_fasta
 from ..core.task import dispatch
 from ..core.tmp import get_release_working_dirs, release_to_out
 
@@ -72,7 +72,7 @@ def write_tmp_ref_files(tmp_dir: Path,
 
 def sep_strands_bam(bam_file: Path,
                     paired: bool,
-                    fasta: Path,
+                    refseq_minus: DNA,
                     minus_label: str,
                     f1r2_plus: bool,
                     keep_tmp: bool,
@@ -94,7 +94,7 @@ def sep_strands_bam(bam_file: Path,
     index_dir = tmp_dir.joinpath("index")
     index_dir.mkdir()
     fasta_minus = index_dir.joinpath(ref_minus).with_suffix(path.FASTA_EXTS[0])
-    write_fasta(fasta_minus, [(ref_minus, get_fasta_seq(fasta, DNA, ref).rc)])
+    write_fasta(fasta_minus, [(ref_minus, refseq_minus)])
     # Index the minus-strand reference.
     index_minus = fasta_minus.with_suffix("")
     run_bowtie2_build(fasta_minus, index_minus, n_procs=n_procs)
@@ -325,13 +325,15 @@ def fq_pipeline(fq_inp: FastqUnit,
     ref_headers = {ref: header
                    for ref, header in run_ref_header(xam_whole, n_procs=n_procs)
                    if ref in sufficient_refs}
+    if sep_strands:
+        # Also cache the sequence for each such reference.
+        ref_seqs = dict(parse_fasta(fasta, DNA, only=sufficient_refs))
+    else:
+        ref_seqs = None
     # Split the whole XAM file into one XAM file for each reference that
     # was guessed to have received enough reads.
     xams_out: list[Path] = list()
-    # Iterate over list(sufficient_refs) instead of just sufficient_refs
-    # so that items can be deleted from sufficient_refs without altering
-    # the object being iterated over.
-    for ref in list(sufficient_refs):
+    for ref in sufficient_refs:
         try:
             # Export the reads that align to the given reference.
             xam_ref = path.build(*path.XAM_SEGS,
@@ -350,9 +352,10 @@ def fq_pipeline(fq_inp: FastqUnit,
         else:
             if sep_strands:
                 # Split the XAM file into plus and minus strands.
+                refseq_rc = ref_seqs[ref].rc
                 xam_neg = sep_strands_bam(xam_ref,
                                           fq_inp.paired,
-                                          fasta,
+                                          refseq_rc,
                                           minus_label,
                                           f1r2_plus,
                                           keep_tmp,
@@ -380,9 +383,20 @@ def fq_pipeline(fq_inp: FastqUnit,
                 logger.debug(f"{xam_neg} got {reads_refs[ref_neg]} read(s)")
                 if reads_refs[ref_neg] >= min_reads:
                     xams_out.append(xam_neg)
-                    sufficient_refs.add(ref_neg)
+                    # Add the minus strand to the set of references so
+                    # that it will be written to the output FASTA file.
+                    if ref_neg in ref_seqs:
+                        raise ValueError(
+                            f"Minus-strand reference {repr(ref_neg)} has the "
+                            f"same name as another reference; use a different "
+                            f"minus label to make all reference names unique"
+                        )
+                    ref_seqs[ref_neg] = refseq_rc
+                    # Add a dummy value to ref_headers to signify that
+                    # the minus strand got sufficient reads.
+                    ref_headers[ref_neg] = ""
                 else:
-                    # Delete the XAM file if it did not get enough reads.
+                    # Delete the XAM file if it got insufficient reads.
                     xam_neg.unlink()
                     logger.debug(f"Deleted {xam_neg} because it received "
                                  f"{reads_refs[ref_neg]} reads (< {min_reads})")
@@ -394,14 +408,19 @@ def fq_pipeline(fq_inp: FastqUnit,
             else:
                 # Delete the XAM file if it did not get enough reads.
                 xam_ref.unlink()
-                # Delete the reference from sufficient_refs.
-                sufficient_refs.remove(ref)
+                # Delete the reference header to signify that it got
+                # insufficient reads.
+                ref_headers.pop(ref)
+                # Delete the reference sequence to avoid writing it to
+                # the output FASTA file and to free up memory.
+                ref_seqs.pop(ref)
                 logger.debug(f"Deleted {xam_ref} because it received "
                              f"{reads_refs[ref]} reads (< {min_reads})")
     if not keep_tmp:
         # Delete the whole XAM file to free up space.
         xam_whole.unlink()
-    if insufficient_refs := set(reads_refs) - sufficient_refs:
+    insufficient_refs = set(reads_refs) - set(ref_headers)
+    if insufficient_refs:
         logger.warning(f"Skipped references with fewer than {min_reads} reads "
                        f"in sample {repr(sample)}: {sorted(insufficient_refs)}")
     ended = datetime.now()
@@ -455,6 +474,12 @@ def fq_pipeline(fq_inp: FastqUnit,
                          began=began,
                          ended=ended)
     report_saved = report.save(release_dir, force=True)
+    if sep_strands:
+        # Write a FASTA file of all references, including the reverse
+        # strands, for use in the relate step.
+        refs_name = f"{fasta.stem}{minus_label}"
+        fasta_path = report_saved.with_stem(refs_name).with_suffix(fasta.suffix)
+        write_fasta(fasta_path, ref_seqs.items())
     return release_to_out(out_dir, release_dir, report_saved.parent)
 
 

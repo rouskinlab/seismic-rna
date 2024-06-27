@@ -60,6 +60,8 @@ def parse_fasta(fasta: Path,
                 seq_type: type[XNA] | None,
                 only: Iterable[str] | None = None):
     names = set()
+    if only is not None and not isinstance(only, set):
+        only = set(only)
     with open(fasta) as f:
         line = f.readline()
         # Read to the end of the file.
