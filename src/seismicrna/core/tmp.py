@@ -43,17 +43,20 @@ def release_to_out(out_dir: Path,
                 # path before raising the exception.
                 delete_path.rename(out_path)
                 logger.debug(f"Restored {out_path} from {delete_path}")
-            raise
-        if deleted:
-            # Once the initial path has been moved to its destination,
-            # it is safe to delete the original directory.
-            try:
-                rmtree(delete_path)
-            except Exception as error:
-                logger.warning(f"Failed to delete {delete_path} (but it is no "
-                               f"longer needed, and safe to delete): {error}")
             else:
-                logger.debug(f"Deleted {delete_path}")
+                # No original files were moved to the delete directory,
+                # which is therefore still empty. Delete it.
+                delete_path.rmdir()
+            raise
+        # Once the initial path has been moved to its destination, the
+        # original directory can be deleted safely.
+        try:
+            rmtree(delete_path)
+        except Exception as error:
+            logger.warning(f"Failed to delete {delete_path} (but it is no "
+                           f"longer needed, and safe to delete): {error}")
+        else:
+            logger.debug(f"Deleted {delete_path}")
     else:
         logger.debug(f"Skipped releasing {initial_path} (does not exist)")
     if not out_path.exists():
