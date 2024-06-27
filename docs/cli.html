@@ -502,6 +502,24 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-sep-strands">
+<span id="cmdoption-seismic-wf-mix-strands"></span><span class="sig-name descname"><span class="pre">--sep-strands</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--mix-strands</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-sep-strands" title="Link to this definition"></a></dt>
+<dd><p>Separate each alignment map into plus- and minus-strand reads</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-f1r2-plus">
+<span id="cmdoption-seismic-wf-f1r2-minus"></span><span class="sig-name descname"><span class="pre">--f1r2-plus</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--f1r2-minus</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-f1r2-plus" title="Link to this definition"></a></dt>
+<dd><p>With –sep-strands, consider forward mate 1s and reverse mate 2s to be plus-stranded</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-minus-label">
+<span class="sig-name descname"><span class="pre">--minus-label</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;minus_label&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-minus-label" title="Link to this definition"></a></dt>
+<dd><p>With –sep-strands, append this label to each minus-strand reference</p>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-min-phred">
 <span class="sig-name descname"><span class="pre">--min-phred</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_phred&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-min-phred" title="Link to this definition"></a></dt>
 <dd><p>Mark base calls with Phred scores lower than this threshold as ambiguous</p>
@@ -1340,6 +1358,24 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dt class="sig sig-object std" id="cmdoption-seismic-align-N">
 <span id="cmdoption-seismic-align-min-reads"></span><span class="sig-name descname"><span class="pre">-N</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--min-reads</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_reads&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-N" title="Link to this definition"></a></dt>
 <dd><p>Discard alignment maps with fewer than this many reads</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-sep-strands">
+<span id="cmdoption-seismic-align-mix-strands"></span><span class="sig-name descname"><span class="pre">--sep-strands</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--mix-strands</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-sep-strands" title="Link to this definition"></a></dt>
+<dd><p>Separate each alignment map into plus- and minus-strand reads</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-f1r2-plus">
+<span id="cmdoption-seismic-align-f1r2-minus"></span><span class="sig-name descname"><span class="pre">--f1r2-plus</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--f1r2-minus</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-f1r2-plus" title="Link to this definition"></a></dt>
+<dd><p>With –sep-strands, consider forward mate 1s and reverse mate 2s to be plus-stranded</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-minus-label">
+<span class="sig-name descname"><span class="pre">--minus-label</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;minus_label&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-minus-label" title="Link to this definition"></a></dt>
+<dd><p>With –sep-strands, append this label to each minus-strand reference</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>
