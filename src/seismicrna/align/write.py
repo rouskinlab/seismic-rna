@@ -76,6 +76,7 @@ def sep_strands_bam(bam_file: Path,
                     minus_label: str,
                     f1r2_plus: bool,
                     keep_tmp: bool,
+                    min_mapq: int,
                     n_procs: int = 1,
                     **kwargs):
     """ Split reads in a BAM file into each strand. """
@@ -84,7 +85,8 @@ def sep_strands_bam(bam_file: Path,
     out_dir = bam_file.parent
     ref = bam_file.stem
     # Make a temporary directory for all splitting strand operations.
-    tmp_dir = path.randdir(out_dir, f"{ref}-")
+    tmp_dir = out_dir.joinpath(ref)
+    tmp_dir.mkdir(parents=False, exist_ok=False)
     # Write the minus-strand reference sequence to a FASTA file.
     if not minus_label:
         raise ValueError(
@@ -114,28 +116,30 @@ def sep_strands_bam(bam_file: Path,
         flags_exc_minus = [FLAG_REVERSE + FLAG_SECOND, 0]
     # Align the minus-strand reads to the minus-strand reference.
     bam_minus = out_dir.joinpath(ref_minus).with_suffix(path.BAM_EXT)
-    bam_dir = tmp_dir.joinpath("bam")
-    bam_dir.mkdir()
+    realign_dir = tmp_dir.joinpath("realign")
+    realign_dir.mkdir()
     run_realign(bam_file,
                 bam_minus,
-                tmp_dir=bam_dir,
+                tmp_pfx=realign_dir.joinpath(ref_minus),
                 index_pfx=index_minus,
                 paired=paired,
                 flags_req=flags_req_minus,
                 flags_exc=flags_exc_minus,
+                min_mapq=min_mapq,
                 n_procs=n_procs,
                 **kwargs)
     if not keep_tmp:
         rmtree(index_dir)
     # Extract the plus-strand reads.
-    bam_plus = bam_dir.joinpath(ref).with_suffix(path.BAM_EXT)
+    bam_plus = realign_dir.joinpath(ref).with_suffix(path.BAM_EXT)
     run_filter(bam_file,
                bam_plus,
-               tmp_dir=bam_dir,
+               tmp_pfx=realign_dir.joinpath(ref),
                collate=paired,
                flags_req=flags_req_plus,
                flags_exc=flags_exc_plus,
                n_procs=n_procs)
+    # This renaming overwrites the original BAM file of both strands.
     bam_plus.rename(bam_file)
     if not keep_tmp:
         rmtree(tmp_dir)
@@ -359,7 +363,8 @@ def fq_pipeline(fq_inp: FastqUnit,
                                           minus_label,
                                           f1r2_plus,
                                           keep_tmp,
-                                          n_procs,
+                                          min_mapq,
+                                          n_procs=n_procs,
                                           phred_arg=fq_inp.phred_arg,
                                           bt2_local=bt2_local,
                                           bt2_discordant=bt2_discordant,
@@ -477,8 +482,7 @@ def fq_pipeline(fq_inp: FastqUnit,
     if sep_strands:
         # Write a FASTA file of all references, including the reverse
         # strands, for use in the relate step.
-        refs_name = f"{fasta.stem}{minus_label}"
-        fasta_path = report_saved.with_stem(refs_name).with_suffix(fasta.suffix)
+        fasta_path = report_saved.parent.joinpath(fasta.name)
         write_fasta(fasta_path, ref_seqs.items())
     return release_to_out(out_dir, release_dir, report_saved.parent)
 

@@ -281,9 +281,7 @@ def xamgen_cmd(fq_inp: FastqUnit,
                                  flags_req=flags_req,
                                  flags_exc=flags_exc,
                                  bam=True)
-    sort_xam_step = sort_xam_cmd(None,
-                                 bam_out,
-                                 tmp_dir=bam_out.parent)
+    sort_xam_step = sort_xam_cmd(None, bam_out)
     return cmds_to_pipe([bowtie2_step, view_xam_step, sort_xam_step])
 
 
@@ -294,7 +292,7 @@ run_xamgen = ShellCommand("aligning, filtering, and sorting by position",
 
 def filter_cmds(xam_inp: Path,
                 xam_out: Path | None, *,
-                tmp_dir: Path | None = None,
+                tmp_pfx: Path | None = None,
                 flags_req: int | Iterable[int] | None = None,
                 flags_exc: int | Iterable[int] | None = None,
                 collate: bool = True,
@@ -324,7 +322,7 @@ def filter_cmds(xam_inp: Path,
         # Paired-end reads must first be collated.
         cmds.append(collate_xam_cmd(None if cmds else xam_inp,
                                     xam_out,
-                                    tmp_dir=tmp_dir,
+                                    tmp_pfx=tmp_pfx,
                                     fast=True,
                                     n_procs=n_procs))
     return cmds
@@ -342,31 +340,30 @@ run_filter = ShellCommand("filtering and collating",
 def realign_cmd(xam_inp: Path,
                 xam_out: Path, *,
                 paired: bool,
-                tmp_dir: Path | None = None,
+                tmp_pfx: Path | None = None,
                 flags_req: int | Iterable[int] | None = None,
                 flags_exc: int | Iterable[int] | None = None,
+                min_mapq: int | None = None,
                 n_procs: int = 1,
                 **kwargs):
     """ Re-align reads that are already in a XAM file. """
     cmds = filter_cmds(xam_inp,
                        None,
-                       tmp_dir=tmp_dir,
+                       tmp_pfx=tmp_pfx,
                        collate=paired,
                        flags_req=flags_req,
                        flags_exc=flags_exc)
     # Convert the reads to FASTQ format.
     cmds.append(xam_to_fastq_cmd(None, None))
     # Re-align the reads from the BAM file using Bowtie2.
-    bowtie2_output = xam_out if xam_out.suffix == path.SAM_EXT else None
-    bowtie2_threads = max(n_procs - len(cmds) - int(bowtie2_output is None), 1)
+    bowtie2_threads = max(n_procs - len(cmds) - 1, 1)
     cmds.append(bowtie2_cmd(None,
-                            bowtie2_output,
+                            None,
                             paired=paired,
                             n_procs=bowtie2_threads,
                             **kwargs))
-    if bowtie2_output is None:
-        # Convert the SAM output into XAM format.
-        cmds.append(view_xam_cmd(None, xam_out))
+    # Filter low-quality alignments.
+    cmds.append(view_xam_cmd(None, xam_out, min_mapq=min_mapq))
     return cmds_to_pipe(cmds)
 
 

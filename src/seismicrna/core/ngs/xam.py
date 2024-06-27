@@ -69,7 +69,7 @@ run_index_xam = ShellCommand("indexing alignment map",
 
 def sort_xam_cmd(xam_inp: Path | None,
                  xam_out: Path | None, *,
-                 tmp_dir: Path | None = None,
+                 tmp_pfx: Path | None = None,
                  name: bool = False,
                  n_procs: int = 1):
     """ Sort a SAM or BAM file using `samtools sort`. """
@@ -78,9 +78,11 @@ def sort_xam_cmd(xam_inp: Path | None,
     if name:
         # Sort by name instead of coordinate.
         args.append("-n")
-    if tmp_dir:
-        # Write temporary files to this directory.
-        args.extend(["-T", tmp_dir])
+    # Write temporary files with this prefix.
+    if tmp_pfx is None and xam_out is not None:
+        tmp_pfx = xam_out.with_suffix("")
+    if tmp_pfx is not None:
+        args.extend(["-T", tmp_pfx])
     if xam_out:
         args.extend(["-o", xam_out])
     else:
@@ -93,7 +95,7 @@ def sort_xam_cmd(xam_inp: Path | None,
 
 def collate_xam_cmd(xam_inp: Path | None,
                     xam_out: Path | None, *,
-                    tmp_dir: Path | None = None,
+                    tmp_pfx: Path | None = None,
                     fast: bool = False,
                     n_procs: int = 1):
     """ Collate a SAM or BAM file using `samtools collate`. """
@@ -102,9 +104,11 @@ def collate_xam_cmd(xam_inp: Path | None,
     if fast:
         # Use fast mode (outputs primary alignments only).
         args.append("-f")
-    if tmp_dir:
-        # Write temporary files to this directory.
-        args.extend(["-T", tmp_dir])
+    # Write temporary files with this prefix.
+    if tmp_pfx is None and xam_out is not None:
+        tmp_pfx = xam_out.with_suffix("")
+    if tmp_pfx is not None:
+        args.extend(["-T", tmp_pfx])
     if xam_out:
         args.extend(["-o", xam_out])
     else:
@@ -317,6 +321,7 @@ def xam_to_fastq_cmd(xam_inp: Path | None,
                      fq_out: Path | None, *,
                      flags_req: int | None = None,
                      flags_exc: int | None = None,
+                     label_12: bool = False,
                      n_procs: int = 1):
     """ Convert XAM format to FASTQ format, and filter by flags. """
     args = [SAMTOOLS_CMD, "fastq",
@@ -327,6 +332,9 @@ def xam_to_fastq_cmd(xam_inp: Path | None,
     if flags_exc is not None:
         # Exclude these flags.
         args.extend(["-F", flags_exc])
+    if not label_12:
+        # Do not add /1 or /2 labels to names of paired-end reads.
+        args.append("-n")
     args.append(xam_inp if xam_inp is not None else "-")
     if fq_out is not None:
         args.extend([">", fq_out])

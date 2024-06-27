@@ -92,7 +92,7 @@ def tmp_xam_cmd(xam_in: Path, xam_out: Path, n_procs: int = 1):
     # Collate the XAM file so paired mates are adjacent.
     collate_step = collate_xam_cmd(xam_in,
                                    None,
-                                   tmp_dir=xam_out.parent,
+                                   tmp_pfx=xam_out.with_suffix(""),
                                    fast=True,
                                    n_procs=max(n_procs - 1, 1))
     # Remove the header.
