@@ -2,7 +2,7 @@ from functools import wraps
 from inspect import Parameter, Signature
 from logging import getLogger
 from pathlib import Path
-from shutil import move, rmtree
+from shutil import rmtree
 from typing import Callable
 
 from .path import randdir, sanitize, transpath
@@ -13,26 +13,49 @@ PENDING = "release"
 WORKING = "working"
 
 
-def release_to_out(out_dir: str | Path,
-                   release_dir: str | Path,
-                   initial_path: str | Path):
+def release_to_out(out_dir: Path,
+                   release_dir: Path,
+                   initial_path: Path):
     """ Move temporary path(s) to the output directory. """
     # Determine the path in the output directory.
     out_path = transpath(out_dir, release_dir, initial_path)
     if initial_path.exists():
-        # Delete the new path if it already exists.
+        # If the output path already exists, then first rename it.
+        delete_path = randdir(out_path.parent, f"{out_path.name}-")
         try:
-            rmtree(out_path)
-        except OSError:
-            pass
+            out_path.rename(delete_path)
+        except FileNotFoundError:
+            # The output path does not yet exist.
+            deleted = False
+            logger.debug(f"Output path {out_path} does not yet exist")
         else:
-            logger.info(f"Deleted existing outputs in {out_path}")
-        # Ensure the parent directory of the new path exists.
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        # Move the temporary path to the new location.
-        move(initial_path, out_path.parent)
+            deleted = True
+            logger.debug(f"Moved {out_path} to {delete_path} (to be deleted)")
+        try:
+            # Ensure the parent directory of the new path exists.
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            # Move the initial path to the output location.
+            initial_path.rename(out_path)
+            logger.debug(f"Moved {initial_path} to {out_path}")
+        except Exception:
+            if deleted:
+                # If an error occurred, then restore the original output
+                # path before raising the exception.
+                delete_path.rename(out_path)
+                logger.debug(f"Restored {out_path} from {delete_path}")
+            raise
+        if deleted:
+            # Once the initial path has been moved to its destination,
+            # it is safe to delete the original directory.
+            try:
+                rmtree(delete_path)
+            except Exception as error:
+                logger.warning(f"Failed to delete {delete_path} (but it is no "
+                               f"longer needed, and safe to delete): {error}")
+            else:
+                logger.debug(f"Deleted {delete_path}")
     else:
-        logger.debug(f"Skipped releasing non-existent path {initial_path}")
+        logger.debug(f"Skipped releasing {initial_path} (does not exist)")
     if not out_path.exists():
         raise FileNotFoundError(out_path)
     logger.info(f"Released {initial_path} to {out_path}")
