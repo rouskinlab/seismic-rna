@@ -226,6 +226,12 @@ def run(fasta: str,
         graph_roc: bool,
         graph_aucroll: bool):
     """ Run the entire workflow. """
+    if sep_strands:
+        raise NotImplementedError("'seismic wf' cannot handle --sep-strands; "
+                                  "run 'seismic align', then use the file it "
+                                  "creates of both plus- and minus-strand "
+                                  "references as the FASTA (and the BAM files "
+                                  "as input files) for 'seismic wf'")
     # Demultiplex
     if demult_on:
         for dms, dmi, dmm in demultiplex_mod.run_dm(
