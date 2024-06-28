@@ -133,7 +133,7 @@ class XamViewer(object):
 
     @cached_property
     def flagstats(self) -> dict:
-        return run_flagstat(self.xam_input)
+        return run_flagstat(self.xam_input, n_procs=self.n_procs)
 
     @cached_property
     def paired(self):

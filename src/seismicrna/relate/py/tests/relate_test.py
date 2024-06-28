@@ -1,15 +1,80 @@
 import unittest as ut
 from itertools import chain, product
 
-from seismicrna.align.sim import as_sam
 from seismicrna.core.arg import opt_min_mapq
-from seismicrna.core.ngs import LO_QUAL, OK_QUAL
+from seismicrna.core.ngs import LO_QUAL, OK_QUAL, MAX_FLAG, SAM_DELIM
 from seismicrna.core.rel import DELET, IRREC, MATCH, NOCOV, SUB_G
 from seismicrna.core.seq import DNA
 from seismicrna.relate.py.cigar import CIG_ALIGN, CIG_DELET, CIG_SCLIP
 from seismicrna.relate.py.encode import encode_relate
 from seismicrna.relate.py.relate import _find_rels_read, _merge_mates, SamRead
 from seismicrna.relate.aux.iterread import iter_alignments
+
+
+def as_sam(name: str,
+           flag: int,
+           ref: str,
+           end5: int,
+           mapq: int,
+           cigar: str,
+           rnext: str,
+           pnext: int,
+           tlen: int,
+           read: DNA,
+           qual: str):
+    """
+    Return a line in SAM format from the given fields.
+
+    Parameters
+    ----------
+    name: str
+        Name of the read.
+    flag: int
+        SAM flag. Must be in [0, MAX_FLAG].
+    ref: str
+        Name of the reference.
+    end5: int
+        Most 5' position to which the read mapped (1-indexed).
+    mapq: int
+        Mapping quality score.
+    cigar: str
+        CIGAR string. Not checked for compatibility with the read.
+    rnext: str
+        Name of the mate's reference (if paired-end).
+    pnext: int
+        Most 5' position of the mate (if paired-end).
+    tlen: int
+        Length of the template.
+    read: DNA
+        Base calls in the read. Must be equal in length to `read`.
+    qual: str
+        Phred quality score string of the base calls. Must be equal in
+        length to `read`.
+
+    Returns
+    -------
+    str
+        A line in SAM format containing the given fields.
+    """
+    if not name:
+        raise ValueError("Read name is empty")
+    if not 0 <= flag <= MAX_FLAG:
+        raise ValueError(f"Invalid SAM flag: {flag}")
+    if not ref:
+        raise ValueError("Reference name is empty")
+    if not end5 >= 1:
+        raise ValueError(f"Invalid 5' mapping position: {end5}")
+    if not cigar:
+        raise ValueError("CIGAR string is empty")
+    if not rnext:
+        raise ValueError("Next reference name is empty")
+    if not pnext >= 0:
+        raise ValueError(f"Invalid next 5' mapping position: {pnext}")
+    if not len(read) == len(qual):
+        raise ValueError(
+            f"Lengths of read ({len(read)}) and qual ({len(qual)}) disagree")
+    return SAM_DELIM.join(map(str, (name, flag, ref, end5, mapq, cigar, rnext,
+                                    pnext, tlen, read, f"{qual}\n")))
 
 
 class TestFindRelsLine(ut.TestCase):

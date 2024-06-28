@@ -63,9 +63,11 @@ from ..core.extern import (BOWTIE2_CMD,
                            cmds_to_subshell,
                            ShellCommand)
 from ..core.ngs import (collate_xam_cmd,
+                        run_flagstat,
                         sort_xam_cmd,
                         view_xam_cmd,
                         xam_to_fastq_cmd,
+                        xam_paired,
                         FLAG_PAIRED,
                         FLAG_UNMAP,
                         FLAG_SECONDARY,
@@ -295,9 +297,11 @@ def filter_cmds(xam_inp: Path,
                 tmp_pfx: Path | None = None,
                 flags_req: int | Iterable[int] | None = None,
                 flags_exc: int | Iterable[int] | None = None,
-                collate: bool = True,
+                paired: bool | None = None,
                 n_procs: int = 1):
     """ Filter a XAM file based on flags, then collate the output. """
+    if paired is None:
+        paired = xam_paired(run_flagstat(xam_inp, n_procs=n_procs))
     cmds = list()
     if flags_req is not None or flags_exc is not None:
         # Pre-filter the reads for specific flags.
@@ -308,7 +312,7 @@ def filter_cmds(xam_inp: Path,
         view_xam_cmds = [view_xam_cmd(xam_inp,
                                       (xam_out
                                        if (i == len(flags_req) - 1
-                                           and not collate)
+                                           and not paired)
                                        else None),
                                       sam=True,
                                       with_header=(i == 0),
@@ -318,7 +322,7 @@ def filter_cmds(xam_inp: Path,
                                                             flags_exc,
                                                             strict=True))]
         cmds.append(cmds_to_subshell(view_xam_cmds))
-    if collate:
+    if paired:
         # Paired-end reads must first be collated.
         cmds.append(collate_xam_cmd(None if cmds else xam_inp,
                                     xam_out,
@@ -339,7 +343,7 @@ run_filter = ShellCommand("filtering and collating",
 
 def realign_cmd(xam_inp: Path,
                 xam_out: Path, *,
-                paired: bool,
+                paired: bool | None = None,
                 tmp_pfx: Path | None = None,
                 flags_req: int | Iterable[int] | None = None,
                 flags_exc: int | Iterable[int] | None = None,
@@ -347,10 +351,12 @@ def realign_cmd(xam_inp: Path,
                 n_procs: int = 1,
                 **kwargs):
     """ Re-align reads that are already in a XAM file. """
+    if paired is None:
+        paired = xam_paired(run_flagstat(xam_inp, n_procs=n_procs))
     cmds = filter_cmds(xam_inp,
                        None,
                        tmp_pfx=tmp_pfx,
-                       collate=paired,
+                       paired=paired,
                        flags_req=flags_req,
                        flags_exc=flags_exc)
     # Convert the reads to FASTQ format.

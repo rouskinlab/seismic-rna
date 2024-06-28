@@ -4,27 +4,27 @@ from pathlib import Path
 logger = getLogger(__name__)
 
 
-def need_write(file: Path, force: bool = False, warn: bool = True):
-    """ Determine whether a file must be written.
+def need_write(query: Path, force: bool = False, warn: bool = True):
+    """ Determine whether a file/directory must be written.
 
     Parameters
     ----------
-    file: Path
-        File for which to check the need for writing.
+    query: Path
+        File or directory for which to check the need for writing.
     force: bool = False
-        Force the file to be written, even if it already exists.
+        Force the query to be written, even if it already exists.
     warn: bool = True
-        If the file does not need to be written, then log a warning.
+        If the query does not need to be written, then log a warning.
 
     Returns
     -------
     bool
         Whether the file must be written.
     """
-    if force or not file.is_file():
+    if force or not query.exists():
         return True
     if warn:
-        logger.warning(f"File exists (use --force to overwrite): {file}")
+        logger.warning(f"{query} exists: use --force to overwrite")
     return False
 
 

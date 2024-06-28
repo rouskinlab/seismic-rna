@@ -13,6 +13,7 @@ calls the function cli() defined in this module.
 
 import cProfile
 import os
+from logging import getLogger
 
 from click import Context, group, pass_context, version_option
 
@@ -34,6 +35,7 @@ from . import (wf,
                cleanfa,
                renumct,
                __version__)
+from .align import split
 from .core import rna
 from .core.arg import (opt_log,
                        opt_log_color,
@@ -41,6 +43,8 @@ from .core.arg import (opt_log,
                        opt_quiet,
                        opt_verbose)
 from .core.logs import set_config
+
+logger = getLogger(__name__)
 
 params = [
     opt_verbose,
@@ -72,6 +76,7 @@ def cli(ctx: Context,
     else:
         log_file = None
     set_config(verbose, quiet, log_file, log_color)
+    logger.info(f"This is SEISMIC-RNA version {__version__}")
     # If no subcommand was given, then run the entire pipeline.
     if ctx.invoked_subcommand is None:
         if profile:
@@ -79,7 +84,7 @@ def cli(ctx: Context,
             # Profile the program as it runs and write results to the
             # file given in the parameter profile.
             os.makedirs(os.path.dirname(profile_path), exist_ok=True)
-            cProfile.runctx("alls.run(**kwargs)",
+            cProfile.runctx("wf.run(**kwargs)",
                             globals=globals(),
                             locals=locals(),
                             filename=profile_path,
@@ -107,6 +112,7 @@ for module in (wf,
                cleanfa,
                renumct):
     cli.add_command(module.cli)
+cli.add_command(split.cli)
 cli.add_command(cluster.addclust.cli)
 cli.add_command(cluster.delclust.cli)
 cli.add_command(lists.listpos.cli)

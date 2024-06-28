@@ -14,6 +14,7 @@ from ..core.extern import (GUNZIP_CMD,
 logger = getLogger(__name__)
 
 FQ_LINES_PER_READ = 4
+PHRED_ENCS = {33, 64}
 
 
 def fastq_gz(fastq_file: Path):
@@ -51,6 +52,14 @@ def count_fastq_reads(fastq_file: Path):
                         parse_stdout_count_fastq_reads,
                         opath=False)
     return step(fastq_file)
+
+
+def format_phred_arg(phred_enc: int):
+    """ Format a Phred score argument for Bowtie2. """
+    if phred_enc not in PHRED_ENCS:
+        logger.warning(f"Expected phred_enc to be one of {PHRED_ENCS}, "
+                       f"but got {phred_enc}, which may cause problems")
+    return f"--phred{phred_enc}"
 
 
 class FastqUnit(object):
@@ -121,11 +130,11 @@ class FastqUnit(object):
                      + ", ".join(f"{k} = {v}" for k, v in self.paths.items())
                      + f", phred_enc = {phred_enc}, one_ref = {one_ref}")
 
-    @property
+    @cached_property
     def phred_arg(self):
-        return f"--phred{self.phred_enc}"
+        return format_phred_arg(self.phred_enc)
 
-    @property
+    @cached_property
     def kind(self):
         cls = type(self).__name__
         if self.paired:

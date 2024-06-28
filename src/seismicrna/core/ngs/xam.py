@@ -93,6 +93,9 @@ def sort_xam_cmd(xam_inp: Path | None,
     return args_to_cmd(args)
 
 
+run_sort_xam = ShellCommand("sorting alignment map", sort_xam_cmd)
+
+
 def collate_xam_cmd(xam_inp: Path | None,
                     xam_out: Path | None, *,
                     tmp_pfx: Path | None = None,
@@ -257,8 +260,9 @@ def xam_paired(flagstats: dict):
                          f"(n = {paired_one + paired_two}) reads")
     # The pairing status cannot be determined if there are no reads.
     if not paired and not single:
-        return None
-    # Otherwise, return True if paired-end and False if single-end.
+        logger.warning("Got 0 reads: neither single-end nor paired-end")
+    # Return True if definitely paired-end, False if single-end or if
+    # there are no reads.
     return paired
 
 

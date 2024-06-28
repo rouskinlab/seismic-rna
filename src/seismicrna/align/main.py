@@ -83,10 +83,6 @@ def run(fasta: str, *,
         out_dir: str,
         tmp_dir: Path,
         keep_tmp: bool,
-        force: bool,
-        # Parallelization
-        max_procs: int,
-        parallel: bool,
         # FASTQC
         fastqc: bool,
         qc_extract: bool,
@@ -128,7 +124,11 @@ def run(fasta: str, *,
         min_reads: int,
         sep_strands: bool,
         f1r2_plus: bool,
-        minus_label: str) -> list[Path]:
+        minus_label: str,
+        # Parallelization
+        max_procs: int,
+        parallel: bool,
+        force: bool) -> list[Path]:
     """ Trim FASTQ files and align them to reference sequences. """
     # Check for external dependencies.
     if fastqc:
@@ -212,11 +212,7 @@ params = [
     # Outputs
     opt_out_dir,
     opt_tmp_pfx,
-    opt_force,
     opt_keep_tmp,
-    # Parallelization
-    opt_parallel,
-    opt_max_procs,
     # FASTQC
     opt_fastqc,
     opt_qc_extract,
@@ -259,6 +255,10 @@ params = [
     opt_sep_strands,
     opt_f1r2_plus,
     opt_minus_label,
+    # Parallelization
+    opt_parallel,
+    opt_max_procs,
+    opt_force,
 ]
 
 
