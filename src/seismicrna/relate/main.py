@@ -13,6 +13,7 @@ from pathlib import Path
 from click import command
 
 from .write import write_all
+from ..align.write import format_ref_minus
 from ..core import path
 from ..core.arg import (CMD_REL,
                         arg_input_path,
@@ -29,13 +30,30 @@ from ..core.arg import (CMD_REL,
                         opt_clip_end5,
                         opt_clip_end3,
                         opt_brotli_level,
+                        opt_sep_strands,
+                        opt_minus_label,
                         opt_parallel,
                         opt_max_procs,
                         opt_force,
                         opt_keep_tmp)
 from ..core.run import run_func
+from ..core.seq import DNA, parse_fasta, write_fasta
 
 logger = getLogger(__name__)
+
+
+def generate_both_strands(ref: str, seq: DNA, minus_label: str):
+    """ Yield both the plus and minus strand for each sequence. """
+    yield ref, seq
+    yield format_ref_minus(ref, minus_label), seq.rc
+
+
+def write_both_strands(fasta_in: Path, fasta_out: Path, minus_label: str):
+    """ Write a FASTA file of both plus and minus strands. """
+    write_fasta(fasta_out,
+                (strand
+                 for ref, seq in parse_fasta(fasta_in, DNA)
+                 for strand in generate_both_strands(ref, seq, minus_label)))
 
 
 @run_func(logger.critical, with_tmp=True, pass_keep_tmp=True)
@@ -52,15 +70,26 @@ def run(fasta: str,
         overhangs: bool,
         clip_end5: int,
         clip_end3: int,
+        sep_strands: bool,
+        minus_label: str,
         max_procs: int,
         parallel: bool,
         brotli_level: int,
         force: bool,
         keep_tmp: bool):
     """ Compute relationships between references and aligned reads. """
+    fasta = Path(fasta)
+    if sep_strands:
+        # Create a temporary FASTA file of both plus and minus strands.
+        fasta_dir = tmp_dir.joinpath("fasta")
+        fasta_dir.mkdir(parents=True, exist_ok=False)
+        relate_fasta = fasta_dir.joinpath(fasta.name)
+        write_both_strands(fasta, relate_fasta, minus_label)
+    else:
+        relate_fasta = fasta
     return write_all(xam_files=path.find_files_chain(map(Path, input_path),
                                                      path.XAM_SEGS),
-                     fasta=Path(fasta),
+                     fasta=relate_fasta,
                      out_dir=Path(out_dir),
                      tmp_dir=tmp_dir,
                      min_reads=min_reads,
@@ -84,6 +113,8 @@ params = [
     # Input files
     arg_fasta,
     arg_input_path,
+    opt_sep_strands,
+    opt_minus_label,
     # Output directories
     opt_out_dir,
     opt_tmp_pfx,
