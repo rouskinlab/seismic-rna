@@ -840,15 +840,15 @@ def align_samples(fq_units: list[FastqUnit],
         fqs_to_align, xams_extant = list_fqs_xams(fq_units, refs, out_dir)
     if fqs_to_align:
         # Align all FASTQs that need to be aligned.
-        xams_new = set(fqs_pipeline(fqs_to_align,
-                                    fasta,
-                                    out_dir=out_dir,
-                                    **kwargs))
+        xam_dirs_new = set(fqs_pipeline(fqs_to_align,
+                                        fasta,
+                                        out_dir=out_dir,
+                                        **kwargs))
     else:
         logger.warning("All given FASTQ files have already been aligned")
-        xams_new = set()
+        xam_dirs_new = set()
     # Merge the existing and new XAM paths into a tuple of strings.
-    return list(xams_extant | xams_new)
+    return list({xam.parent for xam in xams_extant} | xam_dirs_new)
 
 ########################################################################
 #                                                                      #
