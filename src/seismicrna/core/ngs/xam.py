@@ -132,9 +132,9 @@ def view_xam_cmd(xam_inp: Path | None,
                  cram: bool = False,
                  with_header: bool = False,
                  only_header: bool = False,
-                 min_mapq: int | None = None,
-                 flags_req: int | None = None,
-                 flags_exc: int | None = None,
+                 min_mapq: int = 0,
+                 flags_req: int = 0,
+                 flags_exc: int = 0,
                  ref: str | None = None,
                  end5: int | None = None,
                  end3: int | None = None,
@@ -146,15 +146,23 @@ def view_xam_cmd(xam_inp: Path | None,
     args = [SAMTOOLS_CMD, "view",
             "-@", calc_extra_threads(n_procs)]
     # Read filters
-    if min_mapq is not None:
+    if min_mapq:
         # Require minimum mapping quality.
         args.extend(["-q", min_mapq])
-    if flags_req is not None:
+    if flags_req:
         # Require these flags.
         args.extend(["-f", flags_req])
-    if flags_exc is not None:
+    if flags_exc:
         # Exclude these flags.
         args.extend(["-F", flags_exc])
+    # Header
+    if with_header:
+        args.append("-h")
+    if only_header:
+        args.append("-H")
+    # Reference file
+    if refs_file:
+        args.extend(["-T", refs_file])
     # Output format
     if cram:
         args.append("-C")
@@ -168,13 +176,6 @@ def view_xam_cmd(xam_inp: Path | None,
         args.append("-b")
         if sam:
             logger.warning("Both BAM and SAM flags were set: using BAM")
-    if with_header:
-        args.append("-h")
-    if only_header:
-        args.append("-H")
-    # Reference file
-    if refs_file:
-        args.extend(["-T", refs_file])
     # Input and output files
     if xam_out:
         args.extend(["-o", xam_out])
@@ -184,7 +185,7 @@ def view_xam_cmd(xam_inp: Path | None,
     if xam_inp:
         args.append(xam_inp)
     # Reference and section specification
-    if ref is not None:
+    if ref:
         if end5 is not None and end3 is not None:
             # View only reads aligning to a section of this reference.
             args.append(f"{ref}:{end5}-{end3}")

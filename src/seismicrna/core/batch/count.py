@@ -182,12 +182,13 @@ def calc_coverage(pos_index: pd.Index,
                                                    base_count)
     # Reformat the coverage into pandas objects.
     cover_per_pos = cover_per_pos[positions - 1]
-    cover_per_pos = (pd.DataFrame(cover_per_pos,
-                                  index=pos_index,
-                                  columns=read_weights.columns)
-                     if read_weights is not None
-                     else pd.Series(cover_per_pos.reshape(positions.size),
-                                    index=pos_index))
+    if read_weights is not None:
+        cover_per_pos = pd.DataFrame(cover_per_pos,
+                                     index=pos_index,
+                                     columns=read_weights.columns)
+    else:
+        cover_per_pos = pd.Series(cover_per_pos.reshape(positions.size),
+                                  index=pos_index)
     cover_per_read = pd.DataFrame.from_dict(
         {base: pd.Series((cover_per_read[uniq_inverse, bases.index(base)]
                           if base in bases

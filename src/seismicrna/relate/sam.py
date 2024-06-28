@@ -87,17 +87,20 @@ def _iter_records_paired(sam_file: TextIO):
         yield prev_line, ""
 
 
-def tmp_xam_cmd(xam_in: Path, xam_out: Path, n_procs: int = 1):
+def tmp_xam_cmd(xam_in: Path, xam_out: Path, paired: bool, n_procs: int = 1):
     """ Collate and create a temporary XAM file. """
-    # Collate the XAM file so paired mates are adjacent.
-    collate_step = collate_xam_cmd(xam_in,
-                                   None,
-                                   tmp_pfx=xam_out.with_suffix(""),
-                                   fast=True,
-                                   n_procs=max(n_procs - 1, 1))
+    if paired:
+        # Collate the XAM file so paired mates are adjacent.
+        collate_step = collate_xam_cmd(xam_in,
+                                       None,
+                                       tmp_pfx=xam_out.with_suffix(""),
+                                       fast=True,
+                                       n_procs=max(n_procs - 1, 1))
+        # Remove the header.
+        view_step = view_xam_cmd(None, xam_out)
+        return cmds_to_pipe([collate_step, view_step])
     # Remove the header.
-    view_step = view_xam_cmd(None, xam_out)
-    return cmds_to_pipe([collate_step, view_step])
+    return view_xam_cmd(xam_in, xam_out)
 
 
 run_tmp_xam = ShellCommand("collating reads and creating temporary SAM file",
@@ -132,19 +135,17 @@ class XamViewer(object):
         return ref
 
     @cached_property
-    def flagstats(self) -> dict:
+    def flagstats(self):
         return run_flagstat(self.xam_input, n_procs=self.n_procs)
 
     @cached_property
     def paired(self):
-        if (paired := xam_paired(self.flagstats)) is None:
-            logger.warning(f"Failed to determine whether {self.xam_input} has "
-                           "single- or paired-end reads. Most likely, the file "
-                           "contains no reads. It could also be corrupted.")
-        return bool(paired)
+        """ Whether the reads are paired. """
+        return xam_paired(self.flagstats)
 
     @cached_property
     def n_reads(self):
+        """ Total number of reads. """
         return count_total_reads(self.flagstats)
 
     @cached_property
@@ -160,7 +161,10 @@ class XamViewer(object):
 
     def create_tmp_sam(self):
         """ Create the temporary SAM file. """
-        run_tmp_xam(self.xam_input, self.tmp_sam_path, n_procs=self.n_procs)
+        run_tmp_xam(self.xam_input,
+                    self.tmp_sam_path,
+                    paired=self.paired,
+                    n_procs=self.n_procs)
 
     def delete_tmp_sam(self):
         """ Delete the temporary SAM file. """

@@ -9,14 +9,15 @@ from .report import AlignRefReport, AlignSampleReport
 from .xamops import (run_bowtie2_build,
                      get_bowtie2_index_paths,
                      run_export,
-                     run_filter,
+                     run_flags,
                      run_realign,
                      run_xamgen)
 from ..core import path
 from ..core.arg import CMD_ALIGN
 from ..core.logs import exc_info
-from ..core.ngs import (FLAG_REVERSE,
+from ..core.ngs import (FLAG_FIRST,
                         FLAG_SECOND,
+                        FLAG_REVERSE,
                         count_single_paired,
                         count_total_reads,
                         run_flagstat,
@@ -80,6 +81,37 @@ def write_tmp_ref_files(tmp_dir: Path,
     return ref_paths
 
 
+def calc_flags(f1r2_plus: bool, paired: bool):
+    """ Calculate flags for separating strands. """
+    if paired:
+        flags_req_plus = [FLAG_FIRST, FLAG_SECOND]
+        flags_exc_plus = [FLAG_SECOND, FLAG_FIRST]
+        flags_req_minus = [FLAG_FIRST, FLAG_SECOND]
+        flags_exc_minus = [FLAG_SECOND, FLAG_FIRST]
+    else:
+        flags_req_plus = [0]
+        flags_exc_plus = [0]
+        flags_req_minus = [0]
+        flags_exc_minus = [0]
+    if f1r2_plus:
+        # Align forward read 1s and reverse read 2s to the plus strand.
+        # Align reverse read 1s and forward read 2s to the minus strand.
+        if paired:
+            flags_req_plus[1] |= FLAG_REVERSE
+            flags_exc_minus[1] |= FLAG_REVERSE
+        flags_exc_plus[0] |= FLAG_REVERSE
+        flags_req_minus[0] |= FLAG_REVERSE
+    else:
+        # Align reverse read 1s and forward read 2s to the plus strand.
+        # Align forward read 1s and reverse read 2s to the minus strand.
+        if paired:
+            flags_req_minus[1] |= FLAG_REVERSE
+            flags_exc_plus[1] |= FLAG_REVERSE
+        flags_exc_minus[0] |= FLAG_REVERSE
+        flags_req_plus[0] |= FLAG_REVERSE
+    return (flags_req_plus, flags_exc_plus), (flags_req_minus, flags_exc_minus)
+
+
 def separate_strands(xam_file: Path,
                      fasta: Path,
                      paired: bool | None,
@@ -94,6 +126,9 @@ def separate_strands(xam_file: Path,
         paired = xam_paired(run_flagstat(xam_file, n_procs=n_procs))
     out_dir = xam_file.parent
     ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
+    # Calculate the flags.
+    ((flags_req_plus, flags_exc_plus),
+     (flags_req_minus, flags_exc_minus)) = calc_flags(f1r2_plus, paired)
     # Make a temporary directory for all splitting strand operations.
     tmp_dir = out_dir.joinpath(ref)
     tmp_dir.mkdir(parents=False, exist_ok=False)
@@ -107,20 +142,6 @@ def separate_strands(xam_file: Path,
     # Index the minus-strand reference.
     index_minus = fasta_minus.with_suffix("")
     run_bowtie2_build(fasta_minus, index_minus, n_procs=n_procs)
-    if f1r2_plus:
-        # Align forward read 1s and reverse read 2s to the plus strand.
-        flags_req_plus = [0, FLAG_REVERSE + FLAG_SECOND]
-        flags_exc_plus = [FLAG_REVERSE + FLAG_SECOND, 0]
-        # Align reverse read 1s and forward read 2s to the minus strand.
-        flags_req_minus = [FLAG_REVERSE, FLAG_SECOND]
-        flags_exc_minus = [FLAG_SECOND, FLAG_REVERSE]
-    else:
-        # Align reverse read 1s and forward read 2s to the plus strand.
-        flags_req_plus = [FLAG_REVERSE, FLAG_SECOND]
-        flags_exc_plus = [FLAG_SECOND, FLAG_REVERSE]
-        # Align forward read 1s and reverse read 2s to the minus strand.
-        flags_req_minus = [0, FLAG_REVERSE + FLAG_SECOND]
-        flags_exc_minus = [FLAG_REVERSE + FLAG_SECOND, 0]
     # Align the minus-strand reads to the minus-strand reference.
     bam_minus = out_dir.joinpath(ref_minus).with_suffix(path.BAM_EXT)
     realign_dir = tmp_dir.joinpath("realign")
@@ -139,13 +160,12 @@ def separate_strands(xam_file: Path,
         rmtree(index_dir)
     # Extract the plus-strand reads.
     bam_plus = realign_dir.joinpath(ref).with_suffix(path.BAM_EXT)
-    run_filter(xam_file,
-               bam_plus,
-               tmp_pfx=realign_dir.joinpath(ref),
-               paired=paired,
-               flags_req=flags_req_plus,
-               flags_exc=flags_exc_plus,
-               n_procs=n_procs)
+    run_flags(xam_file,
+              bam_plus,
+              tmp_pfx=realign_dir.joinpath(ref),
+              flags_req=flags_req_plus,
+              flags_exc=flags_exc_plus,
+              n_procs=n_procs)
     # This renaming overwrites the original BAM file of both strands.
     bam_plus.rename(xam_file)
     if not keep_tmp:

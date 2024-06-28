@@ -190,13 +190,16 @@ class PartialTabulator(Tabulator, ABC):
                                ">1 GB of memory. If this is impractical, you "
                                "can (at the cost of lower accuracy) disable "
                                "bias correction using --min-mut-gap 0.")
-            return adjust_counts(table_per_pos,
-                                 self.p_ends_given_noclose,
-                                 self._num_reads,
-                                 self.section,
-                                 self.dataset.min_mut_gap,
-                                 self.dataset.quick_unbias,
-                                 self.dataset.quick_unbias_thresh)
+            try:
+                return adjust_counts(table_per_pos,
+                                     self.p_ends_given_noclose,
+                                     self._num_reads,
+                                     self.section,
+                                     self.dataset.min_mut_gap,
+                                     self.dataset.quick_unbias,
+                                     self.dataset.quick_unbias_thresh)
+            except Exception as error:
+                logger.warning(f"Bias correction failed: {error}")
         return table_per_pos, self._num_reads
 
     @cached_property

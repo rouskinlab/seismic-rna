@@ -100,6 +100,10 @@ class TestAlignmentScoreParams(ut.TestCase):
         match, subst, ambig, gapop, gapex = self.parse_all_scores()
         self.assertGreater(2 * gapop + 2 * gapex, match + 2 * subst)
 
+
+if __name__ == "__main__":
+    ut.main()
+
 ########################################################################
 #                                                                      #
 # © Copyright 2024, the Rouskin Lab.                                   #

@@ -292,73 +292,77 @@ run_xamgen = ShellCommand("aligning, filtering, and sorting by position",
                           parse_bowtie2)
 
 
-def filter_cmds(xam_inp: Path,
-                xam_out: Path | None, *,
-                tmp_pfx: Path | None = None,
-                flags_req: int | Iterable[int] | None = None,
-                flags_exc: int | Iterable[int] | None = None,
-                paired: bool | None = None,
-                n_procs: int = 1):
+def flags_cmds(xam_inp: Path,
+               xam_out: Path | None, *,
+               tmp_pfx: Path | None = None,
+               flags_req: int | Iterable[int] = (),
+               flags_exc: int | Iterable[int] = (),
+               n_procs: int = 1):
     """ Filter a XAM file based on flags, then collate the output. """
-    if paired is None:
-        paired = xam_paired(run_flagstat(xam_inp, n_procs=n_procs))
-    cmds = list()
-    if flags_req is not None or flags_exc is not None:
-        # Pre-filter the reads for specific flags.
-        flags_req = ([flags_req] if isinstance(flags_req, int)
-                     else list(flags_req))
-        flags_exc = ([flags_exc] if isinstance(flags_exc, int)
-                     else list(flags_exc))
-        view_xam_cmds = [view_xam_cmd(xam_inp,
-                                      (xam_out
-                                       if (i == len(flags_req) - 1
-                                           and not paired)
-                                       else None),
-                                      sam=True,
-                                      with_header=(i == 0),
-                                      flags_req=req,
-                                      flags_exc=exc)
-                         for i, (req, exc) in enumerate(zip(flags_req,
-                                                            flags_exc,
-                                                            strict=True))]
-        cmds.append(cmds_to_subshell(view_xam_cmds))
-    if paired:
-        # Paired-end reads must first be collated.
-        cmds.append(collate_xam_cmd(None if cmds else xam_inp,
-                                    xam_out,
-                                    tmp_pfx=tmp_pfx,
-                                    fast=True,
-                                    n_procs=n_procs))
-    return cmds
+    if not isinstance(xam_inp, Path):
+        raise TypeError(f"Expected xam_inp to be a Path, "
+                        f"but got {type(xam_inp).__name__}")
+    # Pre-filter the reads for specific flags.
+    if isinstance(flags_req, int):
+        flags_req = [flags_req]
+    elif not isinstance(flags_req, list):
+        flags_req = list(flags_req)
+    if isinstance(flags_exc, int):
+        flags_exc = [flags_exc]
+    elif not isinstance(flags_exc, list):
+        flags_exc = list(flags_exc)
+    num_flags = len(flags_req)
+    if len(flags_exc) != num_flags:
+        raise ValueError(f"Numbers of flags to require ({num_flags}) and "
+                         f"exclude ({len(flags_exc)}) are different")
+    if num_flags == 0:
+        # View the XAM file with no flags.
+        return [view_xam_cmd(xam_inp, xam_out)]
+    multi_flags = num_flags > 1
+    view_xam_cmds = [view_xam_cmd(xam_inp,
+                                  None if multi_flags else xam_out,
+                                  sam=multi_flags,
+                                  with_header=(multi_flags and i == 0),
+                                  flags_req=flags_req[i],
+                                  flags_exc=flags_exc[i])
+                     for i in range(num_flags)]
+    if not multi_flags:
+        # A single flag selection can be returned as-is.
+        return view_xam_cmds
+    # Reads from multiple flag selections must be collated.
+    return [cmds_to_subshell(view_xam_cmds),
+            collate_xam_cmd(None,
+                            xam_out,
+                            tmp_pfx=tmp_pfx,
+                            fast=True,
+                            n_procs=n_procs)]
 
 
-def filter_cmd(*args, **kwargs):
+def flags_cmd(*args, **kwargs):
     """ Filter a XAM file based on flags, then collate the output. """
-    return cmds_to_pipe(filter_cmds(*args, **kwargs))
+    return cmds_to_pipe(flags_cmds(*args, **kwargs))
 
 
-run_filter = ShellCommand("filtering and collating",
-                          filter_cmd)
+run_flags = ShellCommand("filtering and collating", flags_cmd)
 
 
 def realign_cmd(xam_inp: Path,
                 xam_out: Path, *,
                 paired: bool | None = None,
                 tmp_pfx: Path | None = None,
-                flags_req: int | Iterable[int] | None = None,
-                flags_exc: int | Iterable[int] | None = None,
+                flags_req: int | Iterable[int] = (),
+                flags_exc: int | Iterable[int] = (),
                 min_mapq: int | None = None,
                 n_procs: int = 1,
                 **kwargs):
     """ Re-align reads that are already in a XAM file. """
     if paired is None:
         paired = xam_paired(run_flagstat(xam_inp, n_procs=n_procs))
-    cmds = filter_cmds(xam_inp,
-                       None,
-                       tmp_pfx=tmp_pfx,
-                       paired=paired,
-                       flags_req=flags_req,
-                       flags_exc=flags_exc)
+    cmds = flags_cmds(xam_inp,
+                      None,
+                      tmp_pfx=tmp_pfx,
+                      flags_req=flags_req,
+                      flags_exc=flags_exc)
     # Convert the reads to FASTQ format.
     cmds.append(xam_to_fastq_cmd(None, None))
     # Re-align the reads from the BAM file using Bowtie2.
