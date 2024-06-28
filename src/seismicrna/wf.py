@@ -144,6 +144,8 @@ def run(fasta: str,
         sep_strands: bool,
         f1r2_plus: bool,
         minus_label: str,
+        paired_only: bool,
+        single_only: bool,
         # Relate options
         min_phred: int,
         min_reads: int,
@@ -303,6 +305,8 @@ def run(fasta: str,
         sep_strands=sep_strands,
         f1r2_plus=f1r2_plus,
         minus_label=minus_label,
+        paired_only=paired_only,
+        single_only=single_only
     ))
     # Relate
     input_path += as_tuple_str(relate_mod.run(
