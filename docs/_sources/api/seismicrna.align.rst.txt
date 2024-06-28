@@ -42,7 +42,7 @@ Submodules
    :show-inheritance:
 
 
-.. automodule:: seismicrna.align.sim
+.. automodule:: seismicrna.align.split
    :members:
    :undoc-members:
    :show-inheritance:

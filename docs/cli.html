@@ -269,24 +269,6 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-force">
-<span id="cmdoption-seismic-wf-no-force"></span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-force" title="Link to this definition"></a></dt>
-<dd><p>Force all tasks to run, overwriting any existing output files</p>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-parallel">
-<span id="cmdoption-seismic-wf-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-parallel" title="Link to this definition"></a></dt>
-<dd><p>Run tasks in parallel or in series</p>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-wf-max-procs">
-<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-max-procs" title="Link to this definition"></a></dt>
-<dd><p>Run up to this many processes simultaneously</p>
-</dd></dl>
-
-<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-fastqc">
 <span id="cmdoption-seismic-wf-no-fastqc"></span><span class="sig-name descname"><span class="pre">--fastqc</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-fastqc</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-fastqc" title="Link to this definition"></a></dt>
 <dd><p>Run FastQC on the initial and trimmed FASTQ files</p>
@@ -517,6 +499,24 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dt class="sig sig-object std" id="cmdoption-seismic-wf-minus-label">
 <span class="sig-name descname"><span class="pre">--minus-label</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;minus_label&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-minus-label" title="Link to this definition"></a></dt>
 <dd><p>With –sep-strands, append this label to each minus-strand reference</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-parallel">
+<span id="cmdoption-seismic-wf-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-parallel" title="Link to this definition"></a></dt>
+<dd><p>Run tasks in parallel or in series</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-max-procs">
+<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-wf-max-procs" title="Link to this definition"></a></dt>
+<dd><p>Run up to this many processes simultaneously</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-wf-force">
+<span id="cmdoption-seismic-wf-no-force"></span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-wf-force" title="Link to this definition"></a></dt>
+<dd><p>Force all tasks to run, overwriting any existing output files</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1122,27 +1122,9 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-align-force">
-<span id="cmdoption-seismic-align-no-force"></span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-force" title="Link to this definition"></a></dt>
-<dd><p>Force all tasks to run, overwriting any existing output files</p>
-</dd></dl>
-
-<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-align-keep-tmp">
 <span id="cmdoption-seismic-align-erase-tmp"></span><span class="sig-name descname"><span class="pre">--keep-tmp</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--erase-tmp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-keep-tmp" title="Link to this definition"></a></dt>
 <dd><p>Keep temporary files after finishing</p>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-align-parallel">
-<span id="cmdoption-seismic-align-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-parallel" title="Link to this definition"></a></dt>
-<dd><p>Run tasks in parallel or in series</p>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-seismic-align-max-procs">
-<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-max-procs" title="Link to this definition"></a></dt>
-<dd><p>Run up to this many processes simultaneously</p>
 </dd></dl>
 
 <dl class="std option">
@@ -1378,6 +1360,24 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 <dd><p>With –sep-strands, append this label to each minus-strand reference</p>
 </dd></dl>
 
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-parallel">
+<span id="cmdoption-seismic-align-serial"></span><span class="sig-name descname"><span class="pre">--parallel</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--serial</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-parallel" title="Link to this definition"></a></dt>
+<dd><p>Run tasks in parallel or in series</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-max-procs">
+<span class="sig-name descname"><span class="pre">--max-procs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_procs&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-align-max-procs" title="Link to this definition"></a></dt>
+<dd><p>Run up to this many processes simultaneously</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-align-force">
+<span id="cmdoption-seismic-align-no-force"></span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-align-force" title="Link to this definition"></a></dt>
+<dd><p>Force all tasks to run, overwriting any existing output files</p>
+</dd></dl>
+
 <p class="rubric">Arguments</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-align-arg-FASTA">
@@ -1393,6 +1393,18 @@ command <code class="docutils literal notranslate"><span class="pre">seismic</sp
 </pre></div>
 </div>
 <p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-sep-strands">
+<span id="cmdoption-seismic-relate-mix-strands"></span><span class="sig-name descname"><span class="pre">--sep-strands</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--mix-strands</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-seismic-relate-sep-strands" title="Link to this definition"></a></dt>
+<dd><p>Separate each alignment map into plus- and minus-strand reads</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-seismic-relate-minus-label">
+<span class="sig-name descname"><span class="pre">--minus-label</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;minus_label&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-minus-label" title="Link to this definition"></a></dt>
+<dd><p>With –sep-strands, append this label to each minus-strand reference</p>
+</dd></dl>
+
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-seismic-relate-o">
 <span id="cmdoption-seismic-relate-out-dir"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--out-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;out_dir&gt;</span></span><a class="headerlink" href="#cmdoption-seismic-relate-o" title="Link to this definition"></a></dt>
