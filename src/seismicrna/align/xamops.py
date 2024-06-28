@@ -382,6 +382,8 @@ def export_cmd(xam_in: Path,
                ref: str,
                header: str,
                ref_file: Path | None = None,
+               paired_only: bool = False,
+               single_only: bool = False,
                n_procs: int = 1):
     """ Select and export one reference to its own XAM file. """
     # Pipe the header line containing only this one reference.
@@ -389,10 +391,25 @@ def export_cmd(xam_in: Path,
     # Select only the reads that aligned to the reference; ignore the
     # original header so that the output XAM file contains only the
     # one reference in the XAM file.
+    flags_exc = EXCLUDE_FLAGS
+    flags_req = None
+    if paired_only and single_only:
+        logger.warning(f"Setting --paired-only and --single-only will output no reads."
+                       f"Setting to '--no-paired-only' and '--no-single-only'")
+        paired_only = False
+        single_only = False
+    if paired_only:
+        # Require the paired flag.
+        flags_req = FLAG_PAIRED
+    if single_only:
+        # Exclude the paired flag.
+        flags_exc = EXCLUDE_FLAGS | FLAG_PAIRED
     ref_step = view_xam_cmd(xam_in,
                             None,
                             sam=True,
                             with_header=False,
+                            flags_req=flags_req,
+                            flags_exc=flags_exc,
                             ref=ref,
                             n_procs=max(n_procs - 1, 1))
     # Merge the one header line and the reads for the reference.

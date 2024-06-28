@@ -36,7 +36,9 @@ from ..core.arg import (CMD_SPLITBAM,
                         opt_min_reads,
                         opt_sep_strands,
                         opt_minus_label,
-                        opt_f1r2_plus)
+                        opt_f1r2_plus,
+                        opt_paired_only,
+                        opt_single_only)
 from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
                            SAMTOOLS_CMD,
@@ -59,6 +61,8 @@ def split_xam_file(xam_file: Path,
                    fasta: Path,
                    phred_enc: int,
                    force: bool,
+                   paired_only: bool,
+                   single_only: bool,
                    n_procs: int,
                    **kwargs):
     # Assume the XAM file is named for the sample.
@@ -85,6 +89,8 @@ def split_xam_file(xam_file: Path,
         split_references(xam_sorted,
                          fasta=fasta,
                          paired=paired,
+                         paired_only=paired_only,
+                         single_only=single_only,
                          phred_arg=format_phred_arg(phred_enc),
                          top=release_dir,
                          n_procs=n_procs,
@@ -130,6 +136,8 @@ def run(fasta: str, *,
         sep_strands: bool,
         f1r2_plus: bool,
         minus_label: str,
+        paired_only: bool,
+        single_only: bool,
         # Parallelization
         max_procs: int,
         parallel: bool,
@@ -172,7 +180,9 @@ def run(fasta: str, *,
                                 min_reads=min_reads,
                                 sep_strands=sep_strands,
                                 f1r2_plus=f1r2_plus,
-                                minus_label=minus_label))
+                                minus_label=minus_label,
+                                paired_only=paired_only,
+                                single_only=single_only))
 
 
 # Parameters for command line interface
@@ -209,6 +219,8 @@ params = [
     opt_sep_strands,
     opt_f1r2_plus,
     opt_minus_label,
+    opt_paired_only,
+    opt_single_only,
     # Parallelization
     opt_parallel,
     opt_max_procs,

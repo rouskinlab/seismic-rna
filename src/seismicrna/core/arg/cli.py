@@ -498,6 +498,20 @@ opt_min_reads = Option(
     help="Discard alignment maps with fewer than this many reads"
 )
 
+opt_paired_only = Option(
+    ("--paired-only/--no-paired-only",),
+    type=bool,
+    default=False,
+    help="Only write paired-end alignments"
+)
+
+opt_single_only = Option(
+    ("--single-only/--no-single-only",),
+    type=bool,
+    default=False,
+    help="Only write single-end alignments"
+)
+
 # Relate
 
 opt_batch_size = Option(

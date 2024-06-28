@@ -183,6 +183,8 @@ def extract_reference(ref: str,
                       f1r2_plus: bool,
                       minus_label: str,
                       min_reads: int,
+                      paired_only: bool,
+                      single_only: bool,
                       n_procs: int = 1):
     """ Extract one reference from a XAM file. """
     if min_reads < 0:
@@ -199,6 +201,8 @@ def extract_reference(ref: str,
                xam_ref,
                ref=ref,
                header=header,
+               paired_only=paired_only,
+               single_only=single_only,
                n_procs=n_procs)
     xam_files = [xam_ref]
     if sep_strands:
@@ -290,6 +294,8 @@ def split_references(xam_whole: Path, *,
                      sep_strands: bool,
                      f1r2_plus: bool,
                      minus_label: str,
+                     paired_only: bool,
+                     single_only: bool,
                      n_procs: int = 1):
     """ Split a XAM file into one file per reference. """
     sample = path.parse(xam_whole, *path.XAM_SEGS)[path.SAMP]
@@ -337,7 +343,9 @@ def split_references(xam_whole: Path, *,
                                       sep_strands=sep_strands,
                                       f1r2_plus=f1r2_plus,
                                       minus_label=minus_label,
-                                      min_reads=min_reads))
+                                      min_reads=min_reads,
+                                      paired_only=paired_only,
+                                      single_only=single_only))
     # Collect the number of reads for each reference into one dict.
     reads_refs = dict()
     for num_reads in nums_reads:
@@ -405,6 +413,8 @@ def fq_pipeline(fq_inp: FastqUnit,
                 sep_strands: bool,
                 f1r2_plus: bool,
                 minus_label: str,
+                paired_only: bool,
+                single_only: bool,
                 n_procs: int = 1) -> list[Path]:
     """ Run all stages of the alignment pipeline for one FASTQ file or
     one pair of mated FASTQ files. """
@@ -563,6 +573,8 @@ def fq_pipeline(fq_inp: FastqUnit,
                                   f1r2_plus=f1r2_plus,
                                   minus_label=minus_label,
                                   min_reads=min_reads,
+                                  paired_only=paired_only,
+                                  single_only=single_only,
                                   n_procs=n_procs)
     ended = datetime.now()
     # Write a report to summarize the alignment.

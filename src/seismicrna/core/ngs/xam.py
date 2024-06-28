@@ -235,8 +235,9 @@ def count_single_paired(flagstats: dict):
                          f"be even, but got {paired_self_mate}")
     # Count paired-end reads with only one mate in the file.
     paired_one, _ = flagstats["singletons"]
+    secondary, _ = flagstats["secondary"]
     # Count single-end reads.
-    singles = mapped - (paired_one + paired_self_mate)
+    singles = mapped - (paired_one + paired_self_mate + secondary)
     logger.debug(f"Single-end: {singles}\n"
                  f"Paired-end, one mate: {paired_one}\n"
                  f"Paired-end, two mates: {paired_two}")

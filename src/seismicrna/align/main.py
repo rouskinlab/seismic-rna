@@ -57,7 +57,9 @@ from ..core.arg import (CMD_ALIGN,
                         opt_min_reads,
                         opt_sep_strands,
                         opt_minus_label,
-                        opt_f1r2_plus)
+                        opt_f1r2_plus,
+                        opt_paired_only,
+                        opt_single_only)
 from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
                            CUTADAPT_CMD,
@@ -125,6 +127,8 @@ def run(fasta: str, *,
         sep_strands: bool,
         f1r2_plus: bool,
         minus_label: str,
+        paired_only: bool,
+        single_only: bool,
         # Parallelization
         max_procs: int,
         parallel: bool,
@@ -195,7 +199,9 @@ def run(fasta: str, *,
                          min_reads=min_reads,
                          sep_strands=sep_strands,
                          f1r2_plus=f1r2_plus,
-                         minus_label=minus_label)
+                         minus_label=minus_label,
+                         paired_only=paired_only,
+                         single_only=single_only)
 
 
 # Parameters for command line interface
@@ -255,6 +261,8 @@ params = [
     opt_sep_strands,
     opt_f1r2_plus,
     opt_minus_label,
+    opt_paired_only,
+    opt_single_only,
     # Parallelization
     opt_parallel,
     opt_max_procs,
