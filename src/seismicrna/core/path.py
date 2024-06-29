@@ -32,13 +32,13 @@ from __future__ import annotations
 
 import os
 import pathlib
-import random
 import re
 from collections import Counter
 from functools import cache, cached_property, partial, wraps
 from itertools import chain, product
 from logging import getLogger
 from string import ascii_letters, digits, printable
+from tempfile import mkdtemp
 from typing import Any, Callable, Iterable, Sequence
 
 logger = getLogger(__name__)
@@ -681,37 +681,13 @@ def buildpar(*segment_types: Segment, **field_values: Any):
     return path
 
 
-def randname(length: int):
-    """ Generate a random name with valid path characters. """
-    return "".join(random.choices(ALPHANUM_CHARS, k=length))
-
-
 def randdir(parent: str | pathlib.Path | None = None,
             prefix: str = "",
-            suffix: str = "",
-            length: int = 8,
-            max_tries: int = 1000):
+            suffix: str = ""):
     """ Build a path of a new directory that does not exist and create
     it on the file system. """
-    # Use the current directory as the default parent directory.
     parent = sanitize(parent) if parent is not None else pathlib.Path.cwd()
-    if length < 1:
-        raise ValueError(f"length must be ≥ 1, but got {length}")
-    for i in range(max_tries):
-        # Make a random name for the new directory.
-        name = f"{prefix}{randname(length)}{suffix}"
-        path = parent.joinpath(name)
-        try:
-            # Create the new directory if it does not already exist.
-            path.mkdir(exist_ok=False, parents=True)
-        except FileExistsError:
-            # If it does already exist, then try another name.
-            pass
-        else:
-            # If making the directory succeeded, then return the path.
-            return path
-    raise FileExistsError(f"Failed to create new, unique directory in {parent} "
-                          f"within {max_tries} attempts")
+    return pathlib.Path(mkdtemp(dir=parent, prefix=prefix, suffix=suffix))
 
 
 # Path parsing routines
