@@ -42,10 +42,9 @@ class TestIterRecordsPaired(ut.TestCase):
         text = "\n".join(lines)
         sam_file = write_sam(text)
         try:
-            with open(sam_file) as f:
-                result = [(rec1.rstrip(), rec2.rstrip())
-                          for rec1, rec2
-                          in _iter_records_paired(f, 0, len(text))]
+            result = [(rec1.rstrip(), rec2.rstrip())
+                      for rec1, rec2
+                      in _iter_records_paired(sam_file, 0, len(text))]
             self.assertEqual(result, expect)
         except Exception:
             raise
@@ -56,12 +55,11 @@ class TestIterRecordsPaired(ut.TestCase):
         text = "\n".join(lines)
         sam_file = write_sam(text)
         try:
-            with open(sam_file) as f:
-                self.assertRaisesRegex(
-                    ValueError,
-                    expect,
-                    lambda: list(_iter_records_paired(f, 0, len(text)))
-                )
+            self.assertRaisesRegex(
+                ValueError,
+                expect,
+                lambda: list(_iter_records_paired(sam_file, 0, len(text)))
+            )
         except Exception:
             raise
         finally:
@@ -74,7 +72,7 @@ class TestIterRecordsPaired(ut.TestCase):
 
     def test_one_single(self):
         lines = ["read1\t0\ta"]
-        expect = "Read 'read1' is not paired-end"
+        expect = "Read 'read1' in .+ is not paired-end"
         self.run_test_invalid(lines, expect)
 
     def test_one_improper(self):
@@ -84,7 +82,7 @@ class TestIterRecordsPaired(ut.TestCase):
 
     def test_one_proper(self):
         lines = ["read1\t3\ta"]
-        expect = ("Read 'read1' is properly paired but has no mate, "
+        expect = ("Read 'read1' in .+ is properly paired but has no mate, "
                   "which indicates a bug")
         self.run_test_invalid(lines, expect)
 
@@ -93,6 +91,40 @@ class TestIterRecordsPaired(ut.TestCase):
                  "read1\t1\tb"]
         expect = [("read1\t1\ta", "read1\t1\ta"),
                   ("read1\t1\tb", "read1\t1\tb")]
+        self.run_test_valid(lines, expect)
+
+    def test_two_mated_proper(self):
+        lines = ["read1\t3\ta",
+                 "read1\t3\tb"]
+        expect = [("read1\t3\ta", "read1\t3\tb")]
+        self.run_test_valid(lines, expect)
+
+    def test_two_mated_improper_1(self):
+        lines = ["read1\t1\ta",
+                 "read1\t3\tb"]
+        expect = ("Read 'read1' in .+ has only one properly paired mate, "
+                  "which indicates a bug")
+        self.run_test_invalid(lines, expect)
+
+    def test_two_mated_improper_2(self):
+        lines = ["read1\t3\ta",
+                 "read1\t1\tb"]
+        expect = ("Read 'read1' in .+ has only one properly paired mate, "
+                  "which indicates a bug")
+        self.run_test_invalid(lines, expect)
+
+    def test_two_unmated_proper(self):
+        lines = ["read1\t3\ta",
+                 "read2\t3\tb"]
+        expect = ("Read 'read1' in .+ is properly paired but has no mate, "
+                  "which indicates a bug")
+        self.run_test_invalid(lines, expect)
+
+    def test_two_unmated_improper(self):
+        lines = ["read1\t1\ta",
+                 "read2\t1\tb"]
+        expect = [("read1\t1\ta", "read1\t1\ta"),
+                  ("read2\t1\tb", "read2\t1\tb")]
         self.run_test_valid(lines, expect)
 
 

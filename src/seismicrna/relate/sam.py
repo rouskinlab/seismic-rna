@@ -1,7 +1,6 @@
-from functools import cached_property, wraps
+from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Callable, TextIO
 
 from ..core import path
 from ..core.extern import cmds_to_pipe
@@ -27,99 +26,140 @@ def line_attrs(line: str):
     return name, paired, proper
 
 
-def _range_of_records(get_records_func: Callable):
-    @wraps(get_records_func)
-    def wrapper(sam_file: TextIO, start: int, stop: int):
-        logger.debug(
-            f"Reading records from {sam_file.name} from {start} to {stop}"
-        )
-        sam_file.seek(start)
-        records = get_records_func(sam_file)
-        n_records = 0
-        while True:
-            if sam_file.tell() < stop:
-                n_records += 1
-                yield next(records)
-            else:
-                if sam_file.tell() > stop:
-                    raise ValueError(f"Stopped at position {sam_file.tell()} "
-                                     f"of {sam_file.name}, but expected {stop}")
-                break
-        logger.debug(f"Read {n_records} records in {sam_file.name} "
-                     f"from {start} to {stop}")
-
-    return wrapper
-
-
-@_range_of_records
-def _iter_records_single(sam_file: TextIO):
-    """ Yield the line for every read in the file. """
-    while line := sam_file.readline():
-        name, paired, proper = line_attrs(line)
-        if paired:
-            raise ValueError(f"Read {repr(name)} is not single-end")
-        yield line, ""
-
-
-@_range_of_records
-def _iter_records_paired(sam_file: TextIO):
-    """ Yield every pair of lines in the file. """
-    prev_line = ""
-    prev_name = ""
-    prev_proper = False
-    while line := sam_file.readline():
-        name, paired, proper = line_attrs(line)
-        if not paired:
-            raise ValueError(f"Read {repr(name)} is not paired-end")
-        if prev_line:
-            # The previous read has not yet been yielded.
-            if prev_name == name:
-                # This read and the previous read are mates.
-                if proper != prev_proper:
-                    raise ValueError(f"Read {repr(name)} has only one properly "
-                                     f"paired mate, which indicates a bug")
-                if proper:
-                    # The current read is properly paired with its mate:
-                    # yield them together.
-                    yield prev_line, line
+def _iter_batch_indexes(sam_file: Path, batch_size: int, paired: bool):
+    if batch_size <= 0:
+        raise ValueError(f"batch_size must be a positive integer, "
+                         f"but got {batch_size}")
+    # Number of lines to skip between batches: the number of records
+    # per batch minus one (to account for the one line that is read
+    # at the beginning of each batch, which ensures that every batch
+    # has at least one line) times the number of mates per record.
+    n_skip = (batch_size - 1) * (paired + 1)
+    batch = 0
+    with open(sam_file) as f:
+        # Current position in the SAM file.
+        position = f.tell()
+        while line := f.readline():
+            # The current batch starts at the current position.
+            batch_start = position
+            # Skip either the prescribed number of lines or to the
+            # end of the file, whichever limit is reached first.
+            i_skip = 0
+            while i_skip < n_skip and (line := f.readline()):
+                i_skip += 1
+            # Update the position to the end of the current line.
+            position = f.tell()
+            # Files of paired-end reads require an extra step.
+            if paired and line:
+                # Check if the current and next lines are mates.
+                name, paired, proper = line_attrs(line)
+                (next_name,
+                 next_paired,
+                 next_proper) = line_attrs(f.readline())
+                if not (paired and next_paired):
+                    raise ValueError(f"{sam_file} does not have only "
+                                     "paired-end reads")
+                names_match = name == next_name
+                if names_match and proper != next_proper:
+                    raise ValueError(
+                        f"Read {repr(name)} has only one properly paired "
+                        f"mate, which indicates a bug"
+                    )
+                if names_match and proper:
+                    # If the read names match, then the lines are
+                    # mates and should be in the same batch. Advance
+                    # the variable position to point to the end of
+                    # the next read.
+                    position = f.tell()
                 else:
-                    # The current read is not properly paired with its
-                    # mate: yield them separately. This situation can
-                    # occur only if Bowtie2 is run in mixed mode.
-                    position = sam_file.tell()
-                    sam_file.seek(position - 1)
+                    # Otherwise, they are not mates. Backtrack to
+                    # the end of the current read, to which the
+                    # variable position points.
+                    f.seek(position)
+            # Yield the number and positions of the batch.
+            logger.debug(
+                f"Batch {batch} of {sam_file}: {batch_start} - {position}"
+            )
+            yield batch, batch_start, position
+            # Increment the batch number.
+            batch += 1
+
+
+def _iter_records_single(sam_file: Path, start: int, stop: int):
+    """ Yield every single-end read in the file. """
+    with open(sam_file) as f:
+        f.seek(start)
+        while f.tell() < stop:
+            line = f.readline()
+            name, paired, proper = line_attrs(line)
+            if paired:
+                raise ValueError(
+                    f"Read {repr(name)} in {sam_file} is not single-end"
+                )
+            yield line, ""
+
+
+def _iter_records_paired(sam_file: Path, start: int, stop: int):
+    """ Yield every paired-end read in the file. """
+    with open(sam_file) as f:
+        f.seek(start)
+        prev_line = ""
+        prev_name = ""
+        prev_proper = False
+        while f.tell() < stop:
+            line = f.readline()
+            name, paired, proper = line_attrs(line)
+            if not paired:
+                raise ValueError(f"Read {repr(name)} in {sam_file} "
+                                 "is not paired-end")
+            if prev_line:
+                # The previous read has not yet been yielded.
+                if prev_name == name:
+                    # This read and the previous read are mates.
+                    if proper != prev_proper:
+                        raise ValueError(f"Read {repr(name)} in {sam_file} "
+                                         "has only one properly paired mate, "
+                                         "which indicates a bug")
+                    if proper:
+                        # The current read is properly paired with its
+                        # mate: yield them together.
+                        yield prev_line, line
+                    else:
+                        # The current read is not properly paired with
+                        # its mate: yield them separately.
+                        yield prev_line, prev_line
+                        yield line, line
+                    # Reset the attributes of the previous read.
+                    prev_line = ""
+                    prev_name = ""
+                    prev_proper = False
+                else:
+                    # The previous read is paired, but its mate is not
+                    # in the SAM file.
+                    if prev_proper:
+                        raise ValueError(f"Read {repr(prev_name)} "
+                                         f"in {sam_file} is properly paired "
+                                         "but has no mate, "
+                                         "which indicates a bug")
                     yield prev_line, prev_line
-                    sam_file.seek(position)
-                    yield line, line
-                # Reset the attributes of the previous read.
-                prev_line = ""
-                prev_name = ""
-                prev_proper = False
+                    # Save the current read so that if its mate is the
+                    # next read, it can be returned as a pair.
+                    prev_line = line
+                    prev_name = name
+                    prev_proper = proper
             else:
-                # The previous read is paired, but its mate is not in
-                # the SAM file. This situation can occur only if Bowtie2
-                # is run in mixed mode.
-                if prev_proper:
-                    raise ValueError(f"Read {repr(name)} is properly paired "
-                                     f"but has no mate, which indicates a bug")
-                yield prev_line, prev_line
                 # Save the current read so that if its mate is the next
-                # read, it can be returned as a pair.
+                # read, it will be returned as a pair.
                 prev_line = line
                 prev_name = name
                 prev_proper = proper
-        else:
-            # Save the current read so that if its mate is the next
-            # read, it will be returned as a pair.
-            prev_line = line
-            prev_name = name
-            prev_proper = proper
-    if prev_line:
-        if prev_proper:
-            raise ValueError(f"Read {repr(prev_name)} is properly paired "
-                             f"but has no mate, which indicates a bug")
-        # In case the last read has not yet been yielded, do so.
-        yield prev_line, prev_line
+        if prev_line:
+            if prev_proper:
+                raise ValueError(f"Read {repr(prev_name)} in {sam_file} is "
+                                 "properly paired but has no mate, which "
+                                 "indicates a bug")
+            # In case the last read has not yet been yielded, do so.
+            yield prev_line, prev_line
 
 
 def tmp_xam_cmd(xam_in: Path, xam_out: Path, paired: bool, n_procs: int = 1):
@@ -196,21 +236,15 @@ class XamViewer(object):
 
     def create_tmp_sam(self):
         """ Create the temporary SAM file. """
-        run_tmp_xam(self.xam_input,
-                    self.tmp_sam_path,
-                    paired=self.paired,
-                    n_procs=self.n_procs)
+        if not self.tmp_sam_path.is_file():
+            run_tmp_xam(self.xam_input,
+                        self.tmp_sam_path,
+                        paired=self.paired,
+                        n_procs=self.n_procs)
 
     def delete_tmp_sam(self):
         """ Delete the temporary SAM file. """
         self.tmp_sam_path.unlink(missing_ok=True)
-
-    def open_tmp_sam(self):
-        """ Open the temporary SAM file as a file object. """
-        if not self.tmp_sam_path.is_file():
-            # Create the temporary SAM file if it does not yet exist.
-            self.create_tmp_sam()
-        return open(self.tmp_sam_path)
 
     def _iter_batch_indexes(self):
         """ Yield the start and end positions of every batch in the SAM
@@ -219,63 +253,12 @@ class XamViewer(object):
         files, both mates are present. In the extreme case that only one
         mate is present for every paired-end record, there can be up to
         `2 * records_per_batch` records in a batch. """
-        if self.batch_size <= 0:
-            raise ValueError(f"batch_size must be a positive integer, "
-                             f"but got {self.batch_size}")
-        logger.info(f"Began computing batch indexes for {self}, aiming for "
-                    f"{self.batch_size} reads per batch")
-        # Number of lines to skip between batches: the number of records
-        # per batch minus one (to account for the one line that is read
-        # at the beginning of each batch, which ensures that every batch
-        # has at least one line) times the number of mates per record.
-        n_skip = (self.batch_size - 1) * (self.paired + 1)
-        # Count the batches.
-        batch = 0
-        with self.open_tmp_sam() as sam_file:
-            # Current position in the SAM file.
-            position = sam_file.tell()
-            while line := sam_file.readline():
-                # The current batch starts at the current position.
-                batch_start = position
-                # Skip either the prescribed number of lines or to the
-                # end of the file, whichever limit is reached first.
-                i_skip = 0
-                while i_skip < n_skip and (line := sam_file.readline()):
-                    i_skip += 1
-                # Update the position to the end of the current line.
-                position = sam_file.tell()
-                # Files of paired-end reads require an extra step.
-                if self.paired and line:
-                    # Check if the current and next lines are mates.
-                    name, paired, proper = line_attrs(line)
-                    (next_name,
-                     next_paired,
-                     next_proper) = line_attrs(sam_file.readline())
-                    if not (paired and next_paired):
-                        raise ValueError(f"{self.xam_input} does not have only "
-                                         "paired-end reads")
-                    names_match = name == next_name
-                    if names_match and proper != next_proper:
-                        raise ValueError(
-                            f"Read {repr(name)} has only one properly paired "
-                            f"mate, which indicates a bug"
-                        )
-                    if names_match and proper:
-                        # If the read names match, then the lines are
-                        # mates and should be in the same batch. Advance
-                        # the variable position to point to the end of
-                        # the next read.
-                        position = sam_file.tell()
-                    else:
-                        # Otherwise, they are not mates. Backtrack to
-                        # the end of the current read, to which the
-                        # variable position points.
-                        sam_file.seek(position)
-                # Yield the number and positions of the batch.
-                logger.debug(f"Batch {batch}: {batch_start} - {position}")
-                yield batch, batch_start, position
-                # Increment the batch number.
-                batch += 1
+        logger.info(f"Began computing batch indexes for {self}")
+        self.create_tmp_sam()
+        yield from _iter_batch_indexes(self.tmp_sam_path,
+                                       self.batch_size,
+                                       self.paired)
+        logger.info(f"Ended computing batch indexes for {self}")
 
     @cached_property
     def indexes(self):
@@ -284,12 +267,13 @@ class XamViewer(object):
 
     def iter_records(self, batch: int):
         """ Iterate through the records of the batch. """
+        logger.info(f"Began iterating records for {self} batch {batch}")
         start, stop = self.indexes[batch]
-        with self.open_tmp_sam() as sam_file:
-            if self.paired:
-                yield from _iter_records_paired(sam_file, start, stop)
-            else:
-                yield from _iter_records_single(sam_file, start, stop)
+        if self.paired:
+            yield from _iter_records_paired(self.tmp_sam_path, start, stop)
+        else:
+            yield from _iter_records_single(self.tmp_sam_path, start, stop)
+        logger.info(f"Ended iterating records for {self} batch {batch}")
 
     def __str__(self):
         return f"alignment map {self.xam_input}"

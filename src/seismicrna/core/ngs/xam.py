@@ -259,9 +259,9 @@ def count_single_paired(flagstats: dict):
             f"mapped reads in total, but got {paired_end_reads} > {mapped}, "
             "which indicates a bug"
         )
-    logger.debug(f"Paired-end, proper pairs: {paired_end_pairs_proper}\n"
-                 f"Paired-end, other reads: {paired_end_reads_improper}\n"
-                 f"Single-end: {single_end_reads}")
+    logger.debug(f"Proper pairs: {paired_end_pairs_proper}\n"
+                 f"Other paired-end reads: {paired_end_reads_improper}\n"
+                 f"Single-end reads: {single_end_reads}")
     return paired_end_pairs_proper, paired_end_reads_improper, single_end_reads
 
 
