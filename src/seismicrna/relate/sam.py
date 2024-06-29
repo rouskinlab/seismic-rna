@@ -6,6 +6,8 @@ from typing import Callable, TextIO
 from ..core import path
 from ..core.extern import cmds_to_pipe
 from ..core.ngs import (SAM_DELIM,
+                        FLAG_PAIRED,
+                        FLAG_PROPER,
                         ShellCommand,
                         collate_xam_cmd,
                         count_total_reads,
@@ -16,9 +18,13 @@ from ..core.ngs import (SAM_DELIM,
 logger = getLogger(__name__)
 
 
-def read_name(line: str):
-    """ Get the name of the read in the current line of a SAM file. """
-    return line.split(SAM_DELIM, 1)[0]
+def line_attrs(line: str):
+    """ Read attributes from a line in a SAM file. """
+    name, flag_str, _ = line.split(SAM_DELIM, 2)
+    flag = int(flag_str)
+    paired = bool(flag & FLAG_PAIRED)
+    proper = bool(flag & FLAG_PROPER)
+    return name, paired, proper
 
 
 def _range_of_records(get_records_func: Callable):
@@ -49,42 +55,71 @@ def _range_of_records(get_records_func: Callable):
 def _iter_records_single(sam_file: TextIO):
     """ Yield the line for every read in the file. """
     while line := sam_file.readline():
+        name, paired, proper = line_attrs(line)
+        if paired:
+            raise ValueError(f"Read {repr(name)} is not single-end")
         yield line, ""
 
 
 @_range_of_records
 def _iter_records_paired(sam_file: TextIO):
     """ Yield every pair of lines in the file. """
-    prev_line: str = ""
-    prev_name: str = ""
+    prev_line = ""
+    prev_name = ""
+    prev_proper = False
     while line := sam_file.readline():
+        name, paired, proper = line_attrs(line)
+        if not paired:
+            raise ValueError(f"Read {repr(name)} is not paired-end")
         if prev_line:
-            # Read name is the first field of the line.
-            name = read_name(line)
             # The previous read has not yet been yielded.
             if prev_name == name:
-                # The current read is the mate of the previous read.
-                yield prev_line, line
+                # This read and the previous read are mates.
+                if proper != prev_proper:
+                    raise ValueError(f"Read {repr(name)} has only one properly "
+                                     f"paired mate, which indicates a bug")
+                if proper:
+                    # The current read is properly paired with its mate:
+                    # yield them together.
+                    yield prev_line, line
+                else:
+                    # The current read is not properly paired with its
+                    # mate: yield them separately. This situation can
+                    # occur only if Bowtie2 is run in mixed mode.
+                    position = sam_file.tell()
+                    sam_file.seek(position - 1)
+                    yield prev_line, prev_line
+                    sam_file.seek(position)
+                    yield line, line
+                # Reset the attributes of the previous read.
                 prev_line = ""
                 prev_name = ""
+                prev_proper = False
             else:
                 # The previous read is paired, but its mate is not in
-                # the SAM file. This situation can occur if Bowtie2 is
-                # run in mixed alignment mode and two paired mates fail
-                # to align as a pair but one mate aligns individually.
-                yield prev_line, ""
+                # the SAM file. This situation can occur only if Bowtie2
+                # is run in mixed mode.
+                if prev_proper:
+                    raise ValueError(f"Read {repr(name)} is properly paired "
+                                     f"but has no mate, which indicates a bug")
+                yield prev_line, prev_line
                 # Save the current read so that if its mate is the next
-                # read, it will be returned as a pair.
+                # read, it can be returned as a pair.
                 prev_line = line
                 prev_name = name
+                prev_proper = proper
         else:
             # Save the current read so that if its mate is the next
             # read, it will be returned as a pair.
             prev_line = line
-            prev_name = read_name(line)
+            prev_name = name
+            prev_proper = proper
     if prev_line:
+        if prev_proper:
+            raise ValueError(f"Read {repr(prev_name)} is properly paired "
+                             f"but has no mate, which indicates a bug")
         # In case the last read has not yet been yielded, do so.
-        yield prev_line, ""
+        yield prev_line, prev_line
 
 
 def tmp_xam_cmd(xam_in: Path, xam_out: Path, paired: bool, n_procs: int = 1):
@@ -212,7 +247,20 @@ class XamViewer(object):
                 # Files of paired-end reads require an extra step.
                 if self.paired and line:
                     # Check if the current and next lines are mates.
-                    if read_name(line) == read_name(sam_file.readline()):
+                    name, paired, proper = line_attrs(line)
+                    (next_name,
+                     next_paired,
+                     next_proper) = line_attrs(sam_file.readline())
+                    if not (paired and next_paired):
+                        raise ValueError(f"{self.xam_input} does not have only "
+                                         "paired-end reads")
+                    names_match = name == next_name
+                    if names_match and proper != next_proper:
+                        raise ValueError(
+                            f"Read {repr(name)} has only one properly paired "
+                            f"mate, which indicates a bug"
+                        )
+                    if names_match and proper:
                         # If the read names match, then the lines are
                         # mates and should be in the same batch. Advance
                         # the variable position to point to the end of

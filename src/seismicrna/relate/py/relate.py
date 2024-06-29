@@ -314,7 +314,7 @@ def _merge_rels(end5f: int,
         rel = relf & relr
         if rel != MATCH:
             if rel == NOCOV:
-                raise ValueError(f"Cannot merge two blanks at position {pos}")
+                raise ValueError(f"Cannot merge non-covered position {pos}")
             merged_rels[pos] = rel
     return merged_rels
 
@@ -361,27 +361,33 @@ def find_rels_line(line1: str,
                                           clip_end5,
                                           clip_end3)
     if line2:
-        # Generate the relationships for read 2.
-        read2 = SamRead(line2)
-        _validate_read(read2, ref, min_mapq)
-        _validate_pair(read1, read2)
-        end52, end32, rels2 = _find_rels_read(read2,
-                                              refseq,
-                                              qmin,
-                                              ambindel,
-                                              clip_end5,
-                                              clip_end3)
-        # Determine which read (1 or 2) faces forward and reverse.
-        if read2.flag.rev:
-            end5f, end3f, relsf = end51, end31, rels1
-            end5r, end3r, relsr = end52, end32, rels2
+        if line2 == line1:
+            # This read is paired-end but comprises only one mate, which
+            # can occur only if Bowtie2 is run in mixed mode.
+            ends = [end51, end51], [end31, end31]
+            rels = rels1
         else:
-            end5f, end3f, relsf = end52, end32, rels2
-            end5r, end3r, relsr = end51, end31, rels1
-        # Merge the relationships and end coordinates.
-        ends, rels = _merge_mates(
-            end5f, end3f, relsf, end5r, end3r, relsr, overhangs,
-        )
+            # Generate the relationships for read 2.
+            read2 = SamRead(line2)
+            _validate_read(read2, ref, min_mapq)
+            _validate_pair(read1, read2)
+            end52, end32, rels2 = _find_rels_read(read2,
+                                                  refseq,
+                                                  qmin,
+                                                  ambindel,
+                                                  clip_end5,
+                                                  clip_end3)
+            # Determine which read (1 or 2) faces forward and reverse.
+            if read2.flag.rev:
+                end5f, end3f, relsf = end51, end31, rels1
+                end5r, end3r, relsr = end52, end32, rels2
+            else:
+                end5f, end3f, relsf = end52, end32, rels2
+                end5r, end3r, relsr = end51, end31, rels1
+            # Merge the relationships and end coordinates.
+            ends, rels = _merge_mates(
+                end5f, end3f, relsf, end5r, end3r, relsr, overhangs,
+            )
     else:
         # The read is single-ended.
         ends = [end51], [end31]
