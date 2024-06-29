@@ -7,6 +7,11 @@ from ..core.extern import cmds_to_pipe
 from ..core.ngs import (SAM_DELIM,
                         FLAG_PAIRED,
                         FLAG_PROPER,
+                        FLAG_UNMAP,
+                        FLAG_SECONDARY,
+                        FLAG_QCFAIL,
+                        FLAG_DUPLICATE,
+                        FLAG_SUPPLEMENTARY,
                         ShellCommand,
                         collate_xam_cmd,
                         count_total_reads,
@@ -164,7 +169,14 @@ def _iter_records_paired(sam_file: Path, start: int, stop: int):
 
 def tmp_xam_cmd(xam_in: Path, xam_out: Path, paired: bool, n_procs: int = 1):
     """ Collate and create a temporary XAM file. """
+    flags_req = 0
+    flags_exc = (FLAG_UNMAP
+                 | FLAG_SECONDARY
+                 | FLAG_QCFAIL
+                 | FLAG_DUPLICATE
+                 | FLAG_SUPPLEMENTARY)
     if paired:
+        flags_req |= FLAG_PAIRED
         # Collate the XAM file so paired mates are adjacent.
         collate_step = collate_xam_cmd(xam_in,
                                        None,
@@ -172,10 +184,17 @@ def tmp_xam_cmd(xam_in: Path, xam_out: Path, paired: bool, n_procs: int = 1):
                                        fast=True,
                                        n_procs=max(n_procs - 1, 1))
         # Remove the header.
-        view_step = view_xam_cmd(None, xam_out)
+        view_step = view_xam_cmd(None,
+                                 xam_out,
+                                 flags_req=flags_req,
+                                 flags_exc=flags_exc)
         return cmds_to_pipe([collate_step, view_step])
     # Remove the header.
-    return view_xam_cmd(xam_in, xam_out)
+    flags_exc |= FLAG_PAIRED
+    return view_xam_cmd(xam_in,
+                        xam_out,
+                        flags_req=flags_req,
+                        flags_exc=flags_exc)
 
 
 run_tmp_xam = ShellCommand("collating reads and creating temporary SAM file",

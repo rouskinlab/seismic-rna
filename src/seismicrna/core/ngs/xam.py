@@ -227,7 +227,7 @@ run_flagstat = ShellCommand("computing flagstats",
 def count_single_paired(flagstats: dict):
     """ Count the records in a SAM/BAM file given an output dict from
     `get_flagstats()`. """
-    mapped, _ = flagstats["mapped"]
+    mapped, _ = flagstats["primary mapped"]
     # Count properly paired reads.
     paired_end_reads_proper, _ = flagstats["properly paired"]
     paired_end_pairs_proper, extra = divmod(paired_end_reads_proper, 2)
