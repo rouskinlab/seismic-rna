@@ -20,6 +20,8 @@ def release_to_out(out_dir: Path,
     # Determine the path in the output directory.
     out_path = transpath(out_dir, release_dir, initial_path)
     if initial_path.exists():
+        # Ensure the parent directory of the new path exists.
+        out_path.parent.mkdir(parents=True, exist_ok=True)
         # If the output path already exists, then first rename it.
         delete_path = randdir(out_path.parent, f"{out_path.name}-")
         try:
@@ -32,8 +34,6 @@ def release_to_out(out_dir: Path,
             deleted = True
             logger.debug(f"Moved {out_path} to {delete_path} (to be deleted)")
         try:
-            # Ensure the parent directory of the new path exists.
-            out_path.parent.mkdir(parents=True, exist_ok=True)
             # Move the initial path to the output location.
             initial_path.rename(out_path)
             logger.debug(f"Moved {initial_path} to {out_path}")
