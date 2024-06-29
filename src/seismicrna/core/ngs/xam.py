@@ -228,20 +228,41 @@ def count_single_paired(flagstats: dict):
     """ Count the records in a SAM/BAM file given an output dict from
     `get_flagstats()`. """
     mapped, _ = flagstats["mapped"]
-    # Count paired-end reads with both mates in the file.
-    paired_self_mate, _ = flagstats["with itself and mate mapped"]
-    paired_two, extra = divmod(paired_self_mate, 2)
+    # Count properly paired reads.
+    paired_end_reads_proper, _ = flagstats["properly paired"]
+    paired_end_pairs_proper, extra = divmod(paired_end_reads_proper, 2)
     if extra:
-        raise ValueError(f"Reads with themselves and their mates mapped must "
-                         f"be even, but got {paired_self_mate}")
-    # Count paired-end reads with only one mate in the file.
-    paired_one, _ = flagstats["singletons"]
+        raise ValueError("Number of properly paired reads must be even, "
+                         f"but got {paired_end_reads_proper}")
+    # Count improper paired-end reads (either only one mate exists or
+    # both mates exist but did not pair properly with each other).
+    paired_end_reads_both_mates, _ = flagstats["with itself and mate mapped"]
+    paired_end_reads_both_mates_improper = (paired_end_reads_both_mates
+                                            - paired_end_reads_proper)
+    if paired_end_reads_both_mates_improper < 0:
+        raise ValueError(
+            "Number of paired-end reads with both mates mapped and paired "
+            "properly with each other must be no more than the number of "
+            "paired-end reads with both mates mapped (though not necessarily "
+            f"with each other), but got {paired_end_reads_proper} "
+            f"> {paired_end_reads_both_mates}, which indicates a bug"
+        )
+    paired_end_reads_one_mate, _ = flagstats["singletons"]
+    paired_end_reads_improper = (paired_end_reads_both_mates_improper
+                                 + paired_end_reads_one_mate)
     # Count single-end reads.
-    singles = mapped - (paired_one + paired_self_mate)
-    logger.debug(f"Single-end: {singles}\n"
-                 f"Paired-end, one mate: {paired_one}\n"
-                 f"Paired-end, two mates: {paired_two}")
-    return paired_two, paired_one, singles
+    paired_end_reads = paired_end_reads_proper + paired_end_reads_improper
+    single_end_reads = mapped - paired_end_reads
+    if single_end_reads < 0:
+        raise ValueError(
+            "Number of paired-end reads must be no more than the number of "
+            f"mapped reads in total, but got {paired_end_reads} > {mapped}, "
+            "which indicates a bug"
+        )
+    logger.debug(f"Paired-end, proper pairs: {paired_end_pairs_proper}\n"
+                 f"Paired-end, other reads: {paired_end_reads_improper}\n"
+                 f"Single-end: {single_end_reads}")
+    return paired_end_pairs_proper, paired_end_reads_improper, single_end_reads
 
 
 def count_total_reads(flagstats: dict):
