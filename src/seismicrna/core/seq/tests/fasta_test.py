@@ -246,10 +246,7 @@ class TestWriteFasta(ut.TestCase):
                                    write_fasta,
                                    filepath, seqs)
         finally:
-            try:
-                remove(filepath)
-            except FileNotFoundError:
-                pass
+            filepath.unlink(missing_ok=True)
 
     def test_invalid_name(self):
         seqs = [(" Seq1", DNA("GACGTACTGTACGT"))]
@@ -263,10 +260,7 @@ class TestWriteFasta(ut.TestCase):
                 filepath, seqs
             )
         finally:
-            try:
-                remove(filepath)
-            except FileNotFoundError:
-                pass
+            filepath.unlink(missing_ok=True)
 
 ########################################################################
 #                                                                      #

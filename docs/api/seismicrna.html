@@ -194,6 +194,7 @@ that they can be imported from external modules and scripts:</p>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.split.run"><code class="docutils literal notranslate"><span class="pre">run()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.split.split_xam_file"><code class="docutils literal notranslate"><span class="pre">split_xam_file()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.write.align_samples"><code class="docutils literal notranslate"><span class="pre">align_samples()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.write.calc_flags"><code class="docutils literal notranslate"><span class="pre">calc_flags()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.write.check_fqs_xams"><code class="docutils literal notranslate"><span class="pre">check_fqs_xams()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.write.extract_reference"><code class="docutils literal notranslate"><span class="pre">extract_reference()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.write.figure_alignments"><code class="docutils literal notranslate"><span class="pre">figure_alignments()</span></code></a></li>
@@ -208,8 +209,8 @@ that they can be imported from external modules and scripts:</p>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.xamops.bowtie2_build_cmd"><code class="docutils literal notranslate"><span class="pre">bowtie2_build_cmd()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.xamops.bowtie2_cmd"><code class="docutils literal notranslate"><span class="pre">bowtie2_cmd()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.xamops.export_cmd"><code class="docutils literal notranslate"><span class="pre">export_cmd()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.xamops.filter_cmd"><code class="docutils literal notranslate"><span class="pre">filter_cmd()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.xamops.filter_cmds"><code class="docutils literal notranslate"><span class="pre">filter_cmds()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.xamops.flags_cmd"><code class="docutils literal notranslate"><span class="pre">flags_cmd()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.xamops.flags_cmds"><code class="docutils literal notranslate"><span class="pre">flags_cmds()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.xamops.get_bowtie2_index_paths"><code class="docutils literal notranslate"><span class="pre">get_bowtie2_index_paths()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.xamops.parse_bowtie2"><code class="docutils literal notranslate"><span class="pre">parse_bowtie2()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.align.html#seismicrna.align.xamops.realign_cmd"><code class="docutils literal notranslate"><span class="pre">realign_cmd()</span></code></a></li>
@@ -698,7 +699,6 @@ that they can be imported from external modules and scripts:</p>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html#seismicrna.core.path.parse_top_separate"><code class="docutils literal notranslate"><span class="pre">parse_top_separate()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html#seismicrna.core.path.path_matches"><code class="docutils literal notranslate"><span class="pre">path_matches()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html#seismicrna.core.path.randdir"><code class="docutils literal notranslate"><span class="pre">randdir()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html#seismicrna.core.path.randname"><code class="docutils literal notranslate"><span class="pre">randname()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html#seismicrna.core.path.sanitize"><code class="docutils literal notranslate"><span class="pre">sanitize()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html#seismicrna.core.path.transpath"><code class="docutils literal notranslate"><span class="pre">transpath()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.core.html#seismicrna.core.path.transpaths"><code class="docutils literal notranslate"><span class="pre">transpaths()</span></code></a></li>
@@ -1475,7 +1475,7 @@ that they can be imported from external modules and scripts:</p>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.tests.html">seismicrna.relate.tests package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.tests.html#module-seismicrna.relate.tests.sim_test">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.tests.html#module-seismicrna.relate.tests.sam_test">Submodules</a></li>
 </ul>
 </li>
 </ul>
@@ -1539,14 +1539,13 @@ that they can be imported from external modules and scripts:</p>
 <li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.html#seismicrna.relate.sam.XamViewer.indexes"><code class="docutils literal notranslate"><span class="pre">XamViewer.indexes</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.html#seismicrna.relate.sam.XamViewer.iter_records"><code class="docutils literal notranslate"><span class="pre">XamViewer.iter_records()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.html#seismicrna.relate.sam.XamViewer.n_reads"><code class="docutils literal notranslate"><span class="pre">XamViewer.n_reads</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.html#seismicrna.relate.sam.XamViewer.open_tmp_sam"><code class="docutils literal notranslate"><span class="pre">XamViewer.open_tmp_sam()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.html#seismicrna.relate.sam.XamViewer.paired"><code class="docutils literal notranslate"><span class="pre">XamViewer.paired</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.html#seismicrna.relate.sam.XamViewer.ref"><code class="docutils literal notranslate"><span class="pre">XamViewer.ref</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.html#seismicrna.relate.sam.XamViewer.sample"><code class="docutils literal notranslate"><span class="pre">XamViewer.sample</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="seismicrna.relate.html#seismicrna.relate.sam.XamViewer.tmp_sam_path"><code class="docutils literal notranslate"><span class="pre">XamViewer.tmp_sam_path</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html#seismicrna.relate.sam.read_name"><code class="docutils literal notranslate"><span class="pre">read_name()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html#seismicrna.relate.sam.line_attrs"><code class="docutils literal notranslate"><span class="pre">line_attrs()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html#seismicrna.relate.sam.tmp_xam_cmd"><code class="docutils literal notranslate"><span class="pre">tmp_xam_cmd()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html#seismicrna.relate.sim.simulate_batch"><code class="docutils literal notranslate"><span class="pre">simulate_batch()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismicrna.relate.html#seismicrna.relate.sim.simulate_batches"><code class="docutils literal notranslate"><span class="pre">simulate_batches()</span></code></a></li>

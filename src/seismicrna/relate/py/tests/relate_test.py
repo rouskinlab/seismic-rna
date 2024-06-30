@@ -387,7 +387,7 @@ class TestMergeMates(ut.TestCase):
                         error = pos1
                     self.assertRaisesRegex(
                         ValueError,
-                        f"Cannot merge two blanks at position {error}",
+                        f"Cannot merge non-covered position {error}",
                         _merge_mates,
                         end51, end31, rels1,
                         end52, end32, rels2,

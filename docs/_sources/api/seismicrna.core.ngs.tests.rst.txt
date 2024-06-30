@@ -14,3 +14,9 @@ Submodules
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+.. automodule:: seismicrna.core.ngs.tests.xam_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
