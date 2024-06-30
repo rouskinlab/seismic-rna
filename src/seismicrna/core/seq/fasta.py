@@ -2,12 +2,11 @@ import re
 from logging import getLogger
 from os import linesep
 from pathlib import Path
-from shutil import rmtree
+from tempfile import NamedTemporaryFile
 from typing import Iterable
 
 from .xna import XNA
-from ..path import STR_CHARS, randdir
-from ..tmp import release_to_out
+from ..path import STR_CHARS
 from ..write import need_write
 
 logger = getLogger(__name__)
@@ -47,7 +46,7 @@ def format_fasta_seq_lines(seq: XNA, wrap: int = 0):
     """ Format a sequence in a FASTA file so that each line has at most
     `wrap` characters, or no limit if `wrap` is 0. """
     if wrap < 0:
-        raise ValueError(f"Wrap cannot be negative, but got {wrap}")
+        raise ValueError(f"Wrap must be ≥ 0, but got {wrap}")
     if wrap == 0 or wrap >= len(seq):
         return f"{seq}{linesep}"
     return "".join(f"{seq[start: start + wrap]}{linesep}"
@@ -110,10 +109,8 @@ def get_fasta_seq(fasta: Path, seq_type: type[XNA], name: str):
     try:
         _, seq = next(iter(parse_fasta(fasta, seq_type, (name,))))
     except StopIteration:
-        pass
-    else:
-        return seq
-    raise ValueError(f"Sequence {repr(name)} is not in {fasta}")
+        raise ValueError(f"Sequence {repr(name)} is not in {fasta}") from None
+    return seq
 
 
 def write_fasta(fasta: Path,
@@ -123,15 +120,17 @@ def write_fasta(fasta: Path,
     """ Write an iterable of reference names and DNA sequences to a
     FASTA file. """
     if need_write(fasta, force):
-        # Write the new FASTA in a temporary directory to avoid erasing
-        # any existing files yet.
-        out_dir = fasta.parent
-        tmp_dir = randdir(out_dir, "fasta-")
-        tmp_fasta = tmp_dir.joinpath(fasta.name)
-        # Record the names of all the references.
-        names = set()
+        with NamedTemporaryFile("w",
+                                dir=fasta.parent,
+                                prefix=fasta.stem,
+                                suffix=fasta.suffix,
+                                delete=False) as f:
+            tmp_fasta = Path(f.file.name)
         try:
+            # Write the new FASTA in a temporary file.
             with open(tmp_fasta, "w") as f:
+                # Record the names of all the references.
+                names = set()
                 for name, seq in refs:
                     # Confirm that the name is not blank.
                     if not name:
@@ -146,14 +145,12 @@ def write_fasta(fasta: Path,
                     logger.debug(f"Wrote reference {repr(name)} "
                                  f"({len(seq)} nt) to {tmp_fasta}")
                     names.add(name)
-        except Exception:
-            raise
-        else:
             # Release the FASTA file.
-            release_to_out(out_dir, tmp_dir, tmp_fasta)
+            tmp_fasta.rename(fasta)
         finally:
-            # Delete the temporary directory.
-            rmtree(tmp_dir)
+            # The temporary FASTA file would have been renamed already
+            # if the write operation had succeeded; if not, delete it.
+            tmp_fasta.unlink(missing_ok=True)
         logger.info(f"Wrote {len(names)} sequences(s) to {fasta}")
 
 ########################################################################

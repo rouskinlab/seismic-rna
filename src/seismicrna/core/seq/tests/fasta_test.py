@@ -1,22 +1,20 @@
 import unittest as ut
 from itertools import product
-from logging import Filter, LogRecord
 from os import linesep, remove
 from pathlib import Path
 from string import printable, whitespace
 from tempfile import NamedTemporaryFile as NTFile
 
-from ... import path
-from ..fasta import (FASTA_NAME_MARK,
-                     FASTA_NAME_CHARS,
-                     valid_fasta_seqname,
-                     format_fasta_name_line,
-                     format_fasta_record,
-                     format_fasta_seq_lines,
-                     parse_fasta,
-                     write_fasta,
-                     logger as fasta_logger)
-from ..xna import DNA, RNA
+from seismicrna.core import path
+from seismicrna.core.seq.fasta import (FASTA_NAME_MARK,
+                                       FASTA_NAME_CHARS,
+                                       valid_fasta_seqname,
+                                       format_fasta_name_line,
+                                       format_fasta_record,
+                                       format_fasta_seq_lines,
+                                       parse_fasta,
+                                       write_fasta)
+from seismicrna.core.seq.xna import DNA, RNA
 
 
 class TestValidFastaSeqname(ut.TestCase):
@@ -110,115 +108,100 @@ class TestParseFasta(ut.TestCase):
     """ Test parse_fasta. """
 
     def test_valid_names(self):
-        with NTFile('w', suffix=path.FASTA_EXTS[0], delete=False) as f:
+        with NTFile("w", suffix=path.FASTA_EXTS[0], delete=False) as f:
             filepath = Path(f.file.name)
             f.write(linesep.join([">Seq1", "GTACGTGNTCATC",
                                   ">Seq2 ", "AGCTGTGNNT", "ATCG"]))
-        records = list(parse_fasta(filepath, None))
+        try:
+            records = list(parse_fasta(filepath, None))
+        finally:
+            remove(filepath)
         self.assertEqual(records, ["Seq1", "Seq2"])
-        remove(filepath)
 
     def test_valid_dna(self):
-        with NTFile('w', suffix=path.FASTA_EXTS[0], delete=False) as f:
+        with NTFile("w", suffix=path.FASTA_EXTS[0], delete=False) as f:
             filepath = Path(f.file.name)
             f.write(linesep.join([">Seq1", "GTACGTGNTCATC",
                                   ">Seq2 ", "AGCTGTGNNT", "ATCG"]))
-        records = dict(parse_fasta(filepath, DNA))
+        try:
+            records = dict(parse_fasta(filepath, DNA))
+        finally:
+            remove(filepath)
         self.assertEqual(records, {"Seq1": DNA("GTACGTGNTCATC"),
                                    "Seq2": DNA("AGCTGTGNNTATCG")})
-        remove(filepath)
 
     def test_valid_rna(self):
-        with NTFile('w', suffix=path.FASTA_EXTS[0], delete=False) as f:
+        with NTFile("w", suffix=path.FASTA_EXTS[0], delete=False) as f:
             filepath = Path(f.file.name)
             f.write(linesep.join([">Seq1", "GUACGUGNUCAUC",
                                   ">Seq2 ", "AGCUGUGNNU", "AUCG"]))
-        records = dict(parse_fasta(filepath, RNA))
+        try:
+            records = dict(parse_fasta(filepath, RNA))
+        finally:
+            remove(filepath)
         self.assertEqual(records, {"Seq1": RNA("GUACGUGNUCAUC"),
                                    "Seq2": RNA("AGCUGUGNNUAUCG")})
-        remove(filepath)
 
     def test_valid_empty(self):
-        with NTFile('w', suffix=path.FASTA_EXTS[0], delete=False) as f:
+        with NTFile("w", suffix=path.FASTA_EXTS[0], delete=False) as f:
             filepath = Path(f.file.name)
             f.write(linesep.join([]))
-        records = dict(parse_fasta(filepath, DNA))
+        try:
+            records = dict(parse_fasta(filepath, DNA))
+        finally:
+            remove(filepath)
         self.assertEqual(records, {})
-        remove(filepath)
 
     def test_valid_blank_line(self):
-        with NTFile('w', suffix=path.FASTA_EXTS[0], delete=False) as f:
+        with NTFile("w", suffix=path.FASTA_EXTS[0], delete=False) as f:
             filepath = Path(f.file.name)
             f.write(linesep.join([">Seq1", "GTACGTGNTCATC", linesep, linesep,
                                   ">Seq2 ", linesep, "AGCTGTGNNT", linesep,
                                   "ATCG"]))
-        records = dict(parse_fasta(filepath, DNA))
+        try:
+            records = dict(parse_fasta(filepath, DNA))
+        finally:
+            remove(filepath)
         self.assertEqual(records, {"Seq1": DNA("GTACGTGNTCATC"),
                                    "Seq2": DNA("AGCTGTGNNTATCG")})
-        remove(filepath)
 
     def test_duplicate_name(self):
-
-        class DupErrFilter(Filter):
-            """ Suppress errors about duplicate names. """
-
-            def filter(self, rec: LogRecord):
-                return "Duplicate name" not in rec.msg
-
-        with NTFile('w', suffix=path.FASTA_EXTS[0], delete=False) as f:
+        with NTFile("w", suffix=path.FASTA_EXTS[0], delete=False) as f:
             filepath = Path(f.file.name)
             f.write(linesep.join([">Seq1", "GTACGTGNTCATC",
                                   ">Seq1 ", "AGCTGTGNNT", "ATCG"]))
-        # Temporarily ignore errors about duplicate names in the FASTA.
-        fasta_logger.addFilter(dup_filter := DupErrFilter())
         try:
-            records = dict(parse_fasta(filepath, DNA))
+            self.assertRaisesRegex(ValueError,
+                                   "Duplicate name 'Seq1'",
+                                   lambda: dict(parse_fasta(filepath, DNA)))
         finally:
-            fasta_logger.removeFilter(dup_filter)
             remove(filepath)
-        self.assertEqual(records, {"Seq1": DNA("GTACGTGNTCATC")})
 
     def test_invalid_name(self):
-
-        class NameErrFilter(Filter):
-            """ Suppress errors about invalid names. """
-
-            def filter(self, rec: LogRecord):
-                return "Failed to parse name of reference" not in rec.msg
-
-        with NTFile('w', suffix=path.FASTA_EXTS[0], delete=False) as f:
+        with NTFile("w", suffix=path.FASTA_EXTS[0], delete=False) as f:
             filepath = Path(f.file.name)
             f.write(linesep.join([">Seq1", "GTACGTGNTCATC",
                                   ">Seq2|", "AGCTGTGNNT", "ATCG"]))
-        # Temporarily ignore errors about duplicate names in the FASTA.
-        fasta_logger.addFilter(name_filter := NameErrFilter())
         try:
-            records = dict(parse_fasta(filepath, DNA))
+            self.assertRaisesRegex(
+                ValueError,
+                "FASTA name line '>Seq2|' has illegal characters",
+                lambda: dict(parse_fasta(filepath, DNA))
+            )
         finally:
-            fasta_logger.removeFilter(name_filter)
             remove(filepath)
-        self.assertEqual(records, {"Seq1": DNA("GTACGTGNTCATC")})
 
     def test_invalid_seq(self):
-
-        class SeqErrFilter(Filter):
-            """ Suppress errors about invalid sequences. """
-
-            def filter(self, rec: LogRecord):
-                return "Failed to read sequence" not in rec.msg
-
-        with NTFile('w', suffix=path.FASTA_EXTS[0], delete=False) as f:
+        with NTFile("w", suffix=path.FASTA_EXTS[0], delete=False) as f:
             filepath = Path(f.file.name)
             f.write(linesep.join([">Seq1", "GTACGTGNTCATC ",
                                   ">Seq2", "AGCTGTGNNT", "ATCG"]))
-        # Temporarily ignore errors about duplicate names in the FASTA.
-        fasta_logger.addFilter(seq_filter := SeqErrFilter())
         try:
-            records = dict(parse_fasta(filepath, DNA))
+            self.assertRaisesRegex(ValueError,
+                                   "Invalid DNA bases: {' '}",
+                                   lambda: dict(parse_fasta(filepath, DNA)))
         finally:
-            fasta_logger.removeFilter(seq_filter)
             remove(filepath)
-        self.assertEqual(records, {"Seq2": DNA("AGCTGTGNNTATCG")})
 
 
 class TestWriteFasta(ut.TestCase):
@@ -228,59 +211,62 @@ class TestWriteFasta(ut.TestCase):
         seqs = [("Seq1", DNA("GTACGTGNTCATC")),
                 ("Seq2", DNA("AGCTGTGNNTATCG"))]
         text = ">Seq1\nGTACGTGNTCATC\n>Seq2\nAGCTGTGNNTATCG\n"
-        with NTFile('w', suffix=path.FASTA_EXTS[0], delete=True) as f:
+        with NTFile("w", suffix=path.FASTA_EXTS[0], delete=True) as f:
             filepath = Path(f.file.name)
-        write_fasta(filepath, seqs)
-        with open(filepath) as f:
-            self.assertEqual(f.read(), text)
-        remove(filepath)
-
-    def test_overwrite(self):
-        seqs = [("Seq1", DNA("GTACGTGNTCATC")),
-                ("Seq2", DNA("AGCTGTGNNTATCG"))]
-        text = ">Seq1\nGTACGTGNTCATC\n>Seq2\nAGCTGTGNNTATCG\n"
-        with NTFile('w', suffix=path.FASTA_EXTS[0], delete=False) as f:
-            filepath = Path(f.file.name)
-        write_fasta(filepath, seqs, force=True)
-        with open(filepath) as f:
-            self.assertEqual(f.read(), text)
-        remove(filepath)
-
-    def test_no_overwrite(self):
-        seqs = [("Seq1", DNA("GTACGTGNTCATC")),
-                ("Seq2", DNA("AGCTGTGNNTATCG"))]
-        with NTFile('w', suffix=path.FASTA_EXTS[0], delete=False) as f:
-            filepath = Path(f.file.name)
-        self.assertRaisesRegex(FileExistsError, str(filepath),
-                               write_fasta, filepath, seqs)
-        remove(filepath)
-
-    def test_invalid_name(self):
-        seqs = [("", DNA("GTACGTGNTCATC")),
-                ("Seq1 ", DNA("GACGTACTGTACGT")),
-                (" Seq1", DNA("GACGTACTGTACGT")),
-                ("Seq1", DNA("GTACGTGNTCATC")),
-                ("Seq2", DNA("AGCTGTGNNTATCG")),
-                ("Seq1", DNA("ACGATGTATGTA"))]
-        text = ">Seq1\nGTACGTGNTCATC\n>Seq2\nAGCTGTGNNTATCG\n"
-
-        class NameErrFilter(Filter):
-            """ Suppress errors about invalid names. """
-
-            def filter(self, rec: LogRecord):
-                return "Failed to write reference" not in rec.msg
-
-        # Temporarily ignore errors about invalid names.
-        fasta_logger.addFilter(name_filter := NameErrFilter())
         try:
-            with NTFile('w', suffix=path.FASTA_EXTS[0], delete=True) as f:
-                filepath = Path(f.file.name)
             write_fasta(filepath, seqs)
             with open(filepath) as f:
                 self.assertEqual(f.read(), text)
         finally:
-            fasta_logger.removeFilter(name_filter)
-        remove(filepath)
+            remove(filepath)
+
+    def test_force(self):
+        seqs = [("Seq1", DNA("GTACGTGNTCATC")),
+                ("Seq2", DNA("AGCTGTGNNTATCG"))]
+        fasta_text = ">Seq1\nGTACGTGNTCATC\n>Seq2\nAGCTGTGNNTATCG\n"
+        other_text = "some other text"
+        with NTFile("w", suffix=path.FASTA_EXTS[0], delete=True) as f:
+            filepath = Path(f.file.name)
+        try:
+            with open(filepath, "w") as f:
+                f.write(other_text)
+            write_fasta(filepath, seqs, force=True)
+            with open(filepath) as f:
+                self.assertEqual(f.read(), fasta_text)
+        finally:
+            remove(filepath)
+
+    def test_blank_name(self):
+        seqs = [("", DNA("GTACGTGNTCATC"))]
+        with NTFile("w", suffix=path.FASTA_EXTS[0], delete=True) as f:
+            filepath = Path(f.file.name)
+        try:
+            self.assertRaisesRegex(ValueError,
+                                   "Got blank reference name",
+                                   write_fasta,
+                                   filepath, seqs)
+        finally:
+            try:
+                remove(filepath)
+            except FileNotFoundError:
+                pass
+
+    def test_invalid_name(self):
+        seqs = [(" Seq1", DNA("GACGTACTGTACGT"))]
+        with NTFile("w", suffix=path.FASTA_EXTS[0], delete=True) as f:
+            filepath = Path(f.file.name)
+        try:
+            self.assertRaisesRegex(
+                ValueError,
+                "Reference name ' Seq1' has illegal characters",
+                write_fasta,
+                filepath, seqs
+            )
+        finally:
+            try:
+                remove(filepath)
+            except FileNotFoundError:
+                pass
 
 ########################################################################
 #                                                                      #
