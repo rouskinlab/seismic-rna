@@ -9,7 +9,7 @@ BUILD_DIR=$ROOT_DIR/docs
 LOGO_DIR=$ROOT_DIR/logo
 SRC_DIR=$ROOT_DIR/src
 SEISMIC_DIR=$SRC_DIR/seismicrna
-DOCSRC_DIR=$SRC_DIR/docs
+DOCSRC_DIR=$SRC_DIR/userdocs
 PYAPI_DIR=$DOCSRC_DIR/api
 
 # Delete the old Python API source files, if any.

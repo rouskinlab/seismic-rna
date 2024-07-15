@@ -6,7 +6,7 @@ How to Research RNA Structures with SEISMIC-RNA
     :maxdepth: 2
 
     about/index
-    install/index
+    install
     steps/index
     howto/index
     cli
