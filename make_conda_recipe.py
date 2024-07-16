@@ -6,23 +6,46 @@ Build a Conda package for SEISMIC-RNA.
 
 import os
 import re
-import shlex
 import tomllib
 from hashlib import sha256
+from shutil import copy2
 from urllib.error import URLError
 from urllib.request import urlopen
 
-import yaml  # requires pyyaml: pip install pyyaml
 
-
-def find_script_dir():
-    return os.path.dirname(os.path.realpath(os.path.abspath(__file__),
-                                            strict=True))
+def mkdir_if_needed(path):
+    try:
+        os.mkdir(path)
+    except FileExistsError:
+        pass
 
 
 def find_project_dir():
     """ Main directory of SEISMIC-RNA. """
-    return os.path.dirname(find_script_dir())
+    return os.path.dirname(os.path.realpath(os.path.abspath(__file__),
+                                            strict=True))
+
+
+def find_conda_dir():
+    """ Directory for Conda recipe files. """
+    return os.path.join(find_project_dir(), "conda")
+
+
+def find_git_dir():
+    """ Directory for all GitHub repositories. """
+    return os.path.dirname(find_project_dir())
+
+
+def find_bioconda_recipes_dir():
+    """ Directory for the bioconda-recipes GitHub repository. """
+    return os.path.join(find_git_dir(), "bioconda-recipes")
+
+
+def find_bioconda_recipe_dir():
+    """ Directory for this project's Bioconda recipe. """
+    return os.path.join(find_bioconda_recipes_dir(),
+                        "recipes",
+                        find_package_name())
 
 
 def find_package_name():
@@ -41,7 +64,12 @@ def find_environment_file():
 
 def find_metadata_file():
     """ Build metadata file. """
-    return os.path.join(find_script_dir(), "meta.yaml")
+    return os.path.join(find_conda_dir(), "meta.yaml")
+
+
+def find_build_script():
+    """ Build metadata file. """
+    return os.path.join(find_conda_dir(), "build.sh")
 
 
 def find_version_file():
@@ -92,7 +120,8 @@ def list_nonpip_dependencies():
             "bowtie2 >=2.5.1",
             "fastqc >=0.12.1",
             "rnastructure >=6.3",
-            "samtools >=1.17"]
+            "samtools >=1.17",
+            "brotli-python >=1.0"]
 
 
 def list_all_dependencies():
@@ -119,6 +148,49 @@ def calc_github_file_sha256():
     return sha256(response.read()).hexdigest()
 
 
+def _is_listlike(item):
+    return isinstance(item, (list, tuple, set))
+
+
+def _is_dictlike(item):
+    return isinstance(item, dict)
+
+
+def _is_iterlike(item):
+    return _is_listlike(item) or _is_dictlike(item)
+
+
+def _make_prefix(indent: int, is_list: bool):
+    prefix = "  " * indent
+    if is_list:
+        prefix += "- "
+    return prefix
+
+
+def _generate_yaml_lines(data: dict | list | set | tuple, indent: int):
+    if _is_dictlike(data):
+        prefix = _make_prefix(indent, False)
+        for key, value in data.items():
+            if _is_iterlike(value):
+                yield f"{prefix}{key}:"
+                yield from _generate_yaml_lines(value, indent + 1)
+            else:
+                yield f"{prefix}{key}: {value}"
+    elif _is_listlike(data):
+        prefix = _make_prefix(indent, True)
+        for value in data:
+            yield f"{prefix}{value}"
+    else:
+        raise TypeError(data)
+
+
+def format_yaml_text(data: dict):
+    """ Format a dictionary into YAML text. """
+    if not isinstance(data, dict):
+        raise TypeError(data)
+    return "\n".join(["---", ""] + list(_generate_yaml_lines(data, 0)))
+
+
 def write_environment():
     """ Write the environment.yml file for Conda. """
     dependencies: list = list_nonpip_dependencies()
@@ -128,8 +200,9 @@ def write_environment():
     environment = {"name": "seismic",
                    "channels": list_conda_channels(),
                    "dependencies": dependencies}
+    yaml_text = format_yaml_text(environment)
     with open(find_environment_file(), "w") as f:
-        yaml.dump(environment, f)
+        f.write(yaml_text)
 
 
 def format_run_exports_pin():
@@ -143,6 +216,14 @@ def write_metadata():
     metadata = {
         "package": {"name": find_package_name(),
                     "version": find_version()},
+        "about": {
+            "home": find_github_home(),
+            "license": "GPL-3.0-only",
+            "license_family": "GPL3",
+            "license_file": "LICENSE",
+            "license_url": "https://www.gnu.org/licenses/gpl-3.0.html",
+            "summary": "SEISMIC-RNA software by the Rouskin Lab"
+        },
         "source": {"url": find_github_file(),
                    "sha256": calc_github_file_sha256()},
         "build": {
@@ -153,20 +234,41 @@ def write_metadata():
         "requirements": {"build": ["python >=3.10",
                                    "hatch >=1.12"],
                          "run": list_all_dependencies()},
-        "channels": list_conda_channels(),
         "test": {"imports": ["seismicrna"]},
-        "about": {
-            "home": find_github_home(),
-            "license": "GPL-3.0",
-            "license_family": "GPL",
-            "license_file": "LICENSE",
-            "license_url": "https://www.gnu.org/licenses/gpl-3.0.html",
-            "summary": "SEISMIC-RNA software by the Rouskin Lab"
-        },
     }
+    yaml_text = format_yaml_text(metadata)
+    mkdir_if_needed(find_conda_dir())
     with open(find_metadata_file(), "w") as f:
-        yaml.dump(metadata, f)
+        f.write(yaml_text)
+
+
+def write_build_script():
+    """ Write the build.sh file for Conda. """
+    build_script = "\n".join([
+        "#!/bin/bash",
+        "",
+        "# DO NOT RUN THIS SCRIPT YOURSELF!",
+        "# It should only be run by conda build.",
+        "",
+        "set -euxo pipefail",
+        "",
+        "$PYTHON -m pip install --no-dependencies $PWD"
+    ])
+    mkdir_if_needed(find_conda_dir())
+    with open(find_build_script(), "w") as f:
+        f.write(build_script)
+
+
+def copy_recipe_to_bioconda():
+    """ Copy the recipe files to the Bioconda recipe directory. """
+    src = find_conda_dir()
+    dst = find_bioconda_recipe_dir()
+    mkdir_if_needed(dst)
+    for file in os.listdir(src):
+        copy2(os.path.join(src, file), dst)
 
 
 if __name__ == "__main__":
     write_metadata()
+    write_build_script()
+    copy_recipe_to_bioconda()
