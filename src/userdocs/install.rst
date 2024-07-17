@@ -3,37 +3,31 @@ Install
 ********************************************************************************
 
 
-Option 1: Quick installation (if you already have Python_, pip_, and Conda_)
+Option 1: Quick installation (if you already have Conda_)
 ================================================================================
 
-Run these commands in a terminal::
+SEISMIC-RNA is available from the Bioconda_ channel and compatible with Python
+3.10 and later.
+To install, type this into a terminal::
 
-    # Create and activate a new Conda environment.
     conda create -n seismic python=3.12
     conda activate seismic
-    # Install the non-Python dependencies.
-    conda install -y -c bioconda -c conda-forge bowtie2 fastqc rnastructure samtools
-    # Install SEISMIC-RNA and its Python dependencies.
-    pip install seismic-rna
+    conda install -c bioconda -c conda-forge seismic-rna
 
-You can name your environment whatever you like using the ``-n`` option; in this
-example, it is named ``seismic``.
-SEISMIC-RNA is compatible with Python version 3.10 and later.
+If installing with Conda fails, then try :ref:`install_without_conda`.
 
 
-Option 2: Installation with Conda
+Option 2: Step-by-step installation with Conda
 ================================================================================
 
-Install Conda and pip
+Install Conda
 --------------------------------------------------------------------------------
 
-We highly recommend installing SEISMIC-RNA into a virtual environment to spare
-yourself future frustration.
-Conda_ is a popular tool for managing virtual environments, especially (but not
-exclusively) for Python-based software.
-We recommend using the Miniconda_ installer, which installs both Conda and pip.
+Installing SEISMIC-RNA is easiest with Conda_, a popular package manager.
+If you don't already have Conda, then we recommend installing a small version of
+it called Miniconda_.
 When the installer asks if you want to initialize Conda, choose yes.
-If you do not, you can initialize Conda later by typing the path to your Conda
+Otherwise, you can initialize Conda later by typing the path to your ``conda``
 executable followed by ``init``, e.g. ::
 
     ~/miniconda3/bin/conda init
@@ -41,8 +35,8 @@ executable followed by ``init``, e.g. ::
 Create a Conda environment for SEISMIC-RNA
 --------------------------------------------------------------------------------
 
-Once Conda and pip are installed, create a new virtual environment into which
-SEISMIC-RNA and all other necessary software will go::
+Once Conda is installed, create a new virtual environment into which SEISMIC-RNA
+and all other necessary software will go::
 
     conda create -n seismic python=3.12
 
@@ -75,37 +69,22 @@ the environment by typing ``conda activate`` followed by its name, e.g. ::
     this environment but also fail to install the packages into the ``seismic``
     environment.
 
-Install the non-Python dependencies
+Install SEISMIC-RNA and its dependencies
 --------------------------------------------------------------------------------
 
-SEISMIC-RNA requires several other pieces of software:
+Run this command to install SEISMIC-RNA and all other software it requires::
 
-============ =================================================================================================
-Software     SEISMIC-RNA commands that use the software
-============ =================================================================================================
-Bowtie2      ``seismic align``; ``seismic wf``
-FastQC       ``seismic align`` (without ``--no-fastqc``); ``seismic wf`` (without ``--no-fastqc``)
-RNAstructure ``seismic fold``; ``seismic wf`` (with ``--fold``); ``seismic +sim fold``; ``seismic +sim total``
-Samtools     ``seismic align``; ``seismic relate``; ``seismic wf``
-============ =================================================================================================
+    conda install -c bioconda -c conda-forge seismic-rna
 
-Install these pieces of software with this command::
-
-    conda install -y -c bioconda -c conda-forge bowtie2 fastqc rnastructure samtools
-
-Install SEISMIC-RNA and its Python dependencies
---------------------------------------------------------------------------------
-
-Finally, install SEISMIC-RNA and all of the Python packages that it requires::
-
-    pip install seismic-rna
+If installing with Conda fails, then try :ref:`install_without_conda`.
 
 
-Option 3: Installation without Conda
+.. _install_without_conda:
+
+Option 3: Step-by-Step installation without Conda
 ================================================================================
 
-Although we highly recommend using Conda_ or other software that supports virual
-environments, you can also install SEISMIC-RNA without it.
+Although Conda is the easiest means to install SEISMIC-RNA, it is not necessary.
 
 Install Python and pip
 --------------------------------------------------------------------------------
@@ -113,12 +92,27 @@ Install Python and pip
 First, if Python_ is not installed, then install the latest version.
 Confirm that Python version 3.10 or later and pip_ are installed::
 
-    python3 --version
-    pip3 --version
+    python --version
+    pip --version
 
 Install SEISMIC-RNA and its Python dependencies
 --------------------------------------------------------------------------------
 
+Option 3a: Install SEISMIC-RNA from the Python Package Index
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We recommend installing SEISMIC-RNA from the Python Package, which will download
+the latest stable version that has been released.
+In a terminal, type this command to install it and all its Python dependencies::
+
+    pip install seismic-rna
+
+Option 3b: Install SEISMIC-RNA from GitHub
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We recommend installing from GitHub only if you need the latest source code,
+which may be unstable or contain significant bugs (most users do not, and should
+instead use the latest stable version from the Python Package Index).
 In a terminal, navigate to the directory into which to install SEISMIC-RNA.
 If Git_ is installed on your computer, then clone the GitHub repository::
 
@@ -137,26 +131,163 @@ If you want to be able to modify the source code after you install SEISMIC-RNA
 and have those changes come into effect, then add the flag ``-e``.
 Otherwise, to save space, you may delete the source code after installation.
 
+Install the non-Python dependencies of SEISMIC-RNA
+--------------------------------------------------------------------------------
 
-Option 4: Upgrading (if you already have SEISMIC-RNA installed)
+SEISMIC-RNA requires several other pieces of software that cannot be installed
+using pip:
+
+============ =================================================================================================
+Software     SEISMIC-RNA commands that use the software
+============ =================================================================================================
+Bowtie2      ``seismic align``; ``seismic wf``
+FastQC       ``seismic align`` (without ``--no-fastqc``); ``seismic wf`` (without ``--no-fastqc``)
+RNAstructure ``seismic fold``; ``seismic wf`` (with ``--fold``); ``seismic +sim fold``; ``seismic +sim total``
+Samtools     ``seismic align``; ``seismic relate``; ``seismic wf``
+============ =================================================================================================
+
+You only need to install the software for the steps you will use: for example,
+if you won't model RNA structures (using ``seismic fold``, ``seismic wf`` with
+the ``--fold`` option, ``seismic +sim fold``, or ``seismic +sim total``), then
+you don't need to install RNAstructure.
+Although all of these packages are available through Conda, if you are not using
+Conda (or the Conda installation fails) then you can also install them using the
+installation instructions in their documentation:
+
+- Bowtie2_ (make sure to install Bowtie2, not Bowtie)
+- FastQC_
+- RNAstructure_
+- Samtools_
+
+
+.. _install_update:
+
+Option 4: Update to another version (if you already installed SEISMIC-RNA)
 ================================================================================
 
-To upgrade SEISMIC-RNA to the latest version, type ::
+Update SEISMIC-RNA to the latest stable version
+--------------------------------------------------------------------------------
+
+Type this if you had initially installed SEISMIC-RNA with Conda::
+
+    conda update -c bioconda -c conda-forge seismic-rna
+
+or this if you had initially installed it with pip::
 
     pip install -U seismic-rna
 
 
-To install a specific version ``x.y.z``, type ::
+Install a specific version of SEISMIC-RNA
+--------------------------------------------------------------------------------
+
+Type this if you had initially installed SEISMIC-RNA with Conda::
+
+    conda install -c bioconda -c conda-forge seismic-rna=x.y.z
+
+or this if you had initially installed it with pip::
 
     pip install seismic-rna==x.y.z
 
+.. note::
 
-Troubleshooting installation
+    When specifying the version, use ``=`` with Conda and ``==`` with pip.
+
+.. _install_update_depend:
+
+Update the dependencies of SEISMIC-RNA
+--------------------------------------------------------------------------------
+
+Type this if you had initially installed SEISMIC-RNA with Conda::
+
+    conda update -c bioconda -c conda-forge --all
+
+If you had initially installed it with pip, then first check that you have the
+latest versions of Bowtie2_, FastQC_, RNAstructure_, and Samtools_ by typing
+each of these commands::
+
+    bowtie2 --version
+    fastqc --version
+    Fold --version
+    samtools --version
+
+and install the most recent versions as necessary.
+Then update the dependencies of SEISMIC-RNA to the latest compatible versions::
+
+    pip install -U seismic-rna
+
+.. warning::
+
+    Do not use ``pip list --outdated`` to list outdated packages and then update
+    all of them automatically.
+    SEISMIC-RNA is not necessarily compatible with the latest versions of some
+    packages (e.g. NumPy 2.0), so installing them could cause problems.
+    If you update a dependency by itself (e.g. ``pip install -U numpy``), then
+    pip will update it *even if* its latest version is incompatible with another
+    installed package (whereas Conda will ensure all packages are compatible).
+    But if you update a package, then its dependencies will also be updated
+    automatically; in this case, pip will confirm that the dependencies are
+    compatible with the main package.
+
+
+Test SEISMIC-RNA after installing
 ================================================================================
 
+SEISMIC-RNA comes with hundreds of tests to verify that it is working properly
+on your system.
+We recommend running the tests each time you install or update SEISMIC-RNA.
 
-.. _conda: https://docs.conda.io/en/latest/
-.. _git: https://git-scm.com/
-.. _miniconda: https://docs.anaconda.com/miniconda/
-.. _pip: https://pip.pypa.io/en/stable/
-.. _python: https://www.python.org/downloads/
+Run SEISMIC-RNA's testing suite
+--------------------------------------------------------------------------------
+
+To run all the tests, type this::
+
+    seismic +test
+
+To monitor the tests as they run, you can use verbose mode (option ``-v``).
+In verbose mode, as each test finishes, it will print ``.`` if it succeeds,
+``F`` if it fails, ``E`` if it errs, and ``s`` if it was skipped::
+
+    seismic +test -v
+
+To print out the name of each test as it runs and check which tests succeed and
+fail, you can use double-verbose mode::
+
+    seismic +test -vv
+
+Interpret the test results
+--------------------------------------------------------------------------------
+
+Regardless of the verbosity, if all tests succeed, then it will print a message
+similar to this::
+
+    Ran 903 tests in 196.699s
+
+    OK
+
+Otherwise, it will print the number of tests that failed and a message about
+each failure.
+If this happens, then first check that you are using the latest version of
+SEISMIC-RNA by typing ::
+
+    seismic --version
+
+and checking what the version is on PyPI_ or Anaconda_.
+If your installed version is not the latest, then try :ref:`install_update`.
+If you already have the latest version, then the problem could be caused by one
+of the dependencies, so try to :ref:`install_update_depend`.
+If that does not solve your problem either, then please report a bug (see
+:doc:`./issues` for instructions).
+
+
+.. _Conda: https://docs.conda.io/en/latest/
+.. _Bioconda: https://bioconda.github.io/
+.. _Git: https://git-scm.com/
+.. _Miniconda: https://docs.anaconda.com/miniconda/
+.. _Pip: https://pip.pypa.io/en/stable/
+.. _Python: https://www.python.org/downloads/
+.. _Bowtie2: https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml
+.. _FastQC: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+.. _RNAstructure: https://rna.urmc.rochester.edu/RNAstructure.html
+.. _Samtools: https://www.htslib.org/
+.. _PyPI: https://pypi.org/project/seismic-rna/
+.. _Anaconda: https://anaconda.org/bioconda/seismic-rna

@@ -193,13 +193,9 @@ def format_yaml_text(data: dict):
 
 def write_environment():
     """ Write the environment.yml file for Conda. """
-    dependencies: list = list_nonpip_dependencies()
-    pip_dependencies = list_pip_dependencies()
-    pip_dependencies.append(format_package_version())
-    dependencies.append({"pip": list_pip_dependencies()})
     environment = {"name": "seismic",
                    "channels": list_conda_channels(),
-                   "dependencies": dependencies}
+                   "dependencies": list_nonpip_dependencies()}
     yaml_text = format_yaml_text(environment)
     with open(find_environment_file(), "w") as f:
         f.write(yaml_text)
@@ -269,6 +265,7 @@ def copy_recipe_to_bioconda():
 
 
 if __name__ == "__main__":
+    write_environment()
     write_metadata()
     write_build_script()
     copy_recipe_to_bioconda()

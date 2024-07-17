@@ -10,10 +10,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.10
+    - name: Set up Python 3.12
       uses: actions/setup-python@v3
       with:
-        python-version: '3.10'
+        python-version: '3.12'
     - name: Add conda to system path
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
@@ -23,7 +23,7 @@ jobs:
         # Update Conda so that it doesn't issue a reminder to update.
         conda update -n base conda
         # Create a new Conda environment.
-        conda env create --file env.yml
+        conda env create --file environment.yml
         # Also install flake8 (for linting).
         conda install flake8
         # Install SEISMIC-RNA and its Python dependencies with pip.
