@@ -27,7 +27,10 @@ jobs:
       - name: Install Dependencies
         run: |
           echo "WORKING DIRECTORY: $PWD"
-          ls
+          echo "CONTENTS"
+          ls .
+          echo "PARENT CONTENTS"
+          ls ..
           pip install -r docs-requirements.txt
 
       - name: Build Documentation
