@@ -3,7 +3,7 @@ Learn SEISMIC-RNA in 5 minutes
 ********************************************************************************
 
 
-Option 1: Quick installation (if you already have Conda)
+Write Me
 ================================================================================
 
 SEISMIC-RNA
