@@ -21,10 +21,13 @@ jobs:
 
     steps:
 
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Set up Python
         uses: actions/setup-python@v2
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
           echo "WORKING DIRECTORY: $PWD"
           echo "CONTENTS"
@@ -33,11 +36,11 @@ jobs:
           ls ..
           pip install -r docs-requirements.txt
 
-      - name: Build Documentation
+      - name: Build documentation
         run: |
           cd src/userdocs
           bash make.sh
           cd ../..
 
-      - name: Deploy Documentation
+      - name: Deploy documentation
         uses: sphinx-notes/pages@v3
