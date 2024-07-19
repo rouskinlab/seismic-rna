@@ -7,17 +7,9 @@ on:
 
 jobs:
 
-  build-and-deploy:
+  build:
 
     runs-on: ubuntu-latest
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    permissions:
-      pages: write
-      id-token: write
 
     steps:
 
@@ -45,6 +37,22 @@ jobs:
           cd src/userdocs
           bash make.sh
           cd ../..
+
+  deploy:
+
+    needs: build
+
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
 
       - name: Deploy documentation
         uses: sphinx-notes/pages@v3
