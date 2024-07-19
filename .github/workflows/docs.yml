@@ -27,7 +27,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
 
-      - name: Install dependencies
+      - name: Install SEISMIC-RNA from its GitHub repository
+        run: |
+          pip install .
+
+      - name: Install dependencies for building the documentation
         run: |
           echo "WORKING DIRECTORY: $PWD"
           echo "CONTENTS"
