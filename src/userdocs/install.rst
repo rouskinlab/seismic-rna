@@ -81,7 +81,7 @@ If installing with Conda fails, then try :ref:`install_without_conda`.
 
 .. _install_without_conda:
 
-Option 3: Step-by-Step installation without Conda
+Option 3: Step-by-step installation without Conda
 ================================================================================
 
 Although Conda is the easiest means to install SEISMIC-RNA, it is not necessary.
@@ -101,8 +101,8 @@ Install SEISMIC-RNA and its Python dependencies
 Option 3a: Install SEISMIC-RNA from the Python Package Index
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We recommend installing SEISMIC-RNA from the Python Package, which will download
-the latest stable version that has been released.
+We recommend installing SEISMIC-RNA from the Python Package Index, which will
+download the latest stable version that has been released.
 In a terminal, type this command to install it and all its Python dependencies::
 
     pip install seismic-rna
@@ -110,9 +110,8 @@ In a terminal, type this command to install it and all its Python dependencies::
 Option 3b: Install SEISMIC-RNA from GitHub
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We recommend installing from GitHub only if you need the latest source code,
-which may be unstable or contain significant bugs (most users do not, and should
-instead use the latest stable version from the Python Package Index).
+We do *not* recommend installing from GitHub unless you need the latest source
+code (most users do not), which may be unstable or contain significant bugs.
 In a terminal, navigate to the directory into which to install SEISMIC-RNA.
 If Git_ is installed on your computer, then clone the GitHub repository::
 
@@ -128,8 +127,11 @@ code directory that you downloaded, e.g. ::
     pip install ~/Downloads/seismic-rna
 
 If you want to be able to modify the source code after you install SEISMIC-RNA
-and have those changes come into effect, then add the flag ``-e``.
-Otherwise, to save space, you may delete the source code after installation.
+and have those changes come into effect, then add the flag ``-e``, e.g. ::
+
+    pip install -e ~/Downloads/seismic-rna
+
+Otherwise, you may delete the source code after installation to save space.
 
 Install the non-Python dependencies of SEISMIC-RNA
 --------------------------------------------------------------------------------
@@ -151,8 +153,8 @@ if you won't model RNA structures (using ``seismic fold``, ``seismic wf`` with
 the ``--fold`` option, ``seismic +sim fold``, or ``seismic +sim total``), then
 you don't need to install RNAstructure.
 Although all of these packages are available through Conda, if you are not using
-Conda (or the Conda installation fails) then you can also install them using the
-installation instructions in their documentation:
+Conda (or if the Conda installation fails) then you can also install them using
+the installation instructions in their documentation:
 
 - Bowtie2_ (make sure to install Bowtie2, not Bowtie)
 - FastQC_
@@ -217,16 +219,21 @@ Then update the dependencies of SEISMIC-RNA to the latest compatible versions::
 
 .. warning::
 
-    Do not use ``pip list --outdated`` to list outdated packages and then update
-    all of them automatically.
-    SEISMIC-RNA is not necessarily compatible with the latest versions of some
-    packages (e.g. NumPy 2.0), so installing them could cause problems.
-    If you update a dependency by itself (e.g. ``pip install -U numpy``), then
-    pip will update it *even if* its latest version is incompatible with another
-    installed package (whereas Conda will ensure all packages are compatible).
-    But if you update a package, then its dependencies will also be updated
-    automatically; in this case, pip will confirm that the dependencies are
-    compatible with the main package.
+    If you update a package with pip, then it will install the latest version
+    *without* checking if the package is a dependency of any other package.
+    For example, SEISMIC-RNA depends on NumPy but is incompatible with the
+    latest version of NumPy; ``pip install -U numpy`` will install the latest
+    version of NumPy, regardless, which will cause SEISMIC-RNA to crash.
+
+    However, if you update a package, then pip will also update its dependencies
+    and *will* ensure that the versions of the dependencies it installs are
+    compatible with the main package being updated.
+    Thus, the safe way to update all dependencies of a package using pip is to
+    update a package that is *not* a dependency of another package.
+    Assuming you have not installed any packages that depend on SEISMIC-RNA,
+    you can safely type ``pip install -U seismic-rna``, which will install the
+    latest version of SEISMIC-RNA and the latest *compatible* version of each of
+    its dependencies.
 
 
 Test SEISMIC-RNA after installing
@@ -283,7 +290,7 @@ If that does not solve your problem either, then please report a bug (see
 .. _Bioconda: https://bioconda.github.io/
 .. _Git: https://git-scm.com/
 .. _Miniconda: https://docs.anaconda.com/miniconda/
-.. _Pip: https://pip.pypa.io/en/stable/
+.. _pip: https://pip.pypa.io/en/stable/
 .. _Python: https://www.python.org/downloads/
 .. _Bowtie2: https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml
 .. _FastQC: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/

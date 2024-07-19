@@ -719,11 +719,18 @@ opt_quick_unbias_thresh = Option(
 
 # Cluster options
 
-opt_max_clusters = Option(
-    ("--max-clusters", "-k"),
+opt_min_clusters = Option(
+    ("--min-clusters", "-k"),
     type=int,
     default=0,
-    help="Attempt to find at most this many clusters"
+    help="Find at least this many clusters"
+)
+
+opt_max_clusters = Option(
+    ("--max-clusters", "-K"),
+    type=int,
+    default=0,
+    help="Find at most this many clusters (0 to stop at optimal number)"
 )
 
 opt_em_runs = Option(

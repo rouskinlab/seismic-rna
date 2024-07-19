@@ -15,7 +15,7 @@ class CigarOp(object):
     def __init__(self, op: str):
         if op not in (CIG_ALIGN, CIG_MATCH, CIG_SUBST,
                       CIG_DELET, CIG_INSRT, CIG_SCLIP):
-            raise ValueError(f"Invalid CIGAR operation: '{op}'")
+            raise ValueError(f"Invalid CIGAR operation: {repr(op)}")
         self._op = op
         self._len = 1
 

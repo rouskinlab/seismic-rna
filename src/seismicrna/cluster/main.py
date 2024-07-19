@@ -9,6 +9,7 @@ from ..core.arg import (CMD_CLUSTER,
                         arg_input_path,
                         opt_tmp_pfx,
                         opt_keep_tmp,
+                        opt_min_clusters,
                         opt_max_clusters,
                         opt_em_runs,
                         opt_em_thresh,
@@ -24,11 +25,12 @@ from ..mask.data import load_mask_dataset
 
 logger = getLogger(__name__)
 
-DEFAULT_ORDER = 2
+DEFAULT_MIN_CLUSTERS = 1
 
 
 @run_func(logger.critical, with_tmp=True)
 def run(input_path: tuple[str, ...], *,
+        min_clusters: int,
         max_clusters: int,
         em_runs: int,
         min_em_iter: int,
@@ -40,8 +42,7 @@ def run(input_path: tuple[str, ...], *,
         force: bool,
         tmp_dir: Path) -> list[Path]:
     """ Infer alternative structures by clustering reads' mutations. """
-    if max_clusters == 0:
-        # Exit immediately if the maximum number of clusters is 0.
+    if min_clusters <= 0 and max_clusters <= 0:
         return list()
     # Find the mask report files.
     report_files = path.find_files_chain(
@@ -53,7 +54,8 @@ def run(input_path: tuple[str, ...], *,
                     parallel,
                     pass_n_procs=True,
                     args=as_list_of_tuples(report_files),
-                    kwargs=dict(max_order=max_clusters,
+                    kwargs=dict(min_order=min_clusters,
+                                max_order=max_clusters,
                                 n_runs=em_runs,
                                 min_iter=min_em_iter,
                                 max_iter=max_em_iter,
@@ -67,6 +69,7 @@ params = [
     # Input files
     arg_input_path,
     # Clustering options
+    opt_min_clusters,
     opt_max_clusters,
     opt_em_runs,
     opt_em_thresh,
@@ -85,17 +88,20 @@ params = [
 
 
 @command(CMD_CLUSTER, params=params)
-def cli(*args, max_clusters: int, **kwargs):
+def cli(*args, min_clusters: int, max_clusters: int, **kwargs):
     """ Infer alternative structures by clustering reads' mutations. """
     # When cluster is called via the command "cluster" (instead of via
-    # the run() function), assume that clustering is intentional. Thus,
-    # override the default max_clusters == 0 (which disables clustering)
-    # by setting it to 2 (the minimum non-trivial order of clustering).
-    if max_clusters <= 0:
-        logger.warning(f"{repr(CMD_CLUSTER)} expected --max-clusters to be ≥ 1, "
-                       f"but got {max_clusters}; defaulting to {DEFAULT_ORDER}")
-        max_clusters = DEFAULT_ORDER
-    return run(*args, max_clusters=max_clusters, **kwargs)
+    # the run() function), assume min_clusters should be ≥ 1.
+    if min_clusters <= 0:
+        logger.warning(
+            f"{repr(CMD_CLUSTER)} expected --min-clusters to be ≥ 1, "
+            f"but got {min_clusters}; defaulting to {DEFAULT_MIN_CLUSTERS}"
+        )
+        min_clusters = DEFAULT_MIN_CLUSTERS
+    return run(*args,
+               min_clusters=min_clusters,
+               max_clusters=max_clusters,
+               **kwargs)
 
 ########################################################################
 #                                                                      #

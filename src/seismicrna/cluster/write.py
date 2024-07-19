@@ -115,6 +115,7 @@ def run_max_order(uniq_reads: UniqReads, **kwargs):
 
 
 def cluster(mask_report_file: Path,
+            min_order: int,
             max_order: int,
             n_runs: int, *,
             n_procs: int,

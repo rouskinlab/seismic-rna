@@ -1,0 +1,38 @@
+name: Build and Deploy Documentation to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  build-and-deploy:
+
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+
+      - name: Install Dependencies
+        run: |
+          pip install -r docs-requirements.txt
+
+      - name: Build Documentation
+        run: |
+          cd src/userdocs
+          bash make.sh
+          cd ../..
+
+      - name: Deploy Documentation
+        uses: sphinx-notes/pages@v3
