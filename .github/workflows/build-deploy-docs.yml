@@ -43,6 +43,7 @@ jobs:
           cd ../..
   # Deploy built documentation files to GitHub Pages.
   deploy:
+    needs: build
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
