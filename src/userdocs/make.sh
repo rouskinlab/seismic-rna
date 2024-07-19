@@ -1,7 +1,9 @@
 #!/bin/bash
 
-set -eu -o pipefail
+# This script MUST be run from the directory containing it, i.e.
+# cd src/userdocs; bash make.sh
 
+set -eu -o pipefail
 
 # Directories
 ROOT_DIR=$PWD/../..
