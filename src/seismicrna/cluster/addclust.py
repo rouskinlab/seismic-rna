@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from click import command
 
-from .compare import RunOrderResults, get_log_exp_obs_counts
+from .compare import CompareRunsK, get_log_exp_obs_counts
 from .compare import find_best_order
 from .csv import copy_all_run_tables, get_count_path
 from .data import ClusterMutsDataset
@@ -15,7 +15,7 @@ from .io import ClusterBatchIO
 from .names import BIT_VECTOR_NAME, LOG_OBS_NAME
 from .report import ClusterReport
 from .uniq import UniqReads
-from .write import run_orders
+from .write import run_ks
 from ..core import path
 from ..core.arg import (CMD_ADDCLUST,
                         arg_input_path,
@@ -53,7 +53,7 @@ logger = getLogger(__name__)
 BTYPE = ClusterBatchIO.btype()
 
 
-def update_log_counts(new_orders: list[RunOrderResults],
+def update_log_counts(new_orders: list[CompareRunsK],
                       tmp_dir: Path,
                       out_dir: Path,
                       sample: str,
@@ -86,7 +86,7 @@ def update_log_counts(new_orders: list[RunOrderResults],
 
 
 def update_batches(dataset: ClusterMutsDataset,
-                   new_orders: list[RunOrderResults],
+                   new_orders: list[CompareRunsK],
                    tmp_dir: Path,
                    brotli_level: int):
     """ Update the cluster memberships in batches. """
@@ -109,7 +109,7 @@ def update_batches(dataset: ClusterMutsDataset,
 
 def update_field(report: ClusterReport,
                  field: Field,
-                 new_orders: list[RunOrderResults],
+                 new_orders: list[CompareRunsK],
                  attr: str):
     """ Merge the field from the original report with the field from the
     new orders. """
@@ -125,7 +125,7 @@ def update_field(report: ClusterReport,
 def update_report(original_report: ClusterReport,
                   max_order: int,
                   best_order: int,
-                  new_orders: list[RunOrderResults],
+                  new_orders: list[CompareRunsK],
                   checksums: list[str],
                   began: datetime,
                   ended: datetime,
@@ -195,7 +195,7 @@ def add_orders(report_file: Path,
             # the maximum order, not because the BIC decreased.
             uniq_reads = UniqReads.from_dataset_contig(dataset)
             # Add more clusters up to max_order.
-            new_orders = list(run_orders(
+            new_orders = list(run_ks(
                 uniq_reads,
                 original_max_order + 1,
                 max_order,

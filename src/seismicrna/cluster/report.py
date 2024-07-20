@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from .compare import RunOrderResults, find_best_order
+from .compare import CompareRunsK, find_best_order
 from .io import ClusterIO, ClusterBatchIO
 from .uniq import UniqReads
 from ..core import path
@@ -61,7 +61,7 @@ class ClusterReport(BatchedReport, ClusterIO):
 
     @classmethod
     def from_clusters(cls,
-                      orders: list[RunOrderResults],
+                      orders: list[CompareRunsK],
                       uniq_reads: UniqReads,
                       max_order: int,
                       num_runs: int, *,

@@ -719,18 +719,25 @@ opt_quick_unbias_thresh = Option(
 
 # Cluster options
 
+opt_cluster = Option(
+    ("--cluster/--no-cluster",),
+    type=bool,
+    default=True,
+    help="Cluster reads to find alternative structures"
+)
+
 opt_min_clusters = Option(
-    ("--min-clusters", "-k"),
+    ("--min-clusters", "-K"),
     type=int,
-    default=0,
-    help="Find at least this many clusters"
+    default=1,
+    help="Start at this many clusters"
 )
 
 opt_max_clusters = Option(
-    ("--max-clusters", "-K"),
+    ("--max-clusters", "-k"),
     type=int,
     default=0,
-    help="Find at most this many clusters (0 to stop at optimal number)"
+    help="Stop at this many clusters (0 to stop at optimal number)"
 )
 
 opt_em_runs = Option(
@@ -759,6 +766,27 @@ opt_em_thresh = Option(
     type=float,
     default=round(1. / math.e, 2),
     help="Stop EM when the log likelihood increases by less than this threshold"
+)
+
+opt_use_bic = Option(
+    ("--use-bic/--ignore-bic",),
+    type=bool,
+    default=True,
+    help="Use the BIC to choose the optimal number of clusters"
+)
+
+opt_use_clust_corr = Option(
+    ("--use-clust-corr/--ignore-clust-corr",),
+    type=bool,
+    default=True,
+    help="Use the correlations among clusters to choose the optimal number"
+)
+
+opt_max_clust_corr = Option(
+    ("--max-clust-corr",),
+    type=float,
+    default=0.9,
+    help="Require no pair of clusters to have a correlation ",
 )
 
 # Join options

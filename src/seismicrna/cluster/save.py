@@ -2,13 +2,13 @@ from pathlib import Path
 
 import pandas as pd
 
-from .compare import RunOrderResults
+from .compare import CompareRunsK
 from .io import ClusterBatchIO
 from ..mask.data import MaskMutsDataset
 
 
 def write_batches(dataset: MaskMutsDataset,
-                  orders: list[RunOrderResults],
+                  orders: list[CompareRunsK],
                   brotli_level: int,
                   top: Path):
     """ Write the cluster memberships to batch files. """

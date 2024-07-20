@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .compare import RunOrderResults, find_best_order, sort_replicate_runs
+from .compare import CompareRunsK, find_best_order, sort_replicate_runs
 from .csv import write_log_counts, write_mus, write_props
 from .em import EmClustering
 from .report import ClusterReport
@@ -24,15 +24,15 @@ logger = getLogger(__name__)
 SEED_DTYPE = np.uint32
 
 
-def run_order(uniq_reads: UniqReads,
-              order: int,
-              n_runs: int, *,
-              n_procs: int,
-              **kwargs) -> list[EmClustering]:
+def run_k(uniq_reads: UniqReads,
+          k: int,
+          n_runs: int, *,
+          n_procs: int,
+          **kwargs) -> list[EmClustering]:
     """ Run EM with a specific number of clusters. """
-    logger.info(f"Began {n_runs} run(s) of EM with {order} cluster(s)")
+    logger.info(f"Began {n_runs} run(s) of EM with {k} cluster(s)")
     # Initialize one EmClustering object for each replicate run.
-    replicates = [EmClustering(uniq_reads, order, **kwargs)
+    replicates = [EmClustering(uniq_reads, k, **kwargs)
                   for _ in range(n_runs)]
     # Run independent replicates of the clustering algorithm.
     rng = np.random.default_rng()
@@ -44,21 +44,23 @@ def run_order(uniq_reads: UniqReads,
                           parallel=True,
                           pass_n_procs=False,
                           args=seeds)
-    logger.info(f"Ended {n_runs} run(s) of EM with {order} cluster(s)")
+    logger.info(f"Ended {n_runs} run(s) of EM with {k} cluster(s)")
     return sort_replicate_runs(replicates)
 
 
-def run_orders(uniq_reads: UniqReads,
-               min_order: int,
-               max_order: int,
-               n_runs: int,
-               prev_bic: float | None, *,
-               min_iter: int,
-               max_iter: int,
-               em_thresh: float,
-               n_procs: int,
-               top: Path,
-               **kwargs):
+def run_ks(uniq_reads: UniqReads,
+           min_clusters: int,
+           max_clusters: int,
+           n_runs: int, *,
+           use_bic: bool = True,
+           use_clust_corr: bool = False,
+           prev_bic: float | None = None,
+           min_iter: int,
+           max_iter: int,
+           em_thresh: float,
+           n_procs: int,
+           top: Path,
+           **kwargs):
     """ Find the optimal order, from min_order to max_order. """
     if n_runs < 1:
         logger.warning(f"Number of runs must be ≥ 1: setting to 1")
@@ -68,55 +70,60 @@ def run_orders(uniq_reads: UniqReads,
                        ref=uniq_reads.ref,
                        sect=uniq_reads.section.name)
     # Run clustering for each order from min_order to max_order.
-    for order in range(min_order, max_order + 1):
+    if min_clusters < 1:
+        logger.warning(f"min_clusters must be ≥ 1, but got {min_clusters}; "
+                       f"setting min_clusters to 1")
+        min_clusters = 1
+    if max_clusters < 0:
+        logger.warning(f"max_clusters must be ≥ 0, but got {max_clusters}; "
+                       f"setting max_clusters to 0")
+        max_clusters = 0
+    k = min_clusters
+    clustering = True
+    while clustering and (max_clusters == 0 or k <= max_clusters):
         # Cluster n_runs times with different starting points.
-        runs = run_order(uniq_reads,
-                         order,
-                         n_runs=(n_runs if order > 1 else 1),
-                         em_thresh=(em_thresh if order > 1 else inf),
-                         min_iter=(min_iter * order if order > 1 else 2),
-                         max_iter=(max_iter * order if order > 1 else 2),
-                         n_procs=n_procs,
-                         **kwargs)
+        runs = run_k(uniq_reads,
+                     k,
+                     n_runs=(n_runs if k > 1 else 1),
+                     em_thresh=(em_thresh if k > 1 else inf),
+                     min_iter=(min_iter * k if k > 1 else 2),
+                     max_iter=(max_iter * k if k > 1 else 2),
+                     n_procs=n_procs,
+                     **kwargs)
         # Output tables of the mutation rates and cluster proportions
         # for every run.
         for rank, run in enumerate(runs):
             write_mus(run, rank=rank, **path_kwargs)
             write_props(run, rank=rank, **path_kwargs)
-        # Compute a summary of all runs.
-        orders = RunOrderResults(runs)
-        # Compare the BIC for this order to lower orders, if any.
-        best_bic = orders.bic
-        logger.debug(f"The best BIC with order {order} is {best_bic}")
-        if prev_bic is not None:
-            # Check if the best BIC is better (smaller) than the best
-            # BIC from the previous order.
-            if best_bic < prev_bic:
-                # If the best BIC is < the previous best BIC, then this
-                # order is better than the previous.
-                logger.debug(f"The BIC decreased from {prev_bic} "
-                             f"(order {order - 1}) to {best_bic} "
-                             f"(order {order})")
-            else:
-                # If the best BIC is ≥ the previous best BIC, then this
-                # order is worse than the previous: stop.
-                logger.info(f"The BIC failed to decrease from {prev_bic} "
-                            f"(order {order - 1}) to {best_bic} "
-                            f"(order {order}): stopping")
-                break
-        # Record the best BIC for comparison with the next order.
-        prev_bic = best_bic
-        yield orders
-
-
-def run_max_order(uniq_reads: UniqReads, **kwargs):
-    """ Find the optimal order, from 1 to max_order. """
-    yield from run_orders(uniq_reads, min_order=1, prev_bic=None, **kwargs)
+        # Compare all runs for this k.
+        comparison = CompareRunsK(runs)
+        if use_bic:
+            # Compare the BIC for this k to lower ks, if any.
+            best_bic = comparison.bic
+            logger.debug(f"The best BIC with k={k} is {best_bic}")
+            if prev_bic is not None:
+                # Check if the BIC is better (smaller) than the BIC of
+                # the previous k.
+                if best_bic < prev_bic:
+                    # If the BIC is less than the previous BIC, then
+                    # this k is better than the previous k.
+                    logger.debug(f"The BIC decreased from {prev_bic} "
+                                 f"(k={k - 1}) to {best_bic} (k={k})")
+                else:
+                    # If the best BIC is ≥ the previous best BIC, then
+                    # this k is worse than the previous k: stop.
+                    logger.info(f"The BIC failed to decrease from {prev_bic} "
+                                f"(k={k - 1}) to {best_bic} (k={k})")
+                    clustering = False
+            # Record the best BIC for comparison with the next k.
+            prev_bic = best_bic
+        yield comparison
+        k += 1
 
 
 def cluster(mask_report_file: Path,
-            min_order: int,
-            max_order: int,
+            min_clusters: int,
+            max_clusters: int,
             n_runs: int, *,
             n_procs: int,
             brotli_level: int,
@@ -130,8 +137,7 @@ def cluster(mask_report_file: Path,
                                            ClusterReport)
     if need_write(cluster_report_file, force):
         began = datetime.now()
-        logger.info(f"Began clustering {mask_report_file} up to order "
-                    f"{max_order}, with {n_runs} run(s) per order")
+        logger.info(f"Began clustering {mask_report_file}")
         # Load the unique reads.
         dataset = load_mask_dataset(mask_report_file)
         if dataset.min_mut_gap != 3:
@@ -140,12 +146,13 @@ def cluster(mask_report_file: Path,
                            f"but got min_mut_gap={dataset.min_mut_gap}")
         uniq_reads = UniqReads.from_dataset_contig(dataset)
         # Run clustering for every order.
-        orders = list(run_max_order(uniq_reads,
-                                    max_order=max_order,
-                                    n_runs=n_runs,
-                                    n_procs=n_procs,
-                                    top=tmp_dir,
-                                    **kwargs))
+        orders = list(run_ks(uniq_reads,
+                             min_clusters=min_clusters,
+                             max_clusters=max_clusters,
+                             n_runs=n_runs,
+                             n_procs=n_procs,
+                             top=tmp_dir,
+                             **kwargs))
         # Output the observed and expected counts for every best run.
         write_log_counts(orders,
                          top=tmp_dir,
@@ -157,7 +164,7 @@ def cluster(mask_report_file: Path,
         ended = datetime.now()
         report = ClusterReport.from_clusters(orders,
                                              uniq_reads,
-                                             max_order,
+                                             max_clusters,
                                              n_runs,
                                              checksums=checksums,
                                              began=began,

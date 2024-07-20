@@ -501,7 +501,7 @@ class EmClustering(object):
                             columns=self.clusters)
 
     def __str__(self):
-        return f"{type(self).__name__} {self.uniq_reads} to order {self.order}"
+        return f"{type(self).__name__} {self.uniq_reads} with k={self.order}"
 
 ########################################################################
 #                                                                      #

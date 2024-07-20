@@ -42,7 +42,7 @@ def sort_replicate_runs(runs: list[EmClustering]):
     return sorted(runs, key=lambda run: run.log_like, reverse=True)
 
 
-class RunOrderResults(object):
+class CompareRunsK(object):
     """ Results of clustering runs of the same order. """
 
     def __init__(self, runs: list[EmClustering]):
@@ -71,7 +71,7 @@ class RunOrderResults(object):
         return self.best.bic
 
 
-def get_common_best_run_attr(orders: list[RunOrderResults], attr: str):
+def get_common_best_run_attr(orders: list[CompareRunsK], attr: str):
     """ Get an attribute of the best clustering run from every order,
     and confirm that `key(attribute)` is identical for all orders. """
     # Start by getting the attribute from the first order.
@@ -84,7 +84,7 @@ def get_common_best_run_attr(orders: list[RunOrderResults], attr: str):
     return value
 
 
-def find_best_order(orders: list[RunOrderResults]) -> int:
+def find_best_order(orders: list[CompareRunsK]) -> int:
     """ Find the number of clusters with the best (smallest) BIC. """
     return sorted(orders, key=lambda runs: runs.bic)[0].order
 
@@ -100,7 +100,7 @@ def parse_exp_count_col(col: str):
     return int(order)
 
 
-def get_log_exp_obs_counts(orders: list[RunOrderResults]):
+def get_log_exp_obs_counts(orders: list[CompareRunsK]):
     """ Get the expected and observed log counts of each bit vector. """
     # Retrieve the unique bit vectors from the clusters.
     uniq_reads = get_common_best_run_attr(orders, "uniq_reads")

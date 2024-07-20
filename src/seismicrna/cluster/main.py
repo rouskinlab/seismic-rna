@@ -42,8 +42,6 @@ def run(input_path: tuple[str, ...], *,
         force: bool,
         tmp_dir: Path) -> list[Path]:
     """ Infer alternative structures by clustering reads' mutations. """
-    if min_clusters <= 0 and max_clusters <= 0:
-        return list()
     # Find the mask report files.
     report_files = path.find_files_chain(
         input_path, load_mask_dataset.report_path_seg_types
@@ -54,8 +52,8 @@ def run(input_path: tuple[str, ...], *,
                     parallel,
                     pass_n_procs=True,
                     args=as_list_of_tuples(report_files),
-                    kwargs=dict(min_order=min_clusters,
-                                max_order=max_clusters,
+                    kwargs=dict(min_clusters=min_clusters,
+                                max_clusters=max_clusters,
                                 n_runs=em_runs,
                                 min_iter=min_em_iter,
                                 max_iter=max_em_iter,
@@ -88,20 +86,9 @@ params = [
 
 
 @command(CMD_CLUSTER, params=params)
-def cli(*args, min_clusters: int, max_clusters: int, **kwargs):
+def cli(*args, **kwargs):
     """ Infer alternative structures by clustering reads' mutations. """
-    # When cluster is called via the command "cluster" (instead of via
-    # the run() function), assume min_clusters should be ≥ 1.
-    if min_clusters <= 0:
-        logger.warning(
-            f"{repr(CMD_CLUSTER)} expected --min-clusters to be ≥ 1, "
-            f"but got {min_clusters}; defaulting to {DEFAULT_MIN_CLUSTERS}"
-        )
-        min_clusters = DEFAULT_MIN_CLUSTERS
-    return run(*args,
-               min_clusters=min_clusters,
-               max_clusters=max_clusters,
-               **kwargs)
+    return run(*args, **kwargs)
 
 ########################################################################
 #                                                                      #
