@@ -24,6 +24,10 @@ concurrency:
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        # Ensure the workflow runs with bash (on GitHub Actions, Conda only works with bash)
+        shell: bash -el {0}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

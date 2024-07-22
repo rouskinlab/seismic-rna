@@ -18,21 +18,18 @@ concurrency:
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        # Ensure the workflow runs with bash (on GitHub Actions, Conda only works with bash)
+        shell: bash -el {0}
     steps:
       - name: Checkout this GitHub repository
         uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-      - name: Add Conda to system path
+      - name: Install non-Python dependencies
         run: |
-          # $CONDA is an environment variable pointing to the root of the miniconda directory
-          echo $CONDA/bin >> $GITHUB_PATH
-      - name: Install SEISMIC-RNA
+          conda install -n base --file environment.yml
+      - name: Install SEISMIC-RNA from source
         run: |
-          conda env create --file environment.yml
-          conda activate seismic
-          # Install SEISMIC-RNA from source.
           pip install .
       - name: Run the test suite
         run: |
