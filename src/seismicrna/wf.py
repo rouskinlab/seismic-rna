@@ -13,10 +13,8 @@ from click import command
 from . import (demult as demultiplex_mod,
                align as align_mod,
                relate as relate_mod,
-               pool as pool_mod,
                mask as mask_mod,
                cluster as cluster_mod,
-               join as join_mod,
                table as table_mod,
                fold as fold_mod,
                export as export_mod)
@@ -152,8 +150,6 @@ def run(fasta: str,
         clip_end5: int,
         clip_end3: int,
         batch_size: int,
-        # Pool options
-        pool: str,
         # Mask options
         mask_coords: tuple[tuple[str, int, int], ...],
         mask_primers: tuple[tuple[str, DNA, DNA], ...],
@@ -182,9 +178,6 @@ def run(fasta: str,
         min_em_iter: int,
         max_em_iter: int,
         em_thresh: float,
-        # Join options
-        joined: str,
-        join_clusts: str,
         # Table options
         table_pos: bool,
         table_read: bool,
@@ -328,14 +321,6 @@ def run(fasta: str,
         force=force,
         keep_tmp=keep_tmp,
     ))
-    # Pool
-    input_path += as_tuple_str(pool_mod.run(
-        input_path=input_path,
-        pool=pool,
-        max_procs=max_procs,
-        parallel=parallel,
-        force=force,
-    ))
     # Mask
     input_path += as_tuple_str(mask_mod.run(
         input_path=input_path,
@@ -376,15 +361,6 @@ def run(fasta: str,
         max_em_iter=max_em_iter,
         em_thresh=em_thresh,
         brotli_level=brotli_level,
-        max_procs=max_procs,
-        parallel=parallel,
-        force=force,
-    ))
-    # Join
-    input_path += as_tuple_str(join_mod.run(
-        input_path=input_path,
-        joined=joined,
-        join_clusts=join_clusts,
         max_procs=max_procs,
         parallel=parallel,
         force=force,
@@ -569,10 +545,8 @@ params = merge_params([opt_demultiplex],
                       demultiplex_mod.params,
                       align_mod.params,
                       relate_mod.params,
-                      pool_mod.params,
                       mask_mod.params,
                       cluster_mod.params,
-                      join_mod.params,
                       table_mod.params,
                       [opt_fold],
                       fold_mod.params,
