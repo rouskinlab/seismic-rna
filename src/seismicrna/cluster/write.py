@@ -95,7 +95,9 @@ def run_ks(uniq_reads: UniqReads,
             write_mus(run, rank=rank, **path_kwargs)
             write_props(run, rank=rank, **path_kwargs)
         # Compare all runs for this k.
-        runs_ks.append(EMRunsK(runs))
+        runs_ks.append(EMRunsK(runs,
+                               max_pearson=max_pearson,
+                               min_nrmsd=min_nrmsd))
         if cluster_best and k != find_best_k(runs_ks,
                                              max_pearson=max_pearson,
                                              min_nrmsd=min_nrmsd):

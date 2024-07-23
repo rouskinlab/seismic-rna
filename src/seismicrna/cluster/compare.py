@@ -38,7 +38,7 @@ def sort_runs(runs: list[EMRun]):
 class EMRunsK(object):
     """ One or more EM runs with the same number of clusters. """
 
-    def __init__(self, runs: list[EMRun]):
+    def __init__(self, runs: list[EMRun], max_pearson: float, min_nrmsd: float):
         if not runs:
             raise ValueError("Got no clustering runs")
         runs = sort_runs(runs)
@@ -59,7 +59,10 @@ class EMRunsK(object):
         self.min_nrmsds = [run.calc_min_nrmsd() for run in runs]
         # Maximum Pearson correlation between any two clusters
         self.max_pearsons = [run.calc_max_pearson() for run in runs]
-        # Run with the best (largest) likelihood.
+        # Remove runs for which any pair of clusters has an invalid
+        # Pearson correlation or NRMSD.
+        runs = filter_runs(runs, max_pearson=max_pearson, min_nrmsd=min_nrmsd)
+        # Keep the remaining run with the best (largest) likelihood.
         self.best = runs[0]
 
     @property
@@ -71,19 +74,6 @@ class EMRunsK(object):
 
     def calc_min_nrmsd(self):
         return self.best.calc_min_nrmsd()
-
-
-def get_common_best_run_attr(ks: list[EMRunsK], attr: str):
-    """ Get an attribute of the best clustering run from every k, and
-    confirm that `key(attribute)` is identical for every k. """
-    # Start by getting the attribute from the first k.
-    value = getattr(ks[0].best, attr)
-    # Verify that the best run from every other k has an equal value
-    # of that attribute.
-    if any(getattr(k.best, attr) != value for k in ks[1:]):
-        raise ValueError(f"Found more than 1 value for attribute {repr(attr)} "
-                         f"among k values {ks}")
-    return value
 
 
 def filter_runs(runs: list[EMRun] | list[EMRunsK],
@@ -112,10 +102,25 @@ def filter_runs(runs: list[EMRun] | list[EMRunsK],
     return runs
 
 
+def get_common_best_run_attr(ks: list[EMRunsK], attr: str):
+    """ Get an attribute of the best clustering run from every k, and
+    confirm that `key(attribute)` is identical for every k. """
+    # Start by getting the attribute from the first k.
+    value = getattr(ks[0].best, attr)
+    # Verify that the best run from every other k has an equal value
+    # of that attribute.
+    if any(getattr(k.best, attr) != value for k in ks[1:]):
+        raise ValueError(f"Found more than 1 value for attribute {repr(attr)} "
+                         f"among k values {ks}")
+    return value
+
+
 def find_best_k(ks: list[EMRunsK], max_pearson: float, min_nrmsd: float):
     """ Find the best number of clusters. """
     if not ks:
         raise ValueError("Got no groups of EM runs with any number of clusters")
+    # Remove runs for which any pair of clusters has an invalid Pearson
+    # correlation or NRMSD.
     ks = filter_runs(ks, max_pearson=max_pearson, min_nrmsd=min_nrmsd)
     # Of the remaining numbers of clusters, find the number that gives
     # the smallest BIC.

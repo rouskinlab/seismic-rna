@@ -88,6 +88,7 @@ class ClusterReport(BatchedReport, ClusterIO):
                       began: datetime,
                       ended: datetime):
         """ Create a ClusterReport from EmClustering objects. """
+        ks2 = [runs for runs in ks if runs.k >= 2]
         return cls(sample=uniq_reads.sample,
                    ref=uniq_reads.ref,
                    sect=uniq_reads.section.name,
@@ -103,13 +104,13 @@ class ClusterReport(BatchedReport, ClusterIO):
                    em_thresh=em_thresh,
                    checksums={ClusterBatchIO.btype(): checksums},
                    n_batches=len(checksums),
+                   nrmsd_vs_0={runs.k: runs.nrmsd_vs_0 for runs in ks2},
+                   pearson_vs_0={runs.k: runs.pearson_vs_0 for runs in ks2},
+                   min_nrmsds={runs.k: runs.min_nrmsds for runs in ks2},
+                   max_pearsons={runs.k: runs.max_pearsons for runs in ks2},
                    converged={runs.k: runs.converged for runs in ks},
                    log_likes={runs.k: runs.log_likes for runs in ks},
-                   nrmsd_vs_0={runs.k: runs.nrmsd_vs_0 for runs in ks},
-                   pearson_vs_0={runs.k: runs.pearson_vs_0 for runs in ks},
-                   min_nrmsds={runs.k: runs.min_nrmsds for runs in ks},
-                   max_pearsons={runs.k: runs.max_pearsons for runs in ks},
-                   bic={runs.k: runs.best.bic for runs in ks},
+                   bic={runs.k: runs.bic for runs in ks},
                    best_k=find_best_k(ks,
                                       min_nrmsd=min_nrmsd,
                                       max_pearson=max_pearson),

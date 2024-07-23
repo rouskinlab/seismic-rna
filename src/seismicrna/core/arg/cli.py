@@ -845,7 +845,7 @@ opt_table_clust = Option(
     ("--table-clust/--no-table-clust",),
     type=bool,
     default=True,
-    help="Make a table counting reads per cluster (only for clustered data)"
+    help="Make a table counting reads per cluster (only for cluster reports)"
 )
 
 # List options
