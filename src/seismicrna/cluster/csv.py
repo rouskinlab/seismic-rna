@@ -5,8 +5,8 @@ from typing import Callable
 
 import pandas as pd
 
-from .compare import CompareRunsK, get_log_exp_obs_counts
-from .em import EmClustering
+from .compare import EMRunsK, get_log_exp_obs_counts
+from .em import EMRun
 from ..core import path
 
 logger = getLogger(__name__)
@@ -34,24 +34,24 @@ def get_table_path(top: Path,
                          ext=path.CSV_EXT)
 
 
-def write_single_run_table(run: EmClustering,
+def write_single_run_table(run: EMRun,
                            top: Path,
                            sample: str,
                            ref: str,
                            sect: str,
                            rank: int, *,
-                           output_func: Callable[[EmClustering], pd.DataFrame],
+                           output_func: Callable[[EMRun], pd.DataFrame],
                            table: str):
     """ Write a DataFrame of one type of data from one independent run
     of EM clustering to a CSV file. """
     data = output_func(run)
-    file = get_table_path(top, sample, ref, sect, table, run.order, rank)
+    file = get_table_path(top, sample, ref, sect, table, run.k, rank)
     data.round(PRECISION).to_csv(file, header=True, index=True)
     logger.info(f"Wrote {table} of {run} to {file}")
     return file
 
 
-def write_props(run: EmClustering,
+def write_props(run: EMRun,
                 top: Path,
                 sample: str,
                 ref: str,
@@ -63,11 +63,11 @@ def write_props(run: EmClustering,
                                   ref,
                                   sect,
                                   rank,
-                                  output_func=EmClustering.get_props,
+                                  output_func=EMRun.get_props,
                                   table=path.CLUST_PROP_RUN_TABLE)
 
 
-def write_mus(run: EmClustering,
+def write_mus(run: EMRun,
               top: Path,
               sample: str,
               ref: str,
@@ -79,7 +79,7 @@ def write_mus(run: EmClustering,
                                   ref,
                                   sect,
                                   rank,
-                                  output_func=EmClustering.get_mus,
+                                  output_func=EMRun.get_mus,
                                   table=path.CLUST_MUS_RUN_TABLE)
 
 
@@ -94,7 +94,7 @@ def get_count_path(top: Path, sample: str, ref: str, sect: str):
                          ext=path.CSVZIP_EXT)
 
 
-def write_log_counts(orders: list[CompareRunsK],
+def write_log_counts(ks: list[EMRunsK],
                      top: Path,
                      sample: str,
                      ref: str,
@@ -102,7 +102,7 @@ def write_log_counts(orders: list[CompareRunsK],
     """ Write the expected and observed log counts of unique bit vectors
     to a CSV file. """
     # Calculate the log expected and observed counts.
-    log_counts = get_log_exp_obs_counts(orders).sort_index()
+    log_counts = get_log_exp_obs_counts(ks).sort_index()
     # Build the path for the output file.
     file = get_count_path(top, sample, ref, sect)
     # Write the log counts to the file.

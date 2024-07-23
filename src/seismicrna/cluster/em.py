@@ -1,5 +1,7 @@
 from functools import cached_property
+from itertools import combinations, filterfalse
 from logging import getLogger
+from typing import Callable
 
 import numpy as np
 import pandas as pd
@@ -17,12 +19,13 @@ from ..core.mu import (READS,
                        calc_params_observed,
                        calc_p_ends_given_noclose,
                        calc_p_clust_given_noclose,
+                       calc_pearson,
+                       calc_nrmsd,
                        triu_log)
 
 logger = getLogger(__name__)
 
 LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
-FIRST_ITER = 1  # number of the first iteration
 
 
 def _calc_bic(n_params: int,
@@ -163,13 +166,13 @@ def _calc_log_like(logp_marginal: np.ndarray, counts_per_uniq: np.ndarray):
     return float(np.vdot(logp_marginal, counts_per_uniq))
 
 
-class EmClustering(object):
+class EMRun(object):
     """ Run expectation-maximization to cluster the given reads into the
     specified number of clusters. """
 
     def __init__(self,
                  uniq_reads: UniqReads,
-                 order: int, *,
+                 k: int, *,
                  min_iter: int,
                  max_iter: int,
                  em_thresh: float):
@@ -178,9 +181,8 @@ class EmClustering(object):
         ----------
         uniq_reads: UniqReads
             Container of unique reads
-        order: int
-            Number of clusters into which to cluster the reads;
-            must be a positive integer
+        k: int
+            Number of clusters; must be a positive integer.
         min_iter: int
             Minimum number of iterations for clustering. Must be a
             positive integer no greater than `max_iter`.
@@ -196,9 +198,9 @@ class EmClustering(object):
         # Unique reads of mutations
         self.uniq_reads = uniq_reads
         # Number of clusters (i.e. order)
-        if not order >= 1:
-            raise ValueError(f"order must be ≥ 1, but got {order}")
-        self.order = order
+        if not k >= 1:
+            raise ValueError(f"order must be ≥ 1, but got {k}")
+        self.k = k
         # Minimum number of iterations of EM
         if not min_iter >= 1:
             raise ValueError(f"min_iter must be ≥ 1, but got {min_iter}")
@@ -214,16 +216,16 @@ class EmClustering(object):
         self.em_thresh = em_thresh
         # Mutation rates adjusted for observer bias.
         # 2D (all positions x clusters)
-        self.p_mut = np.zeros((self.n_pos_total, self.order))
+        self.p_mut = np.zeros((self.n_pos_total, self.k))
         # Read end coordinate proportions adjusted for observer bias.
         # 2D (all positions x all positions)
         self.p_ends = np.zeros((self.n_pos_total, self.n_pos_total))
         # Cluster proportions adjusted for observer bias.
         # 1D (clusters)
-        self.p_clust = np.zeros(self.order)
+        self.p_clust = np.zeros(self.k)
         # Likelihood of each unique read coming from each cluster.
         # 2D (unique reads x clusters)
-        self.membership = np.zeros((self.uniq_reads.num_uniq, self.order))
+        self.resps = np.zeros((self.uniq_reads.num_uniq, self.k))
         # Marginal likelihoods of observing each unique read.
         # 1D (unique reads)
         self.logp_marginal = np.zeros(self.uniq_reads.num_uniq)
@@ -272,7 +274,7 @@ class EmClustering(object):
     @cached_property
     def clusters(self):
         """ MultiIndex of the order and cluster numbers. """
-        return index_order_clusts(self.order)
+        return index_order_clusts(self.k)
 
     @property
     def log_like(self):
@@ -310,7 +312,7 @@ class EmClustering(object):
         # The cluster memberships are latent variables, not parameters.
         # The degrees of freedom of the mutation rates equals the total
         # number of unmasked positions times clusters.
-        df_mut = self.n_pos_unmasked * self.order
+        df_mut = self.n_pos_unmasked * self.k
         # The degrees of freedom of the coordinate proportions equals
         # the number of non-zero proportions (which are the only ones
         # that can be estimated) minus one because of the constraint
@@ -321,7 +323,7 @@ class EmClustering(object):
         # The degrees of freedom of the cluster proportions equals the
         # number of clusters minus one because of the constraint that
         # the proportions of all clusters must sum to 1.
-        df_clust = self.order - 1
+        df_clust = self.k - 1
         # The number of parameters is the sum of the degrees of freedom.
         return df_mut + df_ends + df_clust
 
@@ -343,13 +345,13 @@ class EmClustering(object):
          p_ends_observed,
          p_clust_observed) = calc_params_observed(
             self.n_pos_total,
-            self.order,
+            self.k,
             self.unmasked,
             self.uniq_reads.muts_per_pos,
             self.end5s,
             self.end3s,
             self.uniq_reads.counts_per_uniq,
-            self.membership
+            self.resps
         )
         if self.iter > 1:
             # If this iteration is not the first, then use the previous
@@ -387,7 +389,7 @@ class EmClustering(object):
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
         # Update the marginal probabilities and cluster memberships.
-        self.logp_marginal, self.membership = _expectation(
+        self.logp_marginal, self.resps = _expectation(
             self.p_mut,
             self.p_ends,
             self.p_clust,
@@ -412,7 +414,7 @@ class EmClustering(object):
 
         Returns
         -------
-        EmClustering
+        EMRun
             This instance, in order to permit statements such as
             ``return [em.run() for em in em_clusterings]``
         """
@@ -429,10 +431,10 @@ class EmClustering(object):
         # so that they can explore much of the parameter space).
         # Use the half-open interval (0, 1] because the concentration
         # parameter of a Dirichlet distribution can be 1 but not 0.
-        conc_params = 1. - rng.random(self.order)
+        conc_params = 1. - rng.random(self.k)
         # Initialize cluster membership with a Dirichlet distribution.
-        self.membership = rng.dirichlet(alpha=conc_params,
-                                        size=self.uniq_reads.num_uniq)
+        self.resps = rng.dirichlet(alpha=conc_params,
+                                   size=self.uniq_reads.num_uniq)
         if self.uniq_reads.num_uniq == 0 or self.n_pos_unmasked == 0:
             logger.warning(f"{self} got 0 reads or positions: stopping")
             self.log_likes.append(0.)
@@ -493,15 +495,34 @@ class EmClustering(object):
                             index=self.uniq_reads.section.unmasked_int,
                             columns=self.clusters)
 
-    def get_members(self, batch_num: int):
+    def get_resps(self, batch_num: int):
         """ Cluster memberships of the reads in the batch. """
         batch_uniq_nums = self.uniq_reads.batch_to_uniq[batch_num]
-        return pd.DataFrame(self.membership[batch_uniq_nums],
+        return pd.DataFrame(self.resps[batch_uniq_nums],
                             index=batch_uniq_nums.index,
                             columns=self.clusters)
 
+    def _calc_p_mut_pairs(self,
+                          stat: Callable[[np.ndarray, np.ndarray], float],
+                          summ: Callable[[list[float]], float]):
+        """ Calculate a statistic for each pair of mutation rates and
+        summarize them into one value. """
+        stats = list(filterfalse(
+            np.isnan,
+            [stat(*p) for p in combinations(self.p_mut[self.unmasked].T, 2)]
+        ))
+        return summ(stats) if stats else np.nan
+
+    def calc_max_pearson(self):
+        """ Maximum Pearson correlation among any pair of clusters. """
+        return self._calc_p_mut_pairs(calc_pearson, max)
+
+    def calc_min_nrmsd(self):
+        """ Minimum NRMSD among any pair of clusters. """
+        return self._calc_p_mut_pairs(calc_nrmsd, min)
+
     def __str__(self):
-        return f"{type(self).__name__} {self.uniq_reads} with k={self.order}"
+        return f"{type(self).__name__} {self.uniq_reads} with k={self.k}"
 
 ########################################################################
 #                                                                      #

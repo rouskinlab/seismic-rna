@@ -71,7 +71,11 @@ from .arg import (opt_phred_enc,
                   opt_min_em_iter,
                   opt_max_em_iter,
                   opt_max_fmut_read,
+                  opt_min_clusters,
                   opt_max_clusters,
+                  opt_max_pearson,
+                  opt_min_nrmsd,
+                  opt_cluster_best,
                   opt_mask_gu,
                   opt_mask_polya,
                   opt_mask_discontig,
@@ -469,7 +473,11 @@ NumUniqReadKeptF = Field("n_uniq_reads",
 MinIterClustF = OptionField(opt_min_em_iter)
 MaxIterClustF = OptionField(opt_max_em_iter)
 ClustConvThreshF = OptionField(opt_em_thresh)
+MinClustsF = OptionField(opt_min_clusters)
 MaxClustsF = OptionField(opt_max_clusters)
+MinNRMSDF = OptionField(opt_min_nrmsd)
+MaxPearsonF = OptionField(opt_max_pearson)
+ClusterBestF = OptionField(opt_cluster_best)
 ClustNumRunsF = OptionField(opt_em_runs)
 NON_CONVERGED = -1  # Number indicating a run did not converge
 ClustsConvF = Field("converged",
@@ -483,25 +491,37 @@ ClustsLogLikesF = Field("log_likes",
                         dict(),
                         iconv=iconv_int_keys,
                         oconv=get_oconv_dict_list_float())
-ClustsRMSDsF = Field("clusts_rmsds",
-                     "NRMSD of each run versus run 0",
+ClustsNRMSDVs0F = Field("nrmsd_vs_0",
+                        "NRMSD of each run versus run 0",
+                        dict,
+                        dict(),
+                        iconv=iconv_int_keys,
+                        oconv=get_oconv_dict_list_float())
+ClustsPearsonVs0F = Field("pearson_vs_0",
+                          "Pearson correlation of each run versus run 0",
+                          dict,
+                          dict(),
+                          iconv=iconv_int_keys,
+                          oconv=get_oconv_dict_list_float())
+MinNRMDSsF = Field("min_nrmsds",
+                   "Minimum NRMSD between any two clusters",
+                   dict,
+                   dict(),
+                   iconv=iconv_int_keys,
+                   oconv=get_oconv_dict_list_float())
+MaxPearsonsF = Field("max_pearsons",
+                     "Maximum Pearson correlation between any two clusters",
                      dict,
                      dict(),
                      iconv=iconv_int_keys,
                      oconv=get_oconv_dict_list_float())
-ClustsMeanRsF = Field("clusts_meanr",
-                      "Pearson correlation of each run versus run 0",
-                      dict,
-                      dict(),
-                      iconv=iconv_int_keys,
-                      oconv=get_oconv_dict_list_float())
-ClustsBicF = Field("bic",
+ClustsBICF = Field("bic",
                    "Bayesian information criterion for each number of clusters",
                    dict,
                    dict(),
                    iconv=iconv_int_keys,
                    oconv=get_oconv_dict_float())
-NumClustsF = Field("best_order", "Number of clusters with the best BIC", int)
+NumClustsF = Field("best_k", "Number of clusters with the best BIC", int)
 
 # Join fields
 

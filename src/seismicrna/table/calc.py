@@ -21,7 +21,7 @@ from ..cluster.data import ClusterMutsDataset, load_cluster_dataset
 from ..core.array import check_naturals, triangular
 from ..core.batch import END5_COORD, END3_COORD, accum_fits
 from ..core.data import MutsDataset, UnbiasDataset
-from ..core.header import ORDER_NAME, Header, make_header
+from ..core.header import NUM_CLUSTS_NAME, Header, make_header
 from ..core.mu import (calc_p_ends_observed,
                        calc_p_noclose,
                        calc_p_noclose_given_ends,
@@ -352,7 +352,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
     elif isinstance(n_reads_clust, pd.Series):
         # Calculate the number of reads with no two mutations too close
         # in each order.
-        n_reads_noclose_orders = n_reads_clust.groupby(level=ORDER_NAME).sum()
+        n_reads_noclose_orders = n_reads_clust.groupby(level=NUM_CLUSTS_NAME).sum()
         # Determine the orders of clustering.
         orders = check_naturals(n_reads_noclose_orders.index.values, "orders")
         # Calculate the parameters for each order separately.

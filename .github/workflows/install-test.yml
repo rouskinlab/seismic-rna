@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-linux:
+  install-test:
     runs-on: ubuntu-latest
     defaults:
       run:

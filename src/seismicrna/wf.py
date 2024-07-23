@@ -1,10 +1,3 @@
-"""
-
-Whole Pipeline Main Module
-========================================================================
-
-"""
-
 from logging import getLogger
 from typing import Iterable
 

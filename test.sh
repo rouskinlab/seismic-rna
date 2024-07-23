@@ -9,6 +9,7 @@ set -euxo pipefail
 RESULTS=test-results.txt
 
 seismic +test 2> $RESULTS
+cat $RESULTS
 LAST=$(tail -n 1 $RESULTS)
 if [ $LAST == "OK" ];
 then

@@ -9,7 +9,7 @@ import pandas as pd
 
 # Index level names
 REL_NAME = "Relationship"
-ORDER_NAME = "Order"
+NUM_CLUSTS_NAME = "Order"
 CLUST_NAME = "Cluster"
 
 # Profile name prefixes
@@ -189,7 +189,7 @@ def index_orders(max_order: int, min_order: int = 1):
     pd.Index
         Index of order numbers
     """
-    return pd.Index(list_orders(max_order, min_order), name=ORDER_NAME)
+    return pd.Index(list_orders(max_order, min_order), name=NUM_CLUSTS_NAME)
 
 
 def list_order_clusts(order: int):
@@ -496,7 +496,7 @@ class ClustHeader(Header):
 
     @classmethod
     def levels(cls):
-        return super().levels() | dict(order=ORDER_NAME, clust=CLUST_NAME)
+        return super().levels() | dict(order=NUM_CLUSTS_NAME, clust=CLUST_NAME)
 
     def __init__(self, *, max_order: int, min_order: int = 1, **kwargs):
         super().__init__(**kwargs)
@@ -596,7 +596,7 @@ def parse_header(index: pd.Index | pd.MultiIndex):
     except KeyError:
         pass
     try:
-        orders = np.asarray(index.get_level_values(ORDER_NAME).values,
+        orders = np.asarray(index.get_level_values(NUM_CLUSTS_NAME).values,
                             dtype=int)
         kwargs.update(max_order=np.max(orders), min_order=np.min(orders))
     except (KeyError, ValueError):

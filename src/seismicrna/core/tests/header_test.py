@@ -7,7 +7,7 @@ import pandas as pd
 from seismicrna.core.header import (AVERAGE_PREFIX,
                                     CLUSTER_PREFIX,
                                     CLUST_NAME,
-                                    ORDER_NAME,
+                                    NUM_CLUSTS_NAME,
                                     REL_NAME,
                                     Header,
                                     RelHeader,
@@ -40,7 +40,7 @@ class TestConstants(ut.TestCase):
         self.assertEqual(CLUST_NAME, "Cluster")
 
     def test_order_name(self):
-        self.assertEqual(ORDER_NAME, "Order")
+        self.assertEqual(NUM_CLUSTS_NAME, "Order")
 
     def test_rel_name(self):
         self.assertEqual(REL_NAME, "Relationship")
@@ -278,7 +278,7 @@ class TestIndexOrders(ut.TestCase):
                 self.assertEqual(index.to_list(),
                                  list_orders(max_order, min_order))
                 self.assertEqual(index.names,
-                                 [ORDER_NAME])
+                                 [NUM_CLUSTS_NAME])
 
 
 class TestListOrderClusts(ut.TestCase):
@@ -334,7 +334,7 @@ class TestIndexOrderClusts(ut.TestCase):
             self.assertEqual(index.to_list(),
                              list_order_clusts(order))
             self.assertEqual(index.names,
-                             [ORDER_NAME, CLUST_NAME])
+                             [NUM_CLUSTS_NAME, CLUST_NAME])
 
 
 class TestIndexOrdersClusts(ut.TestCase):
@@ -346,7 +346,7 @@ class TestIndexOrdersClusts(ut.TestCase):
                 self.assertEqual(index.to_list(),
                                  list_orders_clusts(max_order, min_order))
                 self.assertEqual(index.names,
-                                 [ORDER_NAME, CLUST_NAME])
+                                 [NUM_CLUSTS_NAME, CLUST_NAME])
 
 
 class TestHeader(ut.TestCase):
@@ -541,7 +541,7 @@ class TestClustHeader(ut.TestCase):
 
     def test_levels(self):
         self.assertEqual(ClustHeader.levels(),
-                         dict(order=ORDER_NAME, clust=CLUST_NAME))
+                         dict(order=NUM_CLUSTS_NAME, clust=CLUST_NAME))
 
     def test_num_levels(self):
         self.assertEqual(ClustHeader.num_levels(), 2)
@@ -550,7 +550,7 @@ class TestClustHeader(ut.TestCase):
         self.assertEqual(ClustHeader.level_keys(), ["order", "clust"])
 
     def test_level_names(self):
-        self.assertEqual(ClustHeader.level_names(), [ORDER_NAME, CLUST_NAME])
+        self.assertEqual(ClustHeader.level_names(), [NUM_CLUSTS_NAME, CLUST_NAME])
 
     def test_max_order(self):
         for max_order in range(1, 11):
@@ -610,7 +610,7 @@ class TestClustHeader(ut.TestCase):
                 header = ClustHeader(max_order=max_order, min_order=min_order)
                 index = header.index
                 self.assertIsInstance(index, pd.MultiIndex)
-                self.assertEqual(list(index.names), [ORDER_NAME, CLUST_NAME])
+                self.assertEqual(list(index.names), [NUM_CLUSTS_NAME, CLUST_NAME])
                 self.assertTrue(index.equals(header.clusts))
 
     def test_iter_clust_indexes(self):
@@ -753,7 +753,7 @@ class TestRelClustHeader(ut.TestCase):
 
     def test_levels(self):
         self.assertEqual(RelClustHeader.levels(),
-                         dict(rel=REL_NAME, order=ORDER_NAME, clust=CLUST_NAME))
+                         dict(rel=REL_NAME, order=NUM_CLUSTS_NAME, clust=CLUST_NAME))
 
     def test_num_levels(self):
         self.assertEqual(RelClustHeader.num_levels(), 3)
@@ -763,7 +763,7 @@ class TestRelClustHeader(ut.TestCase):
 
     def test_level_names(self):
         self.assertEqual(RelClustHeader.level_names(),
-                         [REL_NAME, ORDER_NAME, CLUST_NAME])
+                         [REL_NAME, NUM_CLUSTS_NAME, CLUST_NAME])
 
     def test_signature(self):
         for max_order in range(1, 11):
@@ -787,10 +787,10 @@ class TestRelClustHeader(ut.TestCase):
     def test_index(self):
         index = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2).index
         self.assertIsInstance(index, pd.MultiIndex)
-        self.assertEqual(list(index.names), [REL_NAME, ORDER_NAME, CLUST_NAME])
+        self.assertEqual(list(index.names), [REL_NAME, NUM_CLUSTS_NAME, CLUST_NAME])
         self.assertTrue(np.array_equal(index.get_level_values(REL_NAME),
                                        list("aaaaabbbbb")))
-        self.assertTrue(np.array_equal(index.get_level_values(ORDER_NAME),
+        self.assertTrue(np.array_equal(index.get_level_values(NUM_CLUSTS_NAME),
                                        [2, 2, 3, 3, 3, 2, 2, 3, 3, 3]))
         self.assertTrue(np.array_equal(index.get_level_values(CLUST_NAME),
                                        [1, 2, 1, 2, 3, 1, 2, 1, 2, 3]))
@@ -1121,7 +1121,7 @@ class TestParseHeader(ut.TestCase):
         self.assertRaisesRegex(ValueError,
                                f"Expected index named {repr(REL_NAME)}",
                                parse_header,
-                               pd.Index(["a", "b"], name=ORDER_NAME))
+                               pd.Index(["a", "b"], name=NUM_CLUSTS_NAME))
 
     def test_rel_multiindex(self):
         header = parse_header(pd.MultiIndex.from_arrays([["a", "b"]],
@@ -1134,7 +1134,7 @@ class TestParseHeader(ut.TestCase):
         header = parse_header(pd.MultiIndex.from_tuples([("1", "1"),
                                                          ("2", "1"),
                                                          ("2", "2")],
-                                                        names=[ORDER_NAME,
+                                                        names=[NUM_CLUSTS_NAME,
                                                                CLUST_NAME]))
         self.assertIsInstance(header, ClustHeader)
         self.assertNotIsInstance(header, RelClustHeader)
@@ -1149,7 +1149,7 @@ class TestParseHeader(ut.TestCase):
                                                          ("b", "2", "1"),
                                                          ("b", "2", "2")],
                                                         names=[REL_NAME,
-                                                               ORDER_NAME,
+                                                               NUM_CLUSTS_NAME,
                                                                CLUST_NAME]))
         self.assertIsInstance(header, RelClustHeader)
         self.assertEqual(header.index.to_list(),
@@ -1188,7 +1188,7 @@ class TestParseHeader(ut.TestCase):
                                parse_header,
                                pd.MultiIndex.from_tuples([("1", "1"),
                                                           ("2", "2")],
-                                                         names=[ORDER_NAME,
+                                                         names=[NUM_CLUSTS_NAME,
                                                                 CLUST_NAME]))
 
     def test_extra_values(self):
@@ -1199,7 +1199,7 @@ class TestParseHeader(ut.TestCase):
                                                           ("2", "1"),
                                                           ("2", "1"),
                                                           ("2", "2")],
-                                                         names=[ORDER_NAME,
+                                                         names=[NUM_CLUSTS_NAME,
                                                                 CLUST_NAME]))
 
     def test_nonnumeric(self):
@@ -1213,7 +1213,7 @@ class TestParseHeader(ut.TestCase):
                                                           ("b", "y", "x"),
                                                           ("b", "y", "y")],
                                                          names=[REL_NAME,
-                                                                ORDER_NAME,
+                                                                NUM_CLUSTS_NAME,
                                                                 CLUST_NAME]))
 
     def test_invalid_numeric(self):
@@ -1223,7 +1223,7 @@ class TestParseHeader(ut.TestCase):
                                pd.MultiIndex.from_tuples([("a", '0', '0'),
                                                           ("b", '0', '0')],
                                                          names=[REL_NAME,
-                                                                ORDER_NAME,
+                                                                NUM_CLUSTS_NAME,
                                                                 CLUST_NAME]))
 
 

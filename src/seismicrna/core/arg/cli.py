@@ -727,17 +727,38 @@ opt_cluster = Option(
 )
 
 opt_min_clusters = Option(
-    ("--min-clusters", "-K"),
+    ("--min-clusters", "-k"),
     type=int,
     default=1,
-    help="Start at this many clusters"
+    help="Find at least this many clusters"
 )
 
 opt_max_clusters = Option(
-    ("--max-clusters", "-k"),
+    ("--max-clusters", "-K"),
     type=int,
-    default=0,
-    help="Stop at this many clusters (0 to stop at optimal number)"
+    default=20,
+    help="Find at most this many clusters"
+)
+
+opt_cluster_best = Option(
+    ("--cluster-best/--cluster-all",),
+    type=bool,
+    default=True,
+    help="Stop upon finding the best number of clusters"
+)
+
+opt_max_pearson = Option(
+    ("--max-pearson",),
+    type=float,
+    default=0.9,
+    help="Require every pair of clusters to have at most this correlation"
+)
+
+opt_min_nrmsd = Option(
+    ("--min-nrmsd",),
+    type=float,
+    default=0.1,
+    help="Require every pair of clusters to have at least this NRMSD"
 )
 
 opt_em_runs = Option(

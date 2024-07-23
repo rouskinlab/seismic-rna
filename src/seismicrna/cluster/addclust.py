@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 from click import command
 
-from .compare import CompareRunsK, get_log_exp_obs_counts
-from .compare import find_best_order
+from .compare import EMRunsK, get_log_exp_obs_counts
+from .compare import find_best_k
 from .csv import copy_all_run_tables, get_count_path
 from .data import ClusterMutsDataset
 from .data import load_cluster_dataset
@@ -39,9 +39,9 @@ from ..core.report import (calc_dt_minutes,
                            ClustConvThreshF,
                            ClustsConvF,
                            ClustsLogLikesF,
-                           ClustsRMSDsF,
-                           ClustsMeanRsF,
-                           ClustsBicF,
+                           ClustsNRMSDVs0F,
+                           ClustsPearsonVs0F,
+                           ClustsBICF,
                            NumClustsF)
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import release_to_out
@@ -53,7 +53,7 @@ logger = getLogger(__name__)
 BTYPE = ClusterBatchIO.btype()
 
 
-def update_log_counts(new_orders: list[CompareRunsK],
+def update_log_counts(new_orders: list[EMRunsK],
                       tmp_dir: Path,
                       out_dir: Path,
                       sample: str,
@@ -86,14 +86,14 @@ def update_log_counts(new_orders: list[CompareRunsK],
 
 
 def update_batches(dataset: ClusterMutsDataset,
-                   new_orders: list[CompareRunsK],
+                   new_orders: list[EMRunsK],
                    tmp_dir: Path,
                    brotli_level: int):
     """ Update the cluster memberships in batches. """
     checksums = list()
     for batch in dataset.iter_batches():
         # Merge the original responsibilities with the new ones.
-        resps = pd.concat([batch.resps] + [runs.best.get_members(batch.batch)
+        resps = pd.concat([batch.resps] + [runs.best.get_resps(batch.batch)
                                            for runs in new_orders],
                           axis=1,
                           verify_integrity=True)
@@ -109,7 +109,7 @@ def update_batches(dataset: ClusterMutsDataset,
 
 def update_field(report: ClusterReport,
                  field: Field,
-                 new_orders: list[CompareRunsK],
+                 new_orders: list[EMRunsK],
                  attr: str):
     """ Merge the field from the original report with the field from the
     new orders. """
@@ -125,7 +125,7 @@ def update_field(report: ClusterReport,
 def update_report(original_report: ClusterReport,
                   max_order: int,
                   best_order: int,
-                  new_orders: list[CompareRunsK],
+                  new_orders: list[EMRunsK],
                   checksums: list[str],
                   began: datetime,
                   ended: datetime,
@@ -151,15 +151,15 @@ def update_report(original_report: ClusterReport,
                                new_orders,
                                "log_likes"),
         clusts_rmsds=update_field(original_report,
-                                  ClustsRMSDsF,
+                                  ClustsNRMSDVs0F,
                                   new_orders,
                                   "rmsds"),
         clusts_meanr=update_field(original_report,
-                                  ClustsMeanRsF,
+                                  ClustsPearsonVs0F,
                                   new_orders,
                                   "meanr"),
         bic=update_field(original_report,
-                         ClustsBicF,
+                         ClustsBICF,
                          new_orders,
                          "bic"),
         best_order=best_order,
@@ -200,7 +200,7 @@ def add_orders(report_file: Path,
                 original_max_order + 1,
                 max_order,
                 num_runs,
-                prev_bic=min(report.get_field(ClustsBicF).values()),
+                prev_bic=min(report.get_field(ClustsBICF).values()),
                 min_iter=report.get_field(MinIterClustF),
                 max_iter=report.get_field(MaxIterClustF),
                 em_thresh=report.get_field(ClustConvThreshF),
@@ -209,7 +209,7 @@ def add_orders(report_file: Path,
             )
             if new_orders:
                 # One or more higher orders had better BICs: add them.
-                best_order = find_best_order(new_orders)
+                best_order = find_best_k(new_orders)
                 # Update the expected counts for each best run.
                 update_log_counts(new_orders,
                                   tmp_dir=tmp_dir,

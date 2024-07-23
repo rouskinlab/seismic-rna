@@ -64,6 +64,16 @@ def normalize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     return mus / calc_quantile(mus, quantile) if quantile > 0. else mus
 
 
+def normalize_max(mus: np.ndarray | pd.Series | pd.DataFrame):
+    """ Normalize the mutation rates so their maximum becomes 1. """
+    return normalize(mus, 1.0)
+
+
+def normalize_med(mus: np.ndarray | pd.Series | pd.DataFrame):
+    """ Normalize the mutation rates so their median becomes 1. """
+    return normalize(mus, 0.5)
+
+
 @auto_reframe
 def winsorize(mus: np.ndarray | pd.Series | pd.DataFrame, quantile: float):
     """ Normalize and winsorize the mutation rates to a quantile so that

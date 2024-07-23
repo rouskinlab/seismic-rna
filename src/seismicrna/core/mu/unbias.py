@@ -841,14 +841,14 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
 
     # Import scipy here instead of at the top of this module because
     # its import is slow enough to impact global startup time.
-    from scipy.optimize import newton_krylov, _nonlin
+    from scipy.optimize import newton_krylov, NoConvergence
 
     try:
         return _clip(newton_krylov(objective,
                                    init_p_mut_given_span,
                                    f_tol=f_tol,
                                    x_rtol=x_rtol))
-    except _nonlin.NoConvergence as error:
+    except NoConvergence as error:
         logger.warning(f"Failed to unbias mutation rates: {error}")
         return init_p_mut_given_span
 
@@ -1387,7 +1387,7 @@ def calc_params_observed(n_pos_total: int,
                          end5s: np.ndarray,
                          end3s: np.ndarray,
                          counts_per_uniq: np.ndarray,
-                         membership: np.ndarray):
+                         resps: np.ndarray):
     """ Calculate the observed estimates of the parameters.
 
     Parameters
@@ -1410,17 +1410,16 @@ def calc_params_observed(n_pos_total: int,
         respect to the 5' end of the section.
     counts_per_uniq: np.ndarray
         Number of times each unique read occurs.
-    membership: np.ndarray
+    resps: np.ndarray
         Cluster memberships of each read: 2D array (reads x clusters)
 
     Returns
     -------
     tuple[np.ndarray, np.ndarray, np.ndarray]
-
     """
     # Count each unique read in each cluster.
     # 2D (unique reads x clusters)
-    n_each_read_each_clust = counts_per_uniq[:, np.newaxis] * membership
+    n_each_read_each_clust = counts_per_uniq[:, np.newaxis] * resps
     # Count the total number of reads in each cluster.
     # 1D (clusters)
     n_reads_per_clust = np.sum(n_each_read_each_clust, axis=0)
@@ -1449,7 +1448,7 @@ def calc_params_observed(n_pos_total: int,
         # Calculate the number of mutations at each position in each
         # cluster by summing the count-weighted likelihood that each
         # read with a mutation at (j) came from the cluster.
-        n_muts_per_pos[j] = counts_per_uniq[mut_reads] @ membership[mut_reads]
+        n_muts_per_pos[j] = counts_per_uniq[mut_reads] @ resps[mut_reads]
     # Calculate the observed mutation rate at each position.
     # 2D (all positions x clusters)
     with np.errstate(invalid="ignore"):

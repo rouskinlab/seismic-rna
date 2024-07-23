@@ -15,7 +15,7 @@ from ..core.data import (ArrowDataset,
                          LoadFunction,
                          MergedUnbiasDataset,
                          UnbiasDataset)
-from ..core.header import (ORDER_NAME,
+from ..core.header import (NUM_CLUSTS_NAME,
                            ClustHeader,
                            index_orders_clusts,
                            list_clusts,
@@ -179,7 +179,7 @@ class JoinClusterMutsDataset(ClusterDataset,
 
     def _finalize_attrs(self, attrs: dict[str, Any]):
         # Ensure that cluster memberships for each read sum to 1.
-        attrs[RESPS] /= attrs[RESPS].T.groupby(level=ORDER_NAME).sum().T
+        attrs[RESPS] /= attrs[RESPS].T.groupby(level=NUM_CLUSTS_NAME).sum().T
         # Fill any missing values with 0 and sort the read numbers.
         attrs[RESPS] = attrs[RESPS].fillna(0.).sort_index()
         # Delete read_nums (which is the index of resps).
