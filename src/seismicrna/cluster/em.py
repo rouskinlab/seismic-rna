@@ -9,7 +9,7 @@ import pandas as pd
 from .names import CLUST_PROP_NAME
 from .uniq import UniqReads
 from ..core.array import find_dims, get_length
-from ..core.header import index_order_clusts
+from ..core.header import ClustHeader
 from ..core.mu import (READS,
                        POSITIONS,
                        CLUSTERS,
@@ -197,9 +197,9 @@ class EMRun(object):
         """
         # Unique reads of mutations
         self.uniq_reads = uniq_reads
-        # Number of clusters (i.e. order)
+        # Number of clusters
         if not k >= 1:
-            raise ValueError(f"order must be ≥ 1, but got {k}")
+            raise ValueError(f"k must be ≥ 1, but got {k}")
         self.k = k
         # Minimum number of iterations of EM
         if not min_iter >= 1:
@@ -273,8 +273,8 @@ class EMRun(object):
 
     @cached_property
     def clusters(self):
-        """ MultiIndex of the order and cluster numbers. """
-        return index_order_clusts(self.k)
+        """ MultiIndex of k and cluster numbers. """
+        return ClustHeader(ks=[self.k]).index
 
     @property
     def log_like(self):
@@ -522,7 +522,7 @@ class EMRun(object):
         return self._calc_p_mut_pairs(calc_nrmsd, min)
 
     def __str__(self):
-        return f"{type(self).__name__} {self.uniq_reads} with k={self.k}"
+        return f"{type(self).__name__} {self.uniq_reads}, {self.k} cluster(s)"
 
 ########################################################################
 #                                                                      #

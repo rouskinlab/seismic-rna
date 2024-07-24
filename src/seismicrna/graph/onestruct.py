@@ -85,7 +85,7 @@ class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
         """ Yield each RNAProfile from the table. """
         yield from self.table.iter_profiles(quantile=self.quantile,
                                             rel=self.rel_name,
-                                            order=self.order,
+                                            k=self.k,
                                             clust=self.clust)
 
     def iter_states(self):

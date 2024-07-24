@@ -26,21 +26,21 @@ def _add_to_rel(added: pd.Series | pd.DataFrame, frame: pd.DataFrame, rel: str):
 def accumulate(batches: Iterable[SectionMutsBatch],
                refseq: DNA,
                patterns: dict[str, RelPattern], *,
-               max_order: int = 0,
+               ks: Iterable[int] = (),
                pos_nums: np.ndarray | None = None,
                per_read: bool = True,
                get_info: bool = True,
                count_ends: bool = True):
-    header = make_header(rels=list(patterns), max_order=max_order)
+    header = make_header(rels=list(patterns), ks=ks)
     end_counts_index = pd.MultiIndex.from_arrays([np.array([], dtype=int)
                                                   for _ in END_COORDS],
                                                  names=END_COORDS)
     # Initialize the total read counts and end coordinate counts.
     if header.clustered():
         dtype = float
-        num_reads = pd.Series(0, index=header.clusts)
+        num_reads = pd.Series(0, index=header.index)
         end_counts = (pd.DataFrame(index=end_counts_index,
-                                   columns=header.clusts,
+                                   columns=header.index,
                                    dtype=dtype)
                       if count_ends else None)
     else:
@@ -120,13 +120,13 @@ def accum_per_pos(batches: Iterable[SectionMutsBatch],
                   refseq: DNA,
                   pos_nums: np.ndarray,
                   patterns: dict[str, RelPattern],
-                  max_order: int = 0):
+                  ks: Iterable[int] = ()):
     """ Count reads with each relationship at each position in a section
     over multiple batches. """
     num_reads, (fpp, ipp), (_, __), ___ = accumulate(batches,
                                                      refseq,
                                                      patterns,
-                                                     max_order=max_order,
+                                                     ks=ks,
                                                      pos_nums=pos_nums,
                                                      per_read=False,
                                                      count_ends=False)
@@ -137,12 +137,12 @@ def accum_fits(batches: Iterable[SectionMutsBatch],
                refseq: DNA,
                pos_nums: np.ndarray,
                patterns: dict[str, RelPattern],
-               max_order: int = 0):
+               ks: Iterable[int] = ()):
     """ Count positions and reads fitting each relationship. """
     num_reads, (fpp, _), (fpr, __), ends = accumulate(batches,
                                                       refseq,
                                                       patterns,
-                                                      max_order=max_order,
+                                                      ks=ks,
                                                       pos_nums=pos_nums,
                                                       get_info=False)
     return num_reads, fpp, fpr, ends

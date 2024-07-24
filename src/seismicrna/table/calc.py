@@ -94,18 +94,18 @@ class Tabulator(ABC):
 
     @property
     @abstractmethod
-    def max_order(self) -> int:
-        """ Number of clusters, or 0 if not clustered. """
+    def ks(self) -> list[int]:
+        """ Numbers of clusters. """
 
     @cached_property
     def pos_header(self):
         """ Header of the per-position data. """
-        return make_header(rels=TABLE_RELS, max_order=self.max_order)
+        return make_header(rels=TABLE_RELS, ks=self.ks)
 
     @cached_property
     def read_header(self):
         """ Header of the per-read data. """
-        return make_header(rels=TABLE_RELS, max_order=self.max_order)
+        return make_header(rels=TABLE_RELS, ks=self.ks)
 
     @cached_property
     def _counts(self):
@@ -113,7 +113,7 @@ class Tabulator(ABC):
                           self.refseq,
                           self.section.unmasked_int,
                           all_patterns(self.dataset.pattern),
-                          max_order=self.max_order)
+                          ks=self.ks)
 
     @property
     def _num_reads(self):
@@ -213,8 +213,8 @@ class PartialTabulator(Tabulator, ABC):
 class AvgTabulator(Tabulator, ABC):
 
     @property
-    def max_order(self) -> int:
-        return 0
+    def ks(self):
+        return list()
 
 
 class RelateTabulator(FullTabulator, AvgTabulator):
@@ -225,16 +225,16 @@ class MaskTabulator(PartialTabulator, AvgTabulator):
     pass
 
 
-class ClustTabulator(PartialTabulator, ABC):
+class ClustTabulator(PartialTabulator):
 
     @property
-    def max_order(self):
-        return self.dataset.max_order
+    def ks(self):
+        return self.dataset.ks
 
     @cached_property
     def clust_header(self):
         """ Header of the per-cluster data. """
-        return make_header(max_order=self.max_order)
+        return make_header(ks=self.ks)
 
     @cached_property
     def table_per_clust(self):
@@ -284,10 +284,10 @@ def _insert_masked(p_mut: pd.Series | pd.DataFrame,
     return p_mut.values.reshape((section.length, -1))
 
 
-def _order_indices(order: int):
-    """ First and last indices of the order in the array. """
-    last = triangular(order)
-    first = last - order
+def _k_indices(k: int):
+    """ First and last indices of k in the array. """
+    last = triangular(k)
+    first = last - k
     return first, last
 
 
@@ -351,21 +351,21 @@ def adjust_counts(table_per_pos: pd.DataFrame,
         n_clust = n_reads_clust / p_noclose
     elif isinstance(n_reads_clust, pd.Series):
         # Calculate the number of reads with no two mutations too close
-        # in each order.
-        n_reads_noclose_orders = n_reads_clust.groupby(level=NUM_CLUSTS_NAME).sum()
-        # Determine the orders of clustering.
-        orders = check_naturals(n_reads_noclose_orders.index.values, "orders")
-        # Calculate the parameters for each order separately.
+        # for each k.
+        n_reads_noclose_ks = n_reads_clust.groupby(level=NUM_CLUSTS_NAME).sum()
+        # Determine the numbers of clusters.
+        ks = check_naturals(n_reads_noclose_ks.index.values, "ks")
+        # Calculate the parameters for each k separately.
         p_mut = np.empty_like(p_mut_given_noclose)
         p_clust = np.empty_like(n_reads_clust.values)
         p_noclose_given_clust = np.empty_like(n_reads_clust.values)
         n_clust = pd.Series(index=n_reads_clust.index)
-        for order in map(int, orders):
-            i, j = _order_indices(order)
+        for k in map(int, ks):
+            i, j = _k_indices(k)
             # Calculate the fraction of reads with no two mutations too
             # close in each cluster.
-            n_reads_noclose = float(n_reads_noclose_orders.at[order])
-            p_clust_given_noclose = (n_reads_clust.loc[order].values
+            n_reads_noclose = float(n_reads_noclose_ks.at[k])
+            p_clust_given_noclose = (n_reads_clust.loc[k].values
                                      / n_reads_noclose)
             # Calculate the parameters for each cluster.
             p_mut[:, i: j], p_ends, p_clust[i: j] = calc_params(
@@ -385,7 +385,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             p_noclose = float(np.vdot(p_noclose_given_clust[i: j],
                                       p_clust[i: j]))
             # Compute the number of reads in each cluster.
-            n_clust.loc[order] = (n_reads_noclose / p_noclose) * p_clust[i: j]
+            n_clust.loc[k] = (n_reads_noclose / p_noclose) * p_clust[i: j]
     else:
         raise TypeError("n_reads_clust must be an int or Series, "
                         f"but got {type(n_reads_clust).__name__}")

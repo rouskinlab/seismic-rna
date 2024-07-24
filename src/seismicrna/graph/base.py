@@ -11,9 +11,9 @@ from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
 from ..core import path
-from ..core.arg import (CLUST_INDIV,
-                        CLUST_ORDER,
-                        CLUST_UNITE,
+from ..core.arg import (NO_GROUP,
+                        GROUP_BY_K,
+                        GROUP_ALL,
                         arg_input_path,
                         opt_rels,
                         opt_use_ratio,
@@ -51,25 +51,25 @@ ACTION_CLUST = "clustered"
 LINKER = "__and__"
 
 
-def make_index(header: Header, order: int | None, clust: int | None):
+def make_tracks(header: Header, k: int | None, clust: int | None):
     """ Make an index for the rows or columns of a graph. """
-    if header.max_order == 0:
+    if not header.clustered():
         # If there are no clusters, then no clusters must be selected.
-        if order or clust:
-            raise ValueError(f"Cannot select orders or clusters from {header}")
+        if k or clust:
+            raise ValueError(f"Cannot select ks or clusters from {header}")
         return header.clusts
     # If there are any relationship names in the index, then drop them
-    # and then select the order(s) and cluster(s) for the index.
-    return header.modified(rels=()).select(order=order, clust=clust)
+    # and then select the k(s) and cluster(s) for the index.
+    return header.modified(rels=()).select(k=k, clust=clust)
 
 
-def _index_size(index: pd.Index | None):
-    return index.size if index is not None else 1
+def _track_count(tracks: list[tuple[int, int]] | None):
+    return len(tracks) if tracks is not None else 1
 
 
-def _index_titles(index: pd.Index | None):
-    return (format_clust_names(index, allow_zero=True, allow_duplicates=False)
-            if index is not None
+def _track_titles(tracks: list[tuple[int, int]] | None):
+    return (format_clust_names(tracks, allow_zero=True, allow_duplicates=False)
+            if tracks is not None
             else None)
 
 
@@ -87,31 +87,31 @@ def make_title_action_sample(action: str, sample: str):
     return f"{action} reads from sample {repr(sample)}"
 
 
-def make_path_subject(action: str, order: int | None, clust: int | None):
+def make_path_subject(action: str, k: int | None, clust: int | None):
     if action == ACTION_REL or action == ACTION_MASK:
-        if order or clust:
-            raise ValueError(f"For {action} data, order and clust must both "
-                             f"be 0 or None, but got {order} and {clust}")
+        if k or clust:
+            raise ValueError(f"For {action} data, k and clust must both "
+                             f"be 0 or None, but got {k} and {clust}")
         return action
     if action == ACTION_CLUST:
         return "-".join(map(str, [action,
-                                  order if order is not None else "x",
+                                  k if k is not None else "x",
                                   clust if clust is not None else "x"]))
     raise ValueError(f"Invalid action: {repr(action)}")
 
 
 def cgroup_table(table: Table, cgroup: str):
-    if cgroup == CLUST_INDIV:
+    if cgroup == NO_GROUP:
         # One file per cluster, with no subplots.
-        return [dict(order=order, clust=clust)
-                for order, clust in table.header.clusts]
-    elif cgroup == CLUST_ORDER:
-        # One file per order, with one subplot per cluster.
-        return [dict(order=order, clust=None)
-                for order in sorted(table.header.orders)]
-    elif cgroup == CLUST_UNITE:
-        # One file, with one subplot per cluster for all orders.
-        return [dict(order=None, clust=None)]
+        return [dict(k=k, clust=clust)
+                for k, clust in table.header.clusts]
+    elif cgroup == GROUP_BY_K:
+        # One file per k, with one subplot per cluster.
+        return [dict(k=k, clust=None)
+                for k in sorted(table.header.ks)]
+    elif cgroup == GROUP_ALL:
+        # One file, with one subplot per cluster.
+        return [dict(k=None, clust=None)]
     raise ValueError(f"Invalid value for cgroup: {repr(cgroup)}")
 
 
@@ -267,33 +267,33 @@ class GraphBase(ABC):
 
     @property
     @abstractmethod
-    def row_index(self) -> pd.Index | None:
-        """ Index of rows of subplots. """
+    def row_tracks(self) -> list[tuple[int, int]] | None:
+        """ Track for each row of subplots. """
 
     @property
     @abstractmethod
-    def col_index(self) -> pd.Index | None:
-        """ Index of columns of subplots. """
+    def col_tracks(self) -> list[tuple[int, int]] | None:
+        """ Track for each column of subplots. """
 
     @property
     def nrows(self):
         """ Number of rows of subplots. """
-        return _index_size(self.row_index)
+        return _track_count(self.row_tracks)
 
     @property
     def ncols(self):
         """ Number of columns of subplots. """
-        return _index_size(self.col_index)
+        return _track_count(self.col_tracks)
 
     @cached_property
     def row_titles(self):
         """ Titles of the rows. """
-        return _index_titles(self.row_index)
+        return _track_titles(self.row_tracks)
 
     @cached_property
     def col_titles(self):
         """ Titles of the columns. """
-        return _index_titles(self.col_index)
+        return _track_titles(self.col_tracks)
 
     @property
     @abstractmethod

@@ -8,7 +8,7 @@ from .base import (GraphBase,
                    GraphWriter,
                    cgroup_table,
                    get_action_name,
-                   make_index,
+                   make_tracks,
                    make_path_subject,
                    make_title_action_sample)
 from ..core.task import dispatch
@@ -20,12 +20,12 @@ class OneTableGraph(GraphBase, ABC):
 
     def __init__(self, *,
                  table: Table | PosTable,
-                 order: int | None,
+                 k: int | None,
                  clust: int | None,
                  **kwargs):
         super().__init__(**kwargs)
         self.table = table
-        self.order = order
+        self.k = k
         self.clust = clust
 
     @property
@@ -54,16 +54,16 @@ class OneTableGraph(GraphBase, ABC):
         return get_action_name(self.table)
 
     @cached_property
-    def row_index(self):
-        return make_index(self.table.header, self.order, self.clust)
+    def row_tracks(self):
+        return make_tracks(self.table.header, self.k, self.clust)
 
     @property
-    def col_index(self):
+    def col_tracks(self):
         return None
 
     @cached_property
     def path_subject(self):
-        return make_path_subject(self.action, self.order, self.clust)
+        return make_path_subject(self.action, self.k, self.clust)
 
     @cached_property
     def title_action_sample(self):

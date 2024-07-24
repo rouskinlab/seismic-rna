@@ -17,10 +17,10 @@ from ..core.data import (ArrowDataset,
                          UnbiasDataset)
 from ..core.header import (NUM_CLUSTS_NAME,
                            ClustHeader,
-                           index_orders_clusts,
                            list_clusts,
-                           list_orders)
-from ..core.report import NumClustsF
+                           list_ks_clusts,
+                           validate_ks)
+from ..core.report import ClustsBICF, NumClustsF
 from ..joinbase.data import (BATCH_NUM,
                              READ_NUMS,
                              SEG_END5S,
@@ -40,8 +40,13 @@ class ClusterDataset(Dataset, ABC):
 
     @cached_property
     @abstractmethod
-    def max_order(self) -> int:
-        """ Number of clusters. """
+    def ks(self) -> list[int]:
+        """ Numbers of clusters. """
+
+    @cached_property
+    @abstractmethod
+    def best_k(self) -> int:
+        """ Best number of clusters. """
 
 
 class ClusterReadDataset(ClusterDataset, LoadedDataset):
@@ -56,7 +61,11 @@ class ClusterReadDataset(ClusterDataset, LoadedDataset):
         return ClusterBatchIO
 
     @cached_property
-    def max_order(self):
+    def ks(self):
+        return validate_ks(self.report.get_field(ClustsBICF))
+
+    @cached_property
+    def best_k(self):
         return self.report.get_field(NumClustsF)
 
     @property
@@ -96,8 +105,12 @@ class ClusterMutsDataset(ClusterDataset, ArrowDataset, UnbiasDataset):
         return getattr(self.data1, "quick_unbias_thresh")
 
     @property
-    def max_order(self):
-        return getattr(self.data2, "max_order")
+    def ks(self):
+        return getattr(self.data2, "ks")
+
+    @property
+    def best_k(self):
+        return getattr(self.data2, "best_k")
 
     def _integrate(self, batch1: MaskMutsBatch, batch2: ClusterBatchIO):
         return ClusterMutsBatch(batch=batch1.batch,
@@ -132,29 +145,31 @@ class JoinClusterMutsDataset(ClusterDataset,
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self._clusts:
-            self._clusts = {sect: {order: {clust: clust
-                                           for clust in list_clusts(order)}
-                                   for order in list_orders(self.max_order)}
+            self._clusts = {sect: {k: {clust: clust for clust in list_clusts(k)}
+                                   for k in self.ks}
                             for sect in self.sects}
         if sorted(self._clusts) != sorted(self.sects):
             raise ValueError(f"{self} expected clusters for {self.sects}, "
                              f"but got {self._clusts}")
 
     @cached_property
-    def max_order(self):
-        return self._get_common_attr("max_order")
+    def ks(self):
+        return self._get_common_attr("ks")
+
+    @cached_property
+    def best_k(self):
+        return self._get_common_attr("best_k")
 
     @cached_property
     def clusts(self):
-        """ Index of order and cluster numbers. """
-        return index_orders_clusts(self.max_order)
+        """ Index of k and cluster numbers. """
+        return list_ks_clusts(self.ks)
 
     def _sect_cols(self, sect: str):
         """ Get the columns for a section's responsibilities. """
         clusts = self._clusts[sect]
         return pd.MultiIndex.from_tuples(
-            [(order, clusts[order][clust])
-             for order, clust in self.clusts],
+            [(k, clusts[k][clust]) for k, clust in self.clusts],
             names=ClustHeader.level_names()
         )
 
@@ -162,7 +177,7 @@ class JoinClusterMutsDataset(ClusterDataset,
         """ Get the cluster responsibilities for a section. """
         # Reorder the columns.
         reordered = resps.loc[:, self._sect_cols(sect)]
-        # Rename the columns by increasing order and cluster.
+        # Rename the columns by increasing k and cluster.
         reordered.columns = self.clusts
         return reordered
 

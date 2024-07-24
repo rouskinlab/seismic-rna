@@ -25,7 +25,7 @@ class RollingStatGraph(OneTableGraph, OneRelGraph, RollingGraph, ABC):
     def data(self):
         stat_func = self.stat_func()
         data = self._fetch_data(self.table,
-                                order=self.order,
+                                k=self.k,
                                 clust=self.clust)
         stat = pd.DataFrame(index=data.index, dtype=float)
         for cluster, cluster_data in data.items():
@@ -35,8 +35,8 @@ class RollingStatGraph(OneTableGraph, OneRelGraph, RollingGraph, ABC):
                                                   min_count=self._min_count):
                 cluster_stat.loc[center] = stat_func(window)
             if isinstance(cluster, tuple):
-                _, order, clust = cluster
-                label = format_clust_name(order, clust)
+                _, k, clust = cluster
+                label = format_clust_name(k, clust)
             else:
                 label = cluster
             stat[label] = cluster_stat

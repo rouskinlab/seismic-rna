@@ -342,8 +342,7 @@ def run_struct(ct_file: Path,
         # Assemble mutation rates for each structure.
         rels = mu_paired[unpair].columns
         header = make_header(rels=map(str, rels),
-                             max_order=num_structures,
-                             min_order=num_structures)
+                             ks=[num_structures])
         pmut = pd.DataFrame(np.nan, index, header.index)
         for structure, cluster in zip(structures,
                                       list_clusts(num_structures),

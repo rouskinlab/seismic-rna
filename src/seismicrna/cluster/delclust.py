@@ -47,22 +47,22 @@ logger = getLogger(__name__)
 BTYPE = ClusterBatchIO.btype()
 
 
-def update_log_counts(best_order: int,
+def update_log_counts(best_k: int,
                       tmp_dir: Path,
                       out_dir: Path,
                       sample: str,
                       ref: str,
                       sect: str):
     """ Update the expected log counts of unique bit vectors. """
-    if best_order < 1:
-        raise ValueError(f"Best order must be ≥ 1, but got {best_order}")
+    if best_k < 1:
+        raise ValueError(f"Best order must be ≥ 1, but got {best_k}")
     # Load the original log-counts.
     orig_file = get_count_path(out_dir, sample, ref, sect)
     orig_log_counts = pd.read_csv(orig_file, index_col=BIT_VECTOR_NAME)
     # Copy the observed counts.
     new_log_counts = orig_log_counts[LOG_OBS_NAME].to_frame()
     # Copy the expected counts for the orders up to max_order.
-    for order in range(1, best_order + 1):
+    for order in range(1, best_k + 1):
         col = format_exp_count_col(order)
         new_log_counts[col] = orig_log_counts[col]
     # Write the updated log counts to the file.

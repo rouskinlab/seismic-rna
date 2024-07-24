@@ -117,11 +117,11 @@ def conform_series(series: pd.Series | pd.DataFrame):
 
 
 def get_db_structs(table: PosTable,
-                   order: int | None = None,
+                   k: int | None = None,
                    clust: int | None = None):
     structs = dict()
     energies = dict()
-    for profile in table.iter_profiles(order=order, clust=clust):
+    for profile in table.iter_profiles(k=k, clust=clust):
         db_file = profile.get_db_file(table.top)
         if db_file.is_file():
             try:
@@ -143,8 +143,8 @@ def get_db_structs(table: PosTable,
     return structs, energies
 
 
-def iter_pos_table_struct(table: PosTable, order: int, clust: int):
-    structs, energies = get_db_structs(table, order, clust)
+def iter_pos_table_struct(table: PosTable, k: int, clust: int):
+    structs, energies = get_db_structs(table, k, clust)
     keys = list(structs)
     if keys != list(energies):
         raise ValueError(f"Names of structures {keys} and energies "
@@ -158,67 +158,67 @@ def iter_pos_table_struct(table: PosTable, order: int, clust: int):
 
 
 def iter_pos_table_series(table: PosTable,
-                          order: int,
+                          k: int,
                           clust: int,
                           all_pos: bool):
     exclude_masked = not all_pos
     for key, rel in POS_DATA.items():
         yield key, conform_series(
             table.fetch_count(rel=rel,
-                              order=order,
+                              k=k,
                               clust=clust,
                               exclude_masked=exclude_masked)
         ).to_list()
     yield SUBST_RATE, conform_series(
         table.fetch_ratio(rel=SUBST_REL,
-                          order=order,
+                          k=k,
                           clust=clust,
                           exclude_masked=exclude_masked,
                           precision=PRECISION)
     ).to_list()
 
 
-def iter_pos_table_data(table: PosTable, order: int, clust: int, all_pos: bool):
-    yield from iter_pos_table_series(table, order, clust, all_pos)
-    yield from iter_pos_table_struct(table, order, clust)
+def iter_pos_table_data(table: PosTable, k: int, clust: int, all_pos: bool):
+    yield from iter_pos_table_series(table, k, clust, all_pos)
+    yield from iter_pos_table_struct(table, k, clust)
 
 
-def iter_read_table_data(table: ReadTable, order: int, clust: int):
+def iter_read_table_data(table: ReadTable, k: int, clust: int):
     read_counts = np.asarray(
         conform_series(table.fetch_count(rel=SUBST_REL,
-                                         order=order,
+                                         k=k,
                                          clust=clust)).values,
         dtype=int
     )
     yield SUBST_HIST, np.bincount(read_counts, minlength=1).tolist()
 
 
-def iter_clust_table_data(table: ClustFreqTable, order: int, clust: int):
-    clust_count = table.data[table.header.select(order=order,
+def iter_clust_table_data(table: ClustFreqTable, k: int, clust: int):
+    clust_count = table.data[table.header.select(k=k,
                                                  clust=clust)].squeeze()
-    order_count = table.data[table.header.select(order=order)].sum().squeeze()
-    proportion = (round(clust_count / order_count, PRECISION)
-                  if order_count > 0
+    k_count = table.data[table.header.select(k=k)].sum().squeeze()
+    proportion = (round(clust_count / k_count, PRECISION)
+                  if k_count > 0
                   else np.nan)
     yield CLUST_PROP, proportion
 
 
-def iter_table_data(table: Table, order: int, clust: int, all_pos: bool):
+def iter_table_data(table: Table, k: int, clust: int, all_pos: bool):
     if isinstance(table, PosTable):
-        yield from iter_pos_table_data(table, order, clust, all_pos)
+        yield from iter_pos_table_data(table, k, clust, all_pos)
     elif isinstance(table, ReadTable):
-        yield from iter_read_table_data(table, order, clust)
+        yield from iter_read_table_data(table, k, clust)
     elif isinstance(table, ClustFreqTable):
-        yield from iter_clust_table_data(table, order, clust)
+        yield from iter_clust_table_data(table, k, clust)
     else:
         raise TypeError(f"Invalid table type: {type(table).__name__}")
 
 
 def get_table_data(table: Table, all_pos: bool):
     data = dict()
-    for order, clust in table.header.clusts:
-        name = format_clust_name(order, clust, allow_zero=True)
-        data[name] = dict(iter_table_data(table, order, clust, all_pos))
+    for k, clust in table.header.clusts:
+        name = format_clust_name(k, clust, allow_zero=True)
+        data[name] = dict(iter_table_data(table, k, clust, all_pos))
     return data
 
 

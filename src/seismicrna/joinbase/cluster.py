@@ -16,15 +16,15 @@ def parse_join_clusts_file(file: str | Path):
         raise TypeError(f"Expected first {n_cols} of {file} to be a valid "
                         f"{ClustHeader.__name__}, but got {header}")
     # Rearrange the DataFrame into a dict.
-    clusts_dict = {sect: {order: dict() for order in header.orders}
+    clusts_dict = {sect: {k: dict() for k in header.ks}
                    for sect in clusts_df.columns}
     for sect, clusts in clusts_df.items():
-        for (order, clust), sect_clust in clusts.items():
-            if not 1 <= sect_clust <= order:
-                raise ValueError(f"Section {repr(sect)} order {order} got a "
+        for (k, clust), sect_clust in clusts.items():
+            if not 1 <= sect_clust <= k:
+                raise ValueError(f"Section {repr(sect)} k {k} got a "
                                  f"cluster number out of range: {sect_clust}")
-            if sect_clust in clusts_dict[sect][order].values():
-                raise ValueError(f"Section {repr(sect)} order {order} got a "
+            if sect_clust in clusts_dict[sect][k].values():
+                raise ValueError(f"Section {repr(sect)} k={k} got a "
                                  f"repeated cluster number: {sect_clust}")
-            clusts_dict[sect][order][clust] = sect_clust
+            clusts_dict[sect][k][clust] = sect_clust
     return clusts_dict

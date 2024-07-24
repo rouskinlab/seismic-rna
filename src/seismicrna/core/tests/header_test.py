@@ -15,15 +15,10 @@ from seismicrna.core.header import (AVERAGE_PREFIX,
                                     RelClustHeader,
                                     format_clust_name,
                                     format_clust_names,
-                                    validate_order_clust,
+                                    validate_k_clust,
                                     list_clusts,
-                                    list_orders,
-                                    list_order_clusts,
-                                    list_orders_clusts,
-                                    index_clusts,
-                                    index_orders,
-                                    index_order_clusts,
-                                    index_orders_clusts,
+                                    list_k_clusts,
+                                    list_ks_clusts,
                                     make_header,
                                     parse_header)
 
@@ -39,98 +34,98 @@ class TestConstants(ut.TestCase):
     def test_clust_name(self):
         self.assertEqual(CLUST_NAME, "Cluster")
 
-    def test_order_name(self):
-        self.assertEqual(NUM_CLUSTS_NAME, "Order")
+    def test_k_name(self):
+        self.assertEqual(NUM_CLUSTS_NAME, "K")
 
     def test_rel_name(self):
         self.assertEqual(REL_NAME, "Relationship")
 
 
-class TestValidateOrderClust(ut.TestCase):
+class TestValidateKClust(ut.TestCase):
 
-    def test_float_order(self):
+    def test_float_k(self):
         self.assertRaisesRegex(TypeError,
-                               "order must be an int",
-                               validate_order_clust,
-                               order=1.,
+                               "k must be int",
+                               validate_k_clust,
+                               k=1.,
                                clust=1)
 
     def test_float_clust(self):
         self.assertRaisesRegex(TypeError,
-                               "clust must be an int",
-                               validate_order_clust,
-                               order=1,
+                               "clust must be int",
+                               validate_k_clust,
+                               k=1,
                                clust=1.)
 
     def test_negative_zero_allowed(self):
         self.assertRaisesRegex(ValueError,
-                               "order must be ≥ 0",
-                               validate_order_clust,
-                               order=-1,
+                               "k must be ≥ 0",
+                               validate_k_clust,
+                               k=-1,
                                clust=0,
                                allow_zero=True)
 
     def test_zero_negative_allowed(self):
         self.assertRaisesRegex(ValueError,
                                "clust must be ≥ 0",
-                               validate_order_clust,
-                               order=0,
+                               validate_k_clust,
+                               k=0,
                                clust=-1,
                                allow_zero=True)
 
     def test_zero_zero_allowed(self):
-        self.assertIsNone(validate_order_clust(0, 0, allow_zero=True))
+        self.assertIsNone(validate_k_clust(0, 0, allow_zero=True))
 
     def test_zero_zero_unallowed(self):
         self.assertRaisesRegex(ValueError,
-                               "order must be ≥ 1",
-                               validate_order_clust,
-                               order=0,
+                               "k must be ≥ 1",
+                               validate_k_clust,
+                               k=0,
                                clust=0,
                                allow_zero=False)
 
     def test_zero_one_allowed(self):
         self.assertRaisesRegex(ValueError,
-                               "clust must be ≤ order",
-                               validate_order_clust,
-                               order=0,
+                               "clust must be ≤ k",
+                               validate_k_clust,
+                               k=0,
                                clust=1,
                                allow_zero=True)
 
     def test_zero_one_unallowed(self):
         self.assertRaisesRegex(ValueError,
-                               "order must be ≥ 1",
-                               validate_order_clust,
-                               order=0,
+                               "k must be ≥ 1",
+                               validate_k_clust,
+                               k=0,
                                clust=1,
                                allow_zero=False)
 
     def test_one_zero_allowed(self):
         self.assertRaisesRegex(ValueError,
                                "clust must be ≥ 1",
-                               validate_order_clust,
-                               order=1,
+                               validate_k_clust,
+                               k=1,
                                clust=0,
                                allow_zero=True)
 
     def test_one_zero_unallowed(self):
         self.assertRaisesRegex(ValueError,
                                "clust must be ≥ 1",
-                               validate_order_clust,
-                               order=1,
+                               validate_k_clust,
+                               k=1,
                                clust=0,
                                allow_zero=False)
 
     def test_positive_positive(self):
-        for order in range(1, 11):
+        for k in range(1, 11):
             for clust in range(1, 11):
-                if clust <= order:
-                    self.assertIsNone(validate_order_clust(order, clust))
+                if clust <= k:
+                    self.assertIsNone(validate_k_clust(k, clust))
                 else:
                     self.assertRaisesRegex(ValueError,
-                                           "clust must be ≤ order",
-                                           validate_order_clust,
-                                           order=order,
+                                           "clust must be ≤ k",
+                                           validate_k_clust,
+                                           k=k,
                                            clust=clust)
 
 
@@ -171,182 +166,64 @@ class TestFormatClustNames(ut.TestCase):
 
 class TestListClusts(ut.TestCase):
 
-    def test_zero(self):
-        self.assertEqual(list_clusts(0), [0])
-
     def test_positive(self):
         self.assertEqual(list_clusts(1), [1])
         self.assertEqual(list_clusts(2), [1, 2])
         self.assertEqual(list_clusts(3), [1, 2, 3])
         self.assertEqual(list_clusts(4), [1, 2, 3, 4])
 
-    def test_negative(self):
+    def test_zero(self):
         self.assertRaisesRegex(ValueError,
-                               "order must be ≥ 0",
+                               "k must be ≥ 1, but got 0",
                                list_clusts,
-                               -1)
-
-
-class TestListOrders(ut.TestCase):
-
-    def test_zero_none(self):
-        self.assertEqual(list_orders(0), [0])
-
-    def test_zero_zero(self):
-        self.assertRaisesRegex(ValueError,
-                               "min_order must be ≥ 1",
-                               list_orders,
-                               0,
                                0)
 
-    def test_zero_one(self):
-        self.assertEqual(list_orders(0, 1),
-                         list_orders(0))
 
-    def test_zero_two(self):
-        self.assertRaisesRegex(ValueError,
-                               "If max_order = 0, then min_order must be 1",
-                               list_orders,
-                               0,
-                               2)
-
-    def test_positive_none(self):
-        self.assertEqual(list_orders(1), [1])
-        self.assertEqual(list_orders(2), [1, 2])
-        self.assertEqual(list_orders(3), [1, 2, 3])
-        self.assertEqual(list_orders(4), [1, 2, 3, 4])
-
-    def test_positive_zero(self):
-        self.assertRaisesRegex(ValueError,
-                               "min_order must be ≥ 1",
-                               list_orders,
-                               1,
-                               0)
-
-    def test_positive_positive(self):
-        for max_order in range(1, 11):
-            for min_order in range(1, 11):
-                if max_order >= min_order:
-                    self.assertEqual(list_orders(max_order, min_order),
-                                     list(range(min_order, max_order + 1)))
-                else:
-                    self.assertRaisesRegex(ValueError,
-                                           "If not 0, max_order must be ≥",
-                                           list_orders,
-                                           max_order,
-                                           min_order)
-
-    def test_negative_none(self):
-        self.assertRaisesRegex(ValueError,
-                               "max_order must be ≥ 0",
-                               list_orders,
-                               -1)
-
-    def test_negative_zero(self):
-        self.assertRaisesRegex(ValueError,
-                               "min_order must be ≥ 1",
-                               list_orders,
-                               -1,
-                               0)
-
-    def test_negative_positive(self):
-        for min_order in range(1, 11):
-            self.assertRaisesRegex(ValueError,
-                                   "max_order must be ≥ 0",
-                                   list_orders,
-                                   -1,
-                                   min_order)
-
-
-class TestIndexClusts(ut.TestCase):
-
-    def test_valid(self):
-        for order in range(11):
-            index = index_clusts(order)
-            self.assertEqual(index.to_list(),
-                             list_clusts(order))
-            self.assertEqual(index.names,
-                             [CLUST_NAME])
-
-
-class TestIndexOrders(ut.TestCase):
-
-    def test_valid(self):
-        for max_order in range(11):
-            for min_order in range(1, max_order + 1):
-                index = index_orders(max_order, min_order)
-                self.assertEqual(index.to_list(),
-                                 list_orders(max_order, min_order))
-                self.assertEqual(index.names,
-                                 [NUM_CLUSTS_NAME])
-
-
-class TestListOrderClusts(ut.TestCase):
+class TestListKClusts(ut.TestCase):
 
     def test_zero(self):
-        self.assertEqual(list_order_clusts(0),
-                         [(0, 0)])
+        self.assertRaisesRegex(ValueError,
+                               "k must be ≥ 1, but got 0",
+                               list_k_clusts,
+                               0)
 
     def test_positive(self):
-        self.assertEqual(list_order_clusts(1),
+        self.assertEqual(list_k_clusts(1),
                          [(1, 1)])
-        self.assertEqual(list_order_clusts(2),
+        self.assertEqual(list_k_clusts(2),
                          [(2, 1), (2, 2)])
-        self.assertEqual(list_order_clusts(3),
+        self.assertEqual(list_k_clusts(3),
                          [(3, 1), (3, 2), (3, 3)])
-        self.assertEqual(list_order_clusts(4),
+        self.assertEqual(list_k_clusts(4),
                          [(4, 1), (4, 2), (4, 3), (4, 4)])
 
 
-class TestListOrdersClusts(ut.TestCase):
+class TestListKsClusts(ut.TestCase):
 
-    def test_zero_none(self):
-        self.assertEqual(list_orders_clusts(0),
-                         [(0, 0)])
+    def test_empty(self):
+        self.assertRaisesRegex(ValueError,
+                               "ks is empty",
+                               list_ks_clusts,
+                               [])
 
-    def test_zero_one(self):
-        self.assertEqual(list_orders_clusts(0, 1),
-                         list_orders_clusts(0))
+    def test_zero(self):
+        self.assertRaisesRegex(ValueError,
+                               "k must be ≥ 1, but got 0",
+                               list_ks_clusts,
+                               [0])
 
-    def test_positive_none(self):
-        self.assertEqual(list_orders_clusts(1),
-                         [(1, 1)])
-        self.assertEqual(list_orders_clusts(2),
+    def test_one_k(self):
+        for k in range(1, 10):
+            self.assertEqual(list_ks_clusts([k]),
+                             list_k_clusts(k))
+
+    def test_ks(self):
+        self.assertEqual(list_ks_clusts([1, 2]),
                          [(1, 1), (2, 1), (2, 2)])
-        self.assertEqual(list_orders_clusts(3),
+        self.assertEqual(list_ks_clusts([1, 3]),
+                         [(1, 1), (3, 1), (3, 2), (3, 3)])
+        self.assertEqual(list_ks_clusts([1, 2, 3]),
                          [(1, 1), (2, 1), (2, 2), (3, 1), (3, 2), (3, 3)])
-
-    def test_positive_positive(self):
-        for max_order in range(1, 11):
-            for min_order in range(1, max_order + 1):
-                expect = list()
-                for order in range(min_order, max_order + 1):
-                    expect.extend(list_order_clusts(order))
-                self.assertEqual(list_orders_clusts(max_order, min_order),
-                                 expect)
-
-
-class TestIndexOrderClusts(ut.TestCase):
-
-    def test_valid(self):
-        for order in range(11):
-            index = index_order_clusts(order)
-            self.assertEqual(index.to_list(),
-                             list_order_clusts(order))
-            self.assertEqual(index.names,
-                             [NUM_CLUSTS_NAME, CLUST_NAME])
-
-
-class TestIndexOrdersClusts(ut.TestCase):
-
-    def test_valid(self):
-        for max_order in range(1, 11):
-            for min_order in range(1, max_order + 1):
-                index = index_orders_clusts(max_order, min_order)
-                self.assertEqual(index.to_list(),
-                                 list_orders_clusts(max_order, min_order))
-                self.assertEqual(index.names,
-                                 [NUM_CLUSTS_NAME, CLUST_NAME])
 
 
 class TestHeader(ut.TestCase):
@@ -376,52 +253,35 @@ class TestRelHeader(ut.TestCase):
 
     def test_rels_normal(self):
         rels = RelHeader(rels=list("qwerty")).rels
-        self.assertIsInstance(rels, np.ndarray)
-        self.assertTrue(np.array_equal(rels, np.array(list("qwerty"))))
+        self.assertListEqual(rels, list("qwerty"))
 
     def test_rels_duplicated(self):
-        rels = RelHeader(rels=list("banana")).rels
-        self.assertIsInstance(rels, np.ndarray)
-        self.assertTrue(np.array_equal(rels, np.array(list("ban"))))
+        self.assertRaisesRegex(ValueError,
+                               "Duplicate relationship",
+                               RelHeader,
+                               rels=list("banana"))
 
     def test_rels_empty(self):
         self.assertRaisesRegex(ValueError,
-                               "Got no relationships for header",
+                               "Got no relationships for RelHeader",
                                RelHeader,
                                rels=list())
 
-    def test_max_order(self):
-        header = RelHeader(rels=list("qwerty"))
-        self.assertEqual(header.max_order, 0)
-
-    def test_min_order(self):
-        header = RelHeader(rels=list("qwerty"))
-        self.assertEqual(header.min_order, 1)
-
-    def test_orders(self):
-        header = RelHeader(rels=list("qwerty"))
-        self.assertEqual(header.orders.to_list(), [0])
-
     def test_clusts(self):
         header = RelHeader(rels=list("qwerty"))
-        self.assertEqual(header.clusts.to_list(), [(0, 0)])
+        self.assertEqual(header.clusts, [(0, 0)])
 
     def test_names(self):
         header = RelHeader(rels=list("qwerty"))
         self.assertEqual(header.names, [AVERAGE_PREFIX])
 
     def test_signature(self):
-        sig = RelHeader(rels=list("qwerty")).signature
-        self.assertEqual(list(sig.keys()), ["max_order", "min_order", "rels"])
-        sig_max = sig["max_order"]
-        self.assertIsInstance(sig_max, int)
-        self.assertEqual(sig_max, 0)
-        sig_min = sig["min_order"]
-        self.assertIsInstance(sig_min, int)
-        self.assertEqual(sig_min, 1)
+        rels = list("qwerty")
+        sig = RelHeader(rels=rels).signature
+        self.assertEqual(list(sig.keys()), ["rels"])
         sig_rels = sig["rels"]
-        self.assertIsInstance(sig_rels, np.ndarray)
-        self.assertEqual(sig_rels.tolist(), ["q", "w", "e", "r", "t", "y"])
+        self.assertIsInstance(sig_rels, list)
+        self.assertEqual(sig_rels, rels)
 
     def test_index(self):
         index = RelHeader(rels=list("qwerty")).index
@@ -435,7 +295,7 @@ class TestRelHeader(ut.TestCase):
         header = RelHeader(rels=list("qwerty"))
         clust_indexes = list(header.iter_clust_indexes())
         self.assertEqual(len(clust_indexes), 1)
-        self.assertEqual(len(clust_indexes), header.clusts.size)
+        self.assertEqual(len(clust_indexes), len(header.clusts))
         self.assertIsInstance(clust_indexes[0], pd.Index)
         self.assertTrue(clust_indexes[0].equals(header.index))
 
@@ -452,42 +312,42 @@ class TestRelHeader(ut.TestCase):
 
     def test_select_rel(self):
         header = RelHeader(rels=list("qwerty"))
-        selection = header.select(rel='w')
+        selection = header.select(rel="w")
         self.assertIsInstance(selection, pd.Index)
         self.assertNotIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(), ['w'])
+        self.assertEqual(selection.to_list(), ["w"])
 
     def test_select_one_rels(self):
         header = RelHeader(rels=list("qwerty"))
-        selection = header.select(rel=['w'])
+        selection = header.select(rel=["w"])
         self.assertIsInstance(selection, pd.Index)
         self.assertNotIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(), ['w'])
+        self.assertEqual(selection.to_list(), ["w"])
 
     def test_select_two_rels(self):
         header = RelHeader(rels=list("qwerty"))
-        selection = header.select(rel=['t', 'w'])
+        selection = header.select(rel=["t", "w"])
         self.assertIsInstance(selection, pd.Index)
         self.assertNotIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(), ['w', 't'])
+        self.assertEqual(selection.to_list(), ["w", "t"])
 
     def test_select_invalid(self):
         header = RelHeader(rels=list("qwerty"))
         self.assertRaisesRegex(ValueError,
                                "Expected rel to be one of",
                                header.select,
-                               rel='v')
+                               rel="v")
 
     def test_select_extra(self):
         header = RelHeader(rels=list("qwerty"))
         self.assertRaisesRegex(TypeError,
                                "Unexpected keyword arguments",
                                header.select,
-                               order=1)
+                               k=1)
 
     def test_select_extra_zero(self):
         header = RelHeader(rels=list("qwerty"))
-        selection = header.select(order=0)
+        selection = header.select(k=0)
         self.assertIsInstance(selection, pd.Index)
         self.assertNotIsInstance(selection, pd.MultiIndex)
         self.assertTrue(selection.equals(header.index))
@@ -504,34 +364,22 @@ class TestRelHeader(ut.TestCase):
     def test_modified_empty_rels(self):
         header = RelHeader(rels=list("qwerty"))
         self.assertRaisesRegex(TypeError,
-                               "No header for rels",
+                               "Must give rels, ks, or both, but got neither",
                                header.modified,
                                rels=[])
 
-    def test_modified_max_order(self):
+    def test_modified_ks(self):
         header = RelHeader(rels=list("qwerty"))
-        for max_order in range(4):
-            modified = header.modified(max_order=max_order)
-            if max_order == 0:
+        for max_k in range(4):
+            ks = list(range(1, max_k + 1))
+            modified = header.modified(ks=ks)
+            if ks:
+                self.assertIsInstance(modified, RelClustHeader)
+                self.assertEqual(modified,
+                                 make_header(rels=list("qwerty"), ks=ks))
+            else:
                 self.assertIsInstance(modified, RelHeader)
                 self.assertEqual(modified, header)
-            else:
-                self.assertIsInstance(modified, RelClustHeader)
-                self.assertEqual(modified, make_header(rels=list("qwerty"),
-                                                       max_order=max_order))
-
-    def test_modified_min_order(self):
-        header = RelHeader(rels=list("qwerty"))
-        for min_order in range(4):
-            modified = header.modified(max_order=min_order, min_order=min_order)
-            if min_order == 0:
-                self.assertIsInstance(modified, RelHeader)
-                self.assertEqual(modified, header)
-            else:
-                self.assertIsInstance(modified, RelClustHeader)
-                self.assertEqual(modified, make_header(rels=list("qwerty"),
-                                                       max_order=min_order,
-                                                       min_order=min_order))
 
 
 class TestClustHeader(ut.TestCase):
@@ -541,84 +389,82 @@ class TestClustHeader(ut.TestCase):
 
     def test_levels(self):
         self.assertEqual(ClustHeader.levels(),
-                         dict(order=NUM_CLUSTS_NAME, clust=CLUST_NAME))
+                         dict(k=NUM_CLUSTS_NAME, clust=CLUST_NAME))
 
     def test_num_levels(self):
         self.assertEqual(ClustHeader.num_levels(), 2)
 
     def test_level_keys(self):
-        self.assertEqual(ClustHeader.level_keys(), ["order", "clust"])
+        self.assertEqual(ClustHeader.level_keys(), ["k", "clust"])
 
     def test_level_names(self):
         self.assertEqual(ClustHeader.level_names(), [NUM_CLUSTS_NAME, CLUST_NAME])
 
-    def test_max_order(self):
-        for max_order in range(1, 11):
-            header = ClustHeader(max_order=max_order)
-            self.assertEqual(header.max_order, max_order)
-        self.assertRaisesRegex(ValueError,
-                               "max_order must be ≥ 1, but got 0",
-                               ClustHeader,
-                               max_order=0)
+    def test_ks_valid(self):
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                header = ClustHeader(ks=ks)
+                self.assertEqual(header.ks, ks)
+                header = ClustHeader(ks=reversed(ks))
+                self.assertEqual(header.ks, ks)
 
-    def test_min_order(self):
-        for min_order in range(1, 11):
-            header = ClustHeader(max_order=min_order, min_order=min_order)
-            self.assertEqual(header.min_order, min_order)
-
-    def test_orders(self):
-        for max_order in range(1, 11):
-            for min_order in range(1, max_order + 1):
-                header = ClustHeader(max_order=max_order, min_order=min_order)
-                self.assertTrue(header.orders.equals(index_orders(max_order,
-                                                                  min_order)))
+    def test_ks_invalid(self):
+        self.assertRaises(ValueError,
+                          ClustHeader,
+                          ks=[])
+        self.assertRaises(ValueError,
+                          ClustHeader,
+                          ks=[0])
+        self.assertRaises(ValueError,
+                          ClustHeader,
+                          ks=[1, 1])
+        self.assertRaises(TypeError,
+                          ClustHeader,
+                          ks=["1"])
 
     def test_clusts(self):
-        for max_order in range(1, 11):
-            for min_order in range(1, max_order + 1):
-                header = ClustHeader(max_order=max_order, min_order=min_order)
-                self.assertTrue(header.clusts.equals(
-                    index_orders_clusts(max_order, min_order)
-                ))
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                header = ClustHeader(ks=ks)
+                self.assertEqual(header.clusts,
+                                 list_ks_clusts(ks))
 
     def test_names(self):
-        header = ClustHeader(max_order=4, min_order=3)
-        self.assertEqual(header.names, ["cluster 3-1",
-                                        "cluster 3-2",
-                                        "cluster 3-3",
-                                        "cluster 4-1",
-                                        "cluster 4-2",
-                                        "cluster 4-3",
-                                        "cluster 4-4"])
+        header = ClustHeader(ks=[4, 3])
+        self.assertEqual(header.names,
+                         ["cluster 3-1",
+                          "cluster 3-2",
+                          "cluster 3-3",
+                          "cluster 4-1",
+                          "cluster 4-2",
+                          "cluster 4-3",
+                          "cluster 4-4"])
 
     def test_signature(self):
-        for max_order in range(1, 11):
-            for min_order in range(1, max_order + 1):
-                sig = ClustHeader(max_order=max_order,
-                                  min_order=min_order).signature
-                self.assertEqual(list(sig.keys()), ["max_order", "min_order"])
-                sig_max = sig["max_order"]
-                self.assertIsInstance(sig_max, int)
-                self.assertEqual(sig_max, max_order)
-                sig_min = sig["min_order"]
-                self.assertIsInstance(sig_min, int)
-                self.assertEqual(sig_min, min_order)
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                sig = ClustHeader(ks=ks).signature
+                self.assertEqual(list(sig.keys()), ["ks"])
+                self.assertEqual(sig["ks"], ks)
 
     def test_index(self):
-        for max_order in range(1, 11):
-            for min_order in range(1, max_order + 1):
-                header = ClustHeader(max_order=max_order, min_order=min_order)
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                header = ClustHeader(ks=range(min_k, max_k + 1))
                 index = header.index
                 self.assertIsInstance(index, pd.MultiIndex)
                 self.assertEqual(list(index.names), [NUM_CLUSTS_NAME, CLUST_NAME])
-                self.assertTrue(index.equals(header.clusts))
+                self.assertEqual(index.tolist(), header.clusts)
 
     def test_iter_clust_indexes(self):
-        for max_order in range(1, 6):
-            for min_order in range(1, max_order + 1):
-                header = ClustHeader(max_order=max_order, min_order=min_order)
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                header = ClustHeader(ks=range(min_k, max_k + 1))
                 clust_indexes = list(header.iter_clust_indexes())
-                self.assertEqual(len(clust_indexes), header.clusts.size)
+                self.assertEqual(len(clust_indexes), len(header.clusts))
                 for index, clust in zip(clust_indexes,
                                         header.clusts,
                                         strict=True):
@@ -626,124 +472,115 @@ class TestClustHeader(ut.TestCase):
                     self.assertEqual(index.to_list(), [clust])
 
     def test_select_none(self):
-        header = ClustHeader(max_order=4)
+        header = ClustHeader(ks=range(1, 5))
         selection = header.select()
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertTrue(selection.equals(header.index))
 
-    def test_select_order(self):
-        header = ClustHeader(max_order=4)
-        selection = header.select(order=3)
+    def test_select_k(self):
+        header = ClustHeader(ks=range(1, 5))
+        selection = header.select(k=3)
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [(3, 1), (3, 2), (3, 3)])
 
-    def test_select_orders(self):
-        header = ClustHeader(max_order=4)
-        selection = header.select(order=[3, 2])
+    def test_select_ks(self):
+        header = ClustHeader(ks=range(1, 5))
+        selection = header.select(k=[3, 2])
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [(2, 1), (2, 2), (3, 1), (3, 2), (3, 3)])
 
     def test_select_clust(self):
-        header = ClustHeader(max_order=4)
+        header = ClustHeader(ks=range(1, 5))
         selection = header.select(clust=3)
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [(3, 3), (4, 3)])
 
     def test_select_clusts(self):
-        header = ClustHeader(max_order=4)
+        header = ClustHeader(ks=range(1, 5))
         selection = header.select(clust=[3, 2])
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [(2, 2), (3, 2), (3, 3), (4, 2), (4, 3)])
 
-    def test_select_order_clust_exist(self):
-        header = ClustHeader(max_order=4)
-        selection = header.select(order=3, clust=1)
+    def test_select_k_clust_exist(self):
+        header = ClustHeader(ks=range(1, 5))
+        selection = header.select(k=3, clust=1)
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [(3, 1)])
 
-    def test_select_orders_clusts_exist(self):
-        header = ClustHeader(max_order=4)
-        selection = header.select(order=[3, 2], clust=[1, 3])
+    def test_select_ks_clusts_exist(self):
+        header = ClustHeader(ks=range(1, 5))
+        selection = header.select(k=[3, 2], clust=[1, 3])
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [(2, 1), (3, 1), (3, 3)])
 
-    def test_select_order_clust_empty(self):
-        header = ClustHeader(max_order=4)
-        selection = header.select(order=1, clust=3)
+    def test_select_k_clust_empty(self):
+        header = ClustHeader(ks=range(1, 5))
+        selection = header.select(k=1, clust=3)
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [])
 
-    def test_select_invalid_order(self):
-        header = ClustHeader(max_order=4)
+    def test_select_invalid_k(self):
+        header = ClustHeader(ks=range(1, 5))
         self.assertRaisesRegex(ValueError,
-                               "Expected order to be one of",
+                               "Expected k to be one of",
                                header.select,
-                               order=5)
+                               k=5)
 
     def test_select_invalid_clust(self):
-        header = ClustHeader(max_order=4)
+        header = ClustHeader(ks=range(1, 5))
         self.assertRaisesRegex(ValueError,
                                "Expected clust to be one of",
                                header.select,
                                clust=5)
 
     def test_select_extra(self):
-        header = ClustHeader(max_order=4)
+        header = ClustHeader(ks=range(1, 5))
         self.assertRaisesRegex(TypeError,
                                "Unexpected keyword arguments",
                                header.select,
-                               rel='w')
+                               rel="w")
 
     def test_modified_none(self):
-        for max_order in range(1, 4):
-            for min_order in range(1, max_order + 1):
-                header = ClustHeader(max_order=max_order, min_order=min_order)
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                header = ClustHeader(ks=range(min_k, max_k + 1))
                 self.assertEqual(header.modified(), header)
 
     def test_modified_rels(self):
-        for max_order in range(1, 4):
-            for min_order in range(1, max_order + 1):
-                header = ClustHeader(max_order=max_order, min_order=min_order)
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                header = ClustHeader(ks=ks)
                 modified = header.modified(rels=list("qwerty"))
                 self.assertIsInstance(modified, RelClustHeader)
                 self.assertEqual(modified,
-                                 make_header(rels=list("qwerty"),
-                                             max_order=max_order,
-                                             min_order=min_order))
+                                 make_header(rels=list("qwerty"), ks=ks))
 
-    def test_modified_max_order(self):
-        for max_order in range(1, 4):
-            for min_order in range(1, max_order + 1):
-                header = ClustHeader(max_order=max_order, min_order=min_order)
-                for new_max_order in range(1, 4):
-                    modified = header.modified(max_order=new_max_order)
-                    self.assertIsInstance(modified, ClustHeader)
-                    self.assertEqual(modified,
-                                     make_header(max_order=new_max_order,
-                                                 min_order=min_order))
-                self.assertRaisesRegex(TypeError,
-                                       "No header for rels",
-                                       header.modified,
-                                       max_order=0)
-
-    def test_modified_min_order(self):
-        for max_order in range(1, 4):
-            for min_order in range(1, max_order + 1):
-                header = ClustHeader(max_order=max_order, min_order=min_order)
-                for new_min_order in range(1, 4):
-                    modified = header.modified(max_order=new_min_order,
-                                               min_order=new_min_order)
-                    self.assertIsInstance(modified, ClustHeader)
-                    self.assertEqual(modified,
-                                     make_header(max_order=new_min_order,
-                                                 min_order=new_min_order))
+    def test_modified_ks(self):
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                header = ClustHeader(ks=ks)
+                for new_min_k in range(1, 4):
+                    for new_max_k in range(new_min_k, 6):
+                        new_ks = list(range(new_min_k, new_max_k + 1))
+                        modified = header.modified(ks=new_ks)
+                        self.assertIsInstance(modified, ClustHeader)
+                        self.assertEqual(modified,
+                                         make_header(ks=new_ks))
+                self.assertRaisesRegex(
+                    TypeError,
+                    "Must give rels, ks, or both, but got neither",
+                    header.modified,
+                    ks=[]
+                )
 
 
 class TestRelClustHeader(ut.TestCase):
@@ -753,39 +590,41 @@ class TestRelClustHeader(ut.TestCase):
 
     def test_levels(self):
         self.assertEqual(RelClustHeader.levels(),
-                         dict(rel=REL_NAME, order=NUM_CLUSTS_NAME, clust=CLUST_NAME))
+                         dict(rel=REL_NAME,
+                              k=NUM_CLUSTS_NAME,
+                              clust=CLUST_NAME))
 
     def test_num_levels(self):
         self.assertEqual(RelClustHeader.num_levels(), 3)
 
     def test_level_keys(self):
-        self.assertEqual(RelClustHeader.level_keys(), ["rel", "order", "clust"])
+        self.assertEqual(RelClustHeader.level_keys(), ["rel", "k", "clust"])
 
     def test_level_names(self):
         self.assertEqual(RelClustHeader.level_names(),
                          [REL_NAME, NUM_CLUSTS_NAME, CLUST_NAME])
 
     def test_signature(self):
-        for max_order in range(1, 11):
-            for min_order in range(1, max_order + 1):
-                sig = RelClustHeader(rels=list("qwerty"),
-                                     max_order=max_order,
-                                     min_order=min_order).signature
-                self.assertEqual(list(sig.keys()),
-                                 ["max_order", "min_order", "rels"])
-                sig_max = sig["max_order"]
-                self.assertIsInstance(sig_max, int)
-                self.assertEqual(sig_max, max_order)
-                sig_min = sig["min_order"]
-                self.assertIsInstance(sig_min, int)
-                self.assertEqual(sig_min, min_order)
-                sig_rels = sig["rels"]
-                self.assertIsInstance(sig_rels, np.ndarray)
-                self.assertEqual(sig_rels.tolist(),
-                                 ["q", "w", "e", "r", "t", "y"])
+        rels = list("qwerty")
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                sig = RelClustHeader(rels=rels, ks=ks).signature
+                self.assertListEqual(sorted(sig.keys()), ["ks", "rels"])
+                self.assertListEqual(sig["ks"], ks)
+                self.assertListEqual(sig["rels"], rels)
+
+    def test_clusts(self):
+        rels = list("qwerty")
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                header = RelClustHeader(rels=rels, ks=ks)
+                self.assertEqual(header.clusts,
+                                 list_ks_clusts(ks))
 
     def test_index(self):
-        index = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2).index
+        index = RelClustHeader(rels=["a", "b"], ks=[2, 3]).index
         self.assertIsInstance(index, pd.MultiIndex)
         self.assertEqual(list(index.names), [REL_NAME, NUM_CLUSTS_NAME, CLUST_NAME])
         self.assertTrue(np.array_equal(index.get_level_values(REL_NAME),
@@ -796,29 +635,29 @@ class TestRelClustHeader(ut.TestCase):
                                        [1, 2, 1, 2, 3, 1, 2, 1, 2, 3]))
 
     def test_iter_clust_indexes(self):
-        for max_order in range(1, 6):
-            for min_order in range(1, max_order + 1):
-                header = RelClustHeader(rels=list("qwerty"),
-                                        max_order=max_order,
-                                        min_order=min_order)
+        rels = list("qwerty")
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                header = RelClustHeader(rels=rels, ks=ks)
                 clust_indexes = list(header.iter_clust_indexes())
-                self.assertEqual(len(clust_indexes), header.clusts.size)
+                self.assertEqual(len(clust_indexes), len(header.clusts))
                 for index, clust in zip(clust_indexes,
                                         header.clusts,
                                         strict=True):
                     self.assertIsInstance(index, pd.MultiIndex)
-                    self.assertEqual(index.size, len("qwerty"))
+                    self.assertEqual(index.size, len(rels))
                     self.assertEqual(index.to_list(),
-                                     [(rel, *clust) for rel in "qwerty"])
+                                     [(rel, *clust) for rel in rels])
 
     def test_select_none(self):
-        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
+        header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         selection = header.select()
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertTrue(selection.equals(header.index))
 
     def test_select_rel(self):
-        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
+        header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         selection = header.select(rel="b")
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
@@ -828,9 +667,9 @@ class TestRelClustHeader(ut.TestCase):
                           ("b", 3, 2),
                           ("b", 3, 3)])
 
-    def test_select_order(self):
-        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
-        selection = header.select(order=3)
+    def test_select_ks(self):
+        header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
+        selection = header.select(k=3)
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [("a", 3, 1),
@@ -841,7 +680,7 @@ class TestRelClustHeader(ut.TestCase):
                           ("b", 3, 3)])
 
     def test_select_clust(self):
-        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
+        header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         selection = header.select(clust=2)
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
@@ -850,156 +689,145 @@ class TestRelClustHeader(ut.TestCase):
                           ("b", 2, 2),
                           ("b", 3, 2)])
 
-    def test_select_order_clust_exist(self):
-        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
-        selection = header.select(rel="a", order=2, clust=1)
+    def test_select_k_clust_exist(self):
+        header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
+        selection = header.select(rel="a", k=2, clust=1)
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [("a", 2, 1)])
 
-    def test_select_order_clust_empty(self):
-        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
-        selection = header.select(rel="a", order=2, clust=3)
+    def test_select_k_clust_empty(self):
+        header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
+        selection = header.select(rel="a", k=2, clust=3)
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [])
 
     def test_select_invalid_rel(self):
-        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
+        header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         self.assertRaisesRegex(ValueError,
                                "Expected rel to be one of",
                                header.select,
-                               rel='c')
+                               rel="c")
 
-    def test_select_invalid_order(self):
-        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
+    def test_select_invalid_k(self):
+        header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         self.assertRaisesRegex(ValueError,
-                               "Expected order to be one of",
+                               "Expected k to be one of",
                                header.select,
-                               order=1)
+                               k=1)
 
     def test_select_invalid_clust(self):
-        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
+        header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         self.assertRaisesRegex(ValueError,
                                "Expected clust to be one of",
                                header.select,
                                clust=4)
 
     def test_select_extra(self):
-        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
+        header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         self.assertRaisesRegex(TypeError,
                                "Unexpected keyword arguments",
                                header.select,
                                extra="x")
 
     def test_select_extra_none(self):
-        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
-        selection = header.select(rel="a", order=2, clust=1, extra=None)
+        header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
+        selection = header.select(rel="a", k=2, clust=1, extra=None)
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [("a", 2, 1)])
 
     def test_select_extra_zero(self):
-        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
-        selection = header.select(rel="a", order=2, clust=1, extra=0)
+        header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
+        selection = header.select(rel="a", k=2, clust=1, extra=0)
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [("a", 2, 1)])
 
     def test_select_extra_emptystr(self):
-        header = RelClustHeader(rels=["a", "b"], max_order=3, min_order=2)
-        selection = header.select(rel="a", order=2, clust=1, extra="")
+        header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
+        selection = header.select(rel="a", k=2, clust=1, extra="")
         self.assertIsInstance(selection, pd.MultiIndex)
         self.assertEqual(selection.to_list(),
                          [("a", 2, 1)])
 
     def test_modified_none(self):
-        for max_order in range(1, 4):
-            for min_order in range(1, max_order + 1):
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
                 header = RelClustHeader(rels=list("qwerty"),
-                                        max_order=max_order,
-                                        min_order=min_order)
+                                        ks=range(min_k, max_k + 1))
                 self.assertEqual(header.modified(), header)
 
     def test_modified_rels(self):
-        for max_order in range(1, 4):
-            for min_order in range(1, max_order + 1):
-                header = RelClustHeader(rels=list("qwerty"),
-                                        max_order=max_order,
-                                        min_order=min_order)
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                header = RelClustHeader(rels=list("qwerty"), ks=ks)
                 modified = header.modified(rels=list("uiop"))
                 self.assertIsInstance(modified, RelClustHeader)
                 self.assertEqual(modified,
-                                 make_header(rels=list("uiop"),
-                                             max_order=max_order,
-                                             min_order=min_order))
+                                 make_header(rels=list("uiop"), ks=ks))
 
     def test_modified_empty_rels(self):
-        for max_order in range(1, 4):
-            for min_order in range(1, max_order + 1):
-                header = RelClustHeader(rels=list("qwerty"),
-                                        max_order=max_order,
-                                        min_order=min_order)
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                header = RelClustHeader(rels=list("qwerty"), ks=ks)
                 modified = header.modified(rels=[])
                 self.assertIsInstance(modified, ClustHeader)
-                self.assertEqual(modified,
-                                 make_header(max_order=max_order,
-                                             min_order=min_order))
+                self.assertEqual(modified, make_header(ks=ks))
 
-    def test_modified_max_order(self):
-        for max_order in range(1, 4):
-            for min_order in range(1, max_order + 1):
-                header = RelClustHeader(rels=list("qwerty"),
-                                        max_order=max_order,
-                                        min_order=min_order)
-                for new_max_order in range(1, 4):
-                    modified = header.modified(max_order=new_max_order)
-                    self.assertIsInstance(modified, RelClustHeader)
-                    self.assertEqual(modified,
-                                     make_header(rels=list("qwerty"),
-                                                 max_order=new_max_order,
-                                                 min_order=min_order))
+    def test_modified_ks(self):
+        rels = list("qwerty")
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                header = RelClustHeader(rels=rels, ks=ks)
+                for new_min_k in range(1, 4):
+                    for new_max_k in range(new_min_k, 6):
+                        new_ks = list(range(new_min_k, new_max_k + 1))
+                        modified = header.modified(ks=new_ks)
+                        self.assertIsInstance(modified, RelClustHeader)
+                        self.assertEqual(modified,
+                                         make_header(rels=rels, ks=new_ks))
 
-    def test_modified_max_order_0(self):
-        for max_order in range(1, 4):
-            for min_order in range(1, max_order + 1):
-                header = RelClustHeader(rels=list("qwerty"),
-                                        max_order=max_order,
-                                        min_order=min_order)
-                modified = header.modified(max_order=0)
+    def test_modified_empty_ks(self):
+        rels = list("qwerty")
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                header = RelClustHeader(rels=rels, ks=ks)
+                modified = header.modified(ks=[])
                 self.assertIsInstance(modified, RelHeader)
-                self.assertEqual(modified,
-                                 make_header(rels=list("qwerty"),
-                                             max_order=0,
-                                             min_order=min_order))
+                self.assertEqual(modified, make_header(rels=rels))
 
     def test_modified_all(self):
-        for max_order in range(1, 4):
-            for min_order in range(1, max_order + 1):
+        new_rels = list("uiop")
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
                 header = RelClustHeader(rels=list("qwerty"),
-                                        max_order=max_order,
-                                        min_order=min_order)
-                for new_min_order in range(1, 4):
-                    modified = header.modified(rels=list("uiop"),
-                                               max_order=new_min_order,
-                                               min_order=new_min_order)
-                    self.assertIsInstance(modified, ClustHeader)
-                    self.assertEqual(modified,
-                                     make_header(rels=list("uiop"),
-                                                 max_order=new_min_order,
-                                                 min_order=new_min_order))
+                                        ks=range(min_k, max_k + 1))
+                for new_min_k in range(1, 4):
+                    for new_max_k in range(new_min_k, 6):
+                        new_ks = list(range(new_min_k, new_max_k + 1))
+                        modified = header.modified(rels=new_rels, ks=new_ks)
+                        self.assertIsInstance(modified, ClustHeader)
+                        self.assertEqual(modified,
+                                         make_header(rels=new_rels, ks=new_ks))
 
     def test_modified_nullified(self):
-        for max_order in range(1, 4):
-            for min_order in range(1, max_order + 1):
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
                 header = RelClustHeader(rels=list("qwerty"),
-                                        max_order=max_order,
-                                        min_order=min_order)
-                self.assertRaisesRegex(TypeError,
-                                       "No header for rels",
-                                       header.modified,
-                                       rels=[],
-                                       max_order=0)
+                                        ks=range(min_k, max_k + 1))
+                self.assertRaisesRegex(
+                    TypeError,
+                    "Must give rels, ks, or both, but got neither",
+                    header.modified,
+                    rels=[],
+                    ks=[]
+                )
 
 
 class TestEqualHeaders(ut.TestCase):
@@ -1015,41 +843,48 @@ class TestEqualHeaders(ut.TestCase):
                 self.assertNotEqual(header1, header2)
 
     def test_clustheaders(self):
-        for omax1, omax2 in product(range(1, 4), repeat=2):
-            for omin1, omin2 in product(range(1, 4), repeat=2):
-                header1 = ClustHeader(max_order=omax1, min_order=omin1)
-                header2 = ClustHeader(max_order=omax2, min_order=omin2)
-                if (omax1, omin1) == (omax2, omin2):
-                    self.assertEqual(header1, header2)
-                else:
-                    self.assertNotEqual(header1, header2)
+        for min_k1 in range(1, 4):
+            for min_k2 in range(1, 4):
+                for max_k1 in range(min_k1, 4):
+                    for max_k2 in range(min_k2, 4):
+                        header1 = ClustHeader(ks=range(min_k1, max_k1 + 1))
+                        header2 = ClustHeader(ks=range(min_k2, max_k2 + 1))
+                        if min_k1 == min_k2 and max_k1 == max_k2:
+                            self.assertEqual(header1, header2)
+                        else:
+                            self.assertNotEqual(header1, header2)
 
     def test_relclustheaders(self):
-        for rels1, rels2 in product(["qwerty", "uiop", "asdf", "ghjkl"],
-                                    repeat=2):
-            for omax1, omax2 in product(range(1, 4), repeat=2):
-                for omin1, omin2 in product(range(1, 4), repeat=2):
-                    header1 = RelClustHeader(rels=list(rels1),
-                                             max_order=omax1,
-                                             min_order=omin1)
-                    header2 = RelClustHeader(rels=list(rels2),
-                                             max_order=omax2,
-                                             min_order=omin2)
-                    if (rels1, omax1, omin1) == (rels2, omax2, omin2):
-                        self.assertEqual(header1, header2)
-                    else:
-                        self.assertNotEqual(header1, header2)
+        for min_k1 in range(1, 4):
+            for min_k2 in range(1, 4):
+                for max_k1 in range(min_k1, 4):
+                    for max_k2 in range(min_k2, 4):
+                        for rels1, rels2 in product(["qwerty",
+                                                     "uiop",
+                                                     "asdf",
+                                                     "ghjkl"],
+                                                    repeat=2):
+                            header1 = RelClustHeader(rels=list(rels1),
+                                                     ks=range(min_k1,
+                                                              max_k1 + 1))
+                            header2 = RelClustHeader(rels=list(rels2),
+                                                     ks=range(min_k2,
+                                                              max_k2 + 1))
+                            if (rels1 == rels2
+                                    and min_k1 == min_k2
+                                    and max_k1 == max_k2):
+                                self.assertEqual(header1, header2)
+                            else:
+                                self.assertNotEqual(header1, header2)
 
     def test_different_types(self):
         for rels in ["qwerty", "uiop", "asdf", "ghjkl"]:
-            for omax in range(1, 4):
-                for omin in range(1, 4):
+            for min_k in range(1, 4):
+                for max_k in range(min_k, 6):
+                    ks = list(range(min_k, max_k + 1))
                     rh = RelHeader(rels=list(rels))
-                    ch = ClustHeader(max_order=omax,
-                                     min_order=omin)
-                    rch = RelClustHeader(rels=list(rels),
-                                         max_order=omax,
-                                         min_order=omin)
+                    ch = ClustHeader(ks=ks)
+                    rch = RelClustHeader(rels=list(rels), ks=ks)
                     for header1, header2 in combinations([rh, ch, rch], 2):
                         self.assertNotEqual(header1, header2)
 
@@ -1058,31 +893,25 @@ class TestMakeHeader(ut.TestCase):
 
     def test_none(self):
         self.assertRaisesRegex(TypeError,
-                               r"No header for rels=\[\] and max_order=0",
+                               "Must give rels, ks, or both, but got neither",
                                make_header)
 
     def test_rels(self):
-        header = make_header(rels=["a", "b"])
+        rels = ["a", "b"]
+        header = make_header(rels=rels)
         self.assertIsInstance(header, RelHeader)
         self.assertNotIsInstance(header, RelClustHeader)
-        self.assertEqual(header.index.tolist(), ["a", "b"])
+        self.assertEqual(header.index.tolist(), rels)
 
-    def test_max_order(self):
-        header = make_header(max_order=2)
-        self.assertIsInstance(header, ClustHeader)
-        self.assertNotIsInstance(header, RelClustHeader)
-        self.assertEqual(header.index.tolist(),
-                         [(1, 1), (2, 1), (2, 2)])
-
-    def test_min_order(self):
-        header = make_header(max_order=3, min_order=2)
+    def test_ks(self):
+        header = make_header(ks=[3, 2])
         self.assertIsInstance(header, ClustHeader)
         self.assertNotIsInstance(header, RelClustHeader)
         self.assertEqual(header.index.tolist(),
                          [(2, 1), (2, 2), (3, 1), (3, 2), (3, 3)])
 
     def test_all(self):
-        header = make_header(rels=["a", "b"], max_order=3, min_order=2)
+        header = make_header(rels=["a", "b"], ks=[3, 2])
         self.assertIsInstance(header, RelClustHeader)
         self.assertEqual(header.index.tolist(),
                          [("a", 2, 1),
@@ -1101,7 +930,7 @@ class TestParseHeader(ut.TestCase):
 
     def test_none(self):
         self.assertRaisesRegex(TypeError,
-                               r"No header for rels=\[\] and max_order=0",
+                               "Must give rels, ks, or both, but got neither",
                                parse_header,
                                pd.Index([]))
 
@@ -1168,7 +997,7 @@ class TestParseHeader(ut.TestCase):
 
     def test_missing_index_names(self):
         self.assertRaisesRegex(TypeError,
-                               r"No header for rels=\[\] and max_order=0",
+                               "Must give rels, ks, or both, but got neither",
                                parse_header,
                                pd.MultiIndex.from_arrays([["a", "b"]],
                                                          names=["random"]))
@@ -1204,7 +1033,7 @@ class TestParseHeader(ut.TestCase):
 
     def test_nonnumeric(self):
         self.assertRaisesRegex(ValueError,
-                               "Expected index names",
+                               "invalid literal for int",
                                parse_header,
                                pd.MultiIndex.from_tuples([("a", "x", "x"),
                                                           ("a", "y", "x"),
@@ -1218,10 +1047,10 @@ class TestParseHeader(ut.TestCase):
 
     def test_invalid_numeric(self):
         self.assertRaisesRegex(ValueError,
-                               "Expected index names",
+                               "k must be ≥ 1, but got 0",
                                parse_header,
-                               pd.MultiIndex.from_tuples([("a", '0', '0'),
-                                                          ("b", '0', '0')],
+                               pd.MultiIndex.from_tuples([("a", "0", "0"),
+                                                          ("b", "0", "0")],
                                                          names=[REL_NAME,
                                                                 NUM_CLUSTS_NAME,
                                                                 CLUST_NAME]))

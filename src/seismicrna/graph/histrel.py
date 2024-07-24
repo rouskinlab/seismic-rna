@@ -31,7 +31,7 @@ class RelHistogramGraph(OneTableGraph,
     def data(self):
         # Fetch the raw data from the table.
         data = self._fetch_data(self.table,
-                                order=self.order,
+                                k=self.k,
                                 clust=self.clust)
         # Determine the edges of the bins.
         edges = self.get_edges(data)

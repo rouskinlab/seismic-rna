@@ -37,7 +37,7 @@ class ProfileGraph(OneTableGraph, ColorMapGraph, ABC):
     @cached_property
     def data(self):
         return self._fetch_data(self.table,
-                                order=self.order,
+                                k=self.k,
                                 clust=self.clust)
 
     @cached_property

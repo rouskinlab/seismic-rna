@@ -373,7 +373,7 @@ class PosTable(RelTypeTable, ABC):
                        sections: Iterable[Section] | None,
                        quantile: float,
                        rel: str,
-                       order: int | None,
+                       k: int | None,
                        clust: int | None) -> Generator[RNAProfile, Any, Any]:
         """ Yield RNA mutational profiles from the table. """
 
@@ -381,13 +381,13 @@ class PosTable(RelTypeTable, ABC):
                       sections: Iterable[Section] | None = None,
                       quantile: float = 0.,
                       rel: str = MUTAT_REL,
-                      order: int | None = None,
+                      k: int | None = None,
                       clust: int | None = None):
         """ Yield RNA mutational profiles from the table. """
         yield from self._iter_profiles(sections=sections,
                                        quantile=quantile,
                                        rel=rel,
-                                       order=order,
+                                       k=k,
                                        clust=clust)
 
     def _compute_ci(self,
@@ -476,7 +476,7 @@ class PosTable(RelTypeTable, ABC):
         return self._compute_ci(confidence, True, **kwargs)
 
     def _resample_clust(self,
-                        order: int,
+                        k: int,
                         clust: int,
                         n_cov: np.ndarray, *,
                         seed: int | None = None,
@@ -485,8 +485,8 @@ class PosTable(RelTypeTable, ABC):
 
         Parameters
         ----------
-        order: int
-            Order of the cluster.
+        k: int
+            Number of clusters.
         clust: int
             Number of the cluster.
         n_cov: numpy.ndarray
@@ -496,7 +496,7 @@ class PosTable(RelTypeTable, ABC):
         tol: float = 1.e-3
             Tolerance for floating-point rounding error.
         """
-        fetch_kwargs = dict(order=order, clust=clust, exclude_masked=True)
+        fetch_kwargs = dict(k=k, clust=clust, exclude_masked=True)
         rng = np.random.default_rng(seed)
         if n_cov.ndim != 1:
             raise ValueError("n_cov must have exactly 1 dimension, "
@@ -609,23 +609,23 @@ class PosTable(RelTypeTable, ABC):
                                  index=(self.section.unmasked if exclude_masked
                                         else self.data.index),
                                  columns=self.data.columns)
-        for order, clust in self.header.clusts:
+        for k, clust in self.header.clusts:
             # Get the read coverage for the cluster.
             n_cov = np.asarray(np.round(
                 fraction * self.fetch_count(rel=COVER_REL,
-                                            order=order,
+                                            k=k,
                                             clust=clust,
                                             squeeze=True,
                                             exclude_masked=True).values
             ), dtype=int)
             # Resample the other relationships for the cluster.
-            resampled_clust = self._resample_clust(order,
+            resampled_clust = self._resample_clust(k,
                                                    clust,
                                                    n_cov,
                                                    seed=rng.integers(max_seed))
             # Record the resampled data for the cluster.
             for rel, n_rel in resampled_clust.items():
-                key = (rel, order, clust) if order > 0 else rel
+                key = (rel, k, clust) if k > 0 else rel
                 resampled.loc[self.section.unmasked, key] = n_rel
         return resampled
 
@@ -680,7 +680,7 @@ class RelPosTable(RelTable, PosTable, ABC):
                        sections: Iterable[Section] | None,
                        quantile: float,
                        rel: str,
-                       order: int | None,
+                       k: int | None,
                        clust: int | None):
         # Relation table loaders have unmasked, unfiltered reads and are
         # thus unsuitable for making RNA profiles. Yield no profiles.
@@ -693,19 +693,19 @@ class ProfilePosTable(PosTable, ABC):
                        sections: Iterable[Section] | None,
                        quantile: float,
                        rel: str,
-                       order: int | None,
+                       k: int | None,
                        clust: int | None):
         """ Yield RNA mutational profiles from a table. """
         if sections is not None:
             sections = list(sections)
         else:
             sections = [self.section]
-        for o, c in self.header.clusts:
-            if (order is None or order == o) and (clust is None or clust == c):
-                data_name = path.fill_whitespace(format_clust_name(o,
-                                                                   c,
-                                                                   allow_zero=True),
-                                                 fill="-")
+        for hk, hc in self.header.clusts:
+            if (k is None or k == hk) and (clust is None or clust == hc):
+                data_name = path.fill_whitespace(
+                    format_clust_name(hk, hc, allow_zero=True),
+                    fill="-"
+                )
                 for section in sections:
                     yield RNAProfile(section=section,
                                      sample=self.sample,
@@ -713,8 +713,8 @@ class ProfilePosTable(PosTable, ABC):
                                      data_name=data_name,
                                      data=self.fetch_ratio(quantile=quantile,
                                                            rel=rel,
-                                                           order=o,
-                                                           clust=c,
+                                                           k=hk,
+                                                           clust=hc,
                                                            squeeze=True))
 
 

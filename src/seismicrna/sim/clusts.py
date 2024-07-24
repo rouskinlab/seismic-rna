@@ -12,7 +12,7 @@ from ..core.arg import (opt_ct_file,
                         opt_force,
                         opt_parallel,
                         opt_max_procs)
-from ..core.header import ClustHeader, index_order_clusts
+from ..core.header import ClustHeader
 from ..core.rna import from_ct
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
@@ -58,7 +58,7 @@ def sim_pclust(num_clusters: int,
         if sort:
             props = np.sort(props)[::-1]
     return pd.Series(props,
-                     index=index_order_clusts(num_clusters),
+                     index=ClustHeader(ks=[num_clusters]),
                      name=PROPORTION)
 
 

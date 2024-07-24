@@ -69,6 +69,23 @@ the environment by typing ``conda activate`` followed by its name, e.g. ::
     this environment but also fail to install the packages into the ``seismic``
     environment.
 
+
+
+
+
+
+
+
+
+
+ADD A SEGMENT ON WHAT TO DO IF CONDA INSTALL FAILS BUT YOU CAN STILL USE CONDA
+
+
+
+
+
+
+
 Install SEISMIC-RNA and its dependencies
 --------------------------------------------------------------------------------
 

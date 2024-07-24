@@ -13,7 +13,7 @@ from .base import (LINKER,
                    GraphWriter,
                    cgroup_table,
                    get_action_name,
-                   make_index,
+                   make_tracks,
                    make_title_action_sample,
                    make_path_subject)
 from .rel import OneRelGraph
@@ -37,19 +37,19 @@ class TwoTableGraph(OneRelGraph, ABC):
     def __init__(self, *,
                  out_dir: str | Path,
                  table1: Table | PosTable,
-                 order1: int | None,
+                 k1: int | None,
                  clust1: int | None,
                  table2: Table | PosTable,
-                 order2: int | None,
+                 k2: int | None,
                  clust2: int | None,
                  **kwargs):
         super().__init__(**kwargs)
         self._top = Path(out_dir)
         self.table1 = table1
-        self.order1 = order1
+        self.k1 = k1
         self.clust1 = clust1
         self.table2 = table2
-        self.order2 = order2
+        self.k2 = k2
         self.clust2 = clust2
 
     def _get_common_attribute(self, name: str):
@@ -121,14 +121,14 @@ class TwoTableGraph(OneRelGraph, ABC):
     @cached_property
     def path_subject1(self):
         """ Name of subject 1. """
-        return (make_path_subject(self.action1, self.order1, self.clust1)
+        return (make_path_subject(self.action1, self.k1, self.clust1)
                 if isinstance(self.table1, ClustTable)
                 else self.action1)
 
     @cached_property
     def path_subject2(self):
         """ Name of subject 2. """
-        return (make_path_subject(self.action2, self.order2, self.clust2)
+        return (make_path_subject(self.action2, self.k2, self.clust2)
                 if isinstance(self.table2, ClustTable)
                 else self.action2)
 
@@ -142,23 +142,23 @@ class TwoTableGraph(OneRelGraph, ABC):
     def data1(self):
         """ Data from table 1. """
         return self._fetch_data(self.table1,
-                                order=self.order1,
+                                k=self.k1,
                                 clust=self.clust1)
 
     @cached_property
     def data2(self):
         """ Data from table 2. """
         return self._fetch_data(self.table2,
-                                order=self.order2,
+                                k=self.k2,
                                 clust=self.clust2)
 
     @cached_property
-    def row_index(self):
-        return make_index(self.table2.header, self.order2, self.clust2)
+    def row_tracks(self):
+        return make_tracks(self.table2.header, self.k2, self.clust2)
 
     @cached_property
-    def col_index(self):
-        return make_index(self.table1.header, self.order1, self.clust1)
+    def col_tracks(self):
+        return make_tracks(self.table1.header, self.k1, self.clust1)
 
 
 class TwoTableMergedGraph(TwoTableGraph, ABC):
@@ -233,10 +233,10 @@ class TwoTableWriter(GraphWriter, ABC):
                 graph_type = self.get_graph_type()
                 yield graph_type(rel=rel,
                                  table1=self.table1,
-                                 order1=cparams1["order"],
+                                 k1=cparams1["k"],
                                  clust1=cparams1["clust"],
                                  table2=self.table2,
-                                 order2=cparams2["order"],
+                                 k2=cparams2["k"],
                                  clust2=cparams2["clust"],
                                  **kwargs)
 

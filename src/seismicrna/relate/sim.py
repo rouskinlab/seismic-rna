@@ -89,9 +89,9 @@ def simulate_batches(batch_size: int,
                                    pclust.index)
     # Simulate batches for each cluster.
     first_batch = 0
-    for order, cluster in pclust.index:
-        num_reads_cluster = num_reads_clusters.loc[(order, cluster)]
-        pmut_cluster = pmut.loc[:, (slice(None), order, cluster)]
+    for k, clust in pclust.index:
+        num_reads_cluster = num_reads_clusters.loc[(k, clust)]
+        pmut_cluster = pmut.loc[:, (slice(None), k, clust)]
         for batch in simulate_cluster(first_batch,
                                       batch_size,
                                       num_reads_cluster,

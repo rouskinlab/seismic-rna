@@ -34,10 +34,10 @@ BOWTIE2_ORIENT = BOWTIE2_ORIENT_FR, BOWTIE2_ORIENT_RF, BOWTIE2_ORIENT_FF
 ADAPTER_SEQ_ILLUMINA_3P = "AGATCGGAAGAGC"
 ADAPTER_SEQ_ILLUMINA_5P = "GCTCTTCCGATCT"
 
-CLUST_INDIV = "indiv"
-CLUST_ORDER = "order"
-CLUST_UNITE = "unite"
-CLUST_ARRANGE_OPTIONS = CLUST_INDIV, CLUST_ORDER, CLUST_UNITE
+NO_GROUP = "c"
+GROUP_BY_K = "k"
+GROUP_ALL = "a"
+GROUP_CLUST_OPTIONS = NO_GROUP, GROUP_BY_K, GROUP_ALL
 
 KEY_NRMSD = "nrmsd"
 KEY_PEARSON = "pcc"
@@ -955,10 +955,10 @@ opt_compself = Option(
 
 opt_cgroup = Option(
     ("--cgroup",),
-    type=Choice(CLUST_ARRANGE_OPTIONS),
-    default=CLUST_ORDER,
-    help="Graph each INDIVidual cluster in its own file, each ORDER in its "
-         "own file, or UNITE all clusters in one file containing all orders"
+    type=Choice(GROUP_CLUST_OPTIONS),
+    default=GROUP_BY_K,
+    help="Put each Cluster in its own file, each K in its own file, "
+         "or All clusters in one file"
 )
 
 opt_rels = Option(
