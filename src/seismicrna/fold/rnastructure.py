@@ -43,7 +43,6 @@ b-test.int22.dg
 b-test.int22.dh
 b-test.loop.dg
 b-test.miscloop.dg
-b-test.miscloop.dh
 b-test.specification.dat
 b-test.stack.dg
 b-test.stack.dh
@@ -174,26 +173,6 @@ int22.dat
 int22.dh
 loop.dat
 loop.dh
-m6A.coaxial.dg
-m6A.coaxstack.dg
-m6A.dangle.dg
-m6A.hexaloop.dg
-m6A.int11.dg
-m6A.int21.dg
-m6A.int22.dg
-m6A.loop.dg
-m6A.miscloop.dg
-m6A.specification.dat
-m6A.stack.dg
-m6A.tloop.dg
-m6A.triloop.dg
-m6A.tstack.dg
-m6A.tstackcoax.dg
-m6A.tstackh.dg
-m6A.tstacki.dg
-m6A.tstacki1n.dg
-m6A.tstacki23.dg
-m6A.tstackm.dg
 miscloop.dat
 miscloop.dh
 new_training_z_ave.scale.model
@@ -323,6 +302,21 @@ def _guess_data_path_conda():
     return data_path
 
 
+def _guess_data_path_manual():
+    """ Guess the DATAPATH if RNAstructure was installed manually
+    (e.g. by downloading from the Mathews Lab website). """
+    fold_path = which(RNASTRUCTURE_FOLD_CMD)
+    if fold_path is None:
+        raise OSError(
+            f"RNAstructure not seem to be installed: {RNASTRUCTURE_FOLD_CMD}"
+        )
+    fold_path = Path(fold_path)
+    data_path = fold_path.parent.parent.joinpath("data_tables")
+    check_data_path(data_path)
+    logger.debug(f"Successfully guessed {DATAPATH}: {data_path}")
+    return data_path
+
+
 def guess_data_path():
     """ Guess the DATAPATH. """
     errors = list()
@@ -332,7 +326,7 @@ def guess_data_path():
         errors.append(error)
         logger.warning(f"The {DATAPATH} environment variable is not valid; "
                        f"attempting to guess it")
-    for attempt in [_guess_data_path_conda]:
+    for attempt in [_guess_data_path_conda, _guess_data_path_manual]:
         try:
             return attempt()
         except OSError as error:

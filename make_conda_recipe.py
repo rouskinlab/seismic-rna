@@ -119,7 +119,7 @@ def list_nonpip_dependencies():
     return ["python >=3.10",
             "bowtie2 >=2.5.1",
             "fastqc >=0.12.1",
-            "rnastructure >=6.3",
+            "rnastructure >=6.2",
             "samtools >=1.17",
             "brotli-python >=1.0"]
 
