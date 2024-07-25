@@ -11,14 +11,14 @@ logger = getLogger(__name__)
 NUM_FIELDS = 6
 
 
-def _parse_int(text: str, name: str, allow_zero: bool = False) -> int:
+def _parse_int(text: str, name: str, zero_ok: bool = False) -> int:
     """ Try to parse the text into an integer/positive integer. """
     try:
         value = int(text)
     except ValueError:
         value = -1
-    if value < 0 or (value == 0 and not allow_zero):
-        s = "non-negative" if allow_zero else "positive"
+    if value < 0 or (value == 0 and not zero_ok):
+        s = "non-negative" if zero_ok else "positive"
         raise ValueError(f"{name} must be a {s} integer, but got {repr(text)}")
     return value
 
@@ -49,7 +49,7 @@ def _parse_ct_body_line(line: str, first: bool, last: bool):
         raise ValueError(f"CT body line needs {NUM_FIELDS} fields,"
                          f"but got {len(fields)}: '{content}'")
     curr_idx = _parse_int(fields[0], "current index")
-    prev_idx = _parse_int(fields[2], "previous index", allow_zero=first)
+    prev_idx = _parse_int(fields[2], "previous index", zero_ok=first)
     if first:
         if prev_idx != 0:
             raise ValueError(f"Expected previous index of first line "
@@ -57,7 +57,7 @@ def _parse_ct_body_line(line: str, first: bool, last: bool):
     elif prev_idx != curr_idx - 1:
         raise ValueError(f"Previous index ({prev_idx}) does not precede "
                          f"current index ({curr_idx})")
-    next_idx = _parse_int(fields[3], "next index", allow_zero=last)
+    next_idx = _parse_int(fields[3], "next index", zero_ok=last)
     if last:
         if next_idx != 0:
             raise ValueError(f"Expected next index of last line to be 0, "
@@ -65,7 +65,7 @@ def _parse_ct_body_line(line: str, first: bool, last: bool):
     elif next_idx != curr_idx + 1:
         raise ValueError(f"Next index ({next_idx}) does not succeed "
                          f"current index ({curr_idx})")
-    partner = _parse_int(fields[4], "partner index", allow_zero=True)
+    partner = _parse_int(fields[4], "partner index", zero_ok=True)
     position = _parse_int(fields[5], "natural position")
     base = fields[1]
     return curr_idx, base, partner, position

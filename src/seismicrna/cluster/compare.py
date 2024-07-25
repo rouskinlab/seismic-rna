@@ -10,7 +10,7 @@ from .em import EMRun
 from .names import LOG_EXP_NAME, LOG_OBS_NAME
 from ..core.header import NUM_CLUSTS_NAME
 from ..core.mu import calc_rmsd, calc_nrmsd, calc_pearson
-from ..core.report import NON_CONVERGED
+from ..core.report import NOCONV
 
 logger = getLogger(__name__)
 
@@ -47,7 +47,7 @@ class EMRunsK(object):
         # Number of runs.
         self.n_runs = len(runs)
         # Number of iterations until convergenge for each run.
-        self.converged = [run.iter if run.converged else NON_CONVERGED
+        self.converged = [run.iter if run.converged else NOCONV
                           for run in runs]
         # List of log-likelihoods for each run.
         self.log_likes = [run.log_like for run in runs]

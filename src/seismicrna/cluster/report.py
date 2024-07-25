@@ -12,7 +12,8 @@ from ..core.report import (BatchedReport,
                            MinClustsF,
                            MaxClustsF,
                            ClustNumRunsF,
-                           ClusterBestF,
+                           TryAllKsF,
+                           KeepAllKsF,
                            MaxPearsonF,
                            MaxPearsonsF,
                            MinNRMSDF,
@@ -25,7 +26,7 @@ from ..core.report import (BatchedReport,
                            ClustsNRMSDVs0F,
                            ClustsPearsonVs0F,
                            ClustsBICF,
-                           NumClustsF)
+                           BestKF)
 
 
 class ClusterReport(BatchedReport, ClusterIO):
@@ -49,9 +50,10 @@ class ClusterReport(BatchedReport, ClusterIO):
             # Clustering parameters.
             MinClustsF,
             MaxClustsF,
+            TryAllKsF,
+            KeepAllKsF,
             MinNRMSDF,
             MaxPearsonF,
-            ClusterBestF,
             ClustNumRunsF,
             MinIterClustF,
             MaxIterClustF,
@@ -64,7 +66,7 @@ class ClusterReport(BatchedReport, ClusterIO):
             MaxPearsonsF,
             ClustsLogLikesF,
             ClustsBICF,
-            NumClustsF,
+            BestKF,
         ] + super().fields()
 
     @classmethod
@@ -78,7 +80,8 @@ class ClusterReport(BatchedReport, ClusterIO):
                       min_clusters: int,
                       max_clusters: int,
                       em_runs: int,
-                      cluster_best: bool,
+                      try_all_ks: bool,
+                      keep_all_ks: bool,
                       min_nrmsd: float,
                       max_pearson: float,
                       min_iter: int,
@@ -96,7 +99,8 @@ class ClusterReport(BatchedReport, ClusterIO):
                    min_clusters=min_clusters,
                    max_clusters=max_clusters,
                    em_runs=em_runs,
-                   cluster_best=cluster_best,
+                   try_all_ks=try_all_ks,
+                   keep_all_ks=keep_all_ks,
                    min_nrmsd=min_nrmsd,
                    max_pearson=max_pearson,
                    min_em_iter=min_iter,

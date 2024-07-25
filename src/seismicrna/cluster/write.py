@@ -12,7 +12,9 @@ from .em import EMRun
 from .report import ClusterReport
 from .save import write_batches
 from .uniq import UniqReads
+from ..core.header import validate_ks
 from ..core.io import recast_file_path
+from ..core.logs import exc_info
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import release_to_out
 from ..core.types import get_max_uint
@@ -52,19 +54,17 @@ def run_k(uniq_reads: UniqReads,
                          parallel=True,
                          pass_n_procs=False,
                          args=seeds))
-    if not runs:
-        raise ValueError(f"Failed to cluster {uniq_reads} into {k} cluster(s)")
     if len(runs) < em_runs:
         logger.warning(f"Obtained only {len(runs)} (of {em_runs}) "
-                       f"run(s) of {uniq_reads} into {k} cluster(s)")
-    logger.info(f"Ended {em_runs} run(s) of EM with {k} cluster(s)")
+                       f"run(s) of {uniq_reads} with {k} cluster(s)")
     return sort_runs(runs)
 
 
 def run_ks(uniq_reads: UniqReads,
            ks: Iterable[int],
            em_runs: int, *,
-           cluster_best: bool,
+           try_all_ks: bool,
+           keep_all_ks: bool,
            min_nrmsd: float,
            max_pearson: float,
            min_iter: int,
@@ -78,38 +78,56 @@ def run_ks(uniq_reads: UniqReads,
                        sample=uniq_reads.sample,
                        ref=uniq_reads.ref,
                        sect=uniq_reads.section.name)
-    runs_ks = list()
-    for k in sorted(ks):
-        # Cluster n_runs times with different starting points.
-        runs = run_k(uniq_reads,
-                     k,
-                     em_runs=(em_runs if k > 1 else 1),
-                     em_thresh=(em_thresh if k > 1 else inf),
-                     min_iter=(min_iter * k if k > 1 else 2),
-                     max_iter=(max_iter * k if k > 1 else 2),
-                     n_procs=n_procs,
-                     **kwargs)
-        # Output tables of the mutation rates and cluster proportions
-        # for every run.
-        for rank, run in enumerate(runs):
-            write_mus(run, rank=rank, **path_kwargs)
-            write_props(run, rank=rank, **path_kwargs)
-        # Compare all runs for this k.
-        runs_ks.append(EMRunsK(runs,
-                               max_pearson=max_pearson,
-                               min_nrmsd=min_nrmsd))
-        if cluster_best and k != find_best_k(runs_ks,
-                                             max_pearson=max_pearson,
-                                             min_nrmsd=min_nrmsd):
-            # The current k is not the best so far.
-            break
-    return runs_ks
+    runs_ks = dict()
+
+    def current_best_k():
+        return find_best_k(list(runs_ks.values()),
+                           max_pearson=max_pearson,
+                           min_nrmsd=min_nrmsd)
+
+    ks = validate_ks(ks)
+    for k in ks:
+        try:
+            # Cluster em_runs times with different starting points.
+            runs = run_k(uniq_reads,
+                         k,
+                         em_runs=(em_runs if k > 1 else 1),
+                         em_thresh=(em_thresh if k > 1 else inf),
+                         min_iter=(min_iter * k if k > 1 else 2),
+                         max_iter=(max_iter * k if k > 1 else 2),
+                         n_procs=n_procs,
+                         **kwargs)
+            logger.info(f"Ended {em_runs} run(s) of EM with {k} cluster(s)")
+            # Output each run's mutation rates and cluster proportions.
+            for rank, run in enumerate(runs):
+                write_mus(run, rank=rank, **path_kwargs)
+                write_props(run, rank=rank, **path_kwargs)
+            # Compare all runs for this k.
+            runs_ks[k] = EMRunsK(runs,
+                                 max_pearson=max_pearson,
+                                 min_nrmsd=min_nrmsd)
+            if not (try_all_ks or k == current_best_k()):
+                # The current k is not the best so far.
+                break
+        except Exception as error:
+            logger.error(
+                f"Failed to split {uniq_reads} into {k} cluster(s): {error}",
+                exc_info=exc_info()
+            )
+    if not runs_ks:
+        raise ValueError(
+            f"Failed to split {uniq_reads} into any number of clusters: {ks}"
+        )
+    if keep_all_ks:
+        return list(runs_ks.values())
+    return [runs_ks[current_best_k()]]
 
 
 def cluster(mask_report_file: Path, *,
-            em_runs: int,
             min_clusters: int,
             max_clusters: int,
+            try_all_ks: bool,
+            em_runs: int,
             n_procs: int,
             brotli_level: int,
             force: bool,
@@ -131,8 +149,24 @@ def cluster(mask_report_file: Path, *,
                            f"but got min_mut_gap={dataset.min_mut_gap}")
         uniq_reads = UniqReads.from_dataset_contig(dataset)
         # Run clustering for every number of clusters.
+        if max_clusters >= 1:
+            max_clusters_use = max_clusters
+        elif max_clusters == 0:
+            if try_all_ks:
+                # Prevent accidentally forcing the use of a huge number
+                # of clusters.
+                raise ValueError("If using --try-all-ks, "
+                                 "then must specify --max-clusters ≥ 1")
+            # Set the maximum number of clusters to more than the number
+            # of reads: effectively no limit.
+            max_clusters_use = dataset.num_reads + 1
+        else:
+            raise ValueError(
+                f"max_clusters must be ≥ 0, but got {max_clusters}"
+            )
         runs_ks = run_ks(uniq_reads,
-                         ks=range(min_clusters, max_clusters + 1),
+                         ks=range(min_clusters, max_clusters_use + 1),
+                         try_all_ks=try_all_ks,
                          em_runs=em_runs,
                          n_procs=n_procs,
                          top=tmp_dir,
@@ -150,6 +184,7 @@ def cluster(mask_report_file: Path, *,
                                              uniq_reads,
                                              min_clusters=min_clusters,
                                              max_clusters=max_clusters,
+                                             try_all_ks=try_all_ks,
                                              em_runs=em_runs,
                                              checksums=checksums,
                                              began=began,

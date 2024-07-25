@@ -42,7 +42,7 @@ from ..core.report import (calc_dt_minutes,
                            ClustsNRMSDVs0F,
                            ClustsPearsonVs0F,
                            ClustsBICF,
-                           NumClustsF)
+                           BestKF)
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import release_to_out
 from ..mask.data import load_mask_dataset
@@ -188,7 +188,7 @@ def add_orders(report_file: Path,
         dataset = load_mask_dataset(recast_file_path(report_file,
                                                      ClusterReport,
                                                      MaskReport))
-        original_best_order = report.get_field(NumClustsF)
+        original_best_order = report.get_field(BestKF)
         num_runs = report.get_field(ClustNumRunsF)
         if original_best_order == original_max_order:
             # The original clustering stopped because the order reached

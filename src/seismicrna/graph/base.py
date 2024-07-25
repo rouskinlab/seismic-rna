@@ -68,7 +68,7 @@ def _track_count(tracks: list[tuple[int, int]] | None):
 
 
 def _track_titles(tracks: list[tuple[int, int]] | None):
-    return (format_clust_names(tracks, allow_zero=True, allow_duplicates=False)
+    return (format_clust_names(tracks, zero_ok=True, allow_duplicates=False)
             if tracks is not None
             else None)
 

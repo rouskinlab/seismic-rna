@@ -18,10 +18,9 @@ from .base import (COVER_REL,
                    UNAMB_REL,
                    TABLE_RELS)
 from ..cluster.data import ClusterMutsDataset, load_cluster_dataset
-from ..core.array import check_naturals, triangular
 from ..core.batch import END5_COORD, END3_COORD, accum_fits
 from ..core.data import MutsDataset, UnbiasDataset
-from ..core.header import NUM_CLUSTS_NAME, Header, make_header
+from ..core.header import NUM_CLUSTS_NAME, Header, make_header, validate_ks
 from ..core.mu import (calc_p_ends_observed,
                        calc_p_noclose,
                        calc_p_noclose_given_ends,
@@ -284,10 +283,16 @@ def _insert_masked(p_mut: pd.Series | pd.DataFrame,
     return p_mut.values.reshape((section.length, -1))
 
 
-def _k_indices(k: int):
+def _k_indices(k: int, ks: list[int]):
     """ First and last indices of k in the array. """
-    last = triangular(k)
-    first = last - k
+    first = 0
+    for ki in ks:
+        if ki == k:
+            break
+        first += ki
+    else:
+        raise ValueError(f"k={k} is not in {ks}")
+    last = first + k
     return first, last
 
 
@@ -354,38 +359,37 @@ def adjust_counts(table_per_pos: pd.DataFrame,
         # for each k.
         n_reads_noclose_ks = n_reads_clust.groupby(level=NUM_CLUSTS_NAME).sum()
         # Determine the numbers of clusters.
-        ks = check_naturals(n_reads_noclose_ks.index.values, "ks")
+        ks = validate_ks(map(int, n_reads_noclose_ks.index.values))
         # Calculate the parameters for each k separately.
         p_mut = np.empty_like(p_mut_given_noclose)
         p_clust = np.empty_like(n_reads_clust.values)
         p_noclose_given_clust = np.empty_like(n_reads_clust.values)
         n_clust = pd.Series(index=n_reads_clust.index)
-        for k in map(int, ks):
-            i, j = _k_indices(k)
+        for k in ks:
+            ki = n_reads_clust.index.get_level_values(NUM_CLUSTS_NAME) == k
             # Calculate the fraction of reads with no two mutations too
             # close in each cluster.
             n_reads_noclose = float(n_reads_noclose_ks.at[k])
             p_clust_given_noclose = (n_reads_clust.loc[k].values
                                      / n_reads_noclose)
             # Calculate the parameters for each cluster.
-            p_mut[:, i: j], p_ends, p_clust[i: j] = calc_params(
-                p_mut_given_noclose[:, i: j],
-                p_ends_given_noclose[:, :, i: j],
+            p_mut[:, ki], p_ends, p_clust[ki] = calc_params(
+                p_mut_given_noclose[:, ki],
+                p_ends_given_noclose[:, :, ki],
                 p_clust_given_noclose,
                 min_mut_gap
             )
             # Compute the probability that reads from each cluster would
             # have no two mutations too close.
-            p_noclose_given_clust[i: j] = calc_p_noclose(
+            p_noclose_given_clust[ki] = calc_p_noclose(
                 p_ends,
-                calc_p_noclose_given_ends(p_mut[:, i: j], min_mut_gap)
+                calc_p_noclose_given_ends(p_mut[:, ki], min_mut_gap)
             )
             # Compute the probability that reads from any cluster would
             # have no two mutations too close.
-            p_noclose = float(np.vdot(p_noclose_given_clust[i: j],
-                                      p_clust[i: j]))
+            p_noclose = float(np.vdot(p_noclose_given_clust[ki], p_clust[ki]))
             # Compute the number of reads in each cluster.
-            n_clust.loc[k] = (n_reads_noclose / p_noclose) * p_clust[i: j]
+            n_clust.loc[k] = (n_reads_noclose / p_noclose) * p_clust[ki]
     else:
         raise TypeError("n_reads_clust must be an int or Series, "
                         f"but got {type(n_reads_clust).__name__}")

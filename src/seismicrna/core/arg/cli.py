@@ -730,21 +730,28 @@ opt_min_clusters = Option(
     ("--min-clusters", "-k"),
     type=int,
     default=1,
-    help="Find at least this many clusters"
+    help="Start at this many clusters"
 )
 
 opt_max_clusters = Option(
     ("--max-clusters", "-K"),
     type=int,
-    default=20,
-    help="Find at most this many clusters"
+    default=0,
+    help="Stop at this many clusters (0 for no limit)"
 )
 
-opt_cluster_best = Option(
-    ("--cluster-best/--cluster-all",),
+opt_try_all_ks = Option(
+    ("--try-all-ks/--stop-best-k",),
+    type=bool,
+    default=False,
+    help="Try all numbers of clusters, even upon finding the best number"
+)
+
+opt_keep_all_ks = Option(
+    ("--keep-all-ks/--keep-best-k",),
     type=bool,
     default=True,
-    help="Stop upon finding the best number of clusters"
+    help="Keep all numbers of clusters, rather than only the best number"
 )
 
 opt_max_pearson = Option(
@@ -787,27 +794,6 @@ opt_em_thresh = Option(
     type=float,
     default=round(1. / math.e, 2),
     help="Stop EM when the log likelihood increases by less than this threshold"
-)
-
-opt_use_bic = Option(
-    ("--use-bic/--ignore-bic",),
-    type=bool,
-    default=True,
-    help="Use the BIC to choose the optimal number of clusters"
-)
-
-opt_use_clust_corr = Option(
-    ("--use-clust-corr/--ignore-clust-corr",),
-    type=bool,
-    default=True,
-    help="Use the correlations among clusters to choose the optimal number"
-)
-
-opt_max_clust_corr = Option(
-    ("--max-clust-corr",),
-    type=float,
-    default=0.9,
-    help="Require no pair of clusters to have a correlation ",
 )
 
 # Join options
@@ -1319,7 +1305,7 @@ opt_fq_gzip = Option(
 opt_verbose = Option(
     ("--verbose", "-v"),
     count=True,
-    help="Print info (-v) or info and debug (-vv) messages on stdout"
+    help="Log info (-v) or info and debug (-vv) messages on stdout"
 )
 
 opt_quiet = Option(

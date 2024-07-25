@@ -15,6 +15,7 @@ POSITIONS = "positions"
 READS = "reads"
 CLUSTERS = "clusters"
 SEGMENTS = "segments"
+PRECISION = 6
 
 
 def count_end_coords(end5s: np.ndarray,
@@ -180,6 +181,7 @@ def calc_coverage(pos_index: pd.Index,
                                                    is_end3[uniq_index],
                                                    uniq_weights,
                                                    base_count)
+    cover_per_pos = cover_per_pos.round(PRECISION)
     # Reformat the coverage into pandas objects.
     cover_per_pos = cover_per_pos[positions - 1]
     if read_weights is not None:
@@ -255,6 +257,7 @@ def calc_rels_per_pos(mutations: dict[int, dict[int, np.ndarray]],
             if read_weights is not None:
                 rows = read_indexes[reads]
                 num_reads_pos_mut = read_weights.values[rows].sum(axis=0)
+                num_reads_pos_mut = num_reads_pos_mut.round(PRECISION)
             else:
                 num_reads_pos_mut = get_length(reads, "read numbers")
             num_reads_pos += num_reads_pos_mut
@@ -262,18 +265,21 @@ def calc_rels_per_pos(mutations: dict[int, dict[int, np.ndarray]],
         # The number of matches is the coverage minus the number of
         # reads with another kind of relationship that is not the
         # no-coverage relationship (no coverage is counted later).
-        num_match = cover_per_pos.loc[pos_base] - num_reads_pos
-        if np.atleast_1d(num_match)[0] < 0:
+        counts[MATCH].loc[pos_base] = (cover_per_pos.loc[pos_base]
+                                       - num_reads_pos).round(PRECISION)
+        if np.atleast_1d(counts[MATCH].loc[pos_base]).min() < 0:
             raise ValueError("Number of matches must be ≥ 0, "
-                             f"but got {num_match} at position {pos}")
-        counts[MATCH].loc[pos_base] = num_match
+                             f"but got {counts[MATCH].loc[pos_base]} "
+                             f"at position {pos}")
         # The number of non-covered positions is the number of reads
         # minus the number that cover the position.
-        num_nocov = num_reads - cover_per_pos.loc[pos_base]
-        if np.atleast_1d(num_nocov)[0] < 0:
+        counts[NOCOV].loc[pos_base] = (
+                num_reads - cover_per_pos.loc[pos_base]
+        ).round(PRECISION)
+        if np.atleast_1d(counts[NOCOV].loc[pos_base]).min() < 0:
             raise ValueError("Number of non-covered positions must be ≥ 0, "
-                             f"but got {num_nocov} at position {pos}")
-        counts[NOCOV].loc[pos_base] = num_nocov
+                             f"but got {counts[NOCOV].loc[pos_base]} "
+                             f"at position {pos}")
     return dict(counts)
 
 

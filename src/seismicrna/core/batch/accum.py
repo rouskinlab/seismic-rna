@@ -38,9 +38,10 @@ def accumulate(batches: Iterable[SectionMutsBatch],
     # Initialize the total read counts and end coordinate counts.
     if header.clustered():
         dtype = float
-        num_reads = pd.Series(0, index=header.index)
+        clust_index = header.get_clust_header().index
+        num_reads = pd.Series(0, index=clust_index)
         end_counts = (pd.DataFrame(index=end_counts_index,
-                                   columns=header.index,
+                                   columns=clust_index,
                                    dtype=dtype)
                       if count_ends else None)
     else:

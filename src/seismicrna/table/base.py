@@ -703,7 +703,7 @@ class ProfilePosTable(PosTable, ABC):
         for hk, hc in self.header.clusts:
             if (k is None or k == hk) and (clust is None or clust == hc):
                 data_name = path.fill_whitespace(
-                    format_clust_name(hk, hc, allow_zero=True),
+                    format_clust_name(hk, hc, zero_ok=True),
                     fill="-"
                 )
                 for section in sections:

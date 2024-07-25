@@ -75,7 +75,8 @@ from .arg import (opt_phred_enc,
                   opt_max_clusters,
                   opt_max_pearson,
                   opt_min_nrmsd,
-                  opt_cluster_best,
+                  opt_try_all_ks,
+                  opt_keep_all_ks,
                   opt_mask_gu,
                   opt_mask_polya,
                   opt_mask_discontig,
@@ -477,11 +478,12 @@ MinClustsF = OptionField(opt_min_clusters)
 MaxClustsF = OptionField(opt_max_clusters)
 MinNRMSDF = OptionField(opt_min_nrmsd)
 MaxPearsonF = OptionField(opt_max_pearson)
-ClusterBestF = OptionField(opt_cluster_best)
+TryAllKsF = OptionField(opt_try_all_ks)
+KeepAllKsF = OptionField(opt_keep_all_ks)
 ClustNumRunsF = OptionField(opt_em_runs)
-NON_CONVERGED = -1  # Number indicating a run did not converge
+NOCONV = 0  # Number indicating a run did not converge
 ClustsConvF = Field("converged",
-                    f"Iterations for each run ({NON_CONVERGED} if unconverged)",
+                    f"Iterations for each run ({NOCONV} if did not converge)",
                     dict,
                     dict(),
                     iconv=iconv_int_keys)
@@ -521,7 +523,7 @@ ClustsBICF = Field("bic",
                    dict(),
                    iconv=iconv_int_keys,
                    oconv=get_oconv_dict_float())
-NumClustsF = Field("best_k", "Number of clusters with the best BIC", int)
+BestKF = Field("best_k", "Best number of clusters", int)
 
 # Join fields
 

@@ -37,7 +37,7 @@ from ..core.report import (calc_dt_minutes,
                            ClustsNRMSDVs0F,
                            ClustsPearsonVs0F,
                            ClustsBICF,
-                           NumClustsF)
+                           BestKF)
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import release_to_out
@@ -161,7 +161,7 @@ def del_orders(report_file: Path,
         logger.info(f"Began deleting clusters from {report_file} down to "
                     f"order {max_order}")
         dataset = load_cluster_dataset(report_file)
-        original_best_order = report.get_field(NumClustsF)
+        original_best_order = report.get_field(BestKF)
         num_runs = report.get_field(ClustNumRunsF)
         if max_order < original_best_order:
             # Delete all orders greater than max_order.

@@ -16,6 +16,8 @@ from seismicrna.core.header import (AVERAGE_PREFIX,
                                     format_clust_name,
                                     format_clust_names,
                                     validate_k_clust,
+                                    validate_ks,
+                                    deduplicate_rels,
                                     list_clusts,
                                     list_k_clusts,
                                     list_ks_clusts,
@@ -63,7 +65,7 @@ class TestValidateKClust(ut.TestCase):
                                validate_k_clust,
                                k=-1,
                                clust=0,
-                               allow_zero=True)
+                               zero_ok=True)
 
     def test_zero_negative_allowed(self):
         self.assertRaisesRegex(ValueError,
@@ -71,10 +73,10 @@ class TestValidateKClust(ut.TestCase):
                                validate_k_clust,
                                k=0,
                                clust=-1,
-                               allow_zero=True)
+                               zero_ok=True)
 
     def test_zero_zero_allowed(self):
-        self.assertIsNone(validate_k_clust(0, 0, allow_zero=True))
+        self.assertIsNone(validate_k_clust(0, 0, zero_ok=True))
 
     def test_zero_zero_unallowed(self):
         self.assertRaisesRegex(ValueError,
@@ -82,7 +84,7 @@ class TestValidateKClust(ut.TestCase):
                                validate_k_clust,
                                k=0,
                                clust=0,
-                               allow_zero=False)
+                               zero_ok=False)
 
     def test_zero_one_allowed(self):
         self.assertRaisesRegex(ValueError,
@@ -90,7 +92,7 @@ class TestValidateKClust(ut.TestCase):
                                validate_k_clust,
                                k=0,
                                clust=1,
-                               allow_zero=True)
+                               zero_ok=True)
 
     def test_zero_one_unallowed(self):
         self.assertRaisesRegex(ValueError,
@@ -98,7 +100,7 @@ class TestValidateKClust(ut.TestCase):
                                validate_k_clust,
                                k=0,
                                clust=1,
-                               allow_zero=False)
+                               zero_ok=False)
 
     def test_one_zero_allowed(self):
         self.assertRaisesRegex(ValueError,
@@ -106,7 +108,7 @@ class TestValidateKClust(ut.TestCase):
                                validate_k_clust,
                                k=1,
                                clust=0,
-                               allow_zero=True)
+                               zero_ok=True)
 
     def test_one_zero_unallowed(self):
         self.assertRaisesRegex(ValueError,
@@ -114,7 +116,7 @@ class TestValidateKClust(ut.TestCase):
                                validate_k_clust,
                                k=1,
                                clust=0,
-                               allow_zero=False)
+                               zero_ok=False)
 
     def test_positive_positive(self):
         for k in range(1, 11):
@@ -129,10 +131,61 @@ class TestValidateKClust(ut.TestCase):
                                            clust=clust)
 
 
+class TestValidateKs(ut.TestCase):
+
+    def test_empty_ok(self):
+        self.assertListEqual(validate_ks([], empty_ok=True), [])
+
+    def test_empty_not_ok(self):
+        self.assertRaisesRegex(ValueError,
+                               "ks is empty",
+                               validate_ks,
+                               [])
+
+    def test_zero(self):
+        self.assertRaisesRegex(ValueError,
+                               "k must be ≥ 1, but got 0",
+                               validate_ks,
+                               [0])
+
+    def test_valid(self):
+        for min_k in range(1, 5):
+            for max_k in range(min_k, 7):
+                ks = list(range(min_k, max_k + 1))
+                self.assertListEqual(validate_ks(ks), ks)
+                self.assertListEqual(validate_ks(reversed(ks)), ks)
+
+    def test_duplicated(self):
+        self.assertRaisesRegex(ValueError,
+                               "Duplicate k: 2",
+                               validate_ks,
+                               [1, 2, 3, 2, 1])
+
+
+class TestDeduplicateRels(ut.TestCase):
+
+    def test_empty_ok(self):
+        self.assertListEqual(deduplicate_rels([], empty_ok=True), [])
+
+    def test_empty_not_ok(self):
+        self.assertRaisesRegex(ValueError,
+                               "rels is empty",
+                               deduplicate_rels,
+                               [])
+
+    def test_no_duplicates(self):
+        rels = "qwerty"
+        self.assertListEqual(deduplicate_rels(rels), list(rels))
+
+    def test_duplicates(self):
+        rels = "qwqeerwtytyr"
+        self.assertListEqual(deduplicate_rels(rels), list("qwerty"))
+
+
 class TestFormatClustName(ut.TestCase):
 
     def test_zero_zero_allowed(self):
-        self.assertEqual(format_clust_name(0, 0, allow_zero=True),
+        self.assertEqual(format_clust_name(0, 0, zero_ok=True),
                          AVERAGE_PREFIX)
 
     def test_positive(self):
@@ -144,18 +197,18 @@ class TestFormatClustName(ut.TestCase):
 class TestFormatClustNames(ut.TestCase):
 
     def test_zero_zero_allowed(self):
-        self.assertEqual(format_clust_names([(0, 0)],
-                                            allow_zero=True),
-                         [AVERAGE_PREFIX])
+        self.assertListEqual(format_clust_names([(0, 0)],
+                                                zero_ok=True),
+                             [AVERAGE_PREFIX])
 
     def test_positive_no_dups(self):
-        self.assertEqual(format_clust_names([(1, 1), (2, 1), (2, 2)]),
-                         ["cluster 1-1", "cluster 2-1", "cluster 2-2"])
+        self.assertListEqual(format_clust_names([(1, 1), (2, 1), (2, 2)]),
+                             ["cluster 1-1", "cluster 2-1", "cluster 2-2"])
 
     def test_positive_valid_dups(self):
-        self.assertEqual(format_clust_names([(1, 1), (2, 1), (1, 1)],
-                                            allow_duplicates=True),
-                         ["cluster 1-1", "cluster 2-1", "cluster 1-1"])
+        self.assertListEqual(format_clust_names([(1, 1), (2, 1), (1, 1)],
+                                                allow_duplicates=True),
+                             ["cluster 1-1", "cluster 2-1", "cluster 1-1"])
 
     def test_positive_invalid_dups(self):
         self.assertRaisesRegex(ValueError,
@@ -167,10 +220,10 @@ class TestFormatClustNames(ut.TestCase):
 class TestListClusts(ut.TestCase):
 
     def test_positive(self):
-        self.assertEqual(list_clusts(1), [1])
-        self.assertEqual(list_clusts(2), [1, 2])
-        self.assertEqual(list_clusts(3), [1, 2, 3])
-        self.assertEqual(list_clusts(4), [1, 2, 3, 4])
+        self.assertListEqual(list_clusts(1), [1])
+        self.assertListEqual(list_clusts(2), [1, 2])
+        self.assertListEqual(list_clusts(3), [1, 2, 3])
+        self.assertListEqual(list_clusts(4), [1, 2, 3, 4])
 
     def test_zero(self):
         self.assertRaisesRegex(ValueError,
@@ -188,14 +241,14 @@ class TestListKClusts(ut.TestCase):
                                0)
 
     def test_positive(self):
-        self.assertEqual(list_k_clusts(1),
-                         [(1, 1)])
-        self.assertEqual(list_k_clusts(2),
-                         [(2, 1), (2, 2)])
-        self.assertEqual(list_k_clusts(3),
-                         [(3, 1), (3, 2), (3, 3)])
-        self.assertEqual(list_k_clusts(4),
-                         [(4, 1), (4, 2), (4, 3), (4, 4)])
+        self.assertListEqual(list_k_clusts(1),
+                             [(1, 1)])
+        self.assertListEqual(list_k_clusts(2),
+                             [(2, 1), (2, 2)])
+        self.assertListEqual(list_k_clusts(3),
+                             [(3, 1), (3, 2), (3, 3)])
+        self.assertListEqual(list_k_clusts(4),
+                             [(4, 1), (4, 2), (4, 3), (4, 4)])
 
 
 class TestListKsClusts(ut.TestCase):
@@ -214,16 +267,16 @@ class TestListKsClusts(ut.TestCase):
 
     def test_one_k(self):
         for k in range(1, 10):
-            self.assertEqual(list_ks_clusts([k]),
-                             list_k_clusts(k))
+            self.assertListEqual(list_ks_clusts([k]),
+                                 list_k_clusts(k))
 
     def test_ks(self):
-        self.assertEqual(list_ks_clusts([1, 2]),
-                         [(1, 1), (2, 1), (2, 2)])
-        self.assertEqual(list_ks_clusts([1, 3]),
-                         [(1, 1), (3, 1), (3, 2), (3, 3)])
-        self.assertEqual(list_ks_clusts([1, 2, 3]),
-                         [(1, 1), (2, 1), (2, 2), (3, 1), (3, 2), (3, 3)])
+        self.assertListEqual(list_ks_clusts([1, 2]),
+                             [(1, 1), (2, 1), (2, 2)])
+        self.assertListEqual(list_ks_clusts([1, 3]),
+                             [(1, 1), (3, 1), (3, 2), (3, 3)])
+        self.assertListEqual(list_ks_clusts([1, 2, 3]),
+                             [(1, 1), (2, 1), (2, 2), (3, 1), (3, 2), (3, 3)])
 
 
 class TestHeader(ut.TestCase):
@@ -246,10 +299,10 @@ class TestRelHeader(ut.TestCase):
         self.assertEqual(RelHeader.num_levels(), 1)
 
     def test_level_keys(self):
-        self.assertEqual(RelHeader.level_keys(), ["rel"])
+        self.assertListEqual(RelHeader.level_keys(), ["rel"])
 
     def test_level_names(self):
-        self.assertEqual(RelHeader.level_names(), [REL_NAME])
+        self.assertListEqual(RelHeader.level_names(), [REL_NAME])
 
     def test_rels_normal(self):
         rels = RelHeader(rels=list("qwerty")).rels
@@ -267,29 +320,33 @@ class TestRelHeader(ut.TestCase):
                                RelHeader,
                                rels=list())
 
+    def test_ks(self):
+        header = RelHeader(rels=list("qwerty"))
+        self.assertListEqual(header.ks, [0])
+
     def test_clusts(self):
         header = RelHeader(rels=list("qwerty"))
-        self.assertEqual(header.clusts, [(0, 0)])
+        self.assertListEqual(header.clusts, [(0, 0)])
 
     def test_names(self):
         header = RelHeader(rels=list("qwerty"))
-        self.assertEqual(header.names, [AVERAGE_PREFIX])
+        self.assertListEqual(header.names, [AVERAGE_PREFIX])
 
     def test_signature(self):
         rels = list("qwerty")
         sig = RelHeader(rels=rels).signature
-        self.assertEqual(list(sig.keys()), ["rels"])
+        self.assertListEqual(list(sig.keys()), ["rels"])
         sig_rels = sig["rels"]
         self.assertIsInstance(sig_rels, list)
-        self.assertEqual(sig_rels, rels)
+        self.assertListEqual(sig_rels, rels)
 
     def test_index(self):
         index = RelHeader(rels=list("qwerty")).index
         self.assertIsInstance(index, pd.Index)
         self.assertNotIsInstance(index, pd.MultiIndex)
         self.assertEqual(index.name, REL_NAME)
-        self.assertEqual(list(index.names), [REL_NAME])
-        self.assertEqual(index.to_list(), list("qwerty"))
+        self.assertListEqual(list(index.names), [REL_NAME])
+        self.assertListEqual(index.to_list(), list("qwerty"))
 
     def test_iter_clust_indexes(self):
         header = RelHeader(rels=list("qwerty"))
@@ -315,21 +372,21 @@ class TestRelHeader(ut.TestCase):
         selection = header.select(rel="w")
         self.assertIsInstance(selection, pd.Index)
         self.assertNotIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(), ["w"])
+        self.assertListEqual(selection.to_list(), ["w"])
 
     def test_select_one_rels(self):
         header = RelHeader(rels=list("qwerty"))
         selection = header.select(rel=["w"])
         self.assertIsInstance(selection, pd.Index)
         self.assertNotIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(), ["w"])
+        self.assertListEqual(selection.to_list(), ["w"])
 
     def test_select_two_rels(self):
         header = RelHeader(rels=list("qwerty"))
         selection = header.select(rel=["t", "w"])
         self.assertIsInstance(selection, pd.Index)
         self.assertNotIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(), ["w", "t"])
+        self.assertListEqual(selection.to_list(), ["w", "t"])
 
     def test_select_invalid(self):
         header = RelHeader(rels=list("qwerty"))
@@ -395,19 +452,21 @@ class TestClustHeader(ut.TestCase):
         self.assertEqual(ClustHeader.num_levels(), 2)
 
     def test_level_keys(self):
-        self.assertEqual(ClustHeader.level_keys(), ["k", "clust"])
+        self.assertListEqual(ClustHeader.level_keys(),
+                             ["k", "clust"])
 
     def test_level_names(self):
-        self.assertEqual(ClustHeader.level_names(), [NUM_CLUSTS_NAME, CLUST_NAME])
+        self.assertListEqual(ClustHeader.level_names(),
+                             [NUM_CLUSTS_NAME, CLUST_NAME])
 
     def test_ks_valid(self):
         for min_k in range(1, 4):
             for max_k in range(min_k, 6):
                 ks = list(range(min_k, max_k + 1))
                 header = ClustHeader(ks=ks)
-                self.assertEqual(header.ks, ks)
+                self.assertListEqual(header.ks, ks)
                 header = ClustHeader(ks=reversed(ks))
-                self.assertEqual(header.ks, ks)
+                self.assertListEqual(header.ks, ks)
 
     def test_ks_invalid(self):
         self.assertRaises(ValueError,
@@ -419,36 +478,33 @@ class TestClustHeader(ut.TestCase):
         self.assertRaises(ValueError,
                           ClustHeader,
                           ks=[1, 1])
-        self.assertRaises(TypeError,
-                          ClustHeader,
-                          ks=["1"])
 
     def test_clusts(self):
         for min_k in range(1, 4):
             for max_k in range(min_k, 6):
                 ks = list(range(min_k, max_k + 1))
                 header = ClustHeader(ks=ks)
-                self.assertEqual(header.clusts,
-                                 list_ks_clusts(ks))
+                self.assertListEqual(header.clusts,
+                                     list_ks_clusts(ks))
 
     def test_names(self):
         header = ClustHeader(ks=[4, 3])
-        self.assertEqual(header.names,
-                         ["cluster 3-1",
-                          "cluster 3-2",
-                          "cluster 3-3",
-                          "cluster 4-1",
-                          "cluster 4-2",
-                          "cluster 4-3",
-                          "cluster 4-4"])
+        self.assertListEqual(header.names,
+                             ["cluster 3-1",
+                              "cluster 3-2",
+                              "cluster 3-3",
+                              "cluster 4-1",
+                              "cluster 4-2",
+                              "cluster 4-3",
+                              "cluster 4-4"])
 
     def test_signature(self):
         for min_k in range(1, 4):
             for max_k in range(min_k, 6):
                 ks = list(range(min_k, max_k + 1))
                 sig = ClustHeader(ks=ks).signature
-                self.assertEqual(list(sig.keys()), ["ks"])
-                self.assertEqual(sig["ks"], ks)
+                self.assertListEqual(list(sig.keys()), ["ks"])
+                self.assertListEqual(sig["ks"], ks)
 
     def test_index(self):
         for min_k in range(1, 4):
@@ -456,8 +512,9 @@ class TestClustHeader(ut.TestCase):
                 header = ClustHeader(ks=range(min_k, max_k + 1))
                 index = header.index
                 self.assertIsInstance(index, pd.MultiIndex)
-                self.assertEqual(list(index.names), [NUM_CLUSTS_NAME, CLUST_NAME])
-                self.assertEqual(index.tolist(), header.clusts)
+                self.assertListEqual(list(index.names),
+                                     [NUM_CLUSTS_NAME, CLUST_NAME])
+                self.assertListEqual(index.tolist(), header.clusts)
 
     def test_iter_clust_indexes(self):
         for min_k in range(1, 4):
@@ -469,7 +526,7 @@ class TestClustHeader(ut.TestCase):
                                         header.clusts,
                                         strict=True):
                     self.assertIsInstance(index, pd.MultiIndex)
-                    self.assertEqual(index.to_list(), [clust])
+                    self.assertListEqual(index.to_list(), [clust])
 
     def test_select_none(self):
         header = ClustHeader(ks=range(1, 5))
@@ -481,50 +538,50 @@ class TestClustHeader(ut.TestCase):
         header = ClustHeader(ks=range(1, 5))
         selection = header.select(k=3)
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [(3, 1), (3, 2), (3, 3)])
+        self.assertListEqual(selection.to_list(),
+                             [(3, 1), (3, 2), (3, 3)])
 
     def test_select_ks(self):
         header = ClustHeader(ks=range(1, 5))
         selection = header.select(k=[3, 2])
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [(2, 1), (2, 2), (3, 1), (3, 2), (3, 3)])
+        self.assertListEqual(selection.to_list(),
+                             [(2, 1), (2, 2), (3, 1), (3, 2), (3, 3)])
 
     def test_select_clust(self):
         header = ClustHeader(ks=range(1, 5))
         selection = header.select(clust=3)
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [(3, 3), (4, 3)])
+        self.assertListEqual(selection.to_list(),
+                             [(3, 3), (4, 3)])
 
     def test_select_clusts(self):
         header = ClustHeader(ks=range(1, 5))
         selection = header.select(clust=[3, 2])
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [(2, 2), (3, 2), (3, 3), (4, 2), (4, 3)])
+        self.assertListEqual(selection.to_list(),
+                             [(2, 2), (3, 2), (3, 3), (4, 2), (4, 3)])
 
     def test_select_k_clust_exist(self):
         header = ClustHeader(ks=range(1, 5))
         selection = header.select(k=3, clust=1)
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [(3, 1)])
+        self.assertListEqual(selection.to_list(),
+                             [(3, 1)])
 
     def test_select_ks_clusts_exist(self):
         header = ClustHeader(ks=range(1, 5))
         selection = header.select(k=[3, 2], clust=[1, 3])
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [(2, 1), (3, 1), (3, 3)])
+        self.assertListEqual(selection.to_list(),
+                             [(2, 1), (3, 1), (3, 3)])
 
     def test_select_k_clust_empty(self):
         header = ClustHeader(ks=range(1, 5))
         selection = header.select(k=1, clust=3)
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [])
+        self.assertListEqual(selection.to_list(),
+                             [])
 
     def test_select_invalid_k(self):
         header = ClustHeader(ks=range(1, 5))
@@ -598,11 +655,12 @@ class TestRelClustHeader(ut.TestCase):
         self.assertEqual(RelClustHeader.num_levels(), 3)
 
     def test_level_keys(self):
-        self.assertEqual(RelClustHeader.level_keys(), ["rel", "k", "clust"])
+        self.assertListEqual(RelClustHeader.level_keys(),
+                             ["rel", "k", "clust"])
 
     def test_level_names(self):
-        self.assertEqual(RelClustHeader.level_names(),
-                         [REL_NAME, NUM_CLUSTS_NAME, CLUST_NAME])
+        self.assertListEqual(RelClustHeader.level_names(),
+                             [REL_NAME, NUM_CLUSTS_NAME, CLUST_NAME])
 
     def test_signature(self):
         rels = list("qwerty")
@@ -614,19 +672,27 @@ class TestRelClustHeader(ut.TestCase):
                 self.assertListEqual(sig["ks"], ks)
                 self.assertListEqual(sig["rels"], rels)
 
+    def test_ks(self):
+        rels = list("qwerty")
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                header = RelClustHeader(rels=rels, ks=ks)
+                self.assertListEqual(header.ks, ks)
+
     def test_clusts(self):
         rels = list("qwerty")
         for min_k in range(1, 4):
             for max_k in range(min_k, 6):
                 ks = list(range(min_k, max_k + 1))
                 header = RelClustHeader(rels=rels, ks=ks)
-                self.assertEqual(header.clusts,
-                                 list_ks_clusts(ks))
+                self.assertListEqual(header.clusts, list_ks_clusts(ks))
 
     def test_index(self):
         index = RelClustHeader(rels=["a", "b"], ks=[2, 3]).index
         self.assertIsInstance(index, pd.MultiIndex)
-        self.assertEqual(list(index.names), [REL_NAME, NUM_CLUSTS_NAME, CLUST_NAME])
+        self.assertListEqual(list(index.names),
+                             [REL_NAME, NUM_CLUSTS_NAME, CLUST_NAME])
         self.assertTrue(np.array_equal(index.get_level_values(REL_NAME),
                                        list("aaaaabbbbb")))
         self.assertTrue(np.array_equal(index.get_level_values(NUM_CLUSTS_NAME),
@@ -647,8 +713,8 @@ class TestRelClustHeader(ut.TestCase):
                                         strict=True):
                     self.assertIsInstance(index, pd.MultiIndex)
                     self.assertEqual(index.size, len(rels))
-                    self.assertEqual(index.to_list(),
-                                     [(rel, *clust) for rel in rels])
+                    self.assertListEqual(index.to_list(),
+                                         [(rel, *clust) for rel in rels])
 
     def test_select_none(self):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
@@ -660,48 +726,48 @@ class TestRelClustHeader(ut.TestCase):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         selection = header.select(rel="b")
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [("b", 2, 1),
-                          ("b", 2, 2),
-                          ("b", 3, 1),
-                          ("b", 3, 2),
-                          ("b", 3, 3)])
+        self.assertListEqual(selection.to_list(),
+                             [("b", 2, 1),
+                              ("b", 2, 2),
+                              ("b", 3, 1),
+                              ("b", 3, 2),
+                              ("b", 3, 3)])
 
     def test_select_ks(self):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         selection = header.select(k=3)
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [("a", 3, 1),
-                          ("a", 3, 2),
-                          ("a", 3, 3),
-                          ("b", 3, 1),
-                          ("b", 3, 2),
-                          ("b", 3, 3)])
+        self.assertListEqual(selection.to_list(),
+                             [("a", 3, 1),
+                              ("a", 3, 2),
+                              ("a", 3, 3),
+                              ("b", 3, 1),
+                              ("b", 3, 2),
+                              ("b", 3, 3)])
 
     def test_select_clust(self):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         selection = header.select(clust=2)
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [("a", 2, 2),
-                          ("a", 3, 2),
-                          ("b", 2, 2),
-                          ("b", 3, 2)])
+        self.assertListEqual(selection.to_list(),
+                             [("a", 2, 2),
+                              ("a", 3, 2),
+                              ("b", 2, 2),
+                              ("b", 3, 2)])
 
     def test_select_k_clust_exist(self):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         selection = header.select(rel="a", k=2, clust=1)
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [("a", 2, 1)])
+        self.assertListEqual(selection.to_list(),
+                             [("a", 2, 1)])
 
     def test_select_k_clust_empty(self):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         selection = header.select(rel="a", k=2, clust=3)
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [])
+        self.assertListEqual(selection.to_list(),
+                             [])
 
     def test_select_invalid_rel(self):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
@@ -735,22 +801,22 @@ class TestRelClustHeader(ut.TestCase):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         selection = header.select(rel="a", k=2, clust=1, extra=None)
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [("a", 2, 1)])
+        self.assertListEqual(selection.to_list(),
+                             [("a", 2, 1)])
 
     def test_select_extra_zero(self):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         selection = header.select(rel="a", k=2, clust=1, extra=0)
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [("a", 2, 1)])
+        self.assertListEqual(selection.to_list(),
+                             [("a", 2, 1)])
 
     def test_select_extra_emptystr(self):
         header = RelClustHeader(rels=["a", "b"], ks=[2, 3])
         selection = header.select(rel="a", k=2, clust=1, extra="")
         self.assertIsInstance(selection, pd.MultiIndex)
-        self.assertEqual(selection.to_list(),
-                         [("a", 2, 1)])
+        self.assertListEqual(selection.to_list(),
+                             [("a", 2, 1)])
 
     def test_modified_none(self):
         for min_k in range(1, 4):
@@ -901,36 +967,36 @@ class TestMakeHeader(ut.TestCase):
         header = make_header(rels=rels)
         self.assertIsInstance(header, RelHeader)
         self.assertNotIsInstance(header, RelClustHeader)
-        self.assertEqual(header.index.tolist(), rels)
+        self.assertListEqual(header.index.tolist(), rels)
 
     def test_ks(self):
         header = make_header(ks=[3, 2])
         self.assertIsInstance(header, ClustHeader)
         self.assertNotIsInstance(header, RelClustHeader)
-        self.assertEqual(header.index.tolist(),
-                         [(2, 1), (2, 2), (3, 1), (3, 2), (3, 3)])
+        self.assertListEqual(header.index.tolist(),
+                             [(2, 1), (2, 2), (3, 1), (3, 2), (3, 3)])
 
     def test_all(self):
         header = make_header(rels=["a", "b"], ks=[3, 2])
         self.assertIsInstance(header, RelClustHeader)
-        self.assertEqual(header.index.tolist(),
-                         [("a", 2, 1),
-                          ("a", 2, 2),
-                          ("a", 3, 1),
-                          ("a", 3, 2),
-                          ("a", 3, 3),
-                          ("b", 2, 1),
-                          ("b", 2, 2),
-                          ("b", 3, 1),
-                          ("b", 3, 2),
-                          ("b", 3, 3)])
+        self.assertListEqual(header.index.tolist(),
+                             [("a", 2, 1),
+                              ("a", 2, 2),
+                              ("a", 3, 1),
+                              ("a", 3, 2),
+                              ("a", 3, 3),
+                              ("b", 2, 1),
+                              ("b", 2, 2),
+                              ("b", 3, 1),
+                              ("b", 3, 2),
+                              ("b", 3, 3)])
 
 
 class TestParseHeader(ut.TestCase):
 
     def test_none(self):
-        self.assertRaisesRegex(TypeError,
-                               "Must give rels, ks, or both, but got neither",
+        self.assertRaisesRegex(ValueError,
+                               "rels is empty",
                                parse_header,
                                pd.Index([]))
 
@@ -938,13 +1004,13 @@ class TestParseHeader(ut.TestCase):
         header = parse_header(pd.Index(["a", "b"]))
         self.assertIsInstance(header, RelHeader)
         self.assertNotIsInstance(header, RelClustHeader)
-        self.assertEqual(header.index.to_list(), ["a", "b"])
+        self.assertListEqual(header.index.to_list(), ["a", "b"])
 
     def test_rel_index_valid_name(self):
         header = parse_header(pd.Index(["a", "b"], name=REL_NAME))
         self.assertIsInstance(header, RelHeader)
         self.assertNotIsInstance(header, RelClustHeader)
-        self.assertEqual(header.index.to_list(), ["a", "b"])
+        self.assertListEqual(header.index.to_list(), ["a", "b"])
 
     def test_rel_index_invalid_name(self):
         self.assertRaisesRegex(ValueError,
@@ -957,7 +1023,7 @@ class TestParseHeader(ut.TestCase):
                                                         names=[REL_NAME]))
         self.assertIsInstance(header, RelHeader)
         self.assertNotIsInstance(header, RelClustHeader)
-        self.assertEqual(header.index.to_list(), ["a", "b"])
+        self.assertListEqual(header.index.to_list(), ["a", "b"])
 
     def test_clust(self):
         header = parse_header(pd.MultiIndex.from_tuples([("1", "1"),
@@ -967,27 +1033,27 @@ class TestParseHeader(ut.TestCase):
                                                                CLUST_NAME]))
         self.assertIsInstance(header, ClustHeader)
         self.assertNotIsInstance(header, RelClustHeader)
-        self.assertEqual(header.index.to_list(),
-                         [(1, 1), (2, 1), (2, 2)])
+        self.assertListEqual(header.index.to_list(),
+                             [(1, 1), (2, 1), (2, 2)])
 
     def test_relclust(self):
-        header = parse_header(pd.MultiIndex.from_tuples([("a", "1", "1"),
-                                                         ("a", "2", "1"),
-                                                         ("a", "2", "2"),
-                                                         ("b", "1", "1"),
+        header = parse_header(pd.MultiIndex.from_tuples([("b", "1", "1"),
                                                          ("b", "2", "1"),
-                                                         ("b", "2", "2")],
+                                                         ("b", "2", "2"),
+                                                         ("a", "1", "1"),
+                                                         ("a", "2", "1"),
+                                                         ("a", "2", "2")],
                                                         names=[REL_NAME,
                                                                NUM_CLUSTS_NAME,
                                                                CLUST_NAME]))
         self.assertIsInstance(header, RelClustHeader)
-        self.assertEqual(header.index.to_list(),
-                         [("a", 1, 1),
-                          ("a", 2, 1),
-                          ("a", 2, 2),
-                          ("b", 1, 1),
-                          ("b", 2, 1),
-                          ("b", 2, 2)])
+        self.assertListEqual(header.index.to_list(),
+                             [("b", 1, 1),
+                              ("b", 2, 1),
+                              ("b", 2, 2),
+                              ("a", 1, 1),
+                              ("a", 2, 1),
+                              ("a", 2, 2)])
 
     def test_rel_index_repeated(self):
         self.assertRaisesRegex(ValueError,
