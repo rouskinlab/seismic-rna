@@ -754,25 +754,46 @@ opt_keep_all_ks = Option(
     help="Keep all numbers of clusters, rather than only the best number"
 )
 
-opt_max_pearson = Option(
-    ("--max-pearson",),
+opt_max_pearson_run = Option(
+    ("--max-pearson-run",),
     type=float,
     default=0.9,
-    help="Require every pair of clusters to have at most this correlation"
+    help="Remove runs with two clusters more similar than this correlation"
 )
 
-opt_min_nrmsd = Option(
-    ("--min-nrmsd",),
+opt_min_nrmsd_run = Option(
+    ("--min-nrmsd-run",),
     type=float,
     default=0.1,
-    help="Require every pair of clusters to have at least this NRMSD"
+    help="Remove runs with two clusters different by less than this NRMSD"
+)
+
+opt_max_loglike_vs_best = Option(
+    ("--max-loglike-vs-best",),
+    type=float,
+    default=100.,
+    help="Remove ks whose 1st/2nd log likelihood difference exceeds this gap"
+)
+
+opt_min_pearson_vs_best = Option(
+    ("--min-pearson-vs-best",),
+    type=float,
+    default=0.975,
+    help="Remove ks where every run has less than this correlation vs. the best"
+)
+
+opt_max_nrmsd_vs_best = Option(
+    ("--max-nrmsd-vs-best",),
+    type=float,
+    default=0.05,
+    help="Remove ks where every run has more than this NRMSD vs. the best"
 )
 
 opt_em_runs = Option(
     ("--em-runs", "-e"),
     type=int,
     default=12,
-    help="Repeat EM this many times for each number of clusters"
+    help="Run EM this many times for each number of clusters"
 )
 
 opt_min_em_iter = Option(

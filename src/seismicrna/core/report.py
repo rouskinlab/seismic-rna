@@ -73,8 +73,11 @@ from .arg import (opt_phred_enc,
                   opt_max_fmut_read,
                   opt_min_clusters,
                   opt_max_clusters,
-                  opt_max_pearson,
-                  opt_min_nrmsd,
+                  opt_max_pearson_run,
+                  opt_min_nrmsd_run,
+                  opt_max_loglike_vs_best,
+                  opt_min_pearson_vs_best,
+                  opt_max_nrmsd_vs_best,
                   opt_try_all_ks,
                   opt_keep_all_ks,
                   opt_mask_gu,
@@ -476,8 +479,11 @@ MaxIterClustF = OptionField(opt_max_em_iter)
 ClustConvThreshF = OptionField(opt_em_thresh)
 MinClustsF = OptionField(opt_min_clusters)
 MaxClustsF = OptionField(opt_max_clusters)
-MinNRMSDF = OptionField(opt_min_nrmsd)
-MaxPearsonF = OptionField(opt_max_pearson)
+MaxPearsonRunF = OptionField(opt_max_pearson_run)
+MinNRMSDRunF = OptionField(opt_min_nrmsd_run)
+MaxLogLikeVsBestF = OptionField(opt_max_loglike_vs_best)
+MinPearsonVsBestF = OptionField(opt_min_pearson_vs_best)
+MaxNRMSDVsBestF = OptionField(opt_max_nrmsd_vs_best)
 TryAllKsF = OptionField(opt_try_all_ks)
 KeepAllKsF = OptionField(opt_keep_all_ks)
 ClustNumRunsF = OptionField(opt_em_runs)
@@ -493,14 +499,14 @@ ClustsLogLikesF = Field("log_likes",
                         dict(),
                         iconv=iconv_int_keys,
                         oconv=get_oconv_dict_list_float())
-ClustsNRMSDVs0F = Field("nrmsd_vs_0",
-                        "NRMSD of each run versus run 0",
+ClustsNRMSDVs0F = Field("nrmsds_vs_best",
+                        "NRMSD of each run versus the best run",
                         dict,
                         dict(),
                         iconv=iconv_int_keys,
                         oconv=get_oconv_dict_list_float())
-ClustsPearsonVs0F = Field("pearson_vs_0",
-                          "Pearson correlation of each run versus run 0",
+ClustsPearsonVs0F = Field("pearsons_vs_best",
+                          "Pearson correlation of each run versus the best run",
                           dict,
                           dict(),
                           iconv=iconv_int_keys,

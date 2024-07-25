@@ -65,8 +65,11 @@ def run_ks(uniq_reads: UniqReads,
            em_runs: int, *,
            try_all_ks: bool,
            keep_all_ks: bool,
-           min_nrmsd: float,
-           max_pearson: float,
+           min_nrmsd_run: float,
+           max_pearson_run: float,
+           max_loglike_vs_best: float,
+           min_pearson_vs_best: float,
+           max_nrmsd_vs_best: float,
            min_iter: int,
            max_iter: int,
            em_thresh: float,
@@ -82,8 +85,9 @@ def run_ks(uniq_reads: UniqReads,
 
     def current_best_k():
         return find_best_k(list(runs_ks.values()),
-                           max_pearson=max_pearson,
-                           min_nrmsd=min_nrmsd)
+                           max_loglike_vs_best=max_loglike_vs_best,
+                           min_pearson_vs_best=min_pearson_vs_best,
+                           max_nrmsd_vs_best=max_nrmsd_vs_best)
 
     ks = validate_ks(ks)
     for k in ks:
@@ -104,8 +108,8 @@ def run_ks(uniq_reads: UniqReads,
                 write_props(run, rank=rank, **path_kwargs)
             # Compare all runs for this k.
             runs_ks[k] = EMRunsK(runs,
-                                 max_pearson=max_pearson,
-                                 min_nrmsd=min_nrmsd)
+                                 max_pearson_run=max_pearson_run,
+                                 min_nrmsd_run=min_nrmsd_run)
             if not (try_all_ks or k == current_best_k()):
                 # The current k is not the best so far.
                 break
