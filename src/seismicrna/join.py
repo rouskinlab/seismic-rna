@@ -55,9 +55,9 @@ def join_sections(out_dir: Path,
     clustered: bool
         Whether the dataset is clustered.
     clusts: dict[str, dict[int, dict[int, int]]]
-        For each section, for each order, the cluster from the original
-        section to use as the cluster in the joined section; ignored if
-        `clustered` is False.
+        For each section, for each number of clusters, the cluster from
+        the original section to use as the cluster in the joined section
+        (ignored if `clustered` is False).
     force: bool
         Force the report to be written, even if it exists.
 

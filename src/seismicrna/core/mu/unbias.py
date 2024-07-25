@@ -1381,7 +1381,7 @@ def calc_p_ends_observed(npos: int,
 
 
 def calc_params_observed(n_pos_total: int,
-                         order: int,
+                         k: int,
                          unmasked_pos: Iterable[int],
                          muts_per_pos: Iterable[np.ndarray],
                          end5s: np.ndarray,
@@ -1394,8 +1394,8 @@ def calc_params_observed(n_pos_total: int,
     ----------
     n_pos_total: int
         Total number of positions in the section.
-    order: int
-        Order of clustering.
+    k: int
+        Number of clusters.
     unmasked_pos: Iterable[int]
         Unmasked positions; must be zero-indexed with respect to the
         5' end of the section.
@@ -1443,7 +1443,7 @@ def calc_params_observed(n_pos_total: int,
                        * n_reads_per_clust)
     # Count the observed mutations at each position.
     # 2D (all positions x clusters)
-    n_muts_per_pos = np.zeros((n_pos_total, order))
+    n_muts_per_pos = np.zeros((n_pos_total, k))
     for j, mut_reads in zip(unmasked_pos, muts_per_pos, strict=True):
         # Calculate the number of mutations at each position in each
         # cluster by summing the count-weighted likelihood that each
