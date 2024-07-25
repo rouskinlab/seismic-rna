@@ -113,8 +113,6 @@ for module in (wf,
                renumct):
     cli.add_command(module.cli)
 cli.add_command(split.cli)
-cli.add_command(cluster.addclust.cli)
-cli.add_command(cluster.delclust.cli)
 cli.add_command(lists.listpos.cli)
 cli.add_command(rna.convert.cli_ct2db)
 cli.add_command(rna.convert.cli_db2ct)

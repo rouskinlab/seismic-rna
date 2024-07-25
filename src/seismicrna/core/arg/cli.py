@@ -750,7 +750,7 @@ opt_try_all_ks = Option(
 opt_keep_all_ks = Option(
     ("--keep-all-ks/--keep-best-k",),
     type=bool,
-    default=True,
+    default=False,
     help="Keep all numbers of clusters, rather than only the best number"
 )
 
