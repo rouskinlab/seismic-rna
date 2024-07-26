@@ -1,13 +1,15 @@
 import re
+from functools import cached_property
 from itertools import permutations
 from logging import getLogger
-from typing import Callable
+from typing import Callable, Iterable
 
 import numpy as np
 import pandas as pd
 
 from .em import EMRun
 from .names import LOG_EXP_NAME, LOG_OBS_NAME
+from .uniq import UniqReads
 from ..core.header import NUM_CLUSTS_NAME
 from ..core.mu import calc_rmsd, calc_nrmsd, calc_pearson
 from ..core.report import NOCONV
@@ -36,31 +38,6 @@ def sort_runs(runs: list[EMRun]):
     return sorted(runs, key=lambda run: run.log_like, reverse=True)
 
 
-def filter_runs(runs: list[EMRun],
-                max_pearson_run: float,
-                min_nrmsd_run: float):
-    """ Filter EM runs. """
-    if not runs:
-        logger.warning(f"Got no runs to filter")
-    # Remove each number of clusters where any pair of clusters has a
-    # Pearson correlation greater than the limit.
-    if runs and max_pearson_run < 1.:
-        runs = [run for run in runs
-                if not run.calc_max_pearson() > max_pearson_run]
-        if not runs:
-            logger.warning(f"For all runs, the maximum Pearson correlation "
-                           f"is > {max_pearson_run}")
-    # Remove each number of clusters where any pair of clusters has an
-    # NRMSD less than the limit.
-    if runs and min_nrmsd_run > 0.:
-        runs = [run for run in runs
-                if not run.calc_min_nrmsd() < min_nrmsd_run]
-        if not runs:
-            logger.warning(f"For all runs, the minimum NRMSD "
-                           f"is < {min_nrmsd_run}")
-    return runs
-
-
 class EMRunsK(object):
     """ One or more EM runs with the same number of clusters. """
 
@@ -69,129 +46,130 @@ class EMRunsK(object):
                  max_pearson_run: float,
                  min_nrmsd_run: float):
         if not runs:
-            raise ValueError("Got no clustering runs")
+            raise ValueError(f"{self} got no EM runs")
+        # Sort the runs from largest to smallest likelihood.
         runs = sort_runs(runs)
-        # Number of clusters (k).
-        self.k = get_common_k(runs)
+        # Flag runs that fail to meet the filters.
+        self.max_pearson_run = max_pearson_run
+        self.min_nrmsd_run = min_nrmsd_run
+        # To filter invalid runs, need to use "not" with the opposite of
+        # the desired inequality because runs with just one cluster will
+        # produce NaN values, which should always compare as True here.
+        self.run_valid = np.array([
+            not (run.calc_max_pearson() > max_pearson_run
+                 or run.calc_min_nrmsd() < min_nrmsd_run)
+            for run in runs
+        ])
+        if self.n_runs_valid == 0:
+            logger.warning(f"{self} got no EM runs where all pairs of clusters "
+                           f"had Pearson correlation ≤ {self.max_pearson_run} "
+                           f"and NRMSD ≥ {self.min_nrmsd_run}")
+        # Select the best run.
+        self.best = runs[self.best_index]
         # Number of runs.
         self.n_runs_total = len(runs)
+        # Number of clusters (K).
+        self.k = get_common_k(runs)
         # Number of iterations until convergenge for each run.
-        self.converged = [run.iter if run.converged else NOCONV
-                          for run in runs]
-        # List of log-likelihoods for each run.
-        self.log_likes = [run.log_like for run in runs]
-        # Root-mean-square deviations between each run and run 0.
-        self.nrmsds_vs_best = [calc_rms_nrmsd(run, runs[0])
-                               for run in runs]
-        # Correlations between each run and run 0.
-        self.pearsons_vs_best = [calc_mean_pearson(run, runs[0])
-                                 for run in runs]
-        # Minimum NRMSD between any two clusters
-        self.min_nrmsds = [run.calc_min_nrmsd() for run in runs]
-        # Maximum Pearson correlation between any two clusters
-        self.max_pearsons = [run.calc_max_pearson() for run in runs]
-        # Remove runs for which any pair of clusters has an invalid
-        # Pearson correlation or NRMSD.
-        runs = filter_runs(runs,
-                           max_pearson_run=max_pearson_run,
-                           min_nrmsd_run=min_nrmsd_run)
-        self.n_runs_filtered = len(runs)
-        # Keep the remaining run with the best (largest) likelihood.
-        self.best = runs[0] if runs else None
+        self.converged = np.array([run.iter if run.converged else NOCONV
+                                   for run in runs])
+        # Log-likelihood of each run.
+        self.log_likes = np.array([run.log_like for run in runs])
+        # BIC of each run.
+        self.bics = np.array([run.bic for run in runs])
+        # Minimum NRMSD between any two clusters in each run.
+        self.min_nrmsds = np.array([run.calc_min_nrmsd() for run in runs])
+        # Maximum correlation between any two clusters in each run.
+        self.max_pearsons = np.array([run.calc_max_pearson() for run in runs])
+        # NRMSD between each run and the best run.
+        self.nrmsds_vs_best = np.array([calc_rms_nrmsd(run, self.best)
+                                        for run in runs])
+        # Correlation between each run and the best run.
+        self.pearsons_vs_best = np.array([calc_mean_pearson(run, self.best)
+                                          for run in runs])
+        self._passing = None
 
-    @property
+    @cached_property
+    def n_runs_valid(self):
+        """ Number of valid runs. """
+        return int(np.count_nonzero(self.run_valid))
+
+    def get_valid_index(self, i: int | list[int] | np.ndarray):
+        """ Index(es) of valid run number(s) `i`. """
+        return np.flatnonzero(self.run_valid)[i]
+
+    @cached_property
+    def best_index(self) -> int:
+        """ Index of the best valid run. """
+        if self.n_runs_valid > 0:
+            # The best run is the valid run with the largest likelihood.
+            return self.get_valid_index(0)
+        # If no runs are valid, then use the best invalid run.
+        return 0
+
+    @cached_property
+    def subopt_indexes(self):
+        """ Indexes of the valid suboptimal runs. """
+        return self.get_valid_index(np.arange(1, self.n_runs_valid))
+
+    @cached_property
     def loglike_vs_best(self):
         """ Log likelihood difference between the best and second-best
         runs. """
-        if self.n_runs_total > 1:
-            return self.log_likes[0] - self.log_likes[1]
-        # No difference if only 1 run.
-        return 0.
+        if self.n_runs_valid < 2:
+            return np.nan
+        index1, index2 = self.get_valid_index([0, 1])
+        return float(self.log_likes[index1] - self.log_likes[index2])
 
-    @property
+    @cached_property
     def pearson_vs_best(self):
         """ Maximum Pearson correlation between the best run and any
         other run. """
-        return max(self.pearsons_vs_best[1:], default=1.)
+        if self.n_runs_valid < 2:
+            return np.nan
+        return float(np.max(self.pearsons_vs_best[self.subopt_indexes]))
 
-    @property
+    @cached_property
     def nrmsd_vs_best(self):
         """ Minimum NRMSD between the best run and any other run. """
-        return min(self.nrmsds_vs_best[1:], default=0.)
+        if self.n_runs_valid < 2:
+            return np.nan
+        return float(np.min(self.nrmsds_vs_best[self.subopt_indexes]))
 
     @property
     def best_bic(self):
         """ BIC of the best run. """
-        if self.best is None:
-            # Infinitely bad (large) if no best run.
-            return np.inf
         return self.best.bic
 
+    @property
+    def passing(self):
+        """ Whether this number of clusters passes the filters. """
+        if not isinstance(self._passing, bool):
+            raise ValueError(f"{self}.valid has not been set")
+        return self._passing
 
-def filter_ks(ks: list[EMRunsK],
-              max_loglike_vs_best: float,
-              min_pearson_vs_best: float,
-              max_nrmsd_vs_best: float):
-    """ Filter numbers of clusters. """
-    if not ks:
-        logger.warning(f"Got no numbers of clusters to filter")
-    else:
-        # Remove each number of clusters with no runs.
-        ks = [k for k in ks if k.n_runs_filtered > 0]
-        if not ks:
-            logger.warning(f"No number of clusters had at least one run")
-    if ks:
-        # Remove each number of clusters where the log likelihood gap
-        # is too large.
-        ks = [k for k in ks if k.loglike_vs_best <= max_loglike_vs_best]
-        if not ks:
-            logger.warning(f"No number of clusters had a log likelihood "
-                           f"vs. the best run that was ≤ {max_loglike_vs_best}")
-    if ks:
-        # Remove each number of clusters where the maximum Pearson
-        # correlation with the best run is too small.
-        ks = [k for k in ks if k.pearson_vs_best >= min_pearson_vs_best]
-        if not ks:
-            logger.warning(f"No number of clusters had a Pearson correlation "
-                           f"vs. the best run that was ≥ {min_pearson_vs_best}")
-    if ks:
-        # Remove each number of clusters where the minimum NRMSD with
-        # the best run is too large.
-        ks = [k for k in ks if k.nrmsd_vs_best <= max_nrmsd_vs_best]
-        if not ks:
-            logger.warning(f"No number of clusters had an NRMSD "
-                           f"vs. the best run that was ≤ {max_nrmsd_vs_best}")
-    return ks
+    def set_passing(self,
+                    max_loglike_vs_best: float,
+                    min_pearson_vs_best: float,
+                    max_nrmsd_vs_best: float):
+        """ Set whether this number of clusters passes the filters. """
+        # Use "not" followed by the opposite of the desired inequality
+        # so that if any attribute is NaN, the inequality will evaluate
+        # to False, and its "not" will be True, as desired.
+        self._passing = not (self.n_runs_valid == 0
+                             or self.loglike_vs_best > max_loglike_vs_best
+                             or self.pearson_vs_best < min_pearson_vs_best
+                             or self.nrmsd_vs_best > max_nrmsd_vs_best)
+        return self.passing
 
 
-def get_common_best_run_attr(ks: list[EMRunsK], attr: str):
-    """ Get an attribute of the best clustering run from every k, and
-    confirm that `key(attribute)` is identical for every k. """
-    # Start by getting the attribute from the first k.
-    value = getattr(ks[0].best, attr)
-    # Verify that the best run from every other k has an equal value
-    # of that attribute.
-    if any(getattr(k.best, attr) != value for k in ks[1:]):
-        raise ValueError(f"Found more than 1 value for attribute {repr(attr)} "
-                         f"among k values {ks}")
-    return value
-
-
-def find_best_k(ks: list[EMRunsK],
-                max_loglike_vs_best: float,
-                min_pearson_vs_best: float,
-                max_nrmsd_vs_best: float):
+def find_best_k(ks: Iterable[EMRunsK]):
     """ Find the best number of clusters. """
+    # Select only the numbers of clusters that pass the filters.
+    ks = [runs for runs in ks if runs.passing]
     if not ks:
-        raise ValueError("Got no groups of EM runs with any number of clusters")
-    # Remove numbers of clusters that do not pass the filters.
-    ks = filter_ks(ks,
-                   max_loglike_vs_best=max_loglike_vs_best,
-                   min_pearson_vs_best=min_pearson_vs_best,
-                   max_nrmsd_vs_best=max_nrmsd_vs_best)
-    if not ks:
-        raise ValueError("No groups of EM runs with any numbers of clusters "
-                         "passed the filters")
+        logger.warning("No numbers of clusters pass the filters")
+        return 0
     # Of the remaining numbers of clusters, find the number that gives
     # the smallest BIC.
     ks = sorted(ks, key=lambda k: k.best_bic)
@@ -210,17 +188,15 @@ def parse_exp_count_col(col: str):
     return int(k)
 
 
-def get_log_exp_obs_counts(ks: list[EMRunsK]):
+def get_log_exp_obs_counts(uniq_reads: UniqReads, ks: list[EMRunsK]):
     """ Get the expected and observed log counts of each bit vector. """
-    # Retrieve the unique bit vectors from the clusters.
-    uniq_reads = get_common_best_run_attr(ks, "uniq_reads")
     # Compute the observed log counts of the bit vectors.
     log_obs = pd.Series(np.log(uniq_reads.counts_per_uniq),
                         index=uniq_reads.get_uniq_names())
     # For each number of clusters, compute the expected log counts.
-    log_exp = ((format_exp_count_col(runs.k),
+    log_exp = [(format_exp_count_col(runs.k),
                 pd.Series(runs.best.logn_exp, index=log_obs.index))
-               for runs in ks)
+               for runs in ks]
     # Assemble all log counts into one DataFrame.
     log_counts = pd.DataFrame.from_dict({LOG_OBS_NAME: log_obs} | dict(log_exp))
     # Round the log counts.

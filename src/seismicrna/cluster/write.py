@@ -9,8 +9,8 @@ import numpy as np
 from .compare import EMRunsK, find_best_k, sort_runs
 from .csv import write_log_counts, write_mus, write_props
 from .em import EMRun
+from .io import write_batches
 from .report import ClusterReport
-from .save import write_batches
 from .uniq import UniqReads
 from ..core.header import validate_ks
 from ..core.io import recast_file_path
@@ -64,7 +64,6 @@ def run_ks(uniq_reads: UniqReads,
            ks: Iterable[int],
            em_runs: int, *,
            try_all_ks: bool,
-           keep_all_ks: bool,
            min_nrmsd_run: float,
            max_pearson_run: float,
            max_loglike_vs_best: float,
@@ -82,13 +81,6 @@ def run_ks(uniq_reads: UniqReads,
                        ref=uniq_reads.ref,
                        sect=uniq_reads.section.name)
     runs_ks = dict()
-
-    def current_best_k():
-        return find_best_k(list(runs_ks.values()),
-                           max_loglike_vs_best=max_loglike_vs_best,
-                           min_pearson_vs_best=min_pearson_vs_best,
-                           max_nrmsd_vs_best=max_nrmsd_vs_best)
-
     ks = validate_ks(ks)
     for k in ks:
         try:
@@ -106,11 +98,15 @@ def run_ks(uniq_reads: UniqReads,
             for rank, run in enumerate(runs):
                 write_mus(run, rank=rank, **path_kwargs)
                 write_props(run, rank=rank, **path_kwargs)
-            # Compare all runs for this k.
+            # Collect all runs for this number of clusters.
             runs_ks[k] = EMRunsK(runs,
                                  max_pearson_run=max_pearson_run,
                                  min_nrmsd_run=min_nrmsd_run)
-            if not (try_all_ks or k == current_best_k()):
+            # Check whether this number of clusters passes the filters.
+            runs_ks[k].set_passing(max_loglike_vs_best=max_loglike_vs_best,
+                                   min_pearson_vs_best=min_pearson_vs_best,
+                                   max_nrmsd_vs_best=max_nrmsd_vs_best)
+            if not (try_all_ks or k == find_best_k(runs_ks.values())):
                 # The current k is not the best so far.
                 break
         except Exception as error:
@@ -118,19 +114,14 @@ def run_ks(uniq_reads: UniqReads,
                 f"Failed to split {uniq_reads} into {k} cluster(s): {error}",
                 exc_info=exc_info()
             )
-    if not runs_ks:
-        raise ValueError(
-            f"Failed to split {uniq_reads} into any number of clusters: {ks}"
-        )
-    if keep_all_ks:
-        return list(runs_ks.values())
-    return [runs_ks[current_best_k()]]
+    return runs_ks
 
 
 def cluster(mask_report_file: Path, *,
             min_clusters: int,
             max_clusters: int,
             try_all_ks: bool,
+            write_all_ks: bool,
             em_runs: int,
             n_procs: int,
             brotli_level: int,
@@ -169,26 +160,41 @@ def cluster(mask_report_file: Path, *,
                 f"max_clusters must be ≥ 0, but got {max_clusters}"
             )
         runs_ks = run_ks(uniq_reads,
-                         ks=range(min_clusters, max_clusters_use + 1),
+                         ks=range(min_clusters,
+                                  max_clusters_use + 1),
                          try_all_ks=try_all_ks,
                          em_runs=em_runs,
                          n_procs=n_procs,
                          top=tmp_dir,
                          **kwargs)
-        # Output the observed and expected counts for every best run.
-        write_log_counts(runs_ks,
+        # Choose which numbers of clusters to write.
+        if write_all_ks:
+            write_ks = list(runs_ks.values())
+        elif (best_k := find_best_k(runs_ks.values())) >= 1:
+            write_ks = [runs_ks[best_k]]
+        else:
+            write_ks = []
+        # Write the observed and expected counts for every best run.
+        write_log_counts(uniq_reads,
+                         write_ks,
                          top=tmp_dir,
                          sample=dataset.sample,
                          ref=dataset.ref,
                          sect=dataset.sect)
         # Output the cluster memberships in batches of reads.
-        checksums = write_batches(dataset, runs_ks, brotli_level, tmp_dir)
+        checksums, ks_written = write_batches(dataset,
+                                              write_ks,
+                                              brotli_level,
+                                              tmp_dir)
+        # Write the cluster report.
         ended = datetime.now()
-        report = ClusterReport.from_clusters(runs_ks,
+        report = ClusterReport.from_clusters(list(runs_ks.values()),
                                              uniq_reads,
                                              min_clusters=min_clusters,
                                              max_clusters=max_clusters,
                                              try_all_ks=try_all_ks,
+                                             write_all_ks=write_all_ks,
+                                             ks_written=ks_written,
                                              em_runs=em_runs,
                                              checksums=checksums,
                                              began=began,

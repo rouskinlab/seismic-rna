@@ -418,7 +418,7 @@ class EMRun(object):
             This instance, in order to permit statements such as
             ``return [em.run() for em in em_clusterings]``
         """
-        logger.info(f"{self} began with {self.min_iter} - {self.max_iter} "
+        logger.info(f"{self} began with {self.min_iter}-{self.max_iter} "
                     f"iterations")
         rng = np.random.default_rng(seed)
         # Erase the trajectory of log likelihood values (if any).

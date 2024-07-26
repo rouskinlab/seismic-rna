@@ -7,6 +7,7 @@ import pandas as pd
 
 from .compare import EMRunsK, get_log_exp_obs_counts
 from .em import EMRun
+from .uniq import UniqReads
 from ..core import path
 
 logger = getLogger(__name__)
@@ -94,7 +95,8 @@ def get_count_path(top: Path, sample: str, ref: str, sect: str):
                          ext=path.CSVZIP_EXT)
 
 
-def write_log_counts(ks: list[EMRunsK],
+def write_log_counts(uniq_reads: UniqReads,
+                     ks: list[EMRunsK],
                      top: Path,
                      sample: str,
                      ref: str,
@@ -102,7 +104,7 @@ def write_log_counts(ks: list[EMRunsK],
     """ Write the expected and observed log counts of unique bit vectors
     to a CSV file. """
     # Calculate the log expected and observed counts.
-    log_counts = get_log_exp_obs_counts(ks).sort_index()
+    log_counts = get_log_exp_obs_counts(uniq_reads, ks).sort_index()
     # Build the path for the output file.
     file = get_count_path(top, sample, ref, sect)
     # Write the log counts to the file.

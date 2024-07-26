@@ -267,7 +267,7 @@ def calc_rels_per_pos(mutations: dict[int, dict[int, np.ndarray]],
         # no-coverage relationship (no coverage is counted later).
         counts[MATCH].loc[pos_base] = (cover_per_pos.loc[pos_base]
                                        - num_reads_pos).round(PRECISION)
-        if np.atleast_1d(counts[MATCH].loc[pos_base]).min() < 0:
+        if np.atleast_1d(counts[MATCH].loc[pos_base]).min(initial=0) < 0:
             raise ValueError("Number of matches must be ≥ 0, "
                              f"but got {counts[MATCH].loc[pos_base]} "
                              f"at position {pos}")
@@ -276,7 +276,7 @@ def calc_rels_per_pos(mutations: dict[int, dict[int, np.ndarray]],
         counts[NOCOV].loc[pos_base] = (
                 num_reads - cover_per_pos.loc[pos_base]
         ).round(PRECISION)
-        if np.atleast_1d(counts[NOCOV].loc[pos_base]).min() < 0:
+        if np.atleast_1d(counts[NOCOV].loc[pos_base]).min(initial=0) < 0:
             raise ValueError("Number of non-covered positions must be ≥ 0, "
                              f"but got {counts[NOCOV].loc[pos_base]} "
                              f"at position {pos}")

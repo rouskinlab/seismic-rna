@@ -59,64 +59,36 @@ class TestValidateKClust(ut.TestCase):
                                k=1,
                                clust=1.)
 
-    def test_negative_zero_allowed(self):
+    def test_negative_zero(self):
         self.assertRaisesRegex(ValueError,
                                "k must be ≥ 0",
                                validate_k_clust,
                                k=-1,
-                               clust=0,
-                               zero_ok=True)
+                               clust=0)
 
-    def test_zero_negative_allowed(self):
+    def test_zero_negative(self):
         self.assertRaisesRegex(ValueError,
                                "clust must be ≥ 0",
                                validate_k_clust,
                                k=0,
-                               clust=-1,
-                               zero_ok=True)
+                               clust=-1)
 
-    def test_zero_zero_allowed(self):
-        self.assertIsNone(validate_k_clust(0, 0, zero_ok=True))
-
-    def test_zero_zero_unallowed(self):
-        self.assertRaisesRegex(ValueError,
-                               "k must be ≥ 1",
-                               validate_k_clust,
-                               k=0,
-                               clust=0,
-                               zero_ok=False)
+    def test_zero(self):
+        self.assertIsNone(validate_k_clust(0, 0))
 
     def test_zero_one_allowed(self):
         self.assertRaisesRegex(ValueError,
                                "clust must be ≤ k",
                                validate_k_clust,
                                k=0,
-                               clust=1,
-                               zero_ok=True)
-
-    def test_zero_one_unallowed(self):
-        self.assertRaisesRegex(ValueError,
-                               "k must be ≥ 1",
-                               validate_k_clust,
-                               k=0,
-                               clust=1,
-                               zero_ok=False)
+                               clust=1)
 
     def test_one_zero_allowed(self):
         self.assertRaisesRegex(ValueError,
                                "clust must be ≥ 1",
                                validate_k_clust,
                                k=1,
-                               clust=0,
-                               zero_ok=True)
-
-    def test_one_zero_unallowed(self):
-        self.assertRaisesRegex(ValueError,
-                               "clust must be ≥ 1",
-                               validate_k_clust,
-                               k=1,
-                               clust=0,
-                               zero_ok=False)
+                               clust=0)
 
     def test_positive_positive(self):
         for k in range(1, 11):
@@ -133,14 +105,8 @@ class TestValidateKClust(ut.TestCase):
 
 class TestValidateKs(ut.TestCase):
 
-    def test_empty_ok(self):
-        self.assertListEqual(validate_ks([], empty_ok=True), [])
-
-    def test_empty_not_ok(self):
-        self.assertRaisesRegex(ValueError,
-                               "ks is empty",
-                               validate_ks,
-                               [])
+    def test_empty(self):
+        self.assertListEqual(validate_ks([]), [])
 
     def test_zero(self):
         self.assertRaisesRegex(ValueError,
@@ -164,14 +130,8 @@ class TestValidateKs(ut.TestCase):
 
 class TestDeduplicateRels(ut.TestCase):
 
-    def test_empty_ok(self):
-        self.assertListEqual(deduplicate_rels([], empty_ok=True), [])
-
-    def test_empty_not_ok(self):
-        self.assertRaisesRegex(ValueError,
-                               "rels is empty",
-                               deduplicate_rels,
-                               [])
+    def test_empty(self):
+        self.assertListEqual(deduplicate_rels([]), [])
 
     def test_no_duplicates(self):
         rels = "qwerty"
@@ -184,8 +144,8 @@ class TestDeduplicateRels(ut.TestCase):
 
 class TestFormatClustName(ut.TestCase):
 
-    def test_zero_zero_allowed(self):
-        self.assertEqual(format_clust_name(0, 0, zero_ok=True),
+    def test_zero(self):
+        self.assertEqual(format_clust_name(0, 0),
                          AVERAGE_PREFIX)
 
     def test_positive(self):
@@ -196,9 +156,8 @@ class TestFormatClustName(ut.TestCase):
 
 class TestFormatClustNames(ut.TestCase):
 
-    def test_zero_zero_allowed(self):
-        self.assertListEqual(format_clust_names([(0, 0)],
-                                                zero_ok=True),
+    def test_zero(self):
+        self.assertListEqual(format_clust_names([(0, 0)]),
                              [AVERAGE_PREFIX])
 
     def test_positive_no_dups(self):
@@ -254,10 +213,7 @@ class TestListKClusts(ut.TestCase):
 class TestListKsClusts(ut.TestCase):
 
     def test_empty(self):
-        self.assertRaisesRegex(ValueError,
-                               "ks is empty",
-                               list_ks_clusts,
-                               [])
+        self.assertListEqual(list_ks_clusts([]), [])
 
     def test_zero(self):
         self.assertRaisesRegex(ValueError,
@@ -309,16 +265,12 @@ class TestRelHeader(ut.TestCase):
         self.assertListEqual(rels, list("qwerty"))
 
     def test_rels_duplicated(self):
-        self.assertRaisesRegex(ValueError,
-                               "Duplicate relationship",
-                               RelHeader,
-                               rels=list("banana"))
+        rels = RelHeader(rels=list("banana")).rels
+        self.assertListEqual(rels, list("ban"))
 
     def test_rels_empty(self):
-        self.assertRaisesRegex(ValueError,
-                               "Got no relationships for RelHeader",
-                               RelHeader,
-                               rels=list())
+        rels = RelHeader(rels=[]).rels
+        self.assertListEqual(rels, [])
 
     def test_ks(self):
         header = RelHeader(rels=list("qwerty"))
@@ -418,25 +370,25 @@ class TestRelHeader(ut.TestCase):
         self.assertEqual(header.modified(rels=list("uiop")),
                          make_header(rels=list("uiop")))
 
-    def test_modified_empty_rels(self):
+    def test_modified_rels_empty(self):
+        header = RelHeader(rels=list("qwerty"))
+        self.assertEqual(header.modified(rels=[]),
+                         make_header(rels=[]))
+
+    def test_modified_rels_none(self):
         header = RelHeader(rels=list("qwerty"))
         self.assertRaisesRegex(TypeError,
                                "Must give rels, ks, or both, but got neither",
                                header.modified,
-                               rels=[])
+                               rels=None)
 
     def test_modified_ks(self):
         header = RelHeader(rels=list("qwerty"))
         for max_k in range(4):
             ks = list(range(1, max_k + 1))
             modified = header.modified(ks=ks)
-            if ks:
-                self.assertIsInstance(modified, RelClustHeader)
-                self.assertEqual(modified,
-                                 make_header(rels=list("qwerty"), ks=ks))
-            else:
-                self.assertIsInstance(modified, RelHeader)
-                self.assertEqual(modified, header)
+            self.assertIsInstance(modified, RelClustHeader)
+            self.assertEqual(modified, make_header(rels=list("qwerty"), ks=ks))
 
 
 class TestClustHeader(ut.TestCase):
@@ -469,9 +421,6 @@ class TestClustHeader(ut.TestCase):
                 self.assertListEqual(header.ks, ks)
 
     def test_ks_invalid(self):
-        self.assertRaises(ValueError,
-                          ClustHeader,
-                          ks=[])
         self.assertRaises(ValueError,
                           ClustHeader,
                           ks=[0])
@@ -630,13 +579,15 @@ class TestClustHeader(ut.TestCase):
                         new_ks = list(range(new_min_k, new_max_k + 1))
                         modified = header.modified(ks=new_ks)
                         self.assertIsInstance(modified, ClustHeader)
-                        self.assertEqual(modified,
-                                         make_header(ks=new_ks))
+                        self.assertEqual(modified, make_header(ks=new_ks))
+                modified = header.modified(ks=[])
+                self.assertIsInstance(modified, ClustHeader)
+                self.assertEqual(modified, make_header(ks=[]))
                 self.assertRaisesRegex(
                     TypeError,
                     "Must give rels, ks, or both, but got neither",
                     header.modified,
-                    ks=[]
+                    ks=None
                 )
 
 
@@ -835,12 +786,21 @@ class TestRelClustHeader(ut.TestCase):
                 self.assertEqual(modified,
                                  make_header(rels=list("uiop"), ks=ks))
 
-    def test_modified_empty_rels(self):
+    def test_modified_rels_empty(self):
         for min_k in range(1, 4):
             for max_k in range(min_k, 6):
                 ks = list(range(min_k, max_k + 1))
                 header = RelClustHeader(rels=list("qwerty"), ks=ks)
                 modified = header.modified(rels=[])
+                self.assertIsInstance(modified, RelClustHeader)
+                self.assertEqual(modified, make_header(rels=[], ks=ks))
+
+    def test_modified_rels_none(self):
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                header = RelClustHeader(rels=list("qwerty"), ks=ks)
+                modified = header.modified(rels=None)
                 self.assertIsInstance(modified, ClustHeader)
                 self.assertEqual(modified, make_header(ks=ks))
 
@@ -858,13 +818,24 @@ class TestRelClustHeader(ut.TestCase):
                         self.assertEqual(modified,
                                          make_header(rels=rels, ks=new_ks))
 
-    def test_modified_empty_ks(self):
+    def test_modified_ks_empty(self):
         rels = list("qwerty")
         for min_k in range(1, 4):
             for max_k in range(min_k, 6):
                 ks = list(range(min_k, max_k + 1))
                 header = RelClustHeader(rels=rels, ks=ks)
                 modified = header.modified(ks=[])
+                self.assertIsInstance(modified, RelClustHeader)
+                self.assertEqual(modified,
+                                 make_header(rels=rels, ks=[]))
+
+    def test_modified_ks_none(self):
+        rels = list("qwerty")
+        for min_k in range(1, 4):
+            for max_k in range(min_k, 6):
+                ks = list(range(min_k, max_k + 1))
+                header = RelClustHeader(rels=rels, ks=ks)
+                modified = header.modified(ks=None)
                 self.assertIsInstance(modified, RelHeader)
                 self.assertEqual(modified, make_header(rels=rels))
 
@@ -891,8 +862,8 @@ class TestRelClustHeader(ut.TestCase):
                     TypeError,
                     "Must give rels, ks, or both, but got neither",
                     header.modified,
-                    rels=[],
-                    ks=[]
+                    rels=None,
+                    ks=None
                 )
 
 
@@ -994,11 +965,11 @@ class TestMakeHeader(ut.TestCase):
 
 class TestParseHeader(ut.TestCase):
 
-    def test_none(self):
-        self.assertRaisesRegex(ValueError,
-                               "rels is empty",
-                               parse_header,
-                               pd.Index([]))
+    def test_empty(self):
+        header = parse_header(pd.Index([]))
+        self.assertIsInstance(header, RelHeader)
+        self.assertNotIsInstance(header, RelClustHeader)
+        self.assertListEqual(header.index.to_list(), [])
 
     def test_rel_index(self):
         header = parse_header(pd.Index(["a", "b"]))

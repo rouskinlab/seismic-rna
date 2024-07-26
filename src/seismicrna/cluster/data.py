@@ -20,7 +20,7 @@ from ..core.header import (NUM_CLUSTS_NAME,
                            list_clusts,
                            list_ks_clusts,
                            validate_ks)
-from ..core.report import ClustsBICF, BestKF
+from ..core.report import KsWrittenF, BestKF
 from ..joinbase.data import (BATCH_NUM,
                              READ_NUMS,
                              SEG_END5S,
@@ -62,7 +62,7 @@ class ClusterReadDataset(ClusterDataset, LoadedDataset):
 
     @cached_property
     def ks(self):
-        return validate_ks(self.report.get_field(ClustsBICF))
+        return validate_ks(self.report.get_field(KsWrittenF))
 
     @cached_property
     def best_k(self):

@@ -17,7 +17,7 @@ AVERAGE_PREFIX = "average"
 CLUSTER_PREFIX = "cluster"
 
 
-def validate_k_clust(k: int, clust: int, zero_ok: bool = False):
+def validate_k_clust(k: int, clust: int):
     """ Validate a pair of k and cluster numbers.
 
     Parameters
@@ -26,8 +26,6 @@ def validate_k_clust(k: int, clust: int, zero_ok: bool = False):
         Number of clusters
     clust: int
         Cluster number
-    zero_ok: bool = False
-        Allow k and clust to be 0.
 
     Returns
     -------
@@ -45,25 +43,22 @@ def validate_k_clust(k: int, clust: int, zero_ok: bool = False):
         raise TypeError(f"k must be int, but got {type(k).__name__}")
     if not isinstance(clust, int):
         raise TypeError(f"clust must be int, but got {type(clust).__name__}")
-    min_k = int(not zero_ok)
-    if k < min_k:
-        raise ValueError(f"k must be ≥ {min_k}, but got {k}")
-    min_clust = int(k > 0)
+    if k < 0:
+        raise ValueError(f"k must be ≥ 0, but got {k}")
+    min_clust = 1 if k > 0 else 0
     if clust < min_clust:
         raise ValueError(f"clust must be ≥ {min_clust}, but got {clust}")
     if clust > k:
         raise ValueError(f"clust must be ≤ k, but got {clust} > {k}")
 
 
-def validate_ks(ks: Iterable, empty_ok: bool = False):
+def validate_ks(ks: Iterable):
     """ Validate and sort numbers of clusters.
 
     Parameters
     ----------
     ks: Iterable
         Numbers of clusters
-    empty_ok: bool = False
-        Allow `ks` to be an empty iterable.
 
     Returns
     -------
@@ -82,20 +77,16 @@ def validate_ks(ks: Iterable, empty_ok: bool = False):
         if k in validated:
             raise ValueError(f"Duplicate k: {k}")
         validated.add(k)
-    if not validated and not empty_ok:
-        raise ValueError("ks is empty")
     return sorted(validated)
 
 
-def deduplicate_rels(rels: Iterable, empty_ok: bool = False):
+def deduplicate_rels(rels: Iterable):
     """ Remove duplicate relationships while preserving their order.
 
     Parameters
     ----------
     rels: Iterable
         Relationships
-    empty_ok: bool = False
-        Allow `rels` to be an empty iterable.
 
     Returns
     -------
@@ -108,12 +99,10 @@ def deduplicate_rels(rels: Iterable, empty_ok: bool = False):
         if rel not in unordered:
             ordered.append(rel)
             unordered.add(rel)
-    if not ordered and not empty_ok:
-        raise ValueError("rels is empty")
     return ordered
 
 
-def format_clust_name(k: int, clust: int, zero_ok: bool = False):
+def format_clust_name(k: int, clust: int):
     """ Format a pair of k and cluster numbers into a name.
 
     Parameters
@@ -122,20 +111,17 @@ def format_clust_name(k: int, clust: int, zero_ok: bool = False):
         Number of clusters
     clust: int
         Cluster number
-    zero_ok: bool = False
-        Allow k and clust to be 0.
 
     Returns
     -------
     str
         Name specifying k and clust, or "average" if k is 0.
     """
-    validate_k_clust(k, clust, zero_ok)
+    validate_k_clust(k, clust)
     return f"{CLUSTER_PREFIX} {k}-{clust}" if k > 0 else AVERAGE_PREFIX
 
 
 def format_clust_names(clusts: Iterable[tuple[int, int]],
-                       zero_ok: bool = False,
                        allow_duplicates: bool = False):
     """ Format pairs of k and clust into a list of names.
 
@@ -143,8 +129,6 @@ def format_clust_names(clusts: Iterable[tuple[int, int]],
     ----------
     clusts: Iterable[tuple[int, int]]
         Zero or more pairs of k and cluster numbers.
-    zero_ok: bool = False
-        Allow k and clust to be 0.
     allow_duplicates: bool = False
         Allow k and clust pairs to be duplicated.
 
@@ -162,8 +146,7 @@ def format_clust_names(clusts: Iterable[tuple[int, int]],
         counts = Counter(clusts := list(clusts))
         if dups := [clust for clust, count in counts.items() if count > 1]:
             raise ValueError(f"Duplicate clusters: {dups}")
-    return [format_clust_name(k, clust, zero_ok=zero_ok)
-            for k, clust in clusts]
+    return [format_clust_name(k, clust) for k, clust in clusts]
 
 
 def list_clusts(k: int):
@@ -324,11 +307,11 @@ class Header(ABC):
 
     def get_clust_header(self):
         """ Corresponding ClustHeader. """
-        return self.modified(rels=[])
+        return self.modified(rels=None)
 
     def get_rel_header(self):
         """ Corresponding RelHeader. """
-        return self.modified(ks=[])
+        return self.modified(ks=None)
 
     def __eq__(self, other):
         if self is other:
@@ -372,18 +355,7 @@ class RelHeader(Header):
             One or more relationships in the header.
         """
         super().__init__(**kwargs)
-        validated = list()
-        for rel in rels:
-            if not isinstance(rel, str):
-                raise ValueError(
-                    f"rel must be str, but got {type(rel).__name__}"
-                )
-            if rel in validated:
-                raise ValueError(f"Duplicate relationship: {repr(rel)}")
-            validated.append(rel)
-        if not validated:
-            raise ValueError(f"Got no relationships for {type(self).__name__}")
-        self._rels = validated
+        self._rels = deduplicate_rels(rels)
 
     @property
     def rels(self):
@@ -457,14 +429,16 @@ class RelClustHeader(ClustHeader, RelHeader):
                                          names=self.level_names())
 
 
-def make_header(*, rels: Iterable[str] = (), ks: Iterable[int] = ()):
+def make_header(*,
+                rels: Iterable[str] | None = None,
+                ks: Iterable[int] | None = None):
     """ Make a new Header of an appropriate type.
 
     Parameters
     ----------
-    rels: Iterable[str]
+    rels: Iterable[str] | None = None
         Relationships in the header
-    ks: Iterable[int]
+    ks: Iterable[int] | None = None
         Numbers of clusters
 
     Returns
@@ -472,13 +446,11 @@ def make_header(*, rels: Iterable[str] = (), ks: Iterable[int] = ()):
     Header
         Header of the appropriate type.
     """
-    rels = list(rels)
-    ks = list(ks)
-    if rels:
-        if ks:
+    if rels is not None:
+        if ks is not None:
             return RelClustHeader(rels=rels, ks=ks)
         return RelHeader(rels=rels)
-    if ks:
+    if ks is not None:
         return ClustHeader(ks=ks)
     raise TypeError("Must give rels, ks, or both, but got neither")
 
@@ -499,21 +471,21 @@ def parse_header(index: pd.Index | pd.MultiIndex):
     if isinstance(index, pd.MultiIndex):
         names = index.names
         if REL_NAME in names:
-            rels = deduplicate_rels(index.get_level_values(REL_NAME))
+            rels = list(map(str,
+                            deduplicate_rels(index.get_level_values(REL_NAME))))
         else:
-            rels = list()
+            rels = None
         if NUM_CLUSTS_NAME in names:
-            ks = np.unique(index.get_level_values(NUM_CLUSTS_NAME))
+            ks = list(map(int,
+                          np.unique(index.get_level_values(NUM_CLUSTS_NAME))))
         else:
-            ks = list()
+            ks = None
     elif index.name is None or index.name == REL_NAME:
         rels = deduplicate_rels(index.values)
-        ks = list()
+        ks = None
     else:
         raise ValueError(f"Expected index named {repr(REL_NAME)}, "
                          f"but got {repr(index.name)}")
-    rels = list(map(str, rels))
-    ks = list(map(int, ks))
     header = make_header(rels=rels, ks=ks)
     # Verify that the index of the new header matches the given index.
     if isinstance(index, pd.MultiIndex):

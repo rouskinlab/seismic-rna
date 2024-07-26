@@ -1,8 +1,14 @@
 from abc import ABC
+from pathlib import Path
+
+import pandas as pd
 
 from .batch import ClusterReadBatch
+from .compare import EMRunsK
 from ..core import path
+from ..core.header import ClustHeader
 from ..core.io import ReadBatchIO, SectIO
+from ..mask.data import MaskMutsDataset
 
 
 class ClusterIO(SectIO, ABC):
@@ -17,6 +23,43 @@ class ClusterBatchIO(ReadBatchIO, ClusterIO, ClusterReadBatch):
     @classmethod
     def file_seg_type(cls):
         return path.ClustBatSeg
+
+
+def write_batches(dataset: MaskMutsDataset,
+                  ks: list[EMRunsK],
+                  brotli_level: int,
+                  top: Path):
+    """ Write the cluster memberships to batch files. """
+    checksums = list()
+    read_nums = dict()
+
+    def get_read_nums(num: int):
+        if (nums := read_nums.get(num)) is not None:
+            return nums
+        for batch_ in dataset.iter_batches():
+            read_nums[batch_.batch] = batch_.read_nums
+        return read_nums[num]
+
+    # Filter the numbers of clusters to keep only those with at least
+    # one successful run.
+    ks = [runs for runs in ks if runs.best is not None]
+    # Write each cluster batch.
+    for batch_num in dataset.batch_nums:
+        resps = [runs.best.get_resps(batch_num) for runs in ks]
+        if resps:
+            resps = pd.concat(resps, axis=1)
+        else:
+            resps = pd.DataFrame(index=get_read_nums(batch_num),
+                                 columns=ClustHeader(ks=[]).index)
+        batch = ClusterBatchIO(sample=dataset.sample,
+                               ref=dataset.ref,
+                               sect=dataset.sect,
+                               batch=batch_num,
+                               resps=resps)
+        _, checksum = batch.save(top, brotli_level=brotli_level)
+        checksums.append(checksum)
+    ks_written = [runs.k for runs in ks]
+    return checksums, ks_written
 
 ########################################################################
 #                                                                      #

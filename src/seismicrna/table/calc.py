@@ -228,7 +228,10 @@ class ClustTabulator(PartialTabulator):
 
     @property
     def ks(self):
-        return self.dataset.ks
+        ks = self.dataset.ks
+        if not ks:
+            raise ValueError(f"Cannot tabulate {self.dataset} with no clusters")
+        return ks
 
     @cached_property
     def clust_header(self):
@@ -283,19 +286,6 @@ def _insert_masked(p_mut: pd.Series | pd.DataFrame,
     return p_mut.values.reshape((section.length, -1))
 
 
-def _k_indices(k: int, ks: list[int]):
-    """ First and last indices of k in the array. """
-    first = 0
-    for ki in ks:
-        if ki == k:
-            break
-        first += ki
-    else:
-        raise ValueError(f"k={k} is not in {ks}")
-    last = first + k
-    return first, last
-
-
 def adjust_counts(table_per_pos: pd.DataFrame,
                   p_ends_given_noclose: np.ndarray,
                   n_reads_clust: pd.Series | int,
@@ -304,8 +294,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
                   quick_unbias: bool,
                   quick_unbias_thresh: float):
     """ Adjust the given table of masked/clustered counts per position
-    to correct for observer bias.
-    """
+    to correct for observer bias. """
     # Determine which positions are unmasked.
     unmask = section.unmasked_bool
     # Calculate the fraction of mutations at each position among reads
@@ -359,7 +348,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
         # for each k.
         n_reads_noclose_ks = n_reads_clust.groupby(level=NUM_CLUSTS_NAME).sum()
         # Determine the numbers of clusters.
-        ks = validate_ks(map(int, n_reads_noclose_ks.index.values))
+        ks = validate_ks(n_reads_noclose_ks.index.values)
         # Calculate the parameters for each k separately.
         p_mut = np.empty_like(p_mut_given_noclose)
         p_clust = np.empty_like(n_reads_clust.values)

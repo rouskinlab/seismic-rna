@@ -8,7 +8,7 @@ from functools import cache
 from inspect import getmembers
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Hashable, Callable
+from typing import Any, Callable, Hashable, Iterable
 
 import numpy as np
 from click import Option
@@ -79,7 +79,7 @@ from .arg import (opt_phred_enc,
                   opt_min_pearson_vs_best,
                   opt_max_nrmsd_vs_best,
                   opt_try_all_ks,
-                  opt_keep_all_ks,
+                  opt_write_all_ks,
                   opt_mask_gu,
                   opt_mask_polya,
                   opt_mask_discontig,
@@ -194,10 +194,6 @@ def iconv_array_int(nums: list[int]):
     return np.asarray(nums, dtype=int)
 
 
-def oconv_array_int(nums: np.ndarray):
-    return list(map(int, nums))
-
-
 def iconv_dict_str_int(mapping: dict[Any, Any]) -> dict[str, int]:
     return {str(key): int(value) for key, value in mapping.items()}
 
@@ -213,51 +209,46 @@ def iconv_dict_str_dict_int_dict_int_int(
 
 @cache
 def get_oconv_float(precision: int = DECIMAL_PRECISION):
-    def oconv_float(num: float):
-        return round(num, precision)
+    def oconv_float(num):
+        return float(round(num, precision))
 
     return oconv_float
 
 
 @cache
-def get_oconv_list_float(precision: int = DECIMAL_PRECISION):
-    oconv_float = get_oconv_float(precision)
+def get_oconv_list(dtype: type, precision: int = DECIMAL_PRECISION):
+    if dtype is float:
+        oconv_func = get_oconv_float(precision)
+    else:
+        oconv_func = dtype
 
-    def oconv_list_float(nums: list[float]) -> list[float]:
-        return list(map(oconv_float, nums))
+    def oconv_list(nums: Iterable):
+        return list(map(oconv_func, nums))
 
-    return oconv_list_float
-
-
-@cache
-def get_oconv_array_float(precision: int = DECIMAL_PRECISION):
-    oconv_list_float = get_oconv_list_float(precision)
-
-    def oconv_array_float(nums: np.array):
-        return oconv_list_float(nums.tolist())
-
-    return oconv_array_float
+    return oconv_list
 
 
 @cache
-def get_oconv_dict_float(precision: int = DECIMAL_PRECISION):
-    oconv_float = get_oconv_float(precision)
+def get_oconv_dict(dtype: type, precision: int = DECIMAL_PRECISION):
+    if dtype is float:
+        oconv_func = get_oconv_float(precision)
+    else:
+        oconv_func = dtype
 
-    def oconv_dict_float(dnum: dict[Hashable, float]) -> dict[Hashable, float]:
-        return {d: oconv_float(num) for d, num in dnum.items()}
+    def oconv_dict(dnum: dict):
+        return {d: oconv_func(num) for d, num in dnum.items()}
 
-    return oconv_dict_float
+    return oconv_dict
 
 
 @cache
-def get_oconv_dict_list_float(precision: int = DECIMAL_PRECISION):
-    oconv_list_float = get_oconv_list_float(precision)
+def get_oconv_dict_list(dtype: type, precision: int = DECIMAL_PRECISION):
+    oconv_list = get_oconv_list(dtype, precision=precision)
 
-    def oconv_dict_list_float(dnums: dict[Hashable, list[float]]
-                              ) -> dict[Hashable, list[float]]:
-        return {d: oconv_list_float(nums) for d, nums in dnums.items()}
+    def oconv_dict_list(dnums: dict[Hashable, Iterable]):
+        return {d: oconv_list(nums) for d, nums in dnums.items()}
 
-    return oconv_dict_list_float
+    return oconv_dict_list
 
 
 def iconv_datetime(text: str):
@@ -383,7 +374,7 @@ ExclUserPosF = Field("mask_pos",
                      "Mask additional positions from a list",
                      np.ndarray,
                      iconv=iconv_array_int,
-                     oconv=oconv_array_int)
+                     oconv=get_oconv_list(int))
 MinNInfoPosF = OptionField(opt_min_ninfo_pos)
 MaxFMutPosF = OptionField(opt_max_fmut_pos)
 MinNCovReadF = OptionField(opt_min_ncov_read)
@@ -397,32 +388,32 @@ PosCutPolyAF = Field("pos_polya",
                      "Positions in stretches of consecutive A bases",
                      np.ndarray,
                      iconv=iconv_array_int,
-                     oconv=oconv_array_int)
+                     oconv=get_oconv_list(int))
 PosCutGUF = Field("pos_gu",
                   "Positions with G or U bases",
                   np.ndarray,
                   iconv=iconv_array_int,
-                  oconv=oconv_array_int)
+                  oconv=get_oconv_list(int))
 PosCutListF = Field("pos_list",
                     "Positions masked from a list",
                     np.ndarray,
                     iconv=iconv_array_int,
-                    oconv=oconv_array_int)
+                    oconv=get_oconv_list(int))
 PosCutLoInfoF = Field("pos_min_ninfo",
                       "Positions with too few unambiguous base calls",
                       np.ndarray,
                       iconv=iconv_array_int,
-                      oconv=oconv_array_int)
+                      oconv=get_oconv_list(int))
 PosCutHiMutF = Field("pos_max_fmut",
                      "Positions with too many mutations",
                      np.ndarray,
                      iconv=iconv_array_int,
-                     oconv=oconv_array_int)
+                     oconv=get_oconv_list(int))
 PosKeptF = Field("pos_kept",
                  "Positions kept after masking",
                  np.ndarray,
                  iconv=iconv_array_int,
-                 oconv=oconv_array_int)
+                 oconv=get_oconv_list(int))
 NumPosInitF = Field("n_pos_init",
                     "Total number of positions in the section",
                     int)
@@ -485,50 +476,57 @@ MaxLogLikeVsBestF = OptionField(opt_max_loglike_vs_best)
 MinPearsonVsBestF = OptionField(opt_min_pearson_vs_best)
 MaxNRMSDVsBestF = OptionField(opt_max_nrmsd_vs_best)
 TryAllKsF = OptionField(opt_try_all_ks)
-KeepAllKsF = OptionField(opt_keep_all_ks)
+WriteAllKsF = OptionField(opt_write_all_ks)
 ClustNumRunsF = OptionField(opt_em_runs)
 NOCONV = 0  # Number indicating a run did not converge
+EMRunPassingF = Field("em_run_passing",
+                      f"Whether each EM run passed filters",
+                      dict,
+                      iconv=iconv_int_keys,
+                      oconv=get_oconv_dict_list(bool))
+EMKPassingF = Field("em_k_passing",
+                    f"Whether each number of clusters (K) passed filters",
+                    dict,
+                    iconv=iconv_int_keys,
+                    oconv=get_oconv_dict(bool))
 ClustsConvF = Field("converged",
                     f"Iterations for each run ({NOCONV} if did not converge)",
                     dict,
-                    dict(),
-                    iconv=iconv_int_keys)
+                    iconv=iconv_int_keys,
+                    oconv=get_oconv_dict_list(int))
 ClustsLogLikesF = Field("log_likes",
                         "Final log likelihood for each run",
                         dict,
-                        dict(),
                         iconv=iconv_int_keys,
-                        oconv=get_oconv_dict_list_float())
+                        oconv=get_oconv_dict_list(float))
 ClustsNRMSDVs0F = Field("nrmsds_vs_best",
                         "NRMSD of each run versus the best run",
                         dict,
-                        dict(),
                         iconv=iconv_int_keys,
-                        oconv=get_oconv_dict_list_float())
+                        oconv=get_oconv_dict_list(float))
 ClustsPearsonVs0F = Field("pearsons_vs_best",
                           "Pearson correlation of each run versus the best run",
                           dict,
-                          dict(),
                           iconv=iconv_int_keys,
-                          oconv=get_oconv_dict_list_float())
+                          oconv=get_oconv_dict_list(float))
 MinNRMDSsF = Field("min_nrmsds",
                    "Minimum NRMSD between any two clusters",
                    dict,
-                   dict(),
                    iconv=iconv_int_keys,
-                   oconv=get_oconv_dict_list_float())
+                   oconv=get_oconv_dict_list(float))
 MaxPearsonsF = Field("max_pearsons",
                      "Maximum Pearson correlation between any two clusters",
                      dict,
-                     dict(),
                      iconv=iconv_int_keys,
-                     oconv=get_oconv_dict_list_float())
-ClustsBICF = Field("bic",
-                   "Bayesian information criterion for each number of clusters",
-                   dict,
-                   dict(),
-                   iconv=iconv_int_keys,
-                   oconv=get_oconv_dict_float())
+                     oconv=get_oconv_dict_list(float))
+ClustsBICsF = Field("bics",
+                    "Bayesian information criterion for each run",
+                    dict,
+                    iconv=iconv_int_keys,
+                    oconv=get_oconv_dict_list(float))
+KsWrittenF = Field("ks_written",
+                   "Numbers of clusters written to batches",
+                   list)
 BestKF = Field("best_k", "Best number of clusters", int)
 
 # Join fields
