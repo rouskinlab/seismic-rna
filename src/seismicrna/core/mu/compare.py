@@ -152,7 +152,7 @@ def calc_spearman(mus1: np.ndarray | pd.Series | pd.DataFrame,
     return calc_pearson(calc_ranks(mus1), calc_ranks(mus2))
 
 
-def _get_comp_method(key: str):
+def get_comp_method(key: str):
     """ Get a comparison method based on its key. """
     lowerkey = key.lower()
     if lowerkey == KEY_NRMSD:
@@ -179,7 +179,7 @@ def get_comp_func(key: str) -> Callable:
     Callable
         Function to compare mutation rates.
     """
-    func, _ = _get_comp_method(key)
+    func, _ = get_comp_method(key)
     return func
 
 
@@ -196,7 +196,7 @@ def get_comp_name(key: str) -> str:
     str
         Name of the comparison method.
     """
-    _, name = _get_comp_method(key)
+    _, name = get_comp_method(key)
     return name
 
 

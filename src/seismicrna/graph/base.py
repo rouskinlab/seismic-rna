@@ -115,6 +115,23 @@ def cgroup_table(table: Table, cgroup: str):
     raise ValueError(f"Invalid value for cgroup: {repr(cgroup)}")
 
 
+class Annotation(object):
+
+    def __init__(self,
+                 row: int,
+                 col: int,
+                 x: float,
+                 y: float,
+                 text: str,
+                 **kwargs):
+        self.row = row
+        self.col = col
+        self.x = x
+        self.y = y
+        self.text = text
+        self.kwargs = kwargs
+
+
 class GraphBase(ABC):
 
     @classmethod
@@ -306,6 +323,11 @@ class GraphBase(ABC):
         """ Title of the y-axis. """
 
     @property
+    def annotations(self) -> list[Annotation]:
+        """ Text annotations for the figure. """
+        return list()
+
+    @property
     def _subplots_params(self):
         return dict(rows=self.nrows,
                     cols=self.ncols,
@@ -337,12 +359,23 @@ class GraphBase(ABC):
                             linecolor="#000000",
                             autorange=True)
 
+    def _figure_annot(self, figure: go.Figure):
+        """ Annotate the figure. """
+        for annotation in self.annotations:
+            figure.add_annotation(row=annotation.row,
+                                  col=annotation.col,
+                                  x=annotation.x,
+                                  y=annotation.y,
+                                  text=annotation.text,
+                                  **annotation.kwargs)
+
     @cached_property
     def figure(self):
         """ Figure object. """
         figure = self._figure_init()
         self._figure_data(figure)
         self._figure_layout(figure)
+        self._figure_annot(figure)
         return figure
 
     def write_csv(self, force: bool):
