@@ -102,7 +102,7 @@ def fold_section(rna: RNAProfile, *,
                             fold_percent=fold_percent,
                             began=began,
                             ended=ended)
-        report.save(out_dir)
+        report.save(out_dir, force=True)
     return report_file
 
 

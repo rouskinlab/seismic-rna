@@ -509,14 +509,14 @@ def format_retitled_ct_line(length: int, ref: str, uniqid: int, energy: float):
     ref: str
         Name of the reference.
     energy: float
-        Free energy of folding.
+        Free energy of folding (kcal/mol).
 
     Returns
     -------
     str
         Formatted CT title line.
     """
-    return f"{length}\t{ref} #{uniqid}: {energy}\n"
+    return f"{length}\t{ref} #{uniqid}: {energy} kcal/mol\n"
 
 
 def retitle_ct(ct_input: Path, ct_output: Path, force: bool = False):

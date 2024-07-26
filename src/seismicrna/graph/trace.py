@@ -6,12 +6,14 @@ from plotly import graph_objects as go
 from .color import ColorMap
 from .hist import COUNT_NAME, LOWER_NAME, UPPER_NAME
 from ..core.header import REL_NAME
+from ..core.rna import compute_auc
 from ..core.seq import BASE_NAME, POS_NAME, DNA
 
 logger = getLogger(__name__)
 
 # Number of digits behind the decimal point to be kept.
 PRECISION = 6
+AUC_PRECISION = 3
 
 
 def get_seq_base_scatter_trace(xdata: pd.Series,
@@ -147,14 +149,18 @@ def iter_seq_line_traces(data: pd.Series, *_, **__):
     yield get_seq_line_trace(data)
 
 
-def _format_profile_struct(profile: str, struct: str):
-    return f"{profile}, {struct}"
+def _format_profile_struct(profile: str, struct: str, auc: float | None = None):
+    text = f"{profile}, {struct}"
+    if auc is not None:
+        text = f"{text} (AUC = {round(auc, AUC_PRECISION)})"
+    return text
 
 
 def get_roc_trace(fpr: pd.Series, tpr: pd.Series, profile: str, struct: str):
-    return go.Scatter(x=fpr,
-                      y=tpr,
-                      name=_format_profile_struct(profile, struct))
+    name = _format_profile_struct(profile,
+                                  struct,
+                                  compute_auc(fpr.values, tpr.values))
+    return go.Scatter(x=fpr, y=tpr, name=name)
 
 
 def iter_roc_traces(fprs: pd.DataFrame, tprs: pd.DataFrame, profile: str):
