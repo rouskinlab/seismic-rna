@@ -26,7 +26,7 @@ def _add_to_rel(added: pd.Series | pd.DataFrame, frame: pd.DataFrame, rel: str):
 def accumulate(batches: Iterable[SectionMutsBatch],
                refseq: DNA,
                patterns: dict[str, RelPattern], *,
-               ks: Iterable[int] = (),
+               ks: Iterable[int] | None = None,
                pos_nums: np.ndarray | None = None,
                per_read: bool = True,
                get_info: bool = True,
@@ -77,6 +77,10 @@ def accumulate(batches: Iterable[SectionMutsBatch],
         num_reads += batch.num_reads
         # Count the end coordinates.
         if end_counts is not None:
+            print("END COUNTS")
+            print(end_counts)
+            print("BATCH COUNTS")
+            print(batch.read_end_counts)
             end_counts = end_counts.add(batch.read_end_counts, fill_value=0.)
         # Count the positions and/or reads matching each pattern.
         if fits_per_read_per_batch is not None:
@@ -121,7 +125,7 @@ def accum_per_pos(batches: Iterable[SectionMutsBatch],
                   refseq: DNA,
                   pos_nums: np.ndarray,
                   patterns: dict[str, RelPattern],
-                  ks: Iterable[int] = ()):
+                  ks: Iterable[int] | None = None):
     """ Count reads with each relationship at each position in a section
     over multiple batches. """
     num_reads, (fpp, ipp), (_, __), ___ = accumulate(batches,
@@ -138,7 +142,7 @@ def accum_fits(batches: Iterable[SectionMutsBatch],
                refseq: DNA,
                pos_nums: np.ndarray,
                patterns: dict[str, RelPattern],
-               ks: Iterable[int] = ()):
+               ks: Iterable[int] | None = None):
     """ Count positions and reads fitting each relationship. """
     num_reads, (fpp, _), (fpr, __), ends = accumulate(batches,
                                                       refseq,

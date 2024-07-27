@@ -60,7 +60,7 @@ def make_tracks(header: Header, k: int | None, clust: int | None):
         return header.clusts
     # If there are any relationship names in the index, then drop them
     # and then select the k(s) and cluster(s) for the index.
-    return header.modified(rels=()).select(k=k, clust=clust)
+    return header.get_clust_header().select(k=k, clust=clust).to_list()
 
 
 def _track_count(tracks: list[tuple[int, int]] | None):
@@ -68,7 +68,7 @@ def _track_count(tracks: list[tuple[int, int]] | None):
 
 
 def _track_titles(tracks: list[tuple[int, int]] | None):
-    return (format_clust_names(tracks, zero_ok=True, allow_duplicates=False)
+    return (format_clust_names(tracks, allow_duplicates=False)
             if tracks is not None
             else None)
 

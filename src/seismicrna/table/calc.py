@@ -93,7 +93,7 @@ class Tabulator(ABC):
 
     @property
     @abstractmethod
-    def ks(self) -> list[int]:
+    def ks(self) -> list[int] | None:
         """ Numbers of clusters. """
 
     @cached_property
@@ -213,7 +213,7 @@ class AvgTabulator(Tabulator, ABC):
 
     @property
     def ks(self):
-        return list()
+        return None
 
 
 class RelateTabulator(FullTabulator, AvgTabulator):
