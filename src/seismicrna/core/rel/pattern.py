@@ -54,10 +54,11 @@ class HalfRelPattern(object):
         # is truthy, so short-circuit the OR and return the plain match.
         # If code matches ptrn_fancy, cls.ptrn_fancy.match(code.upper())
         # is truthy, so match becomes truthy and is returned.
-        if match := (cls.ptrn_plain.match(code.lower()) or
-                     cls.ptrn_fancy.match(code.upper())):
+        match = (cls.ptrn_plain.match(code.lower())
+                 or cls.ptrn_fancy.match(code.upper()))
+        if match:
             return match
-        raise ValueError(f"Failed to match code: '{code}'")
+        raise ValueError(f"Failed to match code: {repr(code)}")
 
     @classmethod
     def as_plain(cls, code: str):
@@ -129,7 +130,7 @@ class HalfRelPattern(object):
         # Check each pattern.
         for ref, pattern in patterns.items():
             if ref not in cls.ref_bases:
-                raise ValueError(f"Invalid reference base: '{ref}'")
+                raise ValueError(f"Invalid reference base: {repr(ref)}")
             if pattern & MATCH:
                 # The pattern has its match bit set to 1, so the code
                 # in which this ref base matches the read base counts.
@@ -244,7 +245,7 @@ class HalfRelPattern(object):
     @property
     def codes(self):
         """ Return the codes of the relationships counted. """
-        return list(self.decompile(self.patterns))
+        return sorted(self.decompile(self.patterns))
 
     def fits(self, base: str, rel: int):
         """ Test whether a relationship code fits the pattern. """
@@ -272,7 +273,6 @@ class HalfRelPattern(object):
 
 
 class RelPattern(object):
-
     __slots__ = "yes", "nos"
 
     @classmethod
@@ -307,7 +307,6 @@ class RelPattern(object):
         self.nos = nos
 
     def fits(self, base: str, rel: int):
-        """ """
         is_yes = self.yes.fits(base, rel)
         is_nos = self.nos.fits(base, rel)
         return is_yes != is_nos, is_yes
