@@ -18,22 +18,38 @@ SEGMENTS = "segments"
 PRECISION = 6
 
 
-def count_end_coords(end5s: np.ndarray,
-                     end3s: np.ndarray,
-                     weights: pd.DataFrame | None = None):
+def _count_end_coords(end5s: np.ndarray,
+                      end3s: np.ndarray):
     """ Count each pair of 5' and 3' end coordinates. """
+    uniq_ends, counts = np.unique(merge_read_ends(end5s, end3s),
+                                  return_counts=True,
+                                  axis=0)
+    return pd.Series(counts,
+                     pd.MultiIndex.from_arrays(uniq_ends.T, names=END_COORDS))
+
+
+def _count_end_coords_weights(end5s: np.ndarray,
+                              end3s: np.ndarray,
+                              weights: pd.DataFrame):
+    """ Count each pair of 5' and 3' end coordinates, with weights. """
     # Make a MultiIndex of all 5' and 3' coordinates.
     index = pd.MultiIndex.from_frame(pd.DataFrame(merge_read_ends(end5s,
                                                                   end3s),
                                                   columns=END_COORDS,
                                                   copy=False))
-    # Convert the read weights into a Series/DataFrame with that index.
-    if weights is not None:
-        weights = pd.DataFrame(weights.values, index, weights.columns)
-    else:
-        weights = pd.Series(1., index)
+    # Convert the read weights into a DataFrame with that index.
+    weights = pd.DataFrame(weights.values, index, weights.columns)
     # Sum the weights for each unique pair of 5'/3' coordinates.
     return weights.groupby(level=list(range(weights.index.nlevels))).sum()
+
+
+def count_end_coords(end5s: np.ndarray,
+                     end3s: np.ndarray,
+                     weights: pd.DataFrame | None = None):
+    """ Count each pair of 5' and 3' end coordinates. """
+    if weights is not None:
+        return _count_end_coords_weights(end5s, end3s, weights)
+    return _count_end_coords(end5s, end3s)
 
 
 @jit()

@@ -18,140 +18,102 @@ class TestCountEndCoords(ut.TestCase):
         end5s = np.array([], dtype=int)
         end3s = np.array([], dtype=int)
         result = count_end_coords(end5s, end3s)
+        expect = pd.Series(np.array([], dtype=int),
+                           pd.MultiIndex.from_arrays([np.array([], dtype=int),
+                                                      np.array([], dtype=int)],
+                                                     names=[END5_COORD,
+                                                            END3_COORD]))
         self.assertIsInstance(result, pd.Series)
-        self.assertEqual(result.size, 0)
-        self.assertIsInstance(result.index, pd.MultiIndex)
-        self.assertEqual(result.index.names, [END5_COORD, END3_COORD])
-        self.assertTrue(np.array_equal(
-            result.index.get_level_values(END5_COORD),
-            np.array([], dtype=int)
-        ))
-        self.assertTrue(np.array_equal(
-            result.index.get_level_values(END3_COORD),
-            np.array([], dtype=int)
-        ))
-        self.assertTrue(np.array_equal(
-            result.values,
-            np.array([])
-        ))
+        self.assertTrue(result.equals(expect))
 
     def test_length_1(self):
-        end5s = np.array([4], dtype=int)
-        end3s = np.array([6], dtype=int)
+        end5s = np.array([4])
+        end3s = np.array([6])
         result = count_end_coords(end5s, end3s)
+        expect = pd.Series(np.array([1]),
+                           pd.MultiIndex.from_arrays([np.array([4]),
+                                                      np.array([6])],
+                                                     names=[END5_COORD,
+                                                            END3_COORD]))
         self.assertIsInstance(result, pd.Series)
-        self.assertEqual(result.size, 1)
-        self.assertIsInstance(result.index, pd.MultiIndex)
-        self.assertEqual(result.index.names, [END5_COORD, END3_COORD])
-        self.assertTrue(np.array_equal(
-            result.index.get_level_values(END5_COORD),
-            np.array([4])
-        ))
-        self.assertTrue(np.array_equal(
-            result.index.get_level_values(END3_COORD),
-            np.array([6])
-        ))
-        self.assertTrue(np.array_equal(
-            result.values,
-            np.array([1])
-        ))
+        self.assertTrue(result.equals(expect))
 
     def test_length_2_diff(self):
-        end5s = np.array([4, 1], dtype=int)
-        end3s = np.array([6, 8], dtype=int)
+        end5s = np.array([4, 1])
+        end3s = np.array([6, 8])
         result = count_end_coords(end5s, end3s)
+        expect = pd.Series(np.array([1, 1]),
+                           pd.MultiIndex.from_arrays([np.array([1, 4]),
+                                                      np.array([8, 6])],
+                                                     names=[END5_COORD,
+                                                            END3_COORD]))
         self.assertIsInstance(result, pd.Series)
-        self.assertEqual(result.size, 2)
-        self.assertIsInstance(result.index, pd.MultiIndex)
-        self.assertEqual(result.index.names, [END5_COORD, END3_COORD])
-        self.assertTrue(np.array_equal(
-            result.index.get_level_values(END5_COORD),
-            np.array([1, 4])
-        ))
-        self.assertTrue(np.array_equal(
-            result.index.get_level_values(END3_COORD),
-            np.array([8, 6])
-        ))
-        self.assertTrue(np.array_equal(
-            result.values,
-            np.array([1, 1])
-        ))
+        self.assertTrue(result.equals(expect))
 
     def test_length_2_same(self):
-        end5s = np.array([4, 4], dtype=int)
-        end3s = np.array([6, 6], dtype=int)
+        end5s = np.array([4, 4])
+        end3s = np.array([6, 6])
         result = count_end_coords(end5s, end3s)
+        expect = pd.Series(np.array([2]),
+                           pd.MultiIndex.from_arrays([np.array([4]),
+                                                      np.array([6])],
+                                                     names=[END5_COORD,
+                                                            END3_COORD]))
         self.assertIsInstance(result, pd.Series)
-        self.assertEqual(result.size, 1)
-        self.assertIsInstance(result.index, pd.MultiIndex)
-        self.assertEqual(result.index.names, [END5_COORD, END3_COORD])
-        self.assertTrue(np.array_equal(
-            result.index.get_level_values(END5_COORD),
-            np.array([4])
-        ))
-        self.assertTrue(np.array_equal(
-            result.index.get_level_values(END3_COORD),
-            np.array([6])
-        ))
-        self.assertTrue(np.array_equal(
-            result.values,
-            np.array([2])
-        ))
+        self.assertTrue(result.equals(expect))
 
     def test_length_3_diff_weights(self):
-        end5s = np.array([4, 1, 0], dtype=int)
-        end3s = np.array([6, 8, 3], dtype=int)
+        end5s = np.array([4, 1, 0])
+        end3s = np.array([6, 8, 3])
         weights = pd.DataFrame(np.array([[2., 3.],
                                          [4., 5.],
                                          [6., 7.]]),
                                columns=["a", "b"])
         result = count_end_coords(end5s, end3s, weights)
+        expect = pd.DataFrame(weights.values[[2, 1, 0]],
+                              pd.MultiIndex.from_arrays([np.array([0, 1, 4]),
+                                                         np.array([3, 8, 6])],
+                                                        names=[END5_COORD,
+                                                               END3_COORD]),
+                              ["a", "b"])
         self.assertIsInstance(result, pd.DataFrame)
-        self.assertEqual(result.shape, weights.shape)
-        self.assertIsInstance(result.index, pd.MultiIndex)
-        self.assertEqual(result.index.names, [END5_COORD, END3_COORD])
-        self.assertTrue(np.array_equal(
-            result.index.get_level_values(END5_COORD),
-            np.array([0, 1, 4])
-        ))
-        self.assertTrue(np.array_equal(
-            result.index.get_level_values(END3_COORD),
-            np.array([3, 8, 6])
-        ))
-        self.assertEqual(result.columns.to_list(),
-                         weights.columns.to_list())
-        self.assertTrue(np.array_equal(
-            result.values,
-            weights.values[[2, 1, 0]]
-        ))
+        self.assertTrue(result.equals(expect))
 
     def test_length_3_same_weights(self):
-        end5s = np.array([4, 1, 4], dtype=int)
-        end3s = np.array([6, 8, 6], dtype=int)
+        end5s = np.array([4, 1, 4])
+        end3s = np.array([6, 8, 6])
         weights = pd.DataFrame(np.array([[2., 3.],
                                          [4., 5.],
                                          [6., 7.]]),
                                columns=["a", "b"])
         result = count_end_coords(end5s, end3s, weights)
+        expect = pd.DataFrame(np.array([[4., 5.],
+                                        [8., 10.]]),
+                              pd.MultiIndex.from_arrays([np.array([1, 4]),
+                                                         np.array([8, 6])],
+                                                        names=[END5_COORD,
+                                                               END3_COORD]),
+                              ["a", "b"])
         self.assertIsInstance(result, pd.DataFrame)
-        self.assertEqual(result.shape, (2, 2))
-        self.assertIsInstance(result.index, pd.MultiIndex)
-        self.assertEqual(result.index.names, [END5_COORD, END3_COORD])
-        self.assertTrue(np.array_equal(
-            result.index.get_level_values(END5_COORD),
-            np.array([1, 4])
-        ))
-        self.assertTrue(np.array_equal(
-            result.index.get_level_values(END3_COORD),
-            np.array([8, 6])
-        ))
-        self.assertEqual(result.columns.to_list(),
-                         weights.columns.to_list())
-        self.assertTrue(np.array_equal(
-            result.values,
-            np.array([[4., 5.],
-                      [8., 10.]])
-        ))
+        self.assertTrue(result.equals(expect))
+
+    def test_length_3_same_weights_int(self):
+        end5s = np.array([4, 1, 4])
+        end3s = np.array([6, 8, 6])
+        weights = pd.DataFrame(np.array([[2, 3],
+                                         [4, 5],
+                                         [6, 7]]),
+                               columns=["a", "b"])
+        result = count_end_coords(end5s, end3s, weights)
+        expect = pd.DataFrame(np.array([[4, 5],
+                                        [8, 10]]),
+                              pd.MultiIndex.from_arrays([np.array([1, 4]),
+                                                         np.array([8, 6])],
+                                                        names=[END5_COORD,
+                                                               END3_COORD]),
+                              ["a", "b"])
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertTrue(result.equals(expect))
 
 
 class TestCalcUniqReadWeights(ut.TestCase):
