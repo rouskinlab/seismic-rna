@@ -77,10 +77,6 @@ def accumulate(batches: Iterable[SectionMutsBatch],
         num_reads += batch.num_reads
         # Count the end coordinates.
         if end_counts is not None:
-            print("END COUNTS")
-            print(end_counts)
-            print("BATCH COUNTS")
-            print(batch.read_end_counts)
             end_counts = end_counts.add(batch.read_end_counts, fill_value=0.)
         # Count the positions and/or reads matching each pattern.
         if fits_per_read_per_batch is not None:
