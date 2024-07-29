@@ -77,7 +77,9 @@ def accumulate(batches: Iterable[SectionMutsBatch],
         num_reads += batch.num_reads
         # Count the end coordinates.
         if end_counts is not None:
-            end_counts = end_counts.add(batch.read_end_counts, fill_value=0.)
+            end_counts = end_counts.add(batch.read_end_counts,
+                                        fill_value=zero).astype(dtype,
+                                                                copy=False)
         # Count the positions and/or reads matching each pattern.
         if fits_per_read_per_batch is not None:
             fits_per_read_per_batch.append(pd.DataFrame(zero,
