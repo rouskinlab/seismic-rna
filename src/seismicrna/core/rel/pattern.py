@@ -307,11 +307,14 @@ class RelPattern(object):
         self.nos = nos
 
     def fits(self, base: str, rel: int):
+        """ Check whether the base and relationship give a definitive
+        result and whether they fit the pattern. """
         is_yes = self.yes.fits(base, rel)
         is_nos = self.nos.fits(base, rel)
         return is_yes != is_nos, is_yes
 
     def intersect(self, other: RelPattern | None, invert: bool = False):
+        """ Intersect the pattern with another. """
         if other is not None:
             yes = self.yes.intersect(other.yes)
             nos = self.nos.intersect(other.nos)
@@ -319,6 +322,10 @@ class RelPattern(object):
             yes = self.yes
             nos = self.nos
         return self.__class__(nos, yes) if invert else self.__class__(yes, nos)
+
+    def invert(self):
+        """ Swap the `yes` and `nos` patterns. """
+        return self.__class__(self.nos, self.yes)
 
     def __str__(self):
         return f"{type(self).__name__}  +[{self.yes}]  -[{self.nos}]"

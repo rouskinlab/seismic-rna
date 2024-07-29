@@ -270,8 +270,7 @@ class SectionMutsBatch(MutsBatch, ABC):
         pattern in each read. """
         return calc_count_per_read(pattern,
                                    self.cover_per_read,
-                                   self.rels_per_read,
-                                   self.read_weights)
+                                   self.rels_per_read)
 
     def reads_noclose_muts(self, pattern: RelPattern, min_gap: int):
         """ List the reads with no two mutations too close. """

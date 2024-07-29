@@ -365,29 +365,16 @@ def calc_count_per_pos(pattern: RelPattern,
 
 def calc_count_per_read(pattern: RelPattern,
                         cover_per_read: pd.DataFrame,
-                        rels_per_read: dict[int, pd.DataFrame],
-                        read_weights: pd.DataFrame | None = None):
+                        rels_per_read: dict[int, pd.DataFrame]):
     """ Count the positions that fit a pattern in each read. """
     read_nums = cover_per_read.index
-    if read_weights is not None:
-        zero = 0.
-        array_type = pd.DataFrame
-        array_indexes = dict(index=read_nums, columns=read_weights.columns)
-    else:
-        zero = 0
-        array_type = pd.Series
-        array_indexes = dict(index=read_nums)
-    info = array_type(zero, **array_indexes)
-    fits = array_type(zero, **array_indexes)
+    info = pd.Series(0, index=read_nums)
+    fits = pd.Series(0, index=read_nums)
     for rel, rel_counts in rels_per_read.items():
         for base, base_counts in rel_counts.items():
             is_info, is_fits = pattern.fits(str(base), rel)
             if is_info:
-                if read_weights is not None:
-                    read_counts = (read_weights.values
-                                   * base_counts.values[:, np.newaxis])
-                else:
-                    read_counts = base_counts.values
+                read_counts = base_counts.values
                 info += read_counts
                 if is_fits:
                     fits += read_counts

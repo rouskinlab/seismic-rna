@@ -15,7 +15,6 @@ from .base import (Table,
                    MaskPosTable,
                    MaskReadTable,
                    ClustPosTable,
-                   ClustReadTable,
                    ClustFreqTable)
 from ..core import path
 from ..core.header import parse_header
@@ -104,10 +103,6 @@ class ClustPosTableLoader(PosTableLoader, ClustPosTable):
     """ Load cluster data indexed by position. """
 
 
-class ClustReadTableLoader(ReadTableLoader, ClustReadTable):
-    """ Load cluster data indexed by read. """
-
-
 class ClustFreqTableLoader(TableLoader, ClustFreqTable):
     """ Load cluster data indexed by cluster. """
 
@@ -130,7 +125,7 @@ class ClustFreqTableLoader(TableLoader, ClustFreqTable):
 
 
 POS_LOADS = RelPosTableLoader, MaskPosTableLoader, ClustPosTableLoader
-READ_LOADS = RelReadTableLoader, MaskReadTableLoader, ClustReadTableLoader
+READ_LOADS = RelReadTableLoader, MaskReadTableLoader
 FREQ_LOADS = ClustFreqTableLoader,
 
 

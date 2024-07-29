@@ -38,6 +38,7 @@ def accumulate(batches: Iterable[SectionMutsBatch],
     # Initialize the total read counts and end coordinate counts.
     if header.clustered():
         dtype = float
+        rel_header = header.get_rel_header()
         clust_index = header.get_clust_header().index
         num_reads = pd.Series(0, index=clust_index)
         end_counts = (pd.DataFrame(index=end_counts_index,
@@ -46,6 +47,7 @@ def accumulate(batches: Iterable[SectionMutsBatch],
                       if count_ends else None)
     else:
         dtype = int
+        rel_header = header
         num_reads = 0
         end_counts = (pd.Series(index=end_counts_index,
                                 dtype=dtype)
@@ -55,15 +57,20 @@ def accumulate(batches: Iterable[SectionMutsBatch],
     if pos_nums is not None:
         index_per_pos = seq_pos_to_index(refseq, pos_nums, 1)
         fits_per_pos = pd.DataFrame(zero, index_per_pos, header.index)
-        info_per_pos = (pd.DataFrame(zero, index_per_pos, header.index)
-                        if get_info else None)
+        if get_info:
+            info_per_pos = pd.DataFrame(zero, index_per_pos, header.index)
+        else:
+            info_per_pos = None
     else:
         fits_per_pos = None
         info_per_pos = None
     # Initialize the counts per read.
     if per_read:
         fits_per_read_per_batch = list()
-        info_per_read_per_batch = list() if get_info else None
+        if get_info:
+            info_per_read_per_batch = list()
+        else:
+            info_per_read_per_batch = None
     else:
         fits_per_read_per_batch = None
         info_per_read_per_batch = None
@@ -82,13 +89,13 @@ def accumulate(batches: Iterable[SectionMutsBatch],
                                                                 copy=False)
         # Count the positions and/or reads matching each pattern.
         if fits_per_read_per_batch is not None:
-            fits_per_read_per_batch.append(pd.DataFrame(zero,
+            fits_per_read_per_batch.append(pd.DataFrame(0,
                                                         batch.batch_read_index,
-                                                        header.index))
+                                                        rel_header.index))
         if info_per_read_per_batch is not None:
-            info_per_read_per_batch.append(pd.DataFrame(zero,
+            info_per_read_per_batch.append(pd.DataFrame(0,
                                                         batch.batch_read_index,
-                                                        header.index))
+                                                        rel_header.index))
         for column, pattern in patterns.items():
             if fits_per_pos is not None:
                 # Count the matching reads per position.
@@ -108,7 +115,7 @@ def accumulate(batches: Iterable[SectionMutsBatch],
             if data_per_read_per_batch:
                 # Concatenate the per-read counts for the batches.
                 return pd.concat(data_per_read_per_batch, axis=0)
-            return pd.DataFrame(columns=header.index, dtype=dtype)
+            return pd.DataFrame(columns=rel_header.index, dtype=dtype)
         return None
 
     return (num_reads,

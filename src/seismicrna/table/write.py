@@ -11,7 +11,6 @@ from .base import (Table,
                    MaskPosTable,
                    MaskReadTable,
                    ClustPosTable,
-                   ClustReadTable,
                    ClustFreqTable)
 from .calc import (Tabulator,
                    AvgTabulator,
@@ -104,10 +103,6 @@ class ClustPosTableWriter(PosTableWriter, ClustPosTable):
     pass
 
 
-class ClustReadTableWriter(ReadTableWriter, ClustReadTable):
-    pass
-
-
 class ClustFreqTableWriter(TableWriter, ClustFreqTable):
 
     @cached_property
@@ -123,7 +118,7 @@ def get_tabulator_writer_types(tabulator: Tabulator):
     if isinstance(tabulator, MaskTabulator):
         return MaskPosTableWriter, MaskReadTableWriter
     if isinstance(tabulator, ClustTabulator):
-        return ClustPosTableWriter, ClustReadTableWriter, ClustFreqTableWriter
+        return ClustPosTableWriter, ClustFreqTableWriter
     raise TypeError(f"Invalid tabulator type: {type(tabulator).__name__}")
 
 

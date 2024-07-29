@@ -7,9 +7,12 @@ from seismicrna.core.batch.count import (calc_coverage,
                                          _calc_uniq_read_weights,
                                          count_end_coords,
                                          calc_rels_per_pos,
-                                         calc_rels_per_read)
+                                         calc_rels_per_read,
+                                         calc_count_per_pos,
+                                         calc_count_per_read)
 from seismicrna.core.batch.ends import END5_COORD, END3_COORD
 from seismicrna.core.batch.read import calc_inverse
+from seismicrna.core.rel import HalfRelPattern, RelPattern
 from seismicrna.core.seq.section import SEQ_INDEX_NAMES, seq_pos_to_index
 from seismicrna.core.seq.xna import DNA
 
@@ -990,6 +993,216 @@ class TestCalcRelsPerRead(ut.TestCase):
             self.assertTrue(rres.equals(
                 pd.DataFrame(rexp, read_nums, ["A", "C", "G", "T"])
             ))
+
+
+class TestCalcCountPerPos(ut.TestCase):
+
+    def test_average(self):
+        """
+              11  13  14  15
+        Read   A   C   G   T
+        --------------------
+           0   1  64   1 255
+           1 255 255   1 255
+           5 128   1   1  16
+           6 255   1   1  17
+           7   1  64   1 255
+           9 128   1   1   1
+          10   1   1   1 255
+          11   1   1   1   1
+          14  64   3   1   1
+          16 255 255   1   1
+        """
+        positions = seq_pos_to_index(DNA("ANCGT"), [11, 13, 14, 15], 11)
+        mutations = {11: {64: np.array([14]),
+                          128: np.array([5, 9])},
+                     13: {3: np.array([14]),
+                          64: np.array([0, 7])},
+                     14: {},
+                     15: {16: np.array([5]),
+                          17: np.array([6])}}
+        num_reads = 10
+        cover_per_pos = pd.Series([7, 8, 10, 6], positions)
+        rels_per_pos = calc_rels_per_pos(mutations,
+                                         num_reads,
+                                         cover_per_pos)
+        pattern = RelPattern.muts()
+        iexp = pd.Series([7, 7, 10, 5], positions)
+        fexp = pd.Series([3, 2, 0, 1], positions)
+        info, fits = calc_count_per_pos(pattern, cover_per_pos, rels_per_pos)
+        self.assertIsInstance(info, pd.Series)
+        self.assertTrue(info.equals(iexp))
+        self.assertIsInstance(fits, pd.Series)
+        self.assertTrue(fits.equals(fexp))
+        pattern = RelPattern.muts().invert()
+        iexp = pd.Series([7, 7, 10, 5], positions)
+        fexp = pd.Series([4, 5, 10, 4], positions)
+        info, fits = calc_count_per_pos(pattern, cover_per_pos, rels_per_pos)
+        self.assertIsInstance(info, pd.Series)
+        self.assertTrue(info.equals(iexp))
+        self.assertIsInstance(fits, pd.Series)
+        self.assertTrue(fits.equals(fexp))
+
+    def test_clusters(self):
+        """
+              11  13  14  15
+        Read   A   C   G   T
+        --------------------
+           0   1  64   1 255
+           1 255 255   1 255
+           5 128   1   1  16
+           6 255   1   1  17
+           7   1  64   1 255
+           9 128   1   1   1
+          10   1   1   1 255
+          11   1   1   1   1
+          14  64   3   1   1
+          16 255 255   1   1
+        """
+        positions = seq_pos_to_index(DNA("ANCGT"), [11, 13, 14, 15], 11)
+        mutations = {11: {64: np.array([14]),
+                          128: np.array([5, 9])},
+                     13: {3: np.array([14]),
+                          64: np.array([0, 7])},
+                     14: {},
+                     15: {16: np.array([5]),
+                          17: np.array([6])}}
+        cover_per_pos = pd.DataFrame([[3.9, 3.1],
+                                      [4.3, 3.7],
+                                      [5.5, 4.5],
+                                      [4.0, 2.0]],
+                                     positions,
+                                     ["a", "b"])
+        read_nums = np.array([0, 1, 5, 6, 7, 9, 10, 11, 14, 16])
+        read_indexes = calc_inverse(read_nums)
+        read_weights = pd.DataFrame([[0.1, 0.9],
+                                     [0.2, 0.8],
+                                     [0.3, 0.7],
+                                     [0.4, 0.6],
+                                     [0.5, 0.5],
+                                     [0.6, 0.4],
+                                     [0.7, 0.3],
+                                     [0.8, 0.2],
+                                     [0.9, 0.1],
+                                     [1.0, 0.0]],
+                                    index=read_nums,
+                                    columns=["a", "b"])
+        num_reads = read_weights.sum(axis=0)
+        rels_per_pos = calc_rels_per_pos(mutations,
+                                         num_reads,
+                                         cover_per_pos,
+                                         read_indexes,
+                                         read_weights)
+        pattern = RelPattern.muts()
+        iexp = pd.DataFrame([[3.9, 3.1],
+                             [3.4, 3.6],
+                             [5.5, 4.5],
+                             [3.6, 1.4]],
+                            positions,
+                            ["a", "b"])
+        fexp = pd.DataFrame([[1.8, 1.2],
+                             [0.6, 1.4],
+                             [0.0, 0.0],
+                             [0.3, 0.7]],
+                            positions,
+                            ["a", "b"])
+        info, fits = calc_count_per_pos(pattern, cover_per_pos, rels_per_pos)
+        self.assertIsInstance(info, pd.DataFrame)
+        self.assertTrue(info.index.equals(iexp.index))
+        self.assertTrue(info.columns.equals(iexp.columns))
+        self.assertTrue(np.all(np.isclose(info.values, iexp.values)))
+        self.assertIsInstance(fits, pd.DataFrame)
+        self.assertTrue(fits.index.equals(fexp.index))
+        self.assertTrue(fits.columns.equals(fexp.columns))
+        self.assertTrue(np.all(np.isclose(fits.values, fexp.values)))
+        pattern = RelPattern.muts().invert()
+        iexp = pd.DataFrame([[3.9, 3.1],
+                             [3.4, 3.6],
+                             [5.5, 4.5],
+                             [3.6, 1.4]],
+                            positions,
+                            ["a", "b"])
+        fexp = pd.DataFrame([[2.1, 1.9],
+                             [2.8, 2.2],
+                             [5.5, 4.5],
+                             [3.3, 0.7]],
+                            positions,
+                            ["a", "b"])
+        info, fits = calc_count_per_pos(pattern, cover_per_pos, rels_per_pos)
+        self.assertIsInstance(info, pd.DataFrame)
+        self.assertTrue(info.index.equals(iexp.index))
+        self.assertTrue(info.columns.equals(iexp.columns))
+        self.assertTrue(np.all(np.isclose(info.values, iexp.values)))
+        self.assertIsInstance(fits, pd.DataFrame)
+        self.assertTrue(fits.index.equals(fexp.index))
+        self.assertTrue(fits.columns.equals(fexp.columns))
+        self.assertTrue(np.all(np.isclose(fits.values, fexp.values)))
+
+
+class TestCalcCountPerRead(ut.TestCase):
+
+    def test_average(self):
+        """
+              11  13  14  15  17
+        Read   A   C   G   T   C
+        ------------------------
+           0   1  64   1 255 255
+           1 255 255   1 255 255
+           5 128   1   1  16   1
+           6 255   1   1  17  64
+           7   1  64   1 255 255
+           9 128   1   1   1  16
+          10   1   1   1 255 255
+          11   1   1   1   1   1
+          14  64   3   1   1 128
+          16 255 255   1   1   2
+        """
+        positions = seq_pos_to_index(DNA("ANCGTNC"), [11, 13, 14, 15, 17], 11)
+        mutations = {11: {64: np.array([14]),
+                          128: np.array([5, 9])},
+                     13: {3: np.array([14]),
+                          64: np.array([0, 7])},
+                     14: {},
+                     15: {16: np.array([5]),
+                          17: np.array([6])},
+                     17: {2: np.array([16]),
+                          16: np.array([9]),
+                          64: np.array([6]),
+                          128: np.array([14])}}
+        read_nums = np.array([0, 1, 5, 6, 7, 9, 10, 11, 14, 16])
+        read_indexes = calc_inverse(read_nums)
+        cover_per_read = pd.DataFrame.from_dict({
+            "A": pd.Series([1, 0, 1, 0, 1, 1, 1, 1, 1, 0], read_nums),
+            "C": pd.Series([1, 0, 2, 2, 1, 2, 1, 2, 2, 1], read_nums),
+            "G": pd.Series([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], read_nums),
+            "T": pd.Series([0, 0, 1, 1, 0, 1, 0, 1, 1, 1], read_nums),
+        })
+        rels_per_read = calc_rels_per_read(mutations,
+                                           positions,
+                                           cover_per_read,
+                                           read_indexes)
+        pattern = RelPattern.muts()
+        iexp = pd.Series([3, 1, 5, 3, 3, 5, 3, 5, 4, 3], read_nums)
+        fexp = pd.Series([1, 0, 2, 1, 1, 2, 0, 0, 2, 1], read_nums)
+        info, fits = calc_count_per_read(pattern,
+                                         cover_per_read,
+                                         rels_per_read)
+        self.assertIsInstance(info, pd.Series)
+        self.assertTrue(info.equals(iexp))
+        self.assertIsInstance(fits, pd.Series)
+        self.assertTrue(fits.equals(fexp))
+        pattern = RelPattern(HalfRelPattern.from_counts(count_sub=True,
+                                                        discount=["at", "cg"]),
+                             HalfRelPattern.refs())
+        iexp = pd.Series([2, 1, 4, 2, 2, 4, 3, 5, 4, 2], read_nums)
+        fexp = pd.Series([0, 0, 1, 0, 0, 1, 0, 0, 2, 0], read_nums)
+        info, fits = calc_count_per_read(pattern,
+                                         cover_per_read,
+                                         rels_per_read)
+        self.assertIsInstance(info, pd.Series)
+        self.assertTrue(info.equals(iexp))
+        self.assertIsInstance(fits, pd.Series)
+        self.assertTrue(fits.equals(fexp))
 
 
 if __name__ == "__main__":

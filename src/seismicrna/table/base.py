@@ -702,10 +702,8 @@ class ProfilePosTable(PosTable, ABC):
             sections = [self.section]
         for hk, hc in self.header.clusts:
             if (k is None or k == hk) and (clust is None or clust == hc):
-                data_name = path.fill_whitespace(
-                    format_clust_name(hk, hc, zero_ok=True),
-                    fill="-"
-                )
+                data_name = path.fill_whitespace(format_clust_name(hk, hc),
+                                                 fill="-")
                 for section in sections:
                     yield RNAProfile(section=section,
                                      sample=self.sample,
@@ -731,10 +729,6 @@ class RelReadTable(RelTable, ReadTable, ABC):
 
 
 class MaskReadTable(MaskTable, ReadTable, ABC):
-    pass
-
-
-class ClustReadTable(ClustTable, ReadTable, ABC):
     pass
 
 

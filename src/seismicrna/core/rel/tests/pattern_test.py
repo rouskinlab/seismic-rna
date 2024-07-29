@@ -336,6 +336,12 @@ class TestRelPattern(ut.TestCase):
             RelPattern(hrp34, hrp12)
         )
 
+    def test_invert(self):
+        hrp1 = HalfRelPattern("aa", "ac", "ca", "cc", "ga", "gt", "gi", "td")
+        hrp2 = HalfRelPattern("ac", "at", "ca", "cc", "ga", "gg", "gi", "td")
+        self.assertEqual(RelPattern(hrp1, hrp2).invert(),
+                         RelPattern(hrp2, hrp1))
+
 
 if __name__ == "__main__":
     ut.main()

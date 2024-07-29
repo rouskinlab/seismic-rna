@@ -217,7 +217,7 @@ def iter_table_data(table: Table, k: int, clust: int, all_pos: bool):
 def get_table_data(table: Table, all_pos: bool):
     data = dict()
     for k, clust in table.header.clusts:
-        name = format_clust_name(k, clust, zero_ok=True)
+        name = format_clust_name(k, clust)
         data[name] = dict(iter_table_data(table, k, clust, all_pos))
     return data
 
