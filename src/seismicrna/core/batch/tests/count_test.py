@@ -6,7 +6,8 @@ import pandas as pd
 from seismicrna.core.batch.count import (calc_coverage,
                                          _calc_uniq_read_weights,
                                          count_end_coords,
-                                         calc_rels_per_pos)
+                                         calc_rels_per_pos,
+                                         calc_rels_per_read)
 from seismicrna.core.batch.ends import END5_COORD, END3_COORD
 from seismicrna.core.batch.read import calc_inverse
 from seismicrna.core.seq.section import SEQ_INDEX_NAMES, seq_pos_to_index
@@ -856,6 +857,138 @@ class TestCalcRelsPerPos(ut.TestCase):
             self.assertIsInstance(rres, pd.DataFrame)
             self.assertTrue(rres.equals(
                 pd.DataFrame(rexp, ["a", "b"], positions).T
+            ))
+
+
+class TestCalcRelsPerRead(ut.TestCase):
+
+    def test_average(self):
+        """
+              11  13  14  15  17
+        Read   A   C   G   T   C
+        ------------------------
+           0   1  64   1 255 255
+           1 255 255   1 255 255
+           5 128   1   1  16   1
+           6 255   1   1  17  64
+           7   1  64   1 255 255
+           9 128   1   1   1  16
+          10   1   1   1 255 255
+          11   1   1   1   1   1
+          14  64   3   1   1 128
+          16 255 255   1   1   2
+        """
+        positions = seq_pos_to_index(DNA("ANCGTNC"), [11, 13, 14, 15, 17], 11)
+        mutations = {11: {64: np.array([14]),
+                          128: np.array([5, 9])},
+                     13: {3: np.array([14]),
+                          64: np.array([0, 7])},
+                     14: {},
+                     15: {16: np.array([5]),
+                          17: np.array([6])},
+                     17: {2: np.array([16]),
+                          16: np.array([9]),
+                          64: np.array([6]),
+                          128: np.array([14])}}
+        read_nums = np.array([0, 1, 5, 6, 7, 9, 10, 11, 14, 16])
+        read_indexes = calc_inverse(read_nums)
+        cover_per_read = pd.DataFrame.from_dict({
+            "A": pd.Series([1, 0, 1, 0, 1, 1, 1, 1, 1, 0], read_nums),
+            "C": pd.Series([1, 0, 2, 2, 1, 2, 1, 2, 2, 1], read_nums),
+            "G": pd.Series([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], read_nums),
+            "T": pd.Series([0, 0, 1, 1, 0, 1, 0, 1, 1, 1], read_nums),
+        })
+        expect = {1: [[1, 0, 1, 0],
+                      [0, 0, 1, 0],
+                      [0, 2, 1, 0],
+                      [0, 1, 1, 0],
+                      [1, 0, 1, 0],
+                      [0, 1, 1, 1],
+                      [1, 1, 1, 0],
+                      [1, 2, 1, 1],
+                      [0, 0, 1, 1],
+                      [0, 0, 1, 1]],
+                  2: [[0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 1, 0, 0]],
+                  3: [[0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 0, 0, 0],
+                      [0, 1, 0, 0],
+                      [0, 0, 0, 0]],
+                  16: [[0, 0, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 1],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 1, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 0]],
+                  17: [[0, 0, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 1],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 0]],
+                  64: [[0, 1, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 1, 0, 0],
+                       [0, 1, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 0],
+                       [0, 0, 0, 0],
+                       [1, 0, 0, 0],
+                       [0, 0, 0, 0]],
+                  128: [[0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 0, 0]],
+                  255: [[0, 1, 0, 1],
+                        [1, 2, 0, 1],
+                        [0, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 1],
+                        [0, 0, 0, 0],
+                        [0, 1, 0, 1],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [1, 1, 0, 0]]}
+        rels_per_pos = calc_rels_per_read(mutations,
+                                          positions,
+                                          cover_per_read,
+                                          read_indexes)
+        self.assertIsInstance(rels_per_pos, dict)
+        self.assertSetEqual(set(rels_per_pos), set(expect))
+        for rel, rexp in expect.items():
+            rres = rels_per_pos[rel]
+            self.assertIsInstance(rres, pd.DataFrame)
+            self.assertTrue(rres.equals(
+                pd.DataFrame(rexp, read_nums, ["A", "C", "G", "T"])
             ))
 
 
