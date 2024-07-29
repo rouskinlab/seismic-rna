@@ -143,9 +143,8 @@ def calc_coverage(pos_index: pd.Index,
                                                  for base in DNA.alph()})
         return cover_per_pos, cover_per_read
     if positions.size > 1 and np.diff(positions).min() <= 0:
-        raise ValueError(
-            f"positions must increase monotonically, but got {positions}"
-        )
+        raise ValueError("positions must increase monotonically, "
+                         f"but got {positions}")
     min_pos = positions[0]
     max_pos = positions[-1]
     # Validate the dimensions.

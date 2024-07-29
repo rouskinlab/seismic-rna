@@ -5,9 +5,12 @@ import pandas as pd
 
 from seismicrna.core.batch.count import (calc_coverage,
                                          _calc_uniq_read_weights,
-                                         count_end_coords)
+                                         count_end_coords,
+                                         calc_rels_per_pos)
 from seismicrna.core.batch.ends import END5_COORD, END3_COORD
-from seismicrna.core.seq.section import SEQ_INDEX_NAMES
+from seismicrna.core.batch.read import calc_inverse
+from seismicrna.core.seq.section import SEQ_INDEX_NAMES, seq_pos_to_index
+from seismicrna.core.seq.xna import DNA
 
 rng = np.random.default_rng(0)
 
@@ -731,10 +734,129 @@ class TestCalcCoverage(ut.TestCase):
                                                   read_weights)
         self.assertIsInstance(res_per_pos, pd.DataFrame)
         self.assertTrue(res_per_pos.round(6).equals(exp_per_pos.round(6)))
-        self.assertEqual(sorted(res_per_read), sorted(exp_per_read))
+        self.assertListEqual(sorted(res_per_read), sorted(exp_per_read))
         for base in exp_per_read:
             self.assertIsInstance(res_per_read[base], pd.Series)
             self.assertTrue(res_per_read[base].equals(exp_per_read[base]))
+
+
+class TestCalcRelsPerPos(ut.TestCase):
+
+    def test_average(self):
+        """
+              11  13  14  15
+        Read   A   C   G   T
+        --------------------
+           0   1  64   1 255
+           1 255 255   1 255
+           5 128   1   1  16
+           6 255   1   1  17
+           7   1  64   1 255
+           9 128   1   1   1
+          10   1   1   1 255
+          11   1   1   1   1
+          14  64   3   1   1
+          16 255 255   1   1
+        """
+        positions = seq_pos_to_index(DNA("ANCGT"), [11, 13, 14, 15], 11)
+        mutations = {11: {64: np.array([14]),
+                          128: np.array([5, 9])},
+                     13: {3: np.array([14]),
+                          64: np.array([0, 7])},
+                     14: {},
+                     15: {16: np.array([5]),
+                          17: np.array([6])}}
+        num_reads = 10
+        cover_per_pos = pd.Series([7, 8, 10, 6], positions)
+        expect = {1: [4, 5, 10, 4],
+                  3: [0, 1, 0, 0],
+                  16: [0, 0, 0, 1],
+                  17: [0, 0, 0, 1],
+                  64: [1, 2, 0, 0],
+                  128: [2, 0, 0, 0],
+                  255: [3, 2, 0, 4]}
+        rels_per_pos = calc_rels_per_pos(mutations,
+                                         num_reads,
+                                         cover_per_pos)
+        self.assertIsInstance(rels_per_pos, dict)
+        self.assertSetEqual(set(rels_per_pos), set(expect))
+        for rel, rexp in expect.items():
+            rres = rels_per_pos[rel]
+            self.assertIsInstance(rres, pd.Series)
+            self.assertTrue(rres.equals(pd.Series(rexp, positions)))
+
+    def test_clusters(self):
+        """
+              11  13  14  15
+        Read   A   C   G   T
+        --------------------
+           0   1  64   1 255
+           1 255 255   1 255
+           5 128   1   1  16
+           6 255   1   1  17
+           7   1  64   1 255
+           9 128   1   1   1
+          10   1   1   1 255
+          11   1   1   1   1
+          14  64   3   1   1
+          16 255 255   1   1
+        """
+        positions = seq_pos_to_index(DNA("ANCGT"), [11, 13, 14, 15], 11)
+        mutations = {11: {64: np.array([14]),
+                          128: np.array([5, 9])},
+                     13: {3: np.array([14]),
+                          64: np.array([0, 7])},
+                     14: {},
+                     15: {16: np.array([5]),
+                          17: np.array([6])}}
+        cover_per_pos = pd.DataFrame([[3.9, 3.1],
+                                      [4.3, 3.7],
+                                      [5.5, 4.5],
+                                      [4.0, 2.0]],
+                                     positions,
+                                     ["a", "b"])
+        read_nums = np.array([0, 1, 5, 6, 7, 9, 10, 11, 14, 16])
+        read_indexes = calc_inverse(read_nums)
+        read_weights = pd.DataFrame([[0.1, 0.9],
+                                     [0.2, 0.8],
+                                     [0.3, 0.7],
+                                     [0.4, 0.6],
+                                     [0.5, 0.5],
+                                     [0.6, 0.4],
+                                     [0.7, 0.3],
+                                     [0.8, 0.2],
+                                     [0.9, 0.1],
+                                     [1.0, 0.0]],
+                                    index=read_nums,
+                                    columns=["a", "b"])
+        num_reads = read_weights.sum(axis=0)
+        expect = {1: [[2.1, 2.8, 5.5, 3.3],
+                      [1.9, 2.2, 4.5, 0.7]],
+                  3: [[0.0, 0.9, 0.0, 0.0],
+                      [0.0, 0.1, 0.0, 0.0]],
+                  16: [[0.0, 0.0, 0.0, 0.3],
+                       [0.0, 0.0, 0.0, 0.7]],
+                  17: [[0.0, 0.0, 0.0, 0.4],
+                       [0.0, 0.0, 0.0, 0.6]],
+                  64: [[0.9, 0.6, 0.0, 0.0],
+                       [0.1, 1.4, 0.0, 0.0]],
+                  128: [[0.9, 0.0, 0.0, 0.0],
+                        [1.1, 0.0, 0.0, 0.0]],
+                  255: [[1.6, 1.2, 0.0, 1.5],
+                        [1.4, 0.8, 0.0, 2.5]]}
+        rels_per_pos = calc_rels_per_pos(mutations,
+                                         num_reads,
+                                         cover_per_pos,
+                                         read_indexes,
+                                         read_weights)
+        self.assertIsInstance(rels_per_pos, dict)
+        self.assertSetEqual(set(rels_per_pos), set(expect))
+        for rel, rexp in expect.items():
+            rres = rels_per_pos[rel]
+            self.assertIsInstance(rres, pd.DataFrame)
+            self.assertTrue(rres.equals(
+                pd.DataFrame(rexp, ["a", "b"], positions).T
+            ))
 
 
 if __name__ == "__main__":
