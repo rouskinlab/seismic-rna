@@ -19,7 +19,9 @@ __pycache__/
 # Output files
 out/
 tmp*/
-sim/
+sim/refs
+sim/params
+sim/samples
 log/
 *.log
 
