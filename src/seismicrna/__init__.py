@@ -1,21 +1,3 @@
-"""
-
-SEISMIC-RNA
-========================================================================
-
-Expose the sub-packages ``demult``, ``align``, ``relate``, ``cluster``,
-and ``table``, plus the ``__version__`` attribute, at the top level so
-that they can be imported from external modules and scripts::
-
-    >>> import seismicrna
-    >>> seismicrna.__version__
-    'x.y.z'
-    >>> from seismicrna import __version__
-    'x.y.z'
-
-"""
-
-from . import demult, align, relate, cluster, table, cleanfa
 from .core.version import __version__
 
 ########################################################################
