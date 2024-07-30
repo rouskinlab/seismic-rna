@@ -8,7 +8,8 @@ set -euxo pipefail
 RESULTS=test-results.txt
 
 seismic +test -vv 2> $RESULTS
-cat $RESULTS
+#cat $RESULTS
+tail -n 60 $RESULTS
 LAST=$(tail -n 1 $RESULTS)
 if [ $LAST == "OK" ];
 then
@@ -17,7 +18,10 @@ else
 	EXIT=1
 fi
 
-rm -r log
+if [ -d log ]
+then
+	rm -r log
+fi
 rm $RESULTS
 exit $EXIT
 
