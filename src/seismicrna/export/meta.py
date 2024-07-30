@@ -77,7 +77,7 @@ def combine_metadata(special_metadata: dict[str, Any],
     try:
         item_metadata = parsed_metadata[item]
     except KeyError:
-        logger.warning(f"No metadata were given for {what} {repr(item)}")
+        logger.debug(f"No metadata were given for {what} {repr(item)}")
         return special_metadata
     # Check for any keys in the parsed metadata that match those in the
     # special metadata.

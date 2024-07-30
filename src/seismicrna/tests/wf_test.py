@@ -4,7 +4,7 @@ import unittest as ut
 from pathlib import Path
 
 from seismicrna.core.arg.cli import opt_out_dir, opt_sim_dir
-from seismicrna.core.logs import set_config
+from seismicrna.core.logs import get_config, set_config
 from seismicrna.sim.total import run as sim_total_run
 from seismicrna.wf import run as wf_run
 
@@ -22,7 +22,7 @@ class TestWorkflow(ut.TestCase):
     def setUp(self):
         self.SIM_DIR.mkdir()
         self.OUT_DIR.mkdir()
-        self.LOG_DIR.mkdir()
+        self.LOG_DIR.mkdir(exist_ok=True)
 
     def tearDown(self):
         shutil.rmtree(self.SIM_DIR)
@@ -30,6 +30,8 @@ class TestWorkflow(ut.TestCase):
         shutil.rmtree(self.LOG_DIR)
 
     def test_wf_sim_paired_20000reads_2clusts(self):
+        # Suppress warnings.
+        config = get_config()
         set_config(verbose=0, quiet=1)
         # Simulate the data to be processed with wf.
         fastqs = sim_total_run(sim_dir=str(self.SIM_DIR),
@@ -37,7 +39,8 @@ class TestWorkflow(ut.TestCase):
                                ref=self.REF,
                                refs=self.REFS,
                                fold_max=2,
-                               num_reads=20000)
+                               num_reads=20000,
+                               ends_var=0.001)
         sample_dir = self.SIM_DIR.joinpath("samples", self.SAMPLE)
         for fastq, mate in zip(fastqs, [1, 2], strict=True):
             self.assertEqual(fastq,
@@ -51,11 +54,14 @@ class TestWorkflow(ut.TestCase):
                dmfastqx=fastqs,
                cluster=True,
                fold=True,
+               quantile=0.95,
                export=True,
                out_dir=self.OUT_DIR)
         for step in STEPS:
             step_dir = self.OUT_DIR.joinpath(self.SAMPLE, step)
             self.assertTrue(step_dir.is_dir())
+        # Restore the original logging configuration.
+        set_config(*config)
 
 
 if __name__ == "__main__":

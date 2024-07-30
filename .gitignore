@@ -16,7 +16,11 @@ __pycache__/
 # PyCharm
 .idea
 
-# Log files
+# Output files
+out/
+tmp*/
+sim/
+log/
 *.log
 
 # macOS
