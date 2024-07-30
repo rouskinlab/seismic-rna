@@ -16,7 +16,8 @@ from ..core.arg import (arg_fasta,
                         opt_brotli_level,
                         opt_ct_file,
                         opt_param_dir,
-                        merge_params)
+                        merge_params,
+                        extra_defaults)
 from ..core.run import run_func
 from ..core.seq import DNA
 
@@ -29,7 +30,9 @@ def as_tuple_str(items: Iterable):
     return tuple(map(str, items))
 
 
-@run_func(logger.critical, default=None)
+@run_func(logger.critical,
+          default=None,
+          extra_defaults=extra_defaults)
 def run(*,
         sim_dir: str,
         tmp_pfx: str,

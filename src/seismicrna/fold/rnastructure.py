@@ -21,6 +21,7 @@ from ..core.write import need_write, write_mode
 
 logger = getLogger(__name__)
 
+ENERGY_UNIT = "kcal/mol"
 FOLD_SMP_NUM_THREADS = "OMP_NUM_THREADS"
 DATAPATH = "DATAPATH"
 DATAPATH_FILES = """
@@ -516,7 +517,7 @@ def format_retitled_ct_line(length: int, ref: str, uniqid: int, energy: float):
     str
         Formatted CT title line.
     """
-    return f"{length}\t{ref} #{uniqid}: {energy} kcal/mol\n"
+    return f"{length}\t{ref} #{uniqid}: {energy} {ENERGY_UNIT}\n"
 
 
 def retitle_ct(ct_input: Path, ct_output: Path, force: bool = False):
@@ -586,8 +587,12 @@ def parse_energy(line: str):
     float
         Free energy of folding.
     """
-    _, energy = line.split(":")
-    return float(energy)
+    _, energy = line.split(": ")
+    value, unit = energy.split()
+    if unit != ENERGY_UNIT:
+        raise ValueError(f"Expected energy to have units of {ENERGY_UNIT}, "
+                         f"but got {repr(unit)}")
+    return float(value)
 
 ########################################################################
 #                                                                      #

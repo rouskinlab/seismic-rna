@@ -1,5 +1,6 @@
 import gzip
 import os
+from itertools import chain
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Iterable
@@ -322,30 +323,30 @@ def run(*,
     param_dirs = as_list_of_tuples(map(Path, param_dir))
     fastqs = list()
     if report_files:
-        fastqs.extend(dispatch(from_report,
-                               max_procs=max_procs,
-                               parallel=parallel,
-                               pass_n_procs=False,
-                               args=report_files,
-                               kwargs=dict(read_length=read_length,
-                                           p_rev=reverse_fraction,
-                                           fq_gzip=fq_gzip,
-                                           force=force)))
+        fastqs.extend(chain(*dispatch(from_report,
+                                      max_procs=max_procs,
+                                      parallel=parallel,
+                                      pass_n_procs=False,
+                                      args=report_files,
+                                      kwargs=dict(read_length=read_length,
+                                                  p_rev=reverse_fraction,
+                                                  fq_gzip=fq_gzip,
+                                                  force=force))))
     if param_dirs:
-        fastqs.extend(dispatch(from_param_dir,
-                               max_procs=max_procs,
-                               parallel=parallel,
-                               pass_n_procs=False,
-                               args=param_dirs,
-                               kwargs=dict(sample=sample,
-                                           profile=profile_name,
-                                           paired=paired_end,
-                                           read_length=read_length,
-                                           p_rev=reverse_fraction,
-                                           min_mut_gap=min_mut_gap,
-                                           fq_gzip=fq_gzip,
-                                           num_reads=num_reads,
-                                           force=force)))
+        fastqs.extend(chain(*dispatch(from_param_dir,
+                                      max_procs=max_procs,
+                                      parallel=parallel,
+                                      pass_n_procs=False,
+                                      args=param_dirs,
+                                      kwargs=dict(sample=sample,
+                                                  profile=profile_name,
+                                                  paired=paired_end,
+                                                  read_length=read_length,
+                                                  p_rev=reverse_fraction,
+                                                  min_mut_gap=min_mut_gap,
+                                                  fq_gzip=fq_gzip,
+                                                  num_reads=num_reads,
+                                                  force=force))))
     if not fastqs:
         logger.warning("No FASTQ files were generated")
     return fastqs
