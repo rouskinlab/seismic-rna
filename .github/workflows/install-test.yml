@@ -28,10 +28,20 @@ jobs:
       - name: Install non-Python dependencies
         run: |
           conda env update -n base --file environment.yml
+          echo "which conda"
+          which conda
+          echo "which python"
+          which python
+          echo "which bowtie2"
+          which bowtie2
+          echo "which samtools"
+          which samtools
+          echo "which Fold"
+          which Fold
       - name: Install SEISMIC-RNA from source
         run: |
           pip install .
       - name: Run the test suite
         run: |
-          echo "Testing $(seismic --version)"
+          echo "Running tests for $(seismic --version)"
           bash test.sh
