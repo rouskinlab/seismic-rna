@@ -24,10 +24,10 @@ jobs:
         shell: bash -el {0}
     steps:
       - name: Checkout this GitHub repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Install non-Python dependencies
         run: |
-          conda env update --file environment.yml
+          conda env update -y -n base --file environment.yml
       - name: Install SEISMIC-RNA from source
         run: |
           pip install .
