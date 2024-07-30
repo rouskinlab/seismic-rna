@@ -27,7 +27,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Install non-Python dependencies
         run: |
-          conda env update -n base --file environment.yml
+          conda install python=3.12
+          conda env update --file environment.yml
       - name: Install SEISMIC-RNA from source
         run: |
           pip install .
