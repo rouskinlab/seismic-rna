@@ -727,14 +727,14 @@ opt_cluster = Option(
 )
 
 opt_min_clusters = Option(
-    ("--min-clusters", "-k"),
+    ("--min-clusters",),
     type=int,
     default=1,
     help="Start at this many clusters"
 )
 
 opt_max_clusters = Option(
-    ("--max-clusters", "-K"),
+    ("--max-clusters", "-k"),
     type=int,
     default=0,
     help="Stop at this many clusters (0 for no limit)"

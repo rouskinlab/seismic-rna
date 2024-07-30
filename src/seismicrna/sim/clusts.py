@@ -58,7 +58,7 @@ def sim_pclust(num_clusters: int,
         if sort:
             props = np.sort(props)[::-1]
     return pd.Series(props,
-                     index=ClustHeader(ks=[num_clusters]),
+                     index=ClustHeader(ks=[num_clusters]).index,
                      name=PROPORTION)
 
 
