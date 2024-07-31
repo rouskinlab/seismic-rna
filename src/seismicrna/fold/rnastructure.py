@@ -450,7 +450,7 @@ def parse_rnastructure_ct_title(line: str):
     the name of the reference, and {energy} is the predicted free energy
     of folding.
     Also handle the edge case when RNAstructure predicts no base pairs
-    (and thus does not write the free energy) by returning NaN.
+    (and thus does not write the free energy) by returning 0.
 
     Parameters
     ----------
@@ -475,7 +475,7 @@ def parse_rnastructure_ct_title(line: str):
             raise ValueError(f"Failed to parse CT title line: {repr(line)}")
         logger.warning("CT line contains no energy term (probably because no "
                        f"base pairs were predicted): {repr(line)}")
-        energy = "nan"
+        energy = 0.
     return int(length), float(energy), ref
 
 
