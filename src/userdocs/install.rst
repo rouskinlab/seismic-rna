@@ -3,18 +3,47 @@ Install
 ********************************************************************************
 
 
-Option 1: Quick installation (if you already have Conda_)
+System Requirements
+================================================================================
+
+SEISMIC-RNA runs on Linux and macOS.
+If you use Windows, we recommend installing and running SEISMIC-RNA using the
+`Windows Subsystem for Linux (WSL)`_.
+
+.. note::
+
+    SEISMIC-RNA will run on Apple Silicon (M1, M2, M3, etc.) ARM processors, but
+    installation with Conda may not work.
+    If that happens to you, see :ref:`conda_install_fails`.
+
+We recommend the following hardware specifications, depending on your usage:
+
+========== ================ ======== ========== ==== ======== ============
+Usage      Reads (millions) RNA (kb) Clustering CPUs RAM (GB) Storage (GB)
+========== ================ ======== ========== ==== ======== ============
+Light                    <1       <1 No/Limited    4        8           16
+Moderate               1-10      1-3        Yes    8       16           32
+Heavy                10-100     3-10        Yes   16       32           64
+Very Heavy             ≥100      ≥10        Yes  ≥32      ≥64         ≥128
+========== ================ ======== ========== ==== ======== ============
+
+
+Option 1: Quick installation (if you already have Conda and know how to use it)
 ================================================================================
 
 SEISMIC-RNA is available from the Bioconda_ channel and compatible with Python
 3.10 and later.
+
 To install, type this into a terminal::
 
     conda create -n seismic python=3.12
     conda activate seismic
     conda install -c bioconda -c conda-forge seismic-rna
 
-If installing with Conda fails, then try :ref:`install_without_conda`.
+If installing with Conda fails, then try :ref:`conda_install_fails`.
+
+After you have installed SEISMIC-RNA, :ref:`set_datapath` and (optionally)
+:ref:`test_seismicrna`.
 
 
 Option 2: Step-by-step installation with Conda
@@ -69,23 +98,6 @@ the environment by typing ``conda activate`` followed by its name, e.g. ::
     this environment but also fail to install the packages into the ``seismic``
     environment.
 
-
-
-
-
-
-
-
-
-
-ADD A SEGMENT ON WHAT TO DO IF CONDA INSTALL FAILS BUT YOU CAN STILL USE CONDA
-
-
-
-
-
-
-
 Install SEISMIC-RNA and its dependencies
 --------------------------------------------------------------------------------
 
@@ -93,95 +105,48 @@ Run this command to install SEISMIC-RNA and all other software it requires::
 
     conda install -c bioconda -c conda-forge seismic-rna
 
-If installing with Conda fails, then try :ref:`install_without_conda`.
+If installing with Conda fails, then try :ref:`conda_install_fails`.
+
+After you have installed SEISMIC-RNA, :ref:`set_datapath` and (optionally)
+:ref:`test_seismicrna`.
 
 
-.. _install_without_conda:
+.. _conda_install_fails:
 
-Option 3: Step-by-step installation without Conda
+Option 3: Installation with Conda if ``conda install seismic-rna`` fails
+================================================================================
+
+Conda may fail to install SEISMIC-RNA if some dependencies are not compatible
+with your hardware and/or operating system (especially for Apple Silicon).
+If that happens, then first :ref:`install_dependencies` and subsequently
+:ref:`install_seismicrna_without_conda`.
+
+After you have installed SEISMIC-RNA, :ref:`set_datapath` and (optionally)
+:ref:`test_seismicrna`.
+
+
+Option 4: Installation without Conda
 ================================================================================
 
 Although Conda is the easiest means to install SEISMIC-RNA, it is not necessary.
 
-Install Python and pip
---------------------------------------------------------------------------------
-
 First, if Python_ is not installed, then install the latest version.
-Confirm that Python version 3.10 or later and pip_ are installed::
+Confirm that Python version 3.10 or later and pip_ are installed by typing the
+following commands, one by one::
 
     python --version
     pip --version
 
-Install SEISMIC-RNA and its Python dependencies
---------------------------------------------------------------------------------
+After installing Python and pip, :ref:`install_dependencies` and then
+:ref:`install_seismicrna_without_conda`.
 
-Option 3a: Install SEISMIC-RNA from the Python Package Index
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-We recommend installing SEISMIC-RNA from the Python Package Index, which will
-download the latest stable version that has been released.
-In a terminal, type this command to install it and all its Python dependencies::
-
-    pip install seismic-rna
-
-Option 3b: Install SEISMIC-RNA from GitHub
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-We do *not* recommend installing from GitHub unless you need the latest source
-code (most users do not), which may be unstable or contain significant bugs.
-In a terminal, navigate to the directory into which to install SEISMIC-RNA.
-If Git_ is installed on your computer, then clone the GitHub repository::
-
-    git clone https://github.com/rouskinlab/seismic-rna.git
-
-Otherwise, open ``https://github.com/rouskinlab/seismic-rna`` in a web browser,
-click "Code" then "Download ZIP", unzip the file after it has downloaded, and
-move it to the directory where you want to keep the source code.
-
-To install SEISMIC-RNA, type ``pip install`` followed by the path of the source
-code directory that you downloaded, e.g. ::
-
-    pip install ~/Downloads/seismic-rna
-
-If you want to be able to modify the source code after you install SEISMIC-RNA
-and have those changes come into effect, then add the flag ``-e``, e.g. ::
-
-    pip install -e ~/Downloads/seismic-rna
-
-Otherwise, you may delete the source code after installation to save space.
-
-Install the non-Python dependencies of SEISMIC-RNA
---------------------------------------------------------------------------------
-
-SEISMIC-RNA requires several other pieces of software that cannot be installed
-using pip:
-
-============ =================================================================================================
-Software     SEISMIC-RNA commands that use the software
-============ =================================================================================================
-Bowtie2      ``seismic align``; ``seismic wf``
-FastQC       ``seismic align`` (without ``--no-fastqc``); ``seismic wf`` (without ``--no-fastqc``)
-RNAstructure ``seismic fold``; ``seismic wf`` (with ``--fold``); ``seismic +sim fold``; ``seismic +sim total``
-Samtools     ``seismic align``; ``seismic relate``; ``seismic wf``
-============ =================================================================================================
-
-You only need to install the software for the steps you will use: for example,
-if you won't model RNA structures (using ``seismic fold``, ``seismic wf`` with
-the ``--fold`` option, ``seismic +sim fold``, or ``seismic +sim total``), then
-you don't need to install RNAstructure.
-Although all of these packages are available through Conda, if you are not using
-Conda (or if the Conda installation fails) then you can also install them using
-the installation instructions in their documentation:
-
-- Bowtie2_ (make sure to install Bowtie2, not Bowtie)
-- FastQC_
-- RNAstructure_
-- Samtools_
+After you have installed SEISMIC-RNA, :ref:`set_datapath` and (optionally)
+:ref:`test_seismicrna`.
 
 
 .. _install_update:
 
-Option 4: Update to another version (if you already installed SEISMIC-RNA)
+Option 5: Updating to another version (if you already installed SEISMIC-RNA)
 ================================================================================
 
 Update SEISMIC-RNA to the latest stable version
@@ -194,6 +159,8 @@ Type this if you had initially installed SEISMIC-RNA with Conda::
 or this if you had initially installed it with pip::
 
     pip install -U seismic-rna
+
+After updating, it is a good idea to :ref:`test_seismicrna`.
 
 
 Install a specific version of SEISMIC-RNA
@@ -210,6 +177,9 @@ or this if you had initially installed it with pip::
 .. note::
 
     When specifying the version, use ``=`` with Conda and ``==`` with pip.
+
+After updating, it is a good idea to :ref:`test_seismicrna`.
+
 
 .. _install_update_depend:
 
@@ -252,8 +222,116 @@ Then update the dependencies of SEISMIC-RNA to the latest compatible versions::
     latest version of SEISMIC-RNA and the latest *compatible* version of each of
     its dependencies.
 
+After updating, it is a good idea to :ref:`test_seismicrna`.
 
-Test SEISMIC-RNA after installing
+
+.. _install_dependencies:
+
+Install the dependencies of SEISMIC-RNA
+================================================================================
+
+SEISMIC-RNA has four dependencies software that are not available from pip.
+The easiest way to install them is with Conda, using the following commands:
+
+============= =========================================================
+Dependency    Command to install with Conda
+============= =========================================================
+Bowtie2_      ``conda install -c bioconda -c conda-forge bowtie2``
+FastQC_       ``conda install -c bioconda -c conda-forge fastqc``
+RNAstructure_ ``conda install -c bioconda -c conda-forge rnastructure``
+Samtools_     ``conda install -c bioconda -c conda-forge samtools``
+============= =========================================================
+
+If a package fails to install using Conda, or if you are not using Conda, then
+follow its link above to find the instructions for installing it manually.
+Confirm that each dependency is installed by running each of these commands,
+one at a time::
+
+    bowtie2 --version
+    fastqc --version
+    ct2dot --version
+    samtools --version
+
+If the dependency is installed, then it should print out the version number
+(and possibly additional information).
+If it says something like ``command not found``, then the dependency is not
+installed.
+
+
+.. _install_seismicrna_without_conda:
+
+Install SEISMIC-RNA without Conda
+================================================================================
+
+Option A: Install SEISMIC-RNA from the Python Package Index
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We recommend installing SEISMIC-RNA from the Python Package Index, which will
+download the latest stable version that has been released.
+In a terminal, type this command to install it and all its Python dependencies::
+
+    pip install seismic-rna
+
+Option B: Install SEISMIC-RNA from GitHub
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We do *not* recommend installing from GitHub unless you need the latest source
+code (most users do not), which may be unstable or contain significant bugs.
+In a terminal, navigate to the directory into which to install SEISMIC-RNA.
+If Git_ is installed on your computer, then clone the GitHub repository::
+
+    git clone https://github.com/rouskinlab/seismic-rna.git
+
+Otherwise, open ``https://github.com/rouskinlab/seismic-rna`` in a web browser,
+click "Code" then "Download ZIP", unzip the file after it has downloaded, and
+move it to the directory where you want to keep the source code.
+
+To install SEISMIC-RNA, type ``pip install`` followed by the path of the source
+code directory that you downloaded, e.g. ::
+
+    pip install ~/Downloads/seismic-rna
+
+If you want to be able to modify the source code after you install SEISMIC-RNA
+and have those changes come into effect, then add the flag ``-e``, e.g. ::
+
+    pip install -e ~/Downloads/seismic-rna
+
+Otherwise, you may delete the source code after installation to save space.
+
+
+.. _set_datapath:
+
+Set the DATAPATH environment variable
+================================================================================
+
+RNAstructure_ requires an environment variable called ``DATAPATH`` to point to
+the directory of thermodynamic data tables.
+See https://rna.urmc.rochester.edu/Text/Thermodynamics.html for details.
+SEISMIC-RNA should be able to guess the correct ``DATAPATH`` if RNAstructure was
+installed manually from the website or with Conda, but it will log a warning
+message to inform you that it had to guess.
+To suppress this warning, you can create an environment variable called
+``DATAPATH`` on your system.
+To find the location of the data tables for RNAstructure, type ::
+
+    seismic -q +datapath
+
+This command should print a message that begins with ``DATAPATH=``.
+Add this entire line (including ``DATAPATH=``) to the end of your shell RC file:
+``~/.bashrc`` on most Linux systems, ``.zshrc`` on most macOS systems.
+Restart your terminal for the changes to take effect.
+After restarting the terminal, confirm ``DATAPATH`` is set by typing ::
+
+    echo $DATAPATH
+
+which should print out the path to the data tables that you found previously.
+Now the ``DATAPATH`` will be set automatically every time you open the terminal,
+unless you remove or edit that line in your shell RC file.
+
+
+.. _test_seismicrna:
+
+Test SEISMIC-RNA
 ================================================================================
 
 SEISMIC-RNA comes with hundreds of tests to verify that it is working properly
@@ -315,3 +393,4 @@ If that does not solve your problem either, then please report a bug (see
 .. _Samtools: https://www.htslib.org/
 .. _PyPI: https://pypi.org/project/seismic-rna/
 .. _Anaconda: https://anaconda.org/bioconda/seismic-rna
+.. _Windows Subsystem for Linux (WSL): https://learn.microsoft.com/en-us/windows/wsl

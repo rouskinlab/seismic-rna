@@ -29,6 +29,7 @@ Subpackages
    seismicrna.sim
    seismicrna.table
    seismicrna.test
+   seismicrna.tests
 
 Submodules
 ----------

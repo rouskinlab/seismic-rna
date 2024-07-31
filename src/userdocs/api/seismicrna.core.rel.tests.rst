@@ -14,3 +14,9 @@ Submodules
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+.. automodule:: seismicrna.core.rel.tests.pattern_test
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -13,15 +13,15 @@ seismic +test 2> $RESULTS
 LAST=$(tail -n 1 $RESULTS)
 if [ $LAST == "OK" ];
 then
-	EXIT=0
+	  EXIT=0
 else
-	EXIT=1
+	  EXIT=1
 fi
 
 # Clean up the output files.
 if [ -d log ]
 then
-	rm -r log
+	  rm -r log
 fi
 rm $RESULTS
 
