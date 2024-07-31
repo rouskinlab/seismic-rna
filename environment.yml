@@ -10,4 +10,5 @@ dependencies:
   - fastqc >=0.12.1
   - rnastructure >=6.2
   - samtools >=1.17
+  - matplotlib-base >=3.6
   - brotli-python >=1.0

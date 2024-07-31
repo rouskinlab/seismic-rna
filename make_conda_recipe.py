@@ -121,11 +121,24 @@ def list_nonpip_dependencies():
             "fastqc >=0.12.1",
             "rnastructure >=6.2",
             "samtools >=1.17",
+            "matplotlib-base >=3.6",
             "brotli-python >=1.0"]
 
 
-def list_all_dependencies():
-    return list_nonpip_dependencies() + list_pip_dependencies()
+def supercede_pip_dependencies():
+    """ Dependencies with pip that should be superceded by Conda. """
+    return {"matplotlib", "brotli"}
+
+
+def list_conda_dependencies():
+    """ List the dependencies to put in the meta.yaml file. """
+    dependencies = list_nonpip_dependencies()
+    ignore_pip = supercede_pip_dependencies()
+    for dependency in list_pip_dependencies():
+        name, version = dependency.split()
+        if name not in ignore_pip:
+            dependencies.append(dependency)
+    return dependencies
 
 
 def list_conda_channels():
@@ -229,7 +242,7 @@ def write_metadata():
         },
         "requirements": {"build": ["python >=3.10",
                                    "hatch >=1.12"],
-                         "run": list_all_dependencies()},
+                         "run": list_conda_dependencies()},
         "test": {"imports": ["seismicrna"]},
     }
     yaml_text = format_yaml_text(metadata)
