@@ -33,6 +33,7 @@ CMD_RENUMCT = "+renumct"
 CMD_CT2DB = "+ct2db"
 CMD_DB2CT = "+db2ct"
 CMD_SIM = "+sim"
+CMD_DATAPATH = "+datapath"
 CMD_TEST = "+test"
 
 ########################################################################

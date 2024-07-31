@@ -116,6 +116,7 @@ cli.add_command(split.cli)
 cli.add_command(lists.listpos.cli)
 cli.add_command(rna.convert.cli_ct2db)
 cli.add_command(rna.convert.cli_db2ct)
+cli.add_command(fold.cli_datapath)
 
 ########################################################################
 #                                                                      #
