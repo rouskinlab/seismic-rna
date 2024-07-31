@@ -284,7 +284,7 @@ def _guess_data_path_conda():
     envs_dir = bin_dir.parent.parent
     if bin_dir.name != "bin" or envs_dir.name != "envs":
         raise OSError(
-            f"RNAstructure not seem to be installed with Conda: {fold_path}"
+            f"It seems RNAstructure is not installed with Conda: {fold_path}"
         )
     conda_dir = envs_dir.parent
     pkgs_dir = conda_dir.joinpath("pkgs")
@@ -294,7 +294,7 @@ def _guess_data_path_conda():
             rnastructure_pkgs.append(pkg)
     if not rnastructure_pkgs:
         raise OSError(
-            f"RNAstructure not seem to be installed with Conda: {pkgs_dir}"
+            f"It seems RNAstructure is not installed with Conda: {pkgs_dir}"
         )
     rnastructure_pkg = sorted(rnastructure_pkgs)[-1]
     data_path = rnastructure_pkg.joinpath("share",
