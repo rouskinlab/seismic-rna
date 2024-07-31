@@ -33,7 +33,7 @@ requirements:
     - click >=8.1
     - cutadapt >=4.4
     - fastqsplitter >=1.2
-    - matplotlib >=3.6
+    - matplotlib-base >=3.6
     - numpy >=1.23,<1.27
     - numba >=0.59
     - pandas >=1.5
