@@ -280,11 +280,13 @@ def _guess_data_path_conda():
             f"RNAstructure not seem to be installed: {RNASTRUCTURE_FOLD_CMD}"
         )
     fold_path = Path(fold_path)
-    conda_dir = fold_path.parent.parent.parent.parent
-    if conda_dir.name != "conda":
+    bin_dir = fold_path.parent
+    envs_dir = bin_dir.parent.parent
+    if bin_dir.name != "bin" or envs_dir.name != "envs":
         raise OSError(
             f"RNAstructure not seem to be installed with Conda: {fold_path}"
         )
+    conda_dir = envs_dir.parent
     pkgs_dir = conda_dir.joinpath("pkgs")
     rnastructure_pkgs = list()
     for pkg in pkgs_dir.iterdir():
