@@ -5,11 +5,11 @@
 
 set -euxo pipefail
 
+# Run the tests and save the results.
 RESULTS=test-results.txt
+seismic +test 2> $RESULTS
 
-seismic +test -vv 2> $RESULTS
-#cat $RESULTS
-tail -n 60 $RESULTS
+# Check whether all the tests succeeded.
 LAST=$(tail -n 1 $RESULTS)
 if [ $LAST == "OK" ];
 then
@@ -18,10 +18,12 @@ else
 	EXIT=1
 fi
 
+# Clean up the output files.
 if [ -d log ]
 then
 	rm -r log
 fi
 rm $RESULTS
-exit $EXIT
 
+# Exit 0 if all tests succeeded, otherwise exit 1.
+exit $EXIT

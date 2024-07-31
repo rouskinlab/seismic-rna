@@ -37,7 +37,5 @@ jobs:
           pip install .
       - name: Run the test suite
         run: |
-          echo "Conda Package List"
-          ls /usr/share/miniconda/pkgs
           echo "Running tests for $(seismic --version)"
           bash test.sh
