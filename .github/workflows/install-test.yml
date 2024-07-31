@@ -25,19 +25,13 @@ jobs:
     steps:
       - name: Checkout this GitHub repository
         uses: actions/checkout@v4
-      - name: Install non-Python dependencies
-        run: |
-          conda env update -n base --file environment.yml
-          echo "which conda"
-          which conda
-          echo "which python"
-          which python
-          echo "which bowtie2"
-          which bowtie2
-          echo "which samtools"
-          which samtools
-          echo "which Fold"
-          which Fold
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: seismic
+          environment-file: environment.yml
+          condarc-file: condarc.yml
+          python-version: 3.12
       - name: Install SEISMIC-RNA from source
         run: |
           pip install .
