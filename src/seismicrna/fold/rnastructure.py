@@ -280,26 +280,11 @@ def _guess_data_path_conda():
             f"RNAstructure not seem to be installed: {RNASTRUCTURE_FOLD_CMD}"
         )
     fold_path = Path(fold_path)
-    bin_dir = fold_path.parent
-    envs_dir = bin_dir.parent.parent
-    if bin_dir.name != "bin" or envs_dir.name != "envs":
-        raise OSError(
-            f"It seems RNAstructure is not installed with Conda: {fold_path}"
-        )
-    conda_dir = envs_dir.parent
-    pkgs_dir = conda_dir.joinpath("pkgs")
-    rnastructure_pkgs = list()
-    for pkg in pkgs_dir.iterdir():
-        if pkg.name.startswith("rnastructure"):
-            rnastructure_pkgs.append(pkg)
-    if not rnastructure_pkgs:
-        raise OSError(
-            f"It seems RNAstructure is not installed with Conda: {pkgs_dir}"
-        )
-    rnastructure_pkg = sorted(rnastructure_pkgs)[-1]
-    data_path = rnastructure_pkg.joinpath("share",
-                                          "rnastructure",
-                                          "data_tables")
+    env_dir = fold_path.parent.parent
+    data_path = env_dir.joinpath("share", "rnastructure", "data_tables")
+    if not data_path.is_dir():
+        raise OSError("It seems RNAstructure is not installed with Conda: "
+                      f"{data_path} does not exist")
     check_data_path(data_path)
     logger.debug(f"Successfully guessed {DATAPATH}: {data_path}")
     return data_path
