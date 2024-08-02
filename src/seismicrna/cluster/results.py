@@ -68,7 +68,7 @@ def graph_attrs(table: pd.DataFrame, cluster_dir: Path):
         if key == RUN_PASSING:
             continue
         fig = graph_attr(table[attr], passing_text)
-        fig.write_html(cluster_dir.joinpath(f"graph_{key}.html"))
+        fig.write_image(cluster_dir.joinpath(f"graph_{key}.pdf"))
 
 
 def write_results(ks: list[EMRunsK], cluster_dir: Path):
