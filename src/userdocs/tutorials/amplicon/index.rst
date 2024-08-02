@@ -210,7 +210,7 @@ Run the workflow on both DMS-treated replicates
 
 Process the DMS-treated samples through the whole workflow with this command::
 
-    seismic -v wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -p rre CAATGACGCTGACGGTACAGG ATCTTTCCACAGCCAGGATTC hiv-rre.fa
+    seismic -v wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
 
 This is what each of the arguments does:
 
@@ -223,9 +223,9 @@ This is what each of the arguments does:
   paired-end reads with mate 1 and mate 2 in separate files.
 - ``--mask-pos rre 176`` means mask position 176 (because it had a high mutation
   rate in the no-DMS sample).
-- ``-p rre CAATGACGCTGACGGTACAGG ATCTTTCCACAGCCAGGATTC`` defines a section of
-  the reference ``rre`` that corresponds to the amplicon flanked by the primers
-  ``CAATGACGCTGACGGTACAGG`` (forward) and ``ATCTTTCCACAGCCAGGATTC`` (reverse).
+- ``-p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC`` defines a
+  section of the reference ``rre`` that corresponds to the amplicon flanked by
+  primers ``GGAGCTTTGTTCCTTGGGTTCTTGG`` and ``GGAGCTGTTGATCCTTTAGGTATCTTTC``.
 - ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
   (i.e. mutation-free) sequence for the RNA.
 
