@@ -7,6 +7,7 @@ How to Research RNA Structures with SEISMIC-RNA
 
     about/index
     install
+    tutorials/index
     manual/index
     cli
     api/seismicrna

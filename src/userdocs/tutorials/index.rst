@@ -4,5 +4,6 @@ Tutorials
 
 
 .. toctree::
+    :maxdepth: 1
 
-    tutorial1
+    amplicon/index

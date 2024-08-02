@@ -722,7 +722,7 @@ opt_quick_unbias_thresh = Option(
 opt_cluster = Option(
     ("--cluster/--no-cluster",),
     type=bool,
-    default=True,
+    default=False,
     help="Cluster reads to find alternative structures"
 )
 

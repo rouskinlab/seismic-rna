@@ -318,7 +318,7 @@ To find the location of the data tables for RNAstructure, type ::
 
 This command should print a message that begins with ``DATAPATH=``.
 Add this entire line (including ``DATAPATH=``) to the end of your shell RC file:
-``~/.bashrc`` on most Linux systems, ``.zshrc`` on most macOS systems.
+``~/.bashrc`` on most Linux systems, ``~/.zshrc`` on most macOS systems.
 Restart your terminal for the changes to take effect.
 After restarting the terminal, confirm ``DATAPATH`` is set by typing ::
 
