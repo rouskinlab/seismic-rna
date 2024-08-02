@@ -478,52 +478,11 @@ MaxNRMSDVsBestF = OptionField(opt_max_nrmsd_vs_best)
 TryAllKsF = OptionField(opt_try_all_ks)
 WriteAllKsF = OptionField(opt_write_all_ks)
 ClustNumRunsF = OptionField(opt_em_runs)
-NOCONV = 0  # Number indicating a run did not converge
-EMRunPassingF = Field("em_run_passing",
-                      f"Whether each EM run passed filters",
-                      dict,
-                      iconv=iconv_int_keys,
-                      oconv=get_oconv_dict_list(bool))
 EMKPassingF = Field("em_k_passing",
                     f"Whether each number of clusters (K) passed filters",
                     dict,
                     iconv=iconv_int_keys,
                     oconv=get_oconv_dict(bool))
-ClustsConvF = Field("converged",
-                    f"Iterations for each run ({NOCONV} if did not converge)",
-                    dict,
-                    iconv=iconv_int_keys,
-                    oconv=get_oconv_dict_list(int))
-ClustsLogLikesF = Field("log_likes",
-                        "Final log likelihood for each run",
-                        dict,
-                        iconv=iconv_int_keys,
-                        oconv=get_oconv_dict_list(float))
-ClustsNRMSDVs0F = Field("nrmsds_vs_best",
-                        "NRMSD of each run versus the best run",
-                        dict,
-                        iconv=iconv_int_keys,
-                        oconv=get_oconv_dict_list(float))
-ClustsPearsonVs0F = Field("pearsons_vs_best",
-                          "Pearson correlation of each run versus the best run",
-                          dict,
-                          iconv=iconv_int_keys,
-                          oconv=get_oconv_dict_list(float))
-MinNRMDSsF = Field("min_nrmsds",
-                   "Minimum NRMSD between any two clusters",
-                   dict,
-                   iconv=iconv_int_keys,
-                   oconv=get_oconv_dict_list(float))
-MaxPearsonsF = Field("max_pearsons",
-                     "Maximum Pearson correlation between any two clusters",
-                     dict,
-                     iconv=iconv_int_keys,
-                     oconv=get_oconv_dict_list(float))
-ClustsBICsF = Field("bics",
-                    "Bayesian information criterion for each run",
-                    dict,
-                    iconv=iconv_int_keys,
-                    oconv=get_oconv_dict_list(float))
 KsWrittenF = Field("ks_written",
                    "Numbers of clusters written to batches",
                    list)

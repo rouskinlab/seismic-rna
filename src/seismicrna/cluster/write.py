@@ -11,6 +11,7 @@ from .csv import write_log_counts, write_mus, write_props
 from .em import EMRun
 from .io import write_batches
 from .report import ClusterReport
+from .results import write_results
 from .uniq import UniqReads
 from ..core.header import validate_ks
 from ..core.io import recast_file_path
@@ -167,28 +168,31 @@ def cluster(mask_report_file: Path, *,
                          n_procs=n_procs,
                          top=tmp_dir,
                          **kwargs)
+        runs_ks_list = list(runs_ks.values())
         # Choose which numbers of clusters to write.
         if write_all_ks:
-            write_ks = list(runs_ks.values())
-        elif (best_k := find_best_k(runs_ks.values())) >= 1:
+            write_ks = runs_ks_list
+        elif (best_k := find_best_k(runs_ks_list)) >= 1:
             write_ks = [runs_ks[best_k]]
         else:
             write_ks = []
         # Write the observed and expected counts for every best run.
-        write_log_counts(uniq_reads,
-                         write_ks,
-                         top=tmp_dir,
-                         sample=dataset.sample,
-                         ref=dataset.ref,
-                         sect=dataset.sect)
+        log_counts_file = write_log_counts(uniq_reads,
+                                           write_ks,
+                                           top=tmp_dir,
+                                           sample=dataset.sample,
+                                           ref=dataset.ref,
+                                           sect=dataset.sect)
         # Output the cluster memberships in batches of reads.
         checksums, ks_written = write_batches(dataset,
                                               write_ks,
                                               brotli_level,
                                               tmp_dir)
+        # Write the results as a table and as graphs.
+        write_results(runs_ks_list, log_counts_file.parent)
         # Write the cluster report.
         ended = datetime.now()
-        report = ClusterReport.from_clusters(list(runs_ks.values()),
+        report = ClusterReport.from_clusters(runs_ks_list,
                                              uniq_reads,
                                              min_clusters=min_clusters,
                                              max_clusters=max_clusters,

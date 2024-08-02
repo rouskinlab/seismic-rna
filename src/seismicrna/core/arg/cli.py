@@ -1,11 +1,3 @@
-"""
-Core Command Line Interface
-===========================
-Auth: Yves, Matty
-
-Define all command line interface (CLI) options and their defaults.
-"""
-
 import logging
 import math
 import os

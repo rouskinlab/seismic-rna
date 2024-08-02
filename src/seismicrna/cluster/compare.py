@@ -12,10 +12,10 @@ from .names import LOG_EXP_NAME, LOG_OBS_NAME
 from .uniq import UniqReads
 from ..core.header import NUM_CLUSTS_NAME
 from ..core.mu import calc_rmsd, calc_nrmsd, calc_pearson
-from ..core.report import NOCONV
 
 logger = getLogger(__name__)
 
+NOCONV = 0
 EXP_COUNT_PRECISION = 3  # Number of digits to round expected log counts
 
 
@@ -55,12 +55,12 @@ class EMRunsK(object):
         # To filter invalid runs, need to use "not" with the opposite of
         # the desired inequality because runs with just one cluster will
         # produce NaN values, which should always compare as True here.
-        self.run_valid = np.array([
+        self.run_passing = np.array([
             not (run.calc_max_pearson() > max_pearson_run
                  or run.calc_min_nrmsd() < min_nrmsd_run)
             for run in runs
         ])
-        if self.n_runs_valid == 0:
+        if self.n_runs_passing == 0:
             logger.warning(f"{self} got no EM runs where all pairs of clusters "
                            f"had Pearson correlation ≤ {self.max_pearson_run} "
                            f"and NRMSD ≥ {self.min_nrmsd_run}")
@@ -90,18 +90,18 @@ class EMRunsK(object):
         self._passing = None
 
     @cached_property
-    def n_runs_valid(self):
+    def n_runs_passing(self):
         """ Number of valid runs. """
-        return int(np.count_nonzero(self.run_valid))
+        return int(np.count_nonzero(self.run_passing))
 
     def get_valid_index(self, i: int | list[int] | np.ndarray):
         """ Index(es) of valid run number(s) `i`. """
-        return np.flatnonzero(self.run_valid)[i]
+        return np.flatnonzero(self.run_passing)[i]
 
     @cached_property
     def best_index(self) -> int:
         """ Index of the best valid run. """
-        if self.n_runs_valid > 0:
+        if self.n_runs_passing > 0:
             # The best run is the valid run with the largest likelihood.
             return self.get_valid_index(0)
         # If no runs are valid, then use the best invalid run.
@@ -110,13 +110,13 @@ class EMRunsK(object):
     @cached_property
     def subopt_indexes(self):
         """ Indexes of the valid suboptimal runs. """
-        return self.get_valid_index(np.arange(1, self.n_runs_valid))
+        return self.get_valid_index(np.arange(1, self.n_runs_passing))
 
     @cached_property
     def loglike_vs_best(self):
         """ Log likelihood difference between the best and second-best
         runs. """
-        if self.n_runs_valid < 2:
+        if self.n_runs_passing < 2:
             return np.nan
         index1, index2 = self.get_valid_index([0, 1])
         return float(self.log_likes[index1] - self.log_likes[index2])
@@ -125,14 +125,14 @@ class EMRunsK(object):
     def pearson_vs_best(self):
         """ Maximum Pearson correlation between the best run and any
         other run. """
-        if self.n_runs_valid < 2:
+        if self.n_runs_passing < 2:
             return np.nan
         return float(np.max(self.pearsons_vs_best[self.subopt_indexes]))
 
     @cached_property
     def nrmsd_vs_best(self):
         """ Minimum NRMSD between the best run and any other run. """
-        if self.n_runs_valid < 2:
+        if self.n_runs_passing < 2:
             return np.nan
         return float(np.min(self.nrmsds_vs_best[self.subopt_indexes]))
 
@@ -156,7 +156,7 @@ class EMRunsK(object):
         # Use "not" followed by the opposite of the desired inequality
         # so that if any attribute is NaN, the inequality will evaluate
         # to False, and its "not" will be True, as desired.
-        self._passing = not (self.n_runs_valid == 0
+        self._passing = not (self.n_runs_passing == 0
                              or self.loglike_vs_best > max_loglike_vs_best
                              or self.pearson_vs_best < min_pearson_vs_best
                              or self.nrmsd_vs_best > max_nrmsd_vs_best)
