@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import plotly.express as px
 
 from .compare import EMRunsK
 from .names import LOG_EXP_NAME, LOG_OBS_NAME
@@ -42,8 +43,26 @@ def calc_log_obs_exp(uniq_reads: UniqReads, ks: list[EMRunsK]):
 
 
 def write_log_obs_exp(log_obs_exp: pd.DataFrame, to_dir: Path):
-    """ Write the expected and observed log counts of unique reads to a
-    CSV file. """
+    """ Write the expected and observed log counts of unique reads. """
     file = to_dir.joinpath(f"read-counts{path.CSVZIP_EXT}")
     log_obs_exp.to_csv(file)
     return file
+
+
+def graph_log_obs_exp(log_obs_exp: pd.DataFrame, to_dir: Path):
+    """ Graph the expected vs. observed log counts of unique reads. """
+    for column in log_obs_exp.columns:
+        if column != LOG_OBS_NAME:
+            k = parse_exp_count_col(column)
+            fig = px.scatter(log_obs_exp,
+                             x=column,
+                             y=LOG_OBS_NAME,
+                             title=f"{LOG_OBS_NAME} vs. {column}")
+            file = to_dir.joinpath(f"log-obs-exp_k{k}{path.PDF_EXT}")
+            fig.write_image(file)
+
+
+def write_jackpotting(uniq_reads: UniqReads, ks: list[EMRunsK], to_dir: Path):
+    log_obs_exp = calc_log_obs_exp(uniq_reads, ks)
+    write_log_obs_exp(log_obs_exp, to_dir)
+    graph_log_obs_exp(log_obs_exp, to_dir)

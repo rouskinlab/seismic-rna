@@ -10,7 +10,7 @@ from .compare import EMRunsK, find_best_k, sort_runs
 from .params import write_mus, write_pis
 from .em import EMRun
 from .io import write_batches
-from .jackpot import calc_log_obs_exp, write_log_obs_exp
+from .jackpot import write_jackpotting
 from .report import ClusterReport
 from .summary import write_summaries
 from .uniq import UniqReads
@@ -192,8 +192,7 @@ def cluster(mask_report_file: Path, *,
         # Write the observed and expected counts for every best run.
         jackpotting_dir = tmp_clust_dir.joinpath(path.CLUST_JACKPOTTING_DIR)
         jackpotting_dir.mkdir()
-        log_obs_exp = calc_log_obs_exp(uniq_reads, runs_ks_list)
-        write_log_obs_exp(log_obs_exp, jackpotting_dir)
+        write_jackpotting(uniq_reads, runs_ks_list, jackpotting_dir)
         # Summarize the runs in table and graph format.
         summaries_dir = tmp_clust_dir.joinpath(path.CLUST_SUMMARIES_DIR)
         summaries_dir.mkdir()
