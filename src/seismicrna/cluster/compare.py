@@ -1,22 +1,16 @@
-import re
 from functools import cached_property
 from itertools import permutations
 from logging import getLogger
 from typing import Callable, Iterable
 
 import numpy as np
-import pandas as pd
 
 from .em import EMRun
-from .names import LOG_EXP_NAME, LOG_OBS_NAME
-from .uniq import UniqReads
-from ..core.header import NUM_CLUSTS_NAME
 from ..core.mu import calc_rmsd, calc_nrmsd, calc_pearson
 
 logger = getLogger(__name__)
 
 NOCONV = 0
-EXP_COUNT_PRECISION = 3  # Number of digits to round expected log counts
 
 
 def get_common_k(runs: list[EMRun]):
@@ -175,32 +169,6 @@ def find_best_k(ks: Iterable[EMRunsK]):
     ks = sorted(ks, key=lambda k: k.best_bic)
     # Return that number of clusters.
     return ks[0].k
-
-
-def format_exp_count_col(k: int):
-    return f"{LOG_EXP_NAME}, {NUM_CLUSTS_NAME} {k}"
-
-
-def parse_exp_count_col(col: str):
-    if not (match := re.match(f"^{LOG_EXP_NAME}, {NUM_CLUSTS_NAME} ([0-9]+)$", col)):
-        raise ValueError(f"Invalid expected count column: {repr(col)}")
-    k, = match.groups()
-    return int(k)
-
-
-def get_log_exp_obs_counts(uniq_reads: UniqReads, ks: list[EMRunsK]):
-    """ Get the expected and observed log counts of each bit vector. """
-    # Compute the observed log counts of the bit vectors.
-    log_obs = pd.Series(np.log(uniq_reads.counts_per_uniq),
-                        index=uniq_reads.get_uniq_names())
-    # For each number of clusters, compute the expected log counts.
-    log_exp = [(format_exp_count_col(runs.k),
-                pd.Series(runs.best.logn_exp, index=log_obs.index))
-               for runs in ks]
-    # Assemble all log counts into one DataFrame.
-    log_counts = pd.DataFrame.from_dict({LOG_OBS_NAME: log_obs} | dict(log_exp))
-    # Round the log counts.
-    return log_counts.round(EXP_COUNT_PRECISION)
 
 
 def _compare_groups(func: Callable, mus1: np.ndarray, mus2: np.ndarray):

@@ -101,16 +101,6 @@ Extra Utilities
 .. click:: seismicrna.lists.listpos:cli
     :prog: seismic +listpos
 
-.. _cli_addclust:
-
-.. click:: seismicrna.cluster.addclust:cli
-    :prog: seismic +addclust
-
-.. _cli_delclust:
-
-.. click:: seismicrna.cluster.delclust:cli
-    :prog: seismic +delclust
-
 .. _cli_cleanfa:
 
 .. click:: seismicrna.cleanfa:cli
@@ -155,4 +145,3 @@ seismic +sim
 
 .. click:: seismicrna.sim.fastq:cli
     :prog: seismic +sim fastq
-

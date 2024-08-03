@@ -483,7 +483,7 @@ class EMRun(object):
                 if self.uniq_reads.num_nonuniq > 0
                 else np.zeros(0))
 
-    def get_props(self):
+    def get_pis(self):
         """ Real and observed log proportion of each cluster. """
         return pd.DataFrame(self.p_clust[:, np.newaxis],
                             index=self.clusters,

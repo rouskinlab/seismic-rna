@@ -97,16 +97,14 @@ STAGES = (STAGE_ALIGN_INDEX,
           STAGE_ALIGN_SORT,
           STAGE_REL_SAMS)
 
-# Tables
-
-CLUST_PROP_RUN_TABLE = "props"
-CLUST_MUS_RUN_TABLE = "mus"
-CLUST_RESP_RUN_TABLE = "resps"
-CLUST_COUNT_RUN_TABLE = "counts"
-CLUST_TABLES = (CLUST_PROP_RUN_TABLE,
-                CLUST_MUS_RUN_TABLE,
-                CLUST_RESP_RUN_TABLE,
-                CLUST_COUNT_RUN_TABLE)
+# Cluster information
+CLUST_PARAM_PIS = "pis"
+CLUST_PARAM_MUS = "mus"
+CLUST_PARAMS = (CLUST_PARAM_PIS,
+                CLUST_PARAM_MUS)
+CLUST_PARAMS_DIR = "parameters"
+CLUST_SUMMARIES_DIR = "summaries"
+CLUST_JACKPOTTING_DIR = "jackpotting"
 
 RELATE_TABLE = "relate"
 MASK_TABLE = "mask"
@@ -302,7 +300,7 @@ CmdField = Field(str, [QC_INIT_DIR,
                        CMD_GRAPH_DIR])
 StageField = Field(str, STAGES)
 IntField = Field(int)
-ClustTabField = Field(str, CLUST_TABLES)
+ClustRunResultsField = Field(str, CLUST_PARAMS)
 PosTableField = Field(str, TABLES)
 ReadTableField = Field(str, TABLES)
 FreqTableField = Field(str, [CLUST_TABLE])
@@ -313,7 +311,6 @@ ReportExt = Field(str, [JSON_EXT], is_ext=True)
 RefseqFileExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 BatchExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 ClustTabExt = Field(str, CSV_EXTS, is_ext=True)
-ClustCountExt = Field(str, CSV_EXTS, is_ext=True)
 PosTableExt = Field(str, [CSV_EXT], is_ext=True)
 ReadTableExt = Field(str, [CSVZIP_EXT], is_ext=True)
 FreqTableExt = Field(str, [CSV_EXT], is_ext=True)
@@ -341,8 +338,6 @@ class Segment(object):
                  frmt: str | None = None):
         self.name = segment_name
         self.field_types = field_types
-        if not self.field_types:
-            raise PathValueError(f"Segment got no fields")
         # Verify that a field has the key EXT if and only if it is an
         # extension and is the last field in the segment.
         for i, (name, field) in enumerate(self.field_types.items(), start=1):
@@ -508,12 +503,16 @@ MaskBatSeg = Segment("mask-bat",
 MaskRepSeg = Segment("mask-rep", {EXT: ReportExt}, frmt="mask-report{ext}")
 
 # Cluster
-ClustTabSeg = Segment("clust-tab", {TABLE: ClustTabField,
-                                    NCLUST: IntField,
-                                    RUN: IntField,
-                                    EXT: ClustTabExt},
-                      frmt="{table}-k{k}-r{run}{ext}")
-ClustCountSeg = Segment("clust-count", {EXT: ClustCountExt}, frmt="counts{ext}")
+ClustParamsDirSeg = Segment("clust-run-res-dir",
+                            {},
+                            frmt=CLUST_PARAMS_DIR,
+                            order=10)
+ClustParamsFileSeg = Segment("clust-run-res",
+                             {TABLE: ClustRunResultsField,
+                              NCLUST: IntField,
+                              RUN: IntField,
+                              EXT: ClustTabExt},
+                             frmt="k{k}-r{run}_{table}{ext}")
 ClustBatSeg = Segment("clust-bat",
                       {BATCH: IntField, EXT: BatchExt},
                       frmt="cluster-batch-{batch}{ext}")
@@ -567,8 +566,7 @@ DMFASTQ1_SEGS = SampSeg, DmFastq1Seg
 DMFASTQ2_SEGS = SampSeg, DmFastq2Seg
 XAM_SEGS = CMD_DIR_SEGS + (XamSeg,)
 XAM_STAGE_SEGS = STAGE_DIR_SEGS + (XamSeg,)
-CLUST_TAB_SEGS = SECT_DIR_SEGS + (ClustTabSeg,)
-CLUST_COUNT_SEGS = SECT_DIR_SEGS + (ClustCountSeg,)
+CLUST_TAB_SEGS = SECT_DIR_SEGS + (ClustParamsDirSeg, ClustParamsFileSeg)
 POS_TABLE_SEGS = SECT_DIR_SEGS + (PosTableSeg,)
 READ_TABLE_SEGS = SECT_DIR_SEGS + (ReadTableSeg,)
 FREQ_TABLE_SEGS = SECT_DIR_SEGS + (FreqTableSeg,)

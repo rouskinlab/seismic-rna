@@ -13,9 +13,9 @@ ATTRS = {
     RUN_PASSING: "Whether the run passed filters",
     "log_likes": "Final log likelihood",
     "bics": "Bayesian information criterion",
-    "min_nrmsds": "Minimum NRMSD between any two clusters",
+    "min_nrmsds": "Minimum normalized RMSD between any two clusters",
     "max_pearsons": "Maximum Pearson correlation between any two clusters",
-    "nrmsds_vs_best": "NRMSD versus the best run",
+    "nrmsds_vs_best": "Normalized RMSD versus the best run",
     "pearsons_vs_best": "Pearson correlation versus the best run",
     "converged": f"Iterations ({NOCONV} if the run did not converge)",
 }
@@ -41,7 +41,7 @@ def tabulate(ks: list[EMRunsK]):
 
 
 def write_table(table: pd.DataFrame, cluster_dir: Path):
-    table_file = cluster_dir.joinpath("graph.csv")
+    table_file = cluster_dir.joinpath("summary.csv")
     table.to_csv(table_file)
     return table_file
 
@@ -57,7 +57,7 @@ def graph_attr(attr: pd.Series, passing_text: list[str] | None = None):
                   barmode="group")
 
 
-def graph_attrs(table: pd.DataFrame, cluster_dir: Path):
+def graph_attrs(table: pd.DataFrame, to_dir: Path):
     """ Graph every attribute. """
     passing = table[ATTRS[RUN_PASSING]]
     if passing.all():
@@ -68,10 +68,10 @@ def graph_attrs(table: pd.DataFrame, cluster_dir: Path):
         if key == RUN_PASSING:
             continue
         fig = graph_attr(table[attr], passing_text)
-        fig.write_image(cluster_dir.joinpath(f"graph_{key}.pdf"))
+        fig.write_image(to_dir.joinpath(f"{key}.pdf"))
 
 
-def write_results(ks: list[EMRunsK], cluster_dir: Path):
+def write_summaries(ks: list[EMRunsK], to_dir: Path):
     table = tabulate(ks)
-    write_table(table, cluster_dir)
-    graph_attrs(table, cluster_dir)
+    write_table(table, to_dir)
+    graph_attrs(table, to_dir)

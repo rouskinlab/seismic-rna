@@ -7,12 +7,14 @@ from typing import Iterable
 import numpy as np
 
 from .compare import EMRunsK, find_best_k, sort_runs
-from .csv import write_log_counts, write_mus, write_props
+from .params import write_mus, write_pis
 from .em import EMRun
 from .io import write_batches
+from .jackpot import calc_log_obs_exp, write_log_obs_exp
 from .report import ClusterReport
-from .results import write_results
+from .summary import write_summaries
 from .uniq import UniqReads
+from ..core import path
 from ..core.header import validate_ks
 from ..core.io import recast_file_path
 from ..core.logs import exc_info
@@ -98,7 +100,7 @@ def run_ks(uniq_reads: UniqReads,
             # Output each run's mutation rates and cluster proportions.
             for rank, run in enumerate(runs):
                 write_mus(run, rank=rank, **path_kwargs)
-                write_props(run, rank=rank, **path_kwargs)
+                write_pis(run, rank=rank, **path_kwargs)
             # Collect all runs for this number of clusters.
             runs_ks[k] = EMRunsK(runs,
                                  max_pearson_run=max_pearson_run,
@@ -139,6 +141,12 @@ def cluster(mask_report_file: Path, *,
         logger.info(f"Began clustering {mask_report_file}")
         # Load the unique reads.
         dataset = load_mask_dataset(mask_report_file)
+        tmp_clust_dir = path.buildpar(*path.SECT_DIR_SEGS,
+                                      top=tmp_dir,
+                                      cmd=path.CMD_CLUST_DIR,
+                                      sample=dataset.sample,
+                                      ref=dataset.ref,
+                                      sect=dataset.sect)
         if dataset.min_mut_gap != 3:
             logger.warning("For clustering, it is highly recommended to use "
                            "the observer bias correction with min_mut_gap=3, "
@@ -176,20 +184,20 @@ def cluster(mask_report_file: Path, *,
             write_ks = [runs_ks[best_k]]
         else:
             write_ks = []
-        # Write the observed and expected counts for every best run.
-        log_counts_file = write_log_counts(uniq_reads,
-                                           write_ks,
-                                           top=tmp_dir,
-                                           sample=dataset.sample,
-                                           ref=dataset.ref,
-                                           sect=dataset.sect)
         # Output the cluster memberships in batches of reads.
         checksums, ks_written = write_batches(dataset,
                                               write_ks,
                                               brotli_level,
                                               tmp_dir)
-        # Write the results as a table and as graphs.
-        write_results(runs_ks_list, log_counts_file.parent)
+        # Write the observed and expected counts for every best run.
+        jackpotting_dir = tmp_clust_dir.joinpath(path.CLUST_JACKPOTTING_DIR)
+        jackpotting_dir.mkdir()
+        log_obs_exp = calc_log_obs_exp(uniq_reads, runs_ks_list)
+        write_log_obs_exp(log_obs_exp, jackpotting_dir)
+        # Summarize the runs in table and graph format.
+        summaries_dir = tmp_clust_dir.joinpath(path.CLUST_SUMMARIES_DIR)
+        summaries_dir.mkdir()
+        write_summaries(runs_ks_list, summaries_dir)
         # Write the cluster report.
         ended = datetime.now()
         report = ClusterReport.from_clusters(runs_ks_list,
