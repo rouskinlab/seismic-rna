@@ -1,8 +1,5 @@
 from logging import getLogger
 from pathlib import Path
-from typing import Callable
-
-import pandas as pd
 
 from .em import EMRun
 from ..core import path
@@ -38,11 +35,11 @@ def write_single_run_table(run: EMRun,
                            ref: str,
                            sect: str,
                            rank: int, *,
-                           output_func: Callable[[EMRun], pd.DataFrame],
+                           attr: str,
                            table: str):
     """ Write a DataFrame of one type of data from one independent run
     of EM clustering to a CSV file. """
-    data = output_func(run)
+    data = getattr(run, attr)
     file = get_table_path(top, sample, ref, sect, table, run.k, rank)
     data.round(PRECISION).to_csv(file, header=True, index=True)
     logger.info(f"Wrote {table} of {run} to {file}")
@@ -61,7 +58,7 @@ def write_pis(run: EMRun,
                                   ref,
                                   sect,
                                   rank,
-                                  output_func=EMRun.get_pis,
+                                  attr="pis",
                                   table=path.CLUST_PARAM_PIS)
 
 
@@ -77,7 +74,7 @@ def write_mus(run: EMRun,
                                   ref,
                                   sect,
                                   rank,
-                                  output_func=EMRun.get_mus,
+                                  attr="mus",
                                   table=path.CLUST_PARAM_MUS)
 
 ########################################################################

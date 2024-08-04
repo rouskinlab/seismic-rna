@@ -73,6 +73,9 @@ from .arg import (opt_phred_enc,
                   opt_max_fmut_read,
                   opt_min_clusters,
                   opt_max_clusters,
+                  opt_min_obs,
+                  opt_min_exp,
+                  opt_jackpot_alpha,
                   opt_max_pearson_run,
                   opt_min_nrmsd_run,
                   opt_max_loglike_vs_best,
@@ -470,6 +473,9 @@ MaxIterClustF = OptionField(opt_max_em_iter)
 ClustConvThreshF = OptionField(opt_em_thresh)
 MinClustsF = OptionField(opt_min_clusters)
 MaxClustsF = OptionField(opt_max_clusters)
+MinObsF = OptionField(opt_min_obs)
+MinExpF = OptionField(opt_min_exp)
+JackpotAlphaF = OptionField(opt_jackpot_alpha)
 MaxPearsonRunF = OptionField(opt_max_pearson_run)
 MinNRMSDRunF = OptionField(opt_min_nrmsd_run)
 MaxLogLikeVsBestF = OptionField(opt_max_loglike_vs_best)

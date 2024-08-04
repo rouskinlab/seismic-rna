@@ -13,6 +13,8 @@ ATTRS = {
     RUN_PASSING: "Whether the run passed filters",
     "log_likes": "Final log likelihood",
     "bics": "Bayesian information criterion",
+    "jackpot_g_stats": "Jackpotting G-test statistic",
+    "jackpot_p_values": "Jackpotting P-value",
     "min_nrmsds": "Minimum normalized RMSD between any two clusters",
     "max_pearsons": "Maximum Pearson correlation between any two clusters",
     "nrmsds_vs_best": "Normalized RMSD versus the best run",

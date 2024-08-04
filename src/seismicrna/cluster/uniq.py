@@ -153,6 +153,12 @@ class UniqReads(EndCoords):
             names = list()
         return pd.Index(names, name=BIT_VECTOR_NAME)
 
+    @cached_property
+    def log_obs(self):
+        """ Log of the number of times each read was observed. """
+        return pd.Series(np.log(self.counts_per_uniq),
+                         self.get_uniq_names())
+
     def __eq__(self, other):
         if not isinstance(other, UniqReads):
             return NotImplemented

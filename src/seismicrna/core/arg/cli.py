@@ -746,6 +746,27 @@ opt_write_all_ks = Option(
     help="Write all numbers of clusters (Ks), rather than only the best number"
 )
 
+opt_min_obs = Option(
+    ("--min-obs",),
+    type=int,
+    default=10,
+    help="Minimum observed number of reads for jackpotting calculation"
+)
+
+opt_min_exp = Option(
+    ("--min-exp",),
+    type=float,
+    default=10.,
+    help="Minimum expected number of reads for jackpotting calculation"
+)
+
+opt_jackpot_alpha = Option(
+    ("--jackpot-alpha",),
+    type=float,
+    default=0.02,
+    help="Remove runs where the jackpotting P-value is less than this level"
+)
+
 opt_max_pearson_run = Option(
     ("--max-pearson-run",),
     type=float,

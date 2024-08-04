@@ -37,6 +37,7 @@ class EMRunsK(object):
 
     def __init__(self,
                  runs: list[EMRun],
+                 jackpot_alpha: float,
                  max_pearson_run: float,
                  min_nrmsd_run: float):
         if not runs:
@@ -44,20 +45,22 @@ class EMRunsK(object):
         # Sort the runs from largest to smallest likelihood.
         runs = sort_runs(runs)
         # Flag runs that fail to meet the filters.
+        self.jackpot_alpha = jackpot_alpha
         self.max_pearson_run = max_pearson_run
         self.min_nrmsd_run = min_nrmsd_run
-        # To filter invalid runs, need to use "not" with the opposite of
+        # To select only the valid runs, use "not" with the opposite of
         # the desired inequality because runs with just one cluster will
         # produce NaN values, which should always compare as True here.
-        self.run_passing = np.array([
-            not (run.calc_max_pearson() > max_pearson_run
-                 or run.calc_min_nrmsd() < min_nrmsd_run)
-            for run in runs
-        ])
+        self.run_passing = np.array([not (run.jpot_p_value < jackpot_alpha
+                                          or run.max_pearson > max_pearson_run
+                                          or run.min_nrmsd < min_nrmsd_run)
+                                     for run in runs])
         if self.n_runs_passing == 0:
-            logger.warning(f"{self} got no EM runs where all pairs of clusters "
-                           f"had Pearson correlation ≤ {self.max_pearson_run} "
-                           f"and NRMSD ≥ {self.min_nrmsd_run}")
+            logger.warning(f"{self} got no EM runs with "
+                           f"a jackpotting P-value ≥ {jackpot_alpha} "
+                           f"and where all pairs of clusters had "
+                           f"Pearson correlation ≤ {max_pearson_run} "
+                           f"and NRMSD ≥ {min_nrmsd_run}")
         # Select the best run.
         self.best = runs[self.best_index]
         # Number of runs.
@@ -71,10 +74,13 @@ class EMRunsK(object):
         self.log_likes = np.array([run.log_like for run in runs])
         # BIC of each run.
         self.bics = np.array([run.bic for run in runs])
+        # Jackpotting G-test statistic and P-value for each run.
+        self.jackpot_g_stats = np.array([run.jpot_g_stat for run in runs])
+        self.jackpot_p_values = np.array([run.jpot_p_value for run in runs])
         # Minimum NRMSD between any two clusters in each run.
-        self.min_nrmsds = np.array([run.calc_min_nrmsd() for run in runs])
+        self.min_nrmsds = np.array([run.min_nrmsd for run in runs])
         # Maximum correlation between any two clusters in each run.
-        self.max_pearsons = np.array([run.calc_max_pearson() for run in runs])
+        self.max_pearsons = np.array([run.max_pearson for run in runs])
         # NRMSD between each run and the best run.
         self.nrmsds_vs_best = np.array([calc_rms_nrmsd(run, self.best)
                                         for run in runs])
@@ -225,16 +231,20 @@ def assign_clusterings(mus1: np.ndarray, mus2: np.ndarray):
 
 def calc_rms_nrmsd(run1: EMRun, run2: EMRun):
     """ Compute the root-mean-square NRMSD between the clusters. """
-    nrmsds = calc_nrmsd_groups(run1.p_mut, run2.p_mut)
-    assignment = assign_clusterings(run1.p_mut, run2.p_mut)
+    mus1 = run1.mus.values
+    mus2 = run2.mus.values
+    nrmsds = calc_nrmsd_groups(mus1, mus2)
+    assignment = assign_clusterings(mus1, mus2)
     return float(np.sqrt(np.mean([np.square(nrmsds[row, col])
                                   for row, col in enumerate(assignment)])))
 
 
 def calc_mean_pearson(run1: EMRun, run2: EMRun):
     """ Compute the mean Pearson correlation between the clusters. """
-    correlations = calc_pearson_groups(run1.p_mut, run2.p_mut)
-    assignment = assign_clusterings(run1.p_mut, run2.p_mut)
+    mus1 = run1.mus.values
+    mus2 = run2.mus.values
+    correlations = calc_pearson_groups(mus1, mus2)
+    assignment = assign_clusterings(mus1, mus2)
     return float(np.mean([correlations[row, col]
                           for row, col in enumerate(assignment)]))
 

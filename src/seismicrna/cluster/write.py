@@ -7,10 +7,10 @@ from typing import Iterable
 import numpy as np
 
 from .compare import EMRunsK, find_best_k, sort_runs
-from .params import write_mus, write_pis
 from .em import EMRun
 from .io import write_batches
 from .jackpot import write_jackpotting
+from .params import write_mus, write_pis
 from .report import ClusterReport
 from .summary import write_summaries
 from .uniq import UniqReads
@@ -18,7 +18,7 @@ from ..core import path
 from ..core.header import validate_ks
 from ..core.io import recast_file_path
 from ..core.logs import exc_info
-from ..core.task import as_list_of_tuples, dispatch
+from ..core.task import dispatch
 from ..core.tmp import release_to_out
 from ..core.types import get_max_uint
 from ..core.write import need_write
@@ -48,15 +48,16 @@ def run_k(uniq_reads: UniqReads,
     # On some but not all platforms, using this central source of seeds
     # is necessary because otherwise the runs would all take identical
     # trajectories, defeating the purpose of replicates.
-    seeds = as_list_of_tuples(rng.integers(get_max_uint(SEED_DTYPE),
-                                           size=em_runs,
-                                           dtype=SEED_DTYPE))
-    runs = list(dispatch([EMRun(uniq_reads, k, **kwargs).run
-                          for _ in range(em_runs)],
+    seeds = rng.integers(get_max_uint(SEED_DTYPE),
+                         size=em_runs,
+                         dtype=SEED_DTYPE)
+    args = [(uniq_reads, k, seed) for seed in seeds]
+    runs = list(dispatch([EMRun for _ in range(em_runs)],
                          n_procs,
                          parallel=True,
                          pass_n_procs=False,
-                         args=seeds))
+                         args=args,
+                         kwargs=kwargs))
     if len(runs) < em_runs:
         logger.warning(f"Obtained only {len(runs)} (of {em_runs}) "
                        f"run(s) of {uniq_reads} with {k} cluster(s)")
@@ -67,6 +68,7 @@ def run_ks(uniq_reads: UniqReads,
            ks: Iterable[int],
            em_runs: int, *,
            try_all_ks: bool,
+           jackpot_alpha: float,
            min_nrmsd_run: float,
            max_pearson_run: float,
            max_loglike_vs_best: float,
@@ -103,6 +105,7 @@ def run_ks(uniq_reads: UniqReads,
                 write_pis(run, rank=rank, **path_kwargs)
             # Collect all runs for this number of clusters.
             runs_ks[k] = EMRunsK(runs,
+                                 jackpot_alpha=jackpot_alpha,
                                  max_pearson_run=max_pearson_run,
                                  min_nrmsd_run=min_nrmsd_run)
             # Check whether this number of clusters passes the filters.
