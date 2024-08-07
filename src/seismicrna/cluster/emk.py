@@ -1,4 +1,3 @@
-from functools import cached_property
 from itertools import permutations
 from logging import getLogger
 from typing import Callable, Iterable
@@ -37,32 +36,42 @@ class EMRunsK(object):
 
     def __init__(self,
                  runs: list[EMRun],
-                 jackpot_alpha: float,
                  max_pearson_run: float,
-                 min_nrmsd_run: float):
+                 min_nrmsd_run: float,
+                 max_jackpot_index: float,
+                 min_jackpot_pval: float,
+                 max_loglike_vs_best: float,
+                 min_pearson_vs_best: float,
+                 max_nrmsd_vs_best: float):
         if not runs:
             raise ValueError(f"{self} got no EM runs")
         # Sort the runs from largest to smallest likelihood.
         runs = sort_runs(runs)
         # Flag runs that fail to meet the filters.
-        self.jackpot_alpha = jackpot_alpha
         self.max_pearson_run = max_pearson_run
         self.min_nrmsd_run = min_nrmsd_run
+        self.max_jackpot_index = max_jackpot_index
+        # Set the criteria for whether this number of clusters passes.
+        self.max_loglike_vs_best = max_loglike_vs_best
+        self.min_pearson_vs_best = min_pearson_vs_best
+        self.max_nrmsd_vs_best = max_nrmsd_vs_best
+        # Check whether each run shows signs of being overclustered.
         # To select only the valid runs, use "not" with the opposite of
         # the desired inequality because runs with just one cluster will
         # produce NaN values, which should always compare as True here.
-        self.run_passing = np.array([not (run.jpot_p_value < jackpot_alpha
-                                          or run.max_pearson > max_pearson_run
-                                          or run.min_nrmsd < min_nrmsd_run)
-                                     for run in runs])
-        if self.n_runs_passing == 0:
-            logger.warning(f"{self} got no EM runs with "
-                           f"a jackpotting P-value ≥ {jackpot_alpha} "
-                           f"and where all pairs of clusters had "
-                           f"Pearson correlation ≤ {max_pearson_run} "
-                           f"and NRMSD ≥ {min_nrmsd_run}")
+        self.run_not_overclustered = np.array(
+            [not (run.max_pearson > max_pearson_run
+                  or run.min_nrmsd < min_nrmsd_run)
+             for run in runs]
+        )
+        # Check whether each run shows signs of being underclustered.
+        self.run_not_underclustered = np.array(
+            [not (run.jackpot_index > max_jackpot_index
+                  or run.jackpot_p_value < min_jackpot_pval)
+             for run in runs]
+        )
         # Select the best run.
-        self.best = runs[self.best_index]
+        self.best = runs[self.best_index()]
         # Number of runs.
         self.n_runs_total = len(runs)
         # Number of clusters (K).
@@ -74,9 +83,9 @@ class EMRunsK(object):
         self.log_likes = np.array([run.log_like for run in runs])
         # BIC of each run.
         self.bics = np.array([run.bic for run in runs])
-        # Jackpotting G-test statistic and P-value for each run.
-        self.jackpot_g_stats = np.array([run.jpot_g_stat for run in runs])
-        self.jackpot_p_values = np.array([run.jpot_p_value for run in runs])
+        # Jackpotting index and P-value of each run.
+        self.jackpot_indexes = np.array([run.jackpot_index for run in runs])
+        self.jackpot_pvals = np.array([run.jackpot_p_value for run in runs])
         # Minimum NRMSD between any two clusters in each run.
         self.min_nrmsds = np.array([run.min_nrmsd for run in runs])
         # Maximum correlation between any two clusters in each run.
@@ -87,92 +96,138 @@ class EMRunsK(object):
         # Correlation between each run and the best run.
         self.pearsons_vs_best = np.array([calc_mean_pearson(run, self.best)
                                           for run in runs])
-        self._passing = None
 
-    @cached_property
-    def n_runs_passing(self):
-        """ Number of valid runs. """
-        return int(np.count_nonzero(self.run_passing))
+    def run_passing(self, allow_underclustered: bool = False):
+        """ Whether each run passed the filters. """
+        if allow_underclustered:
+            return self.run_not_overclustered
+        return self.run_not_overclustered & self.run_not_underclustered
 
-    def get_valid_index(self, i: int | list[int] | np.ndarray):
+    def n_runs_passing(self, **kwargs):
+        """ Number of runs passing the filters. """
+        return int(np.count_nonzero(self.run_passing(**kwargs)))
+
+    def get_valid_index(self, i: int | list[int] | np.ndarray, **kwargs):
         """ Index(es) of valid run number(s) `i`. """
-        return np.flatnonzero(self.run_passing)[i]
+        return np.flatnonzero(self.run_passing(**kwargs))[i]
 
-    @cached_property
-    def best_index(self) -> int:
+    def best_index(self, **kwargs) -> int:
         """ Index of the best valid run. """
-        if self.n_runs_passing > 0:
+        try:
             # The best run is the valid run with the largest likelihood.
-            return self.get_valid_index(0)
-        # If no runs are valid, then use the best invalid run.
-        return 0
+            return self.get_valid_index(0, **kwargs)
+        except IndexError:
+            # If no runs are valid, then use the best invalid run.
+            logger.warning(f"{self} got no EM runs that passed all filters")
+            return 0
 
-    @cached_property
-    def subopt_indexes(self):
+    def subopt_indexes(self, **kwargs):
         """ Indexes of the valid suboptimal runs. """
-        return self.get_valid_index(np.arange(1, self.n_runs_passing))
+        return self.get_valid_index(np.arange(1, self.n_runs_passing(**kwargs)),
+                                    **kwargs)
 
-    @cached_property
-    def loglike_vs_best(self):
+    def loglike_vs_best(self, **kwargs):
         """ Log likelihood difference between the best and second-best
         runs. """
-        if self.n_runs_passing < 2:
+        try:
+            index1, index2 = self.get_valid_index([0, 1], **kwargs)
+            return float(self.log_likes[index1] - self.log_likes[index2])
+        except IndexError:
             return np.nan
-        index1, index2 = self.get_valid_index([0, 1])
-        return float(self.log_likes[index1] - self.log_likes[index2])
 
-    @cached_property
-    def pearson_vs_best(self):
+    def pearson_vs_best(self, **kwargs):
         """ Maximum Pearson correlation between the best run and any
         other run. """
-        if self.n_runs_passing < 2:
+        try:
+            return float(np.max(
+                self.pearsons_vs_best[self.subopt_indexes(**kwargs)]
+            ))
+        except ValueError:
             return np.nan
-        return float(np.max(self.pearsons_vs_best[self.subopt_indexes]))
 
-    @cached_property
-    def nrmsd_vs_best(self):
+    def nrmsd_vs_best(self, **kwargs):
         """ Minimum NRMSD between the best run and any other run. """
-        if self.n_runs_passing < 2:
+        try:
+            return float(np.min(
+                self.nrmsds_vs_best[self.subopt_indexes(**kwargs)]
+            ))
+        except ValueError:
             return np.nan
-        return float(np.min(self.nrmsds_vs_best[self.subopt_indexes]))
 
-    @property
-    def best_bic(self):
-        """ BIC of the best run. """
-        return self.best.bic
+    def enough_runs_passing(self, **kwargs):
+        """ Whether enough runs passed. """
+        return self.n_runs_passing(**kwargs) >= min(self.n_runs_total, 2)
 
-    @property
-    def passing(self):
+    def passing(self, **kwargs):
         """ Whether this number of clusters passes the filters. """
-        if not isinstance(self._passing, bool):
-            raise ValueError(f"{self}.valid has not been set")
-        return self._passing
-
-    def set_passing(self,
-                    max_loglike_vs_best: float,
-                    min_pearson_vs_best: float,
-                    max_nrmsd_vs_best: float):
-        """ Set whether this number of clusters passes the filters. """
         # Use "not" followed by the opposite of the desired inequality
         # so that if any attribute is NaN, the inequality will evaluate
         # to False, and its "not" will be True, as desired.
-        self._passing = not (self.n_runs_passing == 0
-                             or self.loglike_vs_best > max_loglike_vs_best
-                             or self.pearson_vs_best < min_pearson_vs_best
-                             or self.nrmsd_vs_best > max_nrmsd_vs_best)
-        return self.passing
+        return self.enough_runs_passing(**kwargs) and not (
+                self.loglike_vs_best(**kwargs) > self.max_loglike_vs_best
+                or self.pearson_vs_best(**kwargs) < self.min_pearson_vs_best
+                or self.nrmsd_vs_best(**kwargs) > self.max_nrmsd_vs_best
+        )
+
+    def summarize(self, **kwargs):
+        """ Summarize the results of the runs. """
+        lines = [f"EM runs for K={self.k}",
+                 "\nPARAMETERS\n"]
+        for attr in ["max_pearson_run",
+                     "min_nrmsd_run",
+                     "max_jackpot_index",
+                     "max_loglike_vs_best",
+                     "min_pearson_vs_best",
+                     "max_nrmsd_vs_best"]:
+            lines.append(f"{attr} = {getattr(self, attr)}")
+        lines.append("\nRUNS\n")
+        for attr in ["n_runs_total",
+                     "converged",
+                     "log_likes",
+                     "bics",
+                     "jackpot_indexes",
+                     "jackpot_pvals",
+                     "min_nrmsds",
+                     "max_pearsons",
+                     "nrmsds_vs_best",
+                     "pearsons_vs_best",
+                     "run_not_overclustered",
+                     "run_not_underclustered"]:
+            lines.append(f"{attr} = {getattr(self, attr)}")
+        lines.append("\nPASSING\n")
+        for attr in ["run_passing",
+                     "n_runs_passing",
+                     "best_index",
+                     "loglike_vs_best",
+                     "pearson_vs_best",
+                     "nrmsd_vs_best",
+                     "enough_runs_passing",
+                     "passing"]:
+            func = getattr(self, attr)
+            lines.append(f"{attr} = {func(**kwargs)}")
+        return "\n".join(lines)
 
 
-def find_best_k(ks: Iterable[EMRunsK]):
+def find_best_k(ks: Iterable[EMRunsK], **kwargs):
     """ Find the best number of clusters. """
+    # Sort the runs by increasing numbers of clusters.
+    ks = sorted(ks, key=lambda runs: runs.k)
+    if not ks:
+        logger.warning("No numbers of clusters exist")
+        return 0
     # Select only the numbers of clusters that pass the filters.
-    ks = [runs for runs in ks if runs.passing]
+    # For the largest number of clusters, underclustering can be allowed
+    # to permit this number to be identified as the best number so far;
+    # for all other numbers, use all filters.
+    ks = [runs for runs in ks[:-1] if runs.passing()] + (
+        [ks[-1]] if ks[-1].passing(**kwargs) else []
+    )
     if not ks:
         logger.warning("No numbers of clusters pass the filters")
         return 0
     # Of the remaining numbers of clusters, find the number that gives
     # the smallest BIC.
-    ks = sorted(ks, key=lambda k: k.best_bic)
+    ks = sorted(ks, key=lambda runs: runs.best.bic)
     # Return that number of clusters.
     return ks[0].k
 

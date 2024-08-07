@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 
-from .compare import EMRunsK, NOCONV
+from .emk import EMRunsK, NOCONV
 from ..core.header import NUM_CLUSTS_NAME
 
 EM_RUN_NAME = "Run"
@@ -13,8 +13,8 @@ ATTRS = {
     RUN_PASSING: "Whether the run passed filters",
     "log_likes": "Final log likelihood",
     "bics": "Bayesian information criterion",
-    "jackpot_g_stats": "Jackpotting G-test statistic",
-    "jackpot_p_values": "Jackpotting P-value",
+    "jackpot_indexes": "Jackpotting index",
+    "jackpot_pvals": "Jackpotting P-value",
     "min_nrmsds": "Minimum normalized RMSD between any two clusters",
     "max_pearsons": "Maximum Pearson correlation between any two clusters",
     "nrmsds_vs_best": "Normalized RMSD versus the best run",
@@ -29,11 +29,21 @@ def tabulate_attr(ks: list[EMRunsK], attr: str):
     # If runs.k is numeric, then the bars will be stacked, not grouped.
     # If run is numeric, then the run number will be indicated with a
     # color bar rather than a label.
-    values = pd.Series({(str(runs.k), str(run)): value
-                        for runs in ks
-                        for run, value in enumerate(getattr(runs, attr))})
-    values.index.set_names(K_RUN_NAMES)
-    return values
+    runs_values = dict()
+    for runs in ks:
+        runs_value = getattr(runs, attr)
+        if callable(runs_value):
+            runs_value = runs_value()
+        for run, run_value in enumerate(runs_value):
+            runs_values[str(runs.k), str(run)] = run_value
+    if runs_values:
+        runs_values = pd.Series(runs_values)
+        runs_values.index.set_names(K_RUN_NAMES)
+    else:
+        runs_values = pd.Series([],
+                                pd.MultiIndex.from_arrays([[], []],
+                                                          names=K_RUN_NAMES))
+    return runs_values
 
 
 def tabulate(ks: list[EMRunsK]):

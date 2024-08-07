@@ -6,10 +6,10 @@ from typing import Iterable
 
 import numpy as np
 
-from .compare import EMRunsK, find_best_k, sort_runs
+from .emk import EMRunsK, find_best_k, sort_runs
 from .em import EMRun
 from .io import write_batches
-from .jackpot import write_jackpotting
+from .obsexp import write_jackpotting
 from .params import write_mus, write_pis
 from .report import ClusterReport
 from .summary import write_summaries
@@ -68,9 +68,10 @@ def run_ks(uniq_reads: UniqReads,
            ks: Iterable[int],
            em_runs: int, *,
            try_all_ks: bool,
-           jackpot_alpha: float,
            min_nrmsd_run: float,
            max_pearson_run: float,
+           max_jackpot_index: float,
+           min_jackpot_pval: float,
            max_loglike_vs_best: float,
            min_pearson_vs_best: float,
            max_nrmsd_vs_best: float,
@@ -87,6 +88,8 @@ def run_ks(uniq_reads: UniqReads,
                        sect=uniq_reads.section.name)
     runs_ks = dict()
     ks = validate_ks(ks)
+    # Loop through every K if try_all_ks is True, otherwise go until the
+    # current K is worse than the previous K or raises an error.
     for k in ks:
         try:
             # Cluster em_runs times with different starting points.
@@ -105,14 +108,16 @@ def run_ks(uniq_reads: UniqReads,
                 write_pis(run, rank=rank, **path_kwargs)
             # Collect all runs for this number of clusters.
             runs_ks[k] = EMRunsK(runs,
-                                 jackpot_alpha=jackpot_alpha,
                                  max_pearson_run=max_pearson_run,
-                                 min_nrmsd_run=min_nrmsd_run)
-            # Check whether this number of clusters passes the filters.
-            runs_ks[k].set_passing(max_loglike_vs_best=max_loglike_vs_best,
-                                   min_pearson_vs_best=min_pearson_vs_best,
-                                   max_nrmsd_vs_best=max_nrmsd_vs_best)
-            if not (try_all_ks or k == find_best_k(runs_ks.values())):
+                                 min_nrmsd_run=min_nrmsd_run,
+                                 max_jackpot_index=max_jackpot_index,
+                                 min_jackpot_pval=min_jackpot_pval,
+                                 max_loglike_vs_best=max_loglike_vs_best,
+                                 min_pearson_vs_best=min_pearson_vs_best,
+                                 max_nrmsd_vs_best=max_nrmsd_vs_best)
+            logger.debug(runs_ks[k].summarize())
+            if not (try_all_ks or k == find_best_k(runs_ks.values(),
+                                                   allow_underclustered=True)):
                 # The current k is not the best so far.
                 break
         except Exception as error:
@@ -120,6 +125,10 @@ def run_ks(uniq_reads: UniqReads,
                 f"Failed to split {uniq_reads} into {k} cluster(s): {error}",
                 exc_info=exc_info()
             )
+            if not try_all_ks:
+                # Break so that if clustering would fail for every K,
+                # this part will not get stuck in a VERY long loop.
+                break
     return runs_ks
 
 

@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 
-from .compare import EMRunsK
+from .emk import EMRunsK
 from .names import LOG_EXP_NAME, LOG_OBS_NAME
 from .uniq import UniqReads
 from ..core import path
@@ -31,7 +31,7 @@ def assemble_log_obs_exp(uniq_reads: UniqReads, ks: list[EMRunsK]):
     """ Assemble the expected and observed log counts of each read. """
     # For each number of clusters, compute the expected log counts.
     log_exp = [(format_exp_count_col(runs.k),
-                pd.Series(runs.best.log_exp, index=uniq_reads.log_obs.index))
+                pd.Series(runs.best.log_exp, uniq_reads.uniq_names))
                for runs in ks]
     # Assemble all log counts into one DataFrame.
     log_obs_exp = pd.DataFrame.from_dict({LOG_OBS_NAME: uniq_reads.log_obs}

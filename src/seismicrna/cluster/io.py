@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 from .batch import ClusterReadBatch
-from .compare import EMRunsK
+from .emk import EMRunsK
 from ..core import path
 from ..core.header import ClustHeader
 from ..core.io import ReadBatchIO, SectIO

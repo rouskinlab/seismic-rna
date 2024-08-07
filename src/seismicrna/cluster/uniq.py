@@ -133,8 +133,9 @@ class UniqReads(EndCoords):
                 covs[read, end5: end3] = True
         return covs
 
-    def get_uniq_names(self):
-        """ Unique bit vectors as byte strings. """
+    @cached_property
+    def uniq_names(self):
+        """ Unique read names as byte strings. """
         # Get the full boolean matrices of the coverage and mutations of
         # the unique reads, cast the data from boolean to 8-bit integer
         # type, and merge them into one matrix via subtraction.
@@ -153,11 +154,15 @@ class UniqReads(EndCoords):
             names = list()
         return pd.Index(names, name=BIT_VECTOR_NAME)
 
+    @property
+    def num_obs(self):
+        """ Number of times each read was observed. """
+        return pd.Series(self.counts_per_uniq, self.uniq_names)
+
     @cached_property
     def log_obs(self):
-        """ Log of the number of times each read was observed. """
-        return pd.Series(np.log(self.counts_per_uniq),
-                         self.get_uniq_names())
+        """ Log number of times each read was observed. """
+        return np.log(self.num_obs)
 
     def __eq__(self, other):
         if not isinstance(other, UniqReads):

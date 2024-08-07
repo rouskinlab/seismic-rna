@@ -4,7 +4,7 @@ from itertools import permutations
 
 import numpy as np
 
-from seismicrna.cluster.compare import assign_clusterings
+from seismicrna.cluster.emk import assign_clusterings
 from seismicrna.core.array import calc_inverse
 
 rng = np.random.default_rng()
