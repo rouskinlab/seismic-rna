@@ -1,13 +1,3 @@
-"""
-
-SEISMIC-RNA Logo Module
-
-========================================================================
-
-Draw the logo for SEISMIC-RNA as a PNG file.
-
-"""
-
 from PIL import Image
 
 BASE_DIMENSION = 4800

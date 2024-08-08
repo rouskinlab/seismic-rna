@@ -38,3 +38,11 @@ touch $BUILD_DIR/.nojekyll
 
 # Build the GitHub Pages files from the source files.
 sphinx-build -b html $DOCSRC_DIR $BUILD_DIR
+
+# Change the color of the upper left sidebar from the default (#2980b9).
+DEFAULT_NAV_BACKGROUND="#2980b9"
+CUSTOM_NAV_BACKGROUND="#2186d9"
+for STYLESHEET in theme badge_only
+do
+  sed -i "s/$DEFAULT_NAV_BACKGROUND/$CUSTOM_NAV_BACKGROUND/g" $BUILD_DIR/_static/css/$STYLESHEET
+done
