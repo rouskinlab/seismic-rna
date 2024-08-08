@@ -4,7 +4,7 @@
 Structure Ensemble Inference by Sequencing, Mutation Identification, and
 Clustering of RNA
 
-![Logo of SEISMIC-RNA](logo/logo-1200.png "SEISMIC-RNA")
+![Logo of SEISMIC-RNA](logo/logo-1440.png "SEISMIC-RNA")
 
 
 ## About
@@ -17,7 +17,7 @@ This software introduces an optimized implementation of the algorithm
 and quantifying RNA structure ensembles.
 
 
-## Installation and Usage
+## Documentation
 
 Documentation for installing and using SEISMIC-RNA is available on
 [GitHub Pages](https://rouskinlab.github.io/seismic-rna).
