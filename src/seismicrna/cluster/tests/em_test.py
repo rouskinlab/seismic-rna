@@ -1,8 +1,14 @@
 import unittest as ut
 
 import numpy as np
+from scipy.stats import kstest
 
-from seismicrna.cluster.em import _expectation
+from seismicrna.cluster.em import (_expectation,
+                                   _calc_jackpotting_g_stat,
+                                   _calc_jackpotting_p_value)
+from seismicrna.core.array import get_length
+
+rng = np.random.default_rng(0)
 
 
 class TestExpectation(ut.TestCase):
@@ -216,6 +222,216 @@ class TestExpectation(ut.TestCase):
                      min_mut_gap,
                      expect_log_marginals,
                      expect_memberships)
+
+
+class TestCalcJackpottingGStat(ut.TestCase):
+
+    def test_diff_lengths(self):
+        num_obs = np.array([1])
+        num_exp = np.array([1., 2.])
+        self.assertRaisesRegex(ValueError,
+                               (r"Lengths differ between observed \(1\) "
+                                r"and expected \(2\)"),
+                               _calc_jackpotting_g_stat,
+                               num_obs,
+                               np.log(num_exp))
+
+    def test_neg_num_obs(self):
+        num_obs = np.array([-1, 2])
+        num_exp = np.array([1., 2.])
+        self.assertRaisesRegex(ValueError,
+                               r"All num_obs must be ≥ 0, but got \[-1\]",
+                               _calc_jackpotting_g_stat,
+                               num_obs,
+                               np.log(num_exp))
+
+    def test_zero_min_exp(self):
+        num_obs = np.array([], dtype=int)
+        num_exp = np.array([])
+        min_exp = 0.
+        self.assertRaisesRegex(ValueError,
+                               r"min_exp must be > 0, but got 0.0",
+                               _calc_jackpotting_g_stat,
+                               num_obs,
+                               np.log(num_exp),
+                               min_exp)
+
+    def test_each_exp_below_min_exp_all_exp_equal_obs(self):
+        num_obs = np.array([2, 3, 1])
+        num_exp = np.array([2., 3., 1.])
+        min_exp = 4.
+        g_stat, df = _calc_jackpotting_g_stat(num_obs, np.log(num_exp), min_exp)
+        self.assertIsInstance(g_stat, float)
+        self.assertEqual(g_stat, 0.)
+        self.assertIsInstance(df, int)
+        self.assertEqual(df, 0)
+
+    def test_each_exp_below_min_exp_sum_exp_equal_sum_obs(self):
+        num_obs = np.array([2, 3, 1])
+        num_exp = np.array([1., 2., 3.])
+        min_exp = 4.
+        g_stat, df = _calc_jackpotting_g_stat(num_obs, np.log(num_exp), min_exp)
+        self.assertIsInstance(g_stat, float)
+        self.assertEqual(g_stat, 0.)
+        self.assertIsInstance(df, int)
+        self.assertEqual(df, 0)
+
+    def test_each_exp_below_min_exp_sum_exp_less_than_sum_obs(self):
+        num_obs = np.array([2, 3, 1])
+        num_exp = np.array([1., 2., 2.5])
+        min_exp = 4.
+        g_stat, df = _calc_jackpotting_g_stat(num_obs, np.log(num_exp), min_exp)
+        self.assertIsInstance(g_stat, float)
+        self.assertEqual(g_stat, 0.)
+        self.assertIsInstance(df, int)
+        self.assertEqual(df, 1)
+
+    def test_each_exp_below_min_exp_sum_exp_greater_than_sum_obs(self):
+        num_obs = np.array([2, 3, 1])
+        num_exp = np.array([1., 2., 3.5])
+        self.assertRaisesRegex(ValueError,
+                               (r"Total observed reads \(6\) is less than "
+                                r"total expected reads \(6.5\)"),
+                               _calc_jackpotting_g_stat,
+                               num_obs,
+                               np.log(num_exp))
+
+    def test_each_exp_at_least_min_exp_all_exp_equal_obs(self):
+        min_obs = 4
+        for n in range(5):
+            num_obs = np.arange(min_obs, min_obs + n)
+            num_exp = np.asarray(num_obs, dtype=float)
+            g_stat, df = _calc_jackpotting_g_stat(num_obs,
+                                                  np.log(num_exp),
+                                                  float(min_obs))
+            self.assertIsInstance(g_stat, float)
+            self.assertEqual(g_stat, 0.)
+            self.assertIsInstance(df, int)
+            self.assertEqual(df, max(n - 1, 0))
+
+    def test_each_exp_at_least_min_exp_sum_exp_equal_sum_obs(self):
+        num_obs = np.array([5, 4, 10])
+        num_exp = np.array([4., 5., 10.])
+        min_exp = 4.
+        g_stat, df = _calc_jackpotting_g_stat(num_obs, np.log(num_exp), min_exp)
+        self.assertIsInstance(g_stat, float)
+        self.assertTrue(np.isclose(g_stat,
+                                   sum([10. * np.log(1.25),
+                                        8. * np.log(0.8)])))
+        self.assertIsInstance(df, int)
+        self.assertEqual(df, 2)
+
+    def test_each_exp_at_least_min_exp_sum_exp_less_than_sum_obs(self):
+        num_obs = np.array([5, 4, 11])
+        num_exp = np.array([4., 5., 10.])
+        min_exp = 4.
+        g_stat, df = _calc_jackpotting_g_stat(num_obs, np.log(num_exp), min_exp)
+        self.assertIsInstance(g_stat, float)
+        self.assertTrue(np.isclose(g_stat,
+                                   2. * sum([5 * np.log(5 / 4),
+                                             4 * np.log(4 / 5),
+                                             11 * np.log(11 / 10)])))
+        self.assertIsInstance(df, int)
+        self.assertEqual(df, 3)
+
+    def test_each_exp_at_least_min_exp_sum_exp_greater_than_sum_obs(self):
+        num_obs = np.array([5, 4, 10])
+        num_exp = np.array([4., 5., 11.])
+        self.assertRaisesRegex(ValueError,
+                               (r"Total observed reads \(19\) is less than "
+                                r"total expected reads \(20.0\)"),
+                               _calc_jackpotting_g_stat,
+                               num_obs,
+                               np.log(num_exp))
+
+    def test_mixed_all_exp_equal_obs(self):
+        num_obs = np.array([2, 4, 5, 8, 3])
+        num_exp = np.asarray(num_obs, dtype=float)
+        min_exp = 4.
+        g_stat, df = _calc_jackpotting_g_stat(num_obs, np.log(num_exp), min_exp)
+        self.assertIsInstance(g_stat, float)
+        self.assertEqual(g_stat, 0.)
+        self.assertIsInstance(df, int)
+        self.assertEqual(df, 3)
+
+    def test_mixed_sum_exp_equal_sum_obs(self):
+        num_obs = np.array([0, 3, 7, 6, 6])
+        num_exp = np.array([2., 4., 5., 8., 3.])
+        min_exp = 4.
+        g_stat, df = _calc_jackpotting_g_stat(num_obs, np.log(num_exp), min_exp)
+        self.assertIsInstance(g_stat, float)
+        self.assertTrue(np.isclose(g_stat,
+                                   2. * sum([3 * np.log(3 / 4),
+                                             7 * np.log(7 / 5),
+                                             6 * np.log(6 / 8),
+                                             6 * np.log(6 / 5)])))
+        self.assertIsInstance(df, int)
+        self.assertEqual(df, 3)
+
+    def test_mixed_sum_exp_under_min_exp_less_than_sum_obs(self):
+        num_obs = np.array([0, 3, 7, 6, 6])
+        num_exp = np.array([1., 4., 5., 8., 3.])
+        min_exp = 4.
+        g_stat, df = _calc_jackpotting_g_stat(num_obs, np.log(num_exp), min_exp)
+        self.assertIsInstance(g_stat, float)
+        self.assertTrue(np.isclose(g_stat,
+                                   2. * sum([3 * np.log(3 / 4),
+                                             7 * np.log(7 / 5),
+                                             6 * np.log(6 / 8),
+                                             6 * np.log(6 / 5)])))
+        self.assertIsInstance(df, int)
+        self.assertEqual(df, 4)
+
+    def test_mixed_sum_exp_over_min_exp_less_than_sum_obs(self):
+        num_obs = np.array([0, 3, 5, 6, 8])
+        num_exp = np.array([2., 4., 5., 7., 3.])
+        min_exp = 4.
+        g_stat, df = _calc_jackpotting_g_stat(num_obs, np.log(num_exp), min_exp)
+        self.assertIsInstance(g_stat, float)
+        self.assertTrue(np.isclose(g_stat,
+                                   2. * sum([3 * np.log(3 / 4),
+                                             5 * np.log(5 / 5),
+                                             6 * np.log(6 / 7),
+                                             8 * np.log(8 / 6)])))
+        self.assertIsInstance(df, int)
+        self.assertEqual(df, 4)
+
+
+class TestJackpottingPValue(ut.TestCase):
+
+    @staticmethod
+    def sim_obs_exp(num_reads: int, p_mut: np.ndarray):
+        """ Simulate observed and expected counts. """
+        reads = rng.random((num_reads, get_length(p_mut))) < p_mut
+        uniq_reads, num_obs = np.unique(reads, axis=0, return_counts=True)
+        log_exp = np.log(num_reads) + np.sum(np.where(uniq_reads,
+                                                      np.log(p_mut),
+                                                      np.log(1. - p_mut)),
+                                             axis=1)
+        return num_obs, log_exp
+
+    def test_no_jackpotting(self):
+        """ Test that the P-value distribution is uniform for samples
+        with no jackpotting. """
+        n_trials = 1000
+        n_reads_per_trial = 10000
+        read_length = 30
+        beta_a = 2.
+        beta_b = 98.
+        alpha = 0.01
+        p_values = np.array([
+            _calc_jackpotting_p_value(
+                *_calc_jackpotting_g_stat(
+                    *self.sim_obs_exp(
+                        n_reads_per_trial,
+                        rng.beta(beta_a, beta_b, size=read_length)
+                    )
+                )
+            )
+            for _ in range(n_trials)
+        ])
+        result = kstest(p_values, "uniform", nan_policy="raise")
+        self.assertGreaterEqual(result.pvalue, alpha)
 
 
 if __name__ == "__main__":

@@ -167,12 +167,12 @@ def _calc_log_like(logp_marginal: np.ndarray, counts_per_uniq: np.ndarray):
     return float(np.vdot(logp_marginal, counts_per_uniq))
 
 
-def _calc_jackpotting(num_obs: np.ndarray,
-                      log_exp: np.ndarray,
-                      min_exp: float = 7.5):
+def _calc_jackpotting_g_stat(num_obs: np.ndarray,
+                             log_exp: np.ndarray,
+                             min_exp: float = 5.):
     """ Test for jackpotting using a G-test. """
-    if min_exp < 0.:
-        raise ValueError(f"min_exp must be ≥ 0, but got {min_exp}")
+    if min_exp <= 0.:
+        raise ValueError(f"min_exp must be > 0, but got {min_exp}")
     num_uniq = ensure_same_length(num_obs, log_exp, "observed", "expected")
     if num_uniq > 0:
         min_obs = num_obs.min()
@@ -180,17 +180,8 @@ def _calc_jackpotting(num_obs: np.ndarray,
             raise ValueError(
                 f"All num_obs must be ≥ 0, but got {num_obs[num_obs < 0]}"
             )
-        if min_obs == 0:
-            # Remove any reads with 0 observations.
-            nonzero_obs = num_obs > 0
-            return _calc_jackpotting(num_obs[nonzero_obs],
-                                     log_exp[nonzero_obs],
-                                     min_exp)
     # Total number of reads.
-    num_reads = round(num_obs.sum())
-    if num_reads < min_exp:
-        # Insufficient reads to test jackpotting.
-        return np.nan, 0
+    total_obs = round(num_obs.sum())
     # Expected count of each unique read.
     num_exp = np.exp(log_exp)
     # Calculate the G-test statistic of reads whose expected counts are
@@ -203,19 +194,20 @@ def _calc_jackpotting(num_obs: np.ndarray,
     # Degrees of freedom for those reads.
     df_at_least_min_exp = at_least_min_exp.size - 1
     # Total expected count of all reads that were observed 0 times.
-    obs_0_exp = num_reads - round(num_exp.sum(), SUM_EXP_PRECISION)
+    total_exp = round(num_exp.sum(), SUM_EXP_PRECISION)
+    obs_0_exp = total_obs - total_exp
     # Degree of freedom for all reads that were observed 0 times.
     if obs_0_exp > 0.:
         df_obs_0 = 1
     elif obs_0_exp == 0.:
         df_obs_0 = 0
     else:
-        raise ValueError("Expected count of never-observed reads must be ≥ 0, "
-                         f"but got {obs_0_exp}")
+        raise ValueError(f"Total observed reads ({total_obs}) is less than "
+                         f"total expected reads ({total_exp})")
     # Add reads with expected counts less than min_exp to the G-test.
     # Assume that every read that was observed 0 times has an expected
     # count less than min_exp; this assumption should be valid as long
-    # as min_exp is at least 5-10 and num_reads is at least min_exp.
+    # as min_exp is at least 5 (the usual minimum for a G- or χ²-test).
     # Making this assumption alleviates the need to compute the expected
     # count of every unseen read, which is computationally infeasible.
     # Thus, simply add obs_0_exp to the total of the expected count of
@@ -237,11 +229,20 @@ def _calc_jackpotting(num_obs: np.ndarray,
     else:
         df_less_than_min_exp = 0
     # Calculate total degrees of freedom.
-    df = df_at_least_min_exp + df_less_than_min_exp + df_obs_0
-    if df <= 0 and g_stat != 0.:
+    df = max(df_at_least_min_exp + df_less_than_min_exp + df_obs_0, 0)
+    if df == 0 and g_stat != 0.:
         raise ValueError("G-test statistic must be 0 if the degrees of "
                          f"freedom equals 0, but got {g_stat}")
     return g_stat, df
+
+
+def _calc_jackpotting_p_value(g_stat: float, df: int):
+    if df == 0:
+        return np.nan
+    # Import SciPy here instead of at the top of the module because
+    # the latter would take so long as to slow down the start-up.
+    from scipy.stats import chi2
+    return 1. - chi2.cdf(g_stat, df)
 
 
 class EMRun(object):
@@ -588,8 +589,8 @@ class EMRun(object):
 
     @cached_property
     def _jackpotting_calc(self):
-        return _calc_jackpotting(self.uniq_reads.counts_per_uniq,
-                                 self.log_exp_values)
+        return _calc_jackpotting_g_stat(self.uniq_reads.counts_per_uniq,
+                                        self.log_exp_values)
 
     @property
     def jackpot_stat(self):
@@ -606,12 +607,6 @@ class EMRun(object):
     @cached_property
     def jackpot_p_value(self):
         g_stat, df = self._jackpotting_calc
-        if df <= 0:
-            return np.nan
-        # Import SciPy here instead of at the top of the module because
-        # the latter would take so long as to slow down the start-up.
-        from scipy.stats import chi2
-        return 1. - chi2.cdf(g_stat, df)
 
     def _calc_p_mut_pairs(self,
                           stat: Callable[[np.ndarray, np.ndarray], float],
