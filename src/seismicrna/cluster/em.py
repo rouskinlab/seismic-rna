@@ -607,6 +607,7 @@ class EMRun(object):
     @cached_property
     def jackpot_p_value(self):
         g_stat, df = self._jackpotting_calc
+        return _calc_jackpotting_p_value(g_stat, df)
 
     def _calc_p_mut_pairs(self,
                           stat: Callable[[np.ndarray, np.ndarray], float],
