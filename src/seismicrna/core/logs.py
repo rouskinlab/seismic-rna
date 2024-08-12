@@ -7,6 +7,7 @@ Central manager of logging.
 """
 
 import logging
+from collections import namedtuple
 from functools import cache, wraps
 from itertools import chain
 from typing import Callable, Optional
@@ -21,6 +22,8 @@ LEVELS = {(2, 0): logging.DEBUG,
           (0, 1): logging.ERROR,
           (0, 2): logging.CRITICAL}
 VERBOSITIES = {level: verbosity for verbosity, level in LEVELS.items()}
+DEFAULT_LEVEL = logging.WARNING
+DEFAULT_RAISE = False
 
 
 class AnsiCode(object):
@@ -75,7 +78,32 @@ class ColorFormatter(logging.Formatter):
                                                   (AnsiCode.END,)))
 
 
-def get_top_logger():
+class RaisableLogger(logging.Logger):
+
+    @staticmethod
+    def _handle_error(log_func: Callable, msg: object, *args, **kwargs):
+        """ Handle logging an error message. """
+        if get_config().raise_on_error:
+            if isinstance(msg, BaseException):
+                raise msg
+            raise RuntimeError(msg)
+        log_func(msg, *args, **kwargs)
+
+    def __init__(self, *args, raise_on_error: bool = DEFAULT_RAISE, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.raise_on_error = raise_on_error
+
+    def error(self, msg: object, *args, **kwargs):
+        self._handle_error(super().error, msg, *args, **kwargs)
+
+    def critical(self, msg: object, *args, **kwargs):
+        self._handle_error(super().critical, msg, *args, **kwargs)
+
+
+logging.setLoggerClass(RaisableLogger)
+
+
+def get_top_logger() -> RaisableLogger:
     """ Return the top-level logger. """
     if __name__ != (expect_name := "seismicrna.core.logs"):
         raise ValueError(f"Expected {__file__} named {repr(expect_name)}, "
@@ -101,30 +129,52 @@ def get_verbosity(verbose: int = 0, quiet: int = 0):
     Giving both `verbose` and `quiet` flags causes the verbosity
     to default to `verbose=0`, `quiet=0`.
     """
+    logger = get_top_logger()
     # Limit verbose and quiet to 2.
     if verbose > MAX_VERBOSE:
-        logging.warning(f"Setting 'verbose' to {MAX_VERBOSE} (got {verbose})")
+        logger.warning(f"Setting 'verbose' to {MAX_VERBOSE} (got {verbose})")
         verbose = MAX_VERBOSE
     if quiet > MAX_QUIET:
-        logging.warning(f"Setting 'quiet' to {MAX_QUIET} (got {quiet})")
+        logger.warning(f"Setting 'quiet' to {MAX_QUIET} (got {quiet})")
         quiet = MAX_QUIET
     # Set logging level based on verbose and quiet.
     try:
         return LEVELS[verbose, quiet]
     except KeyError:
-        get_top_logger().warning(f"Invalid options: verbose={verbose}, "
-                                 f"quiet={quiet}. Setting both to 0")
+        logger.warning(f"Invalid options: verbose={verbose}, "
+                       f"quiet={quiet}. Setting both to 0")
         return get_verbosity()
 
 
-def set_config(verbose: int,
-               quiet: int,
+def erase_config():
+    """ Reset the logging configuration to the defaults. """
+    logger = get_top_logger()
+    logger.setLevel(DEFAULT_LEVEL)
+    logger.raise_on_error = DEFAULT_RAISE
+    # Need to use logger.handlers.copy() because logger.handlers will be
+    # modified by logger.removeHandler(); iterating over logger.handlers
+    # itself can therefore fail to remove all handlers.
+    for handler in logger.handlers.copy():
+        if isinstance(handler, logging.FileHandler):
+            handler.close()
+        logger.removeHandler(handler)
+    if logger.handlers:
+        raise RuntimeError(f"Failed to remove all handlers from {logger}; "
+                           f"remaining handlers are {logger.handlers}")
+
+
+def set_config(verbose: int = 0,
+               quiet: int = 0,
                log_file: str | None = None,
-               log_color: bool = True):
+               log_color: bool = True,
+               raise_on_error: bool = DEFAULT_RAISE):
     """ Configure the main logger with handlers and verbosity. """
+    # Erase any existing configuration.
+    erase_config()
     # Set up logger.
     logger = get_top_logger()
     logger.setLevel(get_verbosity(verbose=MAX_VERBOSE))
+    logger.raise_on_error = raise_on_error
     # Add stream handler.
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(get_verbosity(verbose, quiet))
@@ -137,6 +187,14 @@ def set_config(verbose: int,
         file_handler.setLevel(get_verbosity(verbose=MAX_VERBOSE))
         file_handler.setFormatter(logging.Formatter(FILE_MSG_FORMAT))
         logger.addHandler(file_handler)
+
+
+LoggerConfig = namedtuple("LoggerConfig",
+                          ["verbose",
+                           "quiet",
+                           "log_file",
+                           "log_color",
+                           "raise_on_error"])
 
 
 def get_config():
@@ -153,13 +211,16 @@ def get_config():
             verbose, quiet = VERBOSITIES.get(handler.level, (verbose, quiet))
             if isinstance(handler.formatter, ColorFormatter):
                 log_color = True
-    return verbose, quiet, log_file, log_color
+    return LoggerConfig(verbose=verbose,
+                        quiet=quiet,
+                        log_file=log_file,
+                        log_color=log_color,
+                        raise_on_error=logger.raise_on_error)
 
 
 def exc_info():
     """ Whether to log exception information. """
-    verbose, _, _, _ = get_config()
-    return verbose == MAX_VERBOSE
+    return get_config().verbose == MAX_VERBOSE
 
 
 def log_exceptions(logging_method: Callable, default: Optional[Callable]):
@@ -188,6 +249,21 @@ def log_exceptions(logging_method: Callable, default: Optional[Callable]):
         return wrapper
 
     return decorator
+
+
+def restore_config(func: Callable):
+    """ After the function exits, restore the logging configuration that
+    was in place before the function ran. """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        config = get_config()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            set_config(**config._asdict())
+
+    return wrapper
 
 ########################################################################
 #                                                                      #
