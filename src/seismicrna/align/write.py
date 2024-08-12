@@ -27,7 +27,6 @@ from ..core.ngs import (FLAG_FIRST,
                         xam_paired)
 from ..core.seq import DNA, get_fasta_seq, parse_fasta, write_fasta
 from ..core.task import dispatch
-from ..core.tmp import get_release_working_dirs, release_to_out
 
 logger = getLogger(__name__)
 
@@ -429,7 +428,6 @@ def fq_pipeline(fq_inp: FastqUnit,
     """ Run all stages of the alignment pipeline for one FASTQ file or
     one pair of mated FASTQ files. """
     began = datetime.now()
-    release_dir, working_dir = get_release_working_dirs(tmp_dir)
     # Get attributes of the sample and references.
     sample = fq_inp.sample
     refset = path.parse(fasta, path.FastaSeg)[path.REF]
@@ -457,7 +455,7 @@ def fq_pipeline(fq_inp: FastqUnit,
     if cut:
         # Trim adapters and low-quality bases with Cutadapt.
         fq_cut = fq_inp.to_new(path.StageSeg,
-                               top=working_dir,
+                               top=tmp_dir,
                                sample=sample,
                                stage=path.STAGE_ALIGN_TRIM)
         run_cutadapt(fq_inp,
@@ -485,13 +483,15 @@ def fq_pipeline(fq_inp: FastqUnit,
                 logger.error(f"Failed to run FASTQC on {fq_inp}: {error}")
     else:
         fq_cut = None
-    # Align the FASTQ to the reference sequence using Bowtie2.
+    # Create the output directory: this is necessary for FASTQ files of
+    # unaligned reads to have a place to be written.
     path.builddir(*path.CMD_DIR_SEGS,
-                  top=release_dir,
+                  top=out_dir,
                   sample=sample,
                   cmd=path.CMD_ALIGN_DIR)
+    # Align the FASTQ to the reference sequence using Bowtie2.
     xam_whole = path.buildpar(*path.XAM_STAGE_SEGS,
-                              top=working_dir,
+                              top=tmp_dir,
                               sample=sample,
                               cmd=path.CMD_ALIGN_DIR,
                               stage=path.STAGE_ALIGN_MAP,
@@ -521,7 +521,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                              fq_unal=(path.build(path.SampSeg,
                                                  path.CmdSeg,
                                                  path.DmFastqSeg,
-                                                 top=release_dir,
+                                                 top=out_dir,
                                                  sample=sample,
                                                  cmd=CMD_ALIGN,
                                                  ref=(f"{fq_inp.ref}__unaligned"
@@ -560,7 +560,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                                   fasta=fasta,
                                   paired=fq_inp.paired,
                                   phred_arg=fq_inp.phred_arg,
-                                  top=release_dir,
+                                  top=out_dir,
                                   keep_tmp=keep_tmp,
                                   bt2_local=bt2_local,
                                   bt2_discordant=bt2_discordant,
@@ -584,6 +584,9 @@ def fq_pipeline(fq_inp: FastqUnit,
                                   minus_label=minus_label,
                                   min_reads=min_reads,
                                   n_procs=n_procs)
+    if not keep_tmp:
+        # Delete the BAM file of all references.
+        xam_whole.unlink(missing_ok=True)
     ended = datetime.now()
     # Write a report to summarize the alignment.
     report = report_type(sample=sample,
@@ -634,8 +637,8 @@ def fq_pipeline(fq_inp: FastqUnit,
                          reads_refs=reads_refs,
                          began=began,
                          ended=ended)
-    report_saved = report.save(release_dir, force=True)
-    return release_to_out(out_dir, release_dir, report_saved.parent)
+    report_saved = report.save(out_dir, force=True)
+    return report_saved.parent
 
 
 def fqs_pipeline(fq_units: list[FastqUnit],

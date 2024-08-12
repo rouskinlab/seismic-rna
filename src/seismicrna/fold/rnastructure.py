@@ -314,9 +314,10 @@ def guess_data_path():
         errors.append(error)
         logger.warning(f"The {DATAPATH} environment variable is not valid; "
                        f"attempting to guess it")
-    for attempt in [_guess_data_path_conda, _guess_data_path_manual]:
+    for guess_func in [_guess_data_path_conda,
+                       _guess_data_path_manual]:
         try:
-            return attempt()
+            return guess_func()
         except OSError as error:
             errors.append(error)
     raise OSError("\n".join(f" -> {error}" for error in errors))

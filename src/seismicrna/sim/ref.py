@@ -10,7 +10,7 @@ from ..core.arg import (opt_sim_dir,
                         opt_refs,
                         opt_reflen,
                         opt_force)
-from ..core.logs import MAX_VERBOSE, get_config
+from ..core.logs import exc_info
 from ..core.run import run_func
 from ..core.seq import DNA, write_fasta
 from ..core.write import need_write
@@ -59,5 +59,4 @@ def cli(*args, **kwargs):
     try:
         run(*args, **kwargs)
     except Exception as error:
-        verbose, _, _, _ = get_config()
-        logger.critical(error, exc_info=(verbose == MAX_VERBOSE))
+        logger.critical(error, exc_info=exc_info())

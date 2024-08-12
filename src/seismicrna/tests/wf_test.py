@@ -5,11 +5,15 @@ from pathlib import Path
 
 from seismicrna.core.arg.cli import opt_out_dir, opt_sim_dir
 from seismicrna.core.logs import set_config, restore_config
-from seismicrna.sim.total import run as sim_total_run
+from seismicrna.sim.total import run as run_sim_total
+from seismicrna.sim.ref import run as run_sim_ref
+from seismicrna.sim.fold import run as run_sim_fold
+from seismicrna.sim.params import run as run_sim_params
+from seismicrna.sim.fastq import run as run_sim_fastq
 from seismicrna.wf import run as wf_run
 
 STEPS = ["align", "relate", "mask", "cluster", "table", "fold", "graph"]
-VERBOSITY = 2
+VERBOSITY = -1
 VERBOSE = max(VERBOSITY, 0)
 QUIET = max(-VERBOSITY, 0)
 
@@ -31,14 +35,14 @@ class TestWorkflow(ut.TestCase):
         shutil.rmtree(self.OUT_DIR)
 
     @restore_config
-    def test_wf_sim_paired_20000reads_2clusts(self):
+    def test_wf_sim_20000reads_2clusts(self):
         # Suppress warnings, write no log file, and halt on errors.
         set_config(verbose=VERBOSE,
                    quiet=QUIET,
                    log_file=None,
                    raise_on_error=True)
         # Simulate the data to be processed with wf.
-        fastqs = sim_total_run(sim_dir=str(self.SIM_DIR),
+        fastqs = run_sim_total(sim_dir=str(self.SIM_DIR),
                                sample=self.SAMPLE,
                                ref=self.REF,
                                refs=self.REFS,
@@ -54,7 +58,7 @@ class TestWorkflow(ut.TestCase):
         self.assertTrue(fasta.is_file())
         # Process the data with wf.
         wf_run(fasta=fasta,
-               input_path=[],
+               input_path=(),
                dmfastqx=fastqs,
                cluster=True,
                fold=True,
@@ -64,6 +68,58 @@ class TestWorkflow(ut.TestCase):
         for step in STEPS:
             step_dir = self.OUT_DIR.joinpath(self.SAMPLE, step)
             self.assertTrue(step_dir.is_dir())
+
+    @restore_config
+    def test_wf_sim_2samples_2refs_20000reads_2clusts(self):
+        # Suppress warnings, write no log file, and halt on errors.
+        set_config(verbose=VERBOSE,
+                   quiet=QUIET,
+                   log_file=None,
+                   raise_on_error=True)
+        # Simulate the data to be processed with wf.
+        samples = ["sample1", "sample2"]
+        refs = ["refA", "refB"]
+        samples_dir = self.SIM_DIR.joinpath("samples")
+        all_fastas = list()
+        for ref in refs:
+            run_sim_ref(refs=ref, ref=ref)
+            fasta = self.SIM_DIR.joinpath("refs", f"{ref}.fa")
+            all_fastas.append(fasta)
+            run_sim_fold(fasta, fold_max=2)
+            param_dir = self.SIM_DIR.joinpath("params", ref, "full")
+            ct_file = param_dir.joinpath("simulated.ct")
+            run_sim_params(ct_file=(ct_file,))
+            for sample in samples:
+                fastqs = run_sim_fastq(input_path=(),
+                                       param_dir=(param_dir,),
+                                       sample=sample,
+                                       num_reads=10000)
+                sample_dir = samples_dir.joinpath(sample)
+                for fastq, mate in zip(fastqs, [1, 2], strict=True):
+                    self.assertEqual(
+                        fastq,
+                        sample_dir.joinpath(f"{ref}_R{mate}.fq.gz")
+                    )
+                    self.assertTrue(os.path.isfile(fastq))
+        # Merge the FASTA files for all references.
+        fasta = self.SIM_DIR.joinpath("refs", f"{self.REFS}.fa")
+        with open(fasta, "x") as f:
+            for ref in all_fastas:
+                with open(ref) as r:
+                    f.write(r.read())
+        # Process the data with wf.
+        wf_run(fasta=fasta,
+               input_path=(),
+               dmfastqx=(samples_dir,),
+               cluster=True,
+               fold=True,
+               quantile=0.95,
+               export=True,
+               out_dir=self.OUT_DIR)
+        for sample in samples:
+            for step in STEPS:
+                step_dir = self.OUT_DIR.joinpath(sample, step)
+                self.assertTrue(step_dir.is_dir())
 
 
 if __name__ == "__main__":
