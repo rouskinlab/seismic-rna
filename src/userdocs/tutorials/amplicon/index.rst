@@ -9,15 +9,13 @@ The RNA in this example is a segment of the the human immunodeficiency virus 1
 (HIV-1) genome called the Rev response element (RRE), which binds to the protein
 Rev that mediates nuclear export (`Sherpa et al.`_).
 The RRE RNA folds into two different secondary structures: a predominant (~75%)
-5-stemmed structure and a minor (~25%) 4-stemmed structure, which are associated
-with different rates of HIV-1 replication.
+structure with 5 stems and a minor (~25%) structure with 4 stems, each of which
+is associated with a different rate of HIV-1 replication.
 
 In this hypothetical experiment, you *in vitro* transcribe a 232 nt segment of
 the RRE, perform two DMS-MaPseq experiments on it (along with a no-DMS control),
 amplify a section using RT-PCR, and sequence the amplicons using paired-end 150
 x 150 nt read lengths.
-
-
 
 *The FASTQ files in this tutorial were actually generated using ``seismic +sim``
 and don't resemble the authentic DMS mutational patterns.
@@ -26,9 +24,33 @@ and don't resemble the authentic DMS mutational patterns.
 Download example files of an amplicon
 --------------------------------------------------------------------------------
 
-You can download the example FASTA and FASTQ files in several ways,
-according to your preference.
+Download the example FASTA and FASTQ files.
+First, open your terminal and navigate to a directory in which you want to run
+the tutorial.
 
+If you have ``wget``, you can download the tutorial data simply by typing ::
+
+    wget https://raw.githubusercontent.com/rouskinlab/seismic-rna/main/src/userdocs/tutorials/amplicon/data.tar
+
+Otherwise, click this link to download the tutorial data:
+https://raw.githubusercontent.com/rouskinlab/seismic-rna/main/src/userdocs/tutorials/amplicon/data.tar
+
+To ensure the download is complete and not corrupted, verify that the SHA-256
+checksum is ``00c500bc9458048af04ee09b397a59e829fa25c7a53ba6c1b5cc09cbf80cd6ee``
+by typing this command::
+
+    shasum -a 256 data.tar
+
+If this command prints a different checksum, then retry the download.
+If the problem persists, then raise an issue (see :doc:`../../issues`).
+
+After downloading and verifying the data, untar the data by typing ::
+
+    tar xvf data.tar
+
+and then navigate into the ``data`` directory::
+
+    cd data
 
 
 Process the no-DMS control
@@ -96,7 +118,7 @@ If there are adapters or low-quality bases, then trimming is necessary.
 SEISMIC-RNA trims adapters and low-quality bases by default, but this behavior
 can be disabled using the option ``--no-cut``.
 
-Check the graphs of unambiguous count and mutation rate
+Check the graphs of coverage and mutation rate for the no-DMS control
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Next, check the unambiguous count (i.e. how many base calls at each position
@@ -244,7 +266,7 @@ the FastQC reports for the DMS-treated samples as well:
 - ``out/dms2/qc-trimmed/dms2_R1_fastqc.html``
 - ``out/dms2/qc-trimmed/dms2_R2_fastqc.html``
 
-On macOS, you can open all of these files in a web browser with one command::
+On macOS, you can open all of these files in a web browser with one command by::
 
     open out/dms[12]/qc-*/dms[12]_R[12]_fastqc.html
 
@@ -255,8 +277,79 @@ similar command::
 
 but replacing ``[browser]`` with the command for your web browser.
 
+Check the correlation of mutation rates between DMS-treated replicates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-seismic pool -P dms-pool out/dms[12]
+Next, it is recommended to check the correlation of mutation rates between the
+replicates, to ensure they are reproducible.
+To create a scatter plot of the mutation rates and calculate the correlation,
+run the command ::
+
+    seismic graph scatter out/dms[12]/table/rre/26-204/mask-per-pos.csv
+
+- ``graph scatter`` means graph a scatter plot.
+- ``out/dms[12]/table/rre/26-204/mask-per-pos.csv`` means graph data from these
+  tables, where ``[12]`` is a `glob pattern`_ that is automatically expanded by
+  the shell into all files that match the pattern -- which in this case is
+  ``out/dms1/table/rre/26-204/mask-per-pos.csv out/dms2/table/rre/26-204/mask-per-pos.csv``.
+  You could instead type this expression to list both table files explicitly,
+  but the former requires fewer key strokes.
+
+Open ``out/dms1__and__dms2/graph/rre/full/scatter_masked_m-ratio-q0.html`` in a
+web browser to view the scatter plot and correlation:
+
+    .. image:: img/dms1__and__dms2_scatter_masked_m-ratio.png
+
+The Pearson correlation is 0.998, which is extremely high.
+(For a general amplicon, ≥0.98 would be ideal, and ≥0.95 would be decent).
+
+
+Pool the DMS-treated replicates and process them together
+--------------------------------------------------------------------------------
+
+Pool the two DMS-treated replicates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Because the correlation is so high, the data from the replicates can be combined
+so that they can be analyzed as a single sample, which is helpful whenever high
+coverage is necessary, such as during clustering.
+To combine the replicates, run this command::
+
+    seismic pool -P dms-pool out/dms[12]
+
+- ``pool`` means combine samples into a new "pooled" sample.
+- ``-P dms-pool`` means name the pooled sample ``dms-pool``.
+- ``out/dms[12]`` means pool the samples in these directories, where ``[12]``
+  is a `glob pattern`_ that is automatically expanded by the shell into all
+  files that match the pattern -- which in this case is ``out/dms1 out/dms2``.
+  You could instead type this expression to list both table files explicitly,
+  but the former requires fewer key strokes.
+
+Process the pooled DMS-treated samples
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Now that the replicates are pooled, the overall coverage will be higher, and so
+clustering is more likely to detect true alternative structures.
+Process the pooled sample, including with clustering, by running this command::
+
+    seismic -v wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster hiv-rre.fa out/dms-pool/relate
+
+This is what each of the arguments does:
+
+- ``-v`` means use "verbose" mode, which prints messages so that you can monitor
+  the progress.
+- ``wf`` means run the entire workflow.
+- ``--mask-pos rre 176`` means mask position 176 (because it had a high mutation
+  rate in the no-DMS sample).
+- ``-p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC`` defines a
+  section of the reference ``rre`` that corresponds to the amplicon flanked by
+  primers ``GGAGCTTTGTTCCTTGGGTTCTTGG`` and ``GGAGCTGTTGATCCTTTAGGTATCTTTC``.
+- ``--cluster`` means enable clustering to find alternative structures.
+- ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
+  (i.e. mutation-free) sequence for the RNA.
+- ``out/dms-pool/relate`` means search inside ``out/dms-pool/relate`` for data
+  to feed into the workflow: in this case, a report from the Relate step.
 
 
 .. _Sherpa et al.: https://doi.org/10.1093/nar/gkv313
+.. _glob pattern: https://en.wikipedia.org/wiki/Glob_(programming)
