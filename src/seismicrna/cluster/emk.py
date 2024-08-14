@@ -39,7 +39,6 @@ class EMRunsK(object):
                  max_pearson_run: float,
                  min_nrmsd_run: float,
                  max_jackpot_index: float,
-                 min_jackpot_pval: float,
                  max_loglike_vs_best: float,
                  min_pearson_vs_best: float,
                  max_nrmsd_vs_best: float):
@@ -66,8 +65,7 @@ class EMRunsK(object):
         )
         # Check whether each run shows signs of being underclustered.
         self.run_not_underclustered = np.array(
-            [not (run.jackpot_index > max_jackpot_index
-                  or run.jackpot_p_value < min_jackpot_pval)
+            [not (run.jackpot_index > max_jackpot_index)
              for run in runs]
         )
         # Select the best run.
@@ -85,7 +83,6 @@ class EMRunsK(object):
         self.bics = np.array([run.bic for run in runs])
         # Jackpotting index and P-value of each run.
         self.jackpot_indexes = np.array([run.jackpot_index for run in runs])
-        self.jackpot_pvals = np.array([run.jackpot_p_value for run in runs])
         # Minimum NRMSD between any two clusters in each run.
         self.min_nrmsds = np.array([run.min_nrmsd for run in runs])
         # Maximum correlation between any two clusters in each run.
@@ -186,7 +183,6 @@ class EMRunsK(object):
                      "log_likes",
                      "bics",
                      "jackpot_indexes",
-                     "jackpot_pvals",
                      "min_nrmsds",
                      "max_pearsons",
                      "nrmsds_vs_best",

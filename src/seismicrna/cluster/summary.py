@@ -14,7 +14,6 @@ ATTRS = {
     "log_likes": "Final log likelihood",
     "bics": "Bayesian information criterion",
     "jackpot_indexes": "Jackpotting index",
-    "jackpot_pvals": "Jackpotting P-value",
     "min_nrmsds": "Minimum normalized RMSD between any two clusters",
     "max_pearsons": "Maximum Pearson correlation between any two clusters",
     "nrmsds_vs_best": "Normalized RMSD versus the best run",

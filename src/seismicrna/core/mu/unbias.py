@@ -283,7 +283,6 @@ def _triu_div(numer: np.ndarray, denom: np.ndarray):
     return quotient
 
 
-# @jit()
 def _triu_norm(a: np.ndarray):
     """ Normalize the upper triangle of array `a` to sum to 1.
 

@@ -6,27 +6,23 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 
+from .marginal import calc_marginal
+from .jackpot import (bootstrap_norm_g_stats,
+                      calc_jackpot_g_stat,
+                      calc_jackpot_index,
+                      normalize_g_stat)
 from .names import CLUST_PROP_NAME
 from .uniq import UniqReads
-from ..core.array import find_dims, get_length, ensure_same_length
+from ..core.array import get_length
 from ..core.header import ClustHeader
-from ..core.mu import (READS,
-                       POSITIONS,
-                       CLUSTERS,
-                       calc_p_noclose,
-                       calc_p_noclose_given_ends,
-                       calc_params,
+from ..core.mu import (calc_params,
                        calc_params_observed,
-                       calc_p_ends_given_noclose,
-                       calc_p_clust_given_noclose,
                        calc_pearson,
-                       calc_nrmsd,
-                       triu_log)
+                       calc_nrmsd)
 
 logger = getLogger(__name__)
 
 LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
-SUM_EXP_PRECISION = 3
 
 
 def _calc_bic(n_params: int,
@@ -77,172 +73,12 @@ def _calc_bic(n_params: int,
         return n_params * np.log(n_data) - 2. * log_like
 
 
-def _zero_masked(p_mut: np.ndarray, unmasked: np.ndarray):
-    """ Set mutation rates of masked positions to zero. """
-    p_mut_unmasked = np.zeros_like(p_mut)
-    p_mut_unmasked[unmasked] = p_mut[unmasked]
-    return p_mut_unmasked
-
-
-def _expectation(p_mut: np.ndarray,
-                 p_ends: np.ndarray,
-                 p_clust: np.ndarray,
-                 end5s: np.ndarray,
-                 end3s: np.ndarray,
-                 unmasked: np.ndarray,
-                 muts_per_pos: list[np.ndarray],
-                 min_mut_gap: int):
-    # Validate the dimensions.
-    find_dims([(POSITIONS, CLUSTERS),
-               (POSITIONS, POSITIONS),
-               (CLUSTERS,),
-               (READS,),
-               (READS,)],
-              [p_mut, p_ends, p_clust, end5s, end3s],
-              ["p_mut", "p_ends", "p_clust", "end5s", "end3s"],
-              nonzero=True)
-    # Ensure the mutation rates of masked positions are 0.
-    p_mut = _zero_masked(p_mut, unmasked)
-    # Calculate the end probabilities.
-    p_noclose_given_ends = calc_p_noclose_given_ends(p_mut, min_mut_gap)
-    p_ends_given_noclose = calc_p_ends_given_noclose(p_ends,
-                                                     p_noclose_given_ends)
-    # Calculate the cluster probabilities.
-    p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends)
-    p_clust_given_noclose = calc_p_clust_given_noclose(p_clust, p_noclose)
-    # Compute the probability that a read would have no two mutations
-    # too close given its end coordinates.
-    logp_noclose = triu_log(calc_p_noclose_given_ends(p_mut, min_mut_gap))
-    # Compute the logs of the parameters.
-    with np.errstate(divide="ignore"):
-        # Suppress warnings about taking the log of zero, which is a
-        # valid mutation rate.
-        logp_mut = np.log(p_mut)
-    logp_not = np.log(1. - p_mut)
-    logp_ends_given_noclose = triu_log(p_ends_given_noclose)
-    logp_clust_given_noclose = np.log(p_clust_given_noclose)
-    # For each cluster, calculate the probability that a read up to and
-    # including each position would have no mutations.
-    logp_nomut_incl = np.cumsum(logp_not, axis=0)
-    # For each cluster, calculate the probability that a read up to but
-    # not including each position would have no mutations.
-    logp_nomut_excl = np.vstack([np.zeros_like(p_clust), logp_nomut_incl[:-1]])
-    # For each unique read, calculate the probability that a random read
-    # with the same end coordinates would have no mutations.
-    logp_nomut = logp_nomut_incl[end3s] - logp_nomut_excl[end5s]
-    # For each unique read, compute the joint probability that a random
-    # read would have the same end coordinates, come from each cluster,
-    # and have no mutations; normalize by the fraction of all reads that
-    # have no two mutations too close, i.e. logp_noclose[end5s, end3s].
-    # 2D (unique reads x clusters)
-    logp_joint = (logp_clust_given_noclose[np.newaxis, :]
-                  + logp_ends_given_noclose[end5s, end3s]
-                  - logp_noclose[end5s, end3s]
-                  + logp_nomut)
-    # For each unique read, compute the likelihood of observing it
-    # (including its mutations) by adjusting the above likelihood
-    # of observing the end coordinates with no mutations.
-    for j, mut_reads in zip(unmasked, muts_per_pos, strict=True):
-        logp_joint[mut_reads] += logp_mut[j] - logp_not[j]
-    # For each unique observed read, the marginal probability that a
-    # random read would have the end coordinates and mutations, no
-    # matter which cluster it came from, is the sum of the joint
-    # probability over all clusters (axis 1).
-    # 1D (unique reads)
-    logp_marginal = np.logaddexp.reduce(logp_joint, axis=1)
-    # Calculate the posterior probability that each read came from
-    # each cluster by dividing the joint probability (observing the
-    # read and coming from the cluster) by the marginal probability
-    # (observing the read in any cluster).
-    # 2D (unique reads x clusters)
-    membership = np.exp(logp_joint - logp_marginal[:, np.newaxis])
-    return logp_marginal, membership
-
-
 def _calc_log_like(logp_marginal: np.ndarray, counts_per_uniq: np.ndarray):
     # Calculate the log likelihood of observing all the reads
     # by summing the log probability over all reads, weighted
     # by the number of times each read occurs. Cast to a float
     # explicitly to verify that the product is a scalar.
     return float(np.vdot(logp_marginal, counts_per_uniq))
-
-
-def _calc_jackpotting_g_stat(num_obs: np.ndarray,
-                             log_exp: np.ndarray,
-                             min_exp: float = 5.):
-    """ Test for jackpotting using a G-test. """
-    if min_exp <= 0.:
-        raise ValueError(f"min_exp must be > 0, but got {min_exp}")
-    num_uniq = ensure_same_length(num_obs, log_exp, "observed", "expected")
-    if num_uniq > 0:
-        min_obs = num_obs.min()
-        if min_obs < 0:
-            raise ValueError(
-                f"All num_obs must be ≥ 0, but got {num_obs[num_obs < 0]}"
-            )
-    # Total number of reads.
-    total_obs = round(num_obs.sum())
-    # Expected count of each unique read.
-    num_exp = np.exp(log_exp)
-    # Calculate the G-test statistic of reads whose expected counts are
-    # at least min_exp.
-    is_at_least_min_exp = num_exp >= min_exp
-    at_least_min_exp = np.flatnonzero(is_at_least_min_exp)
-    g_stat = 2. * np.sum(num_obs[at_least_min_exp]
-                         * (np.log(num_obs[at_least_min_exp])
-                            - log_exp[at_least_min_exp]))
-    # Degrees of freedom for those reads.
-    df_at_least_min_exp = at_least_min_exp.size - 1
-    # Total expected count of all reads that were observed 0 times.
-    total_exp = round(num_exp.sum(), SUM_EXP_PRECISION)
-    obs_0_exp = total_obs - total_exp
-    # Degree of freedom for all reads that were observed 0 times.
-    if obs_0_exp > 0.:
-        df_obs_0 = 1
-    elif obs_0_exp == 0.:
-        df_obs_0 = 0
-    else:
-        raise ValueError(f"Total observed reads ({total_obs}) is less than "
-                         f"total expected reads ({total_exp})")
-    # Add reads with expected counts less than min_exp to the G-test.
-    # Assume that every read that was observed 0 times has an expected
-    # count less than min_exp; this assumption should be valid as long
-    # as min_exp is at least 5 (the usual minimum for a G- or χ²-test).
-    # Making this assumption alleviates the need to compute the expected
-    # count of every unseen read, which is computationally infeasible.
-    # Thus, simply add obs_0_exp to the total of the expected count of
-    # reads with expected counts less than num_exp.
-    less_than_min_exp = np.flatnonzero(np.logical_not(is_at_least_min_exp))
-    num_obs_less_than_min_exp = round(num_obs[less_than_min_exp].sum())
-    if num_obs_less_than_min_exp > 0:
-        num_exp_less_than_min_exp = num_exp[less_than_min_exp].sum() + obs_0_exp
-        if num_exp_less_than_min_exp == 0.:
-            raise ValueError("Expected number of reads with expected counts "
-                             f"< {min_exp} cannot be 0 if the observed number "
-                             f"of such reads is {num_obs_less_than_min_exp}")
-        g_stat += 2. * (num_obs_less_than_min_exp
-                        * np.log(num_obs_less_than_min_exp
-                                 / num_exp_less_than_min_exp))
-        # Degree of freedom for all reads with expected counts less than
-        # min_exp.
-        df_less_than_min_exp = 1
-    else:
-        df_less_than_min_exp = 0
-    # Calculate total degrees of freedom.
-    df = max(df_at_least_min_exp + df_less_than_min_exp + df_obs_0, 0)
-    if df == 0 and g_stat != 0.:
-        raise ValueError("G-test statistic must be 0 if the degrees of "
-                         f"freedom equals 0, but got {g_stat}")
-    return g_stat, df
-
-
-def _calc_jackpotting_p_value(g_stat: float, df: int):
-    if df == 0:
-        return np.nan
-    # Import SciPy here instead of at the top of the module because
-    # the latter would take so long as to slow down the start-up.
-    from scipy.stats import chi2
-    return 1. - chi2.cdf(g_stat, df)
 
 
 class EMRun(object):
@@ -255,7 +91,10 @@ class EMRun(object):
                  seed: int | None = None, *,
                  min_iter: int,
                  max_iter: int,
-                 em_thresh: float):
+                 em_thresh: float,
+                 jackpot: bool,
+                 jackpot_conf_level: float,
+                 max_jackpot_index: float):
         """
         Parameters
         ----------
@@ -276,6 +115,12 @@ class EMRun(object):
             between two successive iterations becomes smaller than the
             convergence threshold (and at least min_iter iterations have
             run). Must be a positive real number.
+        jackpot: bool
+            Whether to calculate the jackpotting index.
+        jackpot_conf_level: float
+            Confidence level for the jackpotting confidence interval.
+        max_jackpot_index: float
+            Maximum acceptable jackpotting index.
         """
         # Unique reads of mutations
         self.uniq_reads = uniq_reads
@@ -296,6 +141,10 @@ class EMRun(object):
         if not em_thresh >= 0.:
             raise ValueError(f"em_thresh must be ≥ 0, but got {em_thresh}")
         self._em_thresh = em_thresh
+        # Jackpotting parameters.
+        self._jackpot = jackpot
+        self._jackpot_conf_level = jackpot_conf_level
+        self._max_jackpot_index = max_jackpot_index
         # Mutation rates adjusted for observer bias.
         # 2D (all positions x clusters)
         self._p_mut = np.zeros((self._n_pos_total, self.k))
@@ -319,6 +168,11 @@ class EMRun(object):
         self.converged = False
         # Run EM.
         self._run(seed)
+
+    @property
+    def n_reads(self):
+        """ Total number of reads (including redundant reads). """
+        return self.uniq_reads.num_nonuniq
 
     @property
     def section_end5(self):
@@ -415,7 +269,7 @@ class EMRun(object):
     def _n_data(self):
         """ Number of data points in the model. """
         # The number of data points is the total number of reads.
-        return self.uniq_reads.num_nonuniq
+        return self.n_reads
 
     @property
     def bic(self):
@@ -473,7 +327,7 @@ class EMRun(object):
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
         # Update the marginal probabilities and cluster memberships.
-        self._logp_marginal, self._resps = _expectation(
+        self._logp_marginal, self._resps = calc_marginal(
             self._p_mut,
             self._p_ends,
             self._p_clust,
@@ -548,7 +402,10 @@ class EMRun(object):
                 self.converged = True
                 logger.info(f"{self} converged on iteration {self.iter}: "
                             f"last log likelihood = {self.log_like}")
-                return
+                # Cache the jackpotting index here (even though it will
+                # not be used yet) so that this expensive calculation
+                # can be performed in parallel, just like clustering.
+                return self.jackpot_index
         # The log likelihood did not converge within the maximum number
         # of permitted iterations.
         logger.warning(f"{self} failed to converge within {self._max_iter} "
@@ -557,9 +414,9 @@ class EMRun(object):
     @cached_property
     def log_exp_values(self):
         """ Expected log count of each unique read (values only). """
-        if self.uniq_reads.num_nonuniq == 0:
+        if self.n_reads == 0:
             return np.array([])
-        return np.log(self.uniq_reads.num_nonuniq) + self._logp_marginal
+        return np.log(self.n_reads) + self._logp_marginal
 
     @property
     def log_exp(self):
@@ -588,26 +445,31 @@ class EMRun(object):
                             columns=self._clusters)
 
     @cached_property
-    def _jackpotting_calc(self):
-        return _calc_jackpotting_g_stat(self.uniq_reads.counts_per_uniq,
+    def norm_g_stat(self):
+        """ Normalized G-test statistic for jackpotting. """
+        g_stat, _ = calc_jackpot_g_stat(self.uniq_reads.counts_per_uniq,
                                         self.log_exp_values)
+        return normalize_g_stat(g_stat, self.n_reads)
 
-    @property
-    def jackpot_stat(self):
-        g_stat, _ = self._jackpotting_calc
-        return g_stat
+    @cached_property
+    def _null_norm_g_stats(self):
+        """ Normalized G-test statistic of each null model run. """
+        return bootstrap_norm_g_stats(self._p_mut,
+                                      self._p_ends,
+                                      self._p_clust,
+                                      self.n_reads,
+                                      self.uniq_reads.min_mut_gap,
+                                      self._unmasked,
+                                      self.norm_g_stat,
+                                      self._jackpot_conf_level,
+                                      self._max_jackpot_index)
 
     @cached_property
     def jackpot_index(self):
-        g_stat, df = self._jackpotting_calc
-        if df <= 0:
+        if not self._jackpot:
+            # Skip calculating the jackpotting index.
             return np.nan
-        return g_stat / df
-
-    @cached_property
-    def jackpot_p_value(self):
-        g_stat, df = self._jackpotting_calc
-        return _calc_jackpotting_p_value(g_stat, df)
+        return calc_jackpot_index(self.norm_g_stat, self._null_norm_g_stats)
 
     def _calc_p_mut_pairs(self,
                           stat: Callable[[np.ndarray, np.ndarray], float],
@@ -627,7 +489,7 @@ class EMRun(object):
 
     @cached_property
     def min_nrmsd(self):
-        """ Minimum NRMSD among any pair of clusters. """
+        """ Minimum normalized RMSD among any pair of clusters. """
         return self._calc_p_mut_pairs(calc_nrmsd, min)
 
     def __str__(self):

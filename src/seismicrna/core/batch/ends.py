@@ -243,7 +243,7 @@ def find_contiguous_reads(seg_end5s: np.ndarray, seg_end3s: np.ndarray):
 
 def simulate_segment_ends(uniq_end5s: np.ndarray,
                           uniq_end3s: np.ndarray,
-                          pends: np.ndarray,
+                          p_ends: np.ndarray,
                           num_reads: int,
                           read_length: int = 0,
                           p_rev: float = 0.5):
@@ -255,7 +255,7 @@ def simulate_segment_ends(uniq_end5s: np.ndarray,
         Unique read 5' end coordinates.
     uniq_end3s: np.ndarray
         Unique read 3' end coordinates.
-    pends: np.ndarray
+    p_ends: np.ndarray
         Probability of each set of unique end coordinates.
     num_reads: int
         Number of reads to simulate.
@@ -272,10 +272,10 @@ def simulate_segment_ends(uniq_end5s: np.ndarray,
         5' and 3' segment end coordinates of the simulated reads.
     """
     dims = find_dims([(NUM_READS,), (NUM_READS,), (NUM_READS,)],
-                     [uniq_end5s, uniq_end3s, pends],
+                     [uniq_end5s, uniq_end3s, p_ends],
                      ["end5s", "end3s", "pends"])
     # Choose reads based on their probabilities.
-    indexes = rng.choice(dims[NUM_READS], num_reads, p=pends)
+    indexes = rng.choice(dims[NUM_READS], num_reads, p=p_ends)
     read_end5s = uniq_end5s[indexes]
     read_end3s = uniq_end3s[indexes]
     if read_length < 0:
