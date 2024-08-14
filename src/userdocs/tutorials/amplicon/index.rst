@@ -332,7 +332,7 @@ Now that the replicates are pooled, the overall coverage will be higher, and so
 clustering is more likely to detect true alternative structures.
 Process the pooled sample, including with clustering, by running this command::
 
-    seismic -v wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster hiv-rre.fa out/dms-pool/relate
+    seismic -v wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold hiv-rre.fa out/dms-pool/relate
 
 This is what each of the arguments does:
 
@@ -345,6 +345,7 @@ This is what each of the arguments does:
   section of the reference ``rre`` that corresponds to the amplicon flanked by
   primers ``GGAGCTTTGTTCCTTGGGTTCTTGG`` and ``GGAGCTGTTGATCCTTTAGGTATCTTTC``.
 - ``--cluster`` means enable clustering to find alternative structures.
+- ``--fold`` means enable secondary structure prediction.
 - ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
   (i.e. mutation-free) sequence for the RNA.
 - ``out/dms-pool/relate`` means search inside ``out/dms-pool/relate`` for data
