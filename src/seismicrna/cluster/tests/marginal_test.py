@@ -17,19 +17,19 @@ class TestExpectation(ut.TestCase):
                 muts_per_pos: list[np.ndarray],
                 min_mut_gap: int,
                 expect_log_marginals: np.ndarray,
-                expect_memberships: np.ndarray):
-        result_log_marginals, result_memberships = calc_marginal(p_mut,
-                                                                 p_ends,
-                                                                 p_clust,
-                                                                 end5s,
-                                                                 end3s,
-                                                                 unmasked,
-                                                                 muts_per_pos,
-                                                                 min_mut_gap)
+                expect_resps: np.ndarray):
+        result_log_marginals, result_resps = calc_marginal(p_mut,
+                                                           p_ends,
+                                                           p_clust,
+                                                           end5s,
+                                                           end3s,
+                                                           unmasked,
+                                                           muts_per_pos,
+                                                           min_mut_gap)
         self.assertEqual(result_log_marginals.shape, expect_log_marginals.shape)
         self.assertTrue(np.allclose(result_log_marginals, expect_log_marginals))
-        self.assertEqual(expect_memberships.shape, result_memberships.shape)
-        self.assertTrue(np.allclose(expect_memberships, result_memberships))
+        self.assertEqual(expect_resps.shape, result_resps.shape)
+        self.assertTrue(np.allclose(expect_resps, result_resps))
 
     def test_1pos(self):
         p_mut = np.array([[0.1]])
@@ -41,7 +41,7 @@ class TestExpectation(ut.TestCase):
         muts_per_pos = [np.array([1])]
         min_mut_gap = 0
         expect_log_marginals = np.log([0.9, 0.1])
-        expect_memberships = np.ones((2, 1))
+        expect_resps = np.ones((2, 1))
         self.compare(p_mut,
                      p_ends,
                      p_clust,
@@ -51,7 +51,7 @@ class TestExpectation(ut.TestCase):
                      muts_per_pos,
                      min_mut_gap,
                      expect_log_marginals,
-                     expect_memberships)
+                     expect_resps)
 
     def test_2pos_gap0(self):
         p_mut = np.array([[0.1],
@@ -66,7 +66,7 @@ class TestExpectation(ut.TestCase):
         expect_log_marginals = np.log(
             [0.18, 0.02, 0.36, 0.04, 0.09, 0.01, 0.24, 0.06]
         )
-        expect_memberships = np.ones((8, 1))
+        expect_resps = np.ones((8, 1))
         min_mut_gap = 0
         self.compare(p_mut,
                      p_ends,
@@ -77,7 +77,7 @@ class TestExpectation(ut.TestCase):
                      muts_per_pos,
                      min_mut_gap,
                      expect_log_marginals,
-                     expect_memberships)
+                     expect_resps)
 
     def test_2pos_gap1(self):
         p_mut = np.array([[0.1],
@@ -96,7 +96,7 @@ class TestExpectation(ut.TestCase):
                                        0.09 / 0.99,
                                        0.24 / 0.99,
                                        0.06 / 0.99])
-        expect_memberships = np.ones((7, 1))
+        expect_resps = np.ones((7, 1))
         min_mut_gap = 1
         self.compare(p_mut,
                      p_ends,
@@ -107,7 +107,7 @@ class TestExpectation(ut.TestCase):
                      muts_per_pos,
                      min_mut_gap,
                      expect_log_marginals,
-                     expect_memberships)
+                     expect_resps)
 
     def test_2pos_masked0(self):
         p_mut = np.array([[0.1],
@@ -122,7 +122,7 @@ class TestExpectation(ut.TestCase):
         expect_log_marginals = np.log(
             [0.20, 0.20, 0.40, 0.40, 0.10, 0.10, 0.24, 0.06]
         )
-        expect_memberships = np.ones((8, 1))
+        expect_resps = np.ones((8, 1))
         for min_mut_gap in [0, 1]:
             self.compare(p_mut,
                          p_ends,
@@ -133,7 +133,7 @@ class TestExpectation(ut.TestCase):
                          muts_per_pos,
                          min_mut_gap,
                          expect_log_marginals,
-                         expect_memberships)
+                         expect_resps)
 
     def test_2pos_masked1(self):
         p_mut = np.array([[0.1],
@@ -148,7 +148,7 @@ class TestExpectation(ut.TestCase):
         expect_log_marginals = np.log(
             [0.18, 0.02, 0.45, 0.05, 0.45, 0.05, 0.30, 0.30]
         )
-        expect_memberships = np.ones((8, 1))
+        expect_resps = np.ones((8, 1))
         for min_mut_gap in [0, 1]:
             self.compare(p_mut,
                          p_ends,
@@ -159,7 +159,7 @@ class TestExpectation(ut.TestCase):
                          muts_per_pos,
                          min_mut_gap,
                          expect_log_marginals,
-                         expect_memberships)
+                         expect_resps)
 
     def test_1pos_2clusters(self):
         p_mut = np.array([[0.1, 0.2]])
@@ -171,8 +171,8 @@ class TestExpectation(ut.TestCase):
         muts_per_pos = [np.array([1])]
         min_mut_gap = 0
         expect_log_marginals = np.log([0.84, 0.16])
-        expect_memberships = np.array([[3. / 7., 4. / 7.],
-                                       [1. / 4., 3. / 4.]])
+        expect_resps = np.array([[3. / 7., 4. / 7.],
+                                 [1. / 4., 3. / 4.]])
         self.compare(p_mut,
                      p_ends,
                      p_clust,
@@ -182,7 +182,7 @@ class TestExpectation(ut.TestCase):
                      muts_per_pos,
                      min_mut_gap,
                      expect_log_marginals,
-                     expect_memberships)
+                     expect_resps)
 
     def test_2pos_gap0_2clusters(self):
         p_mut = np.array([[0.1, 0.4],
@@ -197,14 +197,14 @@ class TestExpectation(ut.TestCase):
         expect_log_marginals = np.log(
             [0.144, 0.056, 0.270, 0.100, 0.090, 0.040, 0.222, 0.078]
         )
-        expect_memberships = np.array([[1. / 2., 1. / 2.],
-                                       [1. / 7., 6. / 7.],
-                                       [8. / 15., 7. / 15.],
-                                       [4. / 25., 21. / 25.],
-                                       [2. / 5., 3. / 5.],
-                                       [1. / 10., 9. / 10.],
-                                       [16. / 37., 21. / 37.],
-                                       [4. / 13., 9. / 13.]])
+        expect_resps = np.array([[1. / 2., 1. / 2.],
+                                 [1. / 7., 6. / 7.],
+                                 [8. / 15., 7. / 15.],
+                                 [4. / 25., 21. / 25.],
+                                 [2. / 5., 3. / 5.],
+                                 [1. / 10., 9. / 10.],
+                                 [16. / 37., 21. / 37.],
+                                 [4. / 13., 9. / 13.]])
         min_mut_gap = 0
         self.compare(p_mut,
                      p_ends,
@@ -215,7 +215,7 @@ class TestExpectation(ut.TestCase):
                      muts_per_pos,
                      min_mut_gap,
                      expect_log_marginals,
-                     expect_memberships)
+                     expect_resps)
 
 
 if __name__ == "__main__":

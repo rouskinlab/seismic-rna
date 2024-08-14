@@ -162,7 +162,7 @@ def calc_jackpot_g_stat(num_obs: np.ndarray,
         - Number of degrees of freedom
     """
     if min_exp < 0.:
-        raise ValueError(f"min_exp must be > 0, but got {min_exp}")
+        raise ValueError(f"min_exp must be ≥ 0, but got {min_exp}")
     num_uniq = ensure_same_length(num_obs, log_exp, "observed", "expected")
     if num_uniq > 0:
         min_obs = num_obs.min()

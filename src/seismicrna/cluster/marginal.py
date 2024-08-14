@@ -11,6 +11,13 @@ from ..core.mu import (READS,
                        triu_log)
 
 
+def _zero_masked(p_mut: np.ndarray, unmasked: np.ndarray):
+    """ Set mutation rates of masked positions to zero. """
+    p_mut_unmasked = np.zeros_like(p_mut)
+    p_mut_unmasked[unmasked] = p_mut[unmasked]
+    return p_mut_unmasked
+
+
 def calc_marginal(p_mut: np.ndarray,
                   p_ends: np.ndarray,
                   p_clust: np.ndarray,
@@ -29,6 +36,8 @@ def calc_marginal(p_mut: np.ndarray,
               [p_mut, p_ends, p_clust, end5s, end3s],
               ["p_mut", "p_ends", "p_clust", "end5s", "end3s"],
               nonzero=True)
+    # Ensure the mutation rates of masked positions are 0.
+    p_mut = _zero_masked(p_mut, unmasked)
     # Calculate the end probabilities.
     p_noclose_given_ends = calc_p_noclose_given_ends(p_mut, min_mut_gap)
     p_ends_given_noclose = calc_p_ends_given_noclose(p_ends,
