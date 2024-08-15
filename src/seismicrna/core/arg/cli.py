@@ -749,7 +749,7 @@ opt_write_all_ks = Option(
 opt_jackpot = Option(
     ("--jackpot/--no-jackpot",),
     type=bool,
-    default=False,
+    default=True,
     help="Calculate the jackpotting index to find over/under-represented reads"
 )
 

@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 
 from .emk import EMRunsK, NOCONV
+from .names import JACKPOT_INDEX
 from ..core.header import NUM_CLUSTS_NAME
 
 EM_RUN_NAME = "Run"
@@ -13,7 +14,7 @@ ATTRS = {
     RUN_PASSING: "Whether the run passed filters",
     "log_likes": "Final log likelihood",
     "bics": "Bayesian information criterion",
-    "jackpot_indexes": "Jackpotting index",
+    "jackpot_indexes": JACKPOT_INDEX,
     "min_nrmsds": "Minimum normalized RMSD between any two clusters",
     "max_pearsons": "Maximum Pearson correlation between any two clusters",
     "nrmsds_vs_best": "Normalized RMSD versus the best run",

@@ -103,8 +103,8 @@ CLUST_PARAM_MUS = "mus"
 CLUST_PARAMS = (CLUST_PARAM_PIS,
                 CLUST_PARAM_MUS)
 CLUST_PARAMS_DIR = "parameters"
-CLUST_SUMMARIES_DIR = "summaries"
-CLUST_JACKPOTTING_DIR = "jackpotting"
+CLUST_STATS_DIR = "statistics"
+CLUST_COUNTS_DIR = "read-counts"
 
 RELATE_TABLE = "relate"
 MASK_TABLE = "mask"

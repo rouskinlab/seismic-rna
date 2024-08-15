@@ -138,6 +138,13 @@ def sim_obs_exp(p_mut: np.ndarray,
         yield num_obs, log_exp
 
 
+def calc_half_g_anomaly(num_obs: float | np.ndarray,
+                        log_exp: float | np.ndarray):
+    """ Calculate half of an item's G anomaly, i.e. its contribution to
+    the overall G-test statistic. """
+    return num_obs * (np.log(num_obs) - log_exp)
+
+
 def calc_jackpot_g_stat(num_obs: np.ndarray,
                         log_exp: np.ndarray,
                         min_exp: float = 0.):
@@ -194,9 +201,8 @@ def calc_jackpot_g_stat(num_obs: np.ndarray,
         # are at least min_exp.
         is_at_least_min_exp = num_exp >= min_exp
         at_least_min_exp = np.flatnonzero(is_at_least_min_exp)
-        g_stat = 2. * np.sum(num_obs[at_least_min_exp]
-                             * (np.log(num_obs[at_least_min_exp])
-                                - log_exp[at_least_min_exp]))
+        g_stat = 2. * calc_half_g_anomaly(num_obs[at_least_min_exp],
+                                          log_exp[at_least_min_exp]).sum()
         # Degrees of freedom for those reads.
         df_at_least_min_exp = at_least_min_exp.size - 1
         # Add reads with expected counts less than min_exp to the G-test.
@@ -217,9 +223,10 @@ def calc_jackpot_g_stat(num_obs: np.ndarray,
                                  f"counts < {min_exp} cannot be 0 if the "
                                  "observed number of such reads is "
                                  f"{num_obs_less_than_min_exp}")
-            g_stat += 2. * (num_obs_less_than_min_exp
-                            * np.log(num_obs_less_than_min_exp
-                                     / num_exp_less_than_min_exp))
+            g_stat += 2. * calc_half_g_anomaly(
+                num_obs_less_than_min_exp,
+                np.log(num_exp_less_than_min_exp)
+            )
             # Degree of freedom for all reads with expected counts less
             # than min_exp.
             df_less_than_min_exp = 1
@@ -227,7 +234,7 @@ def calc_jackpot_g_stat(num_obs: np.ndarray,
             df_less_than_min_exp = 0
     else:
         # Calculate the G-test statistic of all reads.
-        g_stat = 2. * np.sum(num_obs * (np.log(num_obs) - log_exp))
+        g_stat = 2. * calc_half_g_anomaly(num_obs, log_exp).sum()
         # Degrees of freedom for those reads.
         df_at_least_min_exp = num_exp.size - 1
         # Degree of freedom for all reads with expected counts less

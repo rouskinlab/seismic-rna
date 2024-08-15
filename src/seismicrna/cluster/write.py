@@ -9,7 +9,7 @@ import numpy as np
 from .emk import EMRunsK, find_best_k, sort_runs
 from .em import EMRun
 from .io import write_batches
-from .obsexp import write_jackpotting
+from .obsexp import write_obs_exp_counts
 from .params import write_mus, write_pis
 from .report import ClusterReport
 from .summary import write_summaries
@@ -201,13 +201,13 @@ def cluster(mask_report_file: Path, *,
                                               brotli_level,
                                               tmp_dir)
         # Write the observed and expected counts for every best run.
-        jackpotting_dir = tmp_clust_dir.joinpath(path.CLUST_JACKPOTTING_DIR)
-        jackpotting_dir.mkdir()
-        write_jackpotting(uniq_reads, runs_ks_list, jackpotting_dir)
+        counts_dir = tmp_clust_dir.joinpath(path.CLUST_COUNTS_DIR)
+        counts_dir.mkdir()
+        write_obs_exp_counts(uniq_reads, runs_ks_list, counts_dir)
         # Summarize the runs in table and graph format.
-        summaries_dir = tmp_clust_dir.joinpath(path.CLUST_SUMMARIES_DIR)
-        summaries_dir.mkdir()
-        write_summaries(runs_ks_list, summaries_dir)
+        statistics_dir = tmp_clust_dir.joinpath(path.CLUST_STATS_DIR)
+        statistics_dir.mkdir()
+        write_summaries(runs_ks_list, statistics_dir)
         # Write the cluster report.
         ended = datetime.now()
         report = ClusterReport.from_clusters(runs_ks_list,

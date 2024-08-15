@@ -116,6 +116,7 @@ def cgroup_table(table: Table, cgroup: str):
 
 
 class Annotation(object):
+    """ Text annotation in a graph. """
 
     def __init__(self,
                  row: int,
