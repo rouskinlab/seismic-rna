@@ -763,7 +763,7 @@ opt_jackpot_conf_level = Option(
 opt_max_jackpot_index = Option(
     ("--max-jackpot-index",),
     type=float,
-    default=1.25,
+    default=1.2,
     help="Remove runs whose jackpotting index exceeds this limit"
 )
 

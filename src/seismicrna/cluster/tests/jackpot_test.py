@@ -213,7 +213,7 @@ class TestBootstrapNormGStats(ut.TestCase):
     def setUp(self):
         self.SIM_DIR.mkdir()
         self._config = get_config()
-        set_config(verbose=0, quiet=1, log_file=None, raise_on_error=True)
+        set_config(verbose=2, quiet=0, log_file=None, raise_on_error=True)
 
     def tearDown(self):
         if self.SIM_DIR.exists():
@@ -224,7 +224,7 @@ class TestBootstrapNormGStats(ut.TestCase):
         """ Simulate a dataset and calculate its jackpotting index. """
         n_pos = 120
         n_reads = 10000
-        n_clusts = 1
+        n_clusts = 2
         min_mut_gap = 3
         # Simulate "ideal" data with no low-quality bases or deletions.
         run_sim_ref(refs=self.REFS, ref=self.REF, reflen=n_pos)
