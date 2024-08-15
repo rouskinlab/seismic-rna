@@ -749,7 +749,7 @@ opt_write_all_ks = Option(
 opt_jackpot = Option(
     ("--jackpot/--no-jackpot",),
     type=bool,
-    default=True,
+    default=False,
     help="Calculate the jackpotting index to find over/under-represented reads"
 )
 
@@ -763,7 +763,7 @@ opt_jackpot_conf_level = Option(
 opt_max_jackpot_index = Option(
     ("--max-jackpot-index",),
     type=float,
-    default=0.5,
+    default=1.25,
     help="Remove runs whose jackpotting index exceeds this limit"
 )
 

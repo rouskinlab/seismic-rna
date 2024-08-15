@@ -13,6 +13,8 @@ logger = getLogger(__name__)
 def run_datapath():
     """ Guess the DATAPATH for RNAstructure. """
     datapath = guess_data_path()
+    # This function should use print(), not the logger, because the
+    # DATAPATH should be printed regardless of the logging verbosity.
     print(f"{DATAPATH}={datapath}")
     return datapath
 

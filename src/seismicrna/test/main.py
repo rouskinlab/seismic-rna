@@ -18,13 +18,16 @@ from os.path import dirname
 from click import command
 
 from seismicrna.core.arg import CMD_TEST, opt_verbose
-from seismicrna.core.logs import get_top_logger
+from seismicrna.core.logs import get_top_logger, restore_config, set_config
 from seismicrna.core.run import run_func
 
 
-@run_func(get_top_logger().critical)
+@run_func(get_top_logger().critical, default=None)
+@restore_config
 def run(verbose: int):
     """ Run all unit tests. """
+    # Write no log file and halt on errors.
+    set_config(log_file=None, raise_on_error=True)
     # Discover all unit test modules.
     main_dir = dirname(dirname(__file__))
     # The argument top_level_dir=dirname(main_dir) is needed to make
@@ -36,7 +39,6 @@ def run(verbose: int):
     # Run all unit tests.
     runner = ut.TextTestRunner(verbosity=verbose)
     runner.run(suite)
-    return list()
 
 
 # Parameters for command line interface

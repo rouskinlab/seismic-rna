@@ -4,43 +4,40 @@ import unittest as ut
 from pathlib import Path
 
 from seismicrna.core.arg.cli import opt_out_dir, opt_sim_dir
-from seismicrna.core.logs import set_config, restore_config
-from seismicrna.sim.total import run as run_sim_total
-from seismicrna.sim.ref import run as run_sim_ref
+from seismicrna.core.logs import get_config, set_config
+from seismicrna.sim.fastq import run as run_sim_fastq
 from seismicrna.sim.fold import run as run_sim_fold
 from seismicrna.sim.params import run as run_sim_params
-from seismicrna.sim.fastq import run as run_sim_fastq
+from seismicrna.sim.ref import run as run_sim_ref
+from seismicrna.sim.total import run as run_sim_total
 from seismicrna.wf import run as wf_run
 
 STEPS = ["align", "relate", "mask", "cluster", "table", "fold", "graph"]
-VERBOSITY = -1
-VERBOSE = max(VERBOSITY, 0)
-QUIET = max(-VERBOSITY, 0)
 
 
 class TestWorkflow(ut.TestCase):
     OUT_DIR = Path(opt_out_dir.default).absolute()
     SIM_DIR = Path(opt_sim_dir.default).absolute()
-    LOG_DIR = Path("log").absolute()
     REFS = "test_refs"
     REF = "test_ref"
     SAMPLE = "test_sample"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._config = None
+
     def setUp(self):
         self.SIM_DIR.mkdir()
         self.OUT_DIR.mkdir()
+        self._config = get_config()
+        set_config(verbose=0, quiet=1, log_file=None, raise_on_error=True)
 
     def tearDown(self):
         shutil.rmtree(self.SIM_DIR)
         shutil.rmtree(self.OUT_DIR)
+        set_config(**self._config._asdict())
 
-    @restore_config
     def test_wf_sim_20000reads_2clusts(self):
-        # Suppress warnings, write no log file, and halt on errors.
-        set_config(verbose=VERBOSE,
-                   quiet=QUIET,
-                   log_file=None,
-                   raise_on_error=True)
         # Simulate the data to be processed with wf.
         fastqs = run_sim_total(sim_dir=str(self.SIM_DIR),
                                sample=self.SAMPLE,
@@ -69,13 +66,7 @@ class TestWorkflow(ut.TestCase):
             step_dir = self.OUT_DIR.joinpath(self.SAMPLE, step)
             self.assertTrue(step_dir.is_dir())
 
-    @restore_config
     def test_wf_sim_2samples_2refs_20000reads_2clusts(self):
-        # Suppress warnings, write no log file, and halt on errors.
-        set_config(verbose=VERBOSE,
-                   quiet=QUIET,
-                   log_file=None,
-                   raise_on_error=True)
         # Simulate the data to be processed with wf.
         samples = ["sample1", "sample2"]
         refs = ["refA", "refB"]

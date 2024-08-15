@@ -1,14 +1,31 @@
+import shutil
 import unittest as ut
+from pathlib import Path
 
 import numpy as np
+from scipy.stats import t as studentt
 
+from seismicrna.cluster.em import EMRun
 from seismicrna.cluster.jackpot import calc_jackpot_g_stat
-from seismicrna.core.array import get_length
+from seismicrna.cluster.uniq import UniqReads
+from seismicrna.core.arg.cli import (opt_sim_dir,
+                                     opt_max_em_iter,
+                                     opt_em_thresh,
+                                     opt_jackpot_conf_level,
+                                     opt_max_jackpot_index)
+from seismicrna.core.logs import get_config, set_config
+from seismicrna.mask import run as run_mask
+from seismicrna.mask.data import MaskMutsDataset
+from seismicrna.mask.report import MaskReport, NumReadsInitF, NumReadsKeptF
+from seismicrna.sim.fold import run as run_sim_fold
+from seismicrna.sim.params import run as run_sim_params
+from seismicrna.sim.ref import run as run_sim_ref
+from seismicrna.sim.relate import run as run_sim_relate
 
-rng = np.random.default_rng(0)
+rng = np.random.default_rng()
 
 
-class TestCalcJackpottingGStat(ut.TestCase):
+class TestCalcJackpotGStat(ut.TestCase):
 
     def test_diff_lengths(self):
         num_obs = np.array([1])
@@ -181,40 +198,114 @@ class TestCalcJackpottingGStat(ut.TestCase):
         self.assertEqual(df, 4)
 
 
-def sim_reads(n: int, mus: np.ndarray):
-    return rng.random((n, get_length(mus))) < mus
+class TestBootstrapNormGStats(ut.TestCase):
+    SIM_DIR = Path(opt_sim_dir.default).absolute()
+    REFS = "test_refs"
+    REF = "test_ref"
+    SAMPLE = "test_sample"
+    CONF_LEVEL = 0.95
+    CONF_WIDTH = 0.02
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._config = None
 
-def count_uniq_reads(reads: np.ndarray):
-    uniq_reads, num_obs = np.unique(reads, axis=0, return_counts=True)
-    return uniq_reads, num_obs
+    def setUp(self):
+        self.SIM_DIR.mkdir()
+        self._config = get_config()
+        set_config(verbose=0, quiet=1, log_file=None, raise_on_error=True)
 
+    def tearDown(self):
+        if self.SIM_DIR.exists():
+            shutil.rmtree(self.SIM_DIR)
+        set_config(**self._config._asdict())
 
-def calc_log_exp(n: int, mus: np.ndarray, uniq_reads: np.ndarray):
-    return np.log(n) + np.sum(np.where(uniq_reads,
-                                       np.log(mus),
-                                       np.log(1. - mus)),
-                              axis=1)
+    def simulate_jackpot_index(self):
+        """ Simulate a dataset and calculate its jackpotting index. """
+        n_pos = 120
+        n_reads = 10000
+        n_clusts = 1
+        min_mut_gap = 3
+        # Simulate "ideal" data with no low-quality bases or deletions.
+        run_sim_ref(refs=self.REFS, ref=self.REF, reflen=n_pos)
+        fasta = self.SIM_DIR.joinpath("refs", f"{self.REFS}.fa")
+        run_sim_fold(fasta, fold_max=n_clusts)
+        param_dir = self.SIM_DIR.joinpath("params", self.REF, "full")
+        ct_file = param_dir.joinpath("simulated.ct")
+        pmut = [("loq", 0.),
+                ("ac", 0.25),
+                ("ag", 0.25),
+                ("at", 0.50),
+                ("ca", 0.25),
+                ("cg", 0.50),
+                ("ct", 0.25),
+                ("ga", 0.25),
+                ("gc", 0.50),
+                ("gt", 0.25),
+                ("ta", 0.50),
+                ("tc", 0.25),
+                ("tg", 0.25)]
+        run_sim_params(ct_file=(ct_file,),
+                       pmut_paired=pmut,
+                       pmut_unpaired=pmut,
+                       insert_fmean=1.,
+                       end3_fmean=1.,
+                       clust_conc=2.)
+        relate_report_file, = run_sim_relate(param_dir=(param_dir,),
+                                             sample=self.SAMPLE,
+                                             min_mut_gap=min_mut_gap,
+                                             num_reads=n_reads)
+        # Mask the data.
+        mask_report_file, = run_mask((relate_report_file,),
+                                     mask_polya=0,
+                                     mask_del=False,
+                                     mask_ins=False,
+                                     min_mut_gap=min_mut_gap,
+                                     quick_unbias_thresh=0.)
+        mask_report = MaskReport.load(mask_report_file)
+        self.assertEqual(mask_report.get_field(NumReadsInitF),
+                         mask_report.get_field(NumReadsKeptF))
+        # Cluster the data and calculate the jackpotting index.
+        mask_dataset = MaskMutsDataset.load(mask_report_file)
+        uniq_reads = UniqReads.from_dataset_contig(mask_dataset)
+        em_run = EMRun(uniq_reads,
+                       k=n_clusts,
+                       seed=rng.integers(2 ** 32),
+                       min_iter=2,
+                       max_iter=opt_max_em_iter.default,
+                       em_thresh=opt_em_thresh.default,
+                       jackpot=True,
+                       jackpot_conf_level=opt_jackpot_conf_level.default,
+                       max_jackpot_index=opt_max_jackpot_index.default)
+        # Delete the simulated files so that this function can run again
+        # if necessary.
+        shutil.rmtree(self.SIM_DIR)
+        return em_run.jackpot_index
 
+    def calc_confidence_interval(self, log_jackpot_indexes: list[float]):
+        n = len(log_jackpot_indexes)
+        if n <= 1:
+            return np.nan, np.nan
+        mean = np.mean(log_jackpot_indexes)
+        std_err = np.std(log_jackpot_indexes) / np.sqrt(n)
+        t_lo, t_up = studentt.interval(self.CONF_LEVEL, n - 1)
+        j_lo = mean + std_err * t_lo
+        j_up = mean + std_err * t_up
+        return j_lo, j_up
 
-def sim_obs_exp_mixture(n: int,
-                        mus1: np.ndarray,
-                        mus2: np.ndarray,
-                        pi2: float):
-    """ Simulate observed and expected counts from a mixture of two
-    sets of mutation rates. """
-    n2 = round(n * pi2)
-    n1 = n - n2
-    reads = np.vstack([sim_reads(n1, mus1),
-                       sim_reads(n2, mus2)])
-    uniq_reads, num_obs = count_uniq_reads(reads)
-    # Calculate the expected counts using the average of mus1 and mus2.
-    # The discrepancy between this average and the actual underlying
-    # structure of the simulated reads is what produces the appearance
-    # of jackpotting.
-    mus = (n1 / n) * mus1 + (n2 / n) * mus2
-    log_exp = calc_log_exp(n, mus, uniq_reads)
-    return num_obs, log_exp
+    def test_ideal_jackpot(self):
+        """ Test that bootstrapping "perfect" data correctly returns a
+        jackpotting index that is expected to be 0. """
+        log_jackpot_indexes = list()
+        while True:
+            log_jackpot_indexes.append(np.log(self.simulate_jackpot_index()))
+            j_lo, j_up = self.calc_confidence_interval(log_jackpot_indexes)
+            width = j_up - j_lo
+            if width <= self.CONF_WIDTH:
+                # Verify that the confidence interval contains 0.
+                self.assertLessEqual(j_lo, 0.)
+                self.assertGreaterEqual(j_up, 0.)
+                break
 
 
 if __name__ == "__main__":

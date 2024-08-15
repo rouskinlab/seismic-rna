@@ -162,6 +162,7 @@ def make_pmut_means(*,
     """
     if not 0. <= ploq <= 1.:
         raise ValueError(f"ploq must be ≥ 0 and ≤ 1, but got {ploq}")
+    # Probability that a base is high-quality.
     phiq = 1. - ploq
     # Mutations at A bases.
     pas = [pac, pag, pat]

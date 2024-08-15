@@ -1,3 +1,4 @@
+from logging import getLogger
 from typing import Iterable
 
 import numpy as np
@@ -10,6 +11,8 @@ from ..core.mu import calc_p_noclose, calc_p_noclose_given_ends
 SUM_EXP_PRECISION = 3
 POSITIONS = "positions"
 CLUSTERS = "clusters"
+
+logger = getLogger(__name__)
 
 
 def linearize_ends_matrix(p_ends: np.ndarray):
@@ -118,19 +121,20 @@ def sim_obs_exp(p_mut: np.ndarray,
         if min_mut_gap > 0:
             # Remove reads with two mutations too close.
             reads = reads[_filter_reads(reads[:, :-2], min_mut_gap)]
+        n_reads_filtered, _ = reads.shape
         # Count the number of times each unique read was observed.
         uniq_reads, num_obs = np.unique(reads, axis=0, return_counts=True)
         # List the reads with mutations at each unmasked position.
         muts_per_pos = [np.flatnonzero(uniq_reads[:, j]) for j in unmasked]
-        log_exp = np.log(n_reads) + calc_marginal(p_mut,
-                                                  p_ends,
-                                                  p_clust,
-                                                  uniq_reads[:, -2],
-                                                  uniq_reads[:, -1],
-                                                  unmasked,
-                                                  muts_per_pos,
-                                                  min_mut_gap,
-                                                  calc_resps=False)
+        log_exp = np.log(n_reads_filtered) + calc_marginal(p_mut,
+                                                           p_ends,
+                                                           p_clust,
+                                                           uniq_reads[:, -2],
+                                                           uniq_reads[:, -1],
+                                                           unmasked,
+                                                           muts_per_pos,
+                                                           min_mut_gap,
+                                                           calc_resps=False)
         yield num_obs, log_exp
 
 
@@ -238,14 +242,26 @@ def calc_jackpot_g_stat(num_obs: np.ndarray,
 
 
 def normalize_g_stat(g_stat: float, n_reads: int):
-    """ Normalize the G-test statistic. """
+    """ Normalize the G-test statistic.
+
+    The normalized G-test statistic is defined as the expected value of
+    the log of the ratio of observed to expected counts for a read
+    (or, in other words, the weighted average of those log ratios):
+
+    normG = sum{O_i * log(O_i / E_i)} / sum{O_i}
+    where i is each unique read.
+
+    As sum{O_i * log(O_i / E_i)} equals half of the G-test statistic (G)
+    and sum{O_i} equals the total number of reads observed (n), normG
+    simply equals G / (2n).
+    """
     if n_reads == 0:
         if g_stat != 0.:
             raise ValueError(
                 f"If n_reads is 0, then g_stat must be 0, but got {g_stat}"
             )
         return 0.
-    return g_stat / n_reads
+    return g_stat / (2 * n_reads)
 
 
 def calc_norm_g_stat_ci(norm_g_stats: Iterable[float],
@@ -282,6 +298,24 @@ def calc_jackpot_index(real_norm_g_stat: float,
                        null_norm_g_stat: float | list[float] | np.ndarray):
     """ Calculate the jackpotting index.
 
+    The jackpotting index indicates by what factor the average read is
+    overrepresented in the real dataset compared to the null dataset.
+
+    Since the normalized G-stat is the expected log-ratio of a read's
+    observed to expected count, raising e to the power of it yields the
+    observed-to-expected ratio, which measures jackpotting:
+
+    Jratio = O / E
+           = exp{log(O / E)}
+           = exp(normG)
+
+    Then, the jackpotting index is the quotient of the jackpotting ratio
+    of the real dataset versus the null dataset:
+
+    Jindex = Jratio_real / Jratio_null
+           = exp(normG_real) / exp(normG_null)
+           = exp(normG_real - normG_null)
+
     Parameters
     ----------
     real_norm_g_stat: float
@@ -292,7 +326,7 @@ def calc_jackpot_index(real_norm_g_stat: float,
     Returns
     -------
     float
-        Jackpotting index (log-ratio of the real to the null).
+        Jackpotting index
     """
     # If null_g_stat is array-like, then find its mean.
     null_norm_g_stat = np.atleast_1d(null_norm_g_stat)
@@ -300,7 +334,7 @@ def calc_jackpot_index(real_norm_g_stat: float,
         null_norm_g_stat = null_norm_g_stat.mean()
     else:
         null_norm_g_stat = np.nan
-    return real_norm_g_stat - null_norm_g_stat
+    return np.exp(real_norm_g_stat - null_norm_g_stat)
 
 
 def bootstrap_norm_g_stats(p_mut: np.ndarray,
@@ -338,6 +372,9 @@ def bootstrap_norm_g_stats(p_mut: np.ndarray,
         Stop bootstrapping once the confidence interval lies entirely
         above or entirely below this threshold.
     """
+    logger.info(f"Began boostrapping null normalized G-test statistics for a "
+                f"dataset with {n_reads} reads and a real normalized G-test "
+                f"statistic of {real_norm_g_stat}")
     # Inflate the number of reads because some will drop out due to the
     # observer bias.
     p_noclose_given_ends = calc_p_noclose_given_ends(p_mut, min_mut_gap)
@@ -356,7 +393,9 @@ def bootstrap_norm_g_stats(p_mut: np.ndarray,
                                         unmasked):
         # Calculate and normalize this null model G-test statistic.
         null_g_stat, _ = calc_jackpot_g_stat(num_obs, log_exp)
-        null_norm_g_stats.append(normalize_g_stat(null_g_stat, num_obs.sum()))
+        null_norm_g_stat = normalize_g_stat(null_g_stat, num_obs.sum())
+        null_norm_g_stats.append(null_norm_g_stat)
+        logger.debug(f"Null normalized G-test statistic: {null_norm_g_stat}")
         # Determine a confidence interval for the mean of all normalized
         # G-test statistics simulated so far.
         g_ci_lo, g_ci_up = calc_norm_g_stat_ci(null_norm_g_stats,
@@ -364,7 +403,10 @@ def bootstrap_norm_g_stats(p_mut: np.ndarray,
         # Determine a confidence interval for the jackpotting index.
         # Since the jackpotting index is inversely related to the null
         # G-test statistic, the lower and upper bounds are swapped.
-        i_ci_lo = calc_jackpot_index(real_norm_g_stat, g_ci_up)
-        i_ci_up = calc_jackpot_index(real_norm_g_stat, g_ci_lo)
-        if max_jackpot_index < i_ci_lo or i_ci_up < max_jackpot_index:
+        ji_ci_lo = calc_jackpot_index(real_norm_g_stat, g_ci_up)
+        ji_ci_up = calc_jackpot_index(real_norm_g_stat, g_ci_lo)
+        logger.debug(f"{round(confidence_level * 100)}% confidence interval "
+                     f"for jackpotting index: {ji_ci_lo} - {ji_ci_up}")
+        if max_jackpot_index < ji_ci_lo or ji_ci_up < max_jackpot_index:
+            logger.info("Ended boostrapping null normalized G-test statistics")
             return np.array(null_norm_g_stats)
