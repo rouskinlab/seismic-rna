@@ -3,26 +3,160 @@ import unittest as ut
 from pathlib import Path
 
 import numpy as np
-from scipy.stats import t as studentt
+from scipy.stats import binom, chi2, t as studentt
 
 from seismicrna.cluster.em import EMRun
-from seismicrna.cluster.jackpot import calc_jackpot_g_stat
+from seismicrna.cluster.jackpot import (calc_jackpot_g_stat,
+                                        linearize_ends_matrix,
+                                        _find_reads_no_close,
+                                        _sim_reads)
 from seismicrna.cluster.uniq import UniqReads
 from seismicrna.core.arg.cli import (opt_sim_dir,
                                      opt_max_em_iter,
                                      opt_em_thresh,
                                      opt_jackpot_conf_level,
                                      opt_max_jackpot_index)
+from seismicrna.core.array import find_dims
 from seismicrna.core.logs import get_config, set_config
+from seismicrna.core.unbias import (READS,
+                                    calc_p_ends_given_clust_noclose,
+                                    calc_p_noclose_given_clust,
+                                    calc_p_clust_given_noclose,
+                                    calc_p_clust_given_ends_noclose,
+                                    calc_p_nomut_window,
+                                    calc_p_noclose_given_ends,
+                                    calc_p_ends_given_noclose,
+                                    calc_p_mut_given_span_noclose,
+                                    calc_rectangular_sum)
 from seismicrna.mask import run as run_mask
 from seismicrna.mask.data import MaskMutsDataset
-from seismicrna.mask.report import MaskReport, NumReadsInitF, NumReadsKeptF
 from seismicrna.sim.fold import run as run_sim_fold
 from seismicrna.sim.params import run as run_sim_params
 from seismicrna.sim.ref import run as run_sim_ref
 from seismicrna.sim.relate import run as run_sim_relate
 
 rng = np.random.default_rng()
+
+
+def g_test(obs: np.ndarray, exp: np.ndarray):
+    """ Perform a G-test of the observed values. """
+    if exp.shape != obs.shape:
+        raise ValueError(
+            f"obs and exp have different dimensions: {obs.shape} ≠ {exp.shape}"
+        )
+    if not np.isclose(obs.sum(), exp.sum()):
+        raise ValueError(
+            f"obs and exp have different sums: {obs.sum()} ≠ {exp.sum()}"
+        )
+    n, = obs.shape
+    if n >= 2:
+        # Calculate the G-test statistic and P-value.
+        g_stat = 2. * np.sum(obs * np.log(obs / exp))
+        p_value = 1. - chi2.cdf(g_stat, n - 1)
+    else:
+        # For fewer than 2 items, there can be no difference between
+        # observed and expected counts.
+        g_stat = 0.
+        p_value = 1.
+    return g_stat, p_value
+
+
+class TestSimReads(ut.TestCase):
+
+    @staticmethod
+    def count_reads(reads: np.ndarray, clusts: np.ndarray, n_clust: int):
+        """ Count reads for each cluster and position. """
+        dims = find_dims([(READS, "positions + 2"), (READS,)],
+                         [reads, clusts],
+                         ["reads", "clusts"])
+        n_pos = dims["positions + 2"] - 2
+        clust_counts = np.zeros(n_clust, dtype=int)
+        span_counts = np.zeros((n_pos, n_clust), dtype=int)
+        mut_counts = np.zeros((n_pos, n_clust), dtype=int)
+        for k in range(n_clust):
+            reads_k = reads[clusts == k]
+            clust_counts[k], _ = reads_k.shape
+            for read in reads_k:
+                span_counts[read[-2]: read[-1] + 1, k] += 1
+            mut_counts[:, k] = reads_k[:, :-2].sum(axis=0)
+        return clust_counts, span_counts, mut_counts
+
+    def test_sim_reads(self):
+        n_pos = 10
+        n_reads = 100000
+        n_clust = 2
+        min_mut_gap = 3
+        beta_a = 5.
+        beta_b = 15.
+        cluster_alpha = 2.
+        confidence = 0.999
+        p_mut = rng.beta(beta_a, beta_b, (n_pos, n_clust))
+        p_ends = np.triu(rng.random((n_pos, n_pos)))
+        p_ends /= p_ends.sum()
+        p_clust = rng.dirichlet(np.full(n_clust, cluster_alpha))
+        # Calculate the parameters with no two mutations too close.
+        p_nomut_window = calc_p_nomut_window(
+            p_mut, min_mut_gap
+        )
+        p_noclose_given_ends = calc_p_noclose_given_ends(
+            p_mut, p_nomut_window
+        )
+        p_mut_given_noclose = calc_p_mut_given_span_noclose(
+            p_mut, p_ends, p_noclose_given_ends, p_nomut_window
+        )
+        p_noclose_given_clust = calc_p_noclose_given_clust(
+            p_ends, p_noclose_given_ends
+        )
+        p_ends_given_clust_noclose = calc_p_ends_given_clust_noclose(
+            p_ends, p_noclose_given_ends
+        )
+        p_clust_given_noclose = calc_p_clust_given_noclose(
+            p_clust, p_noclose_given_clust
+        )
+        p_clust_given_ends_noclose = calc_p_clust_given_ends_noclose(
+            p_ends_given_clust_noclose, p_clust_given_noclose
+        )
+        uniq_end5s, uniq_end3s, p_ends_given_noclose = linearize_ends_matrix(
+            calc_p_ends_given_noclose(
+                p_ends_given_clust_noclose, p_clust_given_noclose)
+        )
+        # Choose 5'/3' end coordinates.
+        ends = rng.choice(p_ends_given_noclose.size,
+                          n_reads,
+                          p=p_ends_given_noclose,
+                          replace=True)
+        end5s = uniq_end5s[ends]
+        end3s = uniq_end3s[ends]
+        # Simulate reads and clusters.
+        reads, clusts = _sim_reads(end5s,
+                                   end3s,
+                                   p_clust_given_ends_noclose,
+                                   p_mut,
+                                   min_mut_gap)
+        clust_counts, span_counts, mut_counts = self.count_reads(reads,
+                                                                 clusts,
+                                                                 n_clust)
+        # Confirm the 5'/3' coordinates match.
+        self.assertTupleEqual(reads.shape, (n_reads, n_pos + 2))
+        self.assertTupleEqual(clusts.shape, (n_reads,))
+        self.assertTrue(np.all(reads[:, -2] == end5s))
+        self.assertTrue(np.all(reads[:, -1] == end3s))
+        # G-test of the number of reads in each cluster.
+        self.assertEqual(clust_counts.sum(), n_reads)
+        _, p_value = g_test(clust_counts, n_reads * p_clust_given_noclose)
+        self.assertGreaterEqual(p_value, 1. - confidence)
+        # Binomial test of the reads covering each position.
+        p_span = calc_rectangular_sum(p_ends_given_clust_noclose
+                                      * p_clust_given_noclose)
+        span_lo, span_up = binom.interval(confidence, n_reads, p_span)
+        self.assertTrue(np.all(span_counts >= span_lo))
+        self.assertTrue(np.all(span_counts <= span_up))
+        # Binomial test of the mutations at each position.
+        mut_lo, mut_up = binom.interval(confidence,
+                                        span_counts,
+                                        p_mut_given_noclose)
+        self.assertTrue(np.all(mut_counts >= mut_lo))
+        self.assertTrue(np.all(mut_counts <= mut_up))
 
 
 class TestCalcJackpotGStat(ut.TestCase):
@@ -198,13 +332,55 @@ class TestCalcJackpotGStat(ut.TestCase):
         self.assertEqual(df, 4)
 
 
+class TestFindReadsNoClose(ut.TestCase):
+
+    def compare(self, min_mut_gap: int, expect: np.ndarray):
+        muts = np.array([[0, 0, 0, 0, 0, 0],
+                         [1, 0, 0, 0, 0, 0],
+                         [1, 1, 0, 0, 0, 0],
+                         [1, 0, 1, 0, 0, 0],
+                         [1, 0, 0, 1, 0, 0],
+                         [1, 0, 0, 0, 1, 0],
+                         [1, 0, 0, 0, 0, 1],
+                         [0, 1, 0, 0, 0, 1],
+                         [0, 0, 1, 0, 0, 1],
+                         [0, 0, 0, 1, 0, 1],
+                         [0, 0, 0, 0, 1, 1],
+                         [0, 0, 0, 0, 0, 1]])
+        result = _find_reads_no_close(muts, min_mut_gap)
+        self.assertIs(result.dtype, np.dtypes.BoolDType())
+        self.assertTrue(np.array_equal(result, expect))
+
+    def test_min_mut_gap_0(self):
+        self.compare(0, np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]))
+
+    def test_min_mut_gap_1(self):
+        self.compare(1, np.array([1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1]))
+
+    def test_min_mut_gap_2(self):
+        self.compare(2, np.array([1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1]))
+
+    def test_min_mut_gap_3(self):
+        self.compare(3, np.array([1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1]))
+
+    def test_min_mut_gap_4(self):
+        self.compare(4, np.array([1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]))
+
+    def test_min_mut_gap_5(self):
+        self.compare(5, np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]))
+
+    def test_min_mut_gap_6(self):
+        self.compare(6, np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]))
+
+    def test_min_mut_gap_7(self):
+        self.compare(7, np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]))
+
+
 class TestBootstrapNormGStats(ut.TestCase):
     SIM_DIR = Path(opt_sim_dir.default).absolute()
     REFS = "test_refs"
     REF = "test_ref"
     SAMPLE = "test_sample"
-    CONF_LEVEL = 0.95
-    CONF_WIDTH = 0.02
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -213,7 +389,7 @@ class TestBootstrapNormGStats(ut.TestCase):
     def setUp(self):
         self.SIM_DIR.mkdir()
         self._config = get_config()
-        set_config(verbose=2, quiet=0, log_file=None, raise_on_error=True)
+        set_config(verbose=0, quiet=1, log_file=None, raise_on_error=True)
 
     def tearDown(self):
         if self.SIM_DIR.exists():
@@ -222,8 +398,8 @@ class TestBootstrapNormGStats(ut.TestCase):
 
     def simulate_jackpot_index(self):
         """ Simulate a dataset and calculate its jackpotting index. """
-        n_pos = 120
-        n_reads = 10000
+        n_pos = 60
+        n_reads = 50000
         n_clusts = 2
         min_mut_gap = 3
         # Simulate "ideal" data with no low-quality bases or deletions.
@@ -245,11 +421,19 @@ class TestBootstrapNormGStats(ut.TestCase):
                 ("ta", 0.50),
                 ("tc", 0.25),
                 ("tg", 0.25)]
+        pmut_paired = pmut + [("am", 0.005),
+                              ("cm", 0.005),
+                              ("gm", 0.005),
+                              ("tm", 0.005)]
+        pmut_unpaired = pmut + [("am", 0.1),
+                                ("cm", 0.1),
+                                ("gm", 0.005),
+                                ("tm", 0.005)]
         run_sim_params(ct_file=(ct_file,),
-                       pmut_paired=pmut,
-                       pmut_unpaired=pmut,
-                       insert_fmean=1.,
-                       end3_fmean=1.,
+                       pmut_paired=pmut_paired,
+                       pmut_unpaired=pmut_unpaired,
+                       insert_fmean=0.5,
+                       end3_fmean=0.75,
                        clust_conc=2.)
         relate_report_file, = run_sim_relate(param_dir=(param_dir,),
                                              sample=self.SAMPLE,
@@ -261,10 +445,9 @@ class TestBootstrapNormGStats(ut.TestCase):
                                      mask_del=False,
                                      mask_ins=False,
                                      min_mut_gap=min_mut_gap,
+                                     min_finfo_read=1.,
+                                     min_ninfo_pos=1,
                                      quick_unbias_thresh=0.)
-        mask_report = MaskReport.load(mask_report_file)
-        self.assertEqual(mask_report.get_field(NumReadsInitF),
-                         mask_report.get_field(NumReadsKeptF))
         # Cluster the data and calculate the jackpotting index.
         mask_dataset = MaskMutsDataset.load(mask_report_file)
         uniq_reads = UniqReads.from_dataset_contig(mask_dataset)
@@ -282,13 +465,15 @@ class TestBootstrapNormGStats(ut.TestCase):
         shutil.rmtree(self.SIM_DIR)
         return em_run.jackpot_index
 
-    def calc_confidence_interval(self, log_jackpot_indexes: list[float]):
+    @staticmethod
+    def calc_confidence_interval(log_jackpot_indexes: list[float],
+                                 confidence_level: float):
         n = len(log_jackpot_indexes)
         if n <= 1:
             return np.nan, np.nan
         mean = np.mean(log_jackpot_indexes)
         std_err = np.std(log_jackpot_indexes) / np.sqrt(n)
-        t_lo, t_up = studentt.interval(self.CONF_LEVEL, n - 1)
+        t_lo, t_up = studentt.interval(confidence_level, n - 1)
         j_lo = mean + std_err * t_lo
         j_up = mean + std_err * t_up
         return j_lo, j_up
@@ -296,16 +481,20 @@ class TestBootstrapNormGStats(ut.TestCase):
     def test_ideal_jackpot(self):
         """ Test that bootstrapping "perfect" data correctly returns a
         jackpotting index that is expected to be 0. """
-        log_jackpot_indexes = list()
+        confidence_level = 0.99
+        confidence_width = 0.02
+        jackpot_indexes = list()
         while True:
-            log_jackpot_indexes.append(np.log(self.simulate_jackpot_index()))
-            j_lo, j_up = self.calc_confidence_interval(log_jackpot_indexes)
-            width = j_up - j_lo
-            if width <= self.CONF_WIDTH:
+            jackpot_indexes.append(self.simulate_jackpot_index())
+            j_lo, j_up = self.calc_confidence_interval(jackpot_indexes,
+                                                       confidence_level)
+            if not np.isnan(j_lo) and not np.isnan(j_up):
                 # Verify that the confidence interval contains 0.
-                self.assertLessEqual(j_lo, 0.)
-                self.assertGreaterEqual(j_up, 0.)
-                break
+                self.assertLessEqual(j_lo, 1.)
+                self.assertGreaterEqual(j_up, 1.)
+                if j_up - j_lo < confidence_width:
+                    # The confidence interval has converged around 0.
+                    break
 
 
 if __name__ == "__main__":

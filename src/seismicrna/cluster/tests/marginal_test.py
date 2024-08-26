@@ -2,10 +2,10 @@ import unittest as ut
 
 import numpy as np
 
-from seismicrna.cluster.marginal import calc_marginal
+from seismicrna.cluster.marginal import calc_marginal_resps
 
 
-class TestExpectation(ut.TestCase):
+class TestMarginalResps(ut.TestCase):
 
     def compare(self,
                 p_mut: np.ndarray,
@@ -18,14 +18,14 @@ class TestExpectation(ut.TestCase):
                 min_mut_gap: int,
                 expect_log_marginals: np.ndarray,
                 expect_resps: np.ndarray):
-        result_log_marginals, result_resps = calc_marginal(p_mut,
-                                                           p_ends,
-                                                           p_clust,
-                                                           end5s,
-                                                           end3s,
-                                                           unmasked,
-                                                           muts_per_pos,
-                                                           min_mut_gap)
+        result_log_marginals, result_resps = calc_marginal_resps(p_mut,
+                                                                 p_ends,
+                                                                 p_clust,
+                                                                 end5s,
+                                                                 end3s,
+                                                                 unmasked,
+                                                                 muts_per_pos,
+                                                                 min_mut_gap)
         self.assertEqual(result_log_marginals.shape, expect_log_marginals.shape)
         self.assertTrue(np.allclose(result_log_marginals, expect_log_marginals))
         self.assertEqual(expect_resps.shape, result_resps.shape)

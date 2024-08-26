@@ -90,8 +90,8 @@ def _sim_ends(end5: int,
             raise ValueError(f"Invalid variances: {variances}")
         # Convert the fractional gaps into integers using stochastic
         # rounding; then ensure the 5' and 3' ends are in bounds.
-        end5s = np.minimum(stochastic_round(gap5s) + end5, end3)
         end3s = np.maximum(end3 - stochastic_round(gap3s), end5)
+        end5s = np.minimum(stochastic_round(gap5s) + end5, end3s)
     else:
         end5s = np.full(num_reads, end3_mean - (read_mean - 1))
         end3s = np.full(num_reads, end3_mean)

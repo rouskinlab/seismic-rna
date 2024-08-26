@@ -3,31 +3,36 @@ from itertools import product
 
 import numpy as np
 
-from seismicrna.core.mu.unbias import (_clip,
-                                       _normalize,
-                                       _adjust_min_gap,
-                                       _triu_log,
-                                       _triu_sum,
-                                       _triu_cumsum,
-                                       _triu_norm,
-                                       _triu_dot,
-                                       _triu_div,
-                                       _triu_allclose,
-                                       _calc_rectangular_sum,
-                                       _calc_p_ends_observed,
-                                       _calc_p_nomut_window,
-                                       _calc_p_noclose_given_ends,
-                                       _calc_p_mut_given_span_noclose,
-                                       _calc_p_mut_given_span,
-                                       _calc_p_ends,
-                                       _slice_p_ends,
-                                       _find_split_positions,
-                                       calc_p_clust,
-                                       calc_p_noclose,
-                                       calc_p_noclose_given_ends,
-                                       calc_p_ends_given_noclose,
-                                       calc_p_clust_given_noclose,
-                                       calc_params)
+from seismicrna.core.unbias import (_clip,
+                                    _normalize,
+                                    _adjust_min_gap,
+                                    triu_log,
+                                    _triu_sum,
+                                    _triu_cumsum,
+                                    _triu_norm,
+                                    _triu_mul,
+                                    _triu_dot,
+                                    _triu_div,
+                                    _triu_allclose,
+                                    calc_p_ends_observed,
+                                    calc_p_nomut_window,
+                                    calc_p_noclose_given_ends,
+                                    calc_p_noclose_given_ends_auto,
+                                    calc_p_mut_given_span_noclose,
+                                    calc_p_mut_given_span,
+                                    calc_p_ends,
+                                    _slice_p_ends,
+                                    _find_split_positions,
+                                    calc_p_clust,
+                                    calc_p_noclose_given_clust,
+                                    calc_p_noclose,
+                                    calc_p_ends_given_clust_noclose,
+                                    calc_p_ends_given_noclose,
+                                    calc_p_clust_given_ends_noclose,
+                                    calc_p_clust_given_noclose,
+                                    calc_params,
+                                    calc_rectangular_sum,
+                                    calc_params_observed)
 
 rng = np.random.default_rng(seed=0)
 
@@ -88,16 +93,16 @@ def simulate_reads(n_reads: int, p_mut: np.ndarray, p_ends: np.ndarray):
 
 
 def simulate_params(n_pos: int, n_cls: int, p_mut_max: float = 1.):
-    """ Return `p_mut`, `p_ends`, and `p_cls` parameters. """
+    """ Return `p_mut`, `p_ends`, and `p_clust` parameters. """
     p_mut = p_mut_max * rng.random((n_pos, n_cls))
     p_ends = np.triu(1. - rng.random((n_pos, n_pos)))
     p_ends /= np.sum(p_ends)
-    p_cls = 1. - rng.random(n_cls)
-    p_cls /= np.sum(p_cls)
-    return p_mut, p_ends, p_cls
+    p_clust = 1. - rng.random(n_cls)
+    p_clust /= np.sum(p_clust)
+    return p_mut, p_ends, p_clust
 
 
-class TestCalcPEndsGivenNoClose(ut.TestCase):
+class TestCalcPEndsGivenClustNoClose(ut.TestCase):
 
     def test_npos0_ncls1(self):
         p_ends = np.ones((0, 0))
@@ -105,7 +110,7 @@ class TestCalcPEndsGivenNoClose(ut.TestCase):
         self.assertRaisesRegex(ValueError,
                                "Size of dimension 'positions' must be ≥ 1, "
                                "but got 0",
-                               calc_p_ends_given_noclose,
+                               calc_p_ends_given_clust_noclose,
                                p_ends,
                                p_noclose_given_ends)
 
@@ -115,7 +120,7 @@ class TestCalcPEndsGivenNoClose(ut.TestCase):
         self.assertRaisesRegex(ValueError,
                                "Size of dimension 'clusters' must be ≥ 1, "
                                "but got 0",
-                               calc_p_ends_given_noclose,
+                               calc_p_ends_given_clust_noclose,
                                p_ends,
                                p_noclose_given_ends)
 
@@ -124,7 +129,8 @@ class TestCalcPEndsGivenNoClose(ut.TestCase):
         expect = np.ones((1, 1, 1))
         for p in [0.01, 0.1, 1.0]:
             p_noclose_given_ends = np.full((1, 1, 1), p)
-            result = calc_p_ends_given_noclose(p_ends, p_noclose_given_ends)
+            result = calc_p_ends_given_clust_noclose(p_ends,
+                                                     p_noclose_given_ends)
             self.assertTrue(np.array_equal(result, expect))
 
     def test_npos2_ncls1(self):
@@ -134,7 +140,43 @@ class TestCalcPEndsGivenNoClose(ut.TestCase):
                                          [[0.0], [0.8]]])
         expect = np.array([[[3. / 12.], [5. / 12.]],
                            [[np.nan], [4. / 12.]]])
-        result = calc_p_ends_given_noclose(p_ends, p_noclose_given_ends)
+        result = calc_p_ends_given_clust_noclose(p_ends, p_noclose_given_ends)
+        self.assertEqual(result.shape, expect.shape)
+        self.assertTrue(np.all(np.logical_or(np.isclose(result, expect),
+                                             np.isnan(expect))))
+
+
+class TestCalcPEndsGivenNoClose(ut.TestCase):
+
+    def test_calc_p_ends_given_noclose(self):
+        p_ends_given_clust_noclose = np.array(
+            [[[0.2, 0.1, 0.5], [0.5, 0.7, 0.3]],
+             [[0.0, 0.0, 0.0], [0.3, 0.2, 0.2]]]
+        )
+        p_clust_given_noclose = np.array([0.5, 0.3, 0.2])
+        expect = np.array([[0.23, 0.52],
+                           [np.nan, 0.25]])
+        result = calc_p_ends_given_noclose(p_ends_given_clust_noclose,
+                                           p_clust_given_noclose)
+        self.assertEqual(result.shape, expect.shape)
+        self.assertTrue(np.all(np.logical_or(np.isclose(result, expect),
+                                             np.isnan(expect))))
+
+
+class TestCalcPClustGivenEndsNoClose(ut.TestCase):
+
+    def test_calc_p_clust_given_ends_noclose(self):
+        p_ends_given_clust_noclose = np.array(
+            [[[0.2, 0.1, 0.5], [0.5, 0.7, 0.3]],
+             [[0.0, 0.0, 0.0], [0.3, 0.2, 0.2]]]
+        )
+        p_clust_given_noclose = np.array([0.5, 0.3, 0.2])
+        expect = np.array([[[0.43478261, 0.13043478, 0.43478261],
+                            [0.48076923, 0.40384615, 0.11538462]],
+                           [[np.nan, np.nan, np.nan],
+                            [0.6, 0.24, 0.16]]])
+        result = calc_p_clust_given_ends_noclose(p_ends_given_clust_noclose,
+                                                 p_clust_given_noclose)
         self.assertEqual(result.shape, expect.shape)
         self.assertTrue(np.all(np.logical_or(np.isclose(result, expect),
                                              np.isnan(expect))))
@@ -149,8 +191,11 @@ class TestCalcPClustGivenNoClose(ut.TestCase):
             with self.subTest(npos=npos):
                 p_ends = np.ones((npos, npos))
                 p_noclose_given_ends = np.ones((npos, npos, 1))
-                p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends)
-                result = calc_p_clust_given_noclose(p_clust, p_noclose)
+                p_noclose_given_clust = calc_p_noclose_given_clust(
+                    p_ends, p_noclose_given_ends
+                )
+                result = calc_p_clust_given_noclose(p_clust,
+                                                    p_noclose_given_clust)
                 self.assertEqual(result.shape, expect.shape)
                 self.assertTrue(np.allclose(result, expect))
 
@@ -161,8 +206,11 @@ class TestCalcPClustGivenNoClose(ut.TestCase):
             with self.subTest(npos=npos):
                 p_ends = np.ones((npos, npos))
                 p_noclose_given_ends = np.ones((npos, npos, 1))
-                p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends)
-                result = calc_p_clust_given_noclose(p_clust, p_noclose)
+                p_noclose_given_clust = calc_p_noclose_given_clust(
+                    p_ends, p_noclose_given_ends
+                )
+                result = calc_p_clust_given_noclose(p_clust,
+                                                    p_noclose_given_clust)
                 self.assertEqual(result.shape, expect.shape)
                 self.assertTrue(np.allclose(result, expect))
 
@@ -290,7 +338,7 @@ class TestTriuLog(ut.TestCase):
                       [0., 3.]])
         expect = np.array([[0., np.log(2.)],
                            [np.nan, np.log(3.)]])
-        result = _triu_log(a)
+        result = triu_log(a)
         self.compare(result, expect)
 
     def test_3d(self):
@@ -298,7 +346,7 @@ class TestTriuLog(ut.TestCase):
                       [[0., 1.], [3., 6.]]])
         expect = np.array([[[0., np.log(4.)], [np.log(2.), np.log(5.)]],
                            [[np.nan, np.nan], [np.log(3.), np.log(6.)]]])
-        result = _triu_log(a)
+        result = triu_log(a)
         self.compare(result, expect)
 
 
@@ -352,6 +400,43 @@ class TestTriuDot(ut.TestCase):
                       [[16., 160.], [32., 320.]]])
         expect = np.array([256., 25600.])
         self.assertTrue(np.array_equal(_triu_dot(a, b), expect))
+
+
+class TestTriuMul(ut.TestCase):
+
+    def test_1x1(self):
+        a = rng.random()
+        b = 1. - rng.random()
+        expect = np.array([[a * b]])
+        self.assertTrue(np.array_equal(_triu_mul(np.array([[a]]),
+                                                 np.array([[b]])),
+                                       expect))
+
+    def test_1x1x1(self):
+        a = rng.random()
+        b = 1. - rng.random()
+        expect = np.array([[[a * b]]])
+        self.assertTrue(np.array_equal(_triu_mul(np.array([[[a]]]),
+                                                 np.array([[[b]]])),
+                                       expect))
+
+    def test_2x2(self):
+        a = np.array([[12., 3.],
+                      [20., 56.]])
+        b = np.array([[2., 3.],
+                      [5., 7.]])
+        expect = np.array([[24., 9.],
+                           [np.nan, 392.]])
+        self.assertTrue(_triu_allclose(_triu_mul(a, b), expect))
+
+    def test_2x2x2(self):
+        a = np.array([[[2., 20.], [2., 36.]],
+                      [[3., 7.], [12., 40.]]])
+        b = np.array([[[1., 5.], [2., 6.]],
+                      [[3., 7.], [4., 8.]]])
+        expect = np.array([[[2., 100.], [4., 216.]],
+                           [[np.nan, np.nan], [48., 320.]]])
+        self.assertTrue(_triu_allclose(_triu_mul(a, b), expect))
 
 
 class TestTriuDiv(ut.TestCase):
@@ -637,17 +722,17 @@ class TestAdjustMinGap(ut.TestCase):
                     self.assertEqual(_adjust_min_gap(npos, gap), 0)
 
 
-class TestPrivateCalcPNoCloseGivenEnds(ut.TestCase):
-    """ Test _calc_p_nomut_window and _calc_p_noclose_given_ends. """
+class TestCalcPNoCloseGivenEnds(ut.TestCase):
+    """ Test calc_p_nomut_window and calc_p_noclose_given_ends. """
 
     def test_min_gap_0(self):
         for npos in range(10):
             with self.subTest(npos=npos):
                 mu = rng.random((npos, 1))
-                nm = _calc_p_nomut_window(mu, 0)
+                nm = calc_p_nomut_window(mu, 0)
                 nm_expect = np.ones((1, npos + 1, 1))
                 self.assertTrue(np.array_equal(nm, nm_expect))
-                nc = _calc_p_noclose_given_ends(mu, nm)
+                nc = calc_p_noclose_given_ends(mu, nm)
                 nc_expect = np.ones((npos, npos, 1))
                 self.assertTrue(np.array_equal(nc, nc_expect))
 
@@ -655,10 +740,10 @@ class TestPrivateCalcPNoCloseGivenEnds(ut.TestCase):
         mu = np.zeros((0, 1))
         for min_gap in range(4):
             with self.subTest(min_gap=min_gap):
-                nm = _calc_p_nomut_window(mu, min_gap)
+                nm = calc_p_nomut_window(mu, min_gap)
                 nm_expect = np.ones((1, 1, 1))
                 self.assertTrue(np.array_equal(nm, nm_expect))
-                nc = _calc_p_noclose_given_ends(mu, nm)
+                nc = calc_p_noclose_given_ends(mu, nm)
                 nc_expect = np.ones((0, 0, 1))
                 self.assertTrue(np.array_equal(nc, nc_expect))
 
@@ -667,10 +752,10 @@ class TestPrivateCalcPNoCloseGivenEnds(ut.TestCase):
             mu = np.array([[x]])
             for min_gap in range(4):
                 with self.subTest(x=x, min_gap=min_gap):
-                    nm = _calc_p_nomut_window(mu, min_gap)
+                    nm = calc_p_nomut_window(mu, min_gap)
                     nm_expect = np.ones((1, 2, 1))
                     self.assertTrue(np.array_equal(nm, nm_expect))
-                    nc = _calc_p_noclose_given_ends(mu, nm)
+                    nc = calc_p_noclose_given_ends(mu, nm)
                     nc_expect = np.ones((1, 1, 1))
                     self.assertTrue(np.array_equal(nc, nc_expect))
 
@@ -682,13 +767,13 @@ class TestPrivateCalcPNoCloseGivenEnds(ut.TestCase):
     def test_length_2_min_gap_1(self):
         mu = np.array([[0.1, 0.2]]).reshape((2, 1))
         min_gap = 1
-        nm = _calc_p_nomut_window(mu, min_gap)
+        nm = calc_p_nomut_window(mu, min_gap)
         nm_expect = np.array([
             [1., 1., 1.],
             [np.nan, 0.9, 0.8],
         ]).reshape((2, 3, 1))
         self._check_1_cluster(nm, nm_expect)
-        nc = _calc_p_noclose_given_ends(mu, nm)
+        nc = calc_p_noclose_given_ends(mu, nm)
         nc_expect = np.array([
             [1., 0.98],
             [np.nan, 1.],
@@ -698,13 +783,13 @@ class TestPrivateCalcPNoCloseGivenEnds(ut.TestCase):
     def test_length_3_min_gap_1(self):
         mu = np.array([[0.1, 0.2, 0.3]]).reshape((3, 1))
         min_gap = 1
-        nm = _calc_p_nomut_window(mu, min_gap)
+        nm = calc_p_nomut_window(mu, min_gap)
         nm_expect = np.array([
             [1., 1., 1., 1.],
             [np.nan, 0.9, 0.8, 0.7],
         ]).reshape((2, 4, 1))
         self._check_1_cluster(nm, nm_expect)
-        nc = _calc_p_noclose_given_ends(mu, nm)
+        nc = calc_p_noclose_given_ends(mu, nm)
         nc_expect = np.array([
             [1., 0.98, 0.926],
             [1., 1., 0.94],
@@ -715,14 +800,14 @@ class TestPrivateCalcPNoCloseGivenEnds(ut.TestCase):
     def test_length_3_min_gap_2(self):
         mu = np.array([[0.1, 0.2, 0.3]]).reshape((3, 1))
         min_gap = 2
-        nm = _calc_p_nomut_window(mu, min_gap)
+        nm = calc_p_nomut_window(mu, min_gap)
         nm_expect = np.array([
             [1., 1., 1., 1.],
             [np.nan, 0.9, 0.8, 0.7],
             [np.nan, np.nan, 0.72, 0.56],
         ]).reshape((3, 4, 1))
         self._check_1_cluster(nm, nm_expect)
-        nc = _calc_p_noclose_given_ends(mu, nm)
+        nc = calc_p_noclose_given_ends(mu, nm)
         nc_expect = np.array([
             [1., 0.98, 0.902],
             [1., 1., 0.94],
@@ -733,13 +818,13 @@ class TestPrivateCalcPNoCloseGivenEnds(ut.TestCase):
     def test_length_4_min_gap_1(self):
         mu = np.array([[0.1, 0.2, 0.3, 0.4]]).reshape((4, 1))
         min_gap = 1
-        nm = _calc_p_nomut_window(mu, min_gap)
+        nm = calc_p_nomut_window(mu, min_gap)
         nm_expect = np.array([
             [1., 1., 1., 1., 1.],
             [np.nan, 0.9, 0.8, 0.7, 0.6],
         ]).reshape((2, 5, 1))
         self._check_1_cluster(nm, nm_expect)
-        nc = _calc_p_noclose_given_ends(mu, nm)
+        nc = calc_p_noclose_given_ends(mu, nm)
         nc_expect = np.array([
             [1., 0.98, 0.926, 0.83],
             [1., 1., 0.94, 0.844],
@@ -751,14 +836,14 @@ class TestPrivateCalcPNoCloseGivenEnds(ut.TestCase):
     def test_length_4_min_gap_2(self):
         mu = np.array([[0.1, 0.2, 0.3, 0.4]]).reshape((4, 1))
         min_gap = 2
-        nm = _calc_p_nomut_window(mu, min_gap)
+        nm = calc_p_nomut_window(mu, min_gap)
         nm_expect = np.array([
             [1., 1., 1., 1., 1.],
             [np.nan, 0.9, 0.8, 0.7, 0.6],
             [np.nan, np.nan, 0.72, 0.56, 0.42],
         ]).reshape((3, 5, 1))
         self._check_1_cluster(nm, nm_expect)
-        nc = _calc_p_noclose_given_ends(mu, nm)
+        nc = calc_p_noclose_given_ends(mu, nm)
         nc_expect = np.array([
             [1., 0.98, 0.902, 0.7652],
             [1., 1., 0.94, 0.788],
@@ -770,7 +855,7 @@ class TestPrivateCalcPNoCloseGivenEnds(ut.TestCase):
     def test_length_4_min_gap_3(self):
         mu = np.array([[0.1, 0.2, 0.3, 0.4]]).reshape((4, 1))
         min_gap = 3
-        nm = _calc_p_nomut_window(mu, min_gap)
+        nm = calc_p_nomut_window(mu, min_gap)
         nm_expect = np.array([
             [1., 1., 1., 1., 1.],
             [np.nan, 0.9, 0.8, 0.7, 0.6],
@@ -778,7 +863,7 @@ class TestPrivateCalcPNoCloseGivenEnds(ut.TestCase):
             [np.nan, np.nan, np.nan, 0.504, 0.336],
         ]).reshape((4, 5, 1))
         self._check_1_cluster(nm, nm_expect)
-        nc = _calc_p_noclose_given_ends(mu, nm)
+        nc = calc_p_noclose_given_ends(mu, nm)
         nc_expect = np.array([
             [1., 0.98, 0.902, 0.7428],
             [1., 1., 0.94, 0.788],
@@ -793,34 +878,34 @@ class TestPrivateCalcPNoCloseGivenEnds(ut.TestCase):
                 for min_gap in range(npos):
                     with self.subTest(npos=npos, ncls=ncls, min_gap=min_gap):
                         mu = rng.random((npos, ncls))
-                        nm = _calc_p_nomut_window(mu, min_gap)
+                        nm = calc_p_nomut_window(mu, min_gap)
                         self.assertEqual(nm.shape, (min_gap + 1, npos + 1, ncls))
-                        nc = _calc_p_noclose_given_ends(mu, nm)
+                        nc = calc_p_noclose_given_ends(mu, nm)
                         self.assertEqual(nc.shape, (npos, npos, ncls))
                         for k in range(ncls):
                             mu_k = mu[:, k].reshape((npos, 1))
-                            nm_k = _calc_p_nomut_window(mu_k, min_gap)
+                            nm_k = calc_p_nomut_window(mu_k, min_gap)
                             self.assertEqual(nm_k.shape,
                                              (min_gap + 1, npos + 1, 1))
                             self.assertTrue(np.allclose(np.triu(nm[:, :, k]),
                                                         np.triu(nm_k[:, :, 0])))
-                            nc_k = _calc_p_noclose_given_ends(mu_k, nm_k)
+                            nc_k = calc_p_noclose_given_ends(mu_k, nm_k)
                             self.assertEqual(nc_k.shape,
                                              (npos, npos, 1))
                             self.assertTrue(np.allclose(np.triu(nc[:, :, k]),
                                                         np.triu(nc_k[:, :, 0])))
 
 
-class TestPublicCalcPNoCloseGivenEnds(ut.TestCase):
+class TestCalcPNoCloseGivenEndsAuto(ut.TestCase):
 
     def test_1_dim(self):
         max_n = 5
         max_g = 4
         for n_pos in range(max_n + 1):
             for gap in range(max_g + 1):
-                p_noclose_given_ends = calc_p_noclose_given_ends(
-                    rng.random(n_pos), gap
-                )
+                mu = rng.random(n_pos)
+                p_noclose_given_ends = calc_p_noclose_given_ends_auto(mu,
+                                                                      gap)
                 self.assertIsInstance(p_noclose_given_ends, np.ndarray)
                 self.assertEqual(p_noclose_given_ends.shape, (n_pos, n_pos))
 
@@ -831,9 +916,9 @@ class TestPublicCalcPNoCloseGivenEnds(ut.TestCase):
         for n_pos in range(max_n + 1):
             for n_clust in range(max_c + 1):
                 for gap in range(max_g + 1):
-                    p_noclose_given_ends = calc_p_noclose_given_ends(
-                        rng.random((n_pos, n_clust)), gap
-                    )
+                    mu = rng.random((n_pos, n_clust))
+                    p_noclose_given_ends = calc_p_noclose_given_ends_auto(mu,
+                                                                          gap)
                     self.assertIsInstance(p_noclose_given_ends, np.ndarray)
                     self.assertEqual(p_noclose_given_ends.shape,
                                      (n_pos, n_pos, n_clust))
@@ -843,7 +928,7 @@ class TestPublicCalcPNoCloseGivenEnds(ut.TestCase):
             if n_dim == 1 or n_dim == 2:
                 # Skip the dimensions that are valid.
                 continue
-            err_msg = ("p_mut_given_span must have 1 or 2 dimensions, "
+            err_msg = (r"Array 'p_mut_given_span' must have 2 dimension\(s\), "
                        f"but got {n_dim}")
             for size in range(5):
                 dims = (size,) * n_dim
@@ -855,37 +940,6 @@ class TestPublicCalcPNoCloseGivenEnds(ut.TestCase):
                                            gap)
 
 
-class TestCalcRectangularSum(ut.TestCase):
-
-    @staticmethod
-    def calc_spanning_sum_slow(array: np.ndarray):
-        spanning_sum = np.empty(array.shape[1:])
-        for j in range(array.shape[0]):
-            spanning_sum[j] = np.sum(array[:(j + 1), j:], axis=(0, 1))
-        return spanning_sum
-
-    def test_2d(self):
-        for n in range(5):
-            with self.subTest(n=n):
-                array = rng.random((n, n))
-                fast_sum = _calc_rectangular_sum(array)
-                slow_sum = self.calc_spanning_sum_slow(array)
-                self.assertEqual(fast_sum.shape, (n,))
-                self.assertEqual(slow_sum.shape, (n,))
-                self.assertTrue(np.allclose(fast_sum, slow_sum))
-
-    def test_3d(self):
-        for n in range(5):
-            for k in range(3):
-                with self.subTest(n=n, k=k):
-                    array = rng.random((n, n, k))
-                    fast_sum = _calc_rectangular_sum(array)
-                    slow_sum = self.calc_spanning_sum_slow(array)
-                    self.assertEqual(fast_sum.shape, (n, k))
-                    self.assertEqual(slow_sum.shape, (n, k))
-                    self.assertTrue(np.allclose(fast_sum, slow_sum))
-
-
 class TestCalcPMutGivenSpanNoClose(ut.TestCase):
 
     def test_simulated(self):
@@ -895,7 +949,7 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
         n_pos = 6
         n_reads = 1_000_000
         p_mut_max = 0.5
-        p_mut, p_ends, p_cls = simulate_params(n_pos, 1, p_mut_max)
+        p_mut, p_ends, p_clust = simulate_params(n_pos, 1, p_mut_max)
         muts, info, end5s, end3s = simulate_reads(n_reads, p_mut[:, 0], p_ends)
         # Test each minimum gap between mutations (min_gap).
         for min_gap in [0, 3, n_pos]:
@@ -904,10 +958,10 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                 has_no_close = label_no_close_muts(muts, min_gap)
                 # Calculate the theoretical probability of no mutations
                 # in each window.
-                p_nomut_window_theory = _calc_p_nomut_window(p_mut, min_gap)
+                p_nomut_window_theory = calc_p_nomut_window(p_mut, min_gap)
                 # Calculate the theoretical probability of no mutations
                 # being too close for each pair of end coordinates.
-                p_noclose_given_ends_theory = _calc_p_noclose_given_ends(
+                p_noclose_given_ends_theory = calc_p_noclose_given_ends(
                     p_mut,
                     p_nomut_window_theory
                 )
@@ -952,31 +1006,33 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                             )
                 # Compute the theoretical proportion of reads aligning
                 # to each pair of 5' and 3' coordinates.
-                p_ends_given_noclose_theory = calc_p_ends_given_noclose(
+                p_ends_given_clust_noclose_theory = calc_p_ends_given_clust_noclose(
                     p_ends,
                     p_noclose_given_ends_theory
                 ).reshape((n_pos, n_pos))
                 # Compare to the simulated proportion of reads aligning
                 # to each pair of coordinates.
-                p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends_theory)
-                n_expect = np.round(p_ends_given_noclose_theory
-                                    * (p_noclose * n_reads))
+                p_noclose_given_clust = calc_p_noclose_given_clust(
+                    p_ends, p_noclose_given_ends_theory
+                )
+                n_expect = np.round(p_ends_given_clust_noclose_theory
+                                    * (p_noclose_given_clust * n_reads))
                 inter_lo, inter_up = binom.interval(confidence,
                                                     n_expect,
-                                                    p_ends_given_noclose_theory)
+                                                    p_ends_given_clust_noclose_theory)
                 inter_lo = _triu_div(inter_lo, n_expect)
                 inter_up = _triu_div(inter_up, n_expect)
                 end5s_noclose = end5s[has_no_close]
                 end3s_noclose = end3s[has_no_close]
                 for end5 in range(n_pos):
                     for end3 in range(end5, n_pos):
-                        p_ends_given_noclose_simulated = np.mean(np.logical_and(
+                        p_ends_given_clust_noclose_simulated = np.mean(np.logical_and(
                             end5s_noclose == end5,
                             end3s_noclose == end3
                         ))
-                        self.assertGreaterEqual(p_ends_given_noclose_simulated,
+                        self.assertGreaterEqual(p_ends_given_clust_noclose_simulated,
                                                 inter_lo[end5, end3])
-                        self.assertLessEqual(p_ends_given_noclose_simulated,
+                        self.assertLessEqual(p_ends_given_clust_noclose_simulated,
                                              inter_up[end5, end3])
                 # Compute the expected coverage at each position.
                 n_expect = np.zeros(n_pos, dtype=int)
@@ -986,7 +1042,7 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
                                                           * p_ends[end5, end3])
                 # Calculate the theoretical probability of a mutation at
                 # each position given no mutations are too close.
-                p_mut_given_noclose_theory = _calc_p_mut_given_span_noclose(
+                p_mut_given_noclose_theory = calc_p_mut_given_span_noclose(
                     p_mut,
                     p_ends,
                     p_noclose_given_ends_theory,
@@ -1011,24 +1067,24 @@ class TestCalcPMutGivenSpanNoClose(ut.TestCase):
         max_gap = 3
         # Test each number of clusters.
         for n_cls in range(1, max_clusters + 1):
-            p_mut, p_ends, p_cls = simulate_params(n_pos, n_cls)
+            p_mut, p_ends, p_clust = simulate_params(n_pos, n_cls)
             # Test each minimum gap between mutations.
             for min_gap in range(max_gap + 1):
                 with self.subTest(n_cls=n_cls, min_gap=min_gap):
                     # Compute the mutation rates with no two mutations
                     # too close for all clusters simultaneously.
-                    p_nomut_window = _calc_p_nomut_window(p_mut, min_gap)
-                    p_noclose_given_ends = _calc_p_noclose_given_ends(
+                    p_nomut_window = calc_p_nomut_window(p_mut, min_gap)
+                    p_noclose_given_ends = calc_p_noclose_given_ends(
                         p_mut, p_nomut_window
                     )
-                    p_mut_given_span_noclose = _calc_p_mut_given_span_noclose(
+                    p_mut_given_span_noclose = calc_p_mut_given_span_noclose(
                         p_mut, p_ends, p_noclose_given_ends, p_nomut_window
                     )
                     # Compare to computing each cluster individually.
                     for k in range(n_cls):
                         self.assertTrue(np.allclose(
                             p_mut_given_span_noclose[:, k],
-                            _calc_p_mut_given_span_noclose(
+                            calc_p_mut_given_span_noclose(
                                 p_mut[:, [k]],
                                 p_ends,
                                 p_noclose_given_ends[:, :, [k]],
@@ -1252,8 +1308,8 @@ class TestQuickUnbias(ut.TestCase):
     def random_params(npos: int, ncls: int):
         p_mut = rng.beta(0.5, 9.5, (npos, ncls))
         p_ends = 1. - rng.random((npos, npos, ncls))
-        p_cls = 1. - rng.random(ncls)
-        return p_mut, p_ends, p_cls
+        p_clust = 1. - rng.random(ncls)
+        return p_mut, p_ends, p_clust
 
     def test_threshold_0(self):
         t = 0.
@@ -1261,7 +1317,7 @@ class TestQuickUnbias(ut.TestCase):
         for n_cls in [1, 2]:
             for min_gap in [1, 3]:
                 for f_below in [0.2, 0.5, 0.8]:
-                    p_mut, p_ends, p_cls = self.random_params(n_pos, n_cls)
+                    p_mut, p_ends, p_clust = self.random_params(n_pos, n_cls)
                     # Set some mutation rates to below the threshold.
                     n_below = round(n_pos * f_below)
                     below_t = rng.choice(n_pos, n_below, replace=False)
@@ -1271,12 +1327,12 @@ class TestQuickUnbias(ut.TestCase):
                     # Compare quick vs. exact unbias.
                     (p_mut_quick,
                      p_ends_quick,
-                     p_clust_quick) = calc_params(p_mut, p_ends, p_cls, min_gap,
+                     p_clust_quick) = calc_params(p_mut, p_ends, p_clust, min_gap,
                                                   quick_unbias=True,
                                                   quick_unbias_thresh=t)
                     (p_mut_exact,
                      p_ends_exact,
-                     p_clust_exact) = calc_params(p_mut, p_ends, p_cls, min_gap,
+                     p_clust_exact) = calc_params(p_mut, p_ends, p_clust, min_gap,
                                                   quick_unbias=False,
                                                   quick_unbias_thresh=t)
                     with self.subTest(n_cls=n_cls,
@@ -1302,16 +1358,16 @@ class TestQuickUnbias(ut.TestCase):
         n_pos = 500
         for n_cls in [1, 2]:
             for min_gap in [1, 3]:
-                p_mut, p_ends, p_cls = self.random_params(n_pos, n_cls)
+                p_mut, p_ends, p_clust = self.random_params(n_pos, n_cls)
                 # Compare quick vs. exact unbias.
                 (p_mut_quick,
                  p_ends_quick,
-                 p_clust_quick) = calc_params(p_mut, p_ends, p_cls, min_gap,
+                 p_clust_quick) = calc_params(p_mut, p_ends, p_clust, min_gap,
                                               quick_unbias=True,
                                               quick_unbias_thresh=t)
                 (p_mut_exact,
                  p_ends_exact,
-                 p_clust_exact) = calc_params(p_mut, p_ends, p_cls, min_gap,
+                 p_clust_exact) = calc_params(p_mut, p_ends, p_clust, min_gap,
                                               quick_unbias=False,
                                               quick_unbias_thresh=t)
                 with self.subTest(n_cls=n_cls, min_gap=min_gap):
@@ -1332,23 +1388,23 @@ class TestQuickUnbias(ut.TestCase):
 class TestCalcPMutGivenSpan(ut.TestCase):
 
     def test_invert(self):
-        """ Test the inverse of `_calc_p_mut_given_span_noclose`. """
+        """ Test the inverse of `calc_p_mut_given_span_noclose`. """
         n_pos = 16
         max_p_mut = 0.5
         max_clusters = 3
         max_gap = 3
         for n_cls in range(1, max_clusters):
-            p_mut, p_ends, p_cls = simulate_params(n_pos, n_cls, max_p_mut)
+            p_mut, p_ends, p_clust = simulate_params(n_pos, n_cls, max_p_mut)
             for min_gap in range(max_gap + 1):
                 # Compute the mutation rates without mutations too close.
-                p_nomut_window = _calc_p_nomut_window(p_mut, min_gap)
-                p_noclose_given_ends = _calc_p_noclose_given_ends(
+                p_nomut_window = calc_p_nomut_window(p_mut, min_gap)
+                p_noclose_given_ends = calc_p_noclose_given_ends(
                     p_mut, p_nomut_window
                 )
-                p_mut_given_span_noclose = _calc_p_mut_given_span_noclose(
+                p_mut_given_span_noclose = calc_p_mut_given_span_noclose(
                     p_mut, p_ends, p_noclose_given_ends, p_nomut_window
                 )
-                p_mut_given_span = _calc_p_mut_given_span(
+                p_mut_given_span = calc_p_mut_given_span(
                     p_mut_given_span_noclose,
                     min_gap,
                     p_ends,
@@ -1364,51 +1420,61 @@ class TestCalcPMutGivenSpan(ut.TestCase):
 class TestCalcPEnds(ut.TestCase):
 
     def test_invert(self):
-        """ Test the inverse of `calc_p_ends_given_noclose`. """
+        """ Test the inverse of `calc_p_ends_given_clust_noclose`. """
         n_pos = 16
         max_p_mut = 0.5
         max_clusters = 3
         max_gap = 3
         for n_cls in range(1, max_clusters):
-            p_mut, p_ends, p_cls = simulate_params(n_pos, n_cls, max_p_mut)
+            p_mut, p_ends, p_clust = simulate_params(n_pos, n_cls, max_p_mut)
             for min_gap in range(max_gap + 1):
                 # Compute the coordinate distributions without mutations
                 # too close.
-                p_noclose_given_ends = _calc_p_noclose_given_ends(
-                    p_mut, _calc_p_nomut_window(p_mut, min_gap)
+                p_noclose_given_ends = calc_p_noclose_given_ends(
+                    p_mut, calc_p_nomut_window(p_mut, min_gap)
                 )
-                p_ends_given_noclose = calc_p_ends_given_noclose(
+                p_ends_given_clust_noclose = calc_p_ends_given_clust_noclose(
                     p_ends, p_noclose_given_ends
                 )
                 # Infer the original distribution of all reads.
-                p_ends_inferred = _calc_p_ends(p_ends_given_noclose,
-                                               p_noclose_given_ends,
-                                               p_mut,
-                                               p_cls)
+                p_ends_inferred = calc_p_ends(p_ends_given_clust_noclose,
+                                              p_noclose_given_ends,
+                                              p_mut,
+                                              p_clust)
                 self.assertEqual(p_ends_inferred.shape, p_ends.shape)
                 self.assertTrue(_triu_allclose(p_ends_inferred, p_ends))
 
 
-class TestCalcPNoClose(ut.TestCase):
+class TestCalcPNoCloseGivenClust(ut.TestCase):
 
-    def test_p_noclose(self):
+    def test_p_noclose_given_clust(self):
         p_ends = np.array([[0.2, 0.5],
                            [0.4, 0.3]])
         p_noclose_given_ends = np.array([[[0.2, 0.4], [0.1, 0.2]],
                                          [[0.3, 0.6], [0.4, 0.8]]])
         expect = np.array([0.21, 0.42])
-        result = calc_p_noclose(p_ends, p_noclose_given_ends)
+        result = calc_p_noclose_given_clust(p_ends, p_noclose_given_ends)
         self.assertEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
+
+
+class TestCalcPNoClose(ut.TestCase):
+
+    def test_p_noclose(self):
+        p_clust = np.array([0.6, 0.3, 0.1])
+        p_noclose_given_clust = np.array([0.9, 0.8, 0.7])
+        p_noclose = calc_p_noclose(p_clust, p_noclose_given_clust)
+        self.assertIsInstance(p_noclose, float)
+        self.assertTrue(np.isclose(p_noclose, 0.85))
 
 
 class TestCalcPClust(ut.TestCase):
 
     def test_p_clust(self):
         p_clust_given_observed = np.array([0.2, 0.5, 0.3])
-        p_noclose = np.array([0.8, 0.4, 0.5])
+        p_noclose_given_clust = np.array([0.8, 0.4, 0.5])
         expect = np.array([0.25, 1.25, 0.60]) / 2.1
-        result = calc_p_clust(p_clust_given_observed, p_noclose)
+        result = calc_p_clust(p_clust_given_observed, p_noclose_given_clust)
         self.assertEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
 
@@ -1430,7 +1496,7 @@ class TestCalcPEndsObserved(ut.TestCase):
         expect = np.array([[[0.7, 0.8], [1.0, 1.2], [0.3, 0.4]],
                            [[0.0, 0.0], [0.5, 0.6], [0.4, 0.5]],
                            [[0.0, 0.0], [0.0, 0.0], [0.7, 0.9]]])
-        result = _calc_p_ends_observed(npos, end5s, end3s, weights)
+        result = calc_p_ends_observed(npos, end5s, end3s, weights)
         self.assertEqual(result.shape, expect.shape)
         self.assertTrue(np.allclose(result, expect))
 
@@ -1443,31 +1509,33 @@ class TestCalcParams(ut.TestCase):
         max_clusters = 3
         max_gap = 3
         for n_cls in range(1, max_clusters):
-            p_mut, p_ends, p_cls = simulate_params(n_pos, n_cls, max_p_mut)
+            p_mut, p_ends, p_clust = simulate_params(n_pos, n_cls, max_p_mut)
             for min_gap in range(max_gap + 1):
                 # Compute the mutation rates and distributions of end
                 # coordinates without mutations too close.
-                p_nomut_window = _calc_p_nomut_window(p_mut, min_gap)
-                p_noclose_given_ends = _calc_p_noclose_given_ends(
+                p_nomut_window = calc_p_nomut_window(p_mut, min_gap)
+                p_noclose_given_ends = calc_p_noclose_given_ends(
                     p_mut, p_nomut_window
                 )
-                p_noclose = calc_p_noclose(p_ends, p_noclose_given_ends)
-                p_mut_given_span_noclose = _calc_p_mut_given_span_noclose(
+                p_noclose_given_clust = calc_p_noclose_given_clust(
+                    p_ends, p_noclose_given_ends
+                )
+                p_mut_given_span_noclose = calc_p_mut_given_span_noclose(
                     p_mut, p_ends, p_noclose_given_ends, p_nomut_window
                 )
-                p_ends_given_noclose = calc_p_ends_given_noclose(
+                p_ends_given_clust_noclose = calc_p_ends_given_clust_noclose(
                     p_ends, p_noclose_given_ends
                 )
                 p_clust_given_noclose = calc_p_clust_given_noclose(
-                    p_cls, p_noclose
+                    p_clust, p_noclose_given_clust
                 )
                 # Infer the original parameters using those of the reads
                 # without mutations too close.
                 (p_mut_inferred,
                  p_ends_inferred,
-                 p_cls_inferred) = calc_params(
+                 p_clust_inferred) = calc_params(
                     p_mut_given_span_noclose,
-                    p_ends_given_noclose,
+                    p_ends_given_clust_noclose,
                     p_clust_given_noclose,
                     min_gap,
                 )
@@ -1478,11 +1546,42 @@ class TestCalcParams(ut.TestCase):
                                             rtol=1.e-2))
                 self.assertEqual(p_ends_inferred.shape, p_ends.shape)
                 self.assertTrue(_triu_allclose(p_ends_inferred, p_ends))
-                self.assertEqual(p_cls_inferred.shape, p_cls.shape)
-                self.assertTrue(np.allclose(p_cls_inferred,
-                                            p_cls,
+                self.assertEqual(p_clust_inferred.shape, p_clust.shape)
+                self.assertTrue(np.allclose(p_clust_inferred,
+                                            p_clust,
                                             atol=1.e-3,
                                             rtol=1.e-2))
+
+
+class TestCalcRectangularSum(ut.TestCase):
+
+    @staticmethod
+    def calc_spanning_sum_slow(array: np.ndarray):
+        spanning_sum = np.empty(array.shape[1:])
+        for j in range(array.shape[0]):
+            spanning_sum[j] = np.sum(array[:(j + 1), j:], axis=(0, 1))
+        return spanning_sum
+
+    def test_2d(self):
+        for n in range(5):
+            with self.subTest(n=n):
+                array = rng.random((n, n))
+                fast_sum = calc_rectangular_sum(array)
+                slow_sum = self.calc_spanning_sum_slow(array)
+                self.assertEqual(fast_sum.shape, (n,))
+                self.assertEqual(slow_sum.shape, (n,))
+                self.assertTrue(np.allclose(fast_sum, slow_sum))
+
+    def test_3d(self):
+        for n in range(5):
+            for k in range(3):
+                with self.subTest(n=n, k=k):
+                    array = rng.random((n, n, k))
+                    fast_sum = calc_rectangular_sum(array)
+                    slow_sum = self.calc_spanning_sum_slow(array)
+                    self.assertEqual(fast_sum.shape, (n, k))
+                    self.assertEqual(slow_sum.shape, (n, k))
+                    self.assertTrue(np.allclose(fast_sum, slow_sum))
 
 
 if __name__ == "__main__":

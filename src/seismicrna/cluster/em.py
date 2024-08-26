@@ -6,7 +6,7 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 
-from .marginal import calc_marginal
+from .marginal import calc_marginal_resps
 from .jackpot import (bootstrap_norm_g_stats,
                       calc_jackpot_g_stat,
                       calc_jackpot_index,
@@ -15,10 +15,8 @@ from .names import CLUST_PROP_NAME
 from .uniq import UniqReads
 from ..core.array import get_length
 from ..core.header import ClustHeader
-from ..core.mu import (calc_params,
-                       calc_params_observed,
-                       calc_pearson,
-                       calc_nrmsd)
+from ..core.mu import calc_nrmsd, calc_pearson
+from ..core.unbias import calc_params, calc_params_observed
 
 logger = getLogger(__name__)
 
@@ -199,15 +197,20 @@ class EMRun(object):
         """ Number of unmasked positions. """
         return get_length(self._unmasked, "unmasked positions")
 
-    @cached_property
+    @property
     def _end5s(self):
         """ 5' end coordinates (0-indexed). """
         return self.uniq_reads.read_end5s_zero
 
-    @cached_property
+    @property
     def _end3s(self):
         """ 3' end coordinates (0-indexed). """
         return self.uniq_reads.read_end3s_zero
+
+    @property
+    def _counts_per_uniq(self):
+        """ Number of times each unique read occurs. """
+        return self.uniq_reads.counts_per_uniq
 
     @cached_property
     def _clusters(self):
@@ -283,12 +286,11 @@ class EMRun(object):
          p_ends_observed,
          p_clust_observed) = calc_params_observed(
             self._n_pos_total,
-            self.k,
             self._unmasked,
             self.uniq_reads.muts_per_pos,
             self._end5s,
             self._end3s,
-            self.uniq_reads.counts_per_uniq,
+            self._counts_per_uniq,
             self._resps
         )
         if self.iter > 1:
@@ -327,7 +329,7 @@ class EMRun(object):
     def _exp_step(self):
         """ Run the Expectation step of the EM algorithm. """
         # Update the marginal probabilities and cluster memberships.
-        self._logp_marginal, self._resps = calc_marginal(
+        self._logp_marginal, self._resps = calc_marginal_resps(
             self._p_mut,
             self._p_ends,
             self._p_clust,
@@ -339,7 +341,7 @@ class EMRun(object):
         )
         # Calculate the log likelihood and append it to the trajectory.
         log_like = _calc_log_like(self._logp_marginal,
-                                  self.uniq_reads.counts_per_uniq)
+                                  self._counts_per_uniq)
         self._log_likes.append(round(log_like, LOG_LIKE_PRECISION))
 
     def _run(self, seed: int | None = None):
@@ -391,9 +393,9 @@ class EMRun(object):
             # Check for convergence.
             if self._delta_log_like < 0.:
                 # The log likelihood should not decrease.
-                logger.warning(f"{self}, iteration {self.iter} returned a "
-                               f"smaller log likelihood ({self.log_like}) than "
-                               f"the previous iteration ({self._log_like_prev})")
+                logger.warning(f"{self}, iteration {self.iter} had a smaller "
+                               f"log likelihood ({self.log_like}) than the "
+                               f"previous iteration ({self._log_like_prev})")
             if (self._delta_log_like < self._em_thresh
                     and self.iter >= self._min_iter):
                 # Converge if the increase in log likelihood is smaller
@@ -447,17 +449,19 @@ class EMRun(object):
     @cached_property
     def norm_g_stat(self):
         """ Normalized G-test statistic for jackpotting. """
-        g_stat, _ = calc_jackpot_g_stat(self.uniq_reads.counts_per_uniq,
+        g_stat, _ = calc_jackpot_g_stat(self._counts_per_uniq,
                                         self.log_exp_values)
         return normalize_g_stat(g_stat, self.n_reads)
 
     @cached_property
     def _null_norm_g_stats(self):
         """ Normalized G-test statistic of each null model run. """
-        return bootstrap_norm_g_stats(self._p_mut,
+        return bootstrap_norm_g_stats(self._end5s,
+                                      self._end3s,
+                                      self._counts_per_uniq,
+                                      self._p_mut,
                                       self._p_ends,
                                       self._p_clust,
-                                      self.n_reads,
                                       self.uniq_reads.min_mut_gap,
                                       self._unmasked,
                                       self.norm_g_stat,
@@ -469,7 +473,8 @@ class EMRun(object):
         if not self._jackpot:
             # Skip calculating the jackpotting index.
             return np.nan
-        return calc_jackpot_index(self.norm_g_stat, self._null_norm_g_stats)
+        return calc_jackpot_index(self.norm_g_stat,
+                                  float(np.median(self._null_norm_g_stats)))
 
     def _calc_p_mut_pairs(self,
                           stat: Callable[[np.ndarray, np.ndarray], float],

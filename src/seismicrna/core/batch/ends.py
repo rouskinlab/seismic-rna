@@ -1,10 +1,13 @@
 from functools import cached_property
+from logging import getLogger
 
 import numpy as np
 
 from ..array import ensure_order, ensure_same_length, find_dims
 from ..seq import Section
 from ..types import fit_uint_type
+
+logger = getLogger(__name__)
 
 rng = np.random.default_rng()
 
@@ -273,9 +276,36 @@ def simulate_segment_ends(uniq_end5s: np.ndarray,
     """
     dims = find_dims([(NUM_READS,), (NUM_READS,), (NUM_READS,)],
                      [uniq_end5s, uniq_end3s, p_ends],
-                     ["end5s", "end3s", "pends"])
+                     ["end5s", "end3s", "p_ends"])
+    if num_reads < 0:
+        raise ValueError(f"num_reads must be ≥ 0, but got {num_reads}")
+    elif num_reads == 0:
+        return np.array([], dtype=int), np.array([], dtype=int)
+    elif dims[NUM_READS] == 0:
+        raise ValueError(
+            f"Number of 5'/3' ends cannot be 0 if num_reads is {num_reads}"
+        )
+    # Drop pairs of 5'/3' ends where the 5' is greater than the 3'.
+    valid_ends = np.less_equal(uniq_end5s, uniq_end3s)
+    num_ends = np.count_nonzero(valid_ends)
+    if num_ends == 0:
+        raise ValueError("Got 0 pairs of 5'/3' ends for which 5' > 3'")
+    elif num_ends < valid_ends.size:
+        logger.warning(f"Got {valid_ends.size - num_ends} pairs of 5'/3' ends "
+                       f"for which 5' > 3'")
+        uniq_end5s = uniq_end5s[valid_ends]
+        uniq_end3s = uniq_end3s[valid_ends]
+        p_ends = p_ends[valid_ends]
+        total_p_ends = p_ends.sum()
+        if total_p_ends > 0:
+            p_ends = p_ends / total_p_ends
+        else:
+            # num_ends is not 0.
+            p_ends = np.full(num_ends, 1. / num_ends)
+    elif not np.isclose(p_ends.sum(), 1.):
+        raise ValueError(f"p_ends must sum to 1, but got {p_ends.sum()}")
     # Choose reads based on their probabilities.
-    indexes = rng.choice(dims[NUM_READS], num_reads, p=p_ends)
+    indexes = rng.choice(num_ends, num_reads, p=p_ends)
     read_end5s = uniq_end5s[indexes]
     read_end3s = uniq_end3s[indexes]
     if read_length < 0:

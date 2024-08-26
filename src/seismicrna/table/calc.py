@@ -21,12 +21,12 @@ from ..cluster.data import ClusterMutsDataset, load_cluster_dataset
 from ..core.batch import END5_COORD, END3_COORD, accum_fits
 from ..core.data import MutsDataset, UnbiasDataset
 from ..core.header import NUM_CLUSTS_NAME, Header, make_header, validate_ks
-from ..core.mu import (calc_p_ends_observed,
-                       calc_p_noclose,
-                       calc_p_noclose_given_ends,
-                       calc_params)
 from ..core.rel import RelPattern, HalfRelPattern
 from ..core.seq import Section
+from ..core.unbias import (calc_p_ends_observed,
+                           calc_p_noclose_given_clust,
+                           calc_p_noclose_given_ends_auto,
+                           calc_params)
 from ..mask.data import load_mask_dataset
 from ..pool.data import load_relate_dataset
 
@@ -139,7 +139,7 @@ class Tabulator(ABC):
         return end_counts
 
     @cached_property
-    def p_ends_given_noclose(self):
+    def p_ends_given_clust_noclose(self):
         """ Probability of each end coordinate. """
         # Ensure end_counts has 2 dimensions.
         if self._end_counts.ndim == 1:
@@ -191,7 +191,7 @@ class PartialTabulator(Tabulator, ABC):
                                "bias correction using --min-mut-gap 0.")
             try:
                 return adjust_counts(table_per_pos,
-                                     self.p_ends_given_noclose,
+                                     self.p_ends_given_clust_noclose,
                                      self._num_reads,
                                      self.section,
                                      self.dataset.min_mut_gap,
@@ -287,7 +287,7 @@ def _insert_masked(p_mut: pd.Series | pd.DataFrame,
 
 
 def adjust_counts(table_per_pos: pd.DataFrame,
-                  p_ends_given_noclose: np.ndarray,
+                  p_ends_given_clust_noclose: np.ndarray,
                   n_reads_clust: pd.Series | int,
                   section: Section,
                   min_mut_gap: int,
@@ -313,7 +313,7 @@ def adjust_counts(table_per_pos: pd.DataFrame,
         # Calculate the parameters.
         p_mut, p_ends, p_clust = calc_params(
             p_mut_given_noclose,
-            p_ends_given_noclose,
+            p_ends_given_clust_noclose,
             p_clust_given_noclose,
             min_mut_gap,
             quick_unbias=quick_unbias,
@@ -321,9 +321,9 @@ def adjust_counts(table_per_pos: pd.DataFrame,
         )
         # Compute the probability that reads would have no two mutations
         # too close.
-        p_noclose_given_clust = calc_p_noclose(
+        p_noclose_given_clust = calc_p_noclose_given_clust(
             p_ends,
-            calc_p_noclose_given_ends(p_mut, min_mut_gap)
+            calc_p_noclose_given_ends_auto(p_mut, min_mut_gap)
         )
         # Drop the cluster dimension from the parameters.
         if p_mut.shape != (section.length, 1):
@@ -364,15 +364,15 @@ def adjust_counts(table_per_pos: pd.DataFrame,
             # Calculate the parameters for each cluster.
             p_mut[:, ki], p_ends, p_clust[ki] = calc_params(
                 p_mut_given_noclose[:, ki],
-                p_ends_given_noclose[:, :, ki],
+                p_ends_given_clust_noclose[:, :, ki],
                 p_clust_given_noclose,
                 min_mut_gap
             )
             # Compute the probability that reads from each cluster would
             # have no two mutations too close.
-            p_noclose_given_clust[ki] = calc_p_noclose(
+            p_noclose_given_clust[ki] = calc_p_noclose_given_clust(
                 p_ends,
-                calc_p_noclose_given_ends(p_mut[:, ki], min_mut_gap)
+                calc_p_noclose_given_ends_auto(p_mut[:, ki], min_mut_gap)
             )
             # Compute the probability that reads from any cluster would
             # have no two mutations too close.

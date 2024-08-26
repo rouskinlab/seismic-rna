@@ -6,7 +6,7 @@ from seismicrna.sim.ends import _sim_ends
 class TestSimEnds(ut.TestCase):
 
     def test_typical(self):
-        num_reads = 100_000
+        num_reads = 100000
         for end5 in [1, 11]:
             for end3 in [90, 100]:
                 for mean3 in [60., 80.]:
@@ -27,7 +27,7 @@ class TestSimEnds(ut.TestCase):
                                 self.assertEqual(round(lengths.mean()), meanr)
 
     def test_no_gap5(self):
-        num_reads = 100_000
+        num_reads = 100000
         for end5 in [1, 11]:
             for end3 in [90, 100]:
                 for mean3 in [60., 80.]:
@@ -48,7 +48,7 @@ class TestSimEnds(ut.TestCase):
                             self.assertEqual(round(lengths.mean()), meanr)
 
     def test_read_zero(self):
-        num_reads = 100_000
+        num_reads = 100000
         meanr = 0.
         for end5 in [1, 11]:
             for end3 in [90, 100]:
@@ -63,13 +63,12 @@ class TestSimEnds(ut.TestCase):
                             end5s, end3s = _sim_ends(num_reads=num_reads,
                                                      **kwargs)
                             lengths = end3s - end5s + 1
-                            mean5 = mean3 - meanr + 1
-                            self.assertEqual(round(end5s.mean()), mean5)
+                            self.assertEqual(round(end5s.mean()), mean3)
                             self.assertEqual(round(end3s.mean()), mean3)
-                            self.assertEqual(round(lengths.mean()), meanr)
+                            self.assertEqual(round(lengths.mean()), 1)
 
     def test_no_gap3(self):
-        num_reads = 100_000
+        num_reads = 100000
         for end5 in [1, 11]:
             for end3 in [90, 100]:
                 mean3 = end3
@@ -90,7 +89,7 @@ class TestSimEnds(ut.TestCase):
                             self.assertEqual(round(lengths.mean()), meanr)
 
     def test_var_zero(self):
-        num_reads = 100_000
+        num_reads = 100000
         var = 0.
         for end5 in [1, 11]:
             for end3 in [90, 100]:

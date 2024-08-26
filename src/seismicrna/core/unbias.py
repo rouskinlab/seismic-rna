@@ -1,80 +1,3 @@
-"""
-
-Mutation Rate Core Module
-
-========================================================================
-
-The functions in this module serve two main purposes:
- 1. Adjust mutation rates to correct for observer bias.
- 2. Normalize and winsorize mutation rates
-
-------------------------------------------------------------------------
-
-Adjust mutation rates to correct for observer bias
-
-Our lab has found that pairs of mutations in DMS-MaPseq data rarely have
-fewer than three non-mutated bases separating them. We suspect that the
-reverse transcriptase is prone to falling off or stalling at locations
-in the RNA where DMS has methylated bases that are too close.
-
-Regardless of the reason, mutations on nearby bases are not independent,
-which violates a core assumption of the Bernoulli mixture model that we
-use in the expectation-maximization clustering algorithm. Namely, that
-mutations occur independently of each other, such that the likelihood of
-observing a bit vector is the product of the mutation rate of each base
-that is mutated and one minus the mutation rate ("non-mutation rate") of
-each base that is not mutated.
-
-In order to use the Bernoulli mixture model for expectation-maximization
-clustering, we modify it such that bases separated by zero, one, or two
-other bases are no longer assumed to mutate independently. Specifically,
-since pairs of close mutations are rare, we add the assumption that no
-mutations separated by fewer than three non-mutated bases may occur, and
-exclude the few bit vectors that have such close mutations.
-
-When these bit vectors are assumed to exist in the original population
-of RNA molecules but not appear in the observed data, the mutation rates
-that are observed will differ from the real, underlying mutation rates,
-which would include the unobserved bit vectors. The real mutation rates
-must therefore be estimated from the observed mutation rates.
-
-It is relatively easy to estimate the observed mutation rates given the
-real mutation rates, but there is no closed-form solution that we know
-of to estimate the real mutation rates from the observed mutation rates.
-Thus, we use an iterative approach, based on Newton's method for finding
-the roots of functions. We initially guess the real mutation rates. Each
-iteration, we estimate the mutation rates that would have been observed
-given our current guess of the real mutation rates, and then subtract
-the mutation rates that were actually observed. This difference would be
-zero if we had accurately guessed the real mutation rates. Thus, we use
-Newton's method to solve for the real mutation rates that minimize this
-difference. The details are described in the comments of this module and
-in Tomezsko et al. (2020) (https://doi.org/10.1038/s41586-020-2253-5).
-
-------------------------------------------------------------------------
-
-Normalize and winsorize mutation rates
-
-The mutation rates of an RNA may vary among different samples because of
-variations in the chemical probing and mutational profiling procedure.
-Thus, it is often helpful to compute "normalized" mutation rates that
-can be compared directly across different samples and used to predict
-secondary structures.
-
-This module currently provides a simple method for normalizing mutation
-rates. First, a specific quantile of the dataset is chosen, such as 0.95
-(i.e. the 95th percentile). The mutation rate with this quantile is set
-to 1.0, and all other mutation rates are scaled linearly.
-
-If the chosen quantile is less than 1.0, then any mutation rates above
-the quantile will be scaled to values greater than 1.0. Since these high
-mutation rates may be exceptionally reactive bases, it is often helpful
-to cap the normalized mutation rates to a maximum of 1.0. The winsorize
-function in this module performs normalization and then sets any value
-greater than 1.0 to 1.0.
-
-"""
-
 import warnings
 from logging import getLogger
 from typing import Iterable
@@ -82,7 +5,7 @@ from typing import Iterable
 import numpy as np
 from numba import jit, NumbaPerformanceWarning
 
-from ..array import find_dims, triangular
+from .array import find_dims, triangular
 
 logger = getLogger(__name__)
 
@@ -93,6 +16,12 @@ warnings.filterwarnings("ignore", category=NumbaPerformanceWarning)
 READS = "reads"
 POSITIONS = "positions"
 CLUSTERS = "clusters"
+POSITIONS_PLUS_1 = "positions + 1"
+WINDOW = "window"
+
+# Maximum allowed mutation rate (a mutation rate of 1.0 will break this
+# algorithm because it involves the log of 1 minus the mutation rate).
+MAX_MU = 0.999999
 
 
 @jit()
@@ -110,7 +39,7 @@ def _clip(x: np.ndarray):
     np.ndarray
         Array of the same shape as `x` with all values ≥ 0 and ≤ 1.
     """
-    return np.clip(np.nan_to_num(x), 0., 1.)
+    return np.clip(np.nan_to_num(x), 0., MAX_MU)
 
 
 @jit()
@@ -320,7 +249,7 @@ def _triu_norm(a: np.ndarray):
         # For each sum that was zero, set all elements to the same value
         # such that they sum to 1.
         fill = 1. / n_norm
-        if a_sum_zero.ndim:
+        if a_sum_zero.ndim > 0:
             for indexes in zip(*np.nonzero(a_sum_zero), strict=True):
                 a_norm[(slice(None),) * 2 + indexes] = fill
         else:
@@ -498,6 +427,30 @@ def _calc_p_nomut_window(p_mut_given_span: np.ndarray, min_gap: int):
     return p_nomut_window
 
 
+def calc_p_nomut_window(p_mut_given_span: np.ndarray, min_gap: int):
+    """ Given underlying mutation rates (`p_mut_given_span`), find the
+    probability of no mutations in each window of size 0 to `min_gap`.
+
+    Parameters
+    ----------
+    p_mut_given_span: ndarray
+        2D (positions x clusters) array of the underlying mutation rates
+        (i.e. the probability that a read has a mutation at position (j)
+        given that it contains that position).
+    min_gap: int
+        Minimum number of non-mutated bases between two mutations.
+
+    Returns
+    -------
+    np.ndarray
+        3D (window x positions + 1 x clusters) array of the probability
+        that (window) consecutive bases, ending at position (position),
+        would have 0 mutations at all.
+    """
+    find_dims([(POSITIONS, CLUSTERS)], [p_mut_given_span], ["p_mut_given_span"])
+    return _calc_p_nomut_window(p_mut_given_span, min_gap)
+
+
 @jit()
 def _calc_p_noclose_given_ends(p_mut_given_span: np.ndarray,
                                p_nomut_window: np.ndarray):
@@ -569,6 +522,82 @@ def _calc_p_noclose_given_ends(p_mut_given_span: np.ndarray,
     return p_noclose_given_ends
 
 
+def calc_p_noclose_given_ends(p_mut_given_span: np.ndarray,
+                              p_nomut_window: np.ndarray):
+    """ Given underlying mutation rates (`p_mut_given_span`), calculate
+    the probability that a read starting at position (a) and ending at
+    position (b) would have no two mutations too close, for each (a) and
+    (b) where 1 ≤ a ≤ b ≤ L (biological coordinates) or 0 ≤ a ≤ b < L
+    (Python coordinates).
+
+    Parameters
+    ----------
+    p_mut_given_span: np.ndarray
+        2D (positions x clusters) array of the underlying mutation rates
+        (i.e. the probability that a read has a mutation at position (j)
+        given that it contains that position).
+    p_nomut_window: np.ndarray
+        3D (window x positions x clusters) array of the probability that
+        (window) consecutive bases, ending at position (position), would
+        have zero mutations at all.
+
+    Returns
+    -------
+    np.ndarray
+        3D (positions x positions x clusters) array of the probability
+        that a random read starting at position (a) (row) and ending at
+        position (b) (column) would have no two mutations too close.
+    """
+    dims = find_dims([(POSITIONS, CLUSTERS),
+                      (WINDOW, POSITIONS_PLUS_1, CLUSTERS)],
+                     [p_mut_given_span, p_nomut_window],
+                     ["p_mut_given_span", "p_nomut_window"])
+    if dims[POSITIONS_PLUS_1] != dims[POSITIONS] + 1:
+        raise ValueError(
+            f"Dimension 1 of p_nomut_window must be {dims[POSITIONS] + 1}, "
+            f"but got {dims[POSITIONS_PLUS_1]}"
+        )
+    return _calc_p_noclose_given_ends(p_mut_given_span, p_nomut_window)
+
+
+def calc_p_noclose_given_ends_auto(p_mut_given_span: np.ndarray, min_gap: int):
+    """ Given underlying mutation rates (`p_mut_given_span`), calculate
+    the probability that a read starting at position (a) and ending at
+    position (b) would have no two mutations too close (i.e. separated
+    by fewer than `min_gap` non-mutated positions), for each combination
+    of (a) and (b) such that 1 ≤ a ≤ b ≤ L (in biological coordinates)
+    or 0 ≤ a ≤ b < L (in Python coordinates).
+
+    Parameters
+    ----------
+    p_mut_given_span: ndarray
+        A 2D (positions x clusters) array of the underlying mutation
+        rates, i.e. the probability that a read has a mutation at
+        position (j) given that it contains position (j).
+    min_gap: int
+        Minimum number of non-mutated bases between two mutations;
+        must be ≥ 0.
+
+    Returns
+    -------
+    np.ndarray
+        3D (positions x positions x clusters) array of the probability
+        that a random read starting at position (a) (row) and ending at
+        position (b) (column) would have no two mutations too close.
+    """
+    if p_mut_given_span.ndim == 2:
+        p_mut_given_span = _clip(p_mut_given_span)
+        return _calc_p_noclose_given_ends(p_mut_given_span,
+                                          _calc_p_nomut_window(p_mut_given_span,
+                                                               min_gap))
+    if p_mut_given_span.ndim == 1:
+        return calc_p_noclose_given_ends_auto(
+            p_mut_given_span[:, np.newaxis], min_gap
+        ).reshape((p_mut_given_span.size, p_mut_given_span.size))
+    raise ValueError("p_mut_given_span must have 1 or 2 dimensions, "
+                     f"but got {p_mut_given_span.ndim}")
+
+
 @jit()
 def _calc_rectangular_sum(array: np.ndarray):
     """ For each element of the main diagonal, calculate the sum over
@@ -616,19 +645,73 @@ def _calc_rectangular_sum(array: np.ndarray):
     return rows_area - cols_area
 
 
+def calc_rectangular_sum(array: np.ndarray):
+    """ For each element of the main diagonal, calculate the sum over
+    the rectangular array from that element to the upper right corner.
+    This function is meant to be called by another function that has
+    validated the arguments; hence, this function makes assumptions:
+
+    -   `array` has at least 2 dimensions.
+    -   The first and second dimensions of `array` have equal lengths.
+
+    Parameters
+    ----------
+    array: np.ndarray
+        Array of at least two dimensions for which to calculate the sum
+        of each rectangular array from each element on the main diagonal
+        to the upper right corner.
+
+    Returns
+    -------
+    np.ndarray
+        Array with all but the first dimension of `array` indicating the
+        sum of the array from each element on the main diagonal to the
+        upper right corner of `array`.
+    """
+    find_dims([("size", "size", None)], [array], ["array"])
+    return _calc_rectangular_sum(array)
+
+
 @jit()
 def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
                                    p_ends: np.ndarray,
                                    p_noclose_given_ends: np.ndarray,
                                    p_nomut_window: np.ndarray):
     """ Calculate the mutation rates of only reads with no two mutations
-    too close. """
+    too close that span each position.
+
+    Parameters
+    ----------
+    p_mut_given_span: np.ndarray
+        2D (positions x clusters) array of the underlying mutation rates
+        (i.e. the probability that a read has a mutation at position (j)
+        given that it contains that position).
+    p_ends: np.ndarray
+        2D (positions x positions) array of the proportion of reads in
+        each cluster beginning at the row position and ending at the
+        column position.
+    p_noclose_given_ends: np.ndarray
+        3D (positions x positions x clusters) array of the probabilities
+        that a read with 5' and 3' coordinates corresponding to the row
+        and column would have no two mutations too close.
+    p_nomut_window: np.ndarray
+        3D (window x positions x clusters) array of the probability that
+        (window) consecutive bases, ending at position (position), would
+        have zero mutations at all.
+
+    Returns
+    -------
+    np.ndarray
+        2D (positions x clusters) array of the mutation rate among reads
+        with no two mutations too close per position per cluster.
+    """
+    # NOTE: _calc_p_mut_given_ends_noclose uses code from this function.
+    # Modify the other if you every modify this function.
     # Find the dimensions.
     npos, ncls = p_mut_given_span.shape
-    inc_gap = p_nomut_window.shape[0]
-    min_gap = inc_gap - 1
-    if min_gap == 0:
-        # If min_gap == 0, then no mutations can be too close, so return
+    min_gap = p_nomut_window.shape[0] - 1
+    if min_gap <= 0:
+        # If min_gap <= 0, then no mutations can be too close, so return
         # the original mutation rates.
         return p_mut_given_span
     # Calculate the probability that a read spanning each position would
@@ -653,7 +736,7 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
             # Probability of no close mutations, (a) to (j - 1 - nomut):
             #   p_noclose_given_ends[a, max(j - 1 - nomut, a)]
             # Probability of no mutations over the (nomut)-sized window
-            # from (j - nomut) to (j - 1).
+            # from (j - nomut) to (j - 1):
             #   p_nomut_window[nomut, j]
             # Probability of no close mutations from (a) to (j).
             p_noclose_a[:, a] = (
@@ -685,6 +768,61 @@ def _calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
                                                @ p_ends[:nrows, -ncols:]
                                                @ p_noclose_b[k])
     return p_mut_given_span_noclose
+
+
+def calc_p_mut_given_span_noclose(p_mut_given_span: np.ndarray,
+                                  p_ends: np.ndarray,
+                                  p_noclose_given_ends: np.ndarray,
+                                  p_nomut_window: np.ndarray):
+    """ Calculate the mutation rates of only reads with no two mutations
+    too close that span each position.
+
+    Parameters
+    ----------
+    p_mut_given_span: np.ndarray
+        2D (positions x clusters) array of the underlying mutation rates
+        (i.e. the probability that a read has a mutation at position (j)
+        given that it contains that position).
+    p_ends: np.ndarray
+        2D (positions x positions) array of the proportion of reads in
+        each cluster beginning at the row position and ending at the
+        column position.
+    p_noclose_given_ends: np.ndarray
+        3D (positions x positions x clusters) array of the probabilities
+        that a read with 5' and 3' coordinates corresponding to the row
+        and column would have no two mutations too close.
+    p_nomut_window: np.ndarray
+        3D (window x positions x clusters) array of the probability that
+        (window) consecutive bases, ending at position (position), would
+        have zero mutations at all.
+
+    Returns
+    -------
+    np.ndarray
+        2D (positions x clusters) array of the mutation rate among reads
+        with no two mutations too close per position per cluster.
+    """
+    dims = find_dims([(POSITIONS, CLUSTERS),
+                      (POSITIONS, POSITIONS),
+                      (POSITIONS, POSITIONS, CLUSTERS),
+                      (WINDOW, POSITIONS_PLUS_1, CLUSTERS)],
+                     [p_mut_given_span,
+                      p_ends,
+                      p_noclose_given_ends,
+                      p_nomut_window],
+                     ["p_mut_given_span",
+                      "p_ends",
+                      "p_noclose_given_ends",
+                      "p_nomut_window"])
+    if dims[POSITIONS_PLUS_1] != dims[POSITIONS] + 1:
+        raise ValueError(
+            f"Dimension 1 of p_nomut_window must be {dims[POSITIONS] + 1}, "
+            f"but got {dims[POSITIONS_PLUS_1]}"
+        )
+    return _calc_p_mut_given_span_noclose(p_mut_given_span,
+                                          p_ends,
+                                          p_noclose_given_ends,
+                                          p_nomut_window)
 
 
 def _slice_p_ends(p_ends: np.ndarray,
@@ -755,21 +893,21 @@ def _split_positions(p_mut: np.ndarray,
     return p_mut_split, p_mut_init_split, p_ends_split
 
 
-def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
-                           min_gap: int,
-                           p_ends: np.ndarray,
-                           init_p_mut_given_span: np.ndarray, *,
-                           quick_unbias: bool = True,
-                           quick_unbias_thresh: float = 0.,
-                           f_tol: float = 1.e-4,
-                           x_rtol: float = 1.e-3):
+def calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
+                          min_gap: int,
+                          p_ends: np.ndarray,
+                          init_p_mut_given_span: np.ndarray, *,
+                          quick_unbias: bool = True,
+                          quick_unbias_thresh: float = 0.,
+                          f_tol: float = 1.e-4,
+                          x_rtol: float = 1.e-3):
     """ Calculate the underlying mutation rates including for reads with
     two mutations too close based on the observed mutation rates. """
     # Validate the dimensionality of the arguments.
     if p_mut_given_span_observed.ndim == 1:
         # If p_mut_given_span_noclose has 1 dimension, then convert it
         # to 2 dimensions, calculate, and convert back to 1 dimension.
-        return _calc_p_mut_given_span(
+        return calc_p_mut_given_span(
             p_mut_given_span_observed[:, np.newaxis],
             min_gap,
             p_ends,
@@ -777,9 +915,15 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
             f_tol=f_tol,
             x_rtol=x_rtol,
         )[:, 0]
-    dims = find_dims([(POSITIONS, CLUSTERS)],
-                     [p_mut_given_span_observed],
-                     ["p_mut_given_span_observed"],
+    dims = find_dims([(POSITIONS, CLUSTERS),
+                      (POSITIONS, CLUSTERS),
+                      (POSITIONS, POSITIONS)],
+                     [p_mut_given_span_observed,
+                      init_p_mut_given_span,
+                      p_ends],
+                     ["p_mut_given_span_observed",
+                      "init_p_mut_given_span",
+                      "p_ends"],
                      nonzero=True)
     min_gap = _adjust_min_gap(dims[POSITIONS], min_gap)
     if min_gap == 0:
@@ -802,7 +946,7 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                 strict=True
         ):
             if p_mut_split.max(initial=0.) > quick_unbias_thresh:
-                p_mut_given_span_list.append(_calc_p_mut_given_span(
+                p_mut_given_span_list.append(calc_p_mut_given_span(
                     p_mut_split,
                     min_gap,
                     p_ends_split,
@@ -852,10 +996,10 @@ def _calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
         return init_p_mut_given_span
 
 
-def _calc_p_ends(p_ends_observed: np.ndarray,
-                 p_noclose_given_ends: np.ndarray,
-                 p_mut_given_span: np.ndarray,
-                 p_clust: np.ndarray):
+def calc_p_ends(p_ends_observed: np.ndarray,
+                p_noclose_given_ends: np.ndarray,
+                p_mut_given_span: np.ndarray,
+                p_clust: np.ndarray):
     """ Calculate the proportion of total reads with each pair of 5' and
     3' coordinates.
 
@@ -865,7 +1009,6 @@ def _calc_p_ends(p_ends_observed: np.ndarray,
     -   Every value in the upper triangle of `p_ends_observed` is
         ≥ 0 and ≤ 1; no values below the main diagonal are used.
     -   The upper triangle of `p_ends_observed` sums to 1.
-    -   `min_gap` is a non-negative integer.
     -   Every value in `p_mut_given_span` is ≥ 0 and ≤ 1.
 
     Parameters
@@ -895,10 +1038,10 @@ def _calc_p_ends(p_ends_observed: np.ndarray,
     if p_ends_observed.ndim == 2:
         # If p_ends_observed has 2 dimensions, then promote it to 3
         # dimensions first.
-        return _calc_p_ends(p_ends_observed[:, :, np.newaxis],
-                            p_noclose_given_ends,
-                            p_mut_given_span,
-                            p_clust)
+        return calc_p_ends(p_ends_observed[:, :, np.newaxis],
+                           p_noclose_given_ends,
+                           p_mut_given_span,
+                           p_clust)
     dims = find_dims([(POSITIONS, POSITIONS, CLUSTERS),
                       (POSITIONS, POSITIONS, CLUSTERS),
                       (POSITIONS, CLUSTERS),
@@ -921,10 +1064,10 @@ def _calc_p_ends(p_ends_observed: np.ndarray,
     return np.average(p_ends, axis=2, weights=p_clust)
 
 
-def calc_p_noclose(p_ends: np.ndarray,
-                   p_noclose_given_ends: np.ndarray):
-    """ Calculate the proportion of each cluster considering only reads
-    with no two mutations too close. """
+def calc_p_noclose_given_clust(p_ends: np.ndarray,
+                               p_noclose_given_ends: np.ndarray):
+    """ Calculate the probability that a read from each cluster would
+    have no two mutations too close. """
     # Validate the dimensionality of the arguments.
     find_dims([(POSITIONS, POSITIONS), (POSITIONS, POSITIONS, CLUSTERS)],
               [p_ends, p_noclose_given_ends],
@@ -935,7 +1078,8 @@ def calc_p_noclose(p_ends: np.ndarray,
     return _triu_dot(p_ends[:, :, np.newaxis], p_noclose_given_ends)
 
 
-def calc_p_clust(p_clust_observed: np.ndarray, p_noclose: np.ndarray):
+def calc_p_clust(p_clust_observed: np.ndarray,
+                 p_noclose_given_clust: np.ndarray):
     """ Cluster proportion among all reads.
 
     Parameters
@@ -944,7 +1088,7 @@ def calc_p_clust(p_clust_observed: np.ndarray, p_noclose: np.ndarray):
         Proportion of each cluster among reads with no two mutations too
         close.
         1D (clusters)
-    p_noclose: np.ndarray
+    p_noclose_given_clust: np.ndarray
         Probability that a read from each cluster would have no two
         mutations too close.
         1D (clusters)
@@ -957,17 +1101,18 @@ def calc_p_clust(p_clust_observed: np.ndarray, p_noclose: np.ndarray):
     """
     # Validate the dimensions.
     find_dims([(CLUSTERS,), (CLUSTERS,)],
-              [p_clust_observed, p_noclose],
-              ["p_clust_observed", "p_noclose"],
+              [p_clust_observed, p_noclose_given_clust],
+              ["p_clust_observed", "p_noclose_given_clust"],
               nonzero=True)
     # The cluster proportions among all reads are obtained by weighting
     # each cluster proportion among reads with no two mutations too
     # close by the reciprocal of the probability that no two mutations
     # are too close in that cluster, then normalizing so the sum is 1.
-    return _normalize(p_clust_observed / p_noclose)
+    return _normalize(p_clust_observed / p_noclose_given_clust)
 
 
-def calc_p_clust_given_noclose(p_clust: np.ndarray, p_noclose: np.ndarray):
+def calc_p_clust_given_noclose(p_clust: np.ndarray,
+                               p_noclose_given_clust: np.ndarray):
     """ Cluster proportions among reads with no two mutations too close.
 
     Parameters
@@ -975,7 +1120,7 @@ def calc_p_clust_given_noclose(p_clust: np.ndarray, p_noclose: np.ndarray):
     p_clust: np.ndarray
         Proportion of each cluster among all reads.
         1D (clusters)
-    p_noclose: np.ndarray
+    p_noclose_given_clust: np.ndarray
         Probability that a read from each cluster would have no two
         mutations too close.
         1D (clusters)
@@ -989,76 +1134,38 @@ def calc_p_clust_given_noclose(p_clust: np.ndarray, p_noclose: np.ndarray):
     """
     # Validate the dimensions.
     find_dims([(CLUSTERS,), (CLUSTERS,)],
-              [p_clust, p_noclose],
-              ["p_clust", "p_noclose"],
+              [p_clust, p_noclose_given_clust],
+              ["p_clust", "p_noclose_given_clust"],
               nonzero=True)
     # The cluster proportions among reads with no two mutations too
     # close are obtained by weighting each cluster proportion by the
     # probability that no two mutations are too close in that cluster,
     # then normalizing so the sum is 1.
-    return _normalize(p_clust * p_noclose)
+    return _normalize(p_clust * p_noclose_given_clust)
 
 
-def calc_p_noclose_given_ends(p_mut_given_span: np.ndarray, min_gap: int):
-    """ Given underlying mutation rates (`p_mut_given_span`), calculate
-    the probability that a read starting at position (a) and ending at
-    position (b) would have no two mutations too close (i.e. separated
-    by fewer than `min_gap` non-mutated positions), for each combination
-    of (a) and (b) such that 1 ≤ a ≤ b ≤ L (in biological coordinates)
-    or 0 ≤ a ≤ b < L (in Python coordinates).
+def calc_p_noclose(p_clust: np.ndarray, p_noclose_given_clust: np.ndarray):
+    """ Probability that any read would have two mutations too close.
 
     Parameters
     ----------
-    p_mut_given_span: ndarray
-        A 2D (positions x clusters) array of the underlying mutation
-        rates, i.e. the probability that a read has a mutation at
-        position (j) given that it contains position (j).
-    min_gap: int
-        Minimum number of non-mutated bases between two mutations;
-        must be ≥ 0.
+    p_clust: np.ndarray
+        Proportion of each cluster among all reads.
+        1D (clusters)
+    p_noclose_given_clust: np.ndarray
+        Probability that a read from each cluster would have no two
+        mutations too close.
+        1D (clusters)
 
     Returns
     -------
-    np.ndarray
-        3D (positions x positions x clusters) array of the probability
-        that a random read starting at position (a) (row) and ending at
-        position (b) (column) would have no two mutations too close.
+    float
+        Probability that any read would have no two mutations too close.
     """
-    if p_mut_given_span.ndim == 2:
-        p_mut_given_span = _clip(p_mut_given_span)
-        return _calc_p_noclose_given_ends(p_mut_given_span,
-                                          _calc_p_nomut_window(p_mut_given_span,
-                                                               min_gap))
-    if p_mut_given_span.ndim == 1:
-        return calc_p_noclose_given_ends(
-            p_mut_given_span[:, np.newaxis], min_gap
-        ).reshape((p_mut_given_span.size, p_mut_given_span.size))
-    raise ValueError("p_mut_given_span must have 1 or 2 dimensions, "
-                     f"but got {p_mut_given_span.ndim}")
-
-
-def calc_rectangluar_sum(array: np.ndarray):
-    """ For each element of the main diagonal, calculate the sum over
-    the rectangular array from that element to the upper right corner.
-
-    Parameters
-    ----------
-    array: np.ndarray
-        Array of at least two dimensions for which to calculate the sum
-        of each rectangular array from each element on the main diagonal
-        to the upper right corner. The first two dimensions must have
-        equal lengths.
-
-    Returns
-    -------
-    np.ndarray
-        Array with all but the first dimension of `array` indicating the
-        sum of the array from each element on the main diagonal to the
-        upper right corner of `array`.
-    """
-    # Validate the dimensions.
-    find_dims([(POSITIONS, POSITIONS, None)], [array])
-    return _calc_rectangular_sum(array)
+    find_dims([(CLUSTERS,), (CLUSTERS,)],
+              [p_clust, p_noclose_given_clust],
+              ["p_clust", "p_noclose_given_clust"])
+    return float(np.vdot(p_clust, p_noclose_given_clust))
 
 
 def calc_params(p_mut_given_span_observed: np.ndarray,
@@ -1182,11 +1289,11 @@ def calc_params(p_mut_given_span_observed: np.ndarray,
     # Iteratively update the mutation rates and read coordinates.
     for i in range(max_iter):
         # Update the mutation rates using the read coordinates.
-        next_p_mut_given_span = _calc_p_mut_given_span(p_mut_given_span_observed,
-                                                       min_gap,
-                                                       guess_p_ends,
-                                                       guess_p_mut_given_span,
-                                                       **kwargs)
+        next_p_mut_given_span = calc_p_mut_given_span(p_mut_given_span_observed,
+                                                      min_gap,
+                                                      guess_p_ends,
+                                                      guess_p_mut_given_span,
+                                                      **kwargs)
         # Compute the RMSD change in mutation rates.
         rmsd_p_mut_given_span = np.sqrt(np.mean(np.square(
             next_p_mut_given_span - guess_p_mut_given_span
@@ -1204,27 +1311,27 @@ def calc_params(p_mut_given_span_observed: np.ndarray,
         )
         # Update the distribution of read end coordinates and clusters
         # using the mutation rates.
-        guess_p_ends = _calc_p_ends(p_ends_observed,
-                                    p_noclose_given_ends,
-                                    guess_p_mut_given_span,
-                                    guess_p_clust)
+        guess_p_ends = calc_p_ends(p_ends_observed,
+                                   p_noclose_given_ends,
+                                   guess_p_mut_given_span,
+                                   guess_p_clust)
         guess_p_clust = calc_p_clust(p_clust_observed,
-                                     calc_p_noclose(guess_p_ends,
-                                                    p_noclose_given_ends))
+                                     calc_p_noclose_given_clust(guess_p_ends,
+                                                                p_noclose_given_ends))
     else:
         logger.warning("Mutation rates and distribution of read coordinates "
                        f"failed to converge in {max_iter} iterations.")
     return guess_p_mut_given_span, guess_p_ends, guess_p_clust
 
 
-def calc_p_ends_given_noclose(p_ends: np.ndarray,
-                              p_noclose_given_ends: np.ndarray):
+def calc_p_ends_given_clust_noclose(p_ends: np.ndarray,
+                                    p_noclose_given_ends: np.ndarray):
     """ Calculate the proportion of reads with no two mutations too
     close with each pair of 5' and 3' coordinates.
 
     Assumptions
     -----------
-    -   `p_ends` has 2 dimensions: (positions x clusters)
+    -   `p_ends` has 2 dimensions: (positions x positions)
     -   Every value in the upper triangle of `p_ends` is ≥ 0 and ≤ 1;
         no values below the main diagonal are used.
     -   The upper triangle of `p_ends` sums to 1.
@@ -1241,7 +1348,7 @@ def calc_p_ends_given_noclose(p_ends: np.ndarray,
         each cluster beginning at the row position and ending at the
         column position.
     p_noclose_given_ends: np.ndarray
-        3D (positions x positions x clusters) array of the pobabilities
+        3D (positions x positions x clusters) array of the probabilities
         that a read with 5' and 3' coordinates corresponding to the row
         and column would have no two mutations too close.
 
@@ -1260,6 +1367,73 @@ def calc_p_ends_given_noclose(p_ends: np.ndarray,
     # Calculate the proportion of total reads that would have each
     # pair of end coordinates.
     return _triu_norm(_triu_mul(p_ends[:, :, np.newaxis], p_noclose_given_ends))
+
+
+def calc_p_ends_given_noclose(p_ends_given_clust_noclose: np.ndarray,
+                              p_clust_given_noclose: np.ndarray):
+    """ Calculate the probability that a read would have each pair of
+    5'/3' ends and no two mutations too close.
+
+    Parameters
+    ----------
+    p_ends_given_clust_noclose: np.ndarray
+        3D (positions x positions x clusters) array of the probability
+        that a read from each cluster has each pair of 5'/3' ends given
+        that it has no two mutations too close.
+    p_clust_given_noclose: np.ndarray
+        1D (clusters) array of the probability that a read comes from
+        each cluster given that it has no two mutations too close.
+
+    Returns
+    -------
+    np.ndarray
+        2D (positions x positions) array of the probability that a read
+        with no two mutations too close has each pair of 5'/3' ends,
+        regardless of the cluster to which it belongs.
+    """
+    # Validate the dimensions of the arguments.
+    find_dims([(POSITIONS, POSITIONS, CLUSTERS), (CLUSTERS,)],
+              [p_ends_given_clust_noclose, p_clust_given_noclose],
+              ["p_ends_given_clust_noclose", "p_clust_given_noclose"],
+              nonzero=True)
+    return _triu_norm(p_ends_given_clust_noclose @ p_clust_given_noclose)
+
+
+def calc_p_clust_given_ends_noclose(p_ends_given_clust_noclose: np.ndarray,
+                                    p_clust_given_noclose: np.ndarray):
+    """ Calculate the probability that a read with each pair of 5'/3'
+    ends and no two mutations too close came from each cluster.
+
+    Parameters
+    ----------
+    p_ends_given_clust_noclose: np.ndarray
+        3D (positions x positions x clusters) array of the probability
+        that a read from each cluster has each pair of 5'/3' ends given
+        that it has no two mutations too close.
+    p_clust_given_noclose: np.ndarray
+        1D (clusters) array of the probability that a read comes from
+        each cluster given that it has no two mutations too close.
+
+    Returns
+    -------
+    np.ndarray
+        3D (positions x positions x clusters) array of the probability
+        that a read with each pair of 5'/3' ends and no two mutations
+        too close comes from each cluster.
+    """
+    # Validate the dimensions of the arguments.
+    find_dims([(POSITIONS, POSITIONS, CLUSTERS), (CLUSTERS,)],
+              [p_ends_given_clust_noclose, p_clust_given_noclose],
+              ["p_ends_given_clust_noclose", "p_clust_given_noclose"],
+              nonzero=True)
+    p_ends_given_noclose = calc_p_ends_given_noclose(p_ends_given_clust_noclose,
+                                                     p_clust_given_noclose)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        # Apply Bayes' theorem to calculate p_clust_given_ends_noclose.
+        return p_clust_given_noclose * _triu_div(
+            p_ends_given_clust_noclose,
+            p_ends_given_noclose[:, :, np.newaxis]
+        )
 
 
 @jit()
@@ -1379,8 +1553,15 @@ def calc_p_ends_observed(npos: int,
     return _calc_p_ends_observed(npos, end5s, end3s, weights)
 
 
+def calc_n_reads_per_pos(p_ends_observed: np.ndarray,
+                         n_reads_per_clust: np.ndarray):
+    find_dims([(POSITIONS, POSITIONS, CLUSTERS), (CLUSTERS,)],
+              [p_ends_observed, n_reads_per_clust],
+              ["p_ends_observed", "n_reads_per_clust"])
+    return calc_rectangular_sum(p_ends_observed) * n_reads_per_clust
+
+
 def calc_params_observed(n_pos_total: int,
-                         k: int,
                          unmasked_pos: Iterable[int],
                          muts_per_pos: Iterable[np.ndarray],
                          end5s: np.ndarray,
@@ -1393,8 +1574,6 @@ def calc_params_observed(n_pos_total: int,
     ----------
     n_pos_total: int
         Total number of positions in the section.
-    k: int
-        Number of clusters.
     unmasked_pos: Iterable[int]
         Unmasked positions; must be zero-indexed with respect to the
         5' end of the section.
@@ -1402,10 +1581,10 @@ def calc_params_observed(n_pos_total: int,
         For each unmasked position, numbers of all reads with a mutation
         at that position.
     end5s: np.ndarray
-        Coordinates of the 5' ends of all reads; must be 0-indexed with
-        respect to the 5' end of the section.
+        5' end of every unique read; must be 0-indexed with respect to
+        the 5' end of the section.
     end3s: np.ndarray
-        Coordinates of the 3' ends of all reads; must be 0-indexed with
+        3' end of every unique read; must be 0-indexed with
         respect to the 5' end of the section.
     counts_per_uniq: np.ndarray
         Number of times each unique read occurs.
@@ -1416,6 +1595,9 @@ def calc_params_observed(n_pos_total: int,
     -------
     tuple[np.ndarray, np.ndarray, np.ndarray]
     """
+    dims = find_dims([(READS,), (READS,), (READS,), (READS, CLUSTERS)],
+                     [end5s, end3s, counts_per_uniq, resps],
+                     ["end5s", "end3s", "counts_per_uniq", "resps"])
     # Count each unique read in each cluster.
     # 2D (unique reads x clusters)
     n_each_read_each_clust = counts_per_uniq[:, np.newaxis] * resps
@@ -1438,11 +1620,10 @@ def calc_params_observed(n_pos_total: int,
                                            check_values=False)
     # Count the observed reads that cover each position.
     # 2D (all positions x clusters)
-    n_reads_per_pos = (calc_rectangluar_sum(p_ends_observed)
-                       * n_reads_per_clust)
+    n_reads_per_pos = calc_n_reads_per_pos(p_ends_observed, n_reads_per_clust)
     # Count the observed mutations at each position.
     # 2D (all positions x clusters)
-    n_muts_per_pos = np.zeros((n_pos_total, k))
+    n_muts_per_pos = np.zeros((n_pos_total, dims[CLUSTERS]))
     for j, mut_reads in zip(unmasked_pos, muts_per_pos, strict=True):
         # Calculate the number of mutations at each position in each
         # cluster by summing the count-weighted likelihood that each

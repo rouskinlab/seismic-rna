@@ -7,7 +7,6 @@ from seismicrna.core.array import (calc_inverse,
                                    find_dims,
                                    get_length,
                                    locate_elements,
-                                   find_true_dists,
                                    triangular)
 
 rng = np.random.default_rng()
@@ -430,56 +429,6 @@ class TestFindDims(ut.TestCase):
                                        dims,
                                        arrays,
                                        nonzero="z")
-
-
-class TestFindTrueDists(ut.TestCase):
-
-    def test_all_true(self):
-        for n in range(5):
-            array = np.ones(n, dtype=bool)
-            expect = np.zeros(n, dtype=int)
-            self.assertTrue(np.array_equal(find_true_dists(array), expect))
-
-    def test_all_false(self):
-        for n in range(5):
-            array = np.zeros(n, dtype=bool)
-            expect = np.full(n, n)
-            self.assertTrue(np.array_equal(find_true_dists(array), expect))
-
-    def test_custom_1(self):
-        array = np.array([1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0])
-        expect = np.array([0, 0, 1, 0, 1, 1, 0, 1, 2, 1, 0, 1, 2, 3, 4])
-        self.assertTrue(np.array_equal(find_true_dists(array), expect))
-
-    def test_custom_2(self):
-        array = np.array([0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1])
-        expect = np.array([4, 3, 2, 1, 0, 1, 2, 1, 0, 1, 1, 0, 1, 0, 0])
-        self.assertTrue(np.array_equal(find_true_dists(array), expect))
-
-    def test_vs_slow(self):
-
-        def slow_find_true_dists(x: np.ndarray):
-            length = get_length(x)
-            dists = np.full(length, length)
-            for i in range(length):
-                j = i
-                while j >= 0:
-                    if x[j]:
-                        dists[i] = min(i - j, dists[i])
-                        break
-                    j -= 1
-                j = i
-                while j < length:
-                    if x[j]:
-                        dists[i] = min(j - i, dists[i])
-                        break
-                    j += 1
-            return dists
-
-        for n in range(15):
-            array = rng.random(n) < 0.2
-            expect = slow_find_true_dists(array)
-            self.assertTrue(np.array_equal(find_true_dists(array), expect))
 
 
 class TestTriangular(ut.TestCase):
