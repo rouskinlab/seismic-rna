@@ -2,6 +2,7 @@ from logging import getLogger
 from typing import Iterable
 
 import numpy as np
+from numba import jit
 
 from .marginal import calc_marginal
 from ..core.array import (ensure_same_length,
@@ -34,7 +35,13 @@ def linearize_ends_matrix(p_ends: np.ndarray):
     return end5s, end3s, p_ends[end5s, end3s]
 
 
-# @jit()
+@jit()
+def _rand_muts(p_mut_read: np.ndarray):
+    """ Simulate random mutations for one read. """
+    return np.flatnonzero(np.random.random(p_mut_read.size) < p_mut_read)
+
+
+@jit()
 def _sim_muts(reads: np.ndarray,
               clusts: np.ndarray,
               p_mut: np.ndarray,
@@ -60,12 +67,12 @@ def _sim_muts(reads: np.ndarray,
         end3 = read[-1]
         # Choose which positions are mutated.
         p_mut_read = p_mut[end5: end3 + 1, k]
-        muts = np.flatnonzero(rng.random(p_mut_read.size) < p_mut_read)
+        muts = _rand_muts(p_mut_read)
         if min_mut_gap > 0:
             # Continue choosing which positions are mutated until no two
             # mutations are too close.
             while muts.size > 1 and np.diff(muts).min() <= min_mut_gap:
-                muts = np.flatnonzero(rng.random(p_mut_read.size) < p_mut_read)
+                muts = _rand_muts(p_mut_read)
         # Write the mutated positions into the array of reads.
         read[muts + end5] = 1
 
