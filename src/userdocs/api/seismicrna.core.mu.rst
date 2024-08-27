@@ -52,9 +52,3 @@ Submodules
    :members:
    :undoc-members:
    :show-inheritance:
-
-
-.. automodule:: seismicrna.core.mu.unbias
-   :members:
-   :undoc-members:
-   :show-inheritance:

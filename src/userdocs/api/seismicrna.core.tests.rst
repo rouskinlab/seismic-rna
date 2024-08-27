@@ -22,7 +22,19 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.core.tests.logs_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.core.tests.stats_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.core.tests.unbias_test
    :members:
    :undoc-members:
    :show-inheritance:

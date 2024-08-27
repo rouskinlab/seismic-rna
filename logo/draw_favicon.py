@@ -1,25 +1,18 @@
 from PIL import Image
 
-BASE_DIMENSION = 4800
-LOGO_FILE = "logo-1440.png"
-FAVICON_TEMPLATE = "favicon-{}.ico"
-FAVICON_SIZES = [(32, 32)]
+PNG_FILE = "logo-1440.png"
+ICO_FILE = "favicon.ico"
+SIZE = 32
 
 
 def draw_favicon():
     """ Draw the favicon for SEISMIC-RNA. """
-    image = Image.open(LOGO_FILE)
-    for size in FAVICON_SIZES:
-        image.save(FAVICON_TEMPLATE.format("x".join(map(str, size))),
-                   format="ICO", sizes=[size])
-
-
-def draw():
-    draw_favicon()
+    image = Image.open(PNG_FILE)
+    image.save(ICO_FILE, format="ICO", sizes=[(SIZE, SIZE)])
 
 
 if __name__ == "__main__":
-    draw()
+    draw_favicon()
 
 ########################################################################
 #                                                                      #

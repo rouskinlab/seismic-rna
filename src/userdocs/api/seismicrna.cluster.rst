@@ -48,7 +48,19 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.cluster.jackpot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.cluster.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.cluster.marginal
    :members:
    :undoc-members:
    :show-inheritance:

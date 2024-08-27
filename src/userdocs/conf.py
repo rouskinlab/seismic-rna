@@ -77,7 +77,7 @@ intersphinx_disabled_domains = ["std"]
 # -- Options for HTML output
 html_theme = "sphinx_rtd_theme"
 html_logo = "../../logo/logo-200.png"
-html_favicon = "../../logo/favicon-32x32.ico"
+html_favicon = "../../logo/favicon.ico"
 
 # -- Options for EPUB output
 epub_show_urls = "footnote"

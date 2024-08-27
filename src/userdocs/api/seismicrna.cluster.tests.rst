@@ -16,7 +16,13 @@ Submodules
    :show-inheritance:
 
 
-.. automodule:: seismicrna.cluster.tests.em_test
+.. automodule:: seismicrna.cluster.tests.jackpot_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+.. automodule:: seismicrna.cluster.tests.marginal_test
    :members:
    :undoc-members:
    :show-inheritance:
