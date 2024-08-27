@@ -5,8 +5,8 @@ import pandas as pd
 import plotly.express as px
 
 from .emk import EMRunsK
-from .jackpot import calc_half_g_anomaly
-from .names import LOG_EXP_NAME, LOG_OBS_NAME, G_ANOMALY, JACKPOT_INDEX
+from .jackpot import calc_semi_g_anomaly
+from .names import LOG_EXP_NAME, LOG_OBS_NAME, SEMI_G_ANOMALY, JACKPOT_QUOTIENT
 from .uniq import UniqReads
 from ..core import path
 from ..core.header import NUM_CLUSTS_NAME
@@ -49,19 +49,19 @@ def graph_log_obs_exp(log_obs_exp: pd.DataFrame,
         k = runs.k
         column = format_exp_count_col(k)
         log_exp = log_obs_exp[column]
-        g_anomaly = 2. * calc_half_g_anomaly(num_obs, log_exp)
+        semi_g_anomaly = calc_semi_g_anomaly(num_obs, log_exp)
         fig = px.scatter(log_obs_exp,
                          x=column,
                          y=LOG_OBS_NAME,
-                         color=g_anomaly,
+                         color=semi_g_anomaly,
                          color_continuous_scale="rdbu_r",
                          color_continuous_midpoint=0.,
-                         labels={"color": G_ANOMALY},
+                         labels={"color": SEMI_G_ANOMALY},
                          title=f"{LOG_OBS_NAME} vs. {column}")
-        jackpot_index = runs.best.jackpot_index
-        if not np.isnan(jackpot_index) and not np.isnan(max_log_obs):
+        jackpot_quotient = runs.best.jackpot_quotient
+        if not np.isnan(jackpot_quotient) and not np.isnan(max_log_obs):
             min_log_exp = np.nanmin(log_exp)
-            text = f"{JACKPOT_INDEX} = {round(jackpot_index, PRECISION)}"
+            text = f"{JACKPOT_QUOTIENT} = {round(jackpot_quotient, PRECISION)}"
             fig.add_annotation(x=min_log_exp,
                                y=max_log_obs,
                                text=text,

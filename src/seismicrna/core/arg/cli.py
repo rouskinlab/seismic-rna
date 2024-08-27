@@ -750,21 +750,21 @@ opt_jackpot = Option(
     ("--jackpot/--no-jackpot",),
     type=bool,
     default=True,
-    help="Calculate the jackpotting index to find over/under-represented reads"
+    help="Calculate the jackpotting quotient to find over-represented reads"
 )
 
 opt_jackpot_conf_level = Option(
     ("--jackpot-conf-level",),
     type=float,
     default=0.95,
-    help="Confidence level for the jackpotting index confidence interval"
+    help="Confidence level for the jackpotting quotient confidence interval"
 )
 
-opt_max_jackpot_index = Option(
-    ("--max-jackpot-index",),
+opt_max_jackpot_quotient = Option(
+    ("--max-jackpot-quotient",),
     type=float,
     default=1.2,
-    help="Remove runs whose jackpotting index exceeds this limit"
+    help="Remove runs whose jackpotting quotient exceeds this limit"
 )
 
 opt_max_pearson_run = Option(

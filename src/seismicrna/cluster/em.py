@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 
 from .marginal import calc_marginal_resps
-from .jackpot import (bootstrap_norm_g_stats,
-                      calc_jackpot_g_stat,
-                      calc_jackpot_index,
-                      normalize_g_stat)
+from .jackpot import (bootstrap_jackpot_scores,
+                      calc_semi_g_anomaly,
+                      calc_jackpot_quotient,
+                      calc_jackpot_score)
 from .names import CLUST_PROP_NAME
 from .uniq import UniqReads
 from ..core.array import get_length
@@ -92,7 +92,7 @@ class EMRun(object):
                  em_thresh: float,
                  jackpot: bool,
                  jackpot_conf_level: float,
-                 max_jackpot_index: float):
+                 max_jackpot_quotient: float):
         """
         Parameters
         ----------
@@ -114,11 +114,11 @@ class EMRun(object):
             convergence threshold (and at least min_iter iterations have
             run). Must be a positive real number.
         jackpot: bool
-            Whether to calculate the jackpotting index.
+            Whether to calculate the jackpotting quotient.
         jackpot_conf_level: float
             Confidence level for the jackpotting confidence interval.
-        max_jackpot_index: float
-            Maximum acceptable jackpotting index.
+        max_jackpot_quotient: float
+            Maximum acceptable jackpotting quotient.
         """
         # Unique reads of mutations
         self.uniq_reads = uniq_reads
@@ -142,7 +142,7 @@ class EMRun(object):
         # Jackpotting parameters.
         self._jackpot = jackpot
         self._jackpot_conf_level = jackpot_conf_level
-        self._max_jackpot_index = max_jackpot_index
+        self._max_jackpot_quotient = max_jackpot_quotient
         # Mutation rates adjusted for observer bias.
         # 2D (all positions x clusters)
         self._p_mut = np.zeros((self._n_pos_total, self.k))
@@ -404,10 +404,10 @@ class EMRun(object):
                 self.converged = True
                 logger.info(f"{self} converged on iteration {self.iter}: "
                             f"last log likelihood = {self.log_like}")
-                # Cache the jackpotting index here (even though it will
+                # Cache the jackpotting quotient here (though it will
                 # not be used yet) so that this expensive calculation
                 # can be performed in parallel, just like clustering.
-                return self.jackpot_index
+                return self.jackpot_quotient
         # The log likelihood did not converge within the maximum number
         # of permitted iterations.
         logger.warning(f"{self} failed to converge within {self._max_iter} "
@@ -447,34 +447,39 @@ class EMRun(object):
                             columns=self._clusters)
 
     @cached_property
-    def norm_g_stat(self):
-        """ Normalized G-test statistic for jackpotting. """
-        g_stat, _ = calc_jackpot_g_stat(self._counts_per_uniq,
-                                        self.log_exp_values)
-        return normalize_g_stat(g_stat, self.n_reads)
+    def semi_g_anomalies(self):
+        """ Semi-G-anomaly of each read. """
+        return calc_semi_g_anomaly(self._counts_per_uniq, self.log_exp_values)
 
     @cached_property
-    def _null_norm_g_stats(self):
-        """ Normalized G-test statistic of each null model run. """
-        return bootstrap_norm_g_stats(self._end5s,
-                                      self._end3s,
-                                      self._counts_per_uniq,
-                                      self._p_mut,
-                                      self._p_ends,
-                                      self._p_clust,
-                                      self.uniq_reads.min_mut_gap,
-                                      self._unmasked,
-                                      self.norm_g_stat,
-                                      self._jackpot_conf_level,
-                                      self._max_jackpot_index)
+    def jackpot_score(self):
+        """ Jackpotting score: expected value of the G-anomaly. """
+        return calc_jackpot_score(self.semi_g_anomalies, self.n_reads)
 
     @cached_property
-    def jackpot_index(self):
+    def _null_jackpot_scores(self):
+        """ Jackpotting score of each null model. """
+        return bootstrap_jackpot_scores(self._end5s,
+                                        self._end3s,
+                                        self._counts_per_uniq,
+                                        self._p_mut,
+                                        self._p_ends,
+                                        self._p_clust,
+                                        self.uniq_reads.min_mut_gap,
+                                        self._unmasked,
+                                        self.jackpot_score,
+                                        self._jackpot_conf_level,
+                                        self._max_jackpot_quotient)
+
+    @cached_property
+    def jackpot_quotient(self):
+        """ Jackpotting quotient: jackpotting score divided by the score
+        of the median null model. """
         if not self._jackpot:
-            # Skip calculating the jackpotting index.
+            # Skip calculating the jackpotting quotient.
             return np.nan
-        return calc_jackpot_index(self.norm_g_stat,
-                                  float(np.median(self._null_norm_g_stats)))
+        return calc_jackpot_quotient(self.jackpot_score,
+                                     np.median(self._null_jackpot_scores))
 
     def _calc_p_mut_pairs(self,
                           stat: Callable[[np.ndarray, np.ndarray], float],

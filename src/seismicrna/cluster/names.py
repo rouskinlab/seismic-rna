@@ -10,8 +10,8 @@ BIT_VECTOR_NAME = "Bit Vector"
 CLUST_PROP_NAME = "Proportion"
 LOG_OBS_NAME = "Log Observed"
 LOG_EXP_NAME = "Log Expected"
-G_ANOMALY = "Anomaly (2O×log[O/E])"
-JACKPOT_INDEX = "Jackpotting index"
+SEMI_G_ANOMALY = "Anomaly (O×log[O/E])"
+JACKPOT_QUOTIENT = "Jackpotting quotient"
 
 ########################################################################
 #                                                                      #

@@ -38,7 +38,7 @@ class EMRunsK(object):
                  runs: list[EMRun],
                  max_pearson_run: float,
                  min_nrmsd_run: float,
-                 max_jackpot_index: float,
+                 max_jackpot_quotient: float,
                  max_loglike_vs_best: float,
                  min_pearson_vs_best: float,
                  max_nrmsd_vs_best: float):
@@ -49,7 +49,7 @@ class EMRunsK(object):
         # Flag runs that fail to meet the filters.
         self.max_pearson_run = max_pearson_run
         self.min_nrmsd_run = min_nrmsd_run
-        self.max_jackpot_index = max_jackpot_index
+        self.max_jackpot_quotient = max_jackpot_quotient
         # Set the criteria for whether this number of clusters passes.
         self.max_loglike_vs_best = max_loglike_vs_best
         self.min_pearson_vs_best = min_pearson_vs_best
@@ -65,7 +65,7 @@ class EMRunsK(object):
         )
         # Check whether each run shows signs of being underclustered.
         self.run_not_underclustered = np.array(
-            [not (run.jackpot_index > max_jackpot_index)
+            [not (run.jackpot_quotient > max_jackpot_quotient)
              for run in runs]
         )
         # Select the best run.
@@ -81,8 +81,9 @@ class EMRunsK(object):
         self.log_likes = np.array([run.log_like for run in runs])
         # BIC of each run.
         self.bics = np.array([run.bic for run in runs])
-        # Jackpotting index and P-value of each run.
-        self.jackpot_indexes = np.array([run.jackpot_index for run in runs])
+        # Jackpotting quotient of each run.
+        self.jackpot_quotients = np.array([run.jackpot_quotient
+                                           for run in runs])
         # Minimum NRMSD between any two clusters in each run.
         self.min_nrmsds = np.array([run.min_nrmsd for run in runs])
         # Maximum correlation between any two clusters in each run.
@@ -172,7 +173,7 @@ class EMRunsK(object):
                  "\nPARAMETERS\n"]
         for attr in ["max_pearson_run",
                      "min_nrmsd_run",
-                     "max_jackpot_index",
+                     "max_jackpot_quotient",
                      "max_loglike_vs_best",
                      "min_pearson_vs_best",
                      "max_nrmsd_vs_best"]:
@@ -182,7 +183,7 @@ class EMRunsK(object):
                      "converged",
                      "log_likes",
                      "bics",
-                     "jackpot_indexes",
+                     "jackpot_quotients",
                      "min_nrmsds",
                      "max_pearsons",
                      "nrmsds_vs_best",

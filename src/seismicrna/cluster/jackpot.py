@@ -5,9 +5,7 @@ import numpy as np
 from numba import jit
 
 from .marginal import calc_marginal
-from ..core.array import (ensure_same_length,
-                          find_dims,
-                          get_length)
+from ..core.array import find_dims, get_length
 from ..core.unbias import (CLUSTERS,
                            POSITIONS,
                            READS,
@@ -75,24 +73,6 @@ def _sim_muts(reads: np.ndarray,
                 muts = _rand_muts(p_mut_read)
         # Write the mutated positions into the array of reads.
         read[muts + end5] = 1
-
-
-def _find_reads_no_close(muts: np.ndarray, min_mut_gap: int):
-    """ Find reads with no two mutations closer than `min_mut_gap`. """
-    n_reads, n_pos = muts.shape
-    # It is impossible for two mutations to be separated by more than
-    # (n_pos - 1) positions.
-    min_mut_gap = min(min_mut_gap, n_pos - 1)
-    if min_mut_gap <= 0:
-        # It is impossible for two mutations to be too close.
-        return np.ones(n_reads, dtype=bool)
-    # Using a sliding window of (min_mut_gap + 1) positions, label which
-    # reads have no more than 1 mutation within any window.
-    window_size = min_mut_gap + 1
-    muts_cumsum = np.hstack([np.zeros((n_reads, window_size), dtype=int),
-                             np.cumsum(muts, axis=1)])
-    window_sum = muts_cumsum[:, window_size:] - muts_cumsum[:, :-window_size]
-    return window_sum.max(axis=1) < 2
 
 
 def _sim_clusters(end5s: np.ndarray,
@@ -248,150 +228,50 @@ def sim_obs_exp(end5s: np.ndarray,
         yield _calc_obs_exp(reads, clusts, n_clusts, min_mut_gap, unmasked)
 
 
-def calc_half_g_anomaly(num_obs: float | np.ndarray,
+def calc_semi_g_anomaly(num_obs: float | np.ndarray,
                         log_exp: float | np.ndarray):
-    """ Calculate half of an item's G anomaly, i.e. its contribution to
-    the overall G-test statistic. """
+    """ Calculate each item's semi-G-anomaly, i.e. half its contribution
+    to the G-test statistic. """
     return num_obs * (np.log(num_obs) - log_exp)
 
 
-def calc_jackpot_g_stat(num_obs: np.ndarray,
-                        log_exp: np.ndarray,
-                        min_exp: float = 0.):
-    """ Calculate the G-test statistic for jackpotting.
+def calc_jackpot_score(semi_g_anomalies: np.ndarray, n_reads: int):
+    """ Calculate the jackpotting score.
 
-    Parameters
-    ----------
-    num_obs: np.ndarray
-        Number of times each read was observed (1D, int).
-    log_exp: np.ndarray
-        Log of the number of times each read was expected to be observed
-        (1D, float, same shape as `num_obs`).
-    min_exp: float
-        Aggregate all reads whose expected count is less than `min_exp`
-        into a single category. Doing so corrects two violations of the
-        assumptions of G-tests: that all reads' expected counts are at
-        least approximately 5 (the rarest reads' expected counts are
-        very close to 0) and that the observed and expected counts have
-        equal sums (the sum of the expected counts can be less because
-        it omits the expected counts of reads that were not observed).
+    The jackpotting score is defined as the average log of the ratio of
+    observed to expected counts for a read, weighted by the count of
+    each read:
 
-    Returns
-    -------
-    tuple[float, int]
-        - G-test statistic, normalized by total number of reads observed
-        - Number of degrees of freedom
-    """
-    if min_exp < 0.:
-        raise ValueError(f"min_exp must be ≥ 0, but got {min_exp}")
-    num_uniq = ensure_same_length(num_obs, log_exp, "observed", "expected")
-    if num_uniq > 0:
-        min_obs = num_obs.min()
-        if min_obs < 0:
-            raise ValueError(
-                f"All num_obs must be ≥ 0, but got {num_obs[num_obs < 0]}"
-            )
-    # Total number of reads.
-    total_obs = round(num_obs.sum())
-    # Expected count of each unique read.
-    num_exp = np.exp(log_exp)
-    # Total expected count of all reads that were observed 0 times.
-    total_exp = round(num_exp.sum(), SUM_EXP_PRECISION)
-    obs_0_exp = total_obs - total_exp
-    # Degree of freedom for all reads that were observed 0 times.
-    if obs_0_exp > 0.:
-        df_obs_0 = 1
-    elif obs_0_exp == 0.:
-        df_obs_0 = 0
-    else:
-        raise ValueError(f"Total observed reads ({total_obs}) is less than "
-                         f"total expected reads ({total_exp})")
-    if min_exp > 0.:
-        # Calculate the G-test statistic of reads whose expected counts
-        # are at least min_exp.
-        is_at_least_min_exp = num_exp >= min_exp
-        at_least_min_exp = np.flatnonzero(is_at_least_min_exp)
-        g_stat = 2. * calc_half_g_anomaly(num_obs[at_least_min_exp],
-                                          log_exp[at_least_min_exp]).sum()
-        # Degrees of freedom for those reads.
-        df_at_least_min_exp = at_least_min_exp.size - 1
-        # Add reads with expected counts less than min_exp to the G-test.
-        # Assume that every read that was observed 0 times has an expected
-        # count less than min_exp; this assumption should be valid as long
-        # as min_exp is at least 5 (the usual minimum for a G- or χ²-test).
-        # Making this assumption alleviates the need to compute the expected
-        # count of every unseen read, which is computationally infeasible.
-        # Thus, simply add obs_0_exp to the total of the expected count of
-        # reads with expected counts less than num_exp.
-        less_than_min_exp = np.flatnonzero(np.logical_not(is_at_least_min_exp))
-        num_obs_less_than_min_exp = round(num_obs[less_than_min_exp].sum())
-        if num_obs_less_than_min_exp > 0:
-            num_exp_less_than_min_exp = (num_exp[less_than_min_exp].sum()
-                                         + obs_0_exp)
-            if num_exp_less_than_min_exp == 0.:
-                raise ValueError("Expected number of reads with expected "
-                                 f"counts < {min_exp} cannot be 0 if the "
-                                 "observed number of such reads is "
-                                 f"{num_obs_less_than_min_exp}")
-            g_stat += 2. * calc_half_g_anomaly(
-                num_obs_less_than_min_exp,
-                np.log(num_exp_less_than_min_exp)
-            )
-            # Degree of freedom for all reads with expected counts less
-            # than min_exp.
-            df_less_than_min_exp = 1
-        else:
-            df_less_than_min_exp = 0
-    else:
-        # Calculate the G-test statistic of all reads.
-        g_stat = 2. * calc_half_g_anomaly(num_obs, log_exp).sum()
-        # Degrees of freedom for those reads.
-        df_at_least_min_exp = num_exp.size - 1
-        # Degree of freedom for all reads with expected counts less
-        # than min_exp.
-        df_less_than_min_exp = 0
-    # Calculate total degrees of freedom.
-    df = max(df_at_least_min_exp + df_less_than_min_exp + df_obs_0, 0)
-    if df == 0 and g_stat != 0.:
-        raise ValueError("G-test statistic must be 0 if the degrees of "
-                         f"freedom equals 0, but got {g_stat}")
-    return g_stat, df
-
-
-def normalize_g_stat(g_stat: float, df: float):
-    """ Normalize the G-test statistic.
-
-    The normalized G-test statistic is defined as the expected value of
-    the log of the ratio of observed to expected counts for a read
-    (or, in other words, the weighted average of those log ratios):
-
-    normG = sum{O_i * log(O_i / E_i)} / sum{O_i}
+    JS = sum{O_i * log(O_i / E_i)} / sum{O_i}
     where i is each unique read.
 
-    As sum{O_i * log(O_i / E_i)} equals half of the G-test statistic (G)
-    and sum{O_i} equals the total number of reads observed (n), normG
-    simply equals G / (2n).
+    This formula was based on that of the G-test statistic, which is
+    identical except that the latter is multiplied by 2.
     """
-    return g_stat / df
+    if n_reads == 0:
+        if semi_g_anomalies.size > 0:
+            raise ValueError("If n_reads is 0, then semi_g_anomalies must have "
+                             f"length 0, but got {semi_g_anomalies.size}")
+        return 0.
+    return semi_g_anomalies.sum() / n_reads
 
 
-def calc_norm_g_stat_ci(norm_g_stats: Iterable[float],
-                        confidence_level: float):
+def calc_jackpot_score_ci(jackpot_scores: Iterable[float],
+                          confidence_level: float):
     """ Calculate the confidence interval of the mean of an array of
-    normalized G-test statistics. """
+    jackpotting scores. """
     # Ensure g_stats is a NumPy array of floats with no NaN/inf values.
-    if not isinstance(norm_g_stats, np.ndarray):
-        if not isinstance(norm_g_stats, list):
-            norm_g_stats = list(norm_g_stats)
-        norm_g_stats = np.array(norm_g_stats)
-    norm_g_stats = np.asarray_chkfinite(norm_g_stats,
-                                        dtype=float)
+    if not isinstance(jackpot_scores, np.ndarray):
+        if not isinstance(jackpot_scores, list):
+            jackpot_scores = list(jackpot_scores)
+        jackpot_scores = np.array(jackpot_scores)
+    jackpot_scores = np.asarray_chkfinite(jackpot_scores, dtype=float)
     # Calculate the confidence interval of the mean, assuming that the
-    # G-test statistics are distributed normally.
-    n = get_length(norm_g_stats, "mean_obs_exp_log_ratios")
+    # jackpotting scores are distributed normally.
+    n = get_length(jackpot_scores, "jackpot_scores")
     if n > 1:
-        mean = norm_g_stats.mean()
-        std_dev = norm_g_stats.std()
+        mean = jackpot_scores.mean()
+        std_dev = jackpot_scores.std()
         std_err = std_dev / np.sqrt(n)
         # Import SciPy here instead of at the top of the module because
         # the latter would take so long as to slow down the start-up.
@@ -405,55 +285,53 @@ def calc_norm_g_stat_ci(norm_g_stats: Iterable[float],
     return ci_lo, ci_up
 
 
-def calc_jackpot_index(real_norm_g_stat: float,
-                       null_norm_g_stat: float):
-    """ Calculate the jackpotting index.
+def calc_jackpot_quotient(real_jackpot_score: float,
+                          null_jackpot_score: float):
+    """ Calculate the jackpotting quotient.
 
-    The jackpotting index indicates by what factor the average read is
-    overrepresented in the real dataset compared to the null dataset.
+    The jackpotting quotient indicates how much more overrepresented the
+    average read is in the real dataset compared to the null dataset.
 
-    Since the normalized G-stat is the expected log-ratio of a read's
+    Since the jackpotting score is the expected log-ratio of a read's
     observed to expected count, raising e to the power of it yields the
-    observed-to-expected ratio, which measures jackpotting:
+    observed-to-expected ratio, which measures jackpotting.
 
-    Jratio = O / E
-           = exp{log(O / E)}
-           = exp(normG)
+    JS = average{log(O / E)}
+    exp(JS) = exp(average{log(O / E)})
 
-    Then, the jackpotting index is the quotient of the jackpotting ratio
-    of the real dataset versus the null dataset:
+    Then, the jackpotting quotient is the jackpotting score of the real
+    dataset divided by that of the null dataset:
 
-    Jindex = Jratio_real / Jratio_null
-           = exp(normG_real) / exp(normG_null)
-           = exp(normG_real - normG_null)
+    JQ = exp(JS_real) / exp(JS_null)
+       = exp(JS_real - JS_null)
 
     Parameters
     ----------
-    real_norm_g_stat: float
-        Normalized G-test statistic of the real dataset.
-    null_norm_g_stat: float
-        Normalized G-test statistic(s) based on the null model.
+    real_jackpot_score: float
+        Jackpotting score of the real dataset.
+    null_jackpot_score: float
+        Jackpotting score of the null model.
 
     Returns
     -------
     float
-        Jackpotting index
+        Jackpotting quotient
     """
-    return np.exp(real_norm_g_stat - null_norm_g_stat)
+    return np.exp(real_jackpot_score - null_jackpot_score)
 
 
-def bootstrap_norm_g_stats(uniq_end5s: np.ndarray,
-                           uniq_end3s: np.ndarray,
-                           counts_per_uniq: np.ndarray,
-                           p_mut: np.ndarray,
-                           p_ends: np.ndarray,
-                           p_clust: np.ndarray,
-                           min_mut_gap: int,
-                           unmasked: np.ndarray,
-                           real_norm_g_stat: float,
-                           confidence_level: float,
-                           max_jackpot_index: float):
-    """ Bootstrap normalized G-test statistics from the null model.
+def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
+                             uniq_end3s: np.ndarray,
+                             counts_per_uniq: np.ndarray,
+                             p_mut: np.ndarray,
+                             p_ends: np.ndarray,
+                             p_clust: np.ndarray,
+                             min_mut_gap: int,
+                             unmasked: np.ndarray,
+                             real_jackpot_score: float,
+                             confidence_level: float,
+                             max_jackpot_quotient: float):
+    """ Bootstrap jackpotting scores from the null model.
 
     Parameters
     ----------
@@ -478,12 +356,12 @@ def bootstrap_norm_g_stats(uniq_end5s: np.ndarray,
         Minimum number of non-mutated positions between two mutations.
     unmasked: np.ndarray
         Positions (0-indexed) of p_mut that are not masked.
-    real_norm_g_stat: float
-        Normalized G-test statistic of the real dataset.
+    real_jackpot_score: float
+        Jackpotting score of the real dataset.
     confidence_level: float
-        Level for computing a confidence interval of the mean normalized
-        G-test statistic and of the jackpotting index.
-    max_jackpot_index: float
+        Confidence level for computing a confidence interval of the
+        jackpotting quotient.
+    max_jackpot_quotient: float
         Stop bootstrapping once the confidence interval lies entirely
         above or entirely below this threshold.
 
@@ -511,13 +389,13 @@ def bootstrap_norm_g_stats(uniq_end5s: np.ndarray,
                "p_ends",
                "p_clust"])
     n_reads = counts_per_uniq.sum()
-    logger.info(f"Began boostrapping null normalized G-test statistics for a "
-                f"dataset with {n_reads} reads and a real normalized G-test "
-                f"statistic of {real_norm_g_stat}")
+    logger.info(f"Began boostrapping null jackpotting scores for a dataset "
+                f"with {n_reads} reads and a real jackpotting score of "
+                f"{real_jackpot_score}")
     # Simulate observed and expected read counts.
     end5s = np.repeat(uniq_end5s, counts_per_uniq)
     end3s = np.repeat(uniq_end3s, counts_per_uniq)
-    null_norm_g_stats = list()
+    null_jackpotting_scores = list()
     for num_obs, log_exp in sim_obs_exp(end5s,
                                         end3s,
                                         p_mut,
@@ -525,29 +403,30 @@ def bootstrap_norm_g_stats(uniq_end5s: np.ndarray,
                                         p_clust,
                                         min_mut_gap,
                                         unmasked):
-        # Calculate and normalize this null model G-test statistic.
-        null_g_stat, _ = calc_jackpot_g_stat(num_obs, log_exp)
-        null_norm_g_stat = normalize_g_stat(null_g_stat, n_reads)
-        null_norm_g_stats.append(null_norm_g_stat)
-        logger.debug(f"Null normalized G-test statistic: {null_norm_g_stat}")
-        # Determine a confidence interval for the mean of all normalized
-        # G-test statistics simulated so far.
-        g_ci_lo, g_ci_up = calc_norm_g_stat_ci(null_norm_g_stats,
-                                               confidence_level)
-        # Determine a confidence interval for the jackpotting index.
-        # Since the jackpotting index is inversely related to the null
-        # G-test statistic, the lower and upper bounds are swapped.
-        ji_ci_lo = calc_jackpot_index(real_norm_g_stat, g_ci_up)
-        ji_ci_up = calc_jackpot_index(real_norm_g_stat, g_ci_lo)
-        if not np.isnan(ji_ci_lo) and not np.isnan(ji_ci_up):
+        # Calculate this null model's jackpotting score.
+        null_g_anomalies = calc_semi_g_anomaly(num_obs, log_exp)
+        null_jackpotting_score = calc_jackpot_score(null_g_anomalies,
+                                                    n_reads)
+        null_jackpotting_scores.append(null_jackpotting_score)
+        logger.debug(f"Null jackpotting score: {null_jackpotting_score}")
+        # Calculate a confidence interval for the mean jackpotting score
+        # of the null models simulated so far.
+        njs_ci_lo, njs_ci_up = calc_jackpot_score_ci(null_jackpotting_scores,
+                                                     confidence_level)
+        # Determine a confidence interval for the jackpotting quotient.
+        # Since the jackpotting quotient depends inversely on the null
+        # jackpotting score, the lower and upper bounds are swapped.
+        jq_ci_lo = calc_jackpot_quotient(real_jackpot_score, njs_ci_up)
+        jq_ci_up = calc_jackpot_quotient(real_jackpot_score, njs_ci_lo)
+        if not np.isnan(jq_ci_lo) and not np.isnan(jq_ci_up):
             logger.debug(f"{confidence_level * 100.} % confidence interval "
-                         f"for jackpotting index: {ji_ci_lo} - {ji_ci_up}")
+                         f"for jackpotting quotient: {jq_ci_lo} - {jq_ci_up}")
         # Stop when the confidence interval lies entirely below or above
-        # max_jackpot_index, so it's unambiguous whether the jackpotting
-        # index is less or greater than max_jackpot_index.
-        # Do not use "if not ji_ci_lo <= max_jackpot_index <= ji_ci_up"
+        # max_jackpot_quotient, so it's clear whether the jackpotting
+        # quotient is less or greater than max_jackpot_quotient.
+        # Avoid "if not jq_ci_lo <= max_jackpot_quotient <= jq_ci_up"
         # because this expression will evaluate to True after the first
-        # iteration, when ji_ci_lo and ji_ci_up will both be NaN.
-        if ji_ci_lo > max_jackpot_index or max_jackpot_index > ji_ci_up:
-            logger.info("Ended boostrapping null normalized G-test statistics")
-            return np.array(null_norm_g_stats)
+        # iteration, when jq_ci_lo and jq_ci_up will both be NaN.
+        if jq_ci_lo > max_jackpot_quotient or max_jackpot_quotient > jq_ci_up:
+            logger.info("Ended boostrapping null jackpotting scores")
+            return np.array(null_jackpotting_scores)
