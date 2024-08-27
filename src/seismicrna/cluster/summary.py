@@ -38,7 +38,7 @@ def tabulate_attr(ks: list[EMRunsK], attr: str):
             runs_values[str(runs.k), str(run)] = run_value
     if runs_values:
         runs_values = pd.Series(runs_values)
-        runs_values.index.set_names(K_RUN_NAMES)
+        runs_values.index.set_names(K_RUN_NAMES, inplace=True)
     else:
         runs_values = pd.Series([],
                                 pd.MultiIndex.from_arrays([[], []],
