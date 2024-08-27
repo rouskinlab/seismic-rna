@@ -1,7 +1,5 @@
 import re
-from logging import getLogger
 
-logger = getLogger(__name__)
 
 __version__ = "0.20.1"
 

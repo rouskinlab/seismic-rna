@@ -1,0 +1,165 @@
+\documentclass[main.tex]{subfiles}
+
+
+\begin{document}
+
+
+\chapter{Releases}
+
+This chapter explains how to release a new version of SEISMIC-RNA.
+
+
+\section{Versioning}
+
+\subsection{Why and when to release a new version}
+
+Release a new version when you have made a significant change to the software that you want to share with other users.
+Do not release a new version if any unit tests failed on the most recent commit, which is indicated by either a green checkmark (all successful) or red X (one or more failures) beside the name of the most recent commit on the main page of the repository (\url{https://github.com/rouskinlab/seismic-rna}).
+You can also navigate to the ``Actions" tab and check that all workflow runs with the name of the most recent commit have a green checkmark (not a red X) next to them (there will be more than one run per commit, so make sure to check ALL runs for the most recent commit).
+
+
+\subsection{How to number a new version}
+
+SEISMIC-RNA uses semantic versioning in which each version comprises three non-negative integers separated by periods and an optional pre-release tag:
+\begin{description}
+    \item[Major version] Increase when the new version introduces a major change that fundamentally changes how SEISMIC-RNA works and/or is mostly incompatible with previous versions. These types of changes should happen rarely, less than once annually. A major version of 0 indicates that the version is a pre-release and not yet considered stable, so that increases in the minor version may also indicate major backwards-incompatible changes.
+    \item[Minor version] Increase when the new version introduces new features, removes minor features, and/or makes minor backwards-incompatible changes for which there are workarounds. Ideally, any backwards-incompatible changes will be forewarned by deprecation notices. Reset the minor version to 0 whenever the major version increases.
+    \item[Patch] Increase when the new version makes a small improvement (such as fixing a bug or optimizing an algorithm) that causes little to no change to the user interface and would not be noticed by users who had not encountered the issue that this release fixes. Reset the patch to 0 whenever the minor version increases.
+    \item[Pre-release tag] Append to the version number when the current version is a pre-release (i.e. not considered stable or definitive). This tag can contain any letters and numbers (but cannot start with a number) and should briefly describe the nature of the pre-release, such as ``alpha", ``beta", or ``dev1". Do not include a pre-release tag on a production version of the code.
+\end{description}
+
+
+\subsection{Where to define the version number}
+
+The version number is defined in \verb|src/seismicrna/core/version.py| as \verb|__version__|.
+
+
+\section{Releasing on each platform}
+
+SEISMIC-RNA is released on three platforms:
+\begin{itemize}
+    \item GitHub, as source code
+    \item Python Package Index (PyPI), for pip install
+    \item Bioconda, for conda install
+\end{itemize}
+
+
+\subsection{Releasing on GitHub}
+
+\subsubsection{The first time you release on GitHub}
+
+\begin{enumerate}
+    \item Create an account on GitHub and obtain permission to modify the SEISMIC-RNA repository (\url{https://github.com/rouskinlab/seismic-rna}).
+\end{enumerate}
+
+
+\subsubsection{Every time you release on GitHub}
+
+\begin{enumerate}
+    \item Make sure you have committed and pushed everything you want to release to the GitHub repository; importantly, make sure that the version number defined in the source code (\verb|src/seismicrna/core/version.py|) is up-to-date.
+    \item Open the repository in a web browser, find the ``Releases" panel on the right sidebar, and click ``Create a new release".
+    \item On the new page that opens, you will need to write information about the release.
+    \item Select ``Choose a tag" and in the box labeled ``Find or create a new tag" type the version number of the new release prefaced by a ``v", e.g. ``v2.7.18". Make sure the new tag is exactly a ``v" followed by the version number, or else releasing on Conda will not work.
+    \item Give this release a ``Release title" of up to 10 words that succinctly describes the main point of this release.
+    \item Write a more detailed description in ``Describe this release" that begins with ``What's new in x.y.z" where ``x.y.z" is the version. Describe new features, removed features, bug fixes, changes to the user interface, etc. in bullet-point format, ideally with subheadings for each category of changes.
+    \item Move the cursor to the bottom of the text box and click ``Generate release notes" to add a summary of all commits, pull requests, etc. associated with this release.
+    \item If this is a pre-release, check the box ``Set as a pre-release" at the bottom.
+    \item Click ``Publish release" when you are finished.
+    \item You can edit or delete the release afterwards if it contains a significant mistake.
+\end{enumerate}
+
+
+\subsection{Releasing on PyPI}
+
+\subsubsection{The first time you release on PyPI}
+
+\begin{enumerate}
+    \item Create an account on PyPI and obtain permission to modify the SEISMIC-RNA project (\url{https://pypi.org/project/seismic-rna}).
+    \item Install \verb|build| (to build the package) and \verb|twine| (to upload the package):
+        \begin{verbatim}
+pip install build
+pip install twine
+        \end{verbatim}
+\end{enumerate}
+
+
+\subsubsection{Every time you release on PyPI}
+
+\begin{enumerate}
+    \item Make sure \verb|build| and \verb|twine| are up to date:
+        \begin{verbatim}
+pip install -U build
+pip install -U twine
+        \end{verbatim}
+    \item Make sure the code, including the version in \verb|src/seismicrna/core/version.py|, is correct. You CANNOT edit a PyPI release after it has been uploaded, nor can you delete it and upload a revision with the same version number.
+    \item Ensure that all unit tests succeed by running \verb|seismic +test|. Do not release the code if any tests fail.
+    \item Navigate to the main directory \verb|seismic-rna|; if it already contains a directory called \verb|dist|, then delete \verb|dist|.
+    \item Build the package:
+        \begin{verbatim}
+python -m build
+        \end{verbatim}
+    \item The source (\verb|.tar.gz|) and wheel (\verb|.whl|) files for the package will appear in the new directory \verb|dist|. Make sure the version number of each file is correct.
+    \item Upload the package to PyPI:
+        \begin{verbatim}
+python -m twine upload dist/*
+        \end{verbatim}
+        Enter your PyPI API token to authenticate when prompted.
+    \item Navigate to the SEISMIC-RNA releases page (\url{https://pypi.org/project/seismic-rna/#history}) to confirm that the version was uploaded successfully. The new version will be installable with \verb|pip install seismic-rna| within several minutes.
+\end{enumerate}
+
+
+\subsection{Releasing on Bioconda}
+
+These steps are adapted from the Bioconda contribution instructions: \url{https://bioconda.github.io/contributor/index.html}.
+Refer to these instructions (and their links) if you need to troubleshoot this workflow.
+
+\subsubsection{The first time you release on Bioconda}
+
+\begin{enumerate}
+    \item Create an account on GitHub.
+    \item Fork the Bioconda Recipes repository by navigating to \url{https://github.com/bioconda/bioconda-recipes} and clicking ``Create a new fork" in the drop-down menu underneath ``Fork" in the upper right panel.
+    \item Clone your fork of the repository (so you can modify it on your computer) by typing \verb|git clone https://github.com/<USERNAME>/bioconda-recipes.git|, while replacing \verb|<USERNAME>| with the username you used to fork the repository.
+    \item Create a new Conda environment and install the Bioconda developer tools by typing \verb|conda create -n bioconda -c conda-forge -c bioconda bioconda-utils|.
+\end{enumerate}
+
+
+\subsubsection{Every time you release on Bioconda}
+
+\begin{enumerate}
+    \item Release this version of the software on GitHub (see above). Make sure to give it the tag ``v" followed by the version number, otherwise building the metadata file for Conda will fail.
+    \item Create the Conda recipe files by navigating to the main directory \verb|seismic-rna| and typing \verb|python make_conda_recipe.py|. This will create or update the Conda recipe files \verb|build.sh| and \verb|meta.yaml| in the directory \verb|conda|.
+    \item Navigate to the directory into which you cloned the Bioconda Recipes repository and bring it up-to-date with the \verb|master| branch by typing
+        \begin{verbatim}
+git checkout master
+git pull upstream master
+git push origin master
+        \end{verbatim}
+    \item Create a new branch for the new version, e.g. called \verb|seismic-rna_v2.7.18|, by typing \verb|conda checkout -b seismic-rna_v2.7.18|.
+    \item Copy \verb|build.sh| and \verb|meta.yaml| from \verb|seismic-rna/conda| (in your SEISMIC-RNA repository) to \verb|recipes/seismic-rna| (in your Bioconda Recipes repository).
+    \item Activate your \verb|bioconda| environment by typing \verb|conda activate bioconda|.
+    \item Lint your updates by typing \verb|bioconda-utils lint --packages seismic-rna| and confirm that it prints an OK message, not ``Errors were found".
+    \item Test building the package typing \verb|bioconda-utils build --packages seismic-rna| and confirm that it prints an OK message, not ``Errors were found".
+    \item Once both linting and building succeed, push the updates to your fork of Bioconda Reipces by typing
+    	\begin{verbatim}
+git add recipes/seismic-rna/*
+git commit -m "Update seismic-rna"
+git push
+        \end{verbatim}
+    \item Bioconda is set up to detect version updates and create pull requests automatically. To check if a pull request was created for you, navigate to the Bioconda Recipes GitHub repository Pull Requests tab (\url{https://github.com/bioconda/bioconda-recipes/pulls}) and check if one of the most recent pull requests matches the name of your commit.
+    \item If not, then create a pull request manually by navigating to your fork of Bioconda Recipes on GitHub. If you see a message near the top that says a recent branch had changes, click ``Compare and Pull Request"; otherwise, go to the Pull Requests tab and click ``New pull request" in the upper right corner to create your pull request.
+    \item Navigate back to the Bioconda Recipes GitHub repository Pull Requests tab (\url{https://github.com/bioconda/bioconda-recipes/pulls}) and confirm that your pull request has been opened. Monitor the status badge beside the commit message and wait until turns from an orange circle (pending) into a green checkmark (success) or red X (failure).
+    \item If it fails, then check the failure messages and revise the \verb|build.sh| and \verb|meta.yaml| files. If you need help, then you can ask the Bioconda maintainers.
+    \item Once it succeeds, then the Bioconda maintainers should eventually (within several days) merge your pull request, and the new version will be ready to install with the command \verb|conda install -c bioconda seismic-rna|. Before it is merged, check back periodically for any messages from the Bioconda maintainers.
+    \item Delete your local branch by typing \verb|git branch -d seismic-rna_v2.7.18| and also delete the branch on your fork of the Bioconda Recipes GitHub repository, as they are no longer needed.
+        
+\end{enumerate}
+
+
+
+
+
+
+
+
+
+\end{document}
