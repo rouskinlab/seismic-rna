@@ -3,7 +3,7 @@ How to Research RNA Structures with SEISMIC-RNA
 ########################################################################
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     about/index
     install

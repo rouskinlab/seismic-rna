@@ -3,7 +3,7 @@
 # Run all unit tests for SEISMIC-RNA.
 # If all tests succeed, return 0; otherwise, return 1.
 
-set -euo pipefail
+set -eu -o pipefail
 
 # Run the tests and capture the results.
 RESULTS=test-results.txt

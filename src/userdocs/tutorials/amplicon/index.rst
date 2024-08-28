@@ -5,6 +5,35 @@ Tutorial 1: Amplicon prepared with RT-PCR
 This tutorial demonstrates how to analyze a dataset that was prepared using
 RT-PCR (with forward and reverse primers) of one specific section of an RNA.
 
+
+TL;DR
+--------------------------------------------------------------------------------
+
+#. Download https://raw.githubusercontent.com/rouskinlab/seismic-rna/main/src/userdocs/tutorials/amplicon/data.tar
+
+#. Un-tar and enter the data directory::
+
+    tar xvf data.tar
+    cd data
+
+#. Process the no-DMS control::
+
+    seismic -v wf -x fq/nodms --keep-gu --mask-polya 0 --min-mut-gap 0 hiv-rre.fa
+
+#. Process the DMS-treated replicates separately::
+
+    seismic -v wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
+    seismic graph scatter out/dms[12]/table/rre/26-204/mask-per-pos.csv
+
+#. Pool the replicates and process them together::
+
+    seismic pool -P dms-pool out/dms[12]
+    seismic -v wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
+
+
+Scientific premise
+--------------------------------------------------------------------------------
+
 The RNA in this example is a segment of the the human immunodeficiency virus 1
 (HIV-1) genome called the Rev response element (RRE), which binds to the protein
 Rev that mediates nuclear export (`Sherpa et al.`_).
@@ -332,7 +361,7 @@ Now that the replicates are pooled, the overall coverage will be higher, and so
 clustering is more likely to detect true alternative structures.
 Process the pooled sample, including with clustering, by running this command::
 
-    seismic -v wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold hiv-rre.fa out/dms-pool/relate
+    seismic -v wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
 
 This is what each of the arguments does:
 
@@ -346,6 +375,8 @@ This is what each of the arguments does:
   primers ``GGAGCTTTGTTCCTTGGGTTCTTGG`` and ``GGAGCTGTTGATCCTTTAGGTATCTTTC``.
 - ``--cluster`` means enable clustering to find alternative structures.
 - ``--fold`` means enable secondary structure prediction.
+- ``-q 0.95`` sets the 95th percentile of the mutation rates to 1 and scales the
+  rest of the data accordingly (required if using ``--fold``).
 - ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
   (i.e. mutation-free) sequence for the RNA.
 - ``out/dms-pool/relate`` means search inside ``out/dms-pool/relate`` for data
