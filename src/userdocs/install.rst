@@ -219,8 +219,8 @@ installed.
 Appendix 2: Install SEISMIC-RNA without Conda
 ================================================================================
 
-Option A: Install SEISMIC-RNA from the Python Package Index
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Option 2A: Install SEISMIC-RNA from the Python Package Index
+--------------------------------------------------------------------------------
 
 We recommend installing SEISMIC-RNA from the Python Package Index, which will
 download the latest stable version that has been released.
@@ -228,8 +228,8 @@ In a terminal, type this command to install it and all its Python dependencies::
 
     pip install seismic-rna
 
-Option B: Install SEISMIC-RNA from GitHub
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Option 2B: Install SEISMIC-RNA from GitHub
+--------------------------------------------------------------------------------
 
 We do *not* recommend installing from GitHub unless you need the latest source
 code (most users do not), which may be unstable or contain significant bugs.
@@ -294,7 +294,7 @@ SEISMIC-RNA comes with hundreds of tests to verify that it is working properly
 on your system.
 We recommend running the tests each time you install or update SEISMIC-RNA.
 
-Run SEISMIC-RNA's testing suite
+Step 1: Run SEISMIC-RNA's testing suite
 --------------------------------------------------------------------------------
 
 To run all the tests, type this::
@@ -312,7 +312,7 @@ fail, you can use double-verbose mode::
 
     seismic +test -vv
 
-Interpret the test results
+Step 2: Interpret the test results
 --------------------------------------------------------------------------------
 
 Regardless of the verbosity, if all tests succeed, then it will print a message
