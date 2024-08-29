@@ -132,7 +132,12 @@ class RelateBatch(SectionMutsBatch, AllReadBatch):
 
     @property
     def read_weights(self):
-        return None
+        read_weights = None
+        if self.masked_reads_bool.any():
+            read_weights = np.ones(self.num_reads)
+            read_weights[self.masked_reads_bool] = 0
+            read_weights = pd.DataFrame(read_weights)
+        return read_weights
 
 ########################################################################
 #                                                                      #

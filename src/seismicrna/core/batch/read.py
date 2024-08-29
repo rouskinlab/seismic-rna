@@ -42,6 +42,11 @@ class ReadBatch(ABC):
         """ Map each read number to its index in self.read_nums. """
 
     @cached_property
+    @abstractmethod
+    def masked_read_nums(self) -> np.ndarray:
+        """ Read numbers to mask """
+
+    @cached_property
     def batch_read_index(self):
         """ MultiIndex of the batch number and read numbers. """
         return pd.MultiIndex.from_arrays(
@@ -49,6 +54,13 @@ class ReadBatch(ABC):
                              get_length(self.read_nums, "read_nums")),
              self.read_nums],
             names=RB_INDEX_NAMES)
+
+    @property
+    def masked_reads_bool(self):
+        masked_reads_bool = np.zeros_like(self.read_nums, dtype=bool)
+        if self.masked_read_nums is not None:
+            masked_reads_bool[self.read_indexes[self.masked_read_nums]] = 1
+        return masked_reads_bool
 
     def __str__(self):
         return (f"{type(self).__name__} {self.batch} with "

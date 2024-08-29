@@ -16,6 +16,9 @@ CLUST_NAME = "Cluster"
 AVERAGE_PREFIX = "average"
 CLUSTER_PREFIX = "cluster"
 
+# Header selection keys
+K_CLUST_KEY = "k_clust_list"
+
 
 def validate_k_clust(k: int, clust: int):
     """ Validate a pair of k and cluster numbers.
@@ -270,6 +273,23 @@ class Header(ABC):
         """ Select and return items from the header as an Index. """
         index = self.index
         selected = np.ones(index.size, dtype=bool)
+        # Handle combinations of order and clust specified in a list of tuples.
+        if value := kwargs.pop(K_CLUST_KEY, None):
+            assert isinstance(value, list),\
+            f"{K_CLUST_KEY} must be a list of tuples."
+            k_name = self.levels().get('k')
+            clust_name = self.levels().get('clust')
+            combo_selected = np.zeros(index.size, dtype=bool)
+            for k, clust in value:
+                # Find rows that match each specified combination.
+                k_match = index.get_level_values(k_name) == k
+                clust_match = index.get_level_values(clust_name) == clust
+                combo_selected |= (k_match & clust_match)
+            if np.all(selected):
+                selected &= combo_selected
+            else:
+                selected |= combo_selected
+        # Handle relationship selection.
         for key, name in self.levels().items():
             if value := kwargs.pop(key, None):
                 level_values = index.get_level_values(name)

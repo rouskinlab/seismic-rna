@@ -2,6 +2,7 @@ from functools import cached_property
 from logging import getLogger
 
 import numpy as np
+import pandas as pd
 
 from ..core.array import get_length
 from ..core.batch import (SectionMutsBatch,
@@ -35,7 +36,12 @@ class MaskMutsBatch(MaskReadBatch, SectionMutsBatch, PartialMutsBatch):
 
     @property
     def read_weights(self):
-        return None
+        read_weights = None
+        if self.masked_reads_bool.any():
+            read_weights = np.ones(self.num_reads)
+            read_weights[self.masked_reads_bool] = 0
+            read_weights = pd.DataFrame(read_weights)
+        return read_weights
 
 
 def apply_mask(batch: SectionMutsBatch,
