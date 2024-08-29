@@ -43,7 +43,7 @@ from ..table.load import (find_pos_tables,
 logger = getLogger(__name__)
 
 # Define actions.
-ACTION_REL = "related"
+ACTION_REL = "all"
 ACTION_MASK = "masked"
 ACTION_CLUST = "clustered"
 
@@ -352,7 +352,8 @@ class GraphBase(ABC):
         """ Update the figure's layout. """
         figure.update_layout(title=self.title,
                              plot_bgcolor="#ffffff",
-                             paper_bgcolor="#ffffff")
+                             paper_bgcolor="#ffffff",
+                             showlegend=True)
         figure.update_xaxes(linewidth=1,
                             linecolor="#000000",
                             autorange=True)
