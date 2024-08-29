@@ -8,7 +8,6 @@ on:
     paths:
       - src/seismicrna/**
       - pyproject.toml
-      - conda/meta.yaml
       - environment.yml
       - .github/workflows/install-test.yml
 

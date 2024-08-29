@@ -2,11 +2,15 @@
 SEISMIC-RNA
 ########################################################################
 
+Structure Ensemble Inference by Sequencing, Mutation Identification, and
+Clustering of RNA
+
+
 .. toctree::
     :maxdepth: 1
 
     about/index
-    install
+    install/index
     tutorials/index
     manual/index
     cli

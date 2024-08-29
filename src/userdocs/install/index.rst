@@ -186,7 +186,10 @@ After updating, it is a good idea to run the tests (see :ref:`test_seismicrna`).
 Appendix 1: Install the dependencies of SEISMIC-RNA
 ================================================================================
 
-SEISMIC-RNA has four dependencies software that are not available from pip.
+Although most dependencies of SEISMIC-RNA are available from pip, four are not:
+
+.. image:: dependencies.png
+
 The easiest way to install them is with Conda, using the following commands:
 
 ============= =========================================================
