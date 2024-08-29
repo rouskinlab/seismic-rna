@@ -7,6 +7,10 @@ on:
       - main
     paths:
       - src/seismicrna/**
+      - pyproject.toml
+      - conda/meta.yaml
+      - environment.yml
+      - .github/workflows/install-test.yml
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:

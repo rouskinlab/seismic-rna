@@ -121,14 +121,13 @@ def list_nonpip_dependencies():
             "fastqc >=0.12.1",
             "rnastructure >=6.4",
             "samtools >=1.20",
-            "matplotlib-base >=3.9",
             "brotli-python >=1.0",
             "python-kaleido >=0.2.1"]
 
 
 def supercede_pip_dependencies():
     """ Dependencies with pip that should be superceded by Conda. """
-    return {"matplotlib", "brotli", "kaleido"}
+    return {"brotli", "kaleido"}
 
 
 def list_conda_dependencies():

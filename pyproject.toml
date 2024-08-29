@@ -25,7 +25,6 @@ dependencies = [
     "cutadapt >=4.8",
     "fastqsplitter >=1.2",
     "kaleido >=0.2.1",
-    "matplotlib >=3.9",
     "numpy >=1.26,<1.27",
     "numba >=0.60",
     "pandas >=2.2",
