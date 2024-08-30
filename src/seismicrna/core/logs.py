@@ -65,7 +65,7 @@ class ColorFormatter(logging.Formatter):
     # done
     ansi_codes = {
         logging.DEBUG: AnsiCode.fmt_color(244),
-        logging.INFO: AnsiCode.fmt_color(33),
+        logging.INFO: AnsiCode.fmt_color(75),
         logging.WARNING: AnsiCode.fmt_color(214),
         logging.ERROR: AnsiCode.fmt_color(160),
         logging.CRITICAL: "".join([AnsiCode.fmt_color(201),
