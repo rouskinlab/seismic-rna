@@ -9,7 +9,6 @@ Central manager of logging.
 import logging
 from collections import namedtuple
 from functools import cache, wraps
-from itertools import chain
 from typing import Callable, Optional
 
 MAX_VERBOSE = 2
@@ -28,54 +27,58 @@ DEFAULT_RAISE = False
 
 class AnsiCode(object):
     """ Format text with ANSI codes. """
-    END = 0
+    # Control codes.
+    START = "\033["  # Indicate the start of an ANSI format code.
+    END = "m"  # Indicate the end of an ANSI format code.
+    RESET = 0  # Reset any existing formatting.
+    # Format codes.
     BOLD = 1
-    ULINE = 4
-    RED = 91
-    GREEN = 92
-    YELLOW = 93
-    BLUE = 94
-    PURPLE = 95
-    CYAN = 96
-    CODES = END, BOLD, ULINE, RED, GREEN, YELLOW, BLUE, PURPLE, CYAN
+
+    @classmethod
+    @cache
+    def fmt_color(cls, color: int):
+        """ Make a format string for one 256-color code. """
+        if not 0 <= color < 256:
+            raise ValueError(f"Invalid ANSI 256-color code: {color}")
+        # 38 means set the foreground color (i.e. of the text itself).
+        # 5 means use 256-color mode.
+        # The next number is the color in 256-color mode.
+        return f"{cls.START}38;5;{color}{cls.END}"
 
     @classmethod
     @cache
     def fmt(cls, code: int):
-        """ Format one color code into text. """
-        if code not in cls.CODES:
-            raise ValueError(f"Invalid ANSI color code: {code}")
-        return f"\033[{code}m"
+        """ Make a format string for one ANSI code. """
+        return f"{cls.START}{code}{cls.END}"
 
     @classmethod
-    def end(cls):
+    @cache
+    def reset(cls):
         """ Convenience function to end formatting. """
-        return cls.fmt(cls.END)
-
-    @classmethod
-    def wrap(cls, text: str, *codes: int, end: bool = True):
-        """ Wrap text with ANSI color code(s). """
-        return "".join(chain(map(cls.fmt, codes),
-                             [text, cls.end() if end else ""]))
+        return cls.fmt(cls.RESET)
 
 
 class ColorFormatter(logging.Formatter):
+    # The color of each code can be visualized in a terminal as follows:
+    # for i in {0..255}; do
+    #     echo -ne "\033[38;5;${i}m  ${i} "
+    # done
     ansi_codes = {
-        logging.DEBUG: (AnsiCode.BLUE,),
-        logging.INFO: (AnsiCode.CYAN,),
-        logging.WARNING: (AnsiCode.YELLOW,),
-        logging.ERROR: (AnsiCode.RED,),
-        logging.CRITICAL: (AnsiCode.PURPLE, AnsiCode.BOLD),
+        logging.DEBUG: AnsiCode.fmt_color(244),
+        logging.INFO: AnsiCode.fmt_color(33),
+        logging.WARNING: AnsiCode.fmt_color(214),
+        logging.ERROR: AnsiCode.fmt_color(160),
+        logging.CRITICAL: "".join([AnsiCode.fmt_color(201),
+                                   AnsiCode.fmt(AnsiCode.BOLD)])
     }
 
     def format(self, record: logging.LogRecord) -> str:
         """ Log the message in color by adding an ANSI color escape code
         to the beginning and a color stopping code to the end. """
         # Get the ANSI format codes based on the record's logging level.
+        fmt = self.ansi_codes.get(record.levelno, AnsiCode.reset())
         # Wrap the formatted text with ANSI format codes.
-        return AnsiCode.wrap(super().format(record),
-                             *self.ansi_codes.get(record.levelno,
-                                                  (AnsiCode.END,)))
+        return "".join([fmt, super().format(record), AnsiCode.reset()])
 
 
 class RaisableLogger(logging.Logger):
