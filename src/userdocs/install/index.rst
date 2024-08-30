@@ -28,7 +28,7 @@ Very Heavy             ≥100      ≥10  ≥32      ≥64         ≥128
 ========== ================ ======== ==== ======== ============
 
 
-Option 1: Quick installation (if you already have Conda and know how to use it)
+Option 1: Install with Conda, if you already know how to use it
 ================================================================================
 
 SEISMIC-RNA is available from the Bioconda_ channel and compatible with Python
@@ -46,8 +46,11 @@ After you have installed SEISMIC-RNA, :ref:`set_datapath` and (optionally)
 :ref:`test_seismicrna`.
 
 
-Option 2: Step-by-step installation with Conda
+Option 2: Install with Conda, if you don't know how to use it
 ================================================================================
+
+Conda provides the easiest way to install SEISMIC-RNA.
+These steps explain how to install Conda, SEISMIC-RNA, and its dependencies.
 
 Step 1: Install Conda
 --------------------------------------------------------------------------------
@@ -113,7 +116,7 @@ After you have installed SEISMIC-RNA, :ref:`set_datapath` and (optionally)
 
 .. _conda_install_fails:
 
-Option 3: Installation with Conda if ``conda install seismic-rna`` fails
+Option 3: Install with Conda, if ``conda install seismic-rna`` fails
 ================================================================================
 
 Conda may fail to install SEISMIC-RNA if some dependencies are not compatible
@@ -125,7 +128,7 @@ After you have installed SEISMIC-RNA, :ref:`set_datapath` and (optionally)
 :ref:`test_seismicrna`.
 
 
-Option 4: Installation without Conda
+Option 4: Install without Conda
 ================================================================================
 
 Although Conda is the easiest means to install SEISMIC-RNA, it is not necessary.
@@ -137,17 +140,20 @@ following commands, one by one::
     python --version
     pip --version
 
-After installing Python and pip, :ref:`install_dependencies` and then
+After installing Python and pip, follow :ref:`install_dependencies` and then
 :ref:`install_seismicrna_without_conda`.
 
-After you have installed SEISMIC-RNA, :ref:`set_datapath` and (optionally)
+After you have installed SEISMIC-RNA, follow :ref:`set_datapath` and optionally
 :ref:`test_seismicrna`.
 
 
 .. _install_update:
 
-Option 5: Updating to another version (if you already installed SEISMIC-RNA)
+Option 5: Update to another version of SEISMIC-RNA
 ================================================================================
+
+If you have already installed SEISMIC-RNA, you can install a different version
+easily.
 
 Option 5A: Update SEISMIC-RNA to the latest stable version
 --------------------------------------------------------------------------------
@@ -183,7 +189,7 @@ After updating, it is a good idea to run the tests (see :ref:`test_seismicrna`).
 
 .. _install_dependencies:
 
-Appendix 1: Install the dependencies of SEISMIC-RNA
+Appendix 1: Install the dependencies of SEISMIC-RNA with or without Conda
 ================================================================================
 
 Although most dependencies of SEISMIC-RNA are available from pip, four are not:
@@ -203,18 +209,27 @@ Samtools_     ``conda install -c bioconda -c conda-forge samtools``
 
 If a package fails to install using Conda, or if you are not using Conda, then
 follow its link above to find the instructions for installing it manually.
+
+.. note::
+    If you use macOS and install software without using Conda, then you will
+    need to manually approve each piece of software before you can run it.
+    (This limitation is a safety feature of macOS intended to reduce the risk of
+    running malware accidentally.)
+    To approve the software, type ``which [program]`` (replacing ``[program]``
+    from an item on the list below) to find the path of the executable.
+    Then in Finder, open the directory that contains the executable.
+
+
 Confirm that each dependency is installed by running each of these commands,
 one at a time::
 
-    bowtie2 --version
-    fastqc --version
-    ct2dot --version  # ct2dot is part of RNAstructure
-    samtools --version
+    which bowtie2
+    which fastqc
+    which ct2dot  # ct2dot is part of RNAstructure
+    which samtools
 
-If the dependency is installed, then it should print out the version number
-(and possibly additional information).
-If it says something like ``command not found``, then the dependency is not
-installed.
+If the dependency is installed, then it should print out the path to it.
+If it says something like ``not found``, then the dependency is not installed.
 
 
 .. _install_seismicrna_without_conda:
