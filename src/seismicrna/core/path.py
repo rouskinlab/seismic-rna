@@ -62,9 +62,6 @@ INT_PATTERN = f"([{INT_CHARS}]+)"
 RE_PATTERNS = {str: STR_PATTERN, int: INT_PATTERN, pathlib.Path: PATH_PATTERN}
 
 # Directories for commands
-
-QC_INIT_DIR = "qc-initial"
-QC_TRIM_DIR = "qc-trimmed"
 CMD_ALIGN_DIR = "align"
 CMD_REL_DIR = "relate"
 CMD_MASK_DIR = "mask"
@@ -288,9 +285,7 @@ class Field(object):
 # Fields
 TopField = Field(pathlib.Path)
 NameField = Field(str)
-CmdField = Field(str, [QC_INIT_DIR,
-                       QC_TRIM_DIR,
-                       CMD_ALIGN_DIR,
+CmdField = Field(str, [CMD_ALIGN_DIR,
                        CMD_REL_DIR,
                        CMD_MASK_DIR,
                        CMD_CLUST_DIR,

@@ -241,7 +241,8 @@ opt_dmfastqx = Option(
     help="Demultiplexed FASTQ files of mate 1 and mate 2 reads"
 )
 
-# Adapter trimming options with Cutadapt
+# Adapter trimming options with Fastp
+
 opt_fastp = Option(
     ("--fastp/--no-fastp",),
     type=bool,

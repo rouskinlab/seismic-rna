@@ -55,7 +55,7 @@ def get_num_parallel(n_tasks: int,
             # multiple tasks run in parallel and each run with multiple
             # processes. Only the alignment module can simultaneously
             # run multiple tasks and multiple processes for each task
-            # because its two most computation-heavy processes (cutadapt
+            # because its two most computation-heavy processes (fastp
             # and bowtie2) come with their own parallelization abilities
             # that can work independently of Python's multiprocessing
             # module. However, the other modules (e.g. vectoring) are

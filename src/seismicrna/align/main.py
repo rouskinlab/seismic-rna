@@ -57,7 +57,8 @@ from ..core.arg import (CMD_ALIGN,
                         opt_sep_strands,
                         opt_minus_label,
                         opt_f1r2_plus,
-                        optional_path)
+                        optional_path,
+                        extra_defaults)
 from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
                            FASTP_CMD,
@@ -68,7 +69,10 @@ from ..core.run import run_func
 logger = getLogger(__name__)
 
 
-@run_func(logger.critical, with_tmp=True, pass_keep_tmp=True)
+@run_func(logger.critical,
+          with_tmp=True,
+          pass_keep_tmp=True,
+          extra_defaults=extra_defaults)
 def run(fasta: str, *,
         # Inputs
         fastqz: tuple[str, ...],
@@ -207,7 +211,7 @@ params = [
     opt_out_dir,
     opt_tmp_pfx,
     opt_keep_tmp,
-    # Cutadapt
+    # Fastp
     opt_fastp,
     opt_fastp_5,
     opt_fastp_3,

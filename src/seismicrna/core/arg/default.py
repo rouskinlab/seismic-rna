@@ -13,7 +13,8 @@ cli_defaults = {param.name: param.default
                 for param in (cli_args | cli_opts).values()
                 if param.default is not None}
 
-extra_defaults = dict(mask_sections_file=None,
+extra_defaults = dict(fastp_adapter_fasta=None,
+                      mask_sections_file=None,
                       mask_pos_file=None,
                       join_clusts=None,
                       fold_sections_file=None,
