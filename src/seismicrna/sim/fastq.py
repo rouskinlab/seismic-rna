@@ -11,8 +11,7 @@ from numba import jit
 
 from .relate import get_param_dir_fields, load_param_dir
 from ..core import path
-from ..core.arg import (ADAPTER_SEQ_ILLUMINA_3P,
-                        arg_input_path,
+from ..core.arg import (arg_input_path,
                         opt_param_dir,
                         opt_profile_name,
                         opt_sample,
@@ -52,6 +51,10 @@ rng = np.random.default_rng()
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
+ILLUMINA_TRUSEQ_ADAPTER_R1 = "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA"
+ILLUMINA_TRUSEQ_ADAPTER_R2 = "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT"
+ILLUMINA_ADAPTERS = ILLUMINA_TRUSEQ_ADAPTER_R1, ILLUMINA_TRUSEQ_ADAPTER_R2
+
 
 @jit()
 def _complement(base: str):
@@ -69,6 +72,7 @@ def _complement(base: str):
 @jit()
 def _generate_fastq_read_qual(rels: np.ndarray,
                               refseq: str,
+                              adapter: str,
                               read_length: int,
                               revcomp: bool,
                               hi_qual: str,
@@ -125,9 +129,9 @@ def _generate_fastq_read_qual(rels: np.ndarray,
         ref_pos += ref_inc
     # Add the adapter to the end of the read.
     adapter_pos = 0
-    adapter_length = len(ADAPTER_SEQ_ILLUMINA_3P)
+    adapter_length = len(adapter)
     while read_pos < read_length and adapter_pos < adapter_length:
-        read[read_pos] = ADAPTER_SEQ_ILLUMINA_3P[adapter_pos]
+        read[read_pos] = adapter[adapter_pos]
         read_pos += 1
         adapter_pos += 1
     return "".join(read), "".join(qual)
@@ -136,6 +140,7 @@ def _generate_fastq_read_qual(rels: np.ndarray,
 def generate_fastq_record(name: str,
                           rels: np.ndarray,
                           refseq: str,
+                          adapter: str,
                           read_length: int,
                           reverse: bool = False,
                           hi_qual: str = HI_QUAL,
@@ -148,6 +153,7 @@ def generate_fastq_record(name: str,
         raise ValueError(f"rels contains {NOCOV}: {rels}")
     read, qual = _generate_fastq_read_qual(rels,
                                            refseq,
+                                           adapter,
                                            read_length,
                                            reverse,
                                            hi_qual,
@@ -216,15 +222,21 @@ def generate_fastq(top: Path,
                                                          nbatch.names,
                                                          reverse,
                                                          strict=True):
-                    for i, (fq, end5, end3) in enumerate(zip(fastq_files,
-                                                             end5s,
-                                                             end3s,
-                                                             strict=True)):
-                        record = generate_fastq_record(name,
-                                                       rels[end5 - 1: end3],
-                                                       seq_str[end5 - 1: end3],
-                                                       read_length,
-                                                       bool((rev + i) % 2))
+                    for i, (fq, end5, end3, adapter) in enumerate(zip(
+                            fastq_files,
+                            end5s,
+                            end3s,
+                            ILLUMINA_ADAPTERS,
+                            strict=True
+                    )):
+                        record = generate_fastq_record(
+                            name,
+                            rels[end5 - 1: end3],
+                            seq_str[end5 - 1: end3],
+                            adapter,
+                            read_length,
+                            bool((rev + i) % 2)
+                        )
                         fq.write(record.encode() if fq_gzip else record)
         finally:
             # Close the FASTQ files.

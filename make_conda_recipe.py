@@ -118,22 +118,22 @@ def list_nonpip_dependencies():
     """ List the dependencies not in the pyproject.toml file. """
     return ["python >=3.10",
             "bowtie2 >=2.5.4",
-            "fastqc >=0.12.1",
+            "fastp >=0.23.0",
             "rnastructure >=6.4",
             "samtools >=1.20",
             "brotli-python >=1.0",
             "python-kaleido >=0.2.1"]
 
 
-def supercede_pip_dependencies():
-    """ Dependencies with pip that should be superceded by Conda. """
+def ignore_pip_dependencies():
+    """ Dependencies with pip that should be ignored by Conda. """
     return {"brotli", "kaleido"}
 
 
 def list_conda_dependencies():
     """ List the dependencies to put in the meta.yaml file. """
     dependencies = list_nonpip_dependencies()
-    ignore_pip = supercede_pip_dependencies()
+    ignore_pip = ignore_pip_dependencies()
     for dependency in list_pip_dependencies():
         name, version = dependency.split()
         if name not in ignore_pip:
@@ -259,7 +259,7 @@ def write_build_script():
         "# DO NOT RUN THIS SCRIPT YOURSELF!",
         "# It should only be run by conda build.",
         "",
-        "set -euxo pipefail",
+        "set -eux -o pipefail",
         "",
         "$PYTHON -m pip install --no-dependencies $PWD"
     ])

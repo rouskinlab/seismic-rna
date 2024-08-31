@@ -18,13 +18,15 @@ if (NUM_CPUS := os.cpu_count()) is None:
 
 DEFAULT_MIN_PHRED = 25
 
+TRIM_POLY_G_AUTO = "auto"
+TRIM_POLY_G_NO = "no"
+TRIM_POLY_G_YES = "yes"
+TRIM_POLY_G = TRIM_POLY_G_YES, TRIM_POLY_G_NO, TRIM_POLY_G_AUTO
+
 BOWTIE2_ORIENT_FR = "fr"
 BOWTIE2_ORIENT_RF = "rf"
 BOWTIE2_ORIENT_FF = "ff"
 BOWTIE2_ORIENT = BOWTIE2_ORIENT_FR, BOWTIE2_ORIENT_RF, BOWTIE2_ORIENT_FF
-
-ADAPTER_SEQ_ILLUMINA_3P = "AGATCGGAAGAGC"
-ADAPTER_SEQ_ILLUMINA_5P = "GCTCTTCCGATCT"
 
 NO_GROUP = "c"
 GROUP_BY_K = "k"
@@ -151,20 +153,6 @@ opt_min_phred = Option(
     help="Mark base calls with Phred scores lower than this threshold as ambiguous"
 )
 
-opt_fastqc = Option(
-    ("--fastqc/--no-fastqc",),
-    type=bool,
-    default=True,
-    help="Run FastQC on the initial and trimmed FASTQ files"
-)
-
-opt_qc_extract = Option(
-    ("--qc-extract/--qc-no-extract",),
-    type=bool,
-    default=False,
-    help="Unzip FastQC report files"
-)
-
 # Demultiplexing options
 
 opt_demultiplex = Option(
@@ -254,106 +242,108 @@ opt_dmfastqx = Option(
 )
 
 # Adapter trimming options with Cutadapt
-opt_cutadapt = Option(
-    ("--cut/--no-cut",),
+opt_fastp = Option(
+    ("--fastp/--no-fastp",),
     type=bool,
     default=True,
-    help="Use Cutadapt to trim reads before alignment"
+    help="Use fastp to QC, filter, and trim reads before alignment"
 )
 
-opt_cut_q1 = Option(
-    ("--cut-q1",),
-    type=int,
-    default=DEFAULT_MIN_PHRED,
-    help="Trim base calls below this Phred score from read 1"
+opt_fastp_5 = Option(
+    ("--fastp-5/--no-fastp-5",),
+    type=bool,
+    default=False,
+    help="Trim low-quality bases from the 5' ends of reads"
 )
 
-opt_cut_q2 = Option(
-    ("--cut-q2",),
-    type=int,
-    default=DEFAULT_MIN_PHRED,
-    help="Trim base calls below this Phred score from read 2"
+opt_fastp_3 = Option(
+    ("--fastp-3/--no-fastp-3",),
+    type=bool,
+    default=True,
+    help="Trim low-quality bases from the 3' ends of reads"
 )
 
-opt_cut_g1 = Option(
-    ("--cut-g1",),
-    type=str,
-    multiple=True,
-    default=(ADAPTER_SEQ_ILLUMINA_5P,),
-    help="Trim this 5' adapter from read 1"
-)
-
-opt_cut_a1 = Option(
-    ("--cut-a1",),
-    type=str,
-    multiple=True,
-    default=(ADAPTER_SEQ_ILLUMINA_3P,),
-    help="Trim this 3' adapter from read 1"
-)
-
-opt_cut_g2 = Option(
-    ("--cut-g2",),
-    type=str,
-    multiple=True,
-    default=(ADAPTER_SEQ_ILLUMINA_5P,),
-    help="Trim this 5' adapter from read 2"
-)
-
-opt_cut_a2 = Option(
-    ("--cut-a2",),
-    type=str,
-    multiple=True,
-    default=(ADAPTER_SEQ_ILLUMINA_3P,),
-    help="Trim this 3' adapter from read 2"
-)
-
-opt_cut_o = Option(
-    ("--cut-O",),
+opt_fastp_w = Option(
+    ("--fastp-w",),
     type=int,
     default=6,
-    help="Require at least this many bases of an adapter to trim it"
+    help="Use this window size (nt) for --fastp-5 and --fastp-3"
 )
 
-opt_cut_e = Option(
-    ("--cut-e",),
-    type=float,
-    default=0.1,
-    help="Tolerate at most this fraction of errors in adapter sequences"
+opt_fastp_m = Option(
+    ("--fastp-m",),
+    type=int,
+    default=opt_min_phred.default,
+    help="Use this mean quality threshold for --fastp-5 and --fastp-3"
 )
 
-opt_cut_indels = Option(
-    ("--cut-indels/--cut-no-indels",),
+opt_fastp_adapter_trimming = Option(
+    ("--fastp-adapter-trimming/--no-fastp-adapter-trimming",),
     type=bool,
     default=True,
-    help="Allow errors in adapter sequences to be insertions and deletions"
+    help="Trim adapter sequences from the 3' ends of reads"
 )
 
-opt_cut_nextseq = Option(
-    ("--cut-nextseq/--cut-no-nextseq",),
+opt_fastp_adapter_1 = Option(
+    ("--fastp-adapter-1",),
+    type=str,
+    default="",
+    help="Trim this adapter sequence from the 3' ends of read 1s"
+)
+
+opt_fastp_adapter_2 = Option(
+    ("--fastp-adapter-2",),
+    type=str,
+    default="",
+    help="Trim this adapter sequence from the 3' ends of read 2s"
+)
+
+opt_fastp_adapter_fasta = Option(
+    ("--fastp-adapter-fasta",),
+    type=Path(exists=True, dir_okay=False),
+    help="Trim adapter sequences in this FASTA file from the 3' ends of reads"
+)
+
+opt_fastp_detect_adapter_for_pe = Option(
+    ("--fastp-detect-adapter-for-pe/--no-fastp-detect-adapter-for-pe",),
+    type=bool,
+    default=True,
+    help="Automatically detect the adapter sequences for paired-end reads"
+)
+
+opt_fastp_poly_g = Option(
+    ("--fastp-poly-g",),
+    type=Choice(TRIM_POLY_G, case_sensitive=False),
+    default=TRIM_POLY_G_AUTO,
+    help="Trim poly(G) tails (two-color sequencing artifacts) from the 3' end"
+)
+
+opt_fastp_poly_g_min_len = Option(
+    ("--fastp-poly-g-min-len",),
+    type=int,
+    default=10,
+    help="Minimum number of Gs to consider a poly(G) tail for --fastp-poly-g"
+)
+
+opt_fastp_poly_x = Option(
+    ("--fastp-poly-x/--no-fastp-poly-x",),
     type=bool,
     default=False,
-    help="Trim high-quality Gs from the 3' end (for Illumina NextSeq and iSeq)"
+    help="Trim poly(X) tails (i.e. of any nucleotide) from the 3' end"
 )
 
-opt_cut_discard_trimmed = Option(
-    ("--cut-discard-trimmed/--cut-keep-trimmed",),
-    type=bool,
-    default=False,
-    help="Discard reads in which an adapters were found"
+opt_fastp_poly_x_min_len = Option(
+    ("--fastp-poly-x-min-len",),
+    type=int,
+    default=10,
+    help="Minimum number of bases to consider a poly(X) tail for --fastp-poly-x"
 )
 
-opt_cut_discard_untrimmed = Option(
-    ("--cut-discard-untrimmed/--cut-keep-untrimmed",),
-    type=bool,
-    default=False,
-    help="Discard reads in which no adapters were found"
-)
-
-opt_cut_m = Option(
-    ("--cut-m",),
+opt_fastp_min_length = Option(
+    ("--fastp-min-length",),
     type=int,
     default=20,
-    help="Discard reads shorter than this length after trimming"
+    help="Discard reads shorter than this length"
 )
 
 # Alignment options with Bowtie2
@@ -362,7 +352,7 @@ opt_bt2_local = Option(
     ("--bt2-local/--bt2-end-to-end",),
     type=bool,
     default=True,
-    help="Run Bowtie2 in local mode rather than end-to-end mode"
+    help="Align reads in local mode rather than end-to-end mode"
 )
 
 opt_bt2_discordant = Option(
@@ -569,7 +559,7 @@ opt_pool = Option(
 
 opt_mask_sections_file = Option(
     ("--mask-sections-file", "-s"),
-    type=Path(dir_okay=False),
+    type=Path(exists=True, dir_okay=False),
     help="Mask sections of references from coordinates/primers in a CSV file"
 )
 
@@ -1386,11 +1376,11 @@ def merge_params(*param_lists: list[Parameter],
     return params
 
 
-def optional_path(param: str | pathlib.Path | None):
-    if isinstance(param, pathlib.Path):
-        return param
-    if param:
-        return pathlib.Path(param)
+def optional_path(path_or_none: pathlib.Path | str | None):
+    if isinstance(path_or_none, pathlib.Path):
+        return path_or_none
+    if path_or_none:
+        return pathlib.Path(path_or_none)
     return None
 
 ########################################################################

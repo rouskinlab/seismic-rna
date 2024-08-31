@@ -4,7 +4,7 @@ from pathlib import Path
 from click import command
 
 from .demultiplex import demultiplex_run
-from ..align.fqops import FastqUnit
+from ..align.fqunit import FastqUnit
 from ..core.arg import (CMD_DEMULT,
                         opt_barcode_end,
                         opt_barcode_start,

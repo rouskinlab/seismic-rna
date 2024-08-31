@@ -14,21 +14,21 @@ import numpy as np
 from click import Option
 
 from .arg import (opt_phred_enc,
-                  opt_fastqc,
-                  opt_cutadapt,
-                  opt_cut_q1,
-                  opt_cut_q2,
-                  opt_cut_g1,
-                  opt_cut_g2,
-                  opt_cut_a1,
-                  opt_cut_a2,
-                  opt_cut_discard_trimmed,
-                  opt_cut_discard_untrimmed,
-                  opt_cut_o,
-                  opt_cut_e,
-                  opt_cut_indels,
-                  opt_cut_nextseq,
-                  opt_cut_m,
+                  opt_fastp,
+                  opt_fastp_5,
+                  opt_fastp_3,
+                  opt_fastp_w,
+                  opt_fastp_m,
+                  opt_fastp_poly_g_min_len,
+                  opt_fastp_poly_x,
+                  opt_fastp_poly_x_min_len,
+                  opt_fastp_adapter_trimming,
+                  opt_fastp_adapter_1,
+                  opt_fastp_adapter_2,
+                  opt_fastp_adapter_fasta,
+                  opt_fastp_detect_adapter_for_pe,
+                  opt_fastp_poly_g,
+                  opt_fastp_min_length,
                   opt_bt2_d,
                   opt_bt2_r,
                   opt_bt2_dpad,
@@ -73,7 +73,7 @@ from .arg import (opt_phred_enc,
                   opt_max_fmut_read,
                   opt_min_clusters,
                   opt_max_clusters,
-opt_jackpot,
+                  opt_jackpot,
                   opt_jackpot_conf_level,
                   opt_max_jackpot_quotient,
                   opt_max_pearson_run,
@@ -291,21 +291,21 @@ TimeTakenF = Field("taken",
 IsDemultF = Field("demultiplexed", "Use demultiplexed mode", bool)
 IsPairedEndF = Field("paired_end", "Use paired-end mode", bool)
 PhredEncF = OptionField(opt_phred_enc)
-UseFastqcF = OptionField(opt_fastqc)
-UseCutadaptF = OptionField(opt_cutadapt)
-CutadaptQ1 = OptionField(opt_cut_q1)
-CutadaptQ2 = OptionField(opt_cut_q2)
-CutadaptG1 = OptionField(opt_cut_g1)
-CutadaptA1 = OptionField(opt_cut_a1)
-CutadaptG2 = OptionField(opt_cut_g2)
-CutadaptA2 = OptionField(opt_cut_a2)
-CutadaptOverlap = OptionField(opt_cut_o)
-CutadaptErrors = OptionField(opt_cut_e)
-CutadaptIndels = OptionField(opt_cut_indels)
-CutadaptNextSeq = OptionField(opt_cut_nextseq)
-CutadaptNoTrimmed = OptionField(opt_cut_discard_trimmed)
-CutadaptNoUntrimmed = OptionField(opt_cut_discard_untrimmed)
-CutadaptMinLength = OptionField(opt_cut_m)
+UseFastpF = OptionField(opt_fastp)
+Fastp5F = OptionField(opt_fastp_5)
+Fastp3F = OptionField(opt_fastp_3)
+FastpWF = OptionField(opt_fastp_w)
+FastpMF = OptionField(opt_fastp_m)
+FastpPolyGF = OptionField(opt_fastp_poly_g)
+FastpPolyGMinLenF = OptionField(opt_fastp_poly_g_min_len)
+FastpPolyXF = OptionField(opt_fastp_poly_x)
+FastpPolyXMinLenF = OptionField(opt_fastp_poly_x_min_len)
+FastpAdapterTrimmingF = OptionField(opt_fastp_adapter_trimming)
+FastpAdapter1F = OptionField(opt_fastp_adapter_1)
+FastpAdapter2F = OptionField(opt_fastp_adapter_2)
+FastpAdapterFastaF = OptionField(opt_fastp_adapter_fasta)
+FastpDetectAdapterForPEF = OptionField(opt_fastp_detect_adapter_for_pe)
+FastpMinLengthF = OptionField(opt_fastp_min_length)
 Bowtie2Local = OptionField(opt_bt2_local)
 Bowtie2Discord = OptionField(opt_bt2_discordant)
 Bowtie2Dovetail = OptionField(opt_bt2_dovetail)

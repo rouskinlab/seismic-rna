@@ -202,11 +202,6 @@ class FastqUnit(object):
         return fields
 
     @property
-    def cutadapt_input_args(self):
-        """ Return input file arguments for Cutadapt. """
-        return tuple(self.paths.values())
-
-    @property
     def bowtie2_inputs(self):
         """ Return input file arguments for Bowtie2. """
         return tuple(chain(*[(self.BOWTIE2_FLAGS[key], fq)

@@ -4,9 +4,10 @@ from pathlib import Path
 from shutil import rmtree
 from typing import Iterable
 
-from .fqops import FastqUnit, run_fastqc, run_cutadapt
+from .fqunit import FastqUnit
 from .report import AlignRefReport, AlignSampleReport
-from .xamops import (run_bowtie2_build,
+from .xamops import (FASTP_PHRED_OUT,
+                     run_bowtie2_build,
                      get_bowtie2_index_paths,
                      run_export,
                      run_flags,
@@ -386,22 +387,23 @@ def fq_pipeline(fq_inp: FastqUnit,
                 out_dir: Path,
                 tmp_dir: Path,
                 keep_tmp: bool,
-                fastqc: bool,
-                qc_extract: bool,
-                cut: bool,
-                cut_q1: int,
-                cut_q2: int,
-                cut_g1: str,
-                cut_a1: str,
-                cut_g2: str,
-                cut_a2: str,
-                cut_o: int,
-                cut_e: float,
-                cut_indels: bool,
-                cut_nextseq: bool,
-                cut_discard_trimmed: bool,
-                cut_discard_untrimmed: bool,
-                cut_m: int,
+
+                fastp: bool,
+                fastp_5: bool,
+                fastp_3: bool,
+                fastp_w: int,
+                fastp_m: int,
+                fastp_poly_g: str,
+                fastp_poly_g_min_len: int,
+                fastp_poly_x: bool,
+                fastp_poly_x_min_len: int,
+                fastp_adapter_trimming: bool,
+                fastp_adapter_1: str,
+                fastp_adapter_2: str,
+                fastp_adapter_fasta: Path | None,
+                fastp_detect_adapter_for_pe: bool,
+                fastp_min_length: int,
+
                 bt2_local: bool,
                 bt2_discordant: bool,
                 bt2_mixed: bool,
@@ -431,65 +433,14 @@ def fq_pipeline(fq_inp: FastqUnit,
     # Get attributes of the sample and references.
     sample = fq_inp.sample
     refset = path.parse(fasta, path.FastaSeg)[path.REF]
-    # Determine the path for FASTQC output files.
-    if fq_inp.ref is not None:
-        # If the input FASTQ files are demultiplexed, then include the
-        # name of the reference in the path of the FASTQC output files.
-        fqc_segs = path.REF_DIR_SEGS
-        fqc_vals = {path.TOP: out_dir, path.SAMP: sample, path.REF: fq_inp.ref}
-        # Use the demultiplexed version of the AlignReport.
-        report_type = AlignRefReport
-    else:
-        # Otherwise, use only the name of the sample and command.
-        fqc_segs = path.CMD_DIR_SEGS
-        fqc_vals = {path.TOP: out_dir, path.SAMP: sample}
-        # Use the non-demultiplexed version of the AlignReport.
-        report_type = AlignSampleReport
-    if fastqc:
-        # Run FASTQC on the input FASTQ files.
-        fqc_out = path.build(*fqc_segs, **fqc_vals, cmd=path.QC_INIT_DIR)
-        try:
-            run_fastqc(fq_inp, fqc_out, extract=qc_extract, n_procs=n_procs)
-        except Exception as error:
-            logger.error(f"Failed to run FASTQC on {fq_inp}: {error}")
-    if cut:
-        # Trim adapters and low-quality bases with Cutadapt.
-        fq_cut = fq_inp.to_new(path.StageSeg,
-                               top=tmp_dir,
-                               sample=sample,
-                               stage=path.STAGE_ALIGN_TRIM)
-        run_cutadapt(fq_inp,
-                     fq_cut,
-                     n_procs=n_procs,
-                     cut_q1=cut_q1,
-                     cut_q2=cut_q2,
-                     cut_g1=cut_g1,
-                     cut_a1=cut_a1,
-                     cut_g2=cut_g2,
-                     cut_a2=cut_a2,
-                     cut_o=cut_o,
-                     cut_e=cut_e,
-                     cut_indels=cut_indels,
-                     cut_nextseq=cut_nextseq,
-                     cut_discard_trimmed=cut_discard_trimmed,
-                     cut_discard_untrimmed=cut_discard_untrimmed,
-                     cut_m=cut_m)
-        if fastqc:
-            # Run FASTQC after trimming with Cutadapt.
-            fqc_out = path.build(*fqc_segs, **fqc_vals, cmd=path.QC_TRIM_DIR)
-            try:
-                run_fastqc(fq_cut, fqc_out, extract=qc_extract, n_procs=n_procs)
-            except Exception as error:
-                logger.error(f"Failed to run FASTQC on {fq_inp}: {error}")
-    else:
-        fq_cut = None
     # Create the output directory: this is necessary for FASTQ files of
     # unaligned reads to have a place to be written.
-    path.builddir(*path.CMD_DIR_SEGS,
-                  top=out_dir,
-                  sample=sample,
-                  cmd=path.CMD_ALIGN_DIR)
-    # Align the FASTQ to the reference sequence using Bowtie2.
+    align_dir = path.builddir(*path.CMD_DIR_SEGS,
+                              top=out_dir,
+                              sample=sample,
+                              cmd=path.CMD_ALIGN_DIR)
+    # Optionally trim the reads with Fastp, and then align them to the
+    # reference sequence with Bowtie2.
     xam_whole = path.buildpar(*path.XAM_STAGE_SEGS,
                               top=tmp_dir,
                               sample=sample,
@@ -497,49 +448,71 @@ def fq_pipeline(fq_inp: FastqUnit,
                               stage=path.STAGE_ALIGN_MAP,
                               ref=refset,
                               ext=path.BAM_EXT)
-    reads_align = run_xamgen(fq_inp if fq_cut is None else fq_cut,
-                             xam_whole,
-                             index_pfx=bowtie2_index,
-                             n_procs=n_procs,
-                             bt2_local=bt2_local,
-                             bt2_discordant=bt2_discordant,
-                             bt2_mixed=bt2_mixed,
-                             bt2_dovetail=bt2_dovetail,
-                             bt2_contain=bt2_contain,
-                             bt2_score_min_e2e=bt2_score_min_e2e,
-                             bt2_score_min_loc=bt2_score_min_loc,
-                             bt2_i=bt2_i,
-                             bt2_x=bt2_x,
-                             bt2_gbar=bt2_gbar,
-                             bt2_l=bt2_l,
-                             bt2_s=bt2_s,
-                             bt2_d=bt2_d,
-                             bt2_r=bt2_r,
-                             bt2_dpad=bt2_dpad,
-                             bt2_orient=bt2_orient,
-                             min_mapq=min_mapq,
-                             fq_unal=(path.build(path.SampSeg,
-                                                 path.CmdSeg,
-                                                 path.DmFastqSeg,
-                                                 top=out_dir,
-                                                 sample=sample,
-                                                 cmd=CMD_ALIGN,
-                                                 ref=(f"{fq_inp.ref}__unaligned"
-                                                      if fq_inp.ref is not None
-                                                      else "unaligned"),
-                                                 ext=path.FQ_EXTS[0])
-                                      if bt2_un
-                                      else None))
+    reads_align = run_xamgen(
+        fq_inp,
+        xam_whole,
+        fastp=fastp,
+        fastp_dir=align_dir,
+        fastp_5=fastp_5,
+        fastp_3=fastp_3,
+        fastp_w=fastp_w,
+        fastp_m=fastp_m,
+        fastp_poly_g=fastp_poly_g,
+        fastp_poly_g_min_len=fastp_poly_g_min_len,
+        fastp_poly_x=fastp_poly_x,
+        fastp_poly_x_min_len=fastp_poly_x_min_len,
+        fastp_adapter_trimming=fastp_adapter_trimming,
+        fastp_adapter_1=fastp_adapter_1,
+        fastp_adapter_2=fastp_adapter_2,
+        fastp_adapter_fasta=fastp_adapter_fasta,
+        fastp_detect_adapter_for_pe=fastp_detect_adapter_for_pe,
+        fastp_min_length=fastp_min_length,
+        index_pfx=bowtie2_index,
+        bt2_local=bt2_local,
+        bt2_discordant=bt2_discordant,
+        bt2_mixed=bt2_mixed,
+        bt2_dovetail=bt2_dovetail,
+        bt2_contain=bt2_contain,
+        bt2_score_min_e2e=bt2_score_min_e2e,
+        bt2_score_min_loc=bt2_score_min_loc,
+        bt2_i=bt2_i,
+        bt2_x=bt2_x,
+        bt2_gbar=bt2_gbar,
+        bt2_l=bt2_l,
+        bt2_s=bt2_s,
+        bt2_d=bt2_d,
+        bt2_r=bt2_r,
+        bt2_dpad=bt2_dpad,
+        bt2_orient=bt2_orient,
+        min_mapq=min_mapq,
+        fq_unal=(path.build(path.SampSeg,
+                            path.CmdSeg,
+                            path.DmFastqSeg,
+                            top=out_dir,
+                            sample=sample,
+                            cmd=CMD_ALIGN,
+                            ref=(f"{fq_inp.ref}__unaligned"
+                                 if fq_inp.ref is not None
+                                 else "unaligned"),
+                            ext=path.FQ_EXTS[0])
+                 if bt2_un
+                 else None),
+        n_procs=n_procs
+    )
     # The number of reads after trimming is defined as the number fed to
     # Bowtie 2, regardless of whether the reads were actually trimmed.
     reads_trim = reads_align.pop("reads", None)
     if reads_trim is None:
         raise RuntimeError("Failed to parse number of reads input to Bowtie2 "
                            f"(perhaps Bowtie2 failed): got {reads_align}")
-    # If the reads were trimmed, then the initial number must be found
-    # by counting the reads in the input FASTQ. Otherwise, the initial
-    # number equals the number after trimming.
-    reads_init = fq_inp.n_reads if cut else reads_trim
+    if fastp:
+        # If the reads were trimmed, then the initial number must be
+        # found by counting the reads in the input FASTQ.
+        reads_init = fq_inp.n_reads
+    else:
+        # Otherwise, the initial number of reads equals the number fed
+        # to Bowtie 2, so we can save time by using that number.
+        reads_init = reads_trim
     # Index the whole XAM file to enable exporting only reads aligning
     # to each reference and to speed counting reads.
     run_index_xam(xam_whole, n_procs=n_procs)
@@ -559,7 +532,8 @@ def fq_pipeline(fq_inp: FastqUnit,
     reads_refs = split_references(xam_whole,
                                   fasta=fasta,
                                   paired=fq_inp.paired,
-                                  phred_arg=fq_inp.phred_arg,
+                                  phred_arg=(FASTP_PHRED_OUT if fastp
+                                             else fq_inp.phred_arg),
                                   top=out_dir,
                                   keep_tmp=keep_tmp,
                                   bt2_local=bt2_local,
@@ -589,25 +563,33 @@ def fq_pipeline(fq_inp: FastqUnit,
         xam_whole.unlink(missing_ok=True)
     ended = datetime.now()
     # Write a report to summarize the alignment.
+    if fq_inp.ref is not None:
+        # Use the demultiplexed version of the AlignReport.
+        report_type = AlignRefReport
+    else:
+        # Use the non-demultiplexed version of the AlignReport.
+        report_type = AlignSampleReport
     report = report_type(sample=sample,
                          ref=fq_inp.ref,
                          paired_end=fq_inp.paired,
                          phred_enc=fq_inp.phred_enc,
-                         fastqc=fastqc,
-                         cut=cut,
-                         cut_q1=cut_q1,
-                         cut_q2=cut_q2,
-                         cut_g1=list(cut_g1),
-                         cut_a1=list(cut_a1),
-                         cut_g2=list(cut_g2),
-                         cut_a2=list(cut_a2),
-                         cut_o=cut_o,
-                         cut_e=cut_e,
-                         cut_indels=cut_indels,
-                         cut_nextseq=cut_nextseq,
-                         cut_discard_trimmed=cut_discard_trimmed,
-                         cut_discard_untrimmed=cut_discard_untrimmed,
-                         cut_m=cut_m,
+
+                         fastp=fastp,
+                         fastp_5=fastp_5,
+                         fastp_3=fastp_3,
+                         fastp_w=fastp_w,
+                         fastp_m=fastp_m,
+                         fastp_poly_g=fastp_poly_g,
+                         fastp_poly_g_min_len=fastp_poly_g_min_len,
+                         fastp_poly_x=fastp_poly_x,
+                         fastp_poly_x_min_len=fastp_poly_x_min_len,
+                         fastp_adapter_trimming=fastp_adapter_trimming,
+                         fastp_adapter_1=fastp_adapter_1,
+                         fastp_adapter_2=fastp_adapter_2,
+                         fastp_adapter_fasta=fastp_adapter_fasta,
+                         fastp_detect_adapter_for_pe=fastp_detect_adapter_for_pe,
+                         fastp_min_length=fastp_min_length,
+
                          bt2_local=bt2_local,
                          bt2_discordant=bt2_discordant,
                          bt2_mixed=bt2_mixed,

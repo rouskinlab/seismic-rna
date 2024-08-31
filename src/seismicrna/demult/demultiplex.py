@@ -7,7 +7,7 @@ from pathlib import Path
 import fastqsplitter
 import pandas as pd
 
-from ..align.fqops import FastqUnit
+from ..align.fqunit import FastqUnit
 from ..core.arg import (opt_barcode_end,
                         opt_barcode_start,
                         opt_parallel_demultiplexing,

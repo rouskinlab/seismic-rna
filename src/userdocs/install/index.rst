@@ -202,7 +202,7 @@ The easiest way to install them is with Conda, using the following commands:
 Dependency    Command to install with Conda
 ============= =========================================================
 Bowtie2_      ``conda install -c bioconda -c conda-forge bowtie2``
-FastQC_       ``conda install -c bioconda -c conda-forge fastqc``
+Fastp_        ``conda install -c bioconda -c conda-forge fastp``
 RNAstructure_ ``conda install -c bioconda -c conda-forge rnastructure``
 Samtools_     ``conda install -c bioconda -c conda-forge samtools``
 ============= =========================================================
@@ -224,7 +224,7 @@ Confirm that each dependency is installed by running each of these commands,
 one at a time::
 
     which bowtie2
-    which fastqc
+    which fastp
     which ct2dot  # ct2dot is part of RNAstructure
     which samtools
 
@@ -355,7 +355,7 @@ instructions).
 .. _pip: https://pip.pypa.io/en/stable/
 .. _Python: https://www.python.org/downloads/
 .. _Bowtie2: https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml
-.. _FastQC: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+.. _Fastp: https://github.com/OpenGene/fastp
 .. _RNAstructure: https://rna.urmc.rochester.edu/RNAstructure.html
 .. _Samtools: https://www.htslib.org/
 .. _PyPI: https://pypi.org/project/seismic-rna/

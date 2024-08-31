@@ -8,16 +8,15 @@ from typing import Any, Callable
 logger = logging.getLogger(__name__)
 
 # Commands for external applications
+ECHO_CMD = "echo"
+WORD_COUNT_CMD = "wc"
+GUNZIP_CMD = "gunzip"
+FASTP_CMD = "fastp"
 BOWTIE2_CMD = "bowtie2"
 BOWTIE2_BUILD_CMD = "bowtie2-build"
-CUTADAPT_CMD = "cutadapt"
-ECHO_CMD = "echo"
-FASTQC_CMD = "fastqc"
+SAMTOOLS_CMD = "samtools"
 RNASTRUCTURE_FOLD_CMD = "Fold"
 RNASTRUCTURE_FOLD_SMP_CMD = "Fold-smp"
-GUNZIP_CMD = "gunzip"
-SAMTOOLS_CMD = "samtools"
-WORD_COUNT_CMD = "wc"
 
 
 def args_to_cmd(args: list[Any]):

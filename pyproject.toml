@@ -22,7 +22,6 @@ classifiers = [
 dependencies = [
     "brotli >=1.0",
     "click >=8.1",
-    "cutadapt >=4.8",
     "fastqsplitter >=1.2",
     "kaleido >=0.2.1",
     "numpy >=1.26,<1.27",
