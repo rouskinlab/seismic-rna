@@ -30,7 +30,7 @@ class TestWorkflow(ut.TestCase):
         self.SIM_DIR.mkdir()
         self.OUT_DIR.mkdir()
         self._config = get_config()
-        set_config(verbose=2, quiet=0, log_file=None, raise_on_error=True)
+        set_config(verbose=0, quiet=1, log_file=None, raise_on_error=True)
 
     def tearDown(self):
         shutil.rmtree(self.SIM_DIR)

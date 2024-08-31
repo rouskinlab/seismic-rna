@@ -1,6 +1,5 @@
 CMD_WORKFLOW = "wf"
 CMD_DEMULT = "demult"
-CMD_QC = "qc"
 CMD_ALIGN = "align"
 CMD_REL = "relate"
 CMD_POOL = "pool"
