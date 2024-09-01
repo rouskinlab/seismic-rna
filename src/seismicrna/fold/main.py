@@ -115,7 +115,6 @@ def fold_profile(table: MaskPosTable | ClustPosTable,
     return dispatch(fold_section,
                     n_procs,
                     parallel=True,
-                    hybrid=True,
                     pass_n_procs=True,
                     args=as_list_of_tuples(table.iter_profiles(
                         sections=sections, quantile=quantile)
