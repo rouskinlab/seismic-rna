@@ -23,6 +23,9 @@ TRIM_POLY_G_NO = "no"
 TRIM_POLY_G_YES = "yes"
 TRIM_POLY_G = TRIM_POLY_G_YES, TRIM_POLY_G_NO, TRIM_POLY_G_AUTO
 
+ILLUMINA_TRUSEQ_ADAPTER_R1 = "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA"
+ILLUMINA_TRUSEQ_ADAPTER_R2 = "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT"
+
 BOWTIE2_ORIENT_FR = "fr"
 BOWTIE2_ORIENT_RF = "rf"
 BOWTIE2_ORIENT_FF = "ff"
@@ -288,14 +291,14 @@ opt_fastp_adapter_trimming = Option(
 opt_fastp_adapter_1 = Option(
     ("--fastp-adapter-1",),
     type=str,
-    default="",
+    default=ILLUMINA_TRUSEQ_ADAPTER_R1,
     help="Trim this adapter sequence from the 3' ends of read 1s"
 )
 
 opt_fastp_adapter_2 = Option(
     ("--fastp-adapter-2",),
     type=str,
-    default="",
+    default=ILLUMINA_TRUSEQ_ADAPTER_R2,
     help="Trim this adapter sequence from the 3' ends of read 2s"
 )
 

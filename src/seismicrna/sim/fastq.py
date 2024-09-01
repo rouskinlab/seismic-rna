@@ -11,7 +11,9 @@ from numba import jit
 
 from .relate import get_param_dir_fields, load_param_dir
 from ..core import path
-from ..core.arg import (arg_input_path,
+from ..core.arg import (ILLUMINA_TRUSEQ_ADAPTER_R1,
+                        ILLUMINA_TRUSEQ_ADAPTER_R2,
+                        arg_input_path,
                         opt_param_dir,
                         opt_profile_name,
                         opt_sample,
@@ -51,8 +53,6 @@ rng = np.random.default_rng()
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
-ILLUMINA_TRUSEQ_ADAPTER_R1 = "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA"
-ILLUMINA_TRUSEQ_ADAPTER_R2 = "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT"
 ILLUMINA_ADAPTERS = ILLUMINA_TRUSEQ_ADAPTER_R1, ILLUMINA_TRUSEQ_ADAPTER_R2
 
 
