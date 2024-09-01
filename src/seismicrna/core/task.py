@@ -11,8 +11,7 @@ logger = getLogger(__name__)
 def calc_pool_size(num_tasks: int,
                    max_procs: int,
                    parallel: bool):
-    """
-    Calculate the size of a process pool.
+    """ Calculate the size of a process pool.
 
     Parameters
     ----------
@@ -171,6 +170,10 @@ def dispatch(funcs: list[Callable] | Callable,
     if pass_n_procs:
         # Add the number of processes as a keyword argument.
         kwargs = {**kwargs, "n_procs": n_procs_per_task}
+    elif not parallel:
+        logger.warning("For tasks that cannot be parallelized internally, "
+                       "running such tasks in parallel is generally more "
+                       "efficient than running them in series")
     if pool_size > 1:
         # Run the tasks in parallel.
         with ProcessPoolExecutor(max_workers=pool_size) as pool:
