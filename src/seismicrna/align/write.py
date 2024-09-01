@@ -521,12 +521,12 @@ def fq_pipeline(fq_inp: FastqUnit,
     paired_two, paired_one, singles = count_single_paired(flagstats)
     if fq_inp.paired:
         if singles:
-            raise ValueError(f"{xam_whole} got {singles} single-end reads")
+            raise RuntimeError(f"{xam_whole} got {singles} single-end reads")
         reads_filter = {"paired-end, both mates mapped": paired_two,
                         "paired-end, one mate unmapped": paired_one}
     else:
         if n_paired := paired_two + paired_one:
-            raise ValueError(f"{xam_whole} got {n_paired} paired-end reads")
+            raise RuntimeError(f"{xam_whole} got {n_paired} paired-end reads")
         reads_filter = {"single-end": singles}
     # Split the whole XAM file into one XAM file for each reference.
     reads_refs = split_references(xam_whole,
@@ -573,7 +573,6 @@ def fq_pipeline(fq_inp: FastqUnit,
                          ref=fq_inp.ref,
                          paired_end=fq_inp.paired,
                          phred_enc=fq_inp.phred_enc,
-
                          fastp=fastp,
                          fastp_5=fastp_5,
                          fastp_3=fastp_3,
@@ -589,7 +588,6 @@ def fq_pipeline(fq_inp: FastqUnit,
                          fastp_adapter_fasta=fastp_adapter_fasta,
                          fastp_detect_adapter_for_pe=fastp_detect_adapter_for_pe,
                          fastp_min_length=fastp_min_length,
-
                          bt2_local=bt2_local,
                          bt2_discordant=bt2_discordant,
                          bt2_mixed=bt2_mixed,

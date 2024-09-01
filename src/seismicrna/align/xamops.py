@@ -399,12 +399,23 @@ def xamgen_cmd(fq_inp: FastqUnit,
                n_procs: int = 1):
     """ Wrap QC, alignment, and post-processing into one pipeline. """
     cmds = list()
+    # Reserve one processor each for view and sort.
+    n_procs_bowtie2 = max(n_procs - 2, 1)
     if fastp:
+        # Allocate half of the remaining processors to Fastp.
+        n_procs_fastp = max(n_procs_bowtie2 // 2, 1)
+        n_procs_bowtie2 = max(n_procs_bowtie2 - n_procs_fastp, 1)
+        if fq_inp.one_ref:
+            fastp_html = f"{fq_inp.ref}__fastp.html"
+            fastp_json = f"{fq_inp.ref}__fastp.json"
+        else:
+            fastp_html = "fastp.html"
+            fastp_json = "fastp.json"
         cmds.append(fastp_cmd(
             fq_inp,
             None,
-            fastp_html=fastp_dir.joinpath("fastp.html"),
-            fastp_json=fastp_dir.joinpath("fastp.json"),
+            fastp_html=fastp_dir.joinpath(fastp_html),
+            fastp_json=fastp_dir.joinpath(fastp_json),
             fastp_5=fastp_5,
             fastp_3=fastp_3,
             fastp_w=fastp_w,
@@ -419,7 +430,7 @@ def xamgen_cmd(fq_inp: FastqUnit,
             fastp_adapter_fasta=fastp_adapter_fasta,
             fastp_detect_adapter_for_pe=fastp_detect_adapter_for_pe,
             fastp_min_length=fastp_min_length,
-            n_procs=1,
+            n_procs=n_procs_fastp,
         ))
         # The input for Bowtie2 comes from what Fastp pipes out.
         bowtie2_fq_inp = None
@@ -451,7 +462,7 @@ def xamgen_cmd(fq_inp: FastqUnit,
         bt2_dpad=bt2_dpad,
         bt2_orient=bt2_orient,
         fq_unal=fq_unal,
-        n_procs=max(n_procs - 3, 1),
+        n_procs=n_procs_bowtie2,
     ))
     # Filter out any unaligned or otherwise unsuitable reads.
     if fq_inp.paired:
@@ -502,25 +513,28 @@ def flags_cmds(xam_inp: Path,
                          f"exclude ({len(flags_exc)}) are different")
     if num_flags == 0:
         # View the XAM file with no flags.
-        return [view_xam_cmd(xam_inp, xam_out)]
+        return [view_xam_cmd(xam_inp, xam_out, n_procs=n_procs)]
+    n_procs_per_view = max(n_procs // (num_flags + 1), 1)
     multi_flags = num_flags > 1
     view_xam_cmds = [view_xam_cmd(xam_inp,
                                   None if multi_flags else xam_out,
                                   sam=multi_flags,
                                   with_header=(multi_flags and i == 0),
                                   flags_req=flags_req[i],
-                                  flags_exc=flags_exc[i])
+                                  flags_exc=flags_exc[i],
+                                  n_procs=n_procs_per_view)
                      for i in range(num_flags)]
     if not multi_flags:
         # A single flag selection can be returned as-is.
         return view_xam_cmds
     # Reads from multiple flag selections must be collated.
+    n_procs_collate = max(n_procs - n_procs_per_view * num_flags, 1)
     return [cmds_to_subshell(view_xam_cmds),
             collate_xam_cmd(None,
                             xam_out,
                             tmp_pfx=tmp_pfx,
                             fast=True,
-                            n_procs=n_procs)]
+                            n_procs=n_procs_collate)]
 
 
 def flags_cmd(*args, **kwargs):
@@ -543,6 +557,11 @@ def realign_cmd(xam_inp: Path,
     """ Re-align reads that are already in a XAM file. """
     if paired is None:
         paired = xam_paired(run_flagstat(xam_inp, n_procs=n_procs))
+    # Reserve processors for the flags commands, conversion to FASTQ,
+    # and filtering.
+    num_flags = (1 if isinstance(flags_req, int)
+                 else len(flags_req := list(flags_req)))
+    n_procs_bowtie2 = max(n_procs - max(num_flags, 1) - 2, 1)
     cmds = flags_cmds(xam_inp,
                       None,
                       tmp_pfx=tmp_pfx,
@@ -551,11 +570,10 @@ def realign_cmd(xam_inp: Path,
     # Convert the reads to FASTQ format.
     cmds.append(xam_to_fastq_cmd(None, None))
     # Re-align the reads from the BAM file using Bowtie2.
-    bowtie2_threads = max(n_procs - len(cmds) - 1, 1)
     cmds.append(bowtie2_cmd(None,
                             None,
                             paired=paired,
-                            n_procs=bowtie2_threads,
+                            n_procs=n_procs_bowtie2,
                             **kwargs))
     # Filter low-quality alignments.
     cmds.append(view_xam_cmd(None, xam_out, min_mapq=min_mapq))
@@ -573,6 +591,7 @@ def export_cmd(xam_in: Path,
                ref_file: Path | None = None,
                n_procs: int = 1):
     """ Select and export one reference to its own XAM file. """
+    n_procs_per_view = max((n_procs - 1) // 2, 1)
     # Pipe the header line containing only this one reference.
     echo_step = args_to_cmd([ECHO_CMD, header])
     # Select only the reads that aligned to the reference; ignore the
@@ -583,11 +602,14 @@ def export_cmd(xam_in: Path,
                             sam=True,
                             with_header=False,
                             ref=ref,
-                            n_procs=max(n_procs - 1, 1))
+                            n_procs=n_procs_per_view)
     # Merge the one header line and the reads for the reference.
     merge_step = cmds_to_subshell([echo_step, ref_step])
     # Export the reads into a XAM file.
-    export_step = view_xam_cmd(None, xam_out, refs_file=ref_file)
+    export_step = view_xam_cmd(None,
+                               xam_out,
+                               refs_file=ref_file,
+                               n_procs=n_procs_per_view)
     return cmds_to_pipe([merge_step, export_step])
 
 

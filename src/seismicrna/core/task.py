@@ -35,45 +35,46 @@ def get_num_parallel(n_tasks: int,
         - Number of tasks to run in parallel. Always ≥ 1.
         - Number of processes to run for each task. Always ≥ 1.
     """
-    if n_tasks >= 1 and max_procs >= 1:
-        # This function only works if there is at least one task to
-        # parallelize, at least one process is allowed, and parallel
-        # is a valid option.
-        if parallel:
-            # Multiple tasks may be run in parallel. The number of tasks
-            # run in parallel cannot exceed 1) the total number of tasks
-            # and 2) the user-specified maximum number of processes.
-            n_tasks_parallel = min(n_tasks, max_procs)
-        else:
-            # Otherwise, only one task at a time can be run.
-            n_tasks_parallel = 1
-        if n_tasks_parallel == 1 or hybrid:
-            # Each individual task can be run by multiple processes in
-            # parallel, as long as either 1) multiple tasks are not run
-            # simultaneously in parallel (i.e. n_tasks_parallel == 1)
-            # or 2) the calling function sets hybrid=True, which lets
-            # multiple tasks run in parallel and each run with multiple
-            # processes. Only the alignment module can simultaneously
-            # run multiple tasks and multiple processes for each task
-            # because its two most computation-heavy processes (fastp
-            # and bowtie2) come with their own parallelization abilities
-            # that can work independently of Python's multiprocessing
-            # module. However, the other modules (e.g. vectoring) are
-            # parallelized using the multiprocessing module, which does
-            # not support "nesting" parallelization in multiple layers.
-            # Because n_tasks_parallel is either 1 or the smallest of
-            # n_tasks and n_procs (both of which are ≥ 1), it must be
-            # that 1 ≤ n_tasks_parallel ≤ n_procs, and therefore that
-            # 1 ≤ n_procs / n_tasks_parallel ≤ n_procs, so the
-            # integer quotient must be a valid number of processes.
-            n_procs_per_task = max_procs // n_tasks_parallel
-        else:
-            # Otherwise, only one process can work on each task.
-            n_procs_per_task = 1
+    if max_procs < 1:
+        logger.warning(f"max_procs must be ≥ 1, but got {max_procs}; "
+                       f"defaulting to 1")
+        max_procs = 1
+    if n_tasks < 1:
+        logger.warning(f"n_tasks must be ≥ 1, but got {n_tasks}; "
+                       f"defaulting to 1")
+        n_tasks = 1
+    # One process is required to be the parent process.
+    max_children = max(max_procs - 1, 1)
+    if parallel:
+        # Multiple tasks may be run in parallel. The number of tasks
+        # run in parallel cannot exceed a) the total number of tasks
+        # and b) the maximum number of child processes.
+        n_tasks_parallel = min(n_tasks, max_children)
     else:
-        logger.warning("Defaulting to 1 process due to invalid number of "
-                       f"tasks ({n_tasks}) and/or processes ({max_procs}).")
+        # Otherwise, only one task at a time can be run.
         n_tasks_parallel = 1
+    if n_tasks_parallel == 1 or hybrid:
+        # Each individual task can be run by multiple processes in
+        # parallel, as long as either 1) multiple tasks are not run
+        # simultaneously in parallel (i.e. n_tasks_parallel == 1)
+        # or 2) the calling function sets hybrid=True, which lets
+        # multiple tasks run in parallel and each run with multiple
+        # processes. Only the alignment module can simultaneously
+        # run multiple tasks and multiple processes for each task
+        # because its two most computation-heavy processes (fastp
+        # and bowtie2) come with their own parallelization abilities
+        # that can work independently of Python's multiprocessing
+        # module. However, the other modules (e.g. vectoring) are
+        # parallelized using the multiprocessing module, which does
+        # not support "nesting" parallelization in multiple layers.
+        # Because n_tasks_parallel is either 1 or the smallest of
+        # n_tasks and n_procs (both of which are ≥ 1), it must be
+        # that 1 ≤ n_tasks_parallel ≤ n_procs, and therefore that
+        # 1 ≤ n_procs / n_tasks_parallel ≤ n_procs, so the
+        # integer quotient must be a valid number of processes.
+        n_procs_per_task = max_children // n_tasks_parallel
+    else:
+        # Otherwise, only one process can work on each task.
         n_procs_per_task = 1
     return n_tasks_parallel, n_procs_per_task
 
