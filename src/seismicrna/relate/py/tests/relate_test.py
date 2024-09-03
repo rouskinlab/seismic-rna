@@ -166,19 +166,37 @@ class TestFindRelsLine(ut.TestCase):
                                               end5=end5,
                                               clip5=clip5,
                                               clip3=clip3):
-                                result = self.relate("ref",
-                                                     refseq,
-                                                     read,
-                                                     qual,
-                                                     cigar,
-                                                     end5,
-                                                     True,
-                                                     clip5,
-                                                     clip3)
-                                expect = (min(end5 + clip5, reflen + 1),
-                                          max(end3 - clip3, 0),
-                                          dict())
-                                self.assertEqual(result, expect)
+                                end5_expect = min(end5 + clip5, reflen + 1)
+                                end3_expect = max(end3 - clip3, 0)
+                                if end5_expect <= end3_expect:
+                                    result = self.relate(
+                                        "ref",
+                                        refseq,
+                                        read,
+                                        qual,
+                                        cigar,
+                                        end5,
+                                        True,
+                                        clip5,
+                                        clip3
+                                    )
+                                    expect = end5_expect, end3_expect, dict()
+                                    self.assertEqual(result, expect)
+                                else:
+                                    self.assertRaisesRegex(
+                                        ValueError,
+                                        "For Read",
+                                        self.relate,
+                                        "ref",
+                                        refseq,
+                                        read,
+                                        qual,
+                                        cigar,
+                                        end5,
+                                        True,
+                                        clip5,
+                                        clip3
+                                    )
 
     def test_soft_clips(self):
         reflen = 10
@@ -208,19 +226,35 @@ class TestFindRelsLine(ut.TestCase):
                                                   end5=end5,
                                                   clip5=clip5,
                                                   clip3=clip3):
-                                    result = self.relate("ref",
-                                                         refseq,
-                                                         read,
-                                                         qual,
-                                                         cigar,
-                                                         end5,
-                                                         True,
-                                                         clip5,
-                                                         clip3)
-                                    expect = (min(end5 + clip5, reflen + 1),
-                                              max(end3 - clip3, 0),
-                                              dict())
-                                    self.assertEqual(result, expect)
+                                    end5_expect = min(end5 + clip5, reflen + 1)
+                                    end3_expect = max(end3 - clip3, 0)
+                                    if end5_expect <= end3_expect:
+                                        result = self.relate("ref",
+                                                             refseq,
+                                                             read,
+                                                             qual,
+                                                             cigar,
+                                                             end5,
+                                                             True,
+                                                             clip5,
+                                                             clip3)
+                                        expect = end5_expect, end3_expect, dict()
+                                        self.assertEqual(result, expect)
+                                    else:
+                                        self.assertRaisesRegex(
+                                            ValueError,
+                                            "For Read",
+                                            self.relate,
+                                            "ref",
+                                            refseq,
+                                            read,
+                                            qual,
+                                            cigar,
+                                            end5,
+                                            True,
+                                            clip5,
+                                            clip3
+                                        )
 
     def test_ambig_delet_low_qual(self):
         """ Test ambiguous deletions with all low-quality positions. """
