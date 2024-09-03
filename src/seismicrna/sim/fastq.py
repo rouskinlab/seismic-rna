@@ -53,8 +53,6 @@ rng = np.random.default_rng()
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
-ILLUMINA_ADAPTERS = ILLUMINA_TRUSEQ_ADAPTER_R1, ILLUMINA_TRUSEQ_ADAPTER_R2
-
 
 @jit()
 def _complement(base: str):
@@ -185,9 +183,11 @@ def generate_fastq(top: Path,
     if paired:
         segs = [path.DMFASTQ1_SEGS, path.DMFASTQ2_SEGS]
         exts = [path.FQ1_EXTS[0], path.FQ2_EXTS[0]]
+        adapters = [ILLUMINA_TRUSEQ_ADAPTER_R1, ILLUMINA_TRUSEQ_ADAPTER_R2]
     else:
         segs = [path.DMFASTQ_SEGS]
         exts = [path.FQ_EXTS[0]]
+        adapters = [ILLUMINA_TRUSEQ_ADAPTER_R1]
     if fq_gzip:
         exts = [(ext if ext.endswith(path.GZIP_EXT)
                  else f"{ext}{path.GZIP_EXT}")
@@ -226,7 +226,7 @@ def generate_fastq(top: Path,
                             fastq_files,
                             end5s,
                             end3s,
-                            ILLUMINA_ADAPTERS,
+                            adapters,
                             strict=True
                     )):
                         record = generate_fastq_record(
