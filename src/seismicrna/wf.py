@@ -15,6 +15,8 @@ from .core.arg import (CMD_WORKFLOW,
                        merge_params,
                        opt_demultiplex,
                        opt_cluster,
+                       opt_min_clusters,
+                       opt_max_clusters,
                        opt_fold,
                        opt_export,
                        opt_cgroup,
@@ -354,7 +356,9 @@ def run(fasta: str,
         force=force,
     ))
     # Cluster
-    if cluster:
+    if (cluster
+            or min_clusters != opt_min_clusters.default
+            or max_clusters != opt_max_clusters.default):
         input_path += as_tuple_str(cluster_mod.run(
             input_path=input_path,
             tmp_pfx=tmp_pfx,
