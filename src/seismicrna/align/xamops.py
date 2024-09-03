@@ -118,7 +118,10 @@ def fastp_cmd(fq_inp: FastqUnit,
               fastp_detect_adapter_for_pe: bool,
               fastp_min_length: int,
               n_procs: int):
-    args = [FASTP_CMD, "--thread", n_procs, "--dont_eval_duplication"]
+    args = [FASTP_CMD,
+            "--thread", n_procs,
+            "--dont_eval_duplication",
+            "--disable_quality_filtering"]
     # Length filter
     if fastp_min_length > 0:
         args.extend(["--length_required", fastp_min_length])

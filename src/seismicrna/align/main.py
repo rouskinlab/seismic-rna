@@ -55,8 +55,8 @@ from ..core.arg import (CMD_ALIGN,
                         opt_min_mapq,
                         opt_min_reads,
                         opt_sep_strands,
-                        opt_minus_label,
-                        opt_f1r2_plus,
+                        opt_rev_label,
+                        opt_f1r2_fwd,
                         optional_path,
                         extra_defaults)
 from ..core.extern import (BOWTIE2_CMD,
@@ -124,8 +124,8 @@ def run(fasta: str, *,
         min_mapq: int,
         min_reads: int,
         sep_strands: bool,
-        f1r2_plus: bool,
-        minus_label: str,
+        f1r2_fwd: bool,
+        rev_label: str,
         # Parallelization
         max_procs: int,
         parallel: bool,
@@ -192,8 +192,8 @@ def run(fasta: str, *,
                          min_mapq=min_mapq,
                          min_reads=min_reads,
                          sep_strands=sep_strands,
-                         f1r2_plus=f1r2_plus,
-                         minus_label=minus_label)
+                         f1r2_fwd=f1r2_fwd,
+                         rev_label=rev_label)
 
 
 # Parameters for command line interface
@@ -249,8 +249,8 @@ params = [
     opt_min_mapq,
     opt_min_reads,
     opt_sep_strands,
-    opt_f1r2_plus,
-    opt_minus_label,
+    opt_f1r2_fwd,
+    opt_rev_label,
     # Parallelization
     opt_parallel,
     opt_max_procs,

@@ -31,6 +31,11 @@ BOWTIE2_ORIENT_RF = "rf"
 BOWTIE2_ORIENT_FF = "ff"
 BOWTIE2_ORIENT = BOWTIE2_ORIENT_FR, BOWTIE2_ORIENT_RF, BOWTIE2_ORIENT_FF
 
+BOWTIE2_GBAR_DEFAULT = 4
+CLIP_END5_DEFAULT = max(BOWTIE2_GBAR_DEFAULT, 3)
+CLIP_END3_DEFAULT = max(BOWTIE2_GBAR_DEFAULT, 6)
+MIN_READ_LENGTH_DEFAULT = CLIP_END5_DEFAULT + CLIP_END3_DEFAULT + 1
+
 NO_GROUP = "c"
 GROUP_BY_K = "k"
 GROUP_ALL = "a"
@@ -346,7 +351,7 @@ opt_fastp_poly_x_min_len = Option(
 opt_fastp_min_length = Option(
     ("--fastp-min-length",),
     type=int,
-    default=20,
+    default=MIN_READ_LENGTH_DEFAULT,
     help="Discard reads shorter than this length"
 )
 
@@ -517,14 +522,14 @@ opt_overhangs = Option(
 opt_clip_end5 = Option(
     ("--clip-end5", "-5"),
     type=int,
-    default=max(opt_bt2_gbar.default, 3),
+    default=CLIP_END5_DEFAULT,
     help="Clip this many bases from the 5' end of each read"
 )
 
 opt_clip_end3 = Option(
     ("--clip-end3", "-3"),
     type=int,
-    default=max(opt_bt2_gbar.default, 6),
+    default=CLIP_END3_DEFAULT,
     help="Clip this many bases from the 3' end of each read"
 )
 
@@ -532,22 +537,22 @@ opt_sep_strands = Option(
     ("--sep-strands/--mix-strands",),
     type=bool,
     default=False,
-    help="Separate each alignment map into plus- and minus-strand reads"
+    help="Separate each alignment map into forward- and reverse-strand reads"
 )
 
-opt_minus_label = Option(
-    ("--minus-label",),
+opt_rev_label = Option(
+    ("--rev-label",),
     type=str,
-    default="-minus",
-    help="With --sep-strands, append this label to each minus-strand reference"
+    default="-rev",
+    help="With --sep-strands, add this label to each reverse-strand reference"
 )
 
-opt_f1r2_plus = Option(
-    ("--f1r2-plus/--f1r2-minus",),
+opt_f1r2_fwd = Option(
+    ("--f1r2-fwd/--f1r2-rev",),
     type=bool,
     default=False,
     help=("With --sep-strands, consider forward mate 1s and reverse mate 2s "
-          "to be plus-stranded")
+          "to be forward-stranded")
 )
 
 # Pool

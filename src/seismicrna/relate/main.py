@@ -13,7 +13,7 @@ from pathlib import Path
 from click import command
 
 from .write import write_all
-from ..align.write import format_ref_minus
+from ..align.write import format_ref_reverse
 from ..core import path
 from ..core.arg import (CMD_REL,
                         arg_input_path,
@@ -31,7 +31,7 @@ from ..core.arg import (CMD_REL,
                         opt_clip_end3,
                         opt_brotli_level,
                         opt_sep_strands,
-                        opt_minus_label,
+                        opt_rev_label,
                         opt_parallel,
                         opt_max_procs,
                         opt_force,
@@ -42,18 +42,18 @@ from ..core.seq import DNA, parse_fasta, write_fasta
 logger = getLogger(__name__)
 
 
-def generate_both_strands(ref: str, seq: DNA, minus_label: str):
-    """ Yield both the plus and minus strand for each sequence. """
+def generate_both_strands(ref: str, seq: DNA, rev_label: str):
+    """ Yield both the forward and reverse strand for each sequence. """
     yield ref, seq
-    yield format_ref_minus(ref, minus_label), seq.rc
+    yield format_ref_reverse(ref, rev_label), seq.rc
 
 
-def write_both_strands(fasta_in: Path, fasta_out: Path, minus_label: str):
-    """ Write a FASTA file of both plus and minus strands. """
+def write_both_strands(fasta_in: Path, fasta_out: Path, rev_label: str):
+    """ Write a FASTA file of both forward and reverse strands. """
     write_fasta(fasta_out,
                 (strand
                  for ref, seq in parse_fasta(fasta_in, DNA)
-                 for strand in generate_both_strands(ref, seq, minus_label)))
+                 for strand in generate_both_strands(ref, seq, rev_label)))
 
 
 @run_func(logger.critical, with_tmp=True, pass_keep_tmp=True)
@@ -71,7 +71,7 @@ def run(fasta: str,
         clip_end5: int,
         clip_end3: int,
         sep_strands: bool,
-        minus_label: str,
+        rev_label: str,
         max_procs: int,
         parallel: bool,
         brotli_level: int,
@@ -80,11 +80,11 @@ def run(fasta: str,
     """ Compute relationships between references and aligned reads. """
     fasta = Path(fasta)
     if sep_strands:
-        # Create a temporary FASTA file of both plus and minus strands.
+        # Create a temporary FASTA file of forward and reverse strands.
         fasta_dir = tmp_dir.joinpath("fasta")
         fasta_dir.mkdir(parents=True, exist_ok=False)
         relate_fasta = fasta_dir.joinpath(fasta.name)
-        write_both_strands(fasta, relate_fasta, minus_label)
+        write_both_strands(fasta, relate_fasta, rev_label)
     else:
         relate_fasta = fasta
     return write_all(xam_files=path.find_files_chain(map(Path, input_path),
@@ -114,7 +114,7 @@ params = [
     arg_fasta,
     arg_input_path,
     opt_sep_strands,
-    opt_minus_label,
+    opt_rev_label,
     # Output directories
     opt_out_dir,
     opt_tmp_pfx,

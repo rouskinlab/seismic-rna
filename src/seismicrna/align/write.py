@@ -32,12 +32,12 @@ from ..core.task import dispatch
 logger = getLogger(__name__)
 
 
-def format_ref_minus(ref: str, minus_label: str):
-    """ Name the minus strand of a reference. """
-    if not minus_label:
-        raise ValueError("minus_label must have a value, "
-                         f"but got {repr(minus_label)}")
-    return f"{ref}{minus_label}"
+def format_ref_reverse(ref: str, rev_label: str):
+    """ Name the reverse strand of a reference. """
+    if not rev_label:
+        raise ValueError("rev_label must have a value, "
+                         f"but got {repr(rev_label)}")
+    return f"{ref}{rev_label}"
 
 
 def write_tmp_ref_files(tmp_dir: Path,
@@ -81,42 +81,42 @@ def write_tmp_ref_files(tmp_dir: Path,
     return ref_paths
 
 
-def calc_flags(f1r2_plus: bool, paired: bool):
+def calc_flags(f1r2_fwd: bool, paired: bool):
     """ Calculate flags for separating strands. """
     if paired:
-        flags_req_plus = [FLAG_FIRST, FLAG_SECOND]
-        flags_exc_plus = [FLAG_SECOND, FLAG_FIRST]
-        flags_req_minus = [FLAG_FIRST, FLAG_SECOND]
-        flags_exc_minus = [FLAG_SECOND, FLAG_FIRST]
+        flags_req_fwd = [FLAG_FIRST, FLAG_SECOND]
+        flags_exc_fwd = [FLAG_SECOND, FLAG_FIRST]
+        flags_req_rev = [FLAG_FIRST, FLAG_SECOND]
+        flags_exc_rev = [FLAG_SECOND, FLAG_FIRST]
     else:
-        flags_req_plus = [0]
-        flags_exc_plus = [0]
-        flags_req_minus = [0]
-        flags_exc_minus = [0]
-    if f1r2_plus:
-        # Align forward read 1s and reverse read 2s to the plus strand.
-        # Align reverse read 1s and forward read 2s to the minus strand.
+        flags_req_fwd = [0]
+        flags_exc_fwd = [0]
+        flags_req_rev = [0]
+        flags_exc_rev = [0]
+    if f1r2_fwd:
+        # Align forward read 1s and reverse read 2s to the + strand.
+        # Align reverse read 1s and forward read 2s to the - strand.
         if paired:
-            flags_req_plus[1] |= FLAG_REVERSE
-            flags_exc_minus[1] |= FLAG_REVERSE
-        flags_exc_plus[0] |= FLAG_REVERSE
-        flags_req_minus[0] |= FLAG_REVERSE
+            flags_req_fwd[1] |= FLAG_REVERSE
+            flags_exc_rev[1] |= FLAG_REVERSE
+        flags_exc_fwd[0] |= FLAG_REVERSE
+        flags_req_rev[0] |= FLAG_REVERSE
     else:
-        # Align reverse read 1s and forward read 2s to the plus strand.
-        # Align forward read 1s and reverse read 2s to the minus strand.
+        # Align reverse read 1s and forward read 2s to the + strand.
+        # Align forward read 1s and reverse read 2s to the - strand.
         if paired:
-            flags_req_minus[1] |= FLAG_REVERSE
-            flags_exc_plus[1] |= FLAG_REVERSE
-        flags_exc_minus[0] |= FLAG_REVERSE
-        flags_req_plus[0] |= FLAG_REVERSE
-    return (flags_req_plus, flags_exc_plus), (flags_req_minus, flags_exc_minus)
+            flags_req_rev[1] |= FLAG_REVERSE
+            flags_exc_fwd[1] |= FLAG_REVERSE
+        flags_exc_rev[0] |= FLAG_REVERSE
+        flags_req_fwd[0] |= FLAG_REVERSE
+    return (flags_req_fwd, flags_exc_fwd), (flags_req_rev, flags_exc_rev)
 
 
 def separate_strands(xam_file: Path,
                      fasta: Path,
                      paired: bool | None,
-                     minus_label: str,
-                     f1r2_plus: bool,
+                     rev_label: str,
+                     f1r2_fwd: bool,
                      keep_tmp: bool,
                      min_mapq: int,
                      n_procs: int = 1,
@@ -127,50 +127,51 @@ def separate_strands(xam_file: Path,
     out_dir = xam_file.parent
     ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
     # Calculate the flags.
-    ((flags_req_plus, flags_exc_plus),
-     (flags_req_minus, flags_exc_minus)) = calc_flags(f1r2_plus, paired)
+    ((flags_req_fwd, flags_exc_fwd),
+     (flags_req_rev, flags_exc_rev)) = calc_flags(f1r2_fwd, paired)
     # Make a temporary directory for all splitting strand operations.
     tmp_dir = out_dir.joinpath(ref)
     tmp_dir.mkdir(parents=False, exist_ok=False)
-    # Write the minus-strand reference sequence to a FASTA file.
-    ref_minus = format_ref_minus(ref, minus_label)
+    # Write the reverse-strand reference sequence to a FASTA file.
+    ref_rev = format_ref_reverse(ref, rev_label)
     index_dir = tmp_dir.joinpath("index")
     index_dir.mkdir()
-    fasta_minus = index_dir.joinpath(ref_minus).with_suffix(path.FASTA_EXTS[0])
+    fasta_rev = index_dir.joinpath(ref_rev).with_suffix(path.FASTA_EXTS[0])
     refseq = get_fasta_seq(fasta, DNA, ref)
-    write_fasta(fasta_minus, [(ref_minus, refseq.rc)])
-    # Index the minus-strand reference.
-    index_minus = fasta_minus.with_suffix("")
-    run_bowtie2_build(fasta_minus, index_minus, n_procs=n_procs)
-    # Align the minus-strand reads to the minus-strand reference.
-    bam_minus = out_dir.joinpath(ref_minus).with_suffix(path.BAM_EXT)
+    write_fasta(fasta_rev, [(ref_rev, refseq.rc)])
+    # Index the reverse-strand reference.
+    index_rev = fasta_rev.with_suffix("")
+    run_bowtie2_build(fasta_rev, index_rev, n_procs=n_procs)
+    # Re-align the reads that had aligned to the reverse strand of the
+    # forward-strand reference to the reverse-strand reference.
+    bam_rev = out_dir.joinpath(ref_rev).with_suffix(path.BAM_EXT)
     realign_dir = tmp_dir.joinpath("realign")
     realign_dir.mkdir()
     run_realign(xam_file,
-                bam_minus,
-                tmp_pfx=realign_dir.joinpath(ref_minus),
-                index_pfx=index_minus,
+                bam_rev,
+                tmp_pfx=realign_dir.joinpath(ref_rev),
+                index_pfx=index_rev,
                 paired=paired,
-                flags_req=flags_req_minus,
-                flags_exc=flags_exc_minus,
+                flags_req=flags_req_rev,
+                flags_exc=flags_exc_rev,
                 min_mapq=min_mapq,
                 n_procs=n_procs,
                 **kwargs)
     if not keep_tmp:
         rmtree(index_dir)
-    # Extract the plus-strand reads.
-    bam_plus = realign_dir.joinpath(ref).with_suffix(path.BAM_EXT)
+    # Extract the reads that had aligned to the forward strand.
+    bam_fwd = realign_dir.joinpath(ref).with_suffix(path.BAM_EXT)
     run_flags(xam_file,
-              bam_plus,
+              bam_fwd,
               tmp_pfx=realign_dir.joinpath(ref),
-              flags_req=flags_req_plus,
-              flags_exc=flags_exc_plus,
+              flags_req=flags_req_fwd,
+              flags_exc=flags_exc_fwd,
               n_procs=n_procs)
     # This renaming overwrites the original BAM file of both strands.
-    bam_plus.rename(xam_file)
+    bam_fwd.rename(xam_file)
     if not keep_tmp:
         rmtree(tmp_dir)
-    return bam_minus
+    return bam_rev
 
 
 def extract_reference(ref: str,
@@ -200,8 +201,8 @@ def extract_reference(ref: str,
                       bt2_orient: str,
                       min_mapq: int,
                       sep_strands: bool,
-                      f1r2_plus: bool,
-                      minus_label: str,
+                      f1r2_fwd: bool,
+                      rev_label: str,
                       min_reads: int,
                       n_procs: int = 1):
     """ Extract one reference from a XAM file. """
@@ -223,39 +224,39 @@ def extract_reference(ref: str,
     xam_files = [xam_ref]
     if sep_strands:
         try:
-            # Split the XAM file into plus and minus strands.
-            xam_minus = separate_strands(xam_ref,
-                                         fasta,
-                                         paired,
-                                         minus_label,
-                                         f1r2_plus,
-                                         keep_tmp,
-                                         min_mapq,
-                                         n_procs=n_procs,
-                                         phred_arg=phred_arg,
-                                         bt2_local=bt2_local,
-                                         bt2_discordant=bt2_discordant,
-                                         bt2_mixed=bt2_mixed,
-                                         bt2_dovetail=bt2_dovetail,
-                                         bt2_contain=bt2_contain,
-                                         bt2_score_min_e2e=bt2_score_min_e2e,
-                                         bt2_score_min_loc=bt2_score_min_loc,
-                                         bt2_i=bt2_i,
-                                         bt2_x=bt2_x,
-                                         bt2_gbar=bt2_gbar,
-                                         bt2_l=bt2_l,
-                                         bt2_s=bt2_s,
-                                         bt2_d=bt2_d,
-                                         bt2_r=bt2_r,
-                                         bt2_dpad=bt2_dpad,
-                                         bt2_orient=bt2_orient)
-            xam_files.append(xam_minus)
+            # Split the XAM file into forward and reverse strands.
+            xam_rev = separate_strands(xam_ref,
+                                       fasta,
+                                       paired,
+                                       rev_label,
+                                       f1r2_fwd,
+                                       keep_tmp,
+                                       min_mapq,
+                                       n_procs=n_procs,
+                                       phred_arg=phred_arg,
+                                       bt2_local=bt2_local,
+                                       bt2_discordant=bt2_discordant,
+                                       bt2_mixed=bt2_mixed,
+                                       bt2_dovetail=bt2_dovetail,
+                                       bt2_contain=bt2_contain,
+                                       bt2_score_min_e2e=bt2_score_min_e2e,
+                                       bt2_score_min_loc=bt2_score_min_loc,
+                                       bt2_i=bt2_i,
+                                       bt2_x=bt2_x,
+                                       bt2_gbar=bt2_gbar,
+                                       bt2_l=bt2_l,
+                                       bt2_s=bt2_s,
+                                       bt2_d=bt2_d,
+                                       bt2_r=bt2_r,
+                                       bt2_dpad=bt2_dpad,
+                                       bt2_orient=bt2_orient)
+            xam_files.append(xam_rev)
         except Exception:
             # Delete the XAM file containing both strands because its
-            # name is the same as the file of only plus-strand reads.
+            # name is the same as the file of only forward-strand reads.
             # If not deleted, it would remain in the output directory
             # and could be given to a future step that expects only
-            # plus-strand reads, causing unintended behavior.
+            # forward-strand reads, causing unintended behavior.
             xam_ref.unlink()
             logger.info(f"Deleted {xam_ref}")
             raise
@@ -308,8 +309,8 @@ def split_references(xam_whole: Path, *,
                      min_mapq: int,
                      min_reads: int,
                      sep_strands: bool,
-                     f1r2_plus: bool,
-                     minus_label: str,
+                     f1r2_fwd: bool,
+                     rev_label: str,
                      n_procs: int = 1):
     """ Split a XAM file into one file per reference. """
     sample = path.parse(xam_whole, *path.XAM_SEGS)[path.SAMP]
@@ -354,8 +355,8 @@ def split_references(xam_whole: Path, *,
                                       bt2_orient=bt2_orient,
                                       min_mapq=min_mapq,
                                       sep_strands=sep_strands,
-                                      f1r2_plus=f1r2_plus,
-                                      minus_label=minus_label,
+                                      f1r2_fwd=f1r2_fwd,
+                                      rev_label=rev_label,
                                       min_reads=min_reads))
     # Collect the number of reads for each reference into one dict.
     reads_refs = dict()
@@ -423,8 +424,8 @@ def fq_pipeline(fq_inp: FastqUnit,
                 min_mapq: int,
                 min_reads: int,
                 sep_strands: bool,
-                f1r2_plus: bool,
-                minus_label: str,
+                f1r2_fwd: bool,
+                rev_label: str,
                 n_procs: int = 1) -> list[Path]:
     """ Run all stages of the alignment pipeline for one FASTQ file or
     one pair of mated FASTQ files. """
@@ -553,8 +554,8 @@ def fq_pipeline(fq_inp: FastqUnit,
                                   bt2_orient=bt2_orient,
                                   min_mapq=min_mapq,
                                   sep_strands=sep_strands,
-                                  f1r2_plus=f1r2_plus,
-                                  minus_label=minus_label,
+                                  f1r2_fwd=f1r2_fwd,
+                                  rev_label=rev_label,
                                   min_reads=min_reads,
                                   n_procs=n_procs)
     if not keep_tmp:
@@ -606,8 +607,8 @@ def fq_pipeline(fq_inp: FastqUnit,
                          bt2_un=bt2_un,
                          min_mapq=min_mapq,
                          sep_strands=sep_strands,
-                         f1r2_plus=f1r2_plus,
-                         minus_label=minus_label,
+                         f1r2_fwd=f1r2_fwd,
+                         rev_label=rev_label,
                          min_reads=min_reads,
                          align_reads_init=reads_init,
                          reads_trim=reads_trim,
