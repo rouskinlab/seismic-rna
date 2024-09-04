@@ -296,14 +296,14 @@ opt_fastp_adapter_trimming = Option(
 opt_fastp_adapter_1 = Option(
     ("--fastp-adapter-1",),
     type=str,
-    default=ILLUMINA_TRUSEQ_ADAPTER_R1,
+    default="",
     help="Trim this adapter sequence from the 3' ends of read 1s"
 )
 
 opt_fastp_adapter_2 = Option(
     ("--fastp-adapter-2",),
     type=str,
-    default=ILLUMINA_TRUSEQ_ADAPTER_R2,
+    default="",
     help="Trim this adapter sequence from the 3' ends of read 2s"
 )
 
