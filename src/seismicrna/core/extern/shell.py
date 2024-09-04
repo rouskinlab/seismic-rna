@@ -48,13 +48,16 @@ def run_cmd(cmd: str, text: bool | None = True):
                   shell=True,
                   capture_output=text is not None,
                   text=text)
-    # Format a message depending on whether the process passed.
-    passed = process.returncode == 0
-    status = "PASSED" if passed else f"FAILED with code {process.returncode}"
+    # Format a message depending on whether the process succeeded.
+    succeeded = process.returncode == 0
+    if succeeded:
+        status = "SUCCEEDED"
+    else:
+        status = f"FAILED with code {process.returncode}"
     message = "\n".join([f"Shell command {status}:\n{cmd}\n",
                          f"STDOUT:\n{process.stdout}\n",
                          f"STDERR:\n{process.stderr}\n"])
-    if not passed:
+    if not succeeded:
         raise RuntimeError(message)
     logger.debug(message)
     return process
