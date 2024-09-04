@@ -264,10 +264,6 @@ def _find_rels_read(read: SamRead,
     # Ends of the read, in the reference coordinates (1-indexed).
     end5_ref = min(read.pos + clip_end5, reflen + 1)
     end3_ref = max(ref_pos - clip_end3, 0)
-    if end5_ref > end3_ref:
-        raise ValueError(f"For {read}, the 5' end ({end5_ref}) comes after the "
-                         f"3' end ({end3_ref}), after clipping {clip_end5} and "
-                         f"{clip_end3} bases, respectively, from each end")
     # Convert rels to a non-default dict and select only the positions
     # between end5_ref and end3_ref.
     rels = {pos: rel for pos, rel in rels.items()
@@ -350,7 +346,7 @@ def find_rels_line(line1: str,
                    ref: str,
                    refseq: DNA,
                    min_mapq: int,
-                   qmin: str,
+                   min_qual: str,
                    ambindel: bool,
                    overhangs: bool,
                    clip_end5: int = 0,
@@ -360,7 +356,7 @@ def find_rels_line(line1: str,
     _validate_read(read1, ref, min_mapq)
     end51, end31, rels1 = _find_rels_read(read1,
                                           refseq,
-                                          qmin,
+                                          min_qual,
                                           ambindel,
                                           clip_end5,
                                           clip_end3)
@@ -377,7 +373,7 @@ def find_rels_line(line1: str,
             _validate_pair(read1, read2)
             end52, end32, rels2 = _find_rels_read(read2,
                                                   refseq,
-                                                  qmin,
+                                                  min_qual,
                                                   ambindel,
                                                   clip_end5,
                                                   clip_end3)
@@ -394,7 +390,6 @@ def find_rels_line(line1: str,
             )
     else:
         # The read is single-ended.
-
         ends = [end51], [end31]
         rels = rels1
     return read1.qname, ends, rels

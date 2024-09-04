@@ -1,14 +1,3 @@
-"""
-
-Relation Vector Writing Module
-========================================================================
-
-Given alignment map (BAM) files, split each file into batches of reads,
-write the relation vectors for each batch to a compressed file, and
-write a report summarizing the results.
-
-"""
-
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
@@ -29,46 +18,35 @@ from ..core.write import need_write
 logger = getLogger(__name__)
 
 
+def relate_records(records: Iterable[tuple[str, str]], **kwargs):
+    for line1, line2 in records:
+        try:
+            yield find_rels_line(line1, line2, **kwargs)
+        except Exception as error:
+            logger.error(f"Failed to compute relationships: {error}")
+
+
 def generate_batch(batch: int, *,
                    xam_view: XamViewer,
                    top: Path,
                    refseq: DNA,
-                   min_mapq: int,
-                   min_qual: str,
-                   ambindel: bool,
-                   overhangs: bool,
-                   clip_end5: int,
-                   clip_end3: int,
-                   brotli_level: int):
+                   brotli_level: int,
+                   **kwargs):
     """ Compute relation vectors for every SAM record in one batch,
     write the vectors to a batch file, and return its MD5 checksum
     and the number of vectors. """
-    logger.info(f"Began computing relation vectors for batch {batch} "
-                f"of {xam_view}")
-
-    def relate_records(records: Iterable[tuple[str, str]]):
-        for line1, line2 in records:
-            try:
-                yield find_rels_line(line1,
-                                     line2,
-                                     xam_view.ref,
-                                     refseq,
-                                     min_mapq,
-                                     min_qual,
-                                     ambindel,
-                                     overhangs,
-                                     clip_end5,
-                                     clip_end3)
-            except Exception as error:
-                logger.error(f"Failed to compute relation vector: {error}")
-
-    names, relvecs = from_reads(relate_records(xam_view.iter_records(batch)),
+    logger.info("Began computing read-reference relationships "
+                f"for batch {batch} of {xam_view}")
+    names, relvecs = from_reads(relate_records(xam_view.iter_records(batch),
+                                               ref=xam_view.ref,
+                                               refseq=refseq,
+                                               **kwargs),
                                 xam_view.sample,
                                 xam_view.ref,
                                 refseq,
                                 batch)
-    logger.info(f"Ended computing relation vectors for batch {batch} "
-                f"of {xam_view}")
+    logger.info("Ended computing read-reference relationships "
+                f"for batch {batch} of {xam_view}")
     _, relv_check = relvecs.save(top, brotli_level)
     _, name_check = names.save(top, brotli_level)
     return relvecs.num_reads, relv_check, name_check

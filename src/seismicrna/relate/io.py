@@ -1,5 +1,6 @@
 from abc import ABC
 from collections import defaultdict
+from logging import getLogger
 from typing import Any, Iterable
 
 import numpy as np
@@ -9,6 +10,8 @@ from ..core import path
 from ..core.io import MutsBatchIO, ReadBatchIO, RefIO
 from ..core.seq import DNA, Section
 from ..core.types import fit_uint_type
+
+logger = getLogger(__name__)
 
 
 class RelateIO(RefIO, ABC):
@@ -55,12 +58,19 @@ def from_reads(reads: Iterable[tuple[str, tuple[list[int], [list[int]]], dict[in
     seg_end3s = list()
     muts = {pos: defaultdict(list) for pos in range(1, len(refseq) + 1)}
     # Collect the mutation data from the reads.
-    for read, (name, (end5s, end3s), poss) in enumerate(reads):
-        names.append(name)
-        seg_end5s.append(end5s)
-        seg_end3s.append(end3s)
-        for pos, rel in poss.items():
-            muts[pos][rel].append(read)
+    for (name, (end5s, end3s), poss) in reads:
+        if all(end5 > end3 for end5, end3 in zip(end5s, end3s, strict=True)):
+            # Skip a read if no segment has any coverage.
+            logger.warning(f"Skipped read {repr(name)} with 5' end(s) {end5s} "
+                           f"> 3' end(s) {end3s}")
+        else:
+            # Otherwise, add the data for the read to the batch.
+            read = len(names)
+            names.append(name)
+            seg_end5s.append(end5s)
+            seg_end3s.append(end3s)
+            for pos, rel in poss.items():
+                muts[pos][rel].append(read)
     # Assemble and return the batches.
     pos_dtype = fit_uint_type(max(muts))
     name_batch = QnamesBatchIO(sample=sample,

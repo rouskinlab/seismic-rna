@@ -4,7 +4,7 @@ from ..relate.data import RelateDataset
 
 
 class PoolDataset(TallMutsDataset):
-    """ Load pooled batches of relation vectors. """
+    """ Load pooled batches of relationships. """
 
     @classmethod
     def get_report_type(cls):
