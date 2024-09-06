@@ -272,22 +272,6 @@ def sanitize_values(values: Iterable[int],
     return np.asarray(array, dtype=fit_uint_type(max_value))
 
 
-def stochastic_round(values: np.ndarray | float | int):
-    """ Round values to integers stochastically, so that the probability
-    of rounding up equals the mantissa. """
-    values = np.asarray_chkfinite(values)
-    if values.ndim == 0:
-        # Zero-dimensional arrays must be converted to 1D, as they will
-        # not work properly with np.nonzero().
-        return stochastic_round(np.atleast_1d(values))[0]
-    rounded = np.asarray(np.floor(values), dtype=int)
-    mantissas = values - rounded
-    round_up = np.nonzero(rng.random(mantissas.shape) < mantissas)
-    if any(up.size > 0 for up in round_up):
-        rounded[round_up] += 1
-    return rounded
-
-
 def find_dims(dims: Sequence[Sequence[str | None]],
               arrays: Sequence[np.ndarray],
               names: Sequence[str] | None = None,
