@@ -6,6 +6,7 @@ import numpy as np
 from .array import get_length
 
 logger = getLogger(__name__)
+
 rng = np.random.default_rng()
 
 
@@ -18,6 +19,73 @@ def stochastic_bool(p: np.ndarray, validate: bool = True):
         if p.max() > 1.:
             raise ValueError(f"All p must be ≤ 1, but got {p[p > 1.]}")
     return rng.random(p.shape) < p
+
+
+def calc_p_i_given_m(p: np.ndarray, m: int):
+    """ Calculate the probability of exactly j successes among items
+    1 to i, given that the number of successes among all n items is m.
+
+    Parameters
+    ----------
+    p: np.ndarray
+        1D array of the probability of success for each item.
+    m: int
+        Required number of successes.
+    """
+    n, = p.shape
+    if m < 0:
+        raise ValueError(f"m must be ≥ 0, but got {m}")
+    if m > n:
+        raise ValueError(f"m must be ≤ {n}, but got {m}")
+    # Calculate the required number of failures (x).
+    x = n - m
+    # Initialize probabilities that each item will succeed given that
+    # the total number of successes equals m.
+    p_i_given_m = np.zeros(n)
+    # Initialize probabilities that among items 1 to i (rows) there will
+    # be exactly j successes (columns).
+    p_ij = np.zeros((n + 1, m + 2))
+    # Row 0 represents 0 items, which must have 0 successes:
+    # probability of 0 successes equals 1;
+    # minimum and maximum numbers of successes both equal 0.
+    p_ij[0, 0] = 1.
+    j_prev_min = 0
+    j_prev_max = 0
+    # Use dynamic programming to calculate the probability that among
+    # items 1 to i (rows) there will be exactly j successes (columns).
+    for i in range(1, n + 1):
+        # Calculate the minimum and maximum numbers of successes that
+        # are possible from items 1 to i.
+        j_min = max(0, i - x)
+        j_max = min(i, m)
+        # For each number of successes (j), calculate the probability
+        # that that number of successes resulted from success or failure
+        # of item i.
+        # There are (j_prev_max - j_prev_min + 1) possible numbers of
+        # successes for item (i - 1); success or failure of item i must
+        # build on those numbers of successes.
+        p_success = np.full(j_prev_max + 1 - j_prev_min, p[i - 1])
+        if j_min > j_prev_min:
+            # If the minimum number of successes among items 1 to i is
+            # greater than that among items 1 to (i - 1), then item i
+            # must succeed if the previous number of successes was the
+            # previous minimum number.
+            p_success[0] = 1.
+        if j_max == j_prev_max:
+            # If the maximum number of successes among items 1 to i
+            # equals the maximum number among items 1 to (i - 1), then
+            # item i must fail if the previous number of successes was
+            # the maximum number.
+            p_success[-1] = 0.
+        # Calculate the probability of each number o
+        p_ij_prev = p_ij[i - 1, j_prev_min: j_prev_max + 1]
+        p_i = p_ij_prev * p_success
+        p_i_given_m[i - 1] = p_i.sum()
+        p_ij[i, j_prev_min + 1: j_prev_max + 2] += p_i
+        p_ij[i, j_prev_min: j_prev_max + 1] += p_ij_prev * (1. - p_success)
+        j_prev_min = j_min
+        j_prev_max = j_max
+    return p_i_given_m
 
 
 def combinations_array(n: int, m: int):
