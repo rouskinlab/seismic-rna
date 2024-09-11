@@ -1,214 +1,79 @@
-from itertools import combinations
-from logging import getLogger
-
 import numpy as np
 
-from .array import get_length
-
-logger = getLogger(__name__)
+from .array import calc_inverse
 
 rng = np.random.default_rng()
 
 
-def stochastic_bool(p: np.ndarray, validate: bool = True):
-    """ Return a boolean array of the same shape as p where each value
-    is True with probability equal to the corresponding value in p. """
-    if validate and p.size > 0:
-        if p.min() < 0.:
-            raise ValueError(f"All p must be ≥ 0, but got {p[p < 0.]}")
-        if p.max() > 1.:
-            raise ValueError(f"All p must be ≤ 1, but got {p[p > 1.]}")
-    return rng.random(p.shape) < p
-
-
-def calc_p_i_given_m(p: np.ndarray, m: int):
-    """ Calculate the probability of exactly j successes among items
-    1 to i, given that the number of successes among all n items is m.
+def _stochastic_round(values: np.ndarray | list | float | int):
+    """ Round values to integers stochastically, so that the probability
+    of rounding up equals the fractional part of the original value.
 
     Parameters
     ----------
-    p: np.ndarray
-        1D array of the probability of success for each item.
-    m: int
-        Required number of successes.
-    """
-    n, = p.shape
-    if m < 0:
-        raise ValueError(f"m must be ≥ 0, but got {m}")
-    if m > n:
-        raise ValueError(f"m must be ≤ {n}, but got {m}")
-    # Calculate the required number of failures (x).
-    x = n - m
-    # Initialize probabilities that each item will succeed given that
-    # the total number of successes equals m.
-    p_i_given_m = np.zeros(n)
-    # Initialize probabilities that among items 1 to i (rows) there will
-    # be exactly j successes (columns).
-    p_ij = np.zeros((n + 1, m + 2))
-    # Row 0 represents 0 items, which must have 0 successes:
-    # probability of 0 successes equals 1;
-    # minimum and maximum numbers of successes both equal 0.
-    p_ij[0, 0] = 1.
-    j_prev_min = 0
-    j_prev_max = 0
-    # Use dynamic programming to calculate the probability that among
-    # items 1 to i (rows) there will be exactly j successes (columns).
-    for i in range(1, n + 1):
-        # Calculate the minimum and maximum numbers of successes that
-        # are possible from items 1 to i.
-        j_min = max(0, i - x)
-        j_max = min(i, m)
-        # For each number of successes (j), calculate the probability
-        # that that number of successes resulted from success or failure
-        # of item i.
-        # There are (j_prev_max - j_prev_min + 1) possible numbers of
-        # successes for item (i - 1); success or failure of item i must
-        # build on those numbers of successes.
-        p_success = np.full(j_prev_max + 1 - j_prev_min, p[i - 1])
-        if j_min > j_prev_min:
-            # If the minimum number of successes among items 1 to i is
-            # greater than that among items 1 to (i - 1), then item i
-            # must succeed if the previous number of successes was the
-            # previous minimum number.
-            p_success[0] = 1.
-        if j_max == j_prev_max:
-            # If the maximum number of successes among items 1 to i
-            # equals the maximum number among items 1 to (i - 1), then
-            # item i must fail if the previous number of successes was
-            # the maximum number.
-            p_success[-1] = 0.
-        # Calculate the probability of each number o
-        p_ij_prev = p_ij[i - 1, j_prev_min: j_prev_max + 1]
-        p_i = p_ij_prev * p_success
-        p_i_given_m[i - 1] = p_i.sum()
-        p_ij[i, j_prev_min + 1: j_prev_max + 2] += p_i
-        p_ij[i, j_prev_min: j_prev_max + 1] += p_ij_prev * (1. - p_success)
-        j_prev_min = j_min
-        j_prev_max = j_max
-    return p_i_given_m
-
-
-def combinations_array(n: int, m: int):
-    """ Like itertools.combinations(), but returns a NumPy array.
-
-    Parameters
-    ----------
-    n: int
-        Number of items; must be ≥ 0.
-    m: int
-        Number of items to choose; must be ≥ 0 and ≤ n.
+    values: np.ndarray | list | float | int
+        Values to round; if scalar, a 0D integer array will be returned.
 
     Returns
     -------
     np.ndarray
-        Combinations of items.
+        Values rounded to integers.
     """
-    if n < 0:
-        raise ValueError(f"n must be ≥ 0, but got {n}")
-    if not 0 <= m <= n:
-        raise ValueError(f"m must be ≥ 0 and ≤ {n}, but got {m}")
-    return np.array(list(combinations(range(n), m)), dtype=int)
+    values = np.asarray_chkfinite(values)
+    # Break each value into integer and fractional parts.
+    rounded = np.asarray(np.floor(values), dtype=int)
+    # Reshape the fractional parts into a 1D array.
+    fractionals = np.reshape(values - rounded, -1)
+    # Choose which values to round up.
+    round_up = rng.random(fractionals.shape) < fractionals
+    # Round up the chosen values.
+    rounded.reshape(-1)[round_up] += 1
+    return rounded
 
 
-def combinations_bools(n: int, m: int):
-    """ All combinations of m items from a collection of n items.
+def _stochastic_round_sum(values: np.ndarray | list | float | int):
+    """ Like stochastic_round, but guarantees that the sums before and
+    after rounding are equal. If the former is not an integer, then the
+    sum after rounding will be either the nearest integer greater than
+    the sum (with probability equal to the fractional part of the sum)
+    or the nearest integer less than the sum (with the complementary
+    probability).
 
     Parameters
     ----------
-    n: int
-        Number of items in total; must be ≥ 0.
-    m: int
-        Number of items to choose; must be ≥ 0 and ≤ n.
+    values: np.ndarray | list | float | int
+        Values to round; if scalar, a 0D integer array will be returned.
 
     Returns
     -------
     np.ndarray
-        Combinations of items.
+        Values rounded to integers, with the original sum preserved.
     """
-    # Determine which indexes should be set to True.
-    indexes = combinations_array(n, m)
-    num_combinations, _ = indexes.shape
-    # Initialize the matrix of combinations as boolean values.
-    bools = np.zeros((num_combinations, n), dtype=bool)
-    # Set the indexes to True.
-    rows = np.repeat(np.arange(num_combinations), m)
-    cols = indexes.reshape(-1, order="C")
-    bools[rows, cols] = True
-    return bools
-
-
-def _calc_p_roundup_given_m(p_roundup: np.ndarray, m: int):
-    """ Calculate the probability of each value being rounded up given
-    that exactly m values are rounded up. """
-    # Generate a boolean matrix of all possible combinations of exactly
-    # m values to round up.
-    n = get_length(p_roundup, "p_roundup")
-    roundup_combos = combinations_bools(n, m)
-    # Calculate the joint probability of each possible combination of m
-    # values and that m values are rounded up.
-    p_roundup_combo_and_m = np.where(roundup_combos,
-                                     p_roundup,
-                                     1. - p_roundup).prod(axis=1)
-    # Calculate the probability that exactly m values are rounded up.
-    p_m = p_roundup_combo_and_m.sum()
-    # Calculate the conditional probability of each possible combination
-    # of m values given that m values are rounded up.
-    if p_m > 0.:
-        p_roundup_combo_given_m = p_roundup_combo_and_m / p_m
-    else:
-        p_roundup_combo_given_m = np.zeros_like(p_roundup_combo_and_m)
-    # Calculate the probability that each value is rounded up given that
-    # exactly m values are rounded up.
-    return p_roundup_combo_given_m @ roundup_combos
-
-
-def _calc_p_roundup_given_ms(p_roundup: np.ndarray,
-                             nums_roundup: np.ndarray,
-                             p_nums_roundup: np.ndarray):
-    """ Calculate the probability of each value being rounded up given
-    that the number of values rounded up can be any of nums_roundup,
-    each with probability p_nums_roundup. """
-    # For each possible total number of values to round up, m, calculate
-    # the conditional probability that each value would be rounded up
-    # given that at total of exactly m values are rounded up.
-    p_roundup_given_m = np.stack([_calc_p_roundup_given_m(p_roundup, m)
-                                  for m in nums_roundup],
-                                 axis=1)
-    # Calculate the conditional probability that each value would be
-    # rounded up given that the total number of values that are rounded
-    # up is any of the possibilities, weighted by the probability of
-    # each total number of values to round up.
-    return p_roundup_given_m @ p_nums_roundup
-
-
-def _calc_p_simulate_given_ms(p_roundup: np.ndarray):
-    """ Calculate the round-up probabilities to use for simulation such
-    that when simulations in which the wrong total number of values were
-    rounded up are dropped, the probabilities of rounding up among the
-    remaining simulations (with the correct number of values rounded up)
-    will equal p_roundup. """
-    # List the possible total numbers of values to round up and the
-    # probability of rounding up each total number of values.
-    if p_roundup.size == 0:
-        return p_roundup
-    num_roundup = p_roundup.sum()
-    nums_roundup = np.array(sorted({int(np.floor(num_roundup)),
-                                    int(np.ceil(num_roundup))}))
-    p_nums_roundup = 1. - np.abs(nums_roundup - num_roundup)
-
-    def objective(p_simulate_given_ms: np.ndarray):
-        return (_calc_p_roundup_given_ms(p_simulate_given_ms,
-                                         nums_roundup,
-                                         p_nums_roundup)
-                - p_roundup)
-
-    from scipy.optimize import newton_krylov, NoConvergence
-    try:
-        return newton_krylov(objective, p_roundup)
-    except NoConvergence as error:
-        logger.warning("Failed to calculate the round-up probabilities for "
-                       f"simulation from {p_roundup}: {error}")
-        return p_roundup
+    values = np.asarray_chkfinite(values)
+    if values.size == 0:
+        return np.zeros(values.shape, dtype=bool)
+    # Shuffle the values so that the outcome of each will be independent
+    # of the others.
+    order = rng.permutation(values.size)
+    shuffled = values.reshape(-1, order="C")[order]
+    # Choose a random offset between 0 and 1 to remove bias against the
+    # shuffled item that comes first.
+    offset = rng.random()
+    # Lay out the values along the real number line, such that they are
+    # in shuffled order and abutting exactly (without gaps or overlaps),
+    # each occupies a width of the number line equal to its value, and
+    # the first item starts at the offset; calculate the start and end
+    # coordinates of each item.
+    ends = offset + np.cumsum(shuffled)
+    starts = np.concatenate([[offset], ends[:-1]])
+    # When the values are laid out in this way, the number of integers
+    # that each value straddles must equal the value rounded either up
+    # or down, and the probability that it equals the value rounded up
+    # is the fractional part of the value; thus, count the number of
+    # integers that each value straddles in order to round it up/down.
+    rounded = np.asarray(np.floor(ends) - np.floor(starts), dtype=int)
+    # Un-shuffle the values and reshape to the original shape.
+    return rounded[calc_inverse(order)].reshape(values.shape, order="C")
 
 
 def stochastic_round(values: np.ndarray | list | float | int,
@@ -221,33 +86,14 @@ def stochastic_round(values: np.ndarray | list | float | int,
     values: np.ndarray | list | float | int
         Values to round; if scalar, a 0D integer array will be returned.
     preserve_sum: bool
-        Whether the rounded values should have the same sum as the input
-        values; if the sum is not an integer, it will be rounded using
-        this function.
+        Whether to ensure that the sum of the rounded values equals the
+        sum of the original values.
 
     Returns
     -------
     np.ndarray
-        Values rounded to integers.
+        Values rounded to integers, with the original sum preserved.
     """
-    values = np.asarray_chkfinite(values)
-    # Break each value into integer and fractional parts.
-    rounded = np.asarray(np.floor(values), dtype=int)
-    fractionals = (values - rounded).reshape(-1)
     if preserve_sum:
-        # Choose the number of values that must be rounded up.
-        n_round_up = int(stochastic_round(fractionals.sum()))
-        # Calculate the probability that each value is rounded up.
-        p = _calc_p_simulate_given_ms(fractionals)
-    else:
-        n_round_up = None
-        p = fractionals
-    # Randomly choose values to round up.
-    round_up = stochastic_bool(p, validate=False)
-    if n_round_up is not None:
-        # Make sure the number being rounded up equals n_round_up.
-        while np.count_nonzero(round_up) != n_round_up:
-            round_up = stochastic_bool(p, validate=False)
-    # Round up the chosen values.
-    rounded.reshape(-1)[round_up] += 1
-    return rounded
+        return _stochastic_round_sum(values)
+    return _stochastic_round(values)
