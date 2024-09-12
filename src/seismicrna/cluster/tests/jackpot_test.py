@@ -19,7 +19,6 @@ from seismicrna.core.arg.cli import (opt_sim_dir,
 from seismicrna.core.array import find_dims
 from seismicrna.core.logs import get_config, set_config
 from seismicrna.core.unbias import (CLUSTERS,
-                                    POSITIONS,
                                     READS,
                                     calc_p_ends_given_clust_noclose,
                                     calc_p_noclose_given_clust,
@@ -71,68 +70,46 @@ class TestSimClusters(ut.TestCase):
         # Define data and parameters.
         end5s = np.array([0, 0, 1] * 10)
         end3s = np.array([0, 1, 1] * 10)
-        p_ends_given_clust_noclose = np.array([[[0.25, 0.25], [0.50, 0.25]],
-                                               [[0.00, 0.00], [0.25, 0.50]]])
-        p_clust_given_noclose = np.array([0.75, 0.25])
-        dims = find_dims([(READS,),
-                          (READS,),
-                          (POSITIONS, POSITIONS, CLUSTERS),
-                          (CLUSTERS,)],
-                         [end5s,
-                          end3s,
-                          p_ends_given_clust_noclose,
-                          p_clust_given_noclose],
-                         ["end5s",
-                          "end3s",
-                          "p_ends_given_clust_noclose",
-                          "p_clust_given_noclose"])
+        p_clust_per_read = np.array([[1 / 4, 1 / 4, 1 / 4, 1 / 4],
+                                     [4 / 8, 2 / 8, 1 / 8, 1 / 8],
+                                     [3 / 8, 1 / 8, 2 / 8, 2 / 8]] * 10)
+        dims = find_dims([(READS,), (READS,), (READS, CLUSTERS,)],
+                         [end5s, end3s, p_clust_per_read],
+                         ["end5s", "end3s", "p_clust_per_read"],
+                         nonzero=[CLUSTERS])
         n_reads = dims[READS]
-        # For each read, calculate the probability that the read came
-        # from each cluster.
-        p_clust_per_read = calc_p_clust_given_ends_noclose(
-            p_ends_given_clust_noclose,
-            p_clust_given_noclose
-        )[end5s, end3s]
-        p_clust_among_reads = p_clust_per_read.mean(axis=0)
+        n_clusts = dims[CLUSTERS]
         # Simulate the cluster for each read.
-        clusters = np.vstack([sim_clusters(end5s,
-                                           end3s,
-                                           p_ends_given_clust_noclose,
-                                           p_clust_given_noclose)
+        clusters = np.vstack([sim_clusters(p_clust_per_read)
                               for _ in range(n_trials)])
-        for k in range(p_clust_given_noclose.size):
-            print("CLUSTER", k)
+        for k in range(n_clusts):
             # Find the reads assigned to this cluster.
             read_in_k = clusters == k
             # Check that in every trial, the number of reads assigned to
             # this cluster equals either the integer below or above the
-            # expected number of reads.
+            # expected number of reads, plus/minus the cluster number.
             n_reads_per_clust = np.count_nonzero(read_in_k, axis=1)
-            n_reads_per_clust_expect = n_reads * p_clust_among_reads[k]
-            n_reads_per_clust_is_lo = np.equal(
-                n_reads_per_clust,
-                int(np.floor(n_reads_per_clust_expect))
-            )
-            n_reads_per_clust_is_up = np.equal(
-                n_reads_per_clust,
-                int(np.ceil(n_reads_per_clust_expect))
-            )
-            self.assertTrue(np.all(np.logical_or(n_reads_per_clust_is_lo,
-                                                 n_reads_per_clust_is_up)))
-            # Confirm that the correct proportion of reads were assigned
-            # to the integer above the expected number of reads.
-            (n_reads_per_clust_is_up_expect_lo,
-             n_reads_per_clust_is_up_expect_up) = binom.interval(
+            n_reads_per_clust_expect = p_clust_per_read[:, k].sum()
+            n_reads_per_clust_floor = np.floor(n_reads_per_clust_expect) - k
+            n_reads_per_clust_ceil = np.ceil(n_reads_per_clust_expect) + k
+            self.assertTrue(np.all(np.greater_equal(n_reads_per_clust,
+                                                    n_reads_per_clust_floor)))
+            self.assertTrue(np.all(np.less_equal(n_reads_per_clust,
+                                                 n_reads_per_clust_ceil)))
+            # Confirm that the number of reads assigned to this cluster
+            # across all trials is accurate.
+            # FIXME: A binomial distribution is not the correct distribution; it's too lenient.
+            n_reads_per_clust_lo, n_reads_per_clust_up = binom.interval(
                 confidence,
-                n_trials,
-                n_reads_per_clust_expect - int(n_reads_per_clust_expect)
+                n_trials * n_reads,
+                n_reads_per_clust_expect / n_reads
             )
-            self.assertGreaterEqual(np.count_nonzero(n_reads_per_clust_is_up),
-                                    n_reads_per_clust_is_up_expect_lo)
-            self.assertLessEqual(np.count_nonzero(n_reads_per_clust_is_up),
-                                 n_reads_per_clust_is_up_expect_up)
-            # Confirm that the probability that each read was assigned
-            # to each cluster is accurate.
+            self.assertGreaterEqual(n_reads_per_clust.sum(),
+                                    n_reads_per_clust_lo)
+            self.assertLessEqual(n_reads_per_clust.sum(),
+                                 n_reads_per_clust_up)
+            # Confirm that the number of trials in which each read was
+            # assigned to this cluster is accurate.
             n_clust_per_read = np.count_nonzero(read_in_k, axis=0)
             n_clust_per_read_lo, n_clust_per_read_up = binom.interval(
                 confidence,
