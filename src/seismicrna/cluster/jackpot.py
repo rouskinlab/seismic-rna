@@ -6,6 +6,7 @@ from numba import jit
 
 from .marginal import calc_marginal
 from ..core.array import find_dims, get_length
+from ..core.random import stochastic_round
 from ..core.unbias import (CLUSTERS,
                            POSITIONS,
                            READS,
@@ -16,7 +17,8 @@ from ..core.unbias import (CLUSTERS,
                            calc_p_ends_given_clust_noclose,
                            calc_p_clust_given_ends_noclose,
                            calc_params,
-                           calc_params_observed)
+                           calc_params_observed,
+                           triu_sum)
 
 SUM_EXP_PRECISION = 3
 UNIQUE = "unique reads"
@@ -75,23 +77,72 @@ def _sim_muts(reads: np.ndarray,
         read[muts + end5] = 1
 
 
-def _sim_clusters(end5s: np.ndarray,
-                  end3s: np.ndarray,
-                  p_clust_given_ends_noclose: np.ndarray):
+def sim_clusters(end5s: np.ndarray,
+                 end3s: np.ndarray,
+                 p_ends_given_clust_noclose: np.ndarray,
+                 p_clust_given_noclose: np.ndarray,
+                 validate: bool = True):
     """ Simulate a cluster for each read. """
     dims = find_dims([(READS,),
                       (READS,),
-                      (POSITIONS, POSITIONS, CLUSTERS,)],
-                     [end5s, end3s, p_clust_given_ends_noclose],
-                     ["end5s", "end3s", "p_clust_given_ends_noclose"])
-    # For each read, calculate the cumulative probability that the read
-    # belongs to each cluster.
-    cum_p_clust_per_read = np.cumsum(p_clust_given_ends_noclose[end5s, end3s],
-                                     axis=1)
-    # For each read, generate a random number from 0 to 1 and pick the
-    # cluster in whose window of probability that random number lies.
-    return np.count_nonzero(rng.random((dims[READS], 1)) > cum_p_clust_per_read,
-                            axis=1)
+                      (POSITIONS, POSITIONS, CLUSTERS,),
+                      (CLUSTERS,)],
+                     [end5s,
+                      end3s,
+                      p_ends_given_clust_noclose,
+                      p_clust_given_noclose],
+                     ["end5s",
+                      "end3s",
+                      "p_ends_given_clust_noclose",
+                      "p_clust_given_noclose"])
+    n_reads = dims[READS]
+    n_clusts = dims[CLUSTERS]
+    if validate:
+        if not np.isclose(p_clust_given_noclose.sum(), 1.):
+            raise ValueError("p_clust_given_noclose must sum to 1, "
+                             f"but got {p_clust_given_noclose.sum()}")
+        if not np.allclose(triu_sum(p_ends_given_clust_noclose), 1.):
+            raise ValueError(
+                "p_ends_given_clust_noclose must sum to 1 for every cluster, "
+                f"but got {triu_sum(p_ends_given_clust_noclose)}"
+            )
+    if n_clusts < 1:
+        raise ValueError(f"n_clusts must be ≥ 1, but got {n_clusts}")
+    clusters = np.zeros(n_reads, dtype=int)
+    if n_clusts == 1:
+        # All reads must be in one cluster.
+        return clusters
+    # For each read, calculate the probability that the read came from
+    # each cluster.
+    p_clust_per_read = calc_p_clust_given_ends_noclose(
+        p_ends_given_clust_noclose,
+        p_clust_given_noclose
+    )[end5s, end3s]
+    # Assign a cluster to each read.
+    unassigned = np.arange(n_reads)
+    for k in range(n_clusts):
+        if k < n_clusts - 1:
+            # Select reads to belong to this cluster.
+            selected = stochastic_round(p_clust_per_read[:, 0],
+                                        preserve_sum=True).astype(bool)
+            if k > 0:
+                # This step is unnecessary for k == 0 because clusters
+                # is initialized to all 0.
+                clusters[unassigned][selected] = k
+            # Remove the reads that were assigned to this cluster from
+            # the array of unassigned reads.
+            unassigned = np.setdiff1d(unassigned,
+                                      unassigned[selected],
+                                      assume_unique=True)
+            # Remove this cluster and re-normalize the probabilities of
+            # the remaining clusters to sum to 1 for each read.
+            p_clust_per_read = p_clust_per_read[unassigned, 1:]
+            p_clust_per_read /= p_clust_per_read.sum(axis=1)[:, np.newaxis]
+        else:
+            # If k == n_clusts - 1, then this iteration of the loop is
+            # the last, so assign all unassigned reads to this cluster.
+            clusters[unassigned] = k
+    return clusters
 
 
 def _sim_reads(end5s: np.ndarray,
@@ -106,7 +157,7 @@ def _sim_reads(end5s: np.ndarray,
                      [end5s, end3s, p_clust_given_ends_noclose, p_mut],
                      ["end5s", "end3s", "p_clust_given_ends_noclose", "p_mut"])
     # Assign each read to exactly one cluster.
-    clusts = _sim_clusters(end5s, end3s, p_clust_given_ends_noclose)
+    clusts = sim_clusters(end5s, end3s, p_clust_given_ends_noclose)
     # Initialize an empty matrix for the reads.
     reads = np.zeros((dims[READS], dims[POSITIONS] + 2), dtype=int)
     # Write the 5'/3' ends for the reads into the last two columns.
@@ -115,6 +166,19 @@ def _sim_reads(end5s: np.ndarray,
     # Generate random mutations and write them into the matrix of reads.
     _sim_muts(reads, clusts, p_mut, min_mut_gap)
     return reads, clusts
+
+
+def _sim_reads(end5s: np.ndarray,
+               end3s: np.ndarray,
+               p_clust_given_ends_noclose: np.ndarray, ):
+    dims = find_dims([(READS,),
+                      (READS,),
+                      (POSITIONS, POSITIONS, CLUSTERS,),
+                      (POSITIONS, CLUSTERS)],
+                     [end5s, end3s, p_clust_given_ends_noclose, p_mut],
+                     ["end5s", "end3s", "p_clust_given_ends_noclose", "p_mut"])
+    # Assign each read to exactly one cluster.
+    clusts = sim_clusters(end5s, end3s, p_clust_given_ends_noclose)
 
 
 def _calc_resps(n_clusts: int,
@@ -228,9 +292,9 @@ def sim_obs_exp(end5s: np.ndarray,
         yield _calc_obs_exp(reads, clusts, n_clusts, min_mut_gap, unmasked)
 
 
-def calc_semi_g_anomaly(num_obs: float | np.ndarray,
+def calc_semi_g_anomaly(num_obs: int | np.ndarray,
                         log_exp: float | np.ndarray):
-    """ Calculate each item's semi-G-anomaly, i.e. half its contribution
+    """ Calculate each read's semi-G-anomaly, i.e. half its contribution
     to the G-test statistic. """
     return num_obs * (np.log(num_obs) - log_exp)
 
@@ -245,8 +309,9 @@ def calc_jackpot_score(semi_g_anomalies: np.ndarray, n_reads: int):
     JS = sum{O_i * log(O_i / E_i)} / sum{O_i}
     where i is each unique read.
 
-    This formula was based on that of the G-test statistic, which is
-    identical except that the latter is multiplied by 2.
+    This formula is based on that of the G-test statistic, which is
+    identical except that the latter is multiplied by 2 and not divided
+    by the number of observations.
     """
     if n_reads == 0:
         if semi_g_anomalies.size > 0:
@@ -261,22 +326,19 @@ def calc_jackpot_score_ci(jackpot_scores: Iterable[float],
     """ Calculate the confidence interval of the mean of an array of
     jackpotting scores. """
     # Ensure g_stats is a NumPy array of floats with no NaN/inf values.
-    if not isinstance(jackpot_scores, np.ndarray):
-        if not isinstance(jackpot_scores, list):
-            jackpot_scores = list(jackpot_scores)
-        jackpot_scores = np.array(jackpot_scores)
+    if not isinstance(jackpot_scores, (np.ndarray, list)):
+        jackpot_scores = list(jackpot_scores)
     jackpot_scores = np.asarray_chkfinite(jackpot_scores, dtype=float)
     # Calculate the confidence interval of the mean, assuming that the
     # jackpotting scores are distributed normally.
     n = get_length(jackpot_scores, "jackpot_scores")
     if n > 1:
-        mean = jackpot_scores.mean()
-        std_dev = jackpot_scores.std()
-        std_err = std_dev / np.sqrt(n)
         # Import SciPy here instead of at the top of the module because
         # the latter would take so long as to slow down the start-up.
         from scipy.stats import t
         t_lo, t_up = t.interval(confidence_level, n - 1)
+        mean = jackpot_scores.mean()
+        std_err = np.sqrt(jackpot_scores.var() / n)
         ci_lo = mean + std_err * t_lo
         ci_up = mean + std_err * t_up
     else:
