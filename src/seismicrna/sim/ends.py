@@ -14,8 +14,8 @@ from ..core.arg import (opt_ct_file,
                         opt_force,
                         opt_parallel,
                         opt_max_procs)
-from ..core.array import stochastic_round
 from ..core.batch import END5_COORD, END3_COORD
+from ..core.random import stochastic_round
 from ..core.rna import find_ct_section
 from ..core.run import run_func
 from ..core.stats import calc_dirichlet_params
