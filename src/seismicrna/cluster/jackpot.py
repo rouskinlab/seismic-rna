@@ -76,50 +76,72 @@ def _sim_muts(reads: np.ndarray,
         read[muts + end5] = 1
 
 
-def sim_clusters(p_clust_per_read: np.ndarray):
-    """ Simulate a cluster for each read. """
-    dims = find_dims([(READS, CLUSTERS)],
-                     [p_clust_per_read],
-                     ["p_clust_per_read"],
+def _assign_clusters(p_clust_per_read: np.ndarray,
+                     n_reads_per_clust: np.ndarray,
+                     max_tries_expected: int = 256):
+    dims = find_dims([(READS, CLUSTERS), (CLUSTERS,)],
+                     [p_clust_per_read, n_reads_per_clust],
+                     ["p_clust_per_read", "n_reads_per_clust"],
                      nonzero=[CLUSTERS])
     n_reads = dims[READS]
     n_clusts = dims[CLUSTERS]
-    if p_clust_per_read.size > 0 and p_clust_per_read.min() < 0.:
-        raise ValueError("p_clust_per_read must be ≥ 0, but got "
-                         f"{np.count_nonzero(p_clust_per_read < 0.)} "
-                         "probabilities < 0")
-    if not np.allclose(p_clust_per_read.sum(axis=1), 1.):
-        p_clust_per_read_sum = p_clust_per_read.sum(axis=1)
-        not_close = np.logical_not(np.isclose(p_clust_per_read_sum, 1.))
-        raise ValueError("p_clust_per_read must sum to 1 for every read, "
-                         f"but got {p_clust_per_read_sum[not_close]}")
+    if max_tries_expected < 1:
+        raise ValueError(
+            f"max_tries_expected must be ≥ 1, but got {max_tries_expected}"
+        )
+    # Initially assign all reads to cluster 0.
     clusters = np.zeros(n_reads, dtype=int)
     if n_clusts == 1:
         # There is only one cluster, so all reads must be in it.
         return clusters
-    # Assign a cluster to each read.
+    # Assign a cluster to each read, beginning with the last cluster
+    # (n_clusts - 1) and going until cluster 1.
     unassigned = np.arange(n_reads)
-    for k in range(n_clusts - 1):
-        # Select reads to assign to this cluster.
-        selected = stochastic_round(p_clust_per_read[:, 0],
-                                    preserve_sum=True).astype(bool)
+    for k in range(n_clusts - 1, 0, -1):
+        p_k = p_clust_per_read[:, -1]
+        n_k = n_reads_per_clust[k]
+        # Assign exactly n_k reads to cluster k.
+        if abs(p_k.sum() - n_k) >= 1. - 1. / max_tries_expected:
+            raise ValueError(f"Cannot assign {n_k} reads to cluster {k}")
+        while (selected := stochastic_round(
+                p_k, preserve_sum=True
+        ).astype(bool, copy=False)).sum() != n_k:
+            pass
         newly_assigned = unassigned[selected]
-        if k > 0:
-            # This step is unnecessary for k == 0 because clusters is
-            # initialized to all 0.
-            clusters[newly_assigned] = k
-        # Remove the reads that were assigned to this cluster from the
-        # array of unassigned reads.
-        unassigned = np.setdiff1d(unassigned,
-                                  newly_assigned,
-                                  assume_unique=True)
-        # Remove this cluster and re-normalize the probabilities of the
-        # remaining clusters to sum to 1 for each read.
-        p_clust_per_read = p_clust_per_read[~selected, 1:]
-        p_clust_per_read /= p_clust_per_read.sum(axis=1)[:, np.newaxis]
-    # Assign all as-yet unassigned reads to the last cluster.
-    clusters[unassigned] = n_clusts - 1
+        clusters[newly_assigned] = k
+        if k > 1:
+            # Remove the reads that were assigned to this cluster from
+            # the array of unassigned reads.
+            unassigned = np.setdiff1d(unassigned,
+                                      newly_assigned,
+                                      assume_unique=True)
+            # Remove this cluster and re-normalize the probabilities of
+            # the remaining clusters to sum to 1 for each read.
+            p_clust_per_read = p_clust_per_read[~selected, :-1]
+            p_clust_per_read = (p_clust_per_read
+                                / p_clust_per_read.sum(axis=1)[:, np.newaxis])
     return clusters
+
+
+def sim_clusters(p_clust_per_read: np.ndarray):
+    """ Simulate a cluster for each read. """
+    if p_clust_per_read.size > 0 and p_clust_per_read.min() <= 0.:
+        raise ValueError("All p_clust_per_read must be > 0, but got "
+                         f"{np.count_nonzero(p_clust_per_read <= 0.)} "
+                         "probabilities < 0")
+    if not np.allclose(p_clust_per_read.sum(axis=1), 1.):
+        p_clust_per_read_sum = p_clust_per_read.sum(axis=1)
+        not_close = np.logical_not(np.isclose(p_clust_per_read_sum, 1.))
+        raise ValueError("All rows of p_clust_per_read must sum to 1, "
+                         f"but got {p_clust_per_read_sum[not_close]}")
+    # Choose the number of reads for each cluster.
+    n_reads_per_clust = stochastic_round(p_clust_per_read.sum(axis=0),
+                                         preserve_sum=True)
+    while True:
+        try:
+            return _assign_clusters(p_clust_per_read, n_reads_per_clust)
+        except ValueError:
+            pass
 
 
 def _sim_reads(end5s: np.ndarray,

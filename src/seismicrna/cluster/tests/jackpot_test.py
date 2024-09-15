@@ -67,17 +67,17 @@ class TestSimClusters(ut.TestCase):
     def test_sim_clusters(self):
         confidence = 0.9995
         n_trials = 10000
+        n_blocks = 10
         # Define data and parameters.
-        end5s = np.array([0, 0, 1] * 10)
-        end3s = np.array([0, 1, 1] * 10)
+        end5s = np.array([0, 0, 1] * n_blocks)
+        end3s = np.array([0, 1, 1] * n_blocks)
         p_clust_per_read = np.array([[1 / 4, 1 / 4, 1 / 4, 1 / 4],
                                      [4 / 8, 2 / 8, 1 / 8, 1 / 8],
-                                     [3 / 8, 1 / 8, 2 / 8, 2 / 8]] * 10)
+                                     [3 / 8, 1 / 8, 2 / 8, 2 / 8]] * n_blocks)
         dims = find_dims([(READS,), (READS,), (READS, CLUSTERS,)],
                          [end5s, end3s, p_clust_per_read],
                          ["end5s", "end3s", "p_clust_per_read"],
                          nonzero=[CLUSTERS])
-        n_reads = dims[READS]
         n_clusts = dims[CLUSTERS]
         # Simulate the cluster for each read.
         clusters = np.vstack([sim_clusters(p_clust_per_read)
@@ -87,27 +87,29 @@ class TestSimClusters(ut.TestCase):
             read_in_k = clusters == k
             # Check that in every trial, the number of reads assigned to
             # this cluster equals either the integer below or above the
-            # expected number of reads, plus/minus the cluster number.
+            # expected number of reads.
             n_reads_per_clust = np.count_nonzero(read_in_k, axis=1)
-            n_reads_per_clust_expect = p_clust_per_read[:, k].sum()
-            n_reads_per_clust_floor = np.floor(n_reads_per_clust_expect) - k
-            n_reads_per_clust_ceil = np.ceil(n_reads_per_clust_expect) + k
+            n_reads_per_clust_exp = p_clust_per_read[:, k].sum()
+            n_reads_per_clust_min = int(np.floor(n_reads_per_clust_exp))
+            n_reads_per_clust_max = int(np.ceil(n_reads_per_clust_exp))
             self.assertTrue(np.all(np.greater_equal(n_reads_per_clust,
-                                                    n_reads_per_clust_floor)))
+                                                    n_reads_per_clust_min)))
             self.assertTrue(np.all(np.less_equal(n_reads_per_clust,
-                                                 n_reads_per_clust_ceil)))
-            # Confirm that the number of reads assigned to this cluster
-            # across all trials is accurate.
-            # FIXME: A binomial distribution is not the correct distribution; it's too lenient.
-            n_reads_per_clust_lo, n_reads_per_clust_up = binom.interval(
-                confidence,
-                n_trials * n_reads,
-                n_reads_per_clust_expect / n_reads
+                                                 n_reads_per_clust_max)))
+            # Confirm that the number of trials in which the higher
+            # integer was chosen is accurate.
+            n_reads_per_clust_max_count = np.count_nonzero(
+                n_reads_per_clust == n_reads_per_clust_max
             )
-            self.assertGreaterEqual(n_reads_per_clust.sum(),
-                                    n_reads_per_clust_lo)
-            self.assertLessEqual(n_reads_per_clust.sum(),
-                                 n_reads_per_clust_up)
+            n_reads_per_clust_max_lo, n_reads_per_clust_max_up = binom.interval(
+                confidence,
+                n_trials,
+                n_reads_per_clust_exp - int(n_reads_per_clust_exp)
+            )
+            self.assertGreaterEqual(n_reads_per_clust_max_count,
+                                    n_reads_per_clust_max_lo)
+            self.assertLessEqual(n_reads_per_clust_max_count,
+                                 n_reads_per_clust_max_up)
             # Confirm that the number of trials in which each read was
             # assigned to this cluster is accurate.
             n_clust_per_read = np.count_nonzero(read_in_k, axis=0)
