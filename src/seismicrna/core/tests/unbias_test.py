@@ -7,13 +7,13 @@ from seismicrna.core.unbias import (_clip,
                                     _normalize,
                                     _adjust_min_gap,
                                     triu_log,
-                                    _triu_sum,
+                                    triu_sum,
                                     _triu_cumsum,
                                     _triu_norm,
                                     _triu_mul,
                                     _triu_dot,
                                     _triu_div,
-                                    _triu_allclose,
+                                    triu_allclose,
                                     calc_p_ends_observed,
                                     calc_p_nomut_window,
                                     calc_p_noclose_given_ends,
@@ -358,17 +358,37 @@ class TestTriuAllClose(ut.TestCase):
                 for extras in product(range(4), repeat=extra):
                     dims = (npos, npos) + extras
                     a = rng.random(dims)
-                    self.assertTrue(_triu_allclose(a, a.copy()))
+                    self.assertTrue(triu_allclose(a, a.copy()))
 
     def test_triu(self):
         for npos in range(2, 4):
             a = rng.random((npos, npos))
-            self.assertTrue(_triu_allclose(a, np.triu(a)))
+            self.assertTrue(triu_allclose(a, np.triu(a)))
 
     def test_tril(self):
         for npos in range(2, 4):
             a = rng.random((npos, npos))
-            self.assertFalse(_triu_allclose(a, np.tril(a)))
+            self.assertFalse(triu_allclose(a, np.tril(a)))
+
+    def test_float_equal(self):
+        for npos in range(4):
+            for extra in range(3):
+                for extras in product(range(4), repeat=extra):
+                    dims = (npos, npos) + extras
+                    b = rng.random()
+                    a = np.full(dims, b)
+                    self.assertTrue(triu_allclose(a, b))
+                    self.assertTrue(triu_allclose(b, a))
+
+    def test_float_unequal(self):
+        for npos in range(1, 4):
+            for extra in range(3):
+                for extras in product(range(1, 4), repeat=extra):
+                    dims = (npos, npos) + extras
+                    b = rng.random()
+                    a = np.full(dims, b + 1.)
+                    self.assertFalse(triu_allclose(a, b))
+                    self.assertFalse(triu_allclose(b, a))
 
 
 class TestTriuDot(ut.TestCase):
@@ -427,7 +447,7 @@ class TestTriuMul(ut.TestCase):
                       [5., 7.]])
         expect = np.array([[24., 9.],
                            [np.nan, 392.]])
-        self.assertTrue(_triu_allclose(_triu_mul(a, b), expect))
+        self.assertTrue(triu_allclose(_triu_mul(a, b), expect))
 
     def test_2x2x2(self):
         a = np.array([[[2., 20.], [2., 36.]],
@@ -436,7 +456,7 @@ class TestTriuMul(ut.TestCase):
                       [[3., 7.], [4., 8.]]])
         expect = np.array([[[2., 100.], [4., 216.]],
                            [[np.nan, np.nan], [48., 320.]]])
-        self.assertTrue(_triu_allclose(_triu_mul(a, b), expect))
+        self.assertTrue(triu_allclose(_triu_mul(a, b), expect))
 
 
 class TestTriuDiv(ut.TestCase):
@@ -464,7 +484,7 @@ class TestTriuDiv(ut.TestCase):
                           [5., 7.]])
         expect = np.array([[6., 1.],
                            [np.nan, 8.]])
-        self.assertTrue(_triu_allclose(_triu_div(numer, denom), expect))
+        self.assertTrue(triu_allclose(_triu_div(numer, denom), expect))
 
     def test_2x2x2(self):
         numer = np.array([[[2., 20.], [2., 36.]],
@@ -473,7 +493,7 @@ class TestTriuDiv(ut.TestCase):
                           [[3., 7.], [4., 8.]]])
         expect = np.array([[[2., 4.], [1., 6.]],
                            [[np.nan, np.nan], [3., 5.]]])
-        self.assertTrue(_triu_allclose(_triu_div(numer, denom), expect))
+        self.assertTrue(triu_allclose(_triu_div(numer, denom), expect))
 
 
 class TestTriuSum(ut.TestCase):
@@ -482,44 +502,44 @@ class TestTriuSum(ut.TestCase):
         for ndim in range(2, 6):
             array = rng.random((0,) * ndim)
             expect = np.zeros((0,) * (ndim - 2))
-            self.assertTrue(np.array_equal(_triu_sum(array), expect))
+            self.assertTrue(np.array_equal(triu_sum(array), expect))
 
     def test_1x1(self):
         x = rng.random()
         array = np.array([[x]])
         expect = np.array(x)
-        self.assertTrue(np.array_equal(_triu_sum(array), expect))
+        self.assertTrue(np.array_equal(triu_sum(array), expect))
 
     def test_1x1x1(self):
         x = rng.random()
         array = np.array([[[x]]])
         expect = np.array([x])
-        self.assertTrue(np.array_equal(_triu_sum(array), expect))
+        self.assertTrue(np.array_equal(triu_sum(array), expect))
 
     def test_1x1x2(self):
         x = rng.random()
         y = rng.random()
         array = np.array([[[x, y]]])
         expect = np.array([x, y])
-        self.assertTrue(np.array_equal(_triu_sum(array), expect))
+        self.assertTrue(np.array_equal(triu_sum(array), expect))
 
     def test_2x2(self):
         array = np.array([[1., 2.],
                           [3., 4.]])
         expect = np.array(7.)
-        self.assertTrue(np.array_equal(_triu_sum(array), expect))
+        self.assertTrue(np.array_equal(triu_sum(array), expect))
 
     def test_2x2x1(self):
         array = np.array([[[1.], [2.]],
                           [[3.], [4.]]])
         expect = np.array([7.])
-        self.assertTrue(np.array_equal(_triu_sum(array), expect))
+        self.assertTrue(np.array_equal(triu_sum(array), expect))
 
     def test_2x2x2(self):
         array = np.array([[[1., 5.], [2., 6.]],
                           [[3., 7.], [4., 8.]]])
         expect = np.array([7., 19.])
-        self.assertTrue(np.array_equal(_triu_sum(array), expect))
+        self.assertTrue(np.array_equal(triu_sum(array), expect))
 
     def test_2x2x2x2(self):
         array = np.array([[[[1., 5.],
@@ -530,7 +550,7 @@ class TestTriuSum(ut.TestCase):
                                           [12., 16.]]]])
         expect = np.array([[7., 19.],
                            [31., 43.]])
-        self.assertTrue(np.array_equal(_triu_sum(array), expect))
+        self.assertTrue(np.array_equal(triu_sum(array), expect))
 
 
 class TestTriuCumSum(ut.TestCase):
@@ -540,41 +560,41 @@ class TestTriuCumSum(ut.TestCase):
             array = rng.random((0,) * ndim)
             result = _triu_cumsum(array)
             self.assertEqual(result.shape, array.shape)
-            self.assertTrue(_triu_allclose(result, array))
+            self.assertTrue(triu_allclose(result, array))
 
     def test_all_1(self):
         for ndim in range(2, 6):
             array = rng.random((1,) * ndim)
             result = _triu_cumsum(array)
             self.assertEqual(result.shape, array.shape)
-            self.assertTrue(_triu_allclose(result, array))
+            self.assertTrue(triu_allclose(result, array))
 
     def test_1x1x2(self):
         x = rng.random()
         y = rng.random()
         array = np.array([[[x, y]]])
-        self.assertTrue(_triu_allclose(_triu_cumsum(array), array))
+        self.assertTrue(triu_allclose(_triu_cumsum(array), array))
 
     def test_2x2(self):
         array = np.array([[1., 2.],
                           [3., 4.]])
         expect = np.array([[3., 2.],
                            [10., 6.]])
-        self.assertTrue(_triu_allclose(_triu_cumsum(array), expect))
+        self.assertTrue(triu_allclose(_triu_cumsum(array), expect))
 
     def test_2x2x1(self):
         array = np.array([[[1.], [2.]],
                           [[3.], [4.]]])
         expect = np.array([[[3.], [2.]],
                            [[10.], [6.]]])
-        self.assertTrue(_triu_allclose(_triu_cumsum(array), expect))
+        self.assertTrue(triu_allclose(_triu_cumsum(array), expect))
 
     def test_2x2x2(self):
         array = np.array([[[1., 5.], [2., 6.]],
                           [[3., 7.], [4., 8.]]])
         expect = np.array([[[3., 11.], [2., 6.]],
                            [[0., 0.], [6., 14.]]])
-        self.assertTrue(_triu_allclose(_triu_cumsum(array), expect))
+        self.assertTrue(triu_allclose(_triu_cumsum(array), expect))
 
     def test_3x3(self):
         array = np.array([[3., 4., 6.],
@@ -583,7 +603,7 @@ class TestTriuCumSum(ut.TestCase):
         expect = np.array([[13., 10., 6.],
                            [0., 27., 15.],
                            [0., 0., 20.]])
-        self.assertTrue(_triu_allclose(_triu_cumsum(array), expect))
+        self.assertTrue(triu_allclose(_triu_cumsum(array), expect))
 
     def test_explicit_sum(self):
         for npos in range(8):
@@ -1107,7 +1127,7 @@ class TestSlicePEnds(ut.TestCase):
         p_ends_cumsum = _triu_cumsum(p_ends)
         result = _slice_p_ends(p_ends, p_ends_cumsum, 1, 2)
         expect = np.array([[16.]])
-        self.assertTrue(_triu_allclose(result, expect))
+        self.assertTrue(triu_allclose(result, expect))
 
     def test_slice_5x5(self):
         p_ends = np.arange(25.).reshape((5, 5))
@@ -1116,7 +1136,7 @@ class TestSlicePEnds(ut.TestCase):
         expect = np.array([[7., 9., 24.],
                            [0., 12., 27.],
                            [0., 0., 37.]])
-        self.assertTrue(_triu_allclose(result, expect))
+        self.assertTrue(triu_allclose(result, expect))
 
 
 class TestFindSplitPositions(ut.TestCase):
@@ -1442,7 +1462,7 @@ class TestCalcPEnds(ut.TestCase):
                                               p_mut,
                                               p_clust)
                 self.assertEqual(p_ends_inferred.shape, p_ends.shape)
-                self.assertTrue(_triu_allclose(p_ends_inferred, p_ends))
+                self.assertTrue(triu_allclose(p_ends_inferred, p_ends))
 
 
 class TestCalcPNoCloseGivenClust(ut.TestCase):
@@ -1545,7 +1565,7 @@ class TestCalcParams(ut.TestCase):
                                             atol=1.e-4,
                                             rtol=1.e-2))
                 self.assertEqual(p_ends_inferred.shape, p_ends.shape)
-                self.assertTrue(_triu_allclose(p_ends_inferred, p_ends))
+                self.assertTrue(triu_allclose(p_ends_inferred, p_ends))
                 self.assertEqual(p_clust_inferred.shape, p_clust.shape)
                 self.assertTrue(np.allclose(p_clust_inferred,
                                             p_clust,

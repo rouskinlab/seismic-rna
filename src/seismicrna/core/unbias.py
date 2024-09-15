@@ -18,6 +18,7 @@ POSITIONS = "positions"
 CLUSTERS = "clusters"
 POSITIONS_PLUS_1 = "positions + 1"
 WINDOW = "window"
+SIZE = "size"
 
 # Maximum allowed mutation rate (a mutation rate of 1.0 will break this
 # algorithm because it involves the log of 1 minus the mutation rate).
@@ -137,6 +138,24 @@ def _triu_sum(a: np.ndarray):
     for j in range(a.shape[0]):
         a_sum += a[j, j:].sum(axis=0)
     return a_sum
+
+
+def triu_sum(a: np.ndarray):
+    """ Calculate the sum over the upper triangle(s) of array `a`.
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array whose upper triangle to sum.
+
+    Returns
+    -------
+    np.ndarray
+        Sum of the upper triangle(s), with the same shape as the third
+        and subsequent dimensions of `a`.
+    """
+    find_dims([(SIZE, SIZE, None)], [a], ["a"])
+    return _triu_sum(a)
 
 
 @jit()
@@ -353,6 +372,45 @@ def _triu_allclose(a: np.ndarray,
         if not np.allclose(a[j, j:], b[j, j:], rtol=rtol, atol=atol):
             return False
     return True
+
+
+def triu_allclose(a: np.ndarray | float,
+                  b: np.ndarray | float,
+                  rtol: float = 1.e-3,
+                  atol: float = 1.e-6):
+    """ Whether the upper triangles of `a` and `b` are all close.
+
+    Parameters
+    ----------
+    a: np.ndarray | float
+        Array 1.
+    b: np.ndarray | float
+        Array 2.
+    rtol: float = 1.0e-3
+        Relative tolerance.
+    atol: float = 1.0e-6
+        Absolute tolerance.
+
+    Returns
+    -------
+    bool
+        Whether all elements of the upper triangles of `a` and `b` are
+        close using the function `np.allclose`.
+    """
+    # Ensure a and b are arrays with the same dimensions.
+    a, b = np.broadcast_arrays(np.asarray(a), np.asarray(b))
+    # Explicitly set the writeable flag to False in order to suppress
+    # "FutureWarning: future versions will not create a writeable array
+    # from broadcast_array. Set the writable flag explicitly to avoid
+    # this warning."
+    # These lines may not be needed with NumPy ≥ 2.0.
+    a.flags.writeable = False
+    b.flags.writeable = False
+    # Ensure a and b are both square in their first 2 dimensions.
+    find_dims([(SIZE, SIZE, None), (SIZE, SIZE, None)],
+              [a, b],
+              ["a", "b"])
+    return _triu_allclose(a, b, rtol, atol)
 
 
 @jit()
