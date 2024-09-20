@@ -371,4 +371,4 @@ def triangular(n: int):
         The triangular number with index `n`; equivalently, the number
         of items in the equilateral triangle of side length `n`.
     """
-    return (n * n + n) // 2
+    return (n * (n + 1)) // 2

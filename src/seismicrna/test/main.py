@@ -1,17 +1,3 @@
-"""
-
-Testing Main Module
-
-========================================================================
-
-This module is the entry point for the command line interface. Running
-
-$ seismic [OPTIONS] command [OPTIONS] [ARGS]
-
-calls the function cli() defined in this module.
-
-"""
-
 import unittest as ut
 from os.path import dirname
 
