@@ -11,13 +11,12 @@ from ..core.unbias import (CLUSTERS,
                            POSITIONS,
                            READS,
                            calc_p_noclose_given_clust,
-                           calc_p_noclose_given_ends_auto,
+                           calc_p_nomut_window,
+                           calc_p_noclose_given_ends,
+                           calc_p_mut_given_span_noclose,
                            calc_p_clust_given_noclose,
-                           calc_p_noclose,
                            calc_p_ends_given_clust_noclose,
-                           calc_p_clust_given_ends_noclose,
-                           calc_params,
-                           calc_params_observed)
+                           calc_p_clust_given_ends_noclose)
 
 SUM_EXP_PRECISION = 3
 UNIQUE = "unique reads"
@@ -35,15 +34,23 @@ def linearize_ends_matrix(p_ends: np.ndarray):
 
 
 @jit()
-def _rand_muts(p_mut_read: np.ndarray):
-    """ Simulate random mutations for one read. """
-    return np.flatnonzero(np.random.random(p_mut_read.size) < p_mut_read)
+def _calc_coverage(coverage: np.ndarray,
+                   end5s: np.ndarray,
+                   end3s: np.ndarray,
+                   clusts: np.ndarray):
+    """ Calculate the coverage at each position (row) in each cluster
+    (column). """
+    for end5, end3, clust in zip(end5s, end3s, clusts):
+        coverage[end5: end3 + 1, clust] += 1
 
 
 @jit()
 def _sim_muts(reads: np.ndarray,
               clusts: np.ndarray,
-              p_mut: np.ndarray,
+              read_order: np.ndarray,
+              coverage: np.ndarray,
+              num_muts: np.ndarray,
+              mut_randomness: np.ndarray,
               min_mut_gap: int):
     """ Simulate mutations and write them into reads.
 
@@ -54,84 +61,169 @@ def _sim_muts(reads: np.ndarray,
         will be written.
     clusts: np.ndarray
         1D (reads) array of the cluster to which each read belongs.
-    p_mut: np.ndarray
-        2D (positions x clusters) array of the probability that each
-        position is mutated for each cluster.
+    coverage: np.ndarray
+        2D (positions x clusters) array of the number of reads per
+        position for each cluster.
+    num_muts: np.ndarray
+        2D (positions x clusters) array of the number of mutations per
+        position for each cluster.
+    mut_randomness: np.ndarray
+        2D (reads x positions) array of random numbers for choosing
+        which bases are mutated.
     min_mut_gap: int
         Minimum number of positions between two mutations.
     """
-    for read, k in zip(reads, clusts):
-        # Determine the 5'/3' ends.
-        end5 = read[-2]
-        end3 = read[-1]
-        # Choose which positions are mutated.
-        p_mut_read = p_mut[end5: end3 + 1, k]
-        muts = _rand_muts(p_mut_read)
-        if min_mut_gap > 0:
-            # Continue choosing which positions are mutated until no two
-            # mutations are too close.
-            while muts.size > 1 and np.diff(muts).min() <= min_mut_gap:
-                muts = _rand_muts(p_mut_read)
-        # Write the mutated positions into the array of reads.
-        read[muts + end5] = 1
+    for i in read_order:
+        # Determine the cluster and the 5'/3' ends.
+        k = clusts[i]
+        end5 = reads[i, -2]
+        end3 = reads[i, -1]
+        # Start filling in mutations at the position with the largest
+        # mutation rate.
+        mut_rates = np.nan_to_num(num_muts[end5: end3 + 1, k]
+                                  / coverage[end5: end3 + 1, k])
+        start_fwd = end5 + np.argmax(mut_rates)
+        start_rev = start_fwd - 1
+        # Choose mutated bases from start_fwd to end3.
+        j = start_fwd
+        while j <= end3:
+            if mut_randomness[i, j] < mut_rates[j - end5]:
+                # Mark this base as mutated.
+                reads[i, j] = 1
+                # Decrement the remaining number of mutations.
+                num_muts[j, k] -= 1
+                # Prevent mutations among the min_mut_gap bases before
+                # and after position j.
+                start_rev = min(start_rev, j - (min_mut_gap + 1))
+                j += min_mut_gap
+            # Advance the position.
+            j += 1
+        # Choose mutated bases from start_rev to end5.
+        j = start_rev
+        while j >= end5:
+            if mut_randomness[i, j] < mut_rates[j - end5]:
+                # Mark this base as mutated.
+                reads[i, j] = 1
+                # Decrement the remaining number of mutations.
+                num_muts[j, k] -= 1
+                # Prevent mutations among the min_mut_gap bases before
+                # position j.
+                j -= min_mut_gap
+            # Advance the position.
+            j -= 1
+        # Decrement the remaining coverage among the positions covered
+        # by this read.
+        coverage[end5: end3 + 1, k] -= 1
+    # If any positions (j) and clusters (k) have remaining mutations,
+    # add the mutations to the reads.
+    for j, k in zip(*np.nonzero(num_muts)):
+        num_muts_jk = num_muts[j, k]
+        # Find reads from cluster k.
+        available = clusts == k
+        # Find reads that contain position j.
+        available[available] &= j >= reads[available, -2]
+        available[available] &= j <= reads[available, -1]
+        # Find reads without a mutation at or too close to position j.
+        j_lo = max(j - min_mut_gap, 0)
+        j_up = j + min_mut_gap + 1
+        available[available] &= np.count_nonzero(reads[available, j_lo: j_up],
+                                                 axis=1) == 0
+        # Select the available reads with the lowest random numbers.
+        options = np.flatnonzero(available)
+        selected = options[np.argsort(mut_randomness[options, k])[:num_muts_jk]]
+        reads[selected, j] = 1
 
 
 @jit()
 def _assign_clusters(clusters: np.ndarray,
-                     p_clust_per_read: np.ndarray,
+                     p_clust_given_read: np.ndarray,
                      n_reads_per_clust: np.ndarray,
                      read_order: np.ndarray,
                      read_randomness: np.ndarray):
+    """ Assign one cluster to each read.
+
+    Parameters
+    ----------
+    clusters: np.ndarray
+        1D (reads) integer array into which the cluster assigned to each
+        read will be written.
+    p_clust_given_read: np.ndarray
+        2D (reads x clusters) float array of the probability that each
+        read belongs to each cluster.
+    n_reads_per_clust: np.ndarray
+        1D (clusters) integer array of the number of reads to assign to
+        each cluster.
+    read_order: np.ndarray
+        1D (reads) integer array of the random order in which to assign
+        reads to clusters.
+    read_randomness: np.ndarray
+        1D (reads) float array of a random number (0 - 1) for each read,
+        to be used for choosing the cluster.
+
+    Additionally, this function makes the following assumptions; if any
+    assumption is violated, this function can produce incorrect results
+    or attempt to access invalid memory addresses, potentially causing
+    a segmentation fault.
+    - There must be at least 1 cluster.
+    - Every element of `p_clust_given_read` is ≥ 0 and ≤ 1.
+    - Every row of `p_clust_given_read` sums to 1.
+    - All elements of `n_reads_per_clust` are non-negative integers.
+    - `n_reads_per_clust` sums to the total number of reads (i.e. the
+      lengths of `clusters`, `p_clust_given_read`, `read_order`, and
+      `read_randomness`).
+    - `read_order` contains every integer from 0 to the number of reads
+      minus 1 exactly once (though the order can be random).
+    - Every element of `read_randomness` is ≥ 0 and < 1.
+    """
+    n_clust, = n_reads_per_clust.shape
     # Iterate through the reads in random order to eliminate bias that
     # can arise from the order in which reads are assigned.
     for i in read_order:
         # Calculate the probability of selecting each cluster for this
         # read.
-        p_clust_i = p_clust_per_read[i] * n_reads_per_clust
+        p_clust_i = p_clust_given_read[i] * n_reads_per_clust
+        p_clust_i /= p_clust_i.sum()
         # Select the cluster based on the probabilities.
-        clust_i = np.count_nonzero(np.greater(
-            read_randomness[i],
-            np.cumsum(p_clust_i / p_clust_i.sum())
-        ))
-        # Assign the read to the cluster.
-        clusters[i] = clust_i
-        # Decrement the number of reads remaining in that cluster.
-        n_reads_per_clust[clust_i] -= 1
+        p_clust_i_sum = 0.
+        for k in range(n_clust):
+            p_clust_i_sum += p_clust_i[k]
+            if read_randomness[i] < p_clust_i_sum:
+                # Assign the read to the cluster.
+                clusters[i] = k
+                # Decrement the number of reads remaining in that cluster.
+                n_reads_per_clust[k] -= 1
+                break
     return clusters
 
 
-def sim_clusters(p_clust_per_read: np.ndarray):
+def _sim_clusters(p_clust_given_read: np.ndarray):
     """ Simulate a cluster for each read. """
-    dims = find_dims([(READS, CLUSTERS)],
-                     [p_clust_per_read],
-                     ["p_clust_per_read"],
-                     nonzero=[CLUSTERS])
-    n_reads = dims[READS]
-    n_clusts = dims[CLUSTERS]
-    if p_clust_per_read.size > 0 and p_clust_per_read.min() <= 0.:
-        raise ValueError("All p_clust_per_read must be > 0, but got "
-                         f"{np.count_nonzero(p_clust_per_read <= 0.)} "
+    n_reads, n_clust = p_clust_given_read.shape
+    if p_clust_given_read.size > 0 and p_clust_given_read.min() <= 0.:
+        raise ValueError("All p_clust_given_read must be > 0, but got "
+                         f"{np.count_nonzero(p_clust_given_read <= 0.)} "
                          "probabilities < 0")
-    if not np.allclose(p_clust_per_read.sum(axis=1), 1.):
-        p_clust_per_read_sum = p_clust_per_read.sum(axis=1)
-        not_close = np.logical_not(np.isclose(p_clust_per_read_sum, 1.))
-        raise ValueError("All rows of p_clust_per_read must sum to 1, "
-                         f"but got {p_clust_per_read_sum[not_close]}")
+    if not np.allclose(p_clust_given_read.sum(axis=1), 1.):
+        p_clust_given_read_sum = p_clust_given_read.sum(axis=1)
+        not_close = np.logical_not(np.isclose(p_clust_given_read_sum, 1.))
+        raise ValueError("All rows of p_clust_given_read must sum to 1, "
+                         f"but got {p_clust_given_read_sum[not_close]}")
     # Initially assign all reads to cluster 0.
     clusters = np.zeros(n_reads, dtype=int)
-    if n_clusts == 1:
+    if n_clust == 1:
         # There is only one cluster, so all reads must be in it.
         return clusters
     # Choose the number of reads for each cluster, ensuring that the sum
     # equals the total number of reads.
-    while np.sum(
-            n_reads_per_clust := stochastic_round(p_clust_per_read.sum(axis=0),
-                                                  preserve_sum=True)
-    ) != n_reads:
+    p_clust_given_read_sum = p_clust_given_read.sum(axis=0)
+    while np.sum(n_reads_per_clust := stochastic_round(
+            p_clust_given_read_sum,
+            preserve_sum=True
+    )) != n_reads:
         pass
     # Choose the cluster for each read.
     _assign_clusters(clusters,
-                     p_clust_per_read,
+                     p_clust_given_read,
                      n_reads_per_clust,
                      rng.permutation(n_reads),
                      rng.random(n_reads))
@@ -140,38 +232,46 @@ def sim_clusters(p_clust_per_read: np.ndarray):
 
 def _sim_reads(end5s: np.ndarray,
                end3s: np.ndarray,
-               p_ends_given_clust_noclose: np.ndarray,
-               p_clust_given_noclose: np.ndarray,
-               p_mut: np.ndarray,
+               p_clust_given_ends_noclose: np.ndarray,
+               p_mut_given_span_noclose: np.ndarray,
                min_mut_gap: int):
     dims = find_dims([(READS,),
                       (READS,),
                       (POSITIONS, POSITIONS, CLUSTERS,),
-                      (CLUSTERS,),
                       (POSITIONS, CLUSTERS)],
                      [end5s,
                       end3s,
-                      p_ends_given_clust_noclose,
-                      p_clust_given_noclose,
-                      p_mut],
+                      p_clust_given_ends_noclose,
+                      p_mut_given_span_noclose],
                      ["end5s",
                       "end3s",
-                      "p_ends_given_clust_noclose",
-                      "p_clust_given_noclose",
-                      "p_mut"])
+                      "p_clust_given_ends_noclose",
+                      "p_mut_given_span_noclose"],
+                     nonzero=[CLUSTERS])
+    n_reads = dims[READS]
+    n_pos = dims[POSITIONS]
+    n_clust = dims[CLUSTERS]
     # Assign each read to exactly one cluster.
-    p_clust_per_read = calc_p_clust_given_ends_noclose(
-        p_ends_given_clust_noclose,
-        p_clust_given_noclose
-    )[end5s, end3s]
-    clusts = sim_clusters(p_clust_per_read)
+    p_clust_given_read = p_clust_given_ends_noclose[end5s, end3s]
+    clusts = _sim_clusters(p_clust_given_read)
+    # Calculate the coverage per position in each cluster.
+    coverage = np.zeros((n_pos, n_clust), dtype=int)
+    _calc_coverage(coverage, end5s, end3s, clusts)
+    # Calculate the number of mutations per position in each cluster.
+    num_muts = stochastic_round(coverage * p_mut_given_span_noclose)
     # Initialize an empty matrix for the reads.
-    reads = np.zeros((dims[READS], dims[POSITIONS] + 2), dtype=int)
+    reads = np.zeros((n_reads, n_pos + 2), dtype=int)
     # Write the 5'/3' ends for the reads into the last two columns.
     reads[:, -2] = end5s
     reads[:, -1] = end3s
-    # Generate random mutations and write them into the matrix of reads.
-    _sim_muts(reads, clusts, p_mut, min_mut_gap)
+    # Write random mutations into the matrix of reads.
+    _sim_muts(reads,
+              clusts,
+              rng.permutation(n_reads),
+              coverage,
+              num_muts,
+              rng.random((n_reads, n_pos)),
+              min_mut_gap)
     return reads, clusts
 
 
@@ -192,14 +292,15 @@ def _calc_resps(n_clusts: int,
 
 def _calc_obs_exp(reads: np.ndarray,
                   clusts: np.ndarray,
-                  n_clusts: int,
+                  p_mut: np.ndarray,
+                  p_ends: np.ndarray,
+                  p_clust: np.ndarray,
                   min_mut_gap: int,
                   unmasked: np.ndarray):
     dims = find_dims([(READS, POSITIONS), (READS,)],
                      [reads, clusts],
                      ["reads", "clusts"])
-    n_pos = dims[POSITIONS] - 2
-    n_reads, _ = reads.shape
+    n_reads = dims[READS]
     # Count each unique read.
     uniq_reads, uniq_inverse, num_obs = np.unique(reads,
                                                   axis=0,
@@ -210,29 +311,11 @@ def _calc_obs_exp(reads: np.ndarray,
     n_uniq_reads_observed, _ = uniq_reads.shape
     # Calculate the properties of the simulated reads.
     muts_per_pos = [np.flatnonzero(uniq_reads[:, j]) for j in unmasked]
-    resps = _calc_resps(n_clusts, clusts, uniq_inverse, num_obs)
-    (p_mut_observed,
-     p_ends_observed,
-     p_clust_observed) = calc_params_observed(n_pos,
-                                              unmasked,
-                                              muts_per_pos,
+    log_exp = np.log(n_reads) + calc_marginal(p_mut,
+                                              p_ends,
+                                              p_clust,
                                               uniq_end5s,
                                               uniq_end3s,
-                                              num_obs,
-                                              resps)
-    # Correct the bias in the simulated parameters.
-    p_mut_sim, p_ends_sim, p_clust_sim = calc_params(p_mut_observed,
-                                                     p_ends_observed,
-                                                     p_clust_observed,
-                                                     min_mut_gap)
-    # Calculate the expected number of each read in the simulated data
-    # from its own parameters (p_mut_sim, p_ends_sim, p_clust_sim),
-    # since the real data are also
-    log_exp = np.log(n_reads) + calc_marginal(p_mut_sim,
-                                              p_ends_sim,
-                                              p_clust_sim,
-                                              uniq_reads[:, -2],
-                                              uniq_reads[:, -1],
                                               unmasked,
                                               muts_per_pos,
                                               min_mut_gap)
@@ -247,17 +330,21 @@ def sim_obs_exp(end5s: np.ndarray,
                 min_mut_gap: int,
                 unmasked: np.ndarray):
     """ Simulate observed and expected counts. """
-    dims = find_dims([(READS,),
-                      (READS,),
-                      (POSITIONS, CLUSTERS),
-                      (POSITIONS, POSITIONS),
-                      (CLUSTERS,)],
-                     [end5s, end3s, p_mut, p_ends, p_clust],
-                     ["end5s", "end3s", "p_mut", "p_ends", "p_clust"])
-    n_clusts = dims[CLUSTERS]
+    find_dims([(READS,),
+               (READS,),
+               (POSITIONS, CLUSTERS),
+               (POSITIONS, POSITIONS),
+               (CLUSTERS,)],
+              [end5s, end3s, p_mut, p_ends, p_clust],
+              ["end5s", "end3s", "p_mut", "p_ends", "p_clust"])
     # Calculate the parameters of reads with no two mutations too close.
-    p_noclose_given_ends = calc_p_noclose_given_ends_auto(
-        p_mut, min_mut_gap
+    p_nomut_window = calc_p_nomut_window(p_mut, min_mut_gap)
+    p_noclose_given_ends = calc_p_noclose_given_ends(p_mut, p_nomut_window)
+    p_mut_given_span_noclose = calc_p_mut_given_span_noclose(
+        p_mut,
+        p_ends,
+        p_noclose_given_ends,
+        p_nomut_window
     )
     p_noclose_given_clust = calc_p_noclose_given_clust(
         p_ends, p_noclose_given_ends
@@ -271,19 +358,20 @@ def sim_obs_exp(end5s: np.ndarray,
     p_clust_given_ends_noclose = calc_p_clust_given_ends_noclose(
         p_ends_given_clust_noclose, p_clust_given_noclose
     )
-    # Inflate the number of reads to simulate because a proportion of
-    # them will have two mutations too close.
-    p_noclose = calc_p_noclose(p_clust, p_noclose_given_clust)
-    if p_noclose == 0.:
-        raise ValueError("It is impossible for any read to be observed")
     while True:
         # Simulate the reads and the clusters to which they belong.
         reads, clusts = _sim_reads(end5s,
                                    end3s,
                                    p_clust_given_ends_noclose,
-                                   p_mut,
+                                   p_mut_given_span_noclose,
                                    min_mut_gap)
-        yield _calc_obs_exp(reads, clusts, n_clusts, min_mut_gap, unmasked)
+        yield _calc_obs_exp(reads,
+                            clusts,
+                            p_mut,
+                            p_ends,
+                            p_clust,
+                            min_mut_gap,
+                            unmasked)
 
 
 def calc_semi_g_anomaly(num_obs: int | np.ndarray,
@@ -467,13 +555,13 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
         logger.debug(f"Null jackpotting score: {null_jackpotting_score}")
         # Calculate a confidence interval for the mean jackpotting score
         # of the null models simulated so far.
-        njs_ci_lo, njs_ci_up = calc_jackpot_score_ci(null_jackpotting_scores,
-                                                     confidence_level)
+        js_ci_lo, js_ci_up = calc_jackpot_score_ci(null_jackpotting_scores,
+                                                   confidence_level)
         # Determine a confidence interval for the jackpotting quotient.
         # Since the jackpotting quotient depends inversely on the null
         # jackpotting score, the lower and upper bounds are swapped.
-        jq_ci_lo = calc_jackpot_quotient(real_jackpot_score, njs_ci_up)
-        jq_ci_up = calc_jackpot_quotient(real_jackpot_score, njs_ci_lo)
+        jq_ci_lo = calc_jackpot_quotient(real_jackpot_score, js_ci_up)
+        jq_ci_up = calc_jackpot_quotient(real_jackpot_score, js_ci_lo)
         if not np.isnan(jq_ci_lo) and not np.isnan(jq_ci_up):
             logger.debug(f"{confidence_level * 100.} % confidence interval "
                          f"for jackpotting quotient: {jq_ci_lo} - {jq_ci_up}")

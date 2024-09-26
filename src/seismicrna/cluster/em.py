@@ -478,8 +478,10 @@ class EMRun(object):
         if not self._jackpot:
             # Skip calculating the jackpotting quotient.
             return np.nan
-        return calc_jackpot_quotient(self.jackpot_score,
-                                     np.median(self._null_jackpot_scores))
+        return calc_jackpot_quotient(
+            self.jackpot_score,
+            float(np.median(self._null_jackpot_scores))
+        )
 
     def _calc_p_mut_pairs(self,
                           stat: Callable[[np.ndarray, np.ndarray], float],

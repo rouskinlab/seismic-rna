@@ -3,12 +3,12 @@ import unittest as ut
 from pathlib import Path
 
 import numpy as np
-from scipy.stats import binom, chi2, t as studentt
+from scipy.stats import binom, t as studentt
 
 from seismicrna.cluster.em import EMRun
 from seismicrna.cluster.jackpot import (calc_semi_g_anomaly,
                                         linearize_ends_matrix,
-                                        sim_clusters,
+                                        _sim_clusters,
                                         _sim_reads)
 from seismicrna.cluster.uniq import UniqReads
 from seismicrna.core.arg.cli import (opt_sim_dir,
@@ -27,8 +27,7 @@ from seismicrna.core.unbias import (CLUSTERS,
                                     calc_p_nomut_window,
                                     calc_p_noclose_given_ends,
                                     calc_p_ends_given_noclose,
-                                    calc_p_mut_given_span_noclose,
-                                    calc_rectangular_sum)
+                                    calc_p_mut_given_span_noclose)
 from seismicrna.mask import run as run_mask
 from seismicrna.mask.data import MaskMutsDataset
 from seismicrna.sim.fold import run as run_sim_fold
@@ -37,29 +36,6 @@ from seismicrna.sim.ref import run as run_sim_ref
 from seismicrna.sim.relate import run as run_sim_relate
 
 rng = np.random.default_rng()
-
-
-def g_test(obs: np.ndarray, exp: np.ndarray):
-    """ Perform a G-test of the observed values. """
-    if exp.shape != obs.shape:
-        raise ValueError(
-            f"obs and exp have different dimensions: {obs.shape} ≠ {exp.shape}"
-        )
-    if not np.isclose(obs.sum(), exp.sum()):
-        raise ValueError(
-            f"obs and exp have different sums: {obs.sum()} ≠ {exp.sum()}"
-        )
-    n, = obs.shape
-    if n >= 2:
-        # Calculate the G-test statistic and P-value.
-        g_stat = 2. * np.sum(obs * np.log(obs / exp))
-        p_value = 1. - chi2.cdf(g_stat, n - 1)
-    else:
-        # For fewer than 2 items, there can be no difference between
-        # observed and expected counts.
-        g_stat = 0.
-        p_value = 1.
-    return g_stat, p_value
 
 
 class TestSimClusters(ut.TestCase):
@@ -79,7 +55,7 @@ class TestSimClusters(ut.TestCase):
                          nonzero=[CLUSTERS])
         n_clusts = dims[CLUSTERS]
         # Simulate the cluster for each read.
-        clusters = np.vstack([sim_clusters(p_clust_per_read)
+        clusters = np.vstack([_sim_clusters(p_clust_per_read)
                               for _ in range(n_trials)])
         for k in range(n_clusts):
             # Find the reads assigned to this cluster.
@@ -148,15 +124,13 @@ class TestSimReads(ut.TestCase):
         return clust_counts, span_counts, mut_counts
 
     def test_sim_reads(self):
-        n_pos = 10
-        n_reads = 100000
+        n_pos = 40
+        n_reads = 50000
         n_clust = 2
         min_mut_gap = 3
-        beta_a = 5.
-        beta_b = 15.
+        max_fmut = 0.1
         cluster_alpha = 2.
-        confidence = 0.999
-        p_mut = rng.beta(beta_a, beta_b, (n_pos, n_clust))
+        p_mut = rng.random((n_pos, n_clust)) * max_fmut
         p_ends = np.triu(rng.random((n_pos, n_pos)))
         p_ends /= p_ends.sum()
         p_clust = rng.dirichlet(np.full(n_clust, cluster_alpha))
@@ -167,7 +141,7 @@ class TestSimReads(ut.TestCase):
         p_noclose_given_ends = calc_p_noclose_given_ends(
             p_mut, p_nomut_window
         )
-        p_mut_given_noclose = calc_p_mut_given_span_noclose(
+        p_mut_given_span_noclose = calc_p_mut_given_span_noclose(
             p_mut, p_ends, p_noclose_given_ends, p_nomut_window
         )
         p_noclose_given_clust = calc_p_noclose_given_clust(
@@ -197,7 +171,7 @@ class TestSimReads(ut.TestCase):
         reads, clusts = _sim_reads(end5s,
                                    end3s,
                                    p_clust_given_ends_noclose,
-                                   p_mut,
+                                   p_mut_given_span_noclose,
                                    min_mut_gap)
         clust_counts, span_counts, mut_counts = self.count_reads(reads,
                                                                  clusts,
@@ -207,22 +181,30 @@ class TestSimReads(ut.TestCase):
         self.assertTupleEqual(clusts.shape, (n_reads,))
         self.assertTrue(np.all(reads[:, -2] == end5s))
         self.assertTrue(np.all(reads[:, -1] == end3s))
-        # G-test of the number of reads in each cluster.
+        # Number of reads in each cluster.
         self.assertEqual(clust_counts.sum(), n_reads)
-        _, p_value = g_test(clust_counts, n_reads * p_clust_given_noclose)
-        self.assertGreaterEqual(p_value, 1. - confidence)
-        # Binomial test of the reads covering each position.
-        p_span = calc_rectangular_sum(p_ends_given_clust_noclose
-                                      * p_clust_given_noclose)
-        span_lo, span_up = binom.interval(confidence, n_reads, p_span)
-        self.assertTrue(np.all(span_counts >= span_lo))
-        self.assertTrue(np.all(span_counts <= span_up))
-        # Binomial test of the mutations at each position.
-        mut_lo, mut_up = binom.interval(confidence,
-                                        span_counts,
-                                        p_mut_given_noclose)
-        self.assertTrue(np.all(mut_counts >= mut_lo))
-        self.assertTrue(np.all(mut_counts <= mut_up))
+        clust_counts_expect = p_clust_given_ends_noclose[(end5s,
+                                                          end3s)].sum(axis=0)
+        self.assertTrue(np.all(clust_counts >= np.floor(clust_counts_expect)))
+        self.assertTrue(np.all(clust_counts <= np.ceil(clust_counts_expect)))
+        # Number of reads covering each position in each cluster.
+        for k in range(n_clust):
+            reads_k = np.flatnonzero(clusts == k)
+            end5s_k = end5s[reads_k]
+            end3s_k = end3s[reads_k]
+            for j in range(n_pos):
+                self.assertEqual(
+                    span_counts[j, k],
+                    np.count_nonzero(np.logical_and(j >= end5s_k,
+                                                    j <= end3s_k))
+                )
+        # Number of mutations at each position in each cluster.
+        mut_counts_expect = span_counts * p_mut_given_span_noclose
+        self.assertTrue(np.all(mut_counts >= np.floor(mut_counts_expect)))
+        self.assertTrue(np.all(mut_counts <= np.ceil(mut_counts_expect)))
+        # Distance between each pair of mutations.
+        for i, read in enumerate(reads[:, :n_pos]):
+            self.assertTrue(np.all(np.diff(np.flatnonzero(read)) > min_mut_gap))
 
 
 class TestCalcSemiGAnomaly(ut.TestCase):
@@ -330,6 +312,7 @@ class TestBootstrapJackpotScores(ut.TestCase):
                                      mask_polya=0,
                                      mask_del=False,
                                      mask_ins=False,
+                                     mask_gu=False,
                                      min_mut_gap=min_mut_gap,
                                      min_finfo_read=1.,
                                      min_ninfo_pos=1,
@@ -367,7 +350,7 @@ class TestBootstrapJackpotScores(ut.TestCase):
     def test_ideal_jackpot(self):
         """ Test that bootstrapping "perfect" data correctly returns a
         jackpotting quotient that is expected to be 1. """
-        confidence_level = 0.99
+        confidence_level = 0.999
         confidence_width = 0.02
         log_jackpot_quotients = list()
         while True:
