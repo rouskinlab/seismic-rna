@@ -126,9 +126,9 @@ class TestSimReads(ut.TestCase):
     def test_sim_reads(self):
         n_pos = 40
         n_reads = 50000
-        n_clust = 2
+        n_clust = 4
         min_mut_gap = 3
-        max_fmut = 0.1
+        max_fmut = 0.3
         cluster_alpha = 2.
         p_mut = rng.random((n_pos, n_clust)) * max_fmut
         p_ends = np.triu(rng.random((n_pos, n_pos)))
@@ -351,7 +351,7 @@ class TestBootstrapJackpotScores(ut.TestCase):
         """ Test that bootstrapping "perfect" data correctly returns a
         jackpotting quotient that is expected to be 1. """
         confidence_level = 0.999
-        confidence_width = 0.02
+        confidence_width = 0.01
         log_jackpot_quotients = list()
         while True:
             log_jackpot_quotients.append(np.log(self.sim_jackpot_quotient()))
@@ -359,6 +359,8 @@ class TestBootstrapJackpotScores(ut.TestCase):
                                                          confidence_level)
             if not np.isnan(jq_lo) and not np.isnan(jq_up):
                 # Verify that the confidence interval contains 0.
+                print(log_jackpot_quotients)
+                print(jq_lo, jq_up)
                 self.assertLessEqual(jq_lo, 0.)
                 self.assertGreaterEqual(jq_up, 0.)
                 if jq_up - jq_lo < confidence_width:

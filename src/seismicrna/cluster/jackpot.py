@@ -34,107 +34,6 @@ def linearize_ends_matrix(p_ends: np.ndarray):
 
 
 @jit()
-def _calc_coverage(coverage: np.ndarray,
-                   end5s: np.ndarray,
-                   end3s: np.ndarray,
-                   clusts: np.ndarray):
-    """ Calculate the coverage at each position (row) in each cluster
-    (column). """
-    for end5, end3, clust in zip(end5s, end3s, clusts):
-        coverage[end5: end3 + 1, clust] += 1
-
-
-@jit()
-def _sim_muts(reads: np.ndarray,
-              clusts: np.ndarray,
-              read_order: np.ndarray,
-              coverage: np.ndarray,
-              num_muts: np.ndarray,
-              mut_randomness: np.ndarray,
-              min_mut_gap: int):
-    """ Simulate mutations and write them into reads.
-
-    Parameters
-    ----------
-    reads: np.ndarray
-        2D (reads x positions + 2) array into which the simulated reads
-        will be written.
-    clusts: np.ndarray
-        1D (reads) array of the cluster to which each read belongs.
-    coverage: np.ndarray
-        2D (positions x clusters) array of the number of reads per
-        position for each cluster.
-    num_muts: np.ndarray
-        2D (positions x clusters) array of the number of mutations per
-        position for each cluster.
-    mut_randomness: np.ndarray
-        2D (reads x positions) array of random numbers for choosing
-        which bases are mutated.
-    min_mut_gap: int
-        Minimum number of positions between two mutations.
-    """
-    for i in read_order:
-        # Determine the cluster and the 5'/3' ends.
-        k = clusts[i]
-        end5 = reads[i, -2]
-        end3 = reads[i, -1]
-        # Start filling in mutations at the position with the largest
-        # mutation rate.
-        mut_rates = np.nan_to_num(num_muts[end5: end3 + 1, k]
-                                  / coverage[end5: end3 + 1, k])
-        start_fwd = end5 + np.argmax(mut_rates)
-        start_rev = start_fwd - 1
-        # Choose mutated bases from start_fwd to end3.
-        j = start_fwd
-        while j <= end3:
-            if mut_randomness[i, j] < mut_rates[j - end5]:
-                # Mark this base as mutated.
-                reads[i, j] = 1
-                # Decrement the remaining number of mutations.
-                num_muts[j, k] -= 1
-                # Prevent mutations among the min_mut_gap bases before
-                # and after position j.
-                start_rev = min(start_rev, j - (min_mut_gap + 1))
-                j += min_mut_gap
-            # Advance the position.
-            j += 1
-        # Choose mutated bases from start_rev to end5.
-        j = start_rev
-        while j >= end5:
-            if mut_randomness[i, j] < mut_rates[j - end5]:
-                # Mark this base as mutated.
-                reads[i, j] = 1
-                # Decrement the remaining number of mutations.
-                num_muts[j, k] -= 1
-                # Prevent mutations among the min_mut_gap bases before
-                # position j.
-                j -= min_mut_gap
-            # Advance the position.
-            j -= 1
-        # Decrement the remaining coverage among the positions covered
-        # by this read.
-        coverage[end5: end3 + 1, k] -= 1
-    # If any positions (j) and clusters (k) have remaining mutations,
-    # add the mutations to the reads.
-    for j, k in zip(*np.nonzero(num_muts)):
-        num_muts_jk = num_muts[j, k]
-        # Find reads from cluster k.
-        available = clusts == k
-        # Find reads that contain position j.
-        available[available] &= j >= reads[available, -2]
-        available[available] &= j <= reads[available, -1]
-        # Find reads without a mutation at or too close to position j.
-        j_lo = max(j - min_mut_gap, 0)
-        j_up = j + min_mut_gap + 1
-        available[available] &= np.count_nonzero(reads[available, j_lo: j_up],
-                                                 axis=1) == 0
-        # Select the available reads with the lowest random numbers.
-        options = np.flatnonzero(available)
-        selected = options[np.argsort(mut_randomness[options, k])[:num_muts_jk]]
-        reads[selected, j] = 1
-
-
-@jit()
 def _assign_clusters(clusters: np.ndarray,
                      p_clust_given_read: np.ndarray,
                      n_reads_per_clust: np.ndarray,
@@ -230,48 +129,122 @@ def _sim_clusters(p_clust_given_read: np.ndarray):
     return clusters
 
 
-def _sim_reads(end5s: np.ndarray,
-               end3s: np.ndarray,
-               p_clust_given_ends_noclose: np.ndarray,
-               p_mut_given_span_noclose: np.ndarray,
-               min_mut_gap: int):
+@jit()
+def _calc_covered(covered: np.ndarray,
+                  end5s: np.ndarray,
+                  end3s: np.ndarray):
+    """ Mark the bases that each read covers. """
+    for i, (end5, end3) in enumerate(zip(end5s, end3s)):
+        covered[i, end5: end3 + 1] = True
+
+
+def _sim_muts(end5s: np.ndarray,
+              end3s: np.ndarray,
+              clusts: np.ndarray,
+              p_mut_given_span_noclose: np.ndarray,
+              min_mut_gap: int):
+    """ Simulate mutations and write them into reads.
+
+    Parameters
+    ----------
+    end5s: np.ndarray
+        1D (reads) array of the 5' end of each read.
+    end3s: np.ndarray
+        1D (reads) array of the 3' end of each read.
+    clusts: np.ndarray
+        1D (reads) array of the cluster to which each read belongs.
+    p_mut_given_span_noclose: np.ndarray
+        2D (positions x clusters) array of the probability that a base
+        at each position is mutated given the read covers the position
+        and no two mutations are too close.
+    min_mut_gap: int
+        Minimum number of positions between two mutations.
+
+    Returns
+    -------
+    np.ndarray
+        2D (reads x positions) boolean array of whether each base in
+        each read is mutated.
+    """
     dims = find_dims([(READS,),
                       (READS,),
-                      (POSITIONS, POSITIONS, CLUSTERS,),
                       (POSITIONS, CLUSTERS)],
                      [end5s,
                       end3s,
-                      p_clust_given_ends_noclose,
                       p_mut_given_span_noclose],
                      ["end5s",
                       "end3s",
-                      "p_clust_given_ends_noclose",
                       "p_mut_given_span_noclose"],
                      nonzero=[CLUSTERS])
     n_reads = dims[READS]
     n_pos = dims[POSITIONS]
     n_clust = dims[CLUSTERS]
-    # Assign each read to exactly one cluster.
-    p_clust_given_read = p_clust_given_ends_noclose[end5s, end3s]
-    clusts = _sim_clusters(p_clust_given_read)
-    # Calculate the coverage per position in each cluster.
-    coverage = np.zeros((n_pos, n_clust), dtype=int)
-    _calc_coverage(coverage, end5s, end3s, clusts)
-    # Calculate the number of mutations per position in each cluster.
-    num_muts = stochastic_round(coverage * p_mut_given_span_noclose)
-    # Initialize an empty matrix for the reads.
-    reads = np.zeros((n_reads, n_pos + 2), dtype=int)
-    # Write the 5'/3' ends for the reads into the last two columns.
-    reads[:, -2] = end5s
-    reads[:, -1] = end3s
-    # Write random mutations into the matrix of reads.
-    _sim_muts(reads,
-              clusts,
-              rng.permutation(n_reads),
-              coverage,
-              num_muts,
-              rng.random((n_reads, n_pos)),
-              min_mut_gap)
+    # Initialize an empty matrix for the mutations.
+    muts = np.zeros((n_reads, n_pos), dtype=bool)
+    # Assign mutations to each cluster separately.
+    for k in range(n_clust):
+        # List all reads in cluster k.
+        i_k = np.flatnonzero(clusts == k)
+        muts_k = np.zeros((i_k.size, n_pos), dtype=bool)
+        # Determine which positions are covered by each read.
+        covered = np.zeros_like(muts_k)
+        _calc_covered(covered, end5s[i_k], end3s[i_k])
+        # Calculate the coverage and number of mutations per position.
+        coverage = np.count_nonzero(covered, axis=0)
+        num_muts = stochastic_round(coverage * p_mut_given_span_noclose[:, k])
+        # Start filling in mutations at positions in order of increasing
+        # number of non-mutated bases.
+        for j in np.argsort(coverage - num_muts):
+            # Determine which reads can be mutated at this position,
+            # meaning they cover the position and do not have another
+            # mutation within min_mut_gap positions.
+            j_lo = max(j - min_mut_gap, 0)
+            j_up = min(j + min_mut_gap + 1, n_pos)
+            mutable = np.flatnonzero(np.logical_and(
+                covered[:, j],
+                np.count_nonzero(muts_k[:, j_lo: j_up], axis=1) == 0
+            ))
+            # Mutate a random subset of those reads.
+            mutated = rng.choice(mutable,
+                                 num_muts[j],
+                                 replace=False,
+                                 shuffle=False)
+            muts_k[mutated, j] = 1
+        # After all positions have been finalized, copy them to muts.
+        muts[i_k] = muts_k
+    return muts
+
+
+def _sim_reads(end5s: np.ndarray,
+               end3s: np.ndarray,
+               p_clust_given_ends_noclose: np.ndarray,
+               p_mut_given_span_noclose: np.ndarray,
+               min_mut_gap: int):
+    find_dims([(READS,),
+               (READS,),
+               (POSITIONS, POSITIONS, CLUSTERS,),
+               (POSITIONS, CLUSTERS)],
+              [end5s,
+               end3s,
+               p_clust_given_ends_noclose,
+               p_mut_given_span_noclose],
+              ["end5s",
+               "end3s",
+               "p_clust_given_ends_noclose",
+               "p_mut_given_span_noclose"],
+              nonzero=[CLUSTERS])
+    # Simulate the clusters and the mutations in each read.
+    clusts = _sim_clusters(p_clust_given_ends_noclose[end5s, end3s])
+    muts = _sim_muts(end5s,
+                     end3s,
+                     clusts,
+                     p_mut_given_span_noclose,
+                     min_mut_gap)
+    # Merge the mutation data and 5'/3' ends into one array of reads.
+    reads = np.hstack([muts,
+                       end5s[:, np.newaxis],
+                       end3s[:, np.newaxis]],
+                      dtype=int)
     return reads, clusts
 
 
