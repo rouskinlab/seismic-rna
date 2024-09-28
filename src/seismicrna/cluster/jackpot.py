@@ -185,15 +185,15 @@ def _sim_muts(end5s: np.ndarray,
     for k in range(n_clust):
         # List all reads in cluster k.
         i_k = np.flatnonzero(clusts == k)
-        muts_k = np.zeros((i_k.size, n_pos), dtype=bool)
         # Determine which positions are covered by each read.
-        covered = np.zeros_like(muts_k)
+        covered = np.zeros((i_k.size, n_pos), dtype=bool)
         _calc_covered(covered, end5s[i_k], end3s[i_k])
         # Calculate the coverage and number of mutations per position.
         coverage = np.count_nonzero(covered, axis=0)
         num_muts = stochastic_round(coverage * p_mut_given_span_noclose[:, k])
         # Start filling in mutations at positions in order of increasing
         # number of non-mutated bases.
+        muts_k = np.zeros_like(covered)
         for j in np.argsort(coverage - num_muts):
             # Determine which reads can be mutated at this position,
             # meaning they cover the position and do not have another
