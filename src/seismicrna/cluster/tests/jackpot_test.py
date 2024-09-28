@@ -359,8 +359,6 @@ class TestBootstrapJackpotScores(ut.TestCase):
                                                          confidence_level)
             if not np.isnan(jq_lo) and not np.isnan(jq_up):
                 # Verify that the confidence interval contains 0.
-                print(log_jackpot_quotients)
-                print(jq_lo, jq_up)
                 self.assertLessEqual(jq_lo, 0.)
                 self.assertGreaterEqual(jq_up, 0.)
                 if jq_up - jq_lo < confidence_width:
