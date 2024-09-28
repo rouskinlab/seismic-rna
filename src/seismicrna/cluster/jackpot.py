@@ -209,7 +209,7 @@ def _sim_muts(end5s: np.ndarray,
                                  num_muts[j],
                                  replace=False,
                                  shuffle=False)
-            muts_k[mutated, j] = 1
+            muts_k[mutated, j] = True
         # After all positions have been finalized, copy them to muts.
         muts[i_k] = muts_k
     return muts
