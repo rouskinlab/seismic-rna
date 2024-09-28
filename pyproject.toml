@@ -6,10 +6,10 @@ build-backend = "hatchling.build"
 name = "seismic-rna"
 authors = [
     {name="Matty Allan"},
-    {name="Yves Martin"},
     {name="Scott Grote"},
-    {name="Alberic de Lajarte"},
     {name="Justin Aruda"},
+    {name="Yves Martin"},
+    {name="Alberic de Lajarte"},
 ]
 description = "Structure Ensemble Inference by Sequencing, Mutation Identification, and Clustering of RNA (SEISMIC-RNA)"
 readme = "README.md"
