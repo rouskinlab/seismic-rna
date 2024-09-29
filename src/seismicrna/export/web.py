@@ -1,6 +1,5 @@
 import json
 from functools import cache, partial
-from logging import getLogger
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +9,7 @@ import pandas as pd
 from .meta import combine_metadata
 from ..core import path
 from ..core.header import format_clust_name
+from ..core.logs import logger
 from ..core.rna import parse_db_strings
 from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
@@ -30,8 +30,6 @@ from ..table.base import (Table,
                           PosTable,
                           ReadTable,
                           ClustFreqTable)
-
-logger = getLogger(__name__)
 
 META_SYMBOL = '#'
 SAMPLE = "sample"
@@ -133,13 +131,15 @@ def get_db_structs(table: PosTable,
                 energy = parse_energy(header)
             except Exception as error:
                 logger.error("Failed to parse minimum free energy structure "
-                             f"from dot-bracket file {db_file}: {error}")
+                             "from dot-bracket file {}: {}",
+                             db_file, error)
             else:
                 structs[profile.data_name] = struct
                 energies[profile.data_name] = energy
         else:
-            logger.warning(f"No structure model available for {profile} "
-                           f"(file {db_file} does not exist)")
+            logger.warning("No structure model available for {} "
+                           "(file {} does not exist)",
+                           profile, db_file)
     return structs, energies
 
 

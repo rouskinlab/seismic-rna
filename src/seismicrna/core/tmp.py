@@ -1,13 +1,11 @@
 from functools import wraps
 from inspect import Parameter, Signature
-from logging import getLogger
 from pathlib import Path
 from shutil import rmtree
 from typing import Callable
 
+from .logs import logger
 from .path import randdir, sanitize, transpath
-
-logger = getLogger(__name__)
 
 PENDING = "release"
 WORKING = "working"
@@ -29,20 +27,21 @@ def release_to_out(out_dir: Path,
         except FileNotFoundError:
             # The output path does not yet exist.
             deleted = False
-            logger.debug(f"Output path {out_path} does not yet exist")
+            logger.detail("Output path {} does not yet exist", out_path)
         else:
             deleted = True
-            logger.debug(f"Moved {out_path} to {delete_path} (to be deleted)")
+            logger.detail("Moved {} to {} (to be deleted)",
+                          out_path, delete_path)
         try:
             # Move the initial path to the output location.
             initial_path.rename(out_path)
-            logger.debug(f"Moved {initial_path} to {out_path}")
+            logger.detail("Moved {} to {}", initial_path, out_path)
         except Exception:
             if deleted:
                 # If an error occurred, then restore the original output
                 # path before raising the exception.
                 delete_path.rename(out_path)
-                logger.debug(f"Restored {out_path} from {delete_path}")
+                logger.detail("Restored {} from {}", out_path, delete_path)
             else:
                 # No original files were moved to the delete directory,
                 # which is therefore still empty. Delete it.
@@ -53,15 +52,16 @@ def release_to_out(out_dir: Path,
         try:
             rmtree(delete_path)
         except Exception as error:
-            logger.warning(f"Failed to delete {delete_path} (but it is no "
-                           f"longer needed, and safe to delete): {error}")
+            logger.warning("Failed to delete {}; however, it is no longer "
+                           "needed, and safe to delete yourself: {}",
+                           delete_path, error)
         else:
-            logger.debug(f"Deleted {delete_path}")
+            logger.detail("Deleted {}", delete_path)
     else:
-        logger.debug(f"Skipped releasing {initial_path} (does not exist)")
+        logger.detail("Skipped releasing {} (does not exist)", initial_path)
     if not out_path.exists():
         raise FileNotFoundError(out_path)
-    logger.info(f"Released {initial_path} to {out_path}")
+    logger.routine("Released {} to {}", initial_path, out_path)
     return out_path
 
 
@@ -87,7 +87,7 @@ def with_tmp_dir(pass_keep_tmp: bool):
             try:
                 tmp_pfx = sanitize(tmp_pfx)
                 tmp_dir = randdir(tmp_pfx.parent, prefix=tmp_pfx.name)
-                logger.debug(f"Created temporary directory: {tmp_dir}")
+                logger.routine("Created temporary directory: {}", tmp_dir)
                 if pass_keep_tmp:
                     kwargs = dict(**kwargs, keep_tmp=keep_tmp)
                 return func(*args, **kwargs, tmp_dir=tmp_dir)
@@ -96,10 +96,13 @@ def with_tmp_dir(pass_keep_tmp: bool):
                     try:
                         rmtree(tmp_dir)
                     except OSError as error:
-                        logger.warning("Failed to delete temporary directory "
-                                       f"{tmp_dir}:\n{error}")
+                        logger.warning(
+                            "Failed to delete temporary directory {}:\n{}",
+                            tmp_dir, error
+                        )
                     else:
-                        logger.debug(f"Deleted temporary directory {tmp_dir}")
+                        logger.routine("Deleted temporary directory: {}",
+                                       tmp_dir)
 
         # Add tmp_pfx and keep_tmp to the signature of the wrapper, and
         # remove tmp_dir (functools.wraps does not do so automatically).

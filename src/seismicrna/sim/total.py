@@ -1,5 +1,4 @@
 import os
-from logging import getLogger
 from typing import Iterable
 
 from click import command
@@ -18,10 +17,9 @@ from ..core.arg import (arg_fasta,
                         opt_param_dir,
                         merge_params,
                         extra_defaults)
+from ..core.logs import logger
 from ..core.run import run_func
 from ..core.seq import DNA
-
-logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -30,7 +28,7 @@ def as_tuple_str(items: Iterable):
     return tuple(map(str, items))
 
 
-@run_func(logger.critical,
+@run_func(logger.fatal,
           default=None,
           extra_defaults=extra_defaults)
 def run(*,

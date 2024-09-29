@@ -1,9 +1,9 @@
 from functools import cached_property
-from logging import getLogger
 from pathlib import Path
 
 from ..core import path
 from ..core.extern import cmds_to_pipe
+from ..core.logs import logger
 from ..core.ngs import (SAM_DELIM,
                         FLAG_PAIRED,
                         FLAG_PROPER,
@@ -18,8 +18,6 @@ from ..core.ngs import (SAM_DELIM,
                         run_flagstat,
                         view_xam_cmd,
                         xam_paired)
-
-logger = getLogger(__name__)
 
 
 def line_attrs(line: str):
@@ -82,9 +80,8 @@ def _iter_batch_indexes(sam_file: Path, batch_size: int, paired: bool):
                     # variable position points.
                     f.seek(position)
             # Yield the number and positions of the batch.
-            logger.debug(
-                f"Batch {batch} of {sam_file}: {batch_start} - {position}"
-            )
+            logger.detail("Batch {} of {}: {} - {}",
+                          batch, sam_file, batch_start, position)
             yield batch, batch_start, position
             # Increment the batch number.
             batch += 1
@@ -272,12 +269,12 @@ class XamViewer(object):
         files, both mates are present. In the extreme case that only one
         mate is present for every paired-end record, there can be up to
         `2 * records_per_batch` records in a batch. """
-        logger.info(f"Began computing batch indexes for {self}")
+        logger.routine("Began computing batch indexes for {}", self)
         self.create_tmp_sam()
         yield from _iter_batch_indexes(self.tmp_sam_path,
                                        self.batch_size,
                                        self.paired)
-        logger.info(f"Ended computing batch indexes for {self}")
+        logger.routine("Ended computing batch indexes for {}", self)
 
     @cached_property
     def indexes(self):
@@ -286,13 +283,13 @@ class XamViewer(object):
 
     def iter_records(self, batch: int):
         """ Iterate through the records of the batch. """
-        logger.info(f"Began iterating records for {self} batch {batch}")
+        logger.routine("Began iterating records for {} batch {}", self, batch)
         start, stop = self.indexes[batch]
         if self.paired:
             yield from _iter_records_paired(self.tmp_sam_path, start, stop)
         else:
             yield from _iter_records_single(self.tmp_sam_path, start, stop)
-        logger.info(f"Ended iterating records for {self} batch {batch}")
+        logger.routine("Ended iterating records for {} batch {}", self, batch)
 
     def __str__(self):
         return f"alignment map {self.xam_input}"

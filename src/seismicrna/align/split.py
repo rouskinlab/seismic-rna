@@ -1,4 +1,3 @@
-from logging import getLogger
 from pathlib import Path
 
 from click import command
@@ -41,6 +40,7 @@ from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
                            SAMTOOLS_CMD,
                            require_dependency)
+from ..core.logs import logger
 from ..core.ngs import (run_flagstat,
                         run_sort_xam,
                         run_index_xam,
@@ -49,8 +49,6 @@ from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import release_to_out
 from ..core.write import need_write
-
-logger = getLogger(__name__)
 
 
 def split_xam_file(xam_file: Path,
@@ -98,7 +96,7 @@ def split_xam_file(xam_file: Path,
     return result_dir
 
 
-@run_func(logger.critical, with_tmp=True, pass_keep_tmp=True)
+@run_func(logger.fatal, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str, *,
         # Inputs
         input_path: tuple[str, ...],

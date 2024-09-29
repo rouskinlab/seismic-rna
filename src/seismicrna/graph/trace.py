@@ -1,5 +1,3 @@
-from logging import getLogger
-
 import pandas as pd
 from plotly import graph_objects as go
 
@@ -8,8 +6,6 @@ from .hist import COUNT_NAME, LOWER_NAME, UPPER_NAME
 from ..core.header import REL_NAME
 from ..core.rna import compute_auc
 from ..core.seq import BASE_NAME, POS_NAME, DNA
-
-logger = getLogger(__name__)
 
 # Number of digits behind the decimal point to be kept.
 PRECISION = 6

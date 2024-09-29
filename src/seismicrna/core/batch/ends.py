@@ -1,13 +1,11 @@
 from functools import cached_property
-from logging import getLogger
 
 import numpy as np
 
 from ..array import ensure_order, ensure_same_length, find_dims
+from ..logs import logger
 from ..seq import Section
 from ..types import fit_uint_type
-
-logger = getLogger(__name__)
 
 rng = np.random.default_rng()
 
@@ -291,8 +289,8 @@ def simulate_segment_ends(uniq_end5s: np.ndarray,
     if num_ends == 0:
         raise ValueError("Got 0 pairs of 5'/3' ends for which 5' > 3'")
     elif num_ends < valid_ends.size:
-        logger.warning(f"Got {valid_ends.size - num_ends} pairs of 5'/3' ends "
-                       f"for which 5' > 3'")
+        logger.warning("Got {} pairs of 5'/3' ends for which 5' > 3'",
+                       valid_ends.size - num_ends)
         uniq_end5s = uniq_end5s[valid_ends]
         uniq_end3s = uniq_end3s[valid_ends]
         p_ends = p_ends[valid_ends]

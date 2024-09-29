@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property
 from itertools import chain, combinations, product
-from logging import getLogger
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
@@ -19,11 +18,10 @@ from .base import (LINKER,
 from .rel import OneRelGraph
 from ..core import path
 from ..core.arg import opt_comppair, opt_compself, opt_out_dir
+from ..core.logs import logger
 from ..core.task import dispatch
 from ..table.base import ClustTable, PosTable, Table
 from ..table.load import find_pos_tables, load_pos_table
-
-logger = getLogger(__name__)
 
 # Index level names.
 SAMPLE_NAME = "Sample"
@@ -244,23 +242,26 @@ class TwoTableWriter(GraphWriter, ABC):
 def _iter_table_pairs(table_files: Iterable[Path],
                       table_segs: tuple[path.Segment, ...]):
     """ Yield every pair of files whose reference and section match. """
-    logger.debug("Seeking all pairs of table files with identical references "
-                 f"and sections matching segments {list(map(str, table_segs))}")
+    logger.detail("Seeking all pairs of table files with identical references "
+                  "and sections matching segments",
+                  list(map(str, table_segs)))
     # Determine the reference and section of each table.
     table_fields = defaultdict(set)
     for file in table_files:
         fields = path.parse(file, *table_segs)
         key = fields[path.REF], fields[path.SECT]
         if file in table_fields[key]:
-            logger.warning(f"Duplicate table file: {file}")
+            logger.warning("Duplicate table file: {}", file)
         else:
             table_fields[key].add(file)
     # Yield every pair of table files.
     for (ref, sect), tables in table_fields.items():
         n_files = len(tables)
         n_pairs = n_files * (n_files - 1) // 2
-        logger.debug(f"Found {n_files} table files ({n_pairs} pairs) with "
-                     f"reference {repr(ref)} and section {repr(sect)}")
+        logger.detail(
+            "Found {} table files ({} pairs) with reference {} and section {}",
+            n_files, n_pairs, repr(ref), repr(sect)
+        )
         yield from combinations(sorted(tables), 2)
 
 

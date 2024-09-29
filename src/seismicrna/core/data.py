@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from logging import getLogger
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from . import path
 from .batch import MutsBatch, ReadBatch, list_batch_nums
 from .io import MutsBatchIO, ReadBatchIO, RefseqIO
+from .logs import logger
 from .rel import RelPattern
 from .report import (SampleF,
                      RefF,
@@ -22,8 +22,6 @@ from .report import (SampleF,
                      Report,
                      BatchedReport)
 from .seq import FULL_NAME, DNA, Section, hyphenate_ends, unite
-
-logger = getLogger(__name__)
 
 
 class Dataset(ABC):

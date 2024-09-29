@@ -1,14 +1,12 @@
 import pickle
 from hashlib import md5
-from logging import getLogger
 from pathlib import Path
 from typing import Any
 
 import brotli
 
 from ..write import write_mode
-
-logger = getLogger(__name__)
+from ..logs import logger
 
 DEFAULT_BROTLI_LEVEL = 10
 PICKLE_PROTOCOL = 5
@@ -28,9 +26,9 @@ def save_brickle(item: Any,
                            quality=brotli_level)
     with open(file, write_mode(force, binary=True)) as f:
         f.write(data)
-    logger.info(f"Wrote {item} (brotli level {brotli_level}) to {file}")
+    logger.routine(f"Wrote {item} (brotli level {brotli_level}) to {file}")
     checksum = digest_data(data)
-    logger.debug(f"Computed MD5 checksum of {file}: {checksum}")
+    logger.detail(f"Computed MD5 checksum of {file}: {checksum}")
     return checksum
 
 

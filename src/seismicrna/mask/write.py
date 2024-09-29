@@ -4,7 +4,6 @@ Mask -- Write Module
 
 from collections import defaultdict
 from datetime import datetime
-from logging import getLogger
 from pathlib import Path
 from typing import Iterable
 
@@ -16,14 +15,13 @@ from .io import MaskBatchIO
 from .report import MaskReport
 from ..core.arg import docdef
 from ..core.batch import SectionMutsBatch, accum_per_pos
+from ..core.logs import logger
 from ..core.rel import RelPattern
 from ..core.seq import FIELD_REF, POS_NAME, Section, index_to_pos
 from ..core.tmp import release_to_out
 from ..core.write import need_write
 from ..pool.data import PoolDataset
 from ..relate.data import RelateDataset
-
-logger = getLogger(__name__)
 
 
 class Masker(object):
@@ -197,8 +195,8 @@ class Masker(object):
         # Find the reads with sufficiently many covered positions.
         reads = batch.read_nums[batch.cover_per_read.values.sum(axis=1)
                                 >= self.min_ncov_read]
-        logger.debug(f"{self} kept {reads.size} reads with coverage "
-                     f"≥ {self.min_ncov_read} in {batch}")
+        logger.detail(f"{self} kept {reads.size} reads with coverage "
+                      f"≥ {self.min_ncov_read} in {batch}")
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
@@ -211,8 +209,8 @@ class Masker(object):
             return batch
         # Find the reads with contiguous mates.
         reads = batch.read_nums[batch.contiguous]
-        logger.debug(f"{self} kept {reads.size} reads with "
-                     f"contiguous mates in {batch}")
+        logger.detail(f"{self} kept {reads.size} reads with "
+                      f"contiguous mates in {batch}")
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
@@ -223,15 +221,15 @@ class Masker(object):
                              f"{self.min_finfo_read}")
         if self.min_finfo_read == 0.:
             # All reads have sufficiently many informative positions.
-            logger.debug(f"{self} skipped filtering reads with insufficient "
-                         f"informative fractions in {batch}")
+            logger.detail(f"{self} skipped filtering reads with insufficient "
+                          f"informative fractions in {batch}")
             return batch
         # Find the reads with sufficiently many informative positions.
         info, muts = batch.count_per_read(self.pattern)
         finfo_read = info.values / batch.cover_per_read.values.sum(axis=1)
         reads = info.index.values[finfo_read >= self.min_finfo_read]
-        logger.debug(f"{self} kept {reads.size} reads with informative "
-                     f"fractions ≥ {self.min_finfo_read} in {batch}")
+        logger.detail(f"{self} kept {reads.size} reads with informative "
+                      f"fractions ≥ {self.min_finfo_read} in {batch}")
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
@@ -242,16 +240,16 @@ class Masker(object):
                              f"{self.max_fmut_read}")
         if self.max_fmut_read == 1.:
             # All reads have sufficiently few mutations.
-            logger.debug(f"{self} skipped filtering reads with excessive "
-                         f"mutation fractions in {batch}")
+            logger.detail(f"{self} skipped filtering reads with excessive "
+                          f"mutation fractions in {batch}")
             return batch
         # Find the reads with sufficiently few mutations.
         info, muts = batch.count_per_read(self.pattern)
         with np.errstate(invalid="ignore"):
             fmut_read = muts.values / info.values
         reads = info.index.values[fmut_read <= self.max_fmut_read]
-        logger.debug(f"{self} kept {reads.size} reads with mutated "
-                     f"fractions ≤ {self.max_fmut_read} in {batch}")
+        logger.detail(f"{self} kept {reads.size} reads with mutated "
+                      f"fractions ≤ {self.max_fmut_read} in {batch}")
         # Return a new batch of only those reads.
         return apply_mask(batch, reads)
 
@@ -262,12 +260,12 @@ class Masker(object):
                 f"min_mut_gap must be ≥ 0, but got {self.min_mut_gap}")
         if self.min_mut_gap == 0:
             # No read can have a pair of mutations that are too close.
-            logger.debug(f"{self} skipped filtering reads with pairs of "
-                         f"mutations too close in {batch}")
+            logger.detail(f"{self} skipped filtering reads with pairs of "
+                          f"mutations too close in {batch}")
             return batch
         reads = batch.reads_noclose_muts(self.pattern, self.min_mut_gap)
-        logger.debug(f"{self} kept {reads.size} reads with no two mutations "
-                     f"separated by < {self.min_mut_gap} nt in {batch}")
+        logger.detail(f"{self} kept {reads.size} reads with no two mutations "
+                      f"separated by < {self.min_mut_gap} nt in {batch}")
         return apply_mask(batch, reads)
 
     def _exclude_positions(self):

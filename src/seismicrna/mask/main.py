@@ -1,6 +1,5 @@
 from collections import defaultdict
 from itertools import chain, product
-from logging import getLogger
 from pathlib import Path
 from typing import Iterable
 
@@ -38,12 +37,11 @@ from ..core.arg import (CMD_MASK,
                         optional_path,
                         extra_defaults)
 from ..core.data import load_datasets
+from ..core.logs import logger
 from ..core.run import run_func
 from ..core.seq import DNA, RefSections
 from ..core.task import dispatch
 from ..pool.data import load_relate_dataset
-
-logger = getLogger(__name__)
 
 
 def load_sections(input_path: Iterable[str | Path],
@@ -67,7 +65,7 @@ def load_sections(input_path: Iterable[str | Path],
     return datasets, sections
 
 
-@run_func(logger.critical, with_tmp=True, extra_defaults=extra_defaults)
+@run_func(logger.fatal, with_tmp=True, extra_defaults=extra_defaults)
 def run(input_path: tuple[str, ...], *,
         tmp_dir: Path,
         # Sections

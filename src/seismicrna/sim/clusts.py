@@ -1,5 +1,4 @@
 import os
-from logging import getLogger
 from pathlib import Path
 
 import numpy as np
@@ -13,12 +12,12 @@ from ..core.arg import (opt_ct_file,
                         opt_parallel,
                         opt_max_procs)
 from ..core.header import ClustHeader
+from ..core.logs import logger
 from ..core.rna import from_ct
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
 
-logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -81,7 +80,7 @@ def load_pclust(pclust_file: Path):
     )[PROPORTION]
 
 
-@run_func(logger.critical)
+@run_func(logger.fatal)
 def run(*,
         ct_file: tuple[str, ...],
         clust_conc: float,

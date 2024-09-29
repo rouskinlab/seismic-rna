@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from logging import getLogger
 
 import numpy as np
 import pandas as pd
@@ -21,6 +20,7 @@ from ..cluster.data import ClusterMutsDataset, load_cluster_dataset
 from ..core.batch import END5_COORD, END3_COORD, accum_fits
 from ..core.data import MutsDataset, UnbiasDataset
 from ..core.header import NUM_CLUSTS_NAME, Header, make_header, validate_ks
+from ..core.logs import logger
 from ..core.rel import RelPattern, HalfRelPattern
 from ..core.seq import Section
 from ..core.unbias import (calc_p_ends_observed,
@@ -29,8 +29,6 @@ from ..core.unbias import (calc_p_ends_observed,
                            calc_params)
 from ..mask.data import load_mask_dataset
 from ..pool.data import load_relate_dataset
-
-logger = getLogger(__name__)
 
 # These relationships are of all subtypes of mutations.
 SUBMUTS = [SUBST_REL,

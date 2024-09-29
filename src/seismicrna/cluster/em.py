@@ -1,6 +1,5 @@
 from functools import cached_property
 from itertools import combinations, filterfalse
-from logging import getLogger
 from typing import Callable
 
 import numpy as np
@@ -15,10 +14,9 @@ from .names import CLUST_PROP_NAME
 from .uniq import UniqReads
 from ..core.array import get_length
 from ..core.header import ClustHeader
+from ..core.logs import logger
 from ..core.mu import calc_nrmsd, calc_pearson
 from ..core.unbias import calc_params, calc_params_observed
-
-logger = getLogger(__name__)
 
 LOG_LIKE_PRECISION = 3  # number of digits to round the log likelihood
 
@@ -358,8 +356,8 @@ class EMRun(object):
             This instance, in order to permit statements such as
             ``return [em.run() for em in em_clusterings]``
         """
-        logger.info(f"{self} began with {self._min_iter}-{self._max_iter} "
-                    f"iterations")
+        logger.routine("Began {} with {}-{} iterations",
+                       self, self._min_iter, self._max_iter)
         rng = np.random.default_rng(seed)
         # Choose the concentration parameters using a standard uniform
         # distribution so that the reads assigned to each cluster can
@@ -388,30 +386,33 @@ class EMRun(object):
             if not np.isfinite(self.log_like):
                 raise ValueError(f"{self}, iteration {self.iter} returned a "
                                  f"non-finite log likelihood: {self.log_like}")
-            logger.debug(f"{self}, iteration {self.iter}: "
-                         f"log likelihood = {self.log_like}")
+            logger.detail("{}, iteration {}: log likelihood = {}",
+                          self, self.iter, self.log_like)
             # Check for convergence.
             if self._delta_log_like < 0.:
                 # The log likelihood should not decrease.
-                logger.warning(f"{self}, iteration {self.iter} had a smaller "
-                               f"log likelihood ({self.log_like}) than the "
-                               f"previous iteration ({self._log_like_prev})")
+                logger.warning(
+                    "{}, iteration {} had a smaller log likelihood ({}) "
+                    "than the previous iteration ({})",
+                    self, self.iter, self.log_like, self._log_like_prev
+                )
             if (self._delta_log_like < self._em_thresh
                     and self.iter >= self._min_iter):
                 # Converge if the increase in log likelihood is smaller
                 # than the convergence cutoff and at least the minimum
                 # number of iterations have been run.
                 self.converged = True
-                logger.info(f"{self} converged on iteration {self.iter}: "
-                            f"last log likelihood = {self.log_like}")
+                logger.routine("Ended {} on iteration {}: log likelihood = {}",
+                               self, self.iter, self.log_like)
                 # Cache the jackpotting quotient here (though it will
                 # not be used yet) so that this expensive calculation
                 # can be performed in parallel, just like clustering.
                 return self.jackpot_quotient
         # The log likelihood did not converge within the maximum number
         # of permitted iterations.
-        logger.warning(f"{self} failed to converge within {self._max_iter} "
-                       f"iterations: last log likelihood = {self.log_like}")
+        logger.warning("{} failed to converge within {} iterations: "
+                       "last log likelihood = {}",
+                       self, self._max_iter, self.log_like)
 
     @cached_property
     def log_exp_values(self):

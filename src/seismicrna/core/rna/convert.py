@@ -1,5 +1,3 @@
-from logging import getLogger
-
 from click import command
 
 from .io import ct_to_db, db_to_ct
@@ -10,13 +8,12 @@ from ..arg import (CMD_CT2DB,
                    opt_force,
                    opt_max_procs,
                    opt_parallel)
+from ..logs import logger
 from ..run import run_func
 from ..task import as_list_of_tuples, dispatch
 
-logger = getLogger(__name__)
 
-
-@run_func(logger.critical)
+@run_func(logger.fatal)
 def run_ct_to_db(input_path: tuple[str, ...], *,
                  force: bool,
                  max_procs: int,
@@ -31,7 +28,7 @@ def run_ct_to_db(input_path: tuple[str, ...], *,
                     pass_n_procs=False)
 
 
-@run_func(logger.critical)
+@run_func(logger.fatal)
 def run_db_to_ct(input_path: tuple[str, ...], *,
                  force: bool,
                  max_procs: int,

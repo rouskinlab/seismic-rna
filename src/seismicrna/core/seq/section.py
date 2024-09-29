@@ -1,17 +1,6 @@
-"""
-
-Sections Core Module
-
-========================================================================
-
-Utilities for sections of reference sequences.
-
-"""
-
 import re
 from collections import defaultdict, namedtuple
 from functools import cached_property, reduce
-from logging import getLogger
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -20,8 +9,7 @@ import pandas as pd
 
 from .refs import RefSeqs
 from .xna import BASEA, BASEC, BASEN, DNA
-
-logger = getLogger(__name__)
+from ..logs import logger
 
 # Names of the section index levels.
 POS_NAME = "Position"
@@ -84,7 +72,8 @@ def get_sect_coords_primers(sects_file: Path):
             # the value given currently.
             if prev == value:
                 # If so, then warn about it.
-                logger.warning(f"Key {key} mapped to '{value}' multiple times")
+                logger.warning("Key {} mapped to {} multiple times",
+                               key, repr(value))
             else:
                 # If not, then raise an error because it is ambiguous
                 # which value to use.
@@ -125,8 +114,8 @@ def get_sect_coords_primers(sects_file: Path):
             else:
                 raise ValueError(f"Got neither coordinates nor primers")
         except Exception as error:
-            logger.error(f"Failed to make a section from line {i} of "
-                         f"{sects_file}: {error}")
+            logger.error("Failed to make a section from line {} of {}: {}",
+                         i, sects_file, error)
     return coords, primers
 
 
@@ -277,8 +266,9 @@ def iter_windows(*series: pd.Series,
     # Calculate the 5' and 3' margins.
     margin5, margin3 = window_to_margins(size)
     if min_count > size:
-        logger.warning(f"min_count ({min_count}) is > window size ({size}), "
-                       "so no positions will have enough data")
+        logger.warning("min_count ({}) is > window size ({}), "
+                       "so no positions will have enough data",
+                       min_count, size)
     # Yield each window from each series.
     for center in index_to_pos(index):
         # Determine the 5' and 3' ends of the window.
@@ -553,7 +543,7 @@ class Section(object):
         # Record the positions that have not already been masked.
         self._masks[name] = np.setdiff1d(p, self.masked_int, assume_unique=True)
         # Do not log self._masks[name] due to memory leak.
-        logger.debug(f"Added mask {repr(name)} to {self}")
+        logger.detail("Added mask {} to {}", repr(name), self)
 
     def remove_mask(self, name: str, missing_ok: bool = False):
         """ Remove the specified mask from the section. """
@@ -940,7 +930,7 @@ def get_coords_by_ref(coords: Iterable[tuple[str, int | DNA, int | DNA]]):
     for ref, end5, end3 in coords:
         coord = end5, end3
         if coord in ref_coords[ref]:
-            logger.warning(f"Skipping duplicate coordinates: {coord}")
+            logger.warning("Skipping duplicate coordinates: {}", coord)
         else:
             ref_coords[ref].add(coord)
     return ref_coords
@@ -966,8 +956,8 @@ class RefSections(object):
                 # Combines the coordinates from the sects_file and from the
                 # coord parameter.
             except Exception as error:
-                logger.error(
-                    f"Failed to add coordinates from {sects_file}: {error}")
+                logger.error("Failed to add coordinates from {}: {}",
+                             sects_file, error)
             else:
                 coords = list(coords) + list(sect_coords)
                 primers = list(primers) + list(sect_primers)
@@ -1006,9 +996,8 @@ class RefSections(object):
         try:
             section = SectionFinder(*args, **kwargs)
         except Exception as error:
-            logger.error(
-                f"Failed to create section with {args, kwargs}: {error}"
-            )
+            logger.error("Failed to create section with {}: {}",
+                         (args, kwargs), error)
         else:
             # Check if the section was seen already.
             if (seen := self._sections[section.ref].get(section.coord)) is None:
@@ -1016,11 +1005,12 @@ class RefSections(object):
                 self._sections[section.ref][section.coord] = section
             elif seen.name == section.name:
                 # The section was seen already with the same name.
-                logger.warning(f"Got duplicate section: {section}")
+                logger.warning("Got duplicate section: {}", section)
             else:
                 # The section was seen already with a different name.
-                logger.error(f"Section {seen} was redefined with as {section}. "
-                             f"Using the first encountered: {seen}")
+                logger.error("Section {} was redefined with as {}; "
+                             "using the first encountered: {}",
+                             seen, section, seen)
 
     def list(self, ref: str):
         """ List the sections for a given reference. """

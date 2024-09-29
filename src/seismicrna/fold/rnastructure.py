@@ -7,7 +7,6 @@ https://rna.urmc.rochester.edu/RNAstructure.html
 
 import os
 import re
-from logging import getLogger
 from pathlib import Path
 from shutil import which
 
@@ -16,10 +15,9 @@ from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            RNASTRUCTURE_FOLD_SMP_CMD,
                            args_to_cmd,
                            run_cmd)
+from ..core.logs import logger
 from ..core.rna import RNAProfile, renumber_ct
 from ..core.write import need_write, write_mode
-
-logger = getLogger(__name__)
 
 ENERGY_UNIT = "kcal/mol"
 FOLD_SMP_NUM_THREADS = "OMP_NUM_THREADS"
@@ -286,7 +284,7 @@ def _guess_data_path_conda():
         raise OSError("It seems RNAstructure is not installed with Conda: "
                       f"{data_path} does not exist")
     check_data_path(data_path)
-    logger.debug(f"Successfully guessed {DATAPATH}: {data_path}")
+    logger.detail("Successfully guessed {}: {}", DATAPATH, data_path)
     return data_path
 
 
@@ -301,7 +299,7 @@ def _guess_data_path_manual():
     fold_path = Path(fold_path)
     data_path = fold_path.parent.parent.joinpath("data_tables")
     check_data_path(data_path)
-    logger.debug(f"Successfully guessed {DATAPATH}: {data_path}")
+    logger.detail("Successfully guessed {}: {}", DATAPATH, data_path)
     return data_path
 
 
@@ -421,9 +419,8 @@ def fold(rna: RNAProfile, *,
         try:
             run_cmd(fold_cmds[True])
         except RuntimeError as error:
-            logger.warning(
-                f"Unable to fold using {RNASTRUCTURE_FOLD_SMP_CMD}:\n{error}"
-            )
+            logger.warning("Unable to fold using {}:\n{}",
+                           RNASTRUCTURE_FOLD_SMP_CMD, error)
             run_cmd(fold_cmds[False])
         # Reformat the CT file title lines so that each is unique.
         retitle_ct(ct_tmp, ct_tmp, force=True)
@@ -438,7 +435,7 @@ def fold(rna: RNAProfile, *,
             dms_file.unlink(missing_ok=True)
             if ct_tmp != ct_out:
                 ct_tmp.unlink(missing_ok=True)
-    logger.info(f"Predicted structure of {rna} to {ct_out}")
+    logger.routine("Predicted structure of {} to {}", rna, ct_out)
     return ct_out
 
 
@@ -475,7 +472,8 @@ def parse_rnastructure_ct_title(line: str):
             # The line violated the basic length-and-title format.
             raise ValueError(f"Failed to parse CT title line: {repr(line)}")
         logger.warning("CT line contains no energy term (probably because no "
-                       f"base pairs were predicted): {repr(line)}")
+                       "base pairs were predicted): {}",
+                       repr(line))
         energy = 0.
     return int(length), float(energy), ref
 
@@ -552,8 +550,11 @@ def retitle_ct(ct_input: Path, ct_output: Path, force: bool = False):
         text = "".join(lines)
         with open(ct_output, write_mode(force=True)) as f:
             f.write(text)
-        logger.info(f"Retitled CT file {ct_input}"
-                    + (f" to {ct_output}" if ct_input != ct_output else ""))
+        logger.routine("Retitled CT file {}{}",
+                       ct_input,
+                       (f" to {ct_output}"
+                        if ct_input != ct_output
+                        else ""))
 
 
 def parse_energy(line: str):

@@ -1,7 +1,6 @@
-from logging import getLogger
 from pathlib import Path
 
-logger = getLogger(__name__)
+from .logs import logger
 
 
 def need_write(query: Path, force: bool = False, warn: bool = True):
@@ -24,7 +23,7 @@ def need_write(query: Path, force: bool = False, warn: bool = True):
     if force or not query.exists():
         return True
     if warn:
-        logger.warning(f"{query} exists: use --force to overwrite")
+        logger.warning("{} exists: use --force to overwrite", query)
     return False
 
 

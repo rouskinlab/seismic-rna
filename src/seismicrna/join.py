@@ -1,6 +1,5 @@
 from collections import Counter, defaultdict
 from datetime import datetime
-from logging import getLogger
 from pathlib import Path
 from typing import Iterable
 
@@ -16,6 +15,7 @@ from .core.arg import (CMD_JOIN,
                        opt_parallel,
                        opt_force)
 from .core.data import load_datasets
+from .core.logs import logger
 from .core.run import run_func
 from .core.task import dispatch
 from .core.write import need_write
@@ -24,8 +24,6 @@ from .joinbase.data import JoinMutsDataset
 from .joinbase.report import JoinMaskReport, JoinClusterReport
 from .mask.data import load_mask_dataset
 from .mask.report import MaskReport
-
-logger = getLogger(__name__)
 
 DEFAULT_JOIN = "joined"
 
@@ -114,19 +112,27 @@ def join_sections(out_dir: Path,
                 # The report file does not contain a Join report.
                 raise TypeError(f"Overwriting {report_file} with "
                                 f"{join_type.__name__} would cause data loss")
-        logger.info(f"Began joining sections {sects} into {repr(name)} with "
-                    f"sample {repr(sample)}, reference {repr(ref)} in output "
-                    f"directory {out_dir}")
+        logger.process("Began joining sections {} into {} with sample {}, "
+                    "reference {} in output directory {}",
+                       sects,
+                       repr(name),
+                       repr(sample),
+                       repr(ref),
+                       out_dir)
         ended = datetime.now()
         report = join_type(**report_kwargs, began=began, ended=ended)
         report.save(out_dir, force=True)
-        logger.info(f"Ended joining sections {sects} into {repr(name)} with "
-                    f"sample {repr(sample)}, reference {repr(ref)} in output "
-                    f"directory {out_dir}")
+        logger.process("Ended joining sections {} into {} with sample {}, "
+                    "reference {} in output directory {}",
+                       sects,
+                       repr(name),
+                       repr(sample),
+                       repr(ref),
+                       out_dir)
     return report_file
 
 
-@run_func(logger.critical)
+@run_func(logger.fatal)
 def run(input_path: tuple[str, ...], *,
         joined: str,
         join_clusts: str | None,
@@ -202,8 +208,10 @@ params = [
 def cli(*args, joined: str, **kwargs):
     """ Merge sections (horizontally) from the Mask or Cluster step. """
     if not joined:
-        logger.warning(f"{CMD_JOIN} expected a name via --joined, but got "
-                       f"{repr(joined)}; defaulting to {repr(DEFAULT_JOIN)}")
+        logger.warning(
+            "{} expected a name via --joined, but got {}; defaulting to {}",
+            CMD_JOIN, repr(joined), repr(DEFAULT_JOIN)
+        )
         joined = DEFAULT_JOIN
     return run(*args, joined=joined, **kwargs)
 

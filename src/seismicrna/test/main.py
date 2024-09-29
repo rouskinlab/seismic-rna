@@ -4,11 +4,11 @@ from os.path import dirname
 from click import command
 
 from seismicrna.core.arg import CMD_TEST, opt_verbose
-from seismicrna.core.logs import get_top_logger, restore_config, set_config
+from seismicrna.core.logs import logger, restore_config, set_config
 from seismicrna.core.run import run_func
 
 
-@run_func(get_top_logger().critical, default=None)
+@run_func(logger.fatal, default=None)
 @restore_config
 def run(verbose: int):
     """ Run all unit tests. """

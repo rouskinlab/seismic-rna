@@ -1,5 +1,4 @@
 import os
-from logging import getLogger
 from pathlib import Path
 
 import numpy as np
@@ -15,14 +14,13 @@ from ..core.arg import (opt_ct_file,
                         opt_parallel,
                         opt_max_procs)
 from ..core.batch import END5_COORD, END3_COORD
+from ..core.logs import logger
 from ..core.random import stochastic_round
 from ..core.rna import find_ct_section
 from ..core.run import run_func
 from ..core.stats import calc_dirichlet_params
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
-
-logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -181,7 +179,7 @@ def load_pends(pends_file: Path):
     return uniq_end5s, uniq_end3s, pends
 
 
-@run_func(logger.critical)
+@run_func(logger.fatal)
 def run(*,
         ct_file: tuple[str, ...],
         end3_fmean: float,

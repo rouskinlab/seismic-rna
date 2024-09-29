@@ -1,7 +1,6 @@
 import os
 from functools import cached_property
 from itertools import product
-from logging import getLogger
 
 import numpy as np
 import pandas as pd
@@ -14,8 +13,6 @@ from .trace import iter_seq_base_scatter_traces
 from .twotable import SAMPLE_NAME, TwoTableGraph, TwoTableRunner, TwoTableWriter
 from ..core.arg import opt_metric
 from ..core.mu import get_comp_method
-
-logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 

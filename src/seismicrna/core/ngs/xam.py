@@ -1,11 +1,9 @@
 import re
-from logging import getLogger
 from pathlib import Path
 from subprocess import CompletedProcess
 
+from ..logs import logger
 from ..extern import SAMTOOLS_CMD, args_to_cmd, ShellCommand
-
-logger = getLogger(__name__)
 
 # SAM file format specifications
 SAM_HEADER = "@"
@@ -259,9 +257,9 @@ def count_single_paired(flagstats: dict):
             f"mapped reads in total, but got {paired_end_reads} > {mapped}, "
             "which indicates a bug"
         )
-    logger.debug(f"Proper pairs: {paired_end_pairs_proper}\n"
-                 f"Other paired-end reads: {paired_end_reads_improper}\n"
-                 f"Single-end reads: {single_end_reads}")
+    logger.detail(f"Proper pairs: {paired_end_pairs_proper}\n"
+                  f"Other paired-end reads: {paired_end_reads_improper}\n"
+                  f"Single-end reads: {single_end_reads}")
     return paired_end_pairs_proper, paired_end_reads_improper, single_end_reads
 
 
@@ -334,7 +332,8 @@ def parse_ref_header(process: CompletedProcess):
                     break
             else:
                 # The sequence name was not found.
-                logger.warning(f"Failed to find sequence name in line:\n{line}")
+                logger.warning("Failed to find sequence name in line:\n{}",
+                               line)
 
 
 run_ref_header = ShellCommand("getting header line for each reference",

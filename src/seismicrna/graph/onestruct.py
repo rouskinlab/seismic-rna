@@ -1,6 +1,5 @@
 from abc import ABC
 from functools import cached_property
-from logging import getLogger
 from pathlib import Path
 
 from .base import cgroup_table
@@ -12,11 +11,10 @@ from ..core.arg import (opt_struct_file,
                         opt_fold_coords,
                         opt_fold_primers,
                         opt_fold_full)
+from ..core.logs import logger
 from ..core.rna import RNAState, from_ct
 from ..core.seq import DNA, RefSections
 from ..fold.main import find_foldable_tables
-
-logger = getLogger(__name__)
 
 
 class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
@@ -96,8 +94,9 @@ class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
                 for struct in from_ct(ct_file):
                     yield RNAState.from_struct_profile(struct, profile)
             except FileNotFoundError:
-                logger.error(f"Structure file {ct_file} does not exist; please "
-                             f"obtain the file, e.g. using seismic fold")
+                logger.error("Structure file {} does not exist; please "
+                             "obtain the file, e.g. using seismic fold",
+                             ct_file)
 
 
 class StructOneTableWriter(OneTableWriter, ABC):
@@ -123,10 +122,12 @@ class StructOneTableWriter(OneTableWriter, ABC):
             if ref == self.table.ref:
                 struct_files.append(file)
             else:
-                logger.warning(f"Skipped CT file {file} in section directory "
-                               f"{path.SECT} in reference directory {ref}, "
-                               f"which differs from the reference name of "
-                               f"the table file ({self.table.ref})")
+                logger.warning(
+                    "Skipped CT file {} in section directory {} in reference "
+                    "directory {}, which differs from the reference name of "
+                    "the table file ({})",
+                    file, path.SECT, ref, self.table.ref
+                )
         # Add the sections from the given coordinates/primers.
         ref_sections = RefSections([(self.table.ref, self.table.refseq)],
                                    sects_file=(Path(fold_sections_file)

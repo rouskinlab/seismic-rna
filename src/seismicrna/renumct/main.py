@@ -1,13 +1,4 @@
-"""
-
-CT Renumbering Module
-========================================================================
-
-
-"""
-
 from collections import defaultdict
-from logging import getLogger
 from pathlib import Path
 
 from click import command
@@ -20,14 +11,13 @@ from ..core.arg import (CMD_RENUMCT,
                         opt_force,
                         opt_max_procs,
                         opt_parallel)
+from ..core.logs import logger
 from ..core.rna import renumber_ct as renumber_ct
 from ..core.run import run_func
 from ..core.task import dispatch
 
-logger = getLogger(__name__)
 
-
-@run_func(logger.critical)
+@run_func(logger.fatal)
 def run(*,
         ct_pos_5: tuple[tuple[str, int], ...],
         inplace: bool,

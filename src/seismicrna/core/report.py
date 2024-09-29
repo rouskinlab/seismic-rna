@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import cache
 from inspect import getmembers
-from logging import getLogger
 from pathlib import Path
 from typing import Any, Callable, Hashable, Iterable
 
@@ -88,11 +87,10 @@ from .arg import (opt_phred_enc,
                   opt_mask_discontig,
                   opt_min_phred)
 from .io import FileIO, ReadBatchIO, RefIO
+from .logs import logger
 from .rel import HalfRelPattern
 from .version import __version__
 from .write import need_write, write_mode
-
-logger = getLogger(__name__)
 
 
 # Field class
@@ -660,14 +658,14 @@ class Report(FileIO, ABC):
             # from a different version of SEISMIC-RNA), then just log a
             # warning and ignore the extra fields (to make different
             # versions compatible).
-            logger.warning(f"Got extra fields for {type(self).__name__}: "
-                           f"{list(kwargs)}")
+            logger.warning("Got extra fields for {}: {}",
+                           type(self).__name__, list(kwargs))
         if defaulted:
             # If the report file was missing keyword arguments that have
             # default values, AND if parsing the report file succeeded,
             # then warn about the default values.
-            logger.warning(f"Missing fields for {type(self).__name__} "
-                           f"and using defaults: {defaulted}")
+            logger.warning("Missing fields for {} and using defaults: {}",
+                           type(self).__name__, defaulted)
 
     def get_field(self, field: Field, missing_ok: bool = False):
         """ Return the value of a field of the report using the field
@@ -700,7 +698,7 @@ class Report(FileIO, ABC):
         if need_write(save_path, force):
             with open(save_path, write_mode(force)) as f:
                 f.write(text)
-            logger.info(f"Wrote {self} to {save_path}")
+            logger.routine("Wrote {} to {}", self, save_path)
         return save_path
 
     def __setattr__(self, key: str, value: Any):

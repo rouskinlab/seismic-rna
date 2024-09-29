@@ -1,15 +1,13 @@
 import re
-from logging import getLogger
 from os import linesep
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Iterable
 
 from .xna import XNA
+from ..logs import logger
 from ..path import STR_CHARS
 from ..write import need_write
-
-logger = getLogger(__name__)
 
 # FASTA name line format.
 FASTA_NAME_MARK = ">"
@@ -91,14 +89,16 @@ def parse_fasta(fasta: Path,
                         segments.append(line.rstrip(linesep))
                         line = f.readline()
                     seq = seq_type("".join(segments))
-                    logger.debug(f"Read {seq_type.__name__} {repr(name)} "
-                                 f"({len(seq)} nt) from {fasta}")
+                    logger.detail(
+                        "Read {} {} ({} nt) from {}",
+                        seq_type.__name__, repr(name), len(seq), fasta
+                    )
                     yield name, seq
             # Skip to the next name line if there is one, otherwise to
             # the end of the file; ignore blank lines.
             while line and not line.startswith(FASTA_NAME_MARK):
                 line = f.readline()
-    logger.info(f"Read {len(names)} sequences(s) from {fasta}")
+    logger.routine("Read {} sequences(s) from {}", len(names), fasta)
 
 
 def get_fasta_seq(fasta: Path, seq_type: type[XNA], name: str):
@@ -142,8 +142,8 @@ def write_fasta(fasta: Path,
                     if name in names:
                         raise ValueError(f"Duplicate reference: {repr(name)}")
                     f.write(format_fasta_record(name, seq, wrap))
-                    logger.debug(f"Wrote reference {repr(name)} "
-                                 f"({len(seq)} nt) to {tmp_fasta}")
+                    logger.detail("Wrote reference {} ({} nt) to {}",
+                                  repr(name), len(seq), tmp_fasta)
                     names.add(name)
             # Release the FASTA file.
             tmp_fasta.rename(fasta)
@@ -151,7 +151,7 @@ def write_fasta(fasta: Path,
             # The temporary FASTA file would have been renamed already
             # if the write operation had succeeded; if not, delete it.
             tmp_fasta.unlink(missing_ok=True)
-        logger.info(f"Wrote {len(names)} sequences(s) to {fasta}")
+        logger.routine("Wrote {} sequences(s) to {}", len(names), fasta)
 
 ########################################################################
 #                                                                      #

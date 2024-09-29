@@ -1,12 +1,9 @@
 import os
-from logging import getLogger
 
 from click import command
 
 from .base import PosGraphWriter, PosGraphRunner
 from .histrel import RelHistogramGraph, RelHistogramWriter, RelHistogramRunner
-
-logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 

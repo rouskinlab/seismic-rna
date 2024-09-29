@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import Counter
 from functools import cached_property
-from logging import getLogger
 
 import numpy as np
 import pandas as pd
@@ -24,8 +23,6 @@ from ..seq import Section, index_to_pos
 from ..types import fit_uint_type
 
 rng = np.random.default_rng()
-
-logger = getLogger(__name__)
 
 NUM_READS = "reads"
 NUM_SEGMENTS = "segments"

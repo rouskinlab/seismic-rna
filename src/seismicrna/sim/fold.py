@@ -1,5 +1,4 @@
 import os
-from logging import getLogger
 from pathlib import Path
 
 from click import command
@@ -29,6 +28,7 @@ from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            require_dependency,
                            args_to_cmd,
                            run_cmd)
+from ..core.logs import logger
 from ..core.rna import renumber_ct
 from ..core.run import run_func
 from ..core.seq import DNA, RefSections, Section, parse_fasta, write_fasta
@@ -37,8 +37,6 @@ from ..core.write import need_write
 from ..fold.rnastructure import make_fold_cmd, retitle_ct, require_data_path
 
 COMMAND = __name__.split(os.path.extsep)[-1]
-
-logger = getLogger(__name__)
 
 
 def get_ct_path(top: Path, section: Section, profile: str):
@@ -100,7 +98,7 @@ def fold_section(section: Section, *,
     return ct_sim
 
 
-@run_func(logger.critical,
+@run_func(logger.fatal,
           with_tmp=True,
           pass_keep_tmp=True,
           extra_defaults=extra_defaults)

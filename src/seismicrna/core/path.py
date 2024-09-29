@@ -36,12 +36,11 @@ import re
 from collections import Counter
 from functools import cache, cached_property, partial, wraps
 from itertools import chain, product
-from logging import getLogger
 from string import ascii_letters, digits, printable
 from tempfile import mkdtemp
 from typing import Any, Callable, Iterable, Sequence
 
-logger = getLogger(__name__)
+from .logs import logger
 
 # Constants ############################################################
 
@@ -697,7 +696,7 @@ def deduplicate(paths: Iterable[str | pathlib.Path]):
     seen = set()
     for path in map(sanitize, paths):
         if path in seen:
-            logger.warning(f"Duplicate path: {path}")
+            logger.warning("Duplicate path: {}", path)
         else:
             seen.add(path)
             yield path
@@ -776,15 +775,17 @@ def find_files(path: str | pathlib.Path, segments: Sequence[Segment]):
     path = sanitize(path, strict=True)
     if path.is_dir():
         # Search the directory for files matching the segments.
-        logger.debug(f"Searching {path} and any subdirectories "
-                     f"for files matching {list(map(str, segments))}")
+        logger.detail(
+            "Searching {} and any subdirectories for files matching {}",
+            path, list(map(str, segments))
+        )
         yield from chain(*map(partial(find_files, segments=segments),
                               path.iterdir()))
     else:
         # Assume the path is a file; check if it matches the segments.
         if path_matches(path, segments):
             # If so, then yield it.
-            logger.debug(f"File {path} matches {list(map(str, segments))}")
+            logger.detail("File {} matches {}", path, list(map(str, segments)))
             yield path
 
 
@@ -796,7 +797,7 @@ def find_files_chain(paths: Iterable[str | pathlib.Path],
         try:
             yield from find_files(path, segments)
         except Exception as error:
-            logger.error(f"Failed search for {path}: {error}")
+            logger.error("Failed search for {}: {}", path, error)
 
 
 # Path transformation routines
