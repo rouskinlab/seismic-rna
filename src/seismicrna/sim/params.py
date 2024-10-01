@@ -6,13 +6,12 @@ from . import (clusts as clusts_mod,
                ends as ends_mod,
                muts as muts_mod)
 from ..core.arg import merge_params
-from ..core.logs import logger
 from ..core.run import run_func
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-@run_func(logger.fatal)
+@run_func(COMMAND)
 def run(*,
         ct_file: tuple[str, ...],
         pmut_paired: tuple[tuple[str, float], ...],

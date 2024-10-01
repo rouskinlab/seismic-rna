@@ -12,12 +12,10 @@ from ..core.arg import (opt_ct_file,
                         opt_parallel,
                         opt_max_procs)
 from ..core.header import ClustHeader
-from ..core.logs import logger
 from ..core.rna import from_ct
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
-
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -80,7 +78,7 @@ def load_pclust(pclust_file: Path):
     )[PROPORTION]
 
 
-@run_func(logger.fatal)
+@run_func(COMMAND)
 def run(*,
         ct_file: tuple[str, ...],
         clust_conc: float,

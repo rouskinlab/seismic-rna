@@ -63,11 +63,10 @@ from ..core.extern import (BOWTIE2_CMD,
                            FASTP_CMD,
                            SAMTOOLS_CMD,
                            require_dependency)
-from ..core.logs import logger
 from ..core.run import run_func
 
 
-@run_func(logger.fatal,
+@run_func(CMD_ALIGN,
           with_tmp=True,
           pass_keep_tmp=True,
           extra_defaults=extra_defaults)
@@ -129,7 +128,6 @@ def run(fasta: str, *,
         parallel: bool,
         force: bool) -> list[Path]:
     """ Trim FASTQ files and align them to reference sequences. """
-    logger.status(f"Began {CMD_ALIGN}")
     # Check for external dependencies.
     if fastp:
         require_dependency(FASTP_CMD, __name__)
@@ -148,7 +146,7 @@ def run(fasta: str, *,
                                          dmfastqx=list(map(Path, dmfastqx)),
                                          phred_enc=phred_enc))
     # Generate and return a BAM file for every FASTQ-reference pair.
-    results = align_samples(
+    return align_samples(
         fq_units=fq_units,
         fasta=Path(fasta),
         out_dir=Path(out_dir),
@@ -195,8 +193,6 @@ def run(fasta: str, *,
         f1r2_fwd=f1r2_fwd,
         rev_label=rev_label
     )
-    logger.status(f"Ended {CMD_ALIGN}")
-    return results
 
 
 # Parameters for command line interface

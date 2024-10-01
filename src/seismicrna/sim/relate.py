@@ -20,7 +20,6 @@ from ..core.arg import (opt_param_dir,
                         opt_force,
                         opt_parallel,
                         opt_max_procs)
-from ..core.logs import logger
 from ..core.rna import find_ct_section
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
@@ -69,7 +68,7 @@ def from_param_dir(param_dir: Path,
                            **kwargs)
 
 
-@run_func(logger.fatal, with_tmp=True)
+@run_func(COMMAND, with_tmp=True)
 def run(*,
         param_dir: tuple[str, ...],
         profile_name: str,

@@ -17,7 +17,6 @@ from ..core.arg import (opt_ct_file,
                         opt_parallel,
                         opt_max_procs)
 from ..core.header import RelClustHeader, make_header, list_clusts
-from ..core.logs import logger
 from ..core.rel import (MATCH,
                         NOCOV,
                         DELET,
@@ -374,7 +373,7 @@ def load_pmut(pmut_file: Path):
     return pmut
 
 
-@run_func(logger.fatal)
+@run_func(COMMAND)
 def run(*,
         ct_file: tuple[str, ...],
         pmut_paired: tuple[tuple[str, float], ...],

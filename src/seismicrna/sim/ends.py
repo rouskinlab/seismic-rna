@@ -14,7 +14,6 @@ from ..core.arg import (opt_ct_file,
                         opt_parallel,
                         opt_max_procs)
 from ..core.batch import END5_COORD, END3_COORD
-from ..core.logs import logger
 from ..core.random import stochastic_round
 from ..core.rna import find_ct_section
 from ..core.run import run_func
@@ -179,7 +178,7 @@ def load_pends(pends_file: Path):
     return uniq_end5s, uniq_end3s, pends
 
 
-@run_func(logger.fatal)
+@run_func(COMMAND)
 def run(*,
         ct_file: tuple[str, ...],
         end3_fmean: float,

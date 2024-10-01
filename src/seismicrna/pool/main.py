@@ -98,7 +98,7 @@ def pool_samples(out_dir: Path,
     return report_file
 
 
-@run_func(logger.fatal)
+@run_func(CMD_POOL)
 def run(input_path: tuple[str, ...], *,
         pool: str,
         # Parallelization

@@ -11,7 +11,6 @@ from ..core.arg import (CMD_LISTPOS,
                         opt_force,
                         opt_max_procs,
                         opt_parallel)
-from ..core.logs import logger
 from ..core.run import run_func
 from ..core.seq import FIELD_REF, POS_NAME
 from ..core.task import as_list_of_tuples, dispatch
@@ -51,7 +50,7 @@ def list_pos(table_file: Path, force: bool, **kwargs):
     return list_file
 
 
-@run_func(logger.fatal)
+@run_func(CMD_LISTPOS)
 def run(input_path: tuple[str, ...], *,
         max_fmut_pos,
         complement: bool,

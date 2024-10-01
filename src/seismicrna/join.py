@@ -132,7 +132,7 @@ def join_sections(out_dir: Path,
     return report_file
 
 
-@run_func(logger.fatal)
+@run_func(CMD_JOIN)
 def run(input_path: tuple[str, ...], *,
         joined: str,
         join_clusts: str | None,
@@ -208,10 +208,8 @@ params = [
 def cli(*args, joined: str, **kwargs):
     """ Merge sections (horizontally) from the Mask or Cluster step. """
     if not joined:
-        logger.warning(
-            "{} expected a name via --joined, but got {}; defaulting to {}",
-            CMD_JOIN, repr(joined), repr(DEFAULT_JOIN)
-        )
+        logger.warning(f"{CMD_JOIN} expected a name via --joined, but got "
+                       f"{repr(joined)}; defaulting to {repr(DEFAULT_JOIN)}")
         joined = DEFAULT_JOIN
     return run(*args, joined=joined, **kwargs)
 

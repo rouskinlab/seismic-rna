@@ -242,7 +242,7 @@ def generate_fastq(top: Path,
                 try:
                     fq.close()
                 except Exception as error:
-                    logger.warning("Failed to close file {}: {}", fq, error)
+                    logger.warning(error)
     else:
         # Warn that the FASTQ file(s) already exist(s).
         for fastq in fastq_paths:
@@ -311,7 +311,7 @@ def from_param_dir(param_dir: Path, *,
                           force=force)
 
 
-@run_func(logger.fatal)
+@run_func(COMMAND)
 def run(*,
         input_path: tuple[str, ...],
         param_dir: tuple[str, ...],

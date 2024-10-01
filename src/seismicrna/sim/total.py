@@ -17,7 +17,6 @@ from ..core.arg import (arg_fasta,
                         opt_param_dir,
                         merge_params,
                         extra_defaults)
-from ..core.logs import logger
 from ..core.run import run_func
 from ..core.seq import DNA
 
@@ -28,7 +27,7 @@ def as_tuple_str(items: Iterable):
     return tuple(map(str, items))
 
 
-@run_func(logger.fatal,
+@run_func(COMMAND,
           default=None,
           extra_defaults=extra_defaults)
 def run(*,

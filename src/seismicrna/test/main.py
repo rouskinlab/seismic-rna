@@ -4,16 +4,16 @@ from os.path import dirname
 from click import command
 
 from seismicrna.core.arg import CMD_TEST, opt_verbose
-from seismicrna.core.logs import logger, restore_config, set_config
+from seismicrna.core.logs import restore_config, set_config
 from seismicrna.core.run import run_func
 
 
-@run_func(logger.fatal, default=None)
+@run_func(CMD_TEST, default=None)
 @restore_config
 def run(verbose: int):
     """ Run all unit tests. """
     # Write no log file and halt on errors.
-    set_config(log_file=None, raise_on_error=True)
+    set_config(log_file_path=None, raise_on_error=True)
     # Discover all unit test modules.
     main_dir = dirname(dirname(__file__))
     # The argument top_level_dir=dirname(main_dir) is needed to make

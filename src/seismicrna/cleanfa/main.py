@@ -9,12 +9,11 @@ from ..core.arg import (CMD_CLEANFA,
                         opt_force,
                         opt_max_procs,
                         opt_parallel)
-from ..core.logs import logger
 from ..core.run import run_func
 from ..core.task import dispatch
 
 
-@run_func(logger.fatal)
+@run_func(CMD_CLEANFA)
 def run(input_path: tuple[str, ...], *,
         inplace: bool,
         out_dir: str,

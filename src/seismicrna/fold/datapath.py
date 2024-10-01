@@ -4,11 +4,10 @@ from click import command
 
 from .rnastructure import guess_data_path, DATAPATH
 from ..core.arg import (CMD_DATAPATH)
-from ..core.logs import logger
 from ..core.run import run_func
 
 
-@run_func(logger.fatal, default=None)
+@run_func(CMD_DATAPATH, default=None)
 def run_datapath():
     """ Guess the DATAPATH for RNAstructure. """
     datapath = guess_data_path()

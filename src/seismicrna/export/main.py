@@ -13,7 +13,6 @@ from ..core.arg import (CMD_EXPORT,
                         opt_force,
                         opt_max_procs,
                         opt_parallel)
-from ..core.logs import logger
 from ..core.run import run_func
 from ..core.task import dispatch
 from ..table.base import (MaskTable,
@@ -22,7 +21,7 @@ from ..table.base import (MaskTable,
 from ..table.load import load_all_tables
 
 
-@run_func(logger.fatal)
+@run_func(CMD_EXPORT)
 def run(input_path: tuple[str, ...], *,
         samples_meta: str,
         refs_meta: str,

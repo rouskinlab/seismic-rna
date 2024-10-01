@@ -294,20 +294,8 @@ def exc_info():
     return get_config().verbosity >= EXC_INFO_VERBOSITY
 
 
-def log_exceptions(logging_method: Callable, default: Optional[Callable]):
+def log_exceptions(default: Optional[Callable]):
     """ If any exception occurs, catch it and return an empty list. """
-    try:
-        method_logger = getattr(logging_method, "__self__")
-    except AttributeError:
-        raise TypeError("logging_method is not an instance method")
-    if method_logger is not logger:
-        raise TypeError(f"logging_method must be a method of {logger}, "
-                        f"but it is a method of {method_logger}")
-    if logging_method not in [method_logger.fatal,
-                              method_logger.error,
-                              method_logger.warning]:
-        raise ValueError("logging_method must be fatal, error, or warning, "
-                         f"but got {logging_method}")
 
     def decorator(func: Callable):
 
@@ -316,7 +304,7 @@ def log_exceptions(logging_method: Callable, default: Optional[Callable]):
             try:
                 return func(*args, **kwargs)
             except Exception as error:
-                logging_method(error)
+                logger.fatal(error)
                 return default() if default is not None else None
 
         return wrapper

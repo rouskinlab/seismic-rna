@@ -38,7 +38,6 @@ from .core.arg import (CMD_WORKFLOW,
                        opt_graph_roc,
                        opt_graph_aucroll,
                        extra_defaults)
-from .core.logs import logger
 from .core.run import run_func
 from .core.seq import DNA
 from .graph.aucroll import RollingAUCRunner
@@ -68,7 +67,7 @@ def as_tuple_str(items: Iterable):
     return tuple(map(str, items))
 
 
-@run_func(logger.fatal,
+@run_func(CMD_WORKFLOW,
           default=None,
           extra_defaults=extra_defaults)
 def run(fasta: str,

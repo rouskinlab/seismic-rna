@@ -37,7 +37,6 @@ from ..core.arg import (CMD_MASK,
                         optional_path,
                         extra_defaults)
 from ..core.data import load_datasets
-from ..core.logs import logger
 from ..core.run import run_func
 from ..core.seq import DNA, RefSections
 from ..core.task import dispatch
@@ -65,7 +64,7 @@ def load_sections(input_path: Iterable[str | Path],
     return datasets, sections
 
 
-@run_func(logger.fatal, with_tmp=True, extra_defaults=extra_defaults)
+@run_func(CMD_MASK, with_tmp=True, extra_defaults=extra_defaults)
 def run(input_path: tuple[str, ...], *,
         tmp_dir: Path,
         # Sections
@@ -100,7 +99,6 @@ def run(input_path: tuple[str, ...], *,
         # Effort
         force: bool) -> list[Path]:
     """ Define mutations and sections to filter reads and positions. """
-    logger.status(f"Began {CMD_MASK}")
     # Load all Relate datasets and get the sections for each.
     datasets, sections = load_sections(
         input_path,
@@ -134,14 +132,12 @@ def run(input_path: tuple[str, ...], *,
                   brotli_level=brotli_level,
                   force=force)
     # Call the mutations and filter the relation vectors.
-    results = dispatch(mask_section,
-                       max_procs=max_procs,
-                       parallel=parallel,
-                       pass_n_procs=False,
-                       args=args,
-                       kwargs=kwargs)
-    logger.status(f"Ended {CMD_MASK}")
-    return results
+    return dispatch(mask_section,
+                    max_procs=max_procs,
+                    parallel=parallel,
+                    pass_n_procs=False,
+                    args=args,
+                    kwargs=kwargs)
 
 
 params = [

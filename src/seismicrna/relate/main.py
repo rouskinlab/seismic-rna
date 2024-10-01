@@ -26,7 +26,6 @@ from ..core.arg import (CMD_REL,
                         opt_max_procs,
                         opt_force,
                         opt_keep_tmp)
-from ..core.logs import logger
 from ..core.run import run_func
 from ..core.seq import DNA, parse_fasta, write_fasta
 
@@ -45,7 +44,7 @@ def write_both_strands(fasta_in: Path, fasta_out: Path, rev_label: str):
                  for strand in generate_both_strands(ref, seq, rev_label)))
 
 
-@run_func(logger.fatal, with_tmp=True, pass_keep_tmp=True)
+@run_func(CMD_REL, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str,
         input_path: tuple[str, ...], *,
         out_dir: str,
@@ -67,7 +66,6 @@ def run(fasta: str,
         force: bool,
         keep_tmp: bool):
     """ Compute relationships between references and aligned reads. """
-    logger.status(f"Began {CMD_REL}")
     fasta = Path(fasta)
     if sep_strands:
         # Create a temporary FASTA file of forward and reverse strands.
@@ -77,27 +75,25 @@ def run(fasta: str,
         write_both_strands(fasta, relate_fasta, rev_label)
     else:
         relate_fasta = fasta
-    results = write_all(xam_files=path.find_files_chain(map(Path, input_path),
-                                                        path.XAM_SEGS),
-                        fasta=relate_fasta,
-                        out_dir=Path(out_dir),
-                        tmp_dir=tmp_dir,
-                        min_reads=min_reads,
-                        min_mapq=min_mapq,
-                        phred_enc=phred_enc,
-                        min_phred=min_phred,
-                        ambindel=ambindel,
-                        overhangs=overhangs,
-                        clip_end5=clip_end5,
-                        clip_end3=clip_end3,
-                        batch_size=batch_size,
-                        max_procs=max_procs,
-                        parallel=parallel,
-                        brotli_level=brotli_level,
-                        force=force,
-                        keep_tmp=keep_tmp)
-    logger.status(f"Ended {CMD_REL}")
-    return results
+    return write_all(xam_files=path.find_files_chain(map(Path, input_path),
+                                                     path.XAM_SEGS),
+                     fasta=relate_fasta,
+                     out_dir=Path(out_dir),
+                     tmp_dir=tmp_dir,
+                     min_reads=min_reads,
+                     min_mapq=min_mapq,
+                     phred_enc=phred_enc,
+                     min_phred=min_phred,
+                     ambindel=ambindel,
+                     overhangs=overhangs,
+                     clip_end5=clip_end5,
+                     clip_end3=clip_end3,
+                     batch_size=batch_size,
+                     max_procs=max_procs,
+                     parallel=parallel,
+                     brotli_level=brotli_level,
+                     force=force,
+                     keep_tmp=keep_tmp)
 
 
 # Parameters for command line interface

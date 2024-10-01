@@ -17,7 +17,7 @@ from ..core.run import run_func
 from ..core.task import dispatch
 
 
-@run_func(logger.fatal)
+@run_func(CMD_RENUMCT)
 def run(*,
         ct_pos_5: tuple[tuple[str, int], ...],
         inplace: bool,

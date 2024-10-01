@@ -126,7 +126,7 @@ def fold_profile(table: MaskPosTable | ClustPosTable,
                                 **kwargs))
 
 
-@run_func(logger.fatal,
+@run_func(CMD_FOLD,
           with_tmp=True,
           pass_keep_tmp=True,
           extra_defaults=extra_defaults)
@@ -148,7 +148,6 @@ def run(input_path: tuple[str, ...], *,
         parallel: bool,
         force: bool):
     """ Predict RNA secondary structures using mutation rates. """
-    logger.status(f"Began {CMD_FOLD}")
     # Check for the dependencies and the DATAPATH environment variable.
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_data_path()
@@ -176,7 +175,7 @@ def run(input_path: tuple[str, ...], *,
                      else [table.section]))
             for table in tables]
     # Fold the RNA profiles.
-    results = list(chain(*dispatch(
+    return list(chain(*dispatch(
         fold_profile,
         max_procs,
         parallel,
@@ -193,8 +192,6 @@ def run(input_path: tuple[str, ...], *,
                     fold_percent=fold_percent,
                     force=force)
     )))
-    logger.status(f"Ended {CMD_FOLD}")
-    return results
 
 
 params = [

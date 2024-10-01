@@ -20,7 +20,7 @@ from ..mask.data import load_mask_dataset
 from ..pool.data import load_relate_dataset
 
 
-@run_func(logger.fatal)
+@run_func(CMD_TABLE)
 def run(input_path: tuple[str, ...], *,
         table_pos: bool,
         table_read: bool,
@@ -29,7 +29,6 @@ def run(input_path: tuple[str, ...], *,
         max_procs: int,
         parallel: bool):
     """ Count mutations for each read and position; output tables. """
-    logger.status(f"Began {CMD_TABLE}")
     relate_reports = path.find_files_chain(
         input_path, load_relate_dataset.report_path_seg_types
     )
@@ -48,17 +47,15 @@ def run(input_path: tuple[str, ...], *,
     tasks = as_list_of_tuples(chain(relate_reports,
                                     mask_reports,
                                     clust_reports))
-    results = list(chain(*dispatch(write,
-                                   max_procs,
-                                   parallel,
-                                   args=tasks,
-                                   kwargs=dict(table_pos=table_pos,
-                                               table_read=table_read,
-                                               table_clust=table_clust,
-                                               force=force),
-                                   pass_n_procs=False)))
-    logger.status(f"Ended {CMD_TABLE}")
-    return results
+    return list(chain(*dispatch(write,
+                                max_procs,
+                                parallel,
+                                args=tasks,
+                                kwargs=dict(table_pos=table_pos,
+                                            table_read=table_read,
+                                            table_clust=table_clust,
+                                            force=force),
+                                pass_n_procs=False)))
 
 
 params = [arg_input_path,

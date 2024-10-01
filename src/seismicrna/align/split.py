@@ -40,7 +40,6 @@ from ..core.extern import (BOWTIE2_CMD,
                            BOWTIE2_BUILD_CMD,
                            SAMTOOLS_CMD,
                            require_dependency)
-from ..core.logs import logger
 from ..core.ngs import (run_flagstat,
                         run_sort_xam,
                         run_index_xam,
@@ -96,7 +95,7 @@ def split_xam_file(xam_file: Path,
     return result_dir
 
 
-@run_func(logger.fatal, with_tmp=True, pass_keep_tmp=True)
+@run_func(CMD_SPLITBAM, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str, *,
         # Inputs
         input_path: tuple[str, ...],
