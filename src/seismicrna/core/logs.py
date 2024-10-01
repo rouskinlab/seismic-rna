@@ -31,9 +31,11 @@ class Message(object):
     def __str__(self):
         content = self.content
         if isinstance(content, BaseException):
-            content = "".join(format_exception(content)
-                              if exc_info()
-                              else format_exception_only(content))
+            if exc_info():
+                formatter = format_exception
+            else:
+                formatter = format_exception_only
+            content = "".join(formatter(content))
         elif not isinstance(content, str):
             content = str(content)
         return content

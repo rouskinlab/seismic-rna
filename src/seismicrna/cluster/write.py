@@ -117,9 +117,7 @@ def run_ks(uniq_reads: UniqReads,
                 # The current k is not the best so far.
                 break
         except Exception as error:
-            logger.error(
-                f"Failed to split {uniq_reads} into {k} cluster(s): {error}",
-            )
+            logger.error(error)
             if not try_all_ks:
                 # Break so that if clustering would fail for every K,
                 # this part will not get stuck in a VERY long loop.

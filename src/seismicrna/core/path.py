@@ -245,8 +245,10 @@ class Field(object):
         try:
             val = self.dtype(text)
         except Exception as error:
-            raise PathValueError(f"Failed to interpret {repr(text)} as type "
-                                 f"{repr(self.dtype.__name__)}: {error}")
+            raise PathValueError(
+                f"Failed to interpret {repr(text)} as type "
+                f"{repr(self.dtype.__name__)}: {error}"
+            ) from None
         self.validate(val)
         logger.detail(f"{self} parsed {repr(text)} to {repr(val)}")
         return val

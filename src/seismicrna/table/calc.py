@@ -196,7 +196,7 @@ class PartialTabulator(Tabulator, ABC):
                                      self.dataset.quick_unbias,
                                      self.dataset.quick_unbias_thresh)
             except Exception as error:
-                logger.warning(f"Bias correction failed: {error}")
+                logger.warning(error)
         return table_per_pos, self._num_reads
 
     @cached_property

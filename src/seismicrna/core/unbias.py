@@ -1048,7 +1048,7 @@ def calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                                    f_tol=f_tol,
                                    x_rtol=x_rtol))
     except NoConvergence as error:
-        logger.warning("Failed to unbias mutation rates: {}", error)
+        logger.warning(error)
         return init_p_mut_given_span
 
 

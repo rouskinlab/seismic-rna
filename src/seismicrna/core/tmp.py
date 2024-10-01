@@ -58,9 +58,7 @@ def release_to_out(out_dir: Path,
         try:
             rmtree(delete_path)
         except Exception as error:
-            logger.warning("Failed to delete {}; however, it is no longer "
-                           "needed, and safe to delete yourself: {}",
-                           delete_path, error)
+            logger.warning(error)
         else:
             logger.detail(f"Deleted {delete_path}")
     else:
