@@ -45,12 +45,16 @@ def find_foldable_tables(input_path: Iterable[str | Path]):
     """ Find tables that can be folded. """
     for file in find_pos_tables(input_path):
         try:
+            logger.detail(f"Loading table from {file}")
             table = load_pos_table(file)
         except Exception as error:
-            logger.error("Failed to load table from {}: {}", file, error)
+            logger.error(error)
         else:
             if isinstance(table, (ClustPosTable, MaskPosTable)):
+                logger.detail(f"Loaded table from {file} for use with fold")
                 yield file, table
+            else:
+                logger.detail(f"Table from {file} cannot be used to fold")
 
 
 def fold_section(rna: RNAProfile, *,
@@ -144,16 +148,15 @@ def run(input_path: tuple[str, ...], *,
         parallel: bool,
         force: bool):
     """ Predict RNA secondary structures using mutation rates. """
+    logger.status(f"Began {CMD_FOLD}")
     # Check for the dependencies and the DATAPATH environment variable.
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_data_path()
     # Reactivities must be normalized before using them to fold.
     if quantile <= 0.:
-        logger.warning(
-            "Fold needs normalized mutation rates, but got quantile = {}; "
-            "setting quantile to {}",
-            quantile, DEFAULT_QUANTILE
-        )
+        logger.warning(f"Fold needs normalized mutation rates, "
+                       f"but got quantile = {quantile}; "
+                       f"setting quantile to {DEFAULT_QUANTILE}")
         quantile = DEFAULT_QUANTILE
     # List the tables.
     tables = [table for _, table in find_foldable_tables(input_path)]
@@ -173,7 +176,7 @@ def run(input_path: tuple[str, ...], *,
                      else [table.section]))
             for table in tables]
     # Fold the RNA profiles.
-    return list(chain(*dispatch(
+    results = list(chain(*dispatch(
         fold_profile,
         max_procs,
         parallel,
@@ -190,6 +193,8 @@ def run(input_path: tuple[str, ...], *,
                     fold_percent=fold_percent,
                     force=force)
     )))
+    logger.status(f"Ended {CMD_FOLD}")
+    return results
 
 
 params = [

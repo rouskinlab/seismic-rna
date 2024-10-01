@@ -124,11 +124,10 @@ class FastqUnit(object):
         self.phred_enc = phred_enc
         self.one_ref = one_ref
         self.sample, self.ref, self.exts = self.get_sample_ref_exts()
-        logger.detail("Instantiated a {} with {}, phred_enc = {}, one_ref = {}",
-                      type(self).__name__,
-                      ", ".join(f"{k} = {v}" for k, v in self.paths.items()),
-                      phred_enc,
-                      one_ref)
+        logger.detail(
+            f"Instantiated a {type(self).__name__} with paths={self.paths}, "
+            f"phred_enc={phred_enc}, one_ref={one_ref}"
+        )
 
     @cached_property
     def phred_arg(self):
@@ -231,7 +230,7 @@ class FastqUnit(object):
             try:
                 yield cls(phred_enc=phred_enc, one_ref=one_ref, **{key: fq})
             except Exception as error:
-                logger.error("Failed to load FASTQ file {}: {}", fq, error)
+                logger.error(error)
 
     @classmethod
     def _from_mates(cls, /, *,
@@ -257,7 +256,7 @@ class FastqUnit(object):
                 fields = path.parse(fq, *segs)
                 tag_ = fields[path.SAMP], fields.get(path.REF)
                 if tag_ in tags:
-                    logger.warning("Duplicate sample and reference: {}", tag_)
+                    logger.warning(f"Duplicate sample and reference: {tag_}")
                 else:
                     tags[tag_] = fq
             return tags
@@ -267,16 +266,16 @@ class FastqUnit(object):
         # Check for any mates with only one file.
         set1s, set2s = set(tag1s), set(tag2s)
         if miss1 := set2s - set1s:
-            logger.error("Missing FASTQ mate 1 files: {}", miss1)
+            logger.error(f"Missing FASTQ mate 1 files: {miss1}")
         if miss2 := set1s - set2s:
-            logger.error("Missing FASTQ mate 2 files: {}", miss2)
+            logger.error(f"Missing FASTQ mate 2 files: {miss2}")
         # Yield a FASTQ unit for each pair of mated files.
         for tag in set1s & set2s:
             fq_args = {cls.KEY_MATE1: tag1s[tag], cls.KEY_MATE2: tag2s[tag]}
             try:
                 yield cls(phred_enc=phred_enc, one_ref=one_ref, **fq_args)
             except Exception as error:
-                logger.error("Failed to load FASTQ pair {}: {}", fq_args, error)
+                logger.error(error)
 
     @classmethod
     def from_paths(cls, /, *, phred_enc: int, **fastq_args: list[Path]):

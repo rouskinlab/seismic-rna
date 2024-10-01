@@ -82,9 +82,9 @@ def pool_samples(out_dir: Path,
                 # The report file does not contain a Pool report.
                 raise TypeError(f"Cannot overwrite {report_file} with "
                                 f"{PoolReport.__name__}: would cause data loss")
-        logger.process("Began pooling samples {} into {} with reference {} "
+        logger.task("Began pooling samples {} into {} with reference {} "
                     "in output directory {}",
-                       samples, repr(name), repr(ref), out_dir)
+                    samples, repr(name), repr(ref), out_dir)
         ended = datetime.now()
         report = PoolReport(sample=name,
                             ref=ref,
@@ -92,9 +92,9 @@ def pool_samples(out_dir: Path,
                             began=began,
                             ended=ended)
         report.save(out_dir, force=True)
-        logger.process("Ended pooling samples {} into {} with reference {} "
+        logger.task("Ended pooling samples {} into {} with reference {} "
                     "in output directory {}",
-                       samples, repr(name), repr(ref), out_dir)
+                    samples, repr(name), repr(ref), out_dir)
     return report_file
 
 

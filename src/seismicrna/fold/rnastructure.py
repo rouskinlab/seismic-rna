@@ -284,7 +284,7 @@ def _guess_data_path_conda():
         raise OSError("It seems RNAstructure is not installed with Conda: "
                       f"{data_path} does not exist")
     check_data_path(data_path)
-    logger.detail("Successfully guessed {}: {}", DATAPATH, data_path)
+    logger.detail(f"Successfully guessed {DATAPATH}: {data_path}")
     return data_path
 
 
@@ -299,7 +299,7 @@ def _guess_data_path_manual():
     fold_path = Path(fold_path)
     data_path = fold_path.parent.parent.joinpath("data_tables")
     check_data_path(data_path)
-    logger.detail("Successfully guessed {}: {}", DATAPATH, data_path)
+    logger.detail(f"Successfully guessed {DATAPATH}: {data_path}")
     return data_path
 
 
@@ -419,8 +419,7 @@ def fold(rna: RNAProfile, *,
         try:
             run_cmd(fold_cmds[True])
         except RuntimeError as error:
-            logger.warning("Unable to fold using {}:\n{}",
-                           RNASTRUCTURE_FOLD_SMP_CMD, error)
+            logger.warning(error)
             run_cmd(fold_cmds[False])
         # Reformat the CT file title lines so that each is unique.
         retitle_ct(ct_tmp, ct_tmp, force=True)
@@ -435,7 +434,7 @@ def fold(rna: RNAProfile, *,
             dms_file.unlink(missing_ok=True)
             if ct_tmp != ct_out:
                 ct_tmp.unlink(missing_ok=True)
-    logger.routine("Predicted structure of {} to {}", rna, ct_out)
+    logger.routine(f"Predicted structure of {rna} to {ct_out}")
     return ct_out
 
 
@@ -472,8 +471,7 @@ def parse_rnastructure_ct_title(line: str):
             # The line violated the basic length-and-title format.
             raise ValueError(f"Failed to parse CT title line: {repr(line)}")
         logger.warning("CT line contains no energy term (probably because no "
-                       "base pairs were predicted): {}",
-                       repr(line))
+                       f"base pairs were predicted): {repr(line)}")
         energy = 0.
     return int(length), float(energy), ref
 
@@ -550,11 +548,10 @@ def retitle_ct(ct_input: Path, ct_output: Path, force: bool = False):
         text = "".join(lines)
         with open(ct_output, write_mode(force=True)) as f:
             f.write(text)
-        logger.routine("Retitled CT file {}{}",
-                       ct_input,
-                       (f" to {ct_output}"
-                        if ct_input != ct_output
-                        else ""))
+        logger.routine(f"Retitled CT file {ct_input}"
+                       + (f" to {ct_output}"
+                          if ct_input != ct_output
+                          else ""))
 
 
 def parse_energy(line: str):

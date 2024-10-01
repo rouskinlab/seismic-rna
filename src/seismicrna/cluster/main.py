@@ -58,35 +58,38 @@ def run(input_path: tuple[str, ...], *,
         force: bool,
         tmp_dir: Path) -> list[Path]:
     """ Infer alternative structures by clustering reads' mutations. """
+    logger.status(f"Began {CMD_CLUSTER}")
     # Find the mask report files.
     report_files = path.find_files_chain(
         input_path, load_mask_dataset.report_path_seg_types
     )
     # Cluster each mask dataset.
-    return dispatch(cluster,
-                    max_procs,
-                    parallel,
-                    pass_n_procs=True,
-                    args=as_list_of_tuples(report_files),
-                    kwargs=dict(min_clusters=min_clusters,
-                                max_clusters=max_clusters,
-                                em_runs=em_runs,
-                                min_iter=min_em_iter,
-                                max_iter=max_em_iter,
-                                em_thresh=em_thresh,
-                                min_nrmsd_run=min_nrmsd_run,
-                                max_pearson_run=max_pearson_run,
-                                jackpot=jackpot,
-                                jackpot_conf_level=jackpot_conf_level,
-                                max_jackpot_quotient=max_jackpot_quotient,
-                                max_loglike_vs_best=max_loglike_vs_best,
-                                min_pearson_vs_best=min_pearson_vs_best,
-                                max_nrmsd_vs_best=max_nrmsd_vs_best,
-                                try_all_ks=try_all_ks,
-                                write_all_ks=write_all_ks,
-                                brotli_level=brotli_level,
-                                force=force,
-                                tmp_dir=tmp_dir))
+    results = dispatch(cluster,
+                       max_procs,
+                       parallel,
+                       pass_n_procs=True,
+                       args=as_list_of_tuples(report_files),
+                       kwargs=dict(min_clusters=min_clusters,
+                                   max_clusters=max_clusters,
+                                   em_runs=em_runs,
+                                   min_iter=min_em_iter,
+                                   max_iter=max_em_iter,
+                                   em_thresh=em_thresh,
+                                   min_nrmsd_run=min_nrmsd_run,
+                                   max_pearson_run=max_pearson_run,
+                                   jackpot=jackpot,
+                                   jackpot_conf_level=jackpot_conf_level,
+                                   max_jackpot_quotient=max_jackpot_quotient,
+                                   max_loglike_vs_best=max_loglike_vs_best,
+                                   min_pearson_vs_best=min_pearson_vs_best,
+                                   max_nrmsd_vs_best=max_nrmsd_vs_best,
+                                   try_all_ks=try_all_ks,
+                                   write_all_ks=write_all_ks,
+                                   brotli_level=brotli_level,
+                                   force=force,
+                                   tmp_dir=tmp_dir))
+    logger.status(f"Ended {CMD_CLUSTER}")
+    return results
 
 
 params = [

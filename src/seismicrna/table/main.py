@@ -29,33 +29,36 @@ def run(input_path: tuple[str, ...], *,
         max_procs: int,
         parallel: bool):
     """ Count mutations for each read and position; output tables. """
+    logger.status(f"Began {CMD_TABLE}")
     relate_reports = path.find_files_chain(
         input_path, load_relate_dataset.report_path_seg_types
     )
     if relate_reports:
-        logger.detail("Found relate report files: {}", relate_reports)
+        logger.detail(f"Found relate report files: {relate_reports}")
     mask_reports = path.find_files_chain(
         input_path, load_mask_dataset.report_path_seg_types
     )
     if mask_reports:
-        logger.detail("Found mask report files: {}", mask_reports)
+        logger.detail(f"Found mask report files: {mask_reports}")
     clust_reports = path.find_files_chain(
         input_path, load_cluster_dataset.report_path_seg_types
     )
     if clust_reports:
-        logger.detail("Found cluster report files: {}", clust_reports)
+        logger.detail(f"Found cluster report files: {clust_reports}")
     tasks = as_list_of_tuples(chain(relate_reports,
                                     mask_reports,
                                     clust_reports))
-    return list(chain(*dispatch(write,
-                                max_procs,
-                                parallel,
-                                args=tasks,
-                                kwargs=dict(table_pos=table_pos,
-                                            table_read=table_read,
-                                            table_clust=table_clust,
-                                            force=force),
-                                pass_n_procs=False)))
+    results = list(chain(*dispatch(write,
+                                   max_procs,
+                                   parallel,
+                                   args=tasks,
+                                   kwargs=dict(table_pos=table_pos,
+                                               table_read=table_read,
+                                               table_clust=table_clust,
+                                               force=force),
+                                   pass_n_procs=False)))
+    logger.status(f"Ended {CMD_TABLE}")
+    return results
 
 
 params = [arg_input_path,

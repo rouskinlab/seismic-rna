@@ -21,7 +21,7 @@ def relate_records(records: Iterable[tuple[str, str]], **kwargs):
         try:
             yield find_rels_line(line1, line2, **kwargs)
         except Exception as error:
-            logger.error(f"Failed to compute relationships: {error}")
+            logger.error(error)
 
 
 def generate_batch(batch: int, *,
@@ -99,7 +99,7 @@ class RelationWriter(object):
         """ Compute a relation vector for every record in a XAM file,
         split among one or more batches. For each batch, write a matrix
         of the vectors to one batch file, and compute its checksum. """
-        logger.routine("Began {}", self)
+        logger.routine(f"Began generating batches for {self}")
         try:
             # Collect the keyword arguments.
             kwargs = dict(xam_view=self._xam,
@@ -131,8 +131,8 @@ class RelationWriter(object):
             n_batches = len(nums_reads)
             checksums = {RelateBatchIO.btype(): relv_checks,
                          QnamesBatchIO.btype(): name_checks}
-            logger.routine("Ended {}: {} reads in {} batches",
-                           self, n_reads, n_batches)
+            logger.routine(f"Ended generating batches for {self}: "
+                           f"{n_reads} reads in {n_batches} batches")
             return n_reads, n_batches, checksums
         finally:
             if not keep_tmp:
@@ -161,7 +161,7 @@ class RelationWriter(object):
                                               ref=self.ref)
         if need_write(report_file, force):
             began = datetime.now()
-            logger.process("Began {}", self)
+            logger.task(f"Began {self}")
             # Determine if there are enough reads.
             if self.num_reads < min_reads:
                 raise ValueError(f"Insufficient reads in {self._xam}: "
@@ -200,7 +200,7 @@ class RelationWriter(object):
                                               began=began,
                                               ended=ended)
             release_to_out(out_dir, release_dir, report_saved.parent)
-            logger.process("Ended {}", self)
+            logger.task(f"Ended {self}")
         return report_file
 
     def __str__(self):

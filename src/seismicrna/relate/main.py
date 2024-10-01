@@ -67,6 +67,7 @@ def run(fasta: str,
         force: bool,
         keep_tmp: bool):
     """ Compute relationships between references and aligned reads. """
+    logger.status(f"Began {CMD_REL}")
     fasta = Path(fasta)
     if sep_strands:
         # Create a temporary FASTA file of forward and reverse strands.
@@ -76,25 +77,27 @@ def run(fasta: str,
         write_both_strands(fasta, relate_fasta, rev_label)
     else:
         relate_fasta = fasta
-    return write_all(xam_files=path.find_files_chain(map(Path, input_path),
-                                                     path.XAM_SEGS),
-                     fasta=relate_fasta,
-                     out_dir=Path(out_dir),
-                     tmp_dir=tmp_dir,
-                     min_reads=min_reads,
-                     min_mapq=min_mapq,
-                     phred_enc=phred_enc,
-                     min_phred=min_phred,
-                     ambindel=ambindel,
-                     overhangs=overhangs,
-                     clip_end5=clip_end5,
-                     clip_end3=clip_end3,
-                     batch_size=batch_size,
-                     max_procs=max_procs,
-                     parallel=parallel,
-                     brotli_level=brotli_level,
-                     force=force,
-                     keep_tmp=keep_tmp)
+    results = write_all(xam_files=path.find_files_chain(map(Path, input_path),
+                                                        path.XAM_SEGS),
+                        fasta=relate_fasta,
+                        out_dir=Path(out_dir),
+                        tmp_dir=tmp_dir,
+                        min_reads=min_reads,
+                        min_mapq=min_mapq,
+                        phred_enc=phred_enc,
+                        min_phred=min_phred,
+                        ambindel=ambindel,
+                        overhangs=overhangs,
+                        clip_end5=clip_end5,
+                        clip_end3=clip_end3,
+                        batch_size=batch_size,
+                        max_procs=max_procs,
+                        parallel=parallel,
+                        brotli_level=brotli_level,
+                        force=force,
+                        keep_tmp=keep_tmp)
+    logger.status(f"Ended {CMD_REL}")
+    return results
 
 
 # Parameters for command line interface

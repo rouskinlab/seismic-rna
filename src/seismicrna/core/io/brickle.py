@@ -22,13 +22,16 @@ def save_brickle(item: Any,
                  brotli_level: int = DEFAULT_BROTLI_LEVEL,
                  force: bool = False):
     """ Pickle an object, compress with Brotli, and save to a file. """
+    logger.routine(f"Began writing {item} to {file}")
     data = brotli.compress(pickle.dumps(item, protocol=PICKLE_PROTOCOL),
                            quality=brotli_level)
+    logger.detail(f"Compressed {item} using Brotli level {brotli_level}")
     with open(file, write_mode(force, binary=True)) as f:
         f.write(data)
-    logger.routine(f"Wrote {item} (brotli level {brotli_level}) to {file}")
+    logger.detail(f"Wrote Brotli-compressed {item} to {file}")
     checksum = digest_data(data)
     logger.detail(f"Computed MD5 checksum of {file}: {checksum}")
+    logger.routine(f"Ended writing {item} to {file}")
     return checksum
 
 
@@ -36,16 +39,18 @@ def load_brickle(file: Path,
                  checksum: str,
                  check_type: None | type | tuple[type, ...] = None):
     """ Unpickle and return an object from a Brotli-compressed file. """
+    logger.routine(f"Began loading {file}")
     with open(file, "rb") as f:
         data = f.read()
     if checksum != (digest := digest_data(data)):
         raise ValueError(
-            f"Expected checksum of {file} to be {checksum}, but got {digest}")
+            f"Expected checksum of {file} to be {checksum}, but got {digest}"
+        )
     item = pickle.loads(brotli.decompress(data))
     if check_type is not None and not isinstance(item, check_type):
         raise TypeError(f"Expected to unpickle {check_type}, "
                         f"but got {type(item).__name__}")
-    logger.debug(f"Loaded {item} from {file}")
+    logger.routine(f"Ended loading {item} from {file}")
     return item
 
 ########################################################################

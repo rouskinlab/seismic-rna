@@ -94,9 +94,8 @@ class StructOneTableGraph(OneTableGraph, OneRelGraph, ABC):
                 for struct in from_ct(ct_file):
                     yield RNAState.from_struct_profile(struct, profile)
             except FileNotFoundError:
-                logger.error("Structure file {} does not exist; please "
-                             "obtain the file, e.g. using seismic fold",
-                             ct_file)
+                logger.error(f"Structure file {ct_file} does not exist; "
+                             "please obtain the file, e.g. using seismic fold")
 
 
 class StructOneTableWriter(OneTableWriter, ABC):
@@ -122,12 +121,10 @@ class StructOneTableWriter(OneTableWriter, ABC):
             if ref == self.table.ref:
                 struct_files.append(file)
             else:
-                logger.warning(
-                    "Skipped CT file {} in section directory {} in reference "
-                    "directory {}, which differs from the reference name of "
-                    "the table file ({})",
-                    file, path.SECT, ref, self.table.ref
-                )
+                logger.warning(f"Skipped CT file {file} in section directory "
+                               f"{repr(path.SECT)} in reference directory "
+                               f"{repr(ref)}, which differs from the reference "
+                               f"name of the table file {repr(self.table.ref)}")
         # Add the sections from the given coordinates/primers.
         ref_sections = RefSections([(self.table.ref, self.table.refseq)],
                                    sects_file=(Path(fold_sections_file)

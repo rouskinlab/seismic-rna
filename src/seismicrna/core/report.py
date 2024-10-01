@@ -658,14 +658,15 @@ class Report(FileIO, ABC):
             # from a different version of SEISMIC-RNA), then just log a
             # warning and ignore the extra fields (to make different
             # versions compatible).
-            logger.warning("Got extra fields for {}: {}",
-                           type(self).__name__, list(kwargs))
+            logger.warning(
+                f"Got extra fields for {type(self).__name__}: {list(kwargs)}"
+            )
         if defaulted:
             # If the report file was missing keyword arguments that have
             # default values, AND if parsing the report file succeeded,
             # then warn about the default values.
-            logger.warning("Missing fields for {} and using defaults: {}",
-                           type(self).__name__, defaulted)
+            logger.warning(f"Missing fields for {type(self).__name__} "
+                           f"and using defaults: {defaulted}")
 
     def get_field(self, field: Field, missing_ok: bool = False):
         """ Return the value of a field of the report using the field
@@ -698,7 +699,7 @@ class Report(FileIO, ABC):
         if need_write(save_path, force):
             with open(save_path, write_mode(force)) as f:
                 f.write(text)
-            logger.routine("Wrote {} to {}", self, save_path)
+            logger.routine(f"Wrote {self} to {save_path}")
         return save_path
 
     def __setattr__(self, key: str, value: Any):

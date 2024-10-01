@@ -59,8 +59,8 @@ def from_reads(reads: Iterable[tuple[str, tuple[list[int], [list[int]]], dict[in
     for (name, (end5s, end3s), poss) in reads:
         if all(end5 > end3 for end5, end3 in zip(end5s, end3s, strict=True)):
             # Skip a read if no segment has any coverage.
-            logger.warning("Skipped read {} with 5' end(s) {} > 3' end(s) {}",
-                           repr(name), end5s, end3s)
+            logger.warning(f"Skipped read {repr(name)} with 5' end(s) {end5s} "
+                           f"> 3' end(s) {end3s}")
         else:
             # Otherwise, add the data for the read to the batch.
             read = len(names)

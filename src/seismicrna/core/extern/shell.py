@@ -41,7 +41,7 @@ def cmds_to_subshell(cmds: list[str]):
 def run_cmd(cmd: str, text: bool | None = True):
     """ Run a command via subprocess.run(), with logging. """
     # Log the command with which the process was run.
-    logger.detail("Running command via the shell:\n{}", cmd)
+    logger.routine(f"Began running command via the shell:\n{cmd}")
     # Run the process and capture the output.
     process = run(cmd,
                   shell=True,
@@ -58,7 +58,7 @@ def run_cmd(cmd: str, text: bool | None = True):
                          f"STDERR:\n{process.stderr}\n"])
     if not succeeded:
         raise RuntimeError(message)
-    logger.detail(message)
+    logger.routine(message)
     return process
 
 
@@ -125,7 +125,12 @@ class ShellCommand(object):
         # Generate and run the command.
         process = run_cmd(self._make_command(ipath, opath, **kwargs))
         logger.routine(f"Ended {action}")
-        return self._parse_output(process) if self._parse_output else process
+        if self._parse_output:
+            logger.routine(f"Began parsing output of {action}")
+            output = self._parse_output(process)
+            logger.routine(f"Ended parsing output of {action}")
+            return output
+        return process
 
 ########################################################################
 #                                                                      #

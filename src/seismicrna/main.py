@@ -70,10 +70,9 @@ def cli(ctx: Context,
     if log:
         log_file_path = os.path.abspath(log)
         os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
-        log_file = open(log_file_path, "x")
     else:
-        log_file = None
-    set_config(verbose - quiet, log_file, log_color)
+        log_file_path = None
+    set_config(verbose - quiet, log_file_path, log_color)
     logger.status(f"This is SEISMIC-RNA version {__version__}")
     # If no subcommand was given, then run the entire pipeline.
     if ctx.invoked_subcommand is None:

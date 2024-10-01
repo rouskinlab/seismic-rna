@@ -47,10 +47,13 @@ def write_tmp_ref_files(tmp_dir: Path,
     corresponds to a FASTQ file from demultiplexing. """
     ref_paths: dict[str, tuple[Path, Path]] = dict()
     if refs:
+        logger.routine("Began writing temporary FASTA files of references "
+                       f"{refs} to {tmp_dir}")
         # Parse the FASTA only if there are any references to write.
         for record in parse_fasta(refset_path, DNA):
             ref, _ = record
             if ref in refs:
+                logger.detail(f"Writing FASTA file of reference {repr(ref)}")
                 # Write the reference sequence to a temporary FASTA file
                 # only if at least one demultiplexed FASTQ file uses it.
                 ref_path = path.build(*path.FASTA_STAGE_SEGS,
@@ -60,7 +63,6 @@ def write_tmp_ref_files(tmp_dir: Path,
                                       ext=refset_path.suffix)
                 # Create the parent directory.
                 ref_path.parent.mkdir(parents=True, exist_ok=True)
-                logger.detail("Created directory: {}", ref_path.parent)
                 try:
                     # Write the temporary FASTA file.
                     write_fasta(ref_path, [record])
@@ -68,14 +70,21 @@ def write_tmp_ref_files(tmp_dir: Path,
                     index_prefix = ref_path.with_suffix("")
                     run_bowtie2_build(ref_path, index_prefix, n_procs=n_procs)
                 except Exception as error:
-                    logger.fatal("Failed to generate reference {}: {}",
-                                 ref_path, error)
+                    # If anything goes wrong when writing and indexing
+                    # this reference, log an error message but continue
+                    # with the other references.
+                    logger.error(error)
                 else:
                     # Record the temporary FASTA and index prefix.
                     ref_paths[ref] = ref_path, index_prefix
-    if missing := sorted(refs - set(ref_paths.keys())):
-        logger.fatal("Missing references in {}: {}",
-                     refset_path, ", ".join(missing))
+            else:
+                logger.detail(f"Skipped unused reference {repr(ref)}")
+    missing = sorted(refs - set(ref_paths.keys()))
+    if missing:
+        # If any references in refs do not have sequences, then log an
+        # error but continue with the references that have sequences.
+        logger.error("".join([f"Missing sequences in {refset_path}: ",
+                              ", ".join(missing)]))
     return ref_paths
 
 
@@ -132,7 +141,12 @@ def calc_flags_sep_strands(f1r2_fwd: bool, paired: bool, bt2_mixed: bool):
             flags_exc_fwd[1] |= FLAG_REVERSE
         flags_exc_rev[0] |= FLAG_REVERSE
         flags_req_fwd[0] |= FLAG_REVERSE
-    return (flags_req_fwd, flags_exc_fwd), (flags_req_rev, flags_exc_rev)
+    flags = (flags_req_fwd, flags_exc_fwd), (flags_req_rev, flags_exc_rev)
+    logger.detail(
+        f"Calculated SAM flags for separating strands with parameters "
+        f"f1r2_fwd={f1r2_fwd}, paired={paired}, bt2_mixed={bt2_mixed}: {flags}"
+    )
+    return flags
 
 
 def separate_strands(xam_file: Path,
@@ -147,8 +161,9 @@ def separate_strands(xam_file: Path,
                      **kwargs):
     """ Separate a XAM file into two XAM files of reads that aligned to
     the forward and reverse strands, respectively. """
-    logger.routine("Began separating {} into forward and reverse strands",
-                   xam_file)
+    logger.routine(
+        f"Began separating forward and reverse strands in {xam_file}"
+    )
     if paired is None:
         paired = xam_paired(run_flagstat(xam_file, n_procs=n_procs))
     out_dir = xam_file.parent
@@ -162,17 +177,12 @@ def separate_strands(xam_file: Path,
     # Make a temporary directory for all splitting strand operations.
     tmp_dir = out_dir.joinpath(ref)
     tmp_dir.mkdir(parents=False, exist_ok=False)
-    logger.detail("Created temporary directory {} "
-                  "for aligning reverse-strand reads in {} to {}",
-                  tmp_dir, xam_file, repr(ref_rev))
+    logger.detail(f"Created temporary directory {tmp_dir} for aligning "
+                  f"reverse-strand reads in {xam_file} to {repr(ref_rev)}")
     try:
         # Write the reverse-strand reference sequence to a FASTA file.
         index_dir = tmp_dir.joinpath("index")
         index_dir.mkdir()
-        logger.detail(
-            "Created temporary directory {} for indexing reference {}",
-            index_dir, repr(ref_rev)
-        )
         fasta_rev = index_dir.joinpath(ref_rev).with_suffix(path.FASTA_EXTS[0])
         refseq = get_fasta_seq(fasta, DNA, ref)
         write_fasta(fasta_rev, [(ref_rev, refseq.rc)])
@@ -184,9 +194,6 @@ def separate_strands(xam_file: Path,
         bam_rev = out_dir.joinpath(ref_rev).with_suffix(path.BAM_EXT)
         realign_dir = tmp_dir.joinpath("realign")
         realign_dir.mkdir()
-        logger.detail("Created temporary directory {} "
-                      "for realigning reverse-strand reads in {} to {}",
-                      realign_dir, xam_file, repr(ref_rev))
         run_realign(xam_file,
                     bam_rev,
                     tmp_pfx=realign_dir.joinpath(ref_rev),
@@ -200,7 +207,6 @@ def separate_strands(xam_file: Path,
                     **kwargs)
         if not keep_tmp:
             rmtree(index_dir)
-            logger.detail("Deleted {}", index_dir)
         # Extract the reads that had aligned to the forward strand.
         bam_fwd = realign_dir.joinpath(ref).with_suffix(path.BAM_EXT)
         run_flags(xam_file,
@@ -211,11 +217,10 @@ def separate_strands(xam_file: Path,
                   n_procs=n_procs)
         # Renaming overwrites the original BAM file of both strands.
         bam_fwd.rename(xam_file)
-        logger.detail("Overwrote {} with only the forward-stand reads from {}",
-                      xam_file, bam_fwd)
+        logger.detail(f"Overwrote {xam_file} with only the forward-stand reads "
+                      f"from {bam_fwd}")
         logger.routine(
-            "Ended separating {} into forward ({}) and reverse ({}) strands",
-            xam_file, xam_file, bam_rev
+            f"Ended separating forward and reverse strands in {xam_file}"
         )
         return bam_rev
     finally:
@@ -224,7 +229,7 @@ def separate_strands(xam_file: Path,
         # will fail.
         if not keep_tmp:
             rmtree(tmp_dir)
-            logger.detail("Deleted {}", tmp_dir)
+            logger.detail(f"Deleted temporary directory {tmp_dir}")
 
 
 def extract_reference(ref: str,
@@ -238,9 +243,10 @@ def extract_reference(ref: str,
                       n_procs: int = 1,
                       **kwargs):
     """ Extract one reference from a XAM file. """
+    logger.routine(f"Began extracting reference {repr(ref)} from {xam_whole}")
     if min_reads < 0:
         min_reads = 0
-        logger.warning("min_reads must be ≥ 0, but got {}: set to 0", min_reads)
+        logger.warning(f"min_reads must be ≥ 0, but got {min_reads}: set to 0")
     # Export the reads that align to the given reference.
     xam_ref = path.build(*path.XAM_SEGS,
                          top=top,
@@ -282,16 +288,19 @@ def extract_reference(ref: str,
             num_reads = count_total_reads(run_flagstat(xam, n_procs=n_procs))
             logger.detail(f"{xam} has {num_reads} read(s)")
             if num_reads < min_reads:
-                xam.unlink()
                 logger.warning(
                     f"Skipped sample {repr(sample)} reference {repr(ref)}: "
                     f"{num_reads} < {min_reads} read(s)"
                 )
+                xam.unlink()
+                logger.detail(f"Deleted {xam}")
         except Exception as error:
-            logger.error("Failed to count reads in {}: {}", xam, error)
+            logger.error(error)
             xam.unlink()
+            logger.detail(f"Deleted {xam}")
         else:
             nums_reads[ref] = num_reads
+    logger.routine(f"Ended extracting reference {repr(ref)} from {xam_whole}")
     return nums_reads
 
 
@@ -324,16 +333,23 @@ def split_references(xam_whole: Path, *,
                      rev_label: str,
                      n_procs: int = 1):
     """ Split a XAM file into one file per reference. """
+    logger.routine(f"Began splitting {xam_whole} by reference")
     sample = path.parse(xam_whole, *path.XAM_SEGS)[path.SAMP]
     # Guess how many reads mapped to each reference by the index stats.
     reads_refs = run_idxstats(xam_whole)
     # Guess which references received enough reads.
     guess_refs = {ref for ref, reads_ref in reads_refs.items()
                   if reads_ref >= min_reads}
+    logger.detail(
+        f"Guessed that there are ≥ {min_reads} read(s) in each of the "
+        f"{len(guess_refs)} reference(s) {sorted(guess_refs)}"
+    )
     # Cache the header for each reference that received enough reads.
     ref_headers = {ref: header
                    for ref, header in run_ref_header(xam_whole, n_procs=n_procs)
                    if ref in guess_refs}
+    logger.detail(f"Cached SAM headers for the {len(guess_refs)} reference(s) "
+                  f"that were guessed to have ≥ {min_reads} read(s)")
     # Split the whole XAM file into one XAM file for each reference that
     # was guessed to have received enough reads.
     nums_reads = dispatch(extract_reference,
@@ -375,7 +391,7 @@ def split_references(xam_whole: Path, *,
         for ref, count in num_reads.items():
             logger.detail(f"Reference {repr(ref)} got {count} read(s)")
             if ref in reads_refs:
-                logger.error(f"Duplicate reference: {repr(ref)}")
+                logger.error(f"Reference {repr(ref)} is duplicated")
                 xam_ref = path.build(*path.XAM_SEGS,
                                      top=top,
                                      sample=sample,
@@ -384,12 +400,12 @@ def split_references(xam_whole: Path, *,
                                      ext=path.BAM_EXT)
                 try:
                     xam_ref.unlink()
+                    logger.detail(f"Deleted {xam_ref}")
                 except OSError:
                     pass
-                else:
-                    logger.routine(f"Deleted duplicate reference: {xam_ref}")
             else:
                 reads_refs[ref] = count
+    logger.routine(f"Ended splitting {xam_whole} by reference")
     return reads_refs
 
 
@@ -440,6 +456,7 @@ def fq_pipeline(fq_inp: FastqUnit,
     """ Run all stages of the alignment pipeline for one FASTQ file or
     one pair of mated FASTQ files. """
     began = datetime.now()
+    logger.routine(f"Began processing {fq_inp} through the alignment pipeline")
     # Get attributes of the sample and references.
     sample = fq_inp.sample
     refset = path.parse(fasta, path.FastaSeg)[path.REF]
@@ -515,6 +532,7 @@ def fq_pipeline(fq_inp: FastqUnit,
     if reads_trim is None:
         raise RuntimeError("Failed to parse number of reads input to Bowtie2 "
                            f"(perhaps Bowtie2 failed): got {reads_align}")
+    logger.detail(f"Determined Bowtie 2 received {reads_trim} reads")
     if fastp:
         # If the reads were trimmed, then the initial number must be
         # found by counting the reads in the input FASTQ.
@@ -523,6 +541,7 @@ def fq_pipeline(fq_inp: FastqUnit,
         # Otherwise, the initial number of reads equals the number fed
         # to Bowtie 2, so we can save time by using that number.
         reads_init = reads_trim
+    logger.detail(f"Determined {fq_inp} contained {reads_init} reads")
     # Index the whole XAM file to enable exporting only reads aligning
     # to each reference and to speed counting reads.
     run_index_xam(xam_whole, n_procs=n_procs)
@@ -531,13 +550,16 @@ def fq_pipeline(fq_inp: FastqUnit,
     paired_two, paired_one, singles = count_single_paired(flagstats)
     if fq_inp.paired:
         if singles:
-            raise RuntimeError(f"{xam_whole} got {singles} single-end reads")
+            raise RuntimeError(f"{xam_whole} has {singles} single-end reads")
         reads_filter = {"paired-end, both mates mapped": paired_two,
                         "paired-end, one mate unmapped": paired_one}
     else:
         if n_paired := paired_two + paired_one:
-            raise RuntimeError(f"{xam_whole} got {n_paired} paired-end reads")
+            raise RuntimeError(f"{xam_whole} has {n_paired} paired-end reads")
         reads_filter = {"single-end": singles}
+    logger.detail(
+        f"Determined {xam_whole} contained {reads_filter} reads after filtering"
+    )
     # Split the whole XAM file into one XAM file for each reference.
     reads_refs = split_references(xam_whole,
                                   fasta=fasta,
@@ -571,6 +593,7 @@ def fq_pipeline(fq_inp: FastqUnit,
     if not keep_tmp:
         # Delete the BAM file of all references.
         xam_whole.unlink(missing_ok=True)
+        logger.detail(f"Deleted {xam_whole}")
     ended = datetime.now()
     # Write a report to summarize the alignment.
     if fq_inp.ref is not None:
@@ -628,6 +651,7 @@ def fq_pipeline(fq_inp: FastqUnit,
                          began=began,
                          ended=ended)
     report_saved = report.save(out_dir, force=True)
+    logger.routine(f"Ended processing {fq_inp} through the alignment pipeline")
     return report_saved.parent
 
 
@@ -641,12 +665,16 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                  **kwargs) -> list[Path]:
     """ Run all stages of alignment for one or more FASTQ files or pairs
     of mated FASTQ files. """
+    logger.routine(f"Began running the alignment pipeline")
     # Validate the maximum number of processes.
     if max_procs < 1:
         logger.warning("max_procs must be ≥ 1: setting to 1")
         max_procs = 1
     # Get the name of the reference for every demultiplexed FASTQ.
     tmp_refs = set(filter(None, (fq_unit.ref for fq_unit in fq_units)))
+    if tmp_refs:
+        logger.detail(f"Found {len(tmp_refs)} references among demultiplexed "
+                      f"FASTQ files: {sorted(tmp_refs)}")
     # Write a temporary FASTA file and Bowtie2 index for each
     # demultiplexed FASTQ.
     tmp_fasta_paths = write_tmp_ref_files(tmp_dir,
@@ -655,15 +683,19 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                                           max_procs)
     # Check if the main FASTA file already has a Bowtie2 index.
     main_index = main_fasta.with_suffix("")
-    if not all(index.is_file() for index in get_bowtie2_index_paths(main_index)):
-        # Bowtie2 index does not already exist.
+    if all(index.is_file() for index in get_bowtie2_index_paths(main_index)):
+        logger.detail(f"A Bowtie 2 index exists for {main_fasta}")
+    else:
+        logger.detail(f"A Bowtie 2 index does not exist for {main_fasta}")
         main_index = None
     # Make the arguments for each alignment task.
     iter_args: list[tuple[FastqUnit, Path, Path]] = list()
     # One alignment task will be created for each FASTQ unit.
     for fq_unit in fq_units:
-        logger.detail("Preparing to align {}", fq_unit)
+        logger.detail(f"Preparing to align {fq_unit}")
         if fq_unit.ref is not None:
+            logger.detail(f"{fq_unit} contains reads from 1 reference, "
+                          f"{repr(fq_unit.ref)}")
             # If the FASTQ came from demultiplexing (so contains
             # reads from only one reference), then align to the
             # temporary FASTA file containing only that reference.
@@ -672,16 +704,15 @@ def fqs_pipeline(fq_units: list[FastqUnit],
             except KeyError:
                 # If the FASTA with that reference does not exist,
                 # then log an error and skip this FASTQ.
-                logger.error("Skipped {} because reference {} "
-                             "was not found in FASTA file {}",
-                             fq_unit,
-                             repr(fq_unit.ref),
-                             main_fasta)
+                logger.error(f"Skipped {fq_unit} because {main_fasta} "
+                             f"does not contain reference {repr(fq_unit.ref)}")
                 continue
-            # Add these arguments to the lists of arguments that
-            # will be passed to fq_pipeline.
+            # Add these arguments to the lists of arguments that will be
+            # passed to fq_pipeline.
             iter_args.append((fq_unit, tmp_fasta, tmp_index))
+            logger.detail(f"Planning to align {fq_unit} to {tmp_fasta}")
         else:
+            logger.detail(f"{fq_unit} may contain reads from ≥ 1 reference")
             # If the FASTQ may contain reads from ≥ 1 references,
             # then align to the FASTA file with all references.
             if main_index is None:
@@ -689,7 +720,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                 # have a Bowtie2 index, so build a temporary index.
                 # Determine the name of the set of references.
                 refset = path.parse(main_fasta, path.FastaSeg)[path.REF]
-                # Determine the path of the temporary Bowtie2 index
+                # Determine the path of the temporary Bowtie 2 index
                 # of the main FASTA file.
                 main_index = path.build(*path.FASTA_INDEX_DIR_STAGE_SEGS,
                                         top=tmp_dir,
@@ -697,8 +728,8 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                                         ref=refset)
                 # Make its parent directory if it does not exist.
                 main_index.parent.mkdir(parents=True, exist_ok=True)
-                logger.detail("Created directory for FASTA index: {}",
-                              main_index.parent)
+                logger.detail(f"Created directory {main_index.parent} "
+                              f"for Bowtie 2 index of {main_fasta}")
                 # Build the Bowtie2 index.
                 try:
                     run_bowtie2_build(main_fasta,
@@ -708,14 +739,14 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                     # the same directory as the new index.
                     fasta_link = main_index.with_suffix(main_fasta.suffix)
                     fasta_link.symlink_to(main_fasta)
-                    # Add the FASTA link and the Bowtie2 index to the
+                    logger.detail("Created a temporary symbolic link "
+                                  f"{fasta_link} pointing to {main_fasta}")
+                    # Add the FASTA link and the Bowtie 2 index to the
                     # set of files to delete after alignment finishes.
                     # Being deleted is the only purpose of fasta_link.
                     tmp_fasta_paths[refset] = fasta_link, main_index
                 except Exception as error:
-                    logger.fatal(
-                        f"Failed to index {main_fasta} with Bowtie2: {error}"
-                    )
+                    logger.error(error)
                     # Reset main_index to None and skip this FASTQ unit.
                     main_index = None
                     continue
@@ -726,6 +757,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
             # alignment finishes; but only in the latter case is it
             # added to tmp_fasta_paths.
             iter_args.append((fq_unit, main_fasta, main_index))
+            logger.detail(f"Planning to align {fq_unit} to {main_fasta}")
     # Generate alignment map (XAM) files.
     xam_dirs = dispatch(fq_pipeline,
                         max_procs,
@@ -736,6 +768,7 @@ def fqs_pipeline(fq_units: list[FastqUnit],
                                     keep_tmp=keep_tmp,
                                     **kwargs))
     # Return the final alignment map (XAM) directories.
+    logger.routine(f"Ended running the alignment pipeline")
     return xam_dirs
 
 

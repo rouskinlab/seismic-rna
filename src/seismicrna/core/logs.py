@@ -1,7 +1,9 @@
+from abc import ABC, abstractmethod
 from collections import namedtuple
 from datetime import datetime
 from enum import IntEnum
 from functools import cache, wraps
+from pathlib import Path
 from sys import stderr
 from traceback import format_exception, format_exception_only
 from typing import Callable, Optional, TextIO
@@ -13,20 +15,18 @@ class Level(IntEnum):
     ERROR = -2
     WARNING = -1
     STATUS = 0
-    PROCESS = 1
+    TASK = 1
     ROUTINE = 2
     DETAIL = 3
 
 
 class Message(object):
     """ Message with a logging level. """
-    __slots__ = ["level", "content", "args", "kwargs"]
+    __slots__ = ["level", "content"]
 
-    def __init__(self, level: Level, content: object, *args, **kwargs):
+    def __init__(self, level: Level, content: object):
         self.level = level
         self.content = content
-        self.args = args
-        self.kwargs = kwargs
 
     def __str__(self):
         content = self.content
@@ -34,11 +34,8 @@ class Message(object):
             content = "".join(format_exception(content)
                               if exc_info()
                               else format_exception_only(content))
-        else:
-            if not isinstance(content, str):
-                content = str(content)
-            if self.args or self.kwargs:
-                content = content.format(*self.args, **self.kwargs)
+        elif not isinstance(content, str):
+            content = str(content)
         return content
 
 
@@ -64,23 +61,56 @@ class Formatter(object):
         return self.formatter(message)
 
 
-class Stream(object):
-    """ Direct logging output to one stream, such as to the console or
-    to a file. """
-    __slots__ = ["stream", "filterer", "formatter"]
+class Stream(ABC):
+    """ Log to a stream, such as to the console or to a file. """
+    __slots__ = ["filterer", "formatter"]
 
-    def __init__(self,
-                 stream: TextIO,
-                 filterer: Filterer,
-                 formatter: Formatter):
-        self.stream = stream
+    def __init__(self, filterer: Filterer, formatter: Formatter):
         self.filterer = filterer
         self.formatter = formatter
+
+    @property
+    @abstractmethod
+    def stream(self) -> TextIO:
+        """ Text stream to which messages will be logged after filtering
+        and formating. """
 
     def log(self, message: Message):
         """ Log a message to the stream. """
         if self.filterer(message):
             self.stream.write(self.formatter(message))
+
+
+class ConsoleStream(Stream):
+    """ Log to the console's stderr stream. """
+
+    @property
+    def stream(self):
+        return stderr
+
+
+class FileStream(Stream):
+    """ Log to a file. """
+    __slots__ = ["file_path", "_file"]
+
+    def __init__(self, file_path: str | Path, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.file_path = Path(file_path)
+        self._file = None
+
+    @property
+    def stream(self):
+        if self._file is None:
+            # Create and open the file if it does not already exist.
+            self.file_path.parent.mkdir(exist_ok=True, parents=True)
+            self._file = open(self.file_path, "a")
+        return self._file
+
+    def close(self):
+        """ Close the file stream. """
+        if self._file is not None:
+            self._file.close()
+            self._file = None
 
 
 def format_console_plain(message: Message):
@@ -122,7 +152,7 @@ class AnsiCode(object):
 
 
 # Level-specific color formatting.
-# The color of each code can be visualized in a terminal as follows:
+# The color of each code can be displayed in a bash terminal as follows:
 #   for i in {0..255}; do
 #       echo -ne "\033[38;5;${i}m  ${i} "
 #   done
@@ -132,7 +162,7 @@ LEVEL_COLORS = {
     Level.ERROR: AnsiCode.format_color(160),
     Level.WARNING: AnsiCode.format_color(214),
     Level.STATUS: AnsiCode.format_color(28),
-    Level.PROCESS: AnsiCode.format_color(75),
+    Level.TASK: AnsiCode.format_color(75),
     Level.ROUTINE: AnsiCode.format_color(99),
     Level.DETAIL: AnsiCode.format_color(242),
 }
@@ -157,49 +187,45 @@ class Logger(object):
     __slots__ = ["console_stream", "file_stream", "raise_on_error"]
 
     def __init__(self,
-                 console_stream: Stream | None = None,
-                 file_stream: Stream | None = None,
+                 console_stream: ConsoleStream | None = None,
+                 file_stream: FileStream | None = None,
                  raise_on_error: bool = False):
         self.console_stream = console_stream
         self.file_stream = file_stream
         self.raise_on_error = raise_on_error
 
-    def _log_message(self, message: Message):
-        """ Log a message to the stream(s). """
-        if self.file_stream is not None:
-            self.file_stream.log(message)
-        if self.console_stream is not None:
-            self.console_stream.log(message)
-
-    def _log_object(self, level: Level, content: object, *args, **kwargs):
+    def _log(self, level: Level, content: object):
         """ Create and log a message to the stream(s). """
-        message = Message(level, content, *args, **kwargs)
-        if self.raise_on_error and level <= Level.ERROR:
+        message = Message(level, content)
+        if level <= Level.ERROR and self.raise_on_error:
             if isinstance(content, BaseException):
                 raise content
             raise RuntimeError(str(message))
-        self._log_message(message)
+        if self.console_stream is not None:
+            self.console_stream.log(message)
+        if self.file_stream is not None:
+            self.file_stream.log(message)
 
-    def fatal(self, text: object, *args, **kwargs):
-        self._log_object(Level.FATAL, text, *args, **kwargs)
+    def fatal(self, content: object):
+        self._log(Level.FATAL, content)
 
-    def error(self, text: object, *args, **kwargs):
-        self._log_object(Level.ERROR, text, *args, **kwargs)
+    def error(self, content: object):
+        self._log(Level.ERROR, content)
 
-    def warning(self, text: object, *args, **kwargs):
-        self._log_object(Level.WARNING, text, *args, **kwargs)
+    def warning(self, content: object):
+        self._log(Level.WARNING, content)
 
-    def status(self, text: object, *args, **kwargs):
-        self._log_object(Level.STATUS, text, *args, **kwargs)
+    def status(self, content: object):
+        self._log(Level.STATUS, content)
 
-    def process(self, text: object, *args, **kwargs):
-        self._log_object(Level.PROCESS, text, *args, **kwargs)
+    def task(self, content: object):
+        self._log(Level.TASK, content)
 
-    def routine(self, text: object, *args, **kwargs):
-        self._log_object(Level.ROUTINE, text, *args, **kwargs)
+    def routine(self, content: object):
+        self._log(Level.ROUTINE, content)
 
-    def detail(self, text: object, *args, **kwargs):
-        self._log_object(Level.DETAIL, text, *args, **kwargs)
+    def detail(self, content: object):
+        self._log(Level.DETAIL, content)
 
 
 logger = Logger()
@@ -207,8 +233,8 @@ logger = Logger()
 DEFAULT_COLOR = True
 DEFAULT_RAISE = False
 DEFAULT_VERBOSITY = Level.STATUS
-FILE_VERBOSITY = Level.ROUTINE
-EXC_INFO_VERBOSITY = Level.ROUTINE
+FILE_VERBOSITY = Level.DETAIL
+EXC_INFO_VERBOSITY = Level.TASK
 
 
 def erase_config():
@@ -219,28 +245,27 @@ def erase_config():
 
 
 def set_config(verbosity: int = 0,
-               log_file: TextIO | None = None,
+               log_file_path: Path | None = None,
                log_color: bool = True,
                raise_on_error: bool = DEFAULT_RAISE):
     """ Configure the main logger with handlers and verbosity. """
     # Erase any existing configuration.
     erase_config()
     # Set up logger.
-    logger.console_stream = Stream(stderr,
-                                   Filterer(verbosity),
-                                   Formatter(format_console_color
-                                             if log_color
-                                             else format_console_plain))
-    if log_file is not None:
-        logger.file_stream = Stream(log_file,
-                                    Filterer(FILE_VERBOSITY),
-                                    Formatter(format_logfile))
+    logger.console_stream = ConsoleStream(Filterer(verbosity),
+                                          Formatter(format_console_color
+                                                    if log_color
+                                                    else format_console_plain))
+    if log_file_path is not None:
+        logger.file_stream = FileStream(log_file_path,
+                                        Filterer(FILE_VERBOSITY),
+                                        Formatter(format_logfile))
     logger.raise_on_error = raise_on_error
 
 
 LoggerConfig = namedtuple("LoggerConfig",
                           ["verbosity",
-                           "log_file",
+                           "log_file_path",
                            "log_color",
                            "raise_on_error"])
 
@@ -255,11 +280,11 @@ def get_config():
         verbosity = DEFAULT_VERBOSITY
         log_color = DEFAULT_COLOR
     if logger.file_stream is not None:
-        log_file = logger.file_stream.stream
+        log_file_path = logger.file_stream.file_path
     else:
-        log_file = None
+        log_file_path = None
     return LoggerConfig(verbosity=verbosity,
-                        log_file=log_file,
+                        log_file_path=log_file_path,
                         log_color=log_color,
                         raise_on_error=logger.raise_on_error)
 
