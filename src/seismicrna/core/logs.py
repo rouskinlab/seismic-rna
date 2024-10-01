@@ -11,10 +11,10 @@ from typing import Callable, Optional, TextIO
 
 class Level(IntEnum):
     """ Level of a logging message. """
-    FATAL = -3
+    SEVERE = -3
     ERROR = -2
     WARNING = -1
-    STEP = 0
+    COMMAND = 0
     TASK = 1
     ROUTINE = 2
     DETAIL = 3
@@ -159,14 +159,14 @@ class AnsiCode(object):
 #       echo -ne "\033[38;5;${i}m  ${i} "
 #   done
 LEVEL_COLORS = {
-    Level.FATAL: "".join([AnsiCode.format_color(198),
-                          AnsiCode.format(AnsiCode.BOLD)]),
+    Level.SEVERE: "".join([AnsiCode.format_color(198),
+                           AnsiCode.format(AnsiCode.BOLD)]),
     Level.ERROR: AnsiCode.format_color(160),
     Level.WARNING: AnsiCode.format_color(214),
-    Level.STEP: AnsiCode.format_color(42),
+    Level.COMMAND: AnsiCode.format_color(42),
     Level.TASK: AnsiCode.format_color(33),
     Level.ROUTINE: AnsiCode.format_color(55),
-    Level.DETAIL: AnsiCode.format_color(242),
+    Level.DETAIL: AnsiCode.format_color(240),
 }
 
 
@@ -208,8 +208,8 @@ class Logger(object):
         if self.file_stream is not None:
             self.file_stream.log(message)
 
-    def fatal(self, content: object):
-        self._log(Level.FATAL, content)
+    def severe(self, content: object):
+        self._log(Level.SEVERE, content)
 
     def error(self, content: object):
         self._log(Level.ERROR, content)
@@ -217,8 +217,8 @@ class Logger(object):
     def warning(self, content: object):
         self._log(Level.WARNING, content)
 
-    def step(self, content: object):
-        self._log(Level.STEP, content)
+    def command(self, content: object):
+        self._log(Level.COMMAND, content)
 
     def task(self, content: object):
         self._log(Level.TASK, content)
@@ -234,7 +234,7 @@ logger = Logger()
 
 DEFAULT_COLOR = True
 DEFAULT_RAISE = False
-DEFAULT_VERBOSITY = Level.STEP
+DEFAULT_VERBOSITY = Level.COMMAND
 FILE_VERBOSITY = Level.DETAIL
 EXC_INFO_VERBOSITY = Level.TASK
 
@@ -306,7 +306,7 @@ def log_exceptions(default: Optional[Callable]):
             try:
                 return func(*args, **kwargs)
             except Exception as error:
-                logger.fatal(error)
+                logger.severe(error)
                 return default() if default is not None else None
 
         return wrapper

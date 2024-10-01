@@ -56,4 +56,4 @@ def cli(*args, **kwargs):
     try:
         run(*args, **kwargs)
     except Exception as error:
-        logger.fatal(error)
+        logger.severe(error)

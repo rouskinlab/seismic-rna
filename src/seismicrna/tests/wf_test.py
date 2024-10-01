@@ -4,7 +4,7 @@ import unittest as ut
 from pathlib import Path
 
 from seismicrna.core.arg.cli import opt_out_dir, opt_sim_dir
-from seismicrna.core.logs import get_config, set_config
+from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.sim.fastq import run as run_sim_fastq
 from seismicrna.sim.fold import run as run_sim_fold
 from seismicrna.sim.params import run as run_sim_params
@@ -30,7 +30,9 @@ class TestWorkflow(ut.TestCase):
         self.SIM_DIR.mkdir()
         self.OUT_DIR.mkdir()
         self._config = get_config()
-        set_config(verbose=0, quiet=1, log_file=None, raise_on_error=True)
+        set_config(verbosity=Level.ERROR,
+                   log_file_path=None,
+                   raise_on_error=True)
 
     def tearDown(self):
         shutil.rmtree(self.SIM_DIR)

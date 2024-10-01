@@ -13,9 +13,9 @@ def log_command(command: str):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            logger.step(f"Began {command}")
+            logger.command(f"Began {command}")
             result = func(*args, **kwargs)
-            logger.step(f"Ended {command}")
+            logger.command(f"Ended {command}")
             return result
 
         return wrapper
