@@ -332,8 +332,7 @@ def parse_ref_header(process: CompletedProcess):
                     break
             else:
                 # The sequence name was not found.
-                logger.warning("Failed to find sequence name in line:\n{}",
-                               line)
+                logger.warning(f"Failed to find sequence name in line:\n{line}")
 
 
 run_ref_header = ShellCommand("getting header line for each reference",

@@ -1376,8 +1376,7 @@ def calc_params(p_mut_given_span_observed: np.ndarray,
                                                                 p_noclose_given_ends))
     else:
         logger.warning("Mutation rates and distribution of read coordinates "
-                       "failed to converge in {} iterations",
-                       max_iter)
+                       f"failed to converge in {max_iter} iterations")
     return guess_p_mut_given_span, guess_p_ends, guess_p_clust
 
 

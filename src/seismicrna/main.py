@@ -1,16 +1,3 @@
-"""
-
-SEISMIC-RNA Main Module
-========================================================================
-
-This module is the entry point for the command line interface::
-
-    seismic [OPTIONS] command [OPTIONS] [ARGS]
-
-calls the function cli() defined in this module.
-
-"""
-
 import cProfile
 import os
 
@@ -63,9 +50,7 @@ def cli(ctx: Context,
         log: str,
         profile: str,
         **kwargs):
-    """
-    SEISMIC-RNA main command line interface
-    """
+    """ Command line interface of SEISMIC-RNA. """
     # Configure logging.
     if log:
         log_file_path = os.path.abspath(log)
@@ -73,7 +58,7 @@ def cli(ctx: Context,
     else:
         log_file_path = None
     set_config(verbose - quiet, log_file_path, log_color)
-    logger.status(f"This is SEISMIC-RNA version {__version__}")
+    logger.detail(f"This is SEISMIC-RNA version {__version__}")
     # If no subcommand was given, then run the entire pipeline.
     if ctx.invoked_subcommand is None:
         if profile:

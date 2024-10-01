@@ -143,7 +143,6 @@ def cluster(mask_report_file: Path, *,
                                            ClusterReport)
     if need_write(cluster_report_file, force):
         began = datetime.now()
-        logger.task(f"Began clustering {mask_report_file}")
         # Load the unique reads.
         dataset = load_mask_dataset(mask_report_file)
         tmp_clust_dir = path.buildpar(*path.SECT_DIR_SEGS,
@@ -218,7 +217,6 @@ def cluster(mask_report_file: Path, *,
                                              **kwargs)
         report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
-        logger.task(f"Ended clustering {mask_report_file}")
     return cluster_report_file
 
 ########################################################################

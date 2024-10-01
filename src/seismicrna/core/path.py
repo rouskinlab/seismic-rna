@@ -585,7 +585,7 @@ class Path(object):
         """ Return a `pathlib.Path` instance by assembling the given
         `fields` into a full path. """
         strf = str(fields)
-        logger.routine(f"{self} began building fields {strf}")
+        logger.detail(f"{self} began building fields {strf}")
         # Build the new path one segment at a time.
         segments = list()
         for seg_type in self.seg_types:
@@ -608,12 +608,12 @@ class Path(object):
                                  f"fields {exp} for segment types {segs}")
         # Assemble the segment strings into a path, and return it.
         path = pathlib.Path(*segments)
-        logger.routine(f"{self} ended building fields {strf} into path {path}")
+        logger.detail(f"{self} ended building fields {strf} into path {path}")
         return path
 
     def parse(self, path: str | pathlib.Path):
         """ Return the field names and values from a given path. """
-        logger.routine(f"{self} began parsing path {path}")
+        logger.detail(f"{self} began parsing path {path}")
         # Convert the given path into a canonical, absolute path.
         path = str(sanitize(path))
         # Get the field names and values one segment at a time.
@@ -636,7 +636,7 @@ class Path(object):
             # Parse the deepest part of the path to obtain the fields,
             # and use them to update the field names and values.
             fields.update(seg_type.parse(tail))
-        logger.routine(f"{self} ended parsing path {path} into fields {fields}")
+        logger.detail(f"{self} ended parsing path {path} into fields {fields}")
         return fields
 
     @cached_property
@@ -714,7 +714,7 @@ def get_fields_in_seg_types(*segment_types: Segment) -> dict[str, Field]:
 
 def deduplicate(paths: Iterable[str | pathlib.Path]):
     """ Yield the non-redundant paths. """
-    logger.routine(f"Began deduplicating paths")
+    logger.detail(f"Began deduplicating paths")
     total = 0
     seen = set()
     for path in map(sanitize, paths):
@@ -725,7 +725,7 @@ def deduplicate(paths: Iterable[str | pathlib.Path]):
             seen.add(path)
             logger.detail(f"Non-duplicated path: {path}")
             yield path
-    logger.routine(
+    logger.detail(
         f"Ended deduplicating paths: {total} total, {len(seen)} unique"
     )
 
@@ -742,20 +742,13 @@ def deduplicated(func: Callable):
 
 def parse(path: str | pathlib.Path, /, *segment_types: Segment):
     """ Return the fields of a path based on the segment types. """
-    field_values = create_path_type(*segment_types).parse(path)
-    logger.detail(f"Parsed path {path} with segment types {segment_types} "
-                  f"into fields {field_values}")
-    return field_values
+    return create_path_type(*segment_types).parse(path)
 
 
 def parse_top_separate(path: str | pathlib.Path, /, *segment_types: Segment):
     """ Return the fields of a path, and the `top` field separately. """
     field_values = parse(path, *segment_types)
-    top = field_values.pop(TOP)
-    logger.detail(
-        f"Split fields into top-level path {top} and others {field_values}"
-    )
-    return top, field_values
+    return field_values.pop(TOP), field_values
 
 
 def path_matches(path: str | pathlib.Path, segments: Sequence[Segment]):
@@ -813,8 +806,8 @@ def find_files(path: str | pathlib.Path, segments: Sequence[Segment]):
     strs = str(list(map(str, segments)))
     if path.is_dir():
         # Search the directory for files matching the segments.
-        logger.routine(f"Began searching {path} and any subdirectories "
-                       f"for files matching {strs}")
+        logger.detail(f"Began searching {path} and any subdirectories "
+                      f"for files matching {strs}")
         yield from chain(*map(partial(find_files, segments=segments),
                               path.iterdir()))
     else:
@@ -865,8 +858,8 @@ def cast_path(input_path: pathlib.Path,
         Path comprising `output_segments` made of fields in `input_path`
         (as determined by `input_segments`).
     """
-    logger.routine(f"Began casting {input_path} from segments {input_segments} "
-                   f"to segments {output_segments}")
+    logger.detail(f"Began casting {input_path} from segments {input_segments} "
+                  f"to segments {output_segments}")
     # Extract the fields from the input path using the input segments.
     top, fields = parse_top_separate(input_path, *input_segments)
     logger.detail(f"Parsed fields {fields} from {input_path}")
@@ -880,7 +873,7 @@ def cast_path(input_path: pathlib.Path,
     logger.detail(f"Normalized fields to {fields}")
     # Generate a new output path from the normalized fields.
     output_path = build(*output_segments, top=top, **fields)
-    logger.routine(f"Ended casting {input_path} to {output_path}")
+    logger.detail(f"Ended casting {input_path} to {output_path}")
     return output_path
 
 
@@ -910,7 +903,7 @@ def transpath(to_dir: str | pathlib.Path,
     pathlib.Path
         Hypothetical path after moving `path` from `indir` to `outdir`.
     """
-    logger.routine(f"Began transplanting {path} in {from_dir} to {to_dir}")
+    logger.detail(f"Began transplanting {path} in {from_dir} to {to_dir}")
     # Ensure from_dir is sanitized.
     from_dir = sanitize(from_dir, strict)
     # Find the part of the given path relative to from_dir.
@@ -924,8 +917,8 @@ def transpath(to_dir: str | pathlib.Path,
     logger.detail(f"Relative path of {path} to {from_dir} is {relpath}")
     # Append the relative part of the path to to_dir.
     output_path = sanitize(to_dir, strict).joinpath(relpath)
-    logger.routine(f"Ended transplanting {path} in {from_dir} "
-                   f"to {output_path} in {to_dir}")
+    logger.detail(f"Ended transplanting {path} in {from_dir} "
+                  f"to {output_path} in {to_dir}")
     return output_path
 
 
@@ -952,7 +945,7 @@ def transpaths(to_dir: str | pathlib.Path,
     tuple[pathlib.Path, ...]
         Hypothetical paths after moving all paths in `path` to `outdir`.
     """
-    logger.routine(f"Began transplanting paths {paths} to {to_dir}")
+    logger.detail(f"Began transplanting paths {paths} to {to_dir}")
     if not paths:
         # There are no paths to transplant.
         return tuple()
@@ -962,7 +955,7 @@ def transpaths(to_dir: str | pathlib.Path,
     # Move each path from that common path to the given directory.
     output_paths = tuple(transpath(to_dir, common_path, p, strict)
                          for p in paths)
-    logger.routine(
+    logger.detail(
         f"Ended transplanting paths {paths} to {output_paths} in {to_dir}"
     )
     return output_paths

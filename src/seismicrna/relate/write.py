@@ -161,7 +161,6 @@ class RelationWriter(object):
                                               ref=self.ref)
         if need_write(report_file, force):
             began = datetime.now()
-            logger.task(f"Began {self}")
             # Determine if there are enough reads.
             if self.num_reads < min_reads:
                 raise ValueError(f"Insufficient reads in {self._xam}: "
@@ -200,7 +199,6 @@ class RelationWriter(object):
                                               began=began,
                                               ended=ended)
             release_to_out(out_dir, release_dir, report_saved.parent)
-            logger.task(f"Ended {self}")
         return report_file
 
     def __str__(self):

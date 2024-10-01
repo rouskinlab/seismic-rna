@@ -251,17 +251,15 @@ def _iter_table_pairs(table_files: Iterable[Path],
         fields = path.parse(file, *table_segs)
         key = fields[path.REF], fields[path.SECT]
         if file in table_fields[key]:
-            logger.warning("Duplicate table file: {}", file)
+            logger.warning(f"Duplicate table file: {file}")
         else:
             table_fields[key].add(file)
     # Yield every pair of table files.
     for (ref, sect), tables in table_fields.items():
         n_files = len(tables)
         n_pairs = n_files * (n_files - 1) // 2
-        logger.detail(
-            "Found {} table files ({} pairs) with reference {} and section {}",
-            n_files, n_pairs, repr(ref), repr(sect)
-        )
+        logger.detail(f"Found {n_files} table files ({n_pairs} pairs) "
+                      f"with reference {repr(ref)} and section {repr(sect)}")
         yield from combinations(sorted(tables), 2)
 
 

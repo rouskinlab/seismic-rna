@@ -112,23 +112,9 @@ def join_sections(out_dir: Path,
                 # The report file does not contain a Join report.
                 raise TypeError(f"Overwriting {report_file} with "
                                 f"{join_type.__name__} would cause data loss")
-        logger.task("Began joining sections {} into {} with sample {}, "
-                    "reference {} in output directory {}",
-                    sects,
-                    repr(name),
-                    repr(sample),
-                    repr(ref),
-                    out_dir)
         ended = datetime.now()
         report = join_type(**report_kwargs, began=began, ended=ended)
         report.save(out_dir, force=True)
-        logger.task("Ended joining sections {} into {} with sample {}, "
-                    "reference {} in output directory {}",
-                    sects,
-                    repr(name),
-                    repr(sample),
-                    repr(ref),
-                    out_dir)
     return report_file
 
 

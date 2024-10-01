@@ -14,7 +14,7 @@ class Level(IntEnum):
     FATAL = -3
     ERROR = -2
     WARNING = -1
-    STATUS = 0
+    STEP = 0
     TASK = 1
     ROUTINE = 2
     DETAIL = 3
@@ -163,7 +163,7 @@ LEVEL_COLORS = {
                           AnsiCode.format(AnsiCode.BOLD)]),
     Level.ERROR: AnsiCode.format_color(160),
     Level.WARNING: AnsiCode.format_color(214),
-    Level.STATUS: AnsiCode.format_color(42),
+    Level.STEP: AnsiCode.format_color(42),
     Level.TASK: AnsiCode.format_color(33),
     Level.ROUTINE: AnsiCode.format_color(55),
     Level.DETAIL: AnsiCode.format_color(242),
@@ -217,8 +217,8 @@ class Logger(object):
     def warning(self, content: object):
         self._log(Level.WARNING, content)
 
-    def status(self, content: object):
-        self._log(Level.STATUS, content)
+    def step(self, content: object):
+        self._log(Level.STEP, content)
 
     def task(self, content: object):
         self._log(Level.TASK, content)
@@ -234,7 +234,7 @@ logger = Logger()
 
 DEFAULT_COLOR = True
 DEFAULT_RAISE = False
-DEFAULT_VERBOSITY = Level.STATUS
+DEFAULT_VERBOSITY = Level.STEP
 FILE_VERBOSITY = Level.DETAIL
 EXC_INFO_VERBOSITY = Level.TASK
 
@@ -247,7 +247,7 @@ def erase_config():
 
 
 def set_config(verbosity: int = 0,
-               log_file_path: Path | None = None,
+               log_file_path: str | Path | None = None,
                log_color: bool = True,
                raise_on_error: bool = DEFAULT_RAISE):
     """ Configure the main logger with handlers and verbosity. """

@@ -52,10 +52,8 @@ def pool_samples(out_dir: Path,
     # Deduplicate and sort the samples.
     sample_counts = Counter(samples)
     if max(sample_counts.values()) > 1:
-        logger.warning(
-            "Pool {} with reference {} in {} got duplicate samples: {}",
-            repr(name), repr(ref), out_dir, sample_counts
-        )
+        logger.warning(f"Pool {repr(name)} with reference {repr(ref)} "
+                       f"in {out_dir} got duplicate samples: {sample_counts}")
     samples = sorted(sample_counts)
     # Determine the output report file.
     report_file = PoolReport.build_path(top=out_dir, sample=name, ref=ref)
@@ -82,9 +80,6 @@ def pool_samples(out_dir: Path,
                 # The report file does not contain a Pool report.
                 raise TypeError(f"Cannot overwrite {report_file} with "
                                 f"{PoolReport.__name__}: would cause data loss")
-        logger.task("Began pooling samples {} into {} with reference {} "
-                    "in output directory {}",
-                    samples, repr(name), repr(ref), out_dir)
         ended = datetime.now()
         report = PoolReport(sample=name,
                             ref=ref,
@@ -92,9 +87,6 @@ def pool_samples(out_dir: Path,
                             began=began,
                             ended=ended)
         report.save(out_dir, force=True)
-        logger.task("Ended pooling samples {} into {} with reference {} "
-                    "in output directory {}",
-                    samples, repr(name), repr(ref), out_dir)
     return report_file
 
 

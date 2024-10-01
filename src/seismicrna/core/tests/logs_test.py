@@ -1,6 +1,7 @@
 import os
 import unittest as ut
 from itertools import product
+from pathlib import Path
 
 from seismicrna.core.logs import (logger,
                                   Logger,
@@ -29,7 +30,7 @@ class TestLevels(ut.TestCase):
         self.assertEqual(Level.FATAL, -3)
         self.assertEqual(Level.ERROR, -2)
         self.assertEqual(Level.WARNING, -1)
-        self.assertEqual(Level.STATUS, 0)
+        self.assertEqual(Level.STEP, 0)
         self.assertEqual(Level.TASK, 1)
         self.assertEqual(Level.ROUTINE, 2)
         self.assertEqual(Level.DETAIL, 3)
@@ -78,15 +79,15 @@ class TestExcInfo(ut.TestCase):
 
     @restore_config
     def test_exc_info(self):
-        for verbosity in [Level.TASK,
-                          Level.STATUS,
+        for verbosity in [Level.STEP,
                           Level.WARNING,
                           Level.ERROR,
                           Level.FATAL]:
             set_config(verbosity=verbosity)
             self.assertFalse(exc_info())
         for verbosity in [Level.DETAIL,
-                          Level.ROUTINE]:
+                          Level.ROUTINE,
+                          Level.TASK]:
             set_config(verbosity=verbosity)
             self.assertTrue(exc_info())
 
@@ -160,30 +161,36 @@ class TestSetConfig(ut.TestCase):
 
     @restore_config
     def test_log_file(self):
-        log_file_path = "test.log"
+        log_file_path = Path(os.path.abspath("test.log"))
         msg1 = "Some logging text"
         msg2 = "More logging text"
-        log_file = open(log_file_path, "x")
         try:
-            set_config(log_file=log_file)
+            set_config(log_file_path=log_file_path)
             self.assertEqual(logger.file_stream.filterer.verbosity,
                              FILE_VERBOSITY)
             self.assertIs(logger.file_stream.formatter.formatter,
                           format_logfile)
-            self.assertIs(logger.file_stream.stream,
-                          log_file)
+            self.assertEqual(logger.file_stream.file_path, log_file_path)
             # Test logging a message to the file.
             logger.routine(msg1)
             logger.detail(msg2)
-            log_file.close()
+            # The file stream must be closed explicitly to flush the log
+            # messages to the file before reading with readlines().
+            logger.file_stream.close()
             with open(log_file_path) as log_file:
                 lines = log_file.readlines()
-                self.assertEqual(len(lines), 3)
-                self.assertTrue(lines[0].startswith("LOGMSG> "))
+                self.assertEqual(len(lines), 6)
+                self.assertTrue(
+                    lines[0].startswith(f"LOGMSG> {Level.ROUTINE.name}")
+                )
                 self.assertEqual(lines[1], f"{msg1}\n")
                 self.assertEqual(lines[2], "\n")
+                self.assertTrue(
+                    lines[3].startswith(f"LOGMSG> {Level.DETAIL.name}")
+                )
+                self.assertEqual(lines[4], f"{msg2}\n")
+                self.assertEqual(lines[5], "\n")
         finally:
-            log_file.close()
             try:
                 os.remove(log_file_path)
             except FileNotFoundError:
@@ -207,9 +214,9 @@ class TestGetConfig(ut.TestCase):
 
     @restore_config
     def test_get_config(self):
-        log_file = os.path.abspath("test.log")
+        log_file_path = Path(os.path.abspath("test.log"))
         options = {"verbosity": list(Level),
-                   "log_file": [None, log_file],
+                   "log_file_path": [None, log_file_path],
                    "log_color": [True, False],
                    "raise_on_error": [False, True]}
         try:
@@ -221,7 +228,7 @@ class TestGetConfig(ut.TestCase):
                 self.assertDictEqual(result._asdict(), config)
         finally:
             try:
-                os.remove(log_file)
+                os.remove(log_file_path)
             except FileNotFoundError:
                 pass
 
