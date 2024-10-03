@@ -545,6 +545,9 @@ class Section(object):
         self._masks[name] = np.setdiff1d(p, self.masked_int, assume_unique=True)
         # Do not log self._masks[name] due to memory leak.
         logger.detail(f"Added mask {repr(name)} to {self}")
+        # Return self to allow chaining repeated calls to add_mask(),
+        # i.e. section.add_mask("a", [1]).add_mask("b", [2], True).
+        return self
 
     def remove_mask(self, name: str, missing_ok: bool = False):
         """ Remove the specified mask from the section. """
@@ -564,7 +567,7 @@ class Section(object):
 
     def mask_gu(self):
         """ Mask positions whose base is neither A nor C. """
-        self.add_mask(self.MASK_GU, self._find_gu())
+        return self.add_mask(self.MASK_GU, self._find_gu())
 
     def _find_polya(self, min_length: int) -> np.ndarray:
         """ Array of each position within a stretch of `min_length` or
@@ -585,11 +588,11 @@ class Section(object):
 
     def mask_polya(self, min_length: int):
         """ Mask poly(A) stretches with length ≥ `min_length`. """
-        self.add_mask(self.MASK_POLYA, self._find_polya(min_length))
+        return self.add_mask(self.MASK_POLYA, self._find_polya(min_length))
 
     def mask_list(self, pos: Iterable[int]):
         """ Mask a list of positions. """
-        self.add_mask(self.MASK_LIST, pos)
+        return self.add_mask(self.MASK_LIST, pos)
 
     def subsection(self,
                    end5: int | None = None,
