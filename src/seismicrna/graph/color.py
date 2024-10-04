@@ -110,7 +110,13 @@ bwong = SeqColorMap("bwong",
                     c="#0072b2",
                     g="#e69f00",
                     t="#56b4e9",
-                    n="#e0e0e0")
+                    n="#999999")
+bright = SeqColorMap("bright",
+                     a="#D44D5C",
+                     c="#046E8F",
+                     g="#FFAA24",
+                     t="#96D6D2",
+                     n="#999999")
 
 crayons = RelColorMap("crayons",
                       v="#424242",
@@ -139,7 +145,7 @@ hexta = RelColorMap("sexta",
 
 DEFAULTS: dict[type[ColorMap], ColorMap] = {
     RelColorMap: hexta,
-    SeqColorMap: tetra,
+    SeqColorMap: bright,
 }
 
 

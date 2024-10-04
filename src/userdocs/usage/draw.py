@@ -11,7 +11,7 @@ from seismicrna.core.random import stochastic_round
 from seismicrna.core.rel import NOCOV, MATCH, DELET, SUB_A, SUB_C, SUB_G, SUB_T
 from seismicrna.core.rna import RNAStructure, parse_db_structure
 from seismicrna.core.seq import DNA, Section, BASEA, BASEC, BASEG, BASET
-from seismicrna.graph.color import tetra
+from seismicrna.graph.color import bright
 
 rng = np.random.default_rng(0)
 
@@ -315,7 +315,7 @@ def draw_read(ax: plt.Axes,
         ax.text(j, -i, base,
                 fontfamily=fontfamily,
                 fontsize=fontsize_pt,
-                color=tetra.get(base))
+                color=bright.get(base))
 
 
 def draw_reads(filename: str,
@@ -324,8 +324,8 @@ def draw_reads(filename: str,
                end5s: np.ndarray | None = None):
     """ Draw reads on an axis and save to a file. """
     # Set parameters.
-    vspacing_mm = 6.  # vertical spacing (millimeters)
-    hspacing_mm = 5.  # horizontal spacing (millimeters)
+    vspacing_mm = 5.  # vertical spacing (millimeters)
+    hspacing_mm = 3.  # horizontal spacing (millimeters)
     fontsize_mm = 4.  # font size (millimeters)
     # Generate reads.
     is_alignment = end5s is not None
