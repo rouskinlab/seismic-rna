@@ -38,19 +38,17 @@ SUB_G_REL = "Subbed-G"
 SUB_T_REL = "Subbed-T"
 
 # One-letter codes for each type of relationship
-REL_CODES = {
-    'v': COVER_REL,
-    'n': UNAMB_REL,
-    'e': MATCH_REL,
-    'm': MUTAT_REL,
-    's': SUBST_REL,
-    'a': SUB_A_REL,
-    'c': SUB_C_REL,
-    'g': SUB_G_REL,
-    't': SUB_T_REL,
-    'd': DELET_REL,
-    'i': INSRT_REL,
-}
+REL_CODES = {"v": COVER_REL,
+             "n": UNAMB_REL,
+             "e": MATCH_REL,
+             "m": MUTAT_REL,
+             "s": SUBST_REL,
+             "a": SUB_A_REL,
+             "c": SUB_C_REL,
+             "g": SUB_G_REL,
+             "t": SUB_T_REL,
+             "d": DELET_REL,
+             "i": INSRT_REL}
 REL_NAMES = {name: code for code, name in REL_CODES.items()}
 
 # Columns of each relation-based table
@@ -134,7 +132,7 @@ class Table(ABC):
 
     @classmethod
     def ext(cls):
-        """ Table's file extension: either '.csv' or '.csv.gz'. """
+        """ Table's file extension: either ".csv" or ".csv.gz". """
         return path.CSVZIP_EXT if cls.gzipped() else path.CSV_EXT
 
     @property

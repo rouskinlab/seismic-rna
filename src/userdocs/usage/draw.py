@@ -5,13 +5,20 @@ from typing import Iterable
 
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.patches import Rectangle
 
 from seismicrna.core.array import find_dims
 from seismicrna.core.random import stochastic_round
 from seismicrna.core.rel import NOCOV, MATCH, DELET, SUB_A, SUB_C, SUB_G, SUB_T
 from seismicrna.core.rna import RNAStructure, parse_db_structure
 from seismicrna.core.seq import DNA, Section, BASEA, BASEC, BASEG, BASET
-from seismicrna.graph.color import bright
+from seismicrna.graph.color import get_cmap, RelColorMap, SeqColorMap
+from seismicrna.table.base import (MATCH_REL,
+                                   DELET_REL,
+                                   SUB_A_REL,
+                                   SUB_C_REL,
+                                   SUB_G_REL,
+                                   SUB_T_REL)
 
 rng = np.random.default_rng(0)
 
@@ -19,6 +26,9 @@ READS = "reads"
 POSITIONS = "positions"
 CLUSTERS = "clusters"
 GAP = "-"
+VSPACING_MM = 4.  # vertical grid spacing (millimeters)
+HSPACING_MM = 3.  # horizontal grid spacing (millimeters)
+NOCOV_COLOR = "#3f3f3f"
 
 
 def mm_to_inch(mm: float):
@@ -315,7 +325,7 @@ def draw_read(ax: plt.Axes,
         ax.text(j, -i, base,
                 fontfamily=fontfamily,
                 fontsize=fontsize_pt,
-                color=bright.get(base))
+                color=get_cmap(SeqColorMap).get(base))
 
 
 def draw_reads(filename: str,
@@ -324,8 +334,6 @@ def draw_reads(filename: str,
                end5s: np.ndarray | None = None):
     """ Draw reads on an axis and save to a file. """
     # Set parameters.
-    vspacing_mm = 5.  # vertical spacing (millimeters)
-    hspacing_mm = 3.  # horizontal spacing (millimeters)
     fontsize_mm = 4.  # font size (millimeters)
     # Generate reads.
     is_alignment = end5s is not None
@@ -337,7 +345,7 @@ def draw_reads(filename: str,
     if is_alignment:
         x_max = len(seq)
         y_min = -n_reads
-        y_line = y_min + (1. + fontsize_mm / vspacing_mm) / 2.
+        y_line = y_min + (1. + fontsize_mm / VSPACING_MM) / 2.
         ax.plot([0, x_max],
                 [y_line, y_line],
                 color="#3f3f3f",
@@ -352,10 +360,56 @@ def draw_reads(filename: str,
     # Adjust dimensions and spacing.
     ax.set_xlim((0, x_max))
     ax.set_ylim((y_min, 1))
-    ax.set_aspect(vspacing_mm / hspacing_mm)
+    ax.set_aspect(VSPACING_MM / HSPACING_MM)
     ax.axis("off")
-    fig.set_size_inches(x_max * mm_to_inch(hspacing_mm),
-                        n_reads * mm_to_inch(vspacing_mm))
+    fig.set_size_inches(x_max * mm_to_inch(HSPACING_MM),
+                        n_reads * mm_to_inch(VSPACING_MM))
+    plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    # Save the figure.
+    plt.savefig(filename)
+    plt.close()
+
+
+def draw_rels(filename: str,
+              rels: np.ndarray):
+    """ Draw reads on an axis and save to a file. """
+    n_reads, n_pos = rels.shape
+    # Graph reads.
+    fig, ax = plt.subplots()
+    x_max = n_pos
+    y_min = -n_reads
+    for i in range(n_reads):
+        for j in range(n_pos):
+            rel = rels[i, j]
+            if rel == NOCOV:
+                rel_color = NOCOV_COLOR
+            else:
+                if rel == MATCH:
+                    rel_name = MATCH_REL
+                elif rel == DELET:
+                    rel_name = DELET_REL
+                elif rel == SUB_A:
+                    rel_name = SUB_A_REL
+                elif rel == SUB_C:
+                    rel_name = SUB_C_REL
+                elif rel == SUB_G:
+                    rel_name = SUB_G_REL
+                elif rel == SUB_T:
+                    rel_name = SUB_T_REL
+                else:
+                    raise ValueError(rel)
+                rel_color = get_cmap(RelColorMap)[rel_name]
+            xy = j, -(i + 1)
+            ax.add_patch(
+                Rectangle(xy=xy, width=1., height=1., facecolor=rel_color)
+            )
+    # Adjust dimensions and spacing.
+    ax.set_xlim((0, x_max))
+    ax.set_ylim((y_min, 0))
+    ax.set_aspect(VSPACING_MM / HSPACING_MM)
+    ax.axis("off")
+    fig.set_size_inches(x_max * mm_to_inch(HSPACING_MM),
+                        n_reads * mm_to_inch(VSPACING_MM))
     plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
     # Save the figure.
     plt.savefig(filename)
@@ -379,13 +433,14 @@ def main():
     # Simulate data.
     mu = simulate_mu(is_paired)
     pi = simulate_pi(n_clust, alpha=6.)
-    print(pi)
     end5s, end3s = simulate_ends(n_reads, n_pos, p5=0.1, p3=0.1)
     muts = simulate_muts(mu, pi, end5s, end3s)
     rels = simulate_rels(seq, muts, end5s, end3s)
-    # Draw data for each step.
+    # Draw data for alignment.
     draw_reads("reads.pdf", seq, rels)
     draw_reads("align.pdf", seq, rels, end5s)
+    # Draw data for relate.
+    draw_rels("relate.pdf", rels)
 
 
 if __name__ == "__main__":
