@@ -1,6 +1,8 @@
 """ Illustrate the steps of the workflow. """
 
 import unittest as ut
+from functools import reduce
+from operator import or_
 from typing import Iterable
 
 import numpy as np
@@ -13,7 +15,9 @@ from seismicrna.core.rel import NOCOV, MATCH, DELET, SUB_A, SUB_C, SUB_G, SUB_T
 from seismicrna.core.rna import RNAStructure, parse_db_structure
 from seismicrna.core.seq import DNA, Section, BASEA, BASEC, BASEG, BASET
 from seismicrna.graph.color import get_cmap, RelColorMap, SeqColorMap
-from seismicrna.table.base import (MATCH_REL,
+from seismicrna.table.base import (COVER_REL,
+                                   MATCH_REL,
+                                   MUTAT_REL,
                                    DELET_REL,
                                    SUB_A_REL,
                                    SUB_C_REL,
@@ -22,13 +26,23 @@ from seismicrna.table.base import (MATCH_REL,
 
 rng = np.random.default_rng(0)
 
-READS = "reads"
-POSITIONS = "positions"
-CLUSTERS = "clusters"
+ALIGN_CLIP = 1
+READ = "Read"
+POSITION = "Position"
+CLUSTER = "Cluster"
 GAP = "-"
 VSPACING_MM = 4.  # vertical grid spacing (millimeters)
 HSPACING_MM = 3.  # horizontal grid spacing (millimeters)
-NOCOV_COLOR = "#3f3f3f"
+COVER_TICK_INC = 10
+MUTAT_TICK_INC = 0.05
+TICK_COLOR = "#E0E0E0"
+TICK_WIDTH = 0.5  # millimeters
+MASK_COLOR = "#888888"
+FILE_FORMAT = "pdf"
+USE_MUTS = [SUB_A, SUB_C, SUB_G, SUB_T]
+MUTAT = reduce(or_, USE_MUTS)
+UNINF = MUTAT | DELET
+UNINF_COLOR = "#D0D0D0"
 
 
 def mm_to_inch(mm: float):
@@ -74,15 +88,15 @@ def calc_p_clust_given_read(end5s: np.ndarray,
         2D (reads x clusters) array of the probability that each read
         came from each cluster.
     """
-    dims = find_dims([(READS,),
-                      (READS,),
-                      (READS, POSITIONS),
-                      (POSITIONS, CLUSTERS),
-                      (CLUSTERS,)],
+    dims = find_dims([(READ,),
+                      (READ,),
+                      (READ, POSITION),
+                      (POSITION, CLUSTER),
+                      (CLUSTER,)],
                      [end5s, end3s, muts, mu, pi],
                      ["end5s", "end3s", "muts", "mu", "pi"])
-    n_reads = dims[READS]
-    n_clust = dims[CLUSTERS]
+    n_reads = dims[READ]
+    n_clust = dims[CLUSTER]
     # Calculate the joint probability that each read would have its
     # mutations and come from each cluster.
     log_mu = np.log(mu)
@@ -187,9 +201,9 @@ class TestCalcPClustGivenRead(ut.TestCase):
 
 def simulate_mu(is_paired: np.ndarray,
                 pa: float = 1.,
-                pb: float = 99.,
+                pb: float = 8.,
                 ua: float = 2.,
-                ub: float = 6.):
+                ub: float = 4.):
     """ Simulate mutation rates. """
     n_pos, n_clust = is_paired.shape
     mu = np.zeros((n_pos, n_clust))
@@ -219,12 +233,12 @@ def simulate_muts(mu: np.ndarray,
                   end5s: np.ndarray,
                   end3s: np.ndarray):
     """ Simulate mutations as a boolean array. """
-    dims = find_dims([(POSITIONS, CLUSTERS), (CLUSTERS,), (READS,), (READS,)],
+    dims = find_dims([(POSITION, CLUSTER), (CLUSTER,), (READ,), (READ,)],
                      [mu, pi, end5s, end3s],
                      ["mu", "pi", "end5s", "end3s"])
-    n_reads = dims[READS]
-    n_pos = dims[POSITIONS]
-    n_clust = dims[CLUSTERS]
+    n_reads = dims[READ]
+    n_pos = dims[POSITION]
+    n_clust = dims[CLUSTER]
     # Assign each read to a cluster.
     n_reads_per_clust = stochastic_round(pi * n_reads, preserve_sum=True)
     ks = rng.permutation(np.repeat(np.arange(n_clust), n_reads_per_clust))
@@ -243,16 +257,14 @@ def simulate_rels(seq: DNA,
                   end5s: np.ndarray,
                   end3s: np.ndarray):
     """ Simulate the relationship for each mutation. """
-    dims = find_dims([(READS, POSITIONS), (READS,), (READS,)],
+    dims = find_dims([(READ, POSITION), (READ,), (READ,)],
                      [muts, end5s, end3s],
                      ["muts", "end5s", "end3s"])
-    n_reads = dims[READS]
-    n_pos = dims[POSITIONS]
+    n_reads = dims[READ]
+    n_pos = dims[POSITION]
     rels = np.full((n_reads, n_pos), NOCOV)
     for i in range(n_reads):
-        end5 = end5s[i]
-        end3 = end3s[i]
-        rels[i, end5: end3 + 1] = MATCH
+        rels[i, end5s[i]: end3s[i] + 1] = MATCH
         for j in np.flatnonzero(muts[i]):
             base = seq[j]
             if base == BASEA:
@@ -265,11 +277,41 @@ def simulate_rels(seq: DNA,
                 mut_options = [SUB_A, SUB_C, SUB_G]
             else:
                 raise ValueError(base)
-            if end5 < j < end3:
-                # Deletions are allowed except at the ends of the read.
-                mut_options.append(DELET)
+            mut_options.append(DELET)
             rels[i, j] = rng.choice(mut_options)
     return rels
+
+
+def remove_edge_muts(rels: np.ndarray,
+                     end5s: np.ndarray,
+                     end3s: np.ndarray,
+                     min_match: int = ALIGN_CLIP):
+    """ Remove mutations that are too close to the 5'/3' ends. """
+    n_reads, n_pos = rels.shape
+    for i in range(n_reads):
+        while (end5s[i] <= end3s[i] and not np.all(
+                rels[i, end5s[i]: end5s[i] + min_match] == MATCH
+        )):
+            end5s[i] += 1
+        while (end3s[i] >= end5s[i] and not np.all(
+                rels[i, max(end3s[i] - min_match + 1, 0): end3s[i] + 1] == MATCH
+        )):
+            end3s[i] -= 1
+        rels[i, :end5s[i]] = NOCOV
+        rels[i, end3s[i] + 1:] = NOCOV
+
+
+def clip_rels(rels: np.ndarray,
+              end5s: np.ndarray,
+              end3s: np.ndarray,
+              n_clip: int = ALIGN_CLIP):
+    """ Clip 5'/3' bases from the reads. """
+    n_reads, n_pos = rels.shape
+    for i in range(n_reads):
+        end5s[i] = min(end5s[i] + n_clip, end3s[i] + 1)
+        end3s[i] = max(end3s[i] - n_clip, end5s[i] - 1)
+        rels[i, :end5s[i]] = NOCOV
+        rels[i, end3s[i] + 1:] = NOCOV
 
 
 def calc_is_paired(seq: DNA, ss_dbs: Iterable[str]):
@@ -312,6 +354,21 @@ def generate_reads(seq: DNA, rels: np.ndarray, gaps: bool = False):
                 raise ValueError(rel)
         reads.append("".join(bases))
     return reads
+
+
+def calc_coverage(rels: np.ndarray):
+    """ Calculate the coverage at each position. """
+    return np.count_nonzero(rels != NOCOV, axis=0)
+
+
+def calc_mus_avg(mu: np.ndarray, pi: np.ndarray):
+    """ Calculate the mutation rates of the population average. """
+    return mu @ pi
+
+
+def no_margins():
+    """ Eliminate margins from the graph. """
+    plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
 
 def draw_read(ax: plt.Axes,
@@ -364,45 +421,74 @@ def draw_reads(filename: str,
     ax.axis("off")
     fig.set_size_inches(x_max * mm_to_inch(HSPACING_MM),
                         n_reads * mm_to_inch(VSPACING_MM))
-    plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    no_margins()
     # Save the figure.
     plt.savefig(filename)
     plt.close()
 
 
 def draw_rels(filename: str,
-              rels: np.ndarray):
+              rels: np.ndarray,
+              alpha: np.ndarray | None = None,
+              mask_pos: np.ndarray | None = None,
+              mask_reads: np.ndarray | None = None):
     """ Draw reads on an axis and save to a file. """
     n_reads, n_pos = rels.shape
     # Graph reads.
     fig, ax = plt.subplots()
     x_max = n_pos
     y_min = -n_reads
-    for i in range(n_reads):
-        for j in range(n_pos):
+    reads = np.arange(n_reads)
+    if mask_reads is not None:
+        reads = reads[~mask_reads]
+    positions = np.arange(n_pos)
+    if mask_pos is not None:
+        positions = positions[~mask_pos]
+    for i in reads:
+        for j in positions:
             rel = rels[i, j]
-            if rel == NOCOV:
-                rel_color = NOCOV_COLOR
-            else:
-                if rel == MATCH:
-                    rel_name = MATCH_REL
-                elif rel == DELET:
-                    rel_name = DELET_REL
-                elif rel == SUB_A:
-                    rel_name = SUB_A_REL
-                elif rel == SUB_C:
-                    rel_name = SUB_C_REL
-                elif rel == SUB_G:
-                    rel_name = SUB_G_REL
-                elif rel == SUB_T:
-                    rel_name = SUB_T_REL
+            if rel != NOCOV:
+                if rel == UNINF:
+                    rel_color = UNINF_COLOR
                 else:
-                    raise ValueError(rel)
-                rel_color = get_cmap(RelColorMap)[rel_name]
-            xy = j, -(i + 1)
-            ax.add_patch(
-                Rectangle(xy=xy, width=1., height=1., facecolor=rel_color)
-            )
+                    if rel == MATCH:
+                        rel_name = MATCH_REL
+                    elif rel == MUTAT:
+                        rel_name = MUTAT_REL
+                    elif rel == DELET:
+                        rel_name = DELET_REL
+                    elif rel == SUB_A:
+                        rel_name = SUB_A_REL
+                    elif rel == SUB_C:
+                        rel_name = SUB_C_REL
+                    elif rel == SUB_G:
+                        rel_name = SUB_G_REL
+                    elif rel == SUB_T:
+                        rel_name = SUB_T_REL
+                    else:
+                        raise ValueError(rel)
+                    rel_color = get_cmap(RelColorMap)[rel_name]
+                xy = j, -(i + 1)
+                ax.add_patch(
+                    Rectangle(xy=xy,
+                              width=1.,
+                              height=1.,
+                              facecolor=rel_color,
+                              alpha=(alpha[i] if alpha is not None else None))
+                )
+    # Strike out positions and reads.
+    if mask_reads is not None:
+        for i in -np.flatnonzero(mask_reads) - 0.5:
+            ax.plot([0, x_max],
+                    [i, i],
+                    color=MASK_COLOR,
+                    linewidth=mm_to_point(VSPACING_MM))
+    if mask_pos is not None:
+        for j in np.flatnonzero(mask_pos) + 0.5:
+            ax.plot([j, j],
+                    [y_min, 0],
+                    color=MASK_COLOR,
+                    linewidth=mm_to_point(HSPACING_MM))
     # Adjust dimensions and spacing.
     ax.set_xlim((0, x_max))
     ax.set_ylim((y_min, 0))
@@ -410,10 +496,56 @@ def draw_rels(filename: str,
     ax.axis("off")
     fig.set_size_inches(x_max * mm_to_inch(HSPACING_MM),
                         n_reads * mm_to_inch(VSPACING_MM))
-    plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    no_margins()
     # Save the figure.
     plt.savefig(filename)
     plt.close()
+
+
+def graph_profile(filename: str,
+                  data: np.ndarray,
+                  y_tick_inc: float,
+                  color: str,
+                  start: int = 1):
+    """ Graph a profile. """
+    n_pos, = data.shape
+    end = n_pos + start
+    y_max = data.max(initial=0)
+    x_min = start - 0.5
+    x_max = end - 0.5
+    fig, ax = plt.subplots()
+    # Graph the profile.
+    ax.bar(np.arange(start, end), data, facecolor=color)
+    # Add tick marks.
+    for y in np.arange(y_tick_inc, y_max + y_tick_inc, y_tick_inc):
+        ax.plot([x_min, x_max],
+                [y, y],
+                color=TICK_COLOR,
+                linewidth=mm_to_point(TICK_WIDTH),
+                zorder=0.)
+    # Adjust dimensions and spacing.
+    ax.set_xlim((x_min, x_max))
+    ax.set_ylim((0, y_max))
+    side_length = (x_max - x_min) * mm_to_inch(HSPACING_MM)
+    fig.set_size_inches(side_length, side_length)
+    no_margins()
+    # Save the figure.
+    plt.savefig(filename)
+    plt.close()
+
+
+def graph_cov(*args, **kwargs):
+    """ Graph a coverage profile. """
+    graph_profile(*args, **kwargs,
+                  y_tick_inc=COVER_TICK_INC,
+                  color=get_cmap(RelColorMap)[COVER_REL])
+
+
+def graph_mus(*args, **kwargs):
+    """ Graph a mutation rate profile. """
+    graph_profile(*args, **kwargs,
+                  y_tick_inc=MUTAT_TICK_INC,
+                  color=get_cmap(RelColorMap)[MUTAT_REL])
 
 
 def main():
@@ -423,6 +555,10 @@ def main():
     seq = DNA("GACCGAGTCACCTACGGA")
     ss_dbs = ["..(((((....)).))).",
               "(((...))).((...))."]
+    section_end5 = 1
+    section_end3 = 14
+    min_ncov_read = 8
+    min_mut_gap = 1
     # Derive properties from the sequence and structure.
     n_pos = len(seq)
     is_paired = calc_is_paired(seq, ss_dbs)
@@ -434,13 +570,51 @@ def main():
     mu = simulate_mu(is_paired)
     pi = simulate_pi(n_clust, alpha=6.)
     end5s, end3s = simulate_ends(n_reads, n_pos, p5=0.1, p3=0.1)
-    muts = simulate_muts(mu, pi, end5s, end3s)
-    rels = simulate_rels(seq, muts, end5s, end3s)
-    # Draw data for alignment.
-    draw_reads("reads.pdf", seq, rels)
-    draw_reads("align.pdf", seq, rels, end5s)
-    # Draw data for relate.
-    draw_rels("relate.pdf", rels)
+    rels = simulate_rels(seq, simulate_muts(mu, pi, end5s, end3s), end5s, end3s)
+    # Illustrate align.
+    draw_reads(f"reads.{FILE_FORMAT}", seq, rels)
+    remove_edge_muts(rels, end5s, end3s)
+    draw_reads(f"align.{FILE_FORMAT}", seq, rels, end5s)
+    # Illustrate relate.
+    draw_rels(f"relate-0.{FILE_FORMAT}", rels)
+    clip_rels(rels, end5s, end3s)
+    draw_rels(f"relate-1.{FILE_FORMAT}", rels)
+    graph_cov(f"relate-cov.{FILE_FORMAT}", calc_coverage(rels))
+    graph_mus(f"relate-mus.{FILE_FORMAT}", calc_mus_avg(mu, pi))
+    # Illustrate mask: define section.
+    rels = rels[:, section_end5: section_end3 + 1]
+    draw_rels(f"mask-0.{FILE_FORMAT}", rels)
+    # Illustrate mask: exclude positions.
+    mask_pos = np.array(
+        [base not in "AC" for base in seq[section_end5: section_end3 + 1]]
+    )
+    draw_rels(f"mask-1.{FILE_FORMAT}", rels,
+              mask_pos=mask_pos)
+    # Illustrate mask: define mutations.
+    muts = np.any([rels == mut for mut in USE_MUTS], axis=0)
+    matches = rels == MATCH
+    rels = np.full_like(rels, UNINF)
+    rels[np.nonzero(matches)] = MATCH
+    rels[np.nonzero(muts)] = MUTAT
+    rels[:, mask_pos] = NOCOV
+    for i, (end5, end3) in enumerate(zip(end5s, end3s, strict=True)):
+        rels[i, :end5] = NOCOV
+        rels[i, end3 + 1:] = NOCOV
+    draw_rels(f"mask-2.{FILE_FORMAT}", rels,
+              mask_pos=mask_pos)
+    # Illustrate mask: mask reads.
+    mask_reads = np.zeros(n_reads, dtype=bool)
+    mask_reads |= np.count_nonzero(rels != NOCOV, axis=1) < min_ncov_read
+    cumsum = np.cumsum(rels == MUTAT, axis=1)
+    mask_reads |= np.max(
+        cumsum[:, min_mut_gap + 1:] - cumsum[:, :-(min_mut_gap + 1)],
+        axis=1
+    ) > 1
+    draw_rels(f"mask-3.{FILE_FORMAT}", rels,
+              mask_pos=mask_pos, mask_reads=mask_reads)
+    # draw_rels(f"mask-1.{FILE_FORMAT}", rels[:, ])
+    # graph_cov(f"mask-1-cov.{FILE_FORMAT}", )
+    # graph_mus(f"mask-1-mus.{FILE_FORMAT}", calc_mus_avg(mu, pi))
 
 
 if __name__ == "__main__":

@@ -147,23 +147,23 @@ hexta = RelColorMap("hexta",
                     c="#597DE4",
                     g="#743B4A",
                     t="#9BD1D0")
-# The Klimt and Arches palettes come from the R Color Palette Finder:
+# The Safe palette was adapted from the R Color Palette Finder:
 # https://r-graph-gallery.com/color-palette-finder
-klimt_arches = RelColorMap("klimt-arches",
-                           v="#682C37",
-                           n="#A89F8E",
-                           e="#A8CDEC",
-                           m="#9B6981",
-                           d="#DF9ED4",
-                           i="#924099",
-                           s="#F6955E",
-                           a="#C93F55",
-                           c="#3C4B99",
-                           g="#EACC62",
-                           t="#469D76")
+safe = RelColorMap("safe",
+                   v="#888888",
+                   n="#6699CC",
+                   e="#88CCEE",
+                   m="#661100",
+                   d="#AA4499",
+                   i="#44AA99",
+                   s="#999933",
+                   a="#CC6677",
+                   c="#332288",
+                   g="#DDCC77",
+                   t="#117733")
 
 DEFAULTS: dict[type[ColorMap], ColorMap] = {
-    RelColorMap: klimt_arches,
+    RelColorMap: safe,
     SeqColorMap: bright,
 }
 

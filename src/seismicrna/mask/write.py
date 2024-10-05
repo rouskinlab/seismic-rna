@@ -68,7 +68,7 @@ class Masker(object):
                                name=section.name)
         self.pattern = pattern
         # Set the parameters for excluding positions from the section.
-        if mask_polya <= 0 or mask_polya > 5:
+        if not 0 < mask_polya <= 5:
             logger.warning("It is not recommended to keep sequences of 5 or "
                            "more consecutive As because of an artifact during "
                            "RT that causes low reactivity. See Kladwang et al. "
