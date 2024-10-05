@@ -201,7 +201,7 @@ class TestCalcPClustGivenRead(ut.TestCase):
 
 def simulate_mu(is_paired: np.ndarray,
                 pa: float = 1.,
-                pb: float = 8.,
+                pb: float = 19.,
                 ua: float = 2.,
                 ub: float = 4.):
     """ Simulate mutation rates. """
@@ -557,7 +557,8 @@ def main():
               "(((...))).((...))."]
     section_end5 = 1
     section_end3 = 14
-    min_ncov_read = 8
+    min_ncov_read = 6
+    min_ninfo_pos = 10
     min_mut_gap = 1
     # Derive properties from the sequence and structure.
     n_pos = len(seq)
@@ -579,10 +580,11 @@ def main():
     draw_rels(f"relate-0.{FILE_FORMAT}", rels)
     clip_rels(rels, end5s, end3s)
     draw_rels(f"relate-1.{FILE_FORMAT}", rels)
-    graph_cov(f"relate-cov.{FILE_FORMAT}", calc_coverage(rels))
-    graph_mus(f"relate-mus.{FILE_FORMAT}", calc_mus_avg(mu, pi))
+    graph_cov(f"relate-1-cov.{FILE_FORMAT}", calc_coverage(rels))
+    graph_mus(f"relate-1-mus.{FILE_FORMAT}", calc_mus_avg(mu, pi))
     # Illustrate mask: define section.
     rels = rels[:, section_end5: section_end3 + 1]
+    mu = mu[section_end5: section_end3 + 1]
     draw_rels(f"mask-0.{FILE_FORMAT}", rels)
     # Illustrate mask: exclude positions.
     mask_pos = np.array(
@@ -591,30 +593,42 @@ def main():
     draw_rels(f"mask-1.{FILE_FORMAT}", rels,
               mask_pos=mask_pos)
     # Illustrate mask: define mutations.
-    muts = np.any([rels == mut for mut in USE_MUTS], axis=0)
+    muts = np.isin(rels, USE_MUTS)
     matches = rels == MATCH
     rels = np.full_like(rels, UNINF)
     rels[np.nonzero(matches)] = MATCH
     rels[np.nonzero(muts)] = MUTAT
     rels[:, mask_pos] = NOCOV
     for i, (end5, end3) in enumerate(zip(end5s, end3s, strict=True)):
-        rels[i, :end5] = NOCOV
-        rels[i, end3 + 1:] = NOCOV
+        rels[i, :end5 - section_end5] = NOCOV
+        rels[i, end3 - section_end5 + 1:] = NOCOV
     draw_rels(f"mask-2.{FILE_FORMAT}", rels,
               mask_pos=mask_pos)
     # Illustrate mask: mask reads.
-    mask_reads = np.zeros(n_reads, dtype=bool)
-    mask_reads |= np.count_nonzero(rels != NOCOV, axis=1) < min_ncov_read
+    mask_reads = np.count_nonzero(rels != NOCOV, axis=1) < min_ncov_read
     cumsum = np.cumsum(rels == MUTAT, axis=1)
     mask_reads |= np.max(
         cumsum[:, min_mut_gap + 1:] - cumsum[:, :-(min_mut_gap + 1)],
         axis=1
     ) > 1
+    rels[mask_reads] = NOCOV
     draw_rels(f"mask-3.{FILE_FORMAT}", rels,
               mask_pos=mask_pos, mask_reads=mask_reads)
-    # draw_rels(f"mask-1.{FILE_FORMAT}", rels[:, ])
-    # graph_cov(f"mask-1-cov.{FILE_FORMAT}", )
-    # graph_mus(f"mask-1-mus.{FILE_FORMAT}", calc_mus_avg(mu, pi))
+    graph_cov(f"mask-3-cov.{FILE_FORMAT}",
+              calc_coverage(rels),
+              start=section_end5)
+    # Illustrate mask: mask positions.
+    mask_pos |= np.count_nonzero(rels != NOCOV, axis=0) < min_ninfo_pos
+    rels[:, mask_pos] = NOCOV
+    mu[mask_pos] = 0.
+    draw_rels(f"mask-4.{FILE_FORMAT}", rels,
+              mask_pos=mask_pos, mask_reads=mask_reads)
+    graph_cov(f"mask-4-cov.{FILE_FORMAT}",
+              calc_coverage(rels),
+              start=section_end5)
+    graph_mus(f"mask-4-mus.{FILE_FORMAT}",
+              calc_mus_avg(mu, pi),
+              start=section_end5)
 
 
 if __name__ == "__main__":
