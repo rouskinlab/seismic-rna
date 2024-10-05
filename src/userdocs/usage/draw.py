@@ -502,10 +502,20 @@ def draw_rels(filename: str,
     plt.close()
 
 
+def hex_to_tuple_color(hex_color: str):
+    """ Convert a hex color to a tuple of RGB values. """
+    if hex_color.startswith("#"):
+        hex_color = hex_color[1:]
+    if len(hex_color) != 6:
+        raise ValueError(f"hex_color (excluding #) must have 6 characters, "
+                         f"but got {repr(hex_color)}")
+    return tuple(int(hex_color[i: i + 2], 16) for i in range(0, 6, 2))
+
+
 def graph_profile(filename: str,
                   data: np.ndarray,
+                  seq: DNA,
                   y_tick_inc: float,
-                  color: str,
                   start: int = 1):
     """ Graph a profile. """
     n_pos, = data.shape
@@ -515,7 +525,10 @@ def graph_profile(filename: str,
     x_max = end - 0.5
     fig, ax = plt.subplots()
     # Graph the profile.
-    ax.bar(np.arange(start, end), data, facecolor=color)
+    cmap = get_cmap(SeqColorMap)
+    colors = [hex_to_tuple_color(cmap[base]) for base in seq]
+    for x, y, n in zip(np.arange(start, end), data, seq, strict=True):
+        ax.bar(x, y, facecolor=cmap[n])
     # Add tick marks.
     for y in np.arange(y_tick_inc, y_max + y_tick_inc, y_tick_inc):
         ax.plot([x_min, x_max],
@@ -536,16 +549,12 @@ def graph_profile(filename: str,
 
 def graph_cov(*args, **kwargs):
     """ Graph a coverage profile. """
-    graph_profile(*args, **kwargs,
-                  y_tick_inc=COVER_TICK_INC,
-                  color=get_cmap(RelColorMap)[COVER_REL])
+    graph_profile(*args, **kwargs, y_tick_inc=COVER_TICK_INC)
 
 
 def graph_mus(*args, **kwargs):
     """ Graph a mutation rate profile. """
-    graph_profile(*args, **kwargs,
-                  y_tick_inc=MUTAT_TICK_INC,
-                  color=get_cmap(RelColorMap)[MUTAT_REL])
+    graph_profile(*args, **kwargs, y_tick_inc=MUTAT_TICK_INC)
 
 
 def main():
@@ -580,16 +589,15 @@ def main():
     draw_rels(f"relate-0.{FILE_FORMAT}", rels)
     clip_rels(rels, end5s, end3s)
     draw_rels(f"relate-1.{FILE_FORMAT}", rels)
-    graph_cov(f"relate-1-cov.{FILE_FORMAT}", calc_coverage(rels))
-    graph_mus(f"relate-1-mus.{FILE_FORMAT}", calc_mus_avg(mu, pi))
+    graph_cov(f"relate-1-cov.{FILE_FORMAT}", calc_coverage(rels), seq)
+    graph_mus(f"relate-1-mus.{FILE_FORMAT}", calc_mus_avg(mu, pi), seq)
     # Illustrate mask: define section.
     rels = rels[:, section_end5: section_end3 + 1]
     mu = mu[section_end5: section_end3 + 1]
+    seq = seq[section_end5: section_end3 + 1]
     draw_rels(f"mask-0.{FILE_FORMAT}", rels)
     # Illustrate mask: exclude positions.
-    mask_pos = np.array(
-        [base not in "AC" for base in seq[section_end5: section_end3 + 1]]
-    )
+    mask_pos = np.array([base not in "AC" for base in seq])
     draw_rels(f"mask-1.{FILE_FORMAT}", rels,
               mask_pos=mask_pos)
     # Illustrate mask: define mutations.
@@ -616,6 +624,7 @@ def main():
               mask_pos=mask_pos, mask_reads=mask_reads)
     graph_cov(f"mask-3-cov.{FILE_FORMAT}",
               calc_coverage(rels),
+              seq,
               start=section_end5)
     # Illustrate mask: mask positions.
     mask_pos |= np.count_nonzero(rels != NOCOV, axis=0) < min_ninfo_pos
@@ -625,9 +634,11 @@ def main():
               mask_pos=mask_pos, mask_reads=mask_reads)
     graph_cov(f"mask-4-cov.{FILE_FORMAT}",
               calc_coverage(rels),
+              seq,
               start=section_end5)
     graph_mus(f"mask-4-mus.{FILE_FORMAT}",
               calc_mus_avg(mu, pi),
+              seq,
               start=section_end5)
 
 
