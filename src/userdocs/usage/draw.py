@@ -15,8 +15,7 @@ from seismicrna.core.rel import NOCOV, MATCH, DELET, SUB_A, SUB_C, SUB_G, SUB_T
 from seismicrna.core.rna import RNAStructure, parse_db_structure
 from seismicrna.core.seq import DNA, Section, BASEA, BASEC, BASEG, BASET
 from seismicrna.graph.color import get_cmap, RelColorMap, SeqColorMap
-from seismicrna.table.base import (COVER_REL,
-                                   MATCH_REL,
+from seismicrna.table.base import (MATCH_REL,
                                    MUTAT_REL,
                                    DELET_REL,
                                    SUB_A_REL,
@@ -30,9 +29,10 @@ ALIGN_CLIP = 1
 READ = "Read"
 POSITION = "Position"
 CLUSTER = "Cluster"
-GAP = "-"
-VSPACING_MM = 4.  # vertical grid spacing (millimeters)
-HSPACING_MM = 3.  # horizontal grid spacing (millimeters)
+ALIGN_GAP = "-"
+VGRID_MM = 4.  # vertical grid spacing (millimeters)
+HGRID_MM = 3.  # horizontal grid spacing (millimeters)
+GRID_GAP_MM = 0.5  # gap between grid elements (millimeters)
 COVER_TICK_INC = 10
 MUTAT_TICK_INC = 0.05
 TICK_COLOR = "#E0E0E0"
@@ -349,7 +349,7 @@ def generate_reads(seq: DNA, rels: np.ndarray, gaps: bool = False):
                 bases.append(BASET)
             elif rel == DELET:
                 if gaps:
-                    bases.append(GAP)
+                    bases.append(ALIGN_GAP)
             else:
                 raise ValueError(rel)
         reads.append("".join(bases))
@@ -402,7 +402,7 @@ def draw_reads(filename: str,
     if is_alignment:
         x_max = len(seq)
         y_min = -n_reads
-        y_line = y_min + (1. + fontsize_mm / VSPACING_MM) / 2.
+        y_line = y_min + (1. + fontsize_mm / VGRID_MM) / 2.
         ax.plot([0, x_max],
                 [y_line, y_line],
                 color="#3f3f3f",
@@ -417,10 +417,10 @@ def draw_reads(filename: str,
     # Adjust dimensions and spacing.
     ax.set_xlim((0, x_max))
     ax.set_ylim((y_min, 1))
-    ax.set_aspect(VSPACING_MM / HSPACING_MM)
+    ax.set_aspect(VGRID_MM / HGRID_MM)
     ax.axis("off")
-    fig.set_size_inches(x_max * mm_to_inch(HSPACING_MM),
-                        n_reads * mm_to_inch(VSPACING_MM))
+    fig.set_size_inches(x_max * mm_to_inch(HGRID_MM),
+                        n_reads * mm_to_inch(VGRID_MM))
     no_margins()
     # Save the figure.
     plt.savefig(filename)
@@ -444,6 +444,10 @@ def draw_rels(filename: str,
     positions = np.arange(n_pos)
     if mask_pos is not None:
         positions = positions[~mask_pos]
+    hgap = GRID_GAP_MM / HGRID_MM
+    vgap = GRID_GAP_MM / VGRID_MM
+    width = 1. - hgap
+    height = 1. - vgap
     for i in reads:
         for j in positions:
             rel = rels[i, j]
@@ -468,11 +472,11 @@ def draw_rels(filename: str,
                     else:
                         raise ValueError(rel)
                     rel_color = get_cmap(RelColorMap)[rel_name]
-                xy = j, -(i + 1)
+                xy = j + hgap / 2, vgap / 2 - (i + 1)
                 ax.add_patch(
                     Rectangle(xy=xy,
-                              width=1.,
-                              height=1.,
+                              width=width,
+                              height=height,
                               facecolor=rel_color,
                               alpha=(alpha[i] if alpha is not None else None))
                 )
@@ -482,34 +486,24 @@ def draw_rels(filename: str,
             ax.plot([0, x_max],
                     [i, i],
                     color=MASK_COLOR,
-                    linewidth=mm_to_point(VSPACING_MM))
+                    linewidth=mm_to_point(VGRID_MM - GRID_GAP_MM))
     if mask_pos is not None:
         for j in np.flatnonzero(mask_pos) + 0.5:
             ax.plot([j, j],
                     [y_min, 0],
                     color=MASK_COLOR,
-                    linewidth=mm_to_point(HSPACING_MM))
+                    linewidth=mm_to_point(HGRID_MM - GRID_GAP_MM))
     # Adjust dimensions and spacing.
     ax.set_xlim((0, x_max))
     ax.set_ylim((y_min, 0))
-    ax.set_aspect(VSPACING_MM / HSPACING_MM)
+    ax.set_aspect(VGRID_MM / HGRID_MM)
     ax.axis("off")
-    fig.set_size_inches(x_max * mm_to_inch(HSPACING_MM),
-                        n_reads * mm_to_inch(VSPACING_MM))
+    fig.set_size_inches(x_max * mm_to_inch(HGRID_MM),
+                        n_reads * mm_to_inch(VGRID_MM))
     no_margins()
     # Save the figure.
     plt.savefig(filename)
     plt.close()
-
-
-def hex_to_tuple_color(hex_color: str):
-    """ Convert a hex color to a tuple of RGB values. """
-    if hex_color.startswith("#"):
-        hex_color = hex_color[1:]
-    if len(hex_color) != 6:
-        raise ValueError(f"hex_color (excluding #) must have 6 characters, "
-                         f"but got {repr(hex_color)}")
-    return tuple(int(hex_color[i: i + 2], 16) for i in range(0, 6, 2))
 
 
 def graph_profile(filename: str,
@@ -526,7 +520,6 @@ def graph_profile(filename: str,
     fig, ax = plt.subplots()
     # Graph the profile.
     cmap = get_cmap(SeqColorMap)
-    colors = [hex_to_tuple_color(cmap[base]) for base in seq]
     for x, y, n in zip(np.arange(start, end), data, seq, strict=True):
         ax.bar(x, y, facecolor=cmap[n])
     # Add tick marks.
@@ -539,7 +532,7 @@ def graph_profile(filename: str,
     # Adjust dimensions and spacing.
     ax.set_xlim((x_min, x_max))
     ax.set_ylim((0, y_max))
-    side_length = (x_max - x_min) * mm_to_inch(HSPACING_MM)
+    side_length = (x_max - x_min) * mm_to_inch(HGRID_MM)
     fig.set_size_inches(side_length, side_length)
     no_margins()
     # Save the figure.
