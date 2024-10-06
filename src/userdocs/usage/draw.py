@@ -15,7 +15,8 @@ from seismicrna.core.rel import NOCOV, MATCH, DELET, SUB_A, SUB_C, SUB_G, SUB_T
 from seismicrna.core.rna import RNAStructure, parse_db_structure
 from seismicrna.core.seq import DNA, Section, BASEA, BASEC, BASEG, BASET
 from seismicrna.graph.color import get_cmap, RelColorMap, SeqColorMap
-from seismicrna.table.base import (MATCH_REL,
+from seismicrna.table.base import (COVER_REL,
+                                   MATCH_REL,
                                    MUTAT_REL,
                                    DELET_REL,
                                    SUB_A_REL,
@@ -37,7 +38,7 @@ COVER_TICK_INC = 10
 MUTAT_TICK_INC = 0.05
 TICK_COLOR = "#E0E0E0"
 TICK_WIDTH = 0.5  # millimeters
-MASK_COLOR = "#888888"
+MASK_COLOR = "#D0D0D0"
 FILE_FORMAT = "pdf"
 USE_MUTS = [SUB_A, SUB_C, SUB_G, SUB_T]
 MUTAT = reduce(or_, USE_MUTS)
@@ -508,7 +509,7 @@ def draw_rels(filename: str,
 
 def graph_profile(filename: str,
                   data: np.ndarray,
-                  seq: DNA,
+                  color: str,
                   y_tick_inc: float,
                   start: int = 1):
     """ Graph a profile. """
@@ -519,9 +520,7 @@ def graph_profile(filename: str,
     x_max = end - 0.5
     fig, ax = plt.subplots()
     # Graph the profile.
-    cmap = get_cmap(SeqColorMap)
-    for x, y, n in zip(np.arange(start, end), data, seq, strict=True):
-        ax.bar(x, y, facecolor=cmap[n])
+    ax.bar(np.arange(start, end), data, facecolor=color)
     # Add tick marks.
     for y in np.arange(y_tick_inc, y_max + y_tick_inc, y_tick_inc):
         ax.plot([x_min, x_max],
@@ -542,12 +541,16 @@ def graph_profile(filename: str,
 
 def graph_cov(*args, **kwargs):
     """ Graph a coverage profile. """
-    graph_profile(*args, **kwargs, y_tick_inc=COVER_TICK_INC)
+    graph_profile(*args, **kwargs,
+                  color=get_cmap(RelColorMap)[COVER_REL],
+                  y_tick_inc=COVER_TICK_INC)
 
 
 def graph_mus(*args, **kwargs):
     """ Graph a mutation rate profile. """
-    graph_profile(*args, **kwargs, y_tick_inc=MUTAT_TICK_INC)
+    graph_profile(*args, **kwargs,
+                  color=get_cmap(RelColorMap)[MUTAT_REL],
+                  y_tick_inc=MUTAT_TICK_INC)
 
 
 def main():
@@ -582,9 +585,11 @@ def main():
     draw_rels(f"relate-0.{FILE_FORMAT}", rels)
     clip_rels(rels, end5s, end3s)
     draw_rels(f"relate-1.{FILE_FORMAT}", rels)
-    graph_cov(f"relate-1-cov.{FILE_FORMAT}", calc_coverage(rels), seq)
-    graph_mus(f"relate-1-mus.{FILE_FORMAT}", calc_mus_avg(mu, pi), seq)
+    graph_cov(f"relate-1-cov.{FILE_FORMAT}", calc_coverage(rels))
+    graph_mus(f"relate-1-mus.{FILE_FORMAT}", calc_mus_avg(mu, pi))
     # Illustrate mask: define section.
+    end5s = np.maximum(end5s, section_end5)
+    end3s = np.minimum(end3s, section_end3)
     rels = rels[:, section_end5: section_end3 + 1]
     mu = mu[section_end5: section_end3 + 1]
     seq = seq[section_end5: section_end3 + 1]
@@ -617,7 +622,6 @@ def main():
               mask_pos=mask_pos, mask_reads=mask_reads)
     graph_cov(f"mask-3-cov.{FILE_FORMAT}",
               calc_coverage(rels),
-              seq,
               start=section_end5)
     # Illustrate mask: mask positions.
     mask_pos |= np.count_nonzero(rels != NOCOV, axis=0) < min_ninfo_pos
@@ -627,12 +631,20 @@ def main():
               mask_pos=mask_pos, mask_reads=mask_reads)
     graph_cov(f"mask-4-cov.{FILE_FORMAT}",
               calc_coverage(rels),
-              seq,
               start=section_end5)
     graph_mus(f"mask-4-mus.{FILE_FORMAT}",
               calc_mus_avg(mu, pi),
-              seq,
               start=section_end5)
+    # Illustrate cluster:
+    rels[np.nonzero(rels == UNINF)] = MATCH
+    p_clust = calc_p_clust_given_read(
+        end5s, end3s, np.equal(rels, MUTAT), mu, pi
+    )
+    for k in range(n_clust):
+        draw_rels(f"cluster-0-{k + 1}.{FILE_FORMAT}", rels,
+                  alpha=p_clust[:, k], mask_pos=mask_pos, mask_reads=mask_reads)
+        graph_mus(f"cluster-0-{k + 1}-mus.{FILE_FORMAT}", mu[:, k],
+                  start=section_end5)
 
 
 if __name__ == "__main__":
