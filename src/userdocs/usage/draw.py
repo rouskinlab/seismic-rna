@@ -24,22 +24,23 @@ from seismicrna.table.base import (COVER_REL,
                                    SUB_G_REL,
                                    SUB_T_REL)
 
-rng = np.random.default_rng(0)
+rng = np.random.default_rng(42)
 
 ALIGN_CLIP = 1
 READ = "Read"
 POSITION = "Position"
 CLUSTER = "Cluster"
+DELET_RATIO = 0.25  # number of deletions relative to each substitution
 ALIGN_GAP = "-"
 VGRID_MM = 4.  # vertical grid spacing (millimeters)
 HGRID_MM = 3.  # horizontal grid spacing (millimeters)
 GRID_GAP_MM = 0.5  # gap between grid elements (millimeters)
 COVER_TICK_INC = 10
-MUTAT_TICK_INC = 0.05
+MUTAT_TICK_INC = 0.1
 TICK_COLOR = "#E0E0E0"
 TICK_WIDTH = 0.5  # millimeters
 MASK_COLOR = "#D0D0D0"
-FILE_FORMAT = "pdf"
+FILE_FORMAT = "svg"
 USE_MUTS = [SUB_A, SUB_C, SUB_G, SUB_T]
 MUTAT = reduce(or_, USE_MUTS)
 UNINF = MUTAT | DELET
@@ -201,10 +202,10 @@ class TestCalcPClustGivenRead(ut.TestCase):
 
 
 def simulate_mu(is_paired: np.ndarray,
-                pa: float = 1.,
-                pb: float = 19.,
-                ua: float = 2.,
-                ub: float = 4.):
+                pa: float = 2.,
+                pb: float = 64.,
+                ua: float = 8.,
+                ub: float = 16.):
     """ Simulate mutation rates. """
     n_pos, n_clust = is_paired.shape
     mu = np.zeros((n_pos, n_clust))
@@ -221,7 +222,10 @@ def simulate_pi(n_clust: int, alpha: float = 1.):
     return rng.dirichlet(np.repeat(alpha, n_clust))
 
 
-def simulate_ends(n_reads: int, n_pos: int, p5: float = 0.25, p3: float = 0.25):
+def simulate_ends(n_reads: int,
+                  n_pos: int,
+                  p5: float = 1 / 3,
+                  p3: float = 1 / 3):
     """ Simulate 5' and 3' end coordinates. """
     partition = rng.multinomial(n_pos, [p5, 1. - (p5 + p3), p3], n_reads)
     end5s = partition[:, 0]
@@ -263,22 +267,31 @@ def simulate_rels(seq: DNA,
                      ["muts", "end5s", "end3s"])
     n_reads = dims[READ]
     n_pos = dims[POSITION]
+    if DELET_RATIO > 1.:
+        n_del = round(DELET_RATIO)
+        n_sub = 1
+    elif DELET_RATIO > 0.:
+        n_del = 1
+        n_sub = round(1 / DELET_RATIO)
+    else:
+        n_del = 0
+        n_sub = 1
     rels = np.full((n_reads, n_pos), NOCOV)
     for i in range(n_reads):
         rels[i, end5s[i]: end3s[i] + 1] = MATCH
         for j in np.flatnonzero(muts[i]):
             base = seq[j]
             if base == BASEA:
-                mut_options = [SUB_C, SUB_G, SUB_T]
+                sub_options = [SUB_C, SUB_G, SUB_T]
             elif base == BASEC:
-                mut_options = [SUB_A, SUB_G, SUB_T]
+                sub_options = [SUB_A, SUB_G, SUB_T]
             elif base == BASEG:
-                mut_options = [SUB_A, SUB_C, SUB_T]
+                sub_options = [SUB_A, SUB_C, SUB_T]
             elif base == BASET:
-                mut_options = [SUB_A, SUB_C, SUB_G]
+                sub_options = [SUB_A, SUB_C, SUB_G]
             else:
                 raise ValueError(base)
-            mut_options.append(DELET)
+            mut_options = sub_options * n_sub + [DELET] * n_del
             rels[i, j] = rng.choice(mut_options)
     return rels
 
@@ -394,25 +407,16 @@ def draw_reads(filename: str,
     # Set parameters.
     fontsize_mm = 4.  # font size (millimeters)
     # Generate reads.
-    is_alignment = end5s is not None
-    reads = generate_reads(seq, rels, is_alignment)
+    reads = generate_reads(seq, rels, end5s is not None)
     n_reads = len(reads)
+    if end5s is None:
+        end5s = np.repeat(0, n_reads)
+    end3s = end5s + np.array(list(map(len, reads))) - 1
     # Graph reads.
     fig, ax = plt.subplots()
     fontsize_pt = mm_to_point(fontsize_mm)
-    if is_alignment:
-        x_max = len(seq)
-        y_min = -n_reads
-        y_line = y_min + (1. + fontsize_mm / VGRID_MM) / 2.
-        ax.plot([0, x_max],
-                [y_line, y_line],
-                color="#3f3f3f",
-                linewidth=mm_to_point(0.5))
-        draw_read(ax, n_reads, str(seq), 0, fontsize_pt)
-    else:
-        x_max = max(map(len, reads))
-        y_min = 1 - n_reads
-        end5s = [0] * n_reads
+    x_max = end3s.max() + 1
+    y_min = 1 - n_reads
     for i, (read, end5) in enumerate(zip(reads, end5s, strict=True)):
         draw_read(ax, i, read, end5, fontsize_pt)
     # Adjust dimensions and spacing.
@@ -511,11 +515,13 @@ def graph_profile(filename: str,
                   data: np.ndarray,
                   color: str,
                   y_tick_inc: float,
+                  y_max: float | None = None,
                   start: int = 1):
     """ Graph a profile. """
     n_pos, = data.shape
     end = n_pos + start
-    y_max = data.max(initial=0)
+    if y_max is None:
+        y_max = data.max(initial=0)
     x_min = start - 0.5
     x_max = end - 0.5
     fig, ax = plt.subplots()
@@ -555,7 +561,7 @@ def graph_mus(*args, **kwargs):
 
 def main():
     # Parameters.
-    n_reads = 40
+    n_reads = 30
     n_clust = 2
     seq = DNA("GACCGAGTCACCTACGGA")
     ss_dbs = ["..(((((....)).))).",
@@ -640,11 +646,14 @@ def main():
     p_clust = calc_p_clust_given_read(
         end5s, end3s, np.equal(rels, MUTAT), mu, pi
     )
+    y_max = np.ceil(mu.max() / MUTAT_TICK_INC) * MUTAT_TICK_INC
     for k in range(n_clust):
         draw_rels(f"cluster-0-{k + 1}.{FILE_FORMAT}", rels,
                   alpha=p_clust[:, k], mask_pos=mask_pos, mask_reads=mask_reads)
         graph_mus(f"cluster-0-{k + 1}-mus.{FILE_FORMAT}", mu[:, k],
-                  start=section_end5)
+                  start=section_end5, y_max=y_max)
+        print(f"Mutation rates for cluster {k + 1}:")
+        print(np.round(mu[:, k], 3))
 
 
 if __name__ == "__main__":
