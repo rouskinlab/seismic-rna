@@ -1,5 +1,6 @@
 """ Illustrate the steps of the workflow. """
 
+import os
 import unittest as ut
 from functools import reduce
 from operator import or_
@@ -41,6 +42,7 @@ TICK_COLOR = "#E0E0E0"
 TICK_WIDTH = 0.5  # millimeters
 MASK_COLOR = "#D0D0D0"
 FILE_FORMAT = "svg"
+DRAW_DIR = "draw"
 USE_MUTS = [SUB_A, SUB_C, SUB_G, SUB_T]
 MUTAT = reduce(or_, USE_MUTS)
 UNINF = MUTAT | DELET
@@ -428,7 +430,7 @@ def draw_reads(filename: str,
                         n_reads * mm_to_inch(VGRID_MM))
     no_margins()
     # Save the figure.
-    plt.savefig(filename)
+    plt.savefig(os.path.join(DRAW_DIR, filename))
     plt.close()
 
 
@@ -507,7 +509,7 @@ def draw_rels(filename: str,
                         n_reads * mm_to_inch(VGRID_MM))
     no_margins()
     # Save the figure.
-    plt.savefig(filename)
+    plt.savefig(os.path.join(DRAW_DIR, filename))
     plt.close()
 
 
@@ -541,7 +543,7 @@ def graph_profile(filename: str,
     fig.set_size_inches(side_length, side_length)
     no_margins()
     # Save the figure.
-    plt.savefig(filename)
+    plt.savefig(os.path.join(DRAW_DIR, filename))
     plt.close()
 
 
@@ -560,6 +562,10 @@ def graph_mus(*args, **kwargs):
 
 
 def main():
+    try:
+        os.mkdir(DRAW_DIR)
+    except FileExistsError:
+        pass
     # Parameters.
     n_reads = 30
     n_clust = 2
