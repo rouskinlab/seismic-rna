@@ -64,6 +64,16 @@ executable followed by ``init``, e.g. ::
 
     ~/miniconda3/bin/conda init
 
+.. note::
+
+    Another popular package manage is Mamba_, which is a drop-in replacement 
+    for Conda reimplemented in C++. It can be much faster than Conda in the
+    event you plan to install any additional packages alongside SEISMIC-RNA.
+    If you wish to use Mamba instead of Conda, simply install Mamba and
+    replace all instances of the ``conda`` command in this documentation
+    with ``mamba``. The default installation location of Mamba is 
+    ``~/miniforge3/bin/mamba``
+
 Step 2: Create a Conda environment for SEISMIC-RNA
 --------------------------------------------------------------------------------
 
@@ -349,6 +359,7 @@ instructions).
 
 
 .. _Conda: https://docs.conda.io/en/latest/
+.. _Mamba: https://mamba.readthedocs.io/en/latest/
 .. _Bioconda: https://bioconda.github.io/
 .. _Git: https://git-scm.com/
 .. _Miniconda: https://docs.anaconda.com/miniconda/
