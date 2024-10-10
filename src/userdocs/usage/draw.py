@@ -513,6 +513,11 @@ def draw_rels(filename: str,
     plt.close()
 
 
+def calc_mu_y_max(mu: np.ndarray):
+    """ Calculate the maximum y tick. """
+    return np.ceil(mu.max(initial=0) / MUTAT_TICK_INC) * MUTAT_TICK_INC
+
+
 def graph_profile(filename: str,
                   data: np.ndarray,
                   color: str,
@@ -554,9 +559,14 @@ def graph_cov(*args, **kwargs):
                   y_tick_inc=COVER_TICK_INC)
 
 
-def graph_mus(*args, **kwargs):
+def graph_mus(filename: str,
+              data: np.ndarray,
+              *args,
+              y_max: float | None = None,
+              **kwargs):
     """ Graph a mutation rate profile. """
-    graph_profile(*args, **kwargs,
+    graph_profile(filename, data, *args, **kwargs,
+                  y_max=(y_max if y_max is not None else calc_mu_y_max(data)),
                   color=get_cmap(RelColorMap)[MUTAT_REL],
                   y_tick_inc=MUTAT_TICK_INC)
 
@@ -652,12 +662,11 @@ def main():
     p_clust = calc_p_clust_given_read(
         end5s, end3s, np.equal(rels, MUTAT), mu, pi
     )
-    y_max = np.ceil(mu.max() / MUTAT_TICK_INC) * MUTAT_TICK_INC
     for k in range(n_clust):
         draw_rels(f"cluster-0-{k + 1}.{FILE_FORMAT}", rels,
                   alpha=p_clust[:, k], mask_pos=mask_pos, mask_reads=mask_reads)
         graph_mus(f"cluster-0-{k + 1}-mus.{FILE_FORMAT}", mu[:, k],
-                  start=section_end5, y_max=y_max)
+                  start=section_end5, y_max=calc_mu_y_max(mu))
         print(f"Mutation rates for cluster {k + 1}:")
         print(np.round(mu[:, k], 3))
 
