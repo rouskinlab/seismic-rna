@@ -18,12 +18,6 @@ Submodules
 ----------
 
 
-.. automodule:: seismicrna.align.fqops
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 .. automodule:: seismicrna.align.fqunit
    :members:
    :undoc-members:

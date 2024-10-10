@@ -18,14 +18,14 @@ If you use Windows, we recommend installing and running SEISMIC-RNA using the
 
 We recommend the following hardware specifications, depending on your usage:
 
-========== ================ ======== ==== ======== ============
-Usage      Reads (millions) RNA (kb) CPUs RAM (GB) Storage (GB)
-========== ================ ======== ==== ======== ============
-Light                    <1       <1    4        8           16
-Moderate               1-10      1-3    8       16           32
-Heavy                10-100     3-10   16       32           64
-Very Heavy             ≥100      ≥10  ≥32      ≥64         ≥128
-========== ================ ======== ==== ======== ============
+================ =========== ==== ======== ============
+Reads (millions) Length (kb) CPUs RAM (GB) Storage (GB)
+================ =========== ==== ======== ============
+              <1          <1    4        8           16
+            1-10         1-3    8       16           32
+          10-100        3-10   16       32           64
+            ≥100         ≥10  ≥32      ≥64         ≥128
+================ =========== ==== ======== ============
 
 
 Option 1: Install with Conda, if you already know how to use it
