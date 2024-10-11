@@ -1,4 +1,3 @@
-from logging import getLogger
 from pathlib import Path
 
 from click import command
@@ -33,12 +32,8 @@ from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 from ..mask.data import load_mask_dataset
 
-logger = getLogger(__name__)
 
-DEFAULT_MIN_CLUSTERS = 1
-
-
-@run_func(logger.critical, with_tmp=True)
+@run_func(CMD_CLUSTER, with_tmp=True)
 def run(input_path: tuple[str, ...], *,
         min_clusters: int,
         max_clusters: int,

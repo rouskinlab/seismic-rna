@@ -1,10 +1,9 @@
-from logging import getLogger
 from pathlib import Path
 
 from .em import EMRun
 from ..core import path
+from ..core.logs import logger
 
-logger = getLogger(__name__)
 
 PRECISION = 6  # number of digits behind the decimal point
 
@@ -42,7 +41,7 @@ def write_single_run_table(run: EMRun,
     data = getattr(run, attr)
     file = get_table_path(top, sample, ref, sect, table, run.k, rank)
     data.round(PRECISION).to_csv(file, header=True, index=True)
-    logger.info(f"Wrote {table} of {run} to {file}")
+    logger.routine(f"Wrote {table} of {run} to {file}")
     return file
 
 

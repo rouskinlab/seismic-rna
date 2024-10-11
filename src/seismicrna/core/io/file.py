@@ -1,13 +1,10 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from logging import getLogger
 from pathlib import Path
 from typing import Any, Iterable
 
 from .brickle import load_brickle, save_brickle
 from .. import path
-
-logger = getLogger(__name__)
 
 DEFAULT_BROTLI_LEVEL = 10
 PICKLE_PROTOCOL = 5

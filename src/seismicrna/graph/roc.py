@@ -1,6 +1,5 @@
 import os
 from functools import cached_property
-from logging import getLogger
 
 import numpy as np
 import pandas as pd
@@ -11,8 +10,6 @@ from .onestruct import (StructOneTableGraph,
                         StructOneTableRunner,
                         StructOneTableWriter)
 from .trace import iter_roc_traces
-
-logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 

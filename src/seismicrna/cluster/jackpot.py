@@ -1,4 +1,3 @@
-from logging import getLogger
 from typing import Iterable
 
 import numpy as np
@@ -6,6 +5,7 @@ from numba import jit
 
 from .marginal import calc_marginal
 from ..core.array import find_dims, get_length
+from ..core.logs import logger
 from ..core.random import stochastic_round
 from ..core.unbias import (CLUSTERS,
                            POSITIONS,
@@ -22,8 +22,6 @@ SUM_EXP_PRECISION = 3
 UNIQUE = "unique reads"
 
 rng = np.random.default_rng()
-
-logger = getLogger(__name__)
 
 
 def linearize_ends_matrix(p_ends: np.ndarray):
@@ -506,9 +504,9 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
                "p_ends",
                "p_clust"])
     n_reads = counts_per_uniq.sum()
-    logger.info(f"Began boostrapping null jackpotting scores for a dataset "
-                f"with {n_reads} reads and a real jackpotting score of "
-                f"{real_jackpot_score}")
+    logger.routine(f"Began boostrapping null jackpotting scores for a dataset "
+                   f"with {n_reads} reads and a real jackpotting score of "
+                   f"{real_jackpot_score}")
     # Simulate observed and expected read counts.
     end5s = np.repeat(uniq_end5s, counts_per_uniq)
     end3s = np.repeat(uniq_end3s, counts_per_uniq)
@@ -525,7 +523,7 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
         null_jackpotting_score = calc_jackpot_score(null_g_anomalies,
                                                     n_reads)
         null_jackpotting_scores.append(null_jackpotting_score)
-        logger.debug(f"Null jackpotting score: {null_jackpotting_score}")
+        logger.detail(f"Null jackpotting score: {null_jackpotting_score}")
         # Calculate a confidence interval for the mean jackpotting score
         # of the null models simulated so far.
         js_ci_lo, js_ci_up = calc_jackpot_score_ci(null_jackpotting_scores,
@@ -536,8 +534,8 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
         jq_ci_lo = calc_jackpot_quotient(real_jackpot_score, js_ci_up)
         jq_ci_up = calc_jackpot_quotient(real_jackpot_score, js_ci_lo)
         if not np.isnan(jq_ci_lo) and not np.isnan(jq_ci_up):
-            logger.debug(f"{confidence_level * 100.} % confidence interval "
-                         f"for jackpotting quotient: {jq_ci_lo} - {jq_ci_up}")
+            logger.detail(f"{confidence_level * 100.} % confidence interval "
+                          f"for jackpotting quotient: {jq_ci_lo} - {jq_ci_up}")
         # Stop when the confidence interval lies entirely below or above
         # max_jackpot_quotient, so it's clear whether the jackpotting
         # quotient is less or greater than max_jackpot_quotient.
@@ -545,5 +543,5 @@ def bootstrap_jackpot_scores(uniq_end5s: np.ndarray,
         # because this expression will evaluate to True after the first
         # iteration, when jq_ci_lo and jq_ci_up will both be NaN.
         if jq_ci_lo > max_jackpot_quotient or max_jackpot_quotient > jq_ci_up:
-            logger.info("Ended boostrapping null jackpotting scores")
+            logger.routine("Ended boostrapping null jackpotting scores")
             return np.array(null_jackpotting_scores)

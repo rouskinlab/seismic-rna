@@ -1,16 +1,14 @@
 from functools import partial
-from logging import getLogger
 from pathlib import Path
 from typing import Callable, Iterable
 
 from .ct import parse_ct
 from .db import parse_db
 from .struct import RNAStructure
+from ..logs import logger
 from ..path import CT_EXT, DB_EXT
 from ..seq import Section
 from ..write import need_write, write_mode
-
-logger = getLogger(__name__)
 
 
 def _from_file(file: Path, parser: Callable, *args, **kwargs):
@@ -95,7 +93,7 @@ def to_ct(structures: Iterable[RNAStructure],
         # Write the structures to the file.
         with open(ct_path, write_mode(force)) as f:
             f.write(text)
-        logger.info(f"Wrote {ct_path}")
+        logger.routine(f"Wrote {ct_path}")
 
 
 def to_db(structures: Iterable[RNAStructure],
@@ -121,7 +119,7 @@ def to_db(structures: Iterable[RNAStructure],
         # Write the structures to the file.
         with open(db_path, write_mode(force)) as f:
             f.write(text)
-        logger.info(f"Wrote {db_path}")
+        logger.routine(f"Wrote {db_path}")
 
 
 def renumber_ct(ct_in: Path, ct_out: Path, seq5: int, force: bool = False):

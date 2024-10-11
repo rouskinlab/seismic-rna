@@ -1,5 +1,4 @@
 from functools import cached_property
-from logging import getLogger
 
 import numpy as np
 import pandas as pd
@@ -9,8 +8,6 @@ from ..core.batch import (SectionMutsBatch,
                           PartialMutsBatch,
                           PartialReadBatch)
 from ..core.seq import Section
-
-logger = getLogger(__name__)
 
 
 class MaskReadBatch(PartialReadBatch):

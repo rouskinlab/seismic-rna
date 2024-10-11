@@ -1,9 +1,6 @@
 from functools import cached_property
-from logging import getLogger
 
 from ..seq import Section
-
-logger = getLogger(__name__)
 
 
 class RNASection(object):

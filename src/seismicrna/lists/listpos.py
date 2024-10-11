@@ -1,4 +1,3 @@
-from logging import getLogger
 from pathlib import Path
 
 import pandas as pd
@@ -18,8 +17,6 @@ from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
 from ..table.base import MUTAT_REL, PosTable
 from ..table.load import find_pos_tables, load_pos_table
-
-logger = getLogger(__name__)
 
 
 def find_pos(table: PosTable,
@@ -53,7 +50,7 @@ def list_pos(table_file: Path, force: bool, **kwargs):
     return list_file
 
 
-@run_func(logger.critical)
+@run_func(CMD_LISTPOS)
 def run(input_path: tuple[str, ...], *,
         max_fmut_pos,
         complement: bool,

@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
-from logging import getLogger
 from pathlib import Path
 from typing import Any, Callable, Generator, Iterable
 
@@ -39,8 +38,6 @@ from ..table.load import (find_pos_tables,
                           find_read_tables,
                           load_pos_table,
                           load_read_table)
-
-logger = getLogger(__name__)
 
 # Define actions.
 ACTION_REL = "all"

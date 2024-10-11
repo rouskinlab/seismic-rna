@@ -1,11 +1,10 @@
-from logging import getLogger
 from typing import Generator, Iterable
 
 import pandas as pd
 
+from ..logs import logger
 from ..seq import FIELD_END5, FIELD_END3, POS_NAME, Section
 
-logger = getLogger(__name__)
 
 UNPAIRED = 0
 

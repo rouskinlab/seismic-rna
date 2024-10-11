@@ -157,7 +157,7 @@ def calc_github_file_sha256():
     url = find_github_file()
     response = urlopen(url)
     if response.status != 200:
-        raise URLError(f"{url} returned status {response.status}")
+        raise URLError(f"{url} returned status {response.command}")
     return sha256(response.read()).hexdigest()
 
 

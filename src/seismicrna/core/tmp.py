@@ -1,13 +1,11 @@
 from functools import wraps
 from inspect import Parameter, Signature
-from logging import getLogger
 from pathlib import Path
 from shutil import rmtree
 from typing import Callable
 
+from .logs import logger
 from .path import randdir, sanitize, transpath
-
-logger = getLogger(__name__)
 
 PENDING = "release"
 WORKING = "working"
@@ -17,6 +15,9 @@ def release_to_out(out_dir: Path,
                    release_dir: Path,
                    initial_path: Path):
     """ Move temporary path(s) to the output directory. """
+    logger.routine(
+        f"Began releasing {initial_path} from {release_dir} to {out_dir}"
+    )
     # Determine the path in the output directory.
     out_path = transpath(out_dir, release_dir, initial_path)
     if initial_path.exists():
@@ -29,20 +30,24 @@ def release_to_out(out_dir: Path,
         except FileNotFoundError:
             # The output path does not yet exist.
             deleted = False
-            logger.debug(f"Output path {out_path} does not yet exist")
+            logger.detail(f"Output path {out_path} does not yet exist")
         else:
             deleted = True
-            logger.debug(f"Moved {out_path} to {delete_path} (to be deleted)")
+            logger.detail(f"Output path {out_path} exists; "
+                          f"moved it to {delete_path} (to be deleted)")
         try:
             # Move the initial path to the output location.
             initial_path.rename(out_path)
-            logger.debug(f"Moved {initial_path} to {out_path}")
+            logger.detail(
+                f"Moved initial path {initial_path} to output path {out_path}"
+            )
         except Exception:
             if deleted:
                 # If an error occurred, then restore the original output
                 # path before raising the exception.
                 delete_path.rename(out_path)
-                logger.debug(f"Restored {out_path} from {delete_path}")
+                logger.detail(f"Moved {delete_path} (to be deleted) "
+                              f"back to original output path {out_path}")
             else:
                 # No original files were moved to the delete directory,
                 # which is therefore still empty. Delete it.
@@ -53,15 +58,14 @@ def release_to_out(out_dir: Path,
         try:
             rmtree(delete_path)
         except Exception as error:
-            logger.warning(f"Failed to delete {delete_path} (but it is no "
-                           f"longer needed, and safe to delete): {error}")
+            logger.warning(error)
         else:
-            logger.debug(f"Deleted {delete_path}")
+            logger.detail(f"Deleted {delete_path}")
     else:
-        logger.debug(f"Skipped releasing {initial_path} (does not exist)")
+        logger.detail(f"Skipped releasing {initial_path} (does not exist)")
     if not out_path.exists():
         raise FileNotFoundError(out_path)
-    logger.info(f"Released {initial_path} to {out_path}")
+    logger.routine(f"Ended releasing {initial_path} to {out_path}")
     return out_path
 
 
@@ -87,27 +91,31 @@ def with_tmp_dir(pass_keep_tmp: bool):
             try:
                 tmp_pfx = sanitize(tmp_pfx)
                 tmp_dir = randdir(tmp_pfx.parent, prefix=tmp_pfx.name)
-                logger.debug(f"Created temporary directory: {tmp_dir}")
+                logger.routine(f"Created temporary directory {tmp_dir}")
                 if pass_keep_tmp:
                     kwargs = dict(**kwargs, keep_tmp=keep_tmp)
+                logger.detail("; ".join([f"func={func}",
+                                         f"pass_keep_tmp={pass_keep_tmp}",
+                                         f"kwargs={kwargs}"]))
                 return func(*args, **kwargs, tmp_dir=tmp_dir)
             finally:
                 if tmp_dir is not None and not keep_tmp:
                     try:
                         rmtree(tmp_dir)
                     except OSError as error:
-                        logger.warning("Failed to delete temporary directory "
-                                       f"{tmp_dir}:\n{error}")
+                        logger.warning(error)
                     else:
-                        logger.debug(f"Deleted temporary directory {tmp_dir}")
+                        logger.routine(f"Deleted temporary directory {tmp_dir}")
 
         # Add tmp_pfx and keep_tmp to the signature of the wrapper, and
         # remove tmp_dir (functools.wraps does not do so automatically).
         params = dict(Signature.from_callable(func).parameters)
+        logger.detail(f"Initial parameters: {params}")
         params.pop("tmp_dir")
         for param in ["tmp_pfx", "keep_tmp"]:
             if param not in params:
                 params[param] = Parameter(param, Parameter.KEYWORD_ONLY)
+        logger.detail(f"Updated parameters: {params}")
         wrapper.__signature__ = Signature(parameters=list(params.values()))
         return wrapper
 

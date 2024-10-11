@@ -1,6 +1,5 @@
 import os
 from itertools import chain
-from logging import getLogger
 from pathlib import Path
 from typing import Any
 
@@ -45,8 +44,6 @@ from ..core.seq import (BASE_NAME,
 from ..core.stats import calc_beta_params, calc_dirichlet_params
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
-
-logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -376,7 +373,7 @@ def load_pmut(pmut_file: Path):
     return pmut
 
 
-@run_func(logger.critical)
+@run_func(COMMAND)
 def run(*,
         ct_file: tuple[str, ...],
         pmut_paired: tuple[tuple[str, float], ...],

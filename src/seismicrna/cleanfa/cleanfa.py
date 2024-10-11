@@ -1,12 +1,5 @@
-"""
-
-FASTA Cleaner Module
-
-"""
-
 import re
 from functools import cached_property
-from logging import getLogger
 from pathlib import Path
 
 from ..core.seq import (BASEN,
@@ -18,8 +11,6 @@ from ..core.seq import (BASEN,
                         extract_fasta_seqname,
                         format_fasta_name_line)
 from ..core.write import need_write, write_mode
-
-logger = getLogger(__name__)
 
 
 def get_non_seq_regex(seq_type: type[XNA]):

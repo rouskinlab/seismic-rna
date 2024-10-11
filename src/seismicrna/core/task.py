@@ -1,11 +1,8 @@
 from concurrent.futures import Future, ProcessPoolExecutor
 from itertools import chain, filterfalse, repeat
-from logging import getLogger
 from typing import Any, Callable, Iterable
 
-from .logs import exc_info, get_config, set_config
-
-logger = getLogger(__name__)
+from .logs import logger, get_config, set_config
 
 
 def calc_pool_size(num_tasks: int,
@@ -28,6 +25,7 @@ def calc_pool_size(num_tasks: int,
         - Number of tasks to run in parallel. Always ≥ 1.
         - Number of processes to run for each task. Always ≥ 1.
     """
+    logger.routine("Began calculating pool size")
     if max_procs < 1:
         logger.warning(f"max_procs must be ≥ 1, but got {max_procs}; "
                        f"defaulting to 1")
@@ -52,6 +50,8 @@ def calc_pool_size(num_tasks: int,
         # parent and can thus have all processors.
         pool_size = 1
         num_procs_per_task = max_procs
+    logger.routine(f"Ended calculating pool size: {pool_size} "
+                   f"({num_procs_per_task} processors per task)")
     return pool_size, num_procs_per_task
 
 
@@ -76,20 +76,31 @@ class Task(object):
         """ Call the task's function in a try-except block, return the
         result if it succeeds, and return None otherwise. """
         if get_config() != self._config:
-            # Tasks running in parallel may not have the same top logger
-            # as the parent process (this seems to be system dependent).
+            # Tasks running in parallel may not have the same logger as
+            # the parent process (this seems to be system-dependent).
             # If not, then this task's top logger must be configured to
             # match the configuration of the parent process.
             set_config(*self._config)
+            close_file_stream = True
+        else:
+            close_file_stream = False
         task = fmt_func_args(self._func, *args, **kwargs)
         try:
-            logger.debug(f"Began task {task}")
+            logger.task(f"Began task {task}")
             result = self._func(*args, **kwargs)
         except Exception as error:
-            logger.error(f"Failed task {task}:\n{error}\n", exc_info=exc_info())
+            logger.error(error)
         else:
-            logger.debug(f"Ended task {task}:\n{result}\n")
+            logger.task(f"Ended task {task}:\n{result}\n")
             return result
+        finally:
+            if close_file_stream and logger.file_stream is not None:
+                # If the logger's configuration needed to be set, then
+                # it is not the same logger as for the parent process.
+                # That means that it is using a separate file stream,
+                # which should be closed explicitly to free up file
+                # resources when this task finishes.
+                logger.file_stream.close()
 
 
 def dispatch(funcs: list[Callable] | Callable,
@@ -177,7 +188,7 @@ def dispatch(funcs: list[Callable] | Callable,
     if pool_size > 1:
         # Run the tasks in parallel.
         with ProcessPoolExecutor(max_workers=pool_size) as pool:
-            logger.info(f"Opened pool of {pool_size} processes")
+            logger.task(f"Opened pool of {pool_size} processes")
             # Initialize an empty list of tasks to run.
             tasks: list[Future] = list()
             for func, task_args in zip(funcs, args, strict=True):
@@ -186,12 +197,12 @@ def dispatch(funcs: list[Callable] | Callable,
                 tasks.append(pool.submit(task, *task_args, **kwargs))
             # Run all the tasks in parallel and collect the results as
             # they become available.
-            logger.info(f"Waiting for {n_tasks} tasks to finish")
+            logger.task(f"Waiting for {n_tasks} tasks to finish")
             results = [task.result() for task in tasks]
-        logger.info(f"Closed pool of {pool_size} processes")
+        logger.task(f"Closed pool of {pool_size} processes")
     else:
         # Run the tasks in series.
-        logger.info(f"Began running {n_tasks} task(s) in series")
+        logger.task(f"Began running {n_tasks} task(s) in series")
         # Initialize an empty list of results from the tasks.
         results = list()
         for func, task_args in zip(funcs, args, strict=True):
@@ -199,7 +210,7 @@ def dispatch(funcs: list[Callable] | Callable,
             # its result to the list of results.
             task = Task(func)
             results.append(task(*task_args, **kwargs))
-        logger.info(f"Ended running {n_tasks} task(s) in series")
+        logger.task(f"Ended running {n_tasks} task(s) in series")
     # Remove any failed runs (None values) from results.
     results = [result for result in results if result is not None]
     n_pass = len(results)
@@ -210,7 +221,7 @@ def dispatch(funcs: list[Callable] | Callable,
             f"Failed {n_fail} of {n_tasks} task(s) ({round(p_fail, 1)} %)"
         )
     else:
-        logger.info(f"All {n_tasks} task(s) completed successfully")
+        logger.task(f"All {n_tasks} task(s) completed successfully")
     return results
 
 

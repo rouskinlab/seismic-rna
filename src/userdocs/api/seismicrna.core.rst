@@ -57,6 +57,12 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: seismicrna.core.random
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. automodule:: seismicrna.core.report
    :members:
    :undoc-members:

@@ -1,7 +1,6 @@
 import gzip
 import os
 from itertools import chain
-from logging import getLogger
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -28,6 +27,7 @@ from ..core.arg import (ILLUMINA_TRUSEQ_ADAPTER_R1,
                         opt_parallel,
                         opt_force)
 from ..core.array import get_length
+from ..core.logs import logger
 from ..core.ngs import HI_QUAL, LO_QUAL
 from ..core.rel import (MATCH,
                         NOCOV,
@@ -46,8 +46,6 @@ from ..relate.batch import QnamesBatch, RelateBatch
 from ..relate.data import QnamesDataset, RelateDataset
 from ..relate.report import RelateReport
 from ..relate.sim import simulate_batches
-
-logger = getLogger(__name__)
 
 rng = np.random.default_rng()
 
@@ -244,7 +242,7 @@ def generate_fastq(top: Path,
                 try:
                     fq.close()
                 except Exception as error:
-                    logger.warning(f"Failed to close file {fq}: {error}")
+                    logger.warning(error)
     else:
         # Warn that the FASTQ file(s) already exist(s).
         for fastq in fastq_paths:
@@ -313,7 +311,7 @@ def from_param_dir(param_dir: Path, *,
                           force=force)
 
 
-@run_func(logger.critical)
+@run_func(COMMAND)
 def run(*,
         input_path: tuple[str, ...],
         param_dir: tuple[str, ...],

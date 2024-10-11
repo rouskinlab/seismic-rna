@@ -1,13 +1,8 @@
-"""
-
-Add a summary of the license to the end of each source file.
-
-"""
-
-
 import os
 from logging import DEBUG, basicConfig, getLogger
 
+# This module lies outside the SEISMIC-RNA package, so it needs to use
+# the Logger from Python's standard library, not from SEISMIC-RNA.
 basicConfig(level=DEBUG)
 logger = getLogger(__name__)
 

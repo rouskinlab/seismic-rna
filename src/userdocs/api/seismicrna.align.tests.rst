@@ -10,12 +10,6 @@ Submodules
 ----------
 
 
-.. automodule:: seismicrna.align.tests.fqutil_test
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 .. automodule:: seismicrna.align.tests.write_test
    :members:
    :undoc-members:

@@ -1,5 +1,4 @@
 import os
-from logging import getLogger
 
 from click import command
 
@@ -9,12 +8,10 @@ from . import (clusts as clusts_mod,
 from ..core.arg import merge_params
 from ..core.run import run_func
 
-logger = getLogger(__name__)
-
 COMMAND = __name__.split(os.path.extsep)[-1]
 
 
-@run_func(logger.critical)
+@run_func(COMMAND)
 def run(*,
         ct_file: tuple[str, ...],
         pmut_paired: tuple[tuple[str, float], ...],

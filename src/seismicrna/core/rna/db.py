@@ -1,12 +1,9 @@
 from collections import defaultdict
-from logging import getLogger
 from pathlib import Path
 from typing import Iterable, TextIO
 
 from .. import path
 from ..seq import RNA, Section
-
-logger = getLogger(__name__)
 
 DB_NAME_MARK = ">"
 UNPAIRED_MARK = "."

@@ -1,17 +1,8 @@
-"""
-
-Core -- Pattern Module
-
-========================================================================
-
-"""
-
 from __future__ import annotations
 
 import re
 from functools import cache
 from itertools import product
-from logging import getLogger
 from typing import Iterable
 
 from .code import (MATCH,
@@ -24,8 +15,6 @@ from .code import (MATCH,
                    SUB_T,
                    REL_TYPE)
 from ..seq import BASEA, BASEC, BASEG, BASET, DNA
-
-logger = getLogger(__name__)
 
 READ_DEL = "D"
 READ_INS = "I"

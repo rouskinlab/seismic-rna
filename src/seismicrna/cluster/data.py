@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from logging import getLogger
 from typing import Any
 
 import pandas as pd
@@ -31,8 +30,6 @@ from ..joinbase.data import (BATCH_NUM,
 from ..joinbase.report import JoinClusterReport
 from ..mask.batch import MaskMutsBatch
 from ..mask.data import load_mask_dataset
-
-logger = getLogger(__name__)
 
 
 class ClusterDataset(Dataset, ABC):

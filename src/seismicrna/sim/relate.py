@@ -1,5 +1,4 @@
 import os
-from logging import getLogger
 from pathlib import Path
 
 from click import command
@@ -25,8 +24,6 @@ from ..core.rna import find_ct_section
 from ..core.run import run_func
 from ..core.task import as_list_of_tuples, dispatch
 from ..relate.sim import simulate_relate
-
-logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 
@@ -71,7 +68,7 @@ def from_param_dir(param_dir: Path,
                            **kwargs)
 
 
-@run_func(logger.critical, with_tmp=True)
+@run_func(COMMAND, with_tmp=True)
 def run(*,
         param_dir: tuple[str, ...],
         profile_name: str,

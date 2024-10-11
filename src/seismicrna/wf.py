@@ -1,4 +1,3 @@
-from logging import getLogger
 from typing import Iterable
 
 from click import command
@@ -56,8 +55,6 @@ from .table.base import (DELET_REL,
                          SUB_T_REL,
                          UNAMB_REL)
 
-logger = getLogger(__name__)
-
 MUTAT_RELS = "".join(REL_NAMES[code] for code in [SUB_A_REL,
                                                   SUB_C_REL,
                                                   SUB_G_REL,
@@ -70,7 +67,7 @@ def as_tuple_str(items: Iterable):
     return tuple(map(str, items))
 
 
-@run_func(logger.critical,
+@run_func(CMD_WORKFLOW,
           default=None,
           extra_defaults=extra_defaults)
 def run(fasta: str,

@@ -46,8 +46,10 @@ def param_defaults(defaults: dict[str, Any],
         try:
             func.__signature__ = Signature(parameters=new_params)
         except ValueError as error:
-            raise ValueError(f"Failed to set signature of {func.__name__} to "
-                             f"({', '.join(map(str, new_params))}): {error}")
+            raise ValueError(
+                f"Failed to set signature of {func.__name__} to "
+                f"({', '.join(map(str, new_params))}): {error}"
+            ) from None
 
         # Update the actual default values of keyword-only arguments
         # (does not affect help text).

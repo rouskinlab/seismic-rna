@@ -1,6 +1,5 @@
 import os
 from functools import cached_property, partial
-from logging import getLogger
 
 from click import command
 from plotly import graph_objects as go
@@ -11,8 +10,6 @@ from .trace import iter_seq_line_traces
 from .twotable import TwoTableMergedGraph, TwoTableRunner, TwoTableWriter
 from ..core.arg import opt_metric
 from ..core.mu import compare_windows, get_comp_name
-
-logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 

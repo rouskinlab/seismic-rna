@@ -17,7 +17,7 @@ from seismicrna.core.arg.cli import (opt_sim_dir,
                                      opt_jackpot_conf_level,
                                      opt_max_jackpot_quotient)
 from seismicrna.core.array import find_dims
-from seismicrna.core.logs import get_config, set_config
+from seismicrna.core.logs import Level, get_config, set_config
 from seismicrna.core.unbias import (CLUSTERS,
                                     READS,
                                     calc_p_ends_given_clust_noclose,
@@ -257,7 +257,9 @@ class TestBootstrapJackpotScores(ut.TestCase):
     def setUp(self):
         self.SIM_DIR.mkdir()
         self._config = get_config()
-        set_config(verbose=0, quiet=1, log_file=None, raise_on_error=True)
+        set_config(verbosity=Level.ERROR,
+                   log_file_path=None,
+                   raise_on_error=True)
 
     def tearDown(self):
         if self.SIM_DIR.exists():

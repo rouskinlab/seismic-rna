@@ -10,6 +10,7 @@ Clustering of RNA
     :maxdepth: 1
 
     about/index
+    works/index
     install/index
     tutorials/index
     manual/index

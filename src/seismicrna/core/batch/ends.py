@@ -1,13 +1,11 @@
 from functools import cached_property
-from logging import getLogger
 
 import numpy as np
 
 from ..array import ensure_order, ensure_same_length, find_dims
+from ..logs import logger
 from ..seq import Section
 from ..types import fit_uint_type
-
-logger = getLogger(__name__)
 
 rng = np.random.default_rng()
 

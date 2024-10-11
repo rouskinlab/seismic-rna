@@ -1,6 +1,5 @@
 from datetime import datetime
 from itertools import chain
-from logging import getLogger
 from pathlib import Path
 from typing import Iterable
 
@@ -30,6 +29,7 @@ from ..core.arg import (CMD_FOLD,
                         extra_defaults)
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
                            require_dependency)
+from ..core.logs import logger
 from ..core.rna import RNAProfile, ct_to_db
 from ..core.run import run_func
 from ..core.seq import DNA, RefSections, RefSeqs, Section
@@ -38,8 +38,6 @@ from ..core.write import need_write
 from ..table.base import MaskPosTable, ClustPosTable
 from ..table.load import find_pos_tables, load_pos_table
 
-logger = getLogger(__name__)
-
 DEFAULT_QUANTILE = 0.95
 
 
@@ -47,12 +45,16 @@ def find_foldable_tables(input_path: Iterable[str | Path]):
     """ Find tables that can be folded. """
     for file in find_pos_tables(input_path):
         try:
+            logger.detail(f"Loading table from {file}")
             table = load_pos_table(file)
         except Exception as error:
-            logger.error(f"Failed to load table from {file}: {error}")
+            logger.error(error)
         else:
             if isinstance(table, (ClustPosTable, MaskPosTable)):
+                logger.detail(f"Loaded table from {file} for use with fold")
                 yield file, table
+            else:
+                logger.detail(f"Table from {file} cannot be used to fold")
 
 
 def fold_section(rna: RNAProfile, *,
@@ -124,7 +126,7 @@ def fold_profile(table: MaskPosTable | ClustPosTable,
                                 **kwargs))
 
 
-@run_func(logger.critical,
+@run_func(CMD_FOLD,
           with_tmp=True,
           pass_keep_tmp=True,
           extra_defaults=extra_defaults)
@@ -151,8 +153,9 @@ def run(input_path: tuple[str, ...], *,
     require_data_path()
     # Reactivities must be normalized before using them to fold.
     if quantile <= 0.:
-        logger.warning("Fold needs normalized mutation rates, but got quantile "
-                       f"= {quantile}; setting quantile to {DEFAULT_QUANTILE}")
+        logger.warning(f"Fold needs normalized mutation rates, "
+                       f"but got quantile = {quantile}; "
+                       f"setting quantile to {DEFAULT_QUANTILE}")
         quantile = DEFAULT_QUANTILE
     # List the tables.
     tables = [table for _, table in find_foldable_tables(input_path)]

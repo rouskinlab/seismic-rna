@@ -1,5 +1,4 @@
 import os
-from logging import getLogger
 from pathlib import Path
 
 from click import command
@@ -37,8 +36,6 @@ from ..core.write import need_write
 from ..fold.rnastructure import make_fold_cmd, retitle_ct, require_data_path
 
 COMMAND = __name__.split(os.path.extsep)[-1]
-
-logger = getLogger(__name__)
 
 
 def get_ct_path(top: Path, section: Section, profile: str):
@@ -100,7 +97,7 @@ def fold_section(section: Section, *,
     return ct_sim
 
 
-@run_func(logger.critical,
+@run_func(COMMAND,
           with_tmp=True,
           pass_keep_tmp=True,
           extra_defaults=extra_defaults)

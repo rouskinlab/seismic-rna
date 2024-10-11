@@ -1,11 +1,8 @@
-from logging import getLogger
 from pathlib import Path
 from typing import TextIO
 
 from .. import path
 from ..seq import RNA, Section
-
-logger = getLogger(__name__)
 
 
 NUM_FIELDS = 6

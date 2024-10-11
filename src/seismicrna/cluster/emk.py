@@ -1,13 +1,11 @@
 from itertools import permutations
-from logging import getLogger
 from typing import Callable, Iterable
 
 import numpy as np
 
 from .em import EMRun
+from ..core.logs import logger
 from ..core.mu import calc_rmsd, calc_nrmsd, calc_pearson
-
-logger = getLogger(__name__)
 
 NOCONV = 0
 

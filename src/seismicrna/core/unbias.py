@@ -1,13 +1,11 @@
 import warnings
-from logging import getLogger
 from typing import Iterable
 
 import numpy as np
 from numba import jit, NumbaPerformanceWarning
 
 from .array import find_dims, triangular
-
-logger = getLogger(__name__)
+from .logs import logger
 
 # Disable performance warnings from Numba.
 warnings.filterwarnings("ignore", category=NumbaPerformanceWarning)
@@ -1050,7 +1048,7 @@ def calc_p_mut_given_span(p_mut_given_span_observed: np.ndarray,
                                    f_tol=f_tol,
                                    x_rtol=x_rtol))
     except NoConvergence as error:
-        logger.warning(f"Failed to unbias mutation rates: {error}")
+        logger.warning(error)
         return init_p_mut_given_span
 
 
@@ -1378,7 +1376,7 @@ def calc_params(p_mut_given_span_observed: np.ndarray,
                                                                 p_noclose_given_ends))
     else:
         logger.warning("Mutation rates and distribution of read coordinates "
-                       f"failed to converge in {max_iter} iterations.")
+                       f"failed to converge in {max_iter} iterations")
     return guess_p_mut_given_span, guess_p_ends, guess_p_clust
 
 

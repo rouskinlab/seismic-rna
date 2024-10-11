@@ -1,5 +1,4 @@
 import os
-from logging import getLogger
 
 import numpy as np
 from click import command
@@ -10,8 +9,6 @@ from .color import ColorMapGraph, SeqColorMap
 from .trace import iter_seq_base_bar_traces
 from .twotable import TwoTableRunner, TwoTableWriter, TwoTableMergedGraph
 from ..core.seq import POS_NAME
-
-logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 

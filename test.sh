@@ -11,8 +11,8 @@ seismic +test 2> $RESULTS
 cat $RESULTS
 
 # Check whether all the tests succeeded.
-LAST=$(tail -n 1 $RESULTS)
-if [ "$LAST" == "OK" ];
+STATUS=$(tail -n 2 $RESULTS | head -n 1)
+if [ "$STATUS" == "OK" ];
 then
 	  EXIT=0
 else

@@ -1,7 +1,6 @@
 import os
 from abc import ABC
 from functools import cached_property
-from logging import getLogger
 
 from click import command
 from plotly import graph_objects as go
@@ -13,8 +12,6 @@ from .rel import MultiRelsGraph, OneRelGraph
 from .trace import iter_seq_base_bar_traces, iter_seqbar_stack_traces
 from ..core.header import parse_header
 from ..core.seq import POS_NAME
-
-logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 

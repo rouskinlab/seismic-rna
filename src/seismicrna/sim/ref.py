@@ -1,5 +1,4 @@
 import os
-from logging import getLogger
 from pathlib import Path
 
 from click import command
@@ -10,14 +9,12 @@ from ..core.arg import (opt_sim_dir,
                         opt_refs,
                         opt_reflen,
                         opt_force)
-from ..core.logs import exc_info
+from ..core.logs import logger
 from ..core.run import run_func
 from ..core.seq import DNA, write_fasta
 from ..core.write import need_write
 
 COMMAND = __name__.split(os.path.extsep)[-1]
-
-logger = getLogger(__name__)
 
 
 def get_fasta_path(top: Path, ref: str):
@@ -28,7 +25,7 @@ def get_fasta_path(top: Path, ref: str):
                          ext=path.FASTA_EXTS[0])
 
 
-@run_func(logger.critical, default=Path)
+@run_func(COMMAND, default=Path)
 def run(*,
         sim_dir: str,
         refs: str,
@@ -59,4 +56,4 @@ def cli(*args, **kwargs):
     try:
         run(*args, **kwargs)
     except Exception as error:
-        logger.critical(error, exc_info=exc_info())
+        logger.severe(error)

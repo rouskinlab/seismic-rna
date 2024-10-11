@@ -1,6 +1,5 @@
 from collections import Counter, defaultdict
 from datetime import datetime
-from logging import getLogger
 from pathlib import Path
 from typing import Iterable
 
@@ -15,12 +14,11 @@ from ..core.arg import (CMD_POOL,
                         opt_parallel,
                         opt_force)
 from ..core.data import load_datasets
+from ..core.logs import logger
 from ..core.run import run_func
 from ..core.task import dispatch
 from ..core.write import need_write
 from ..relate.report import RelateReport
-
-logger = getLogger(__name__)
 
 DEFAULT_POOL = "pooled"
 
@@ -54,8 +52,8 @@ def pool_samples(out_dir: Path,
     # Deduplicate and sort the samples.
     sample_counts = Counter(samples)
     if max(sample_counts.values()) > 1:
-        logger.warning(f"Pool {repr(name)} with reference {repr(ref)} in "
-                       f"{out_dir} got duplicate samples: {sample_counts}")
+        logger.warning(f"Pool {repr(name)} with reference {repr(ref)} "
+                       f"in {out_dir} got duplicate samples: {sample_counts}")
     samples = sorted(sample_counts)
     # Determine the output report file.
     report_file = PoolReport.build_path(top=out_dir, sample=name, ref=ref)
@@ -82,8 +80,6 @@ def pool_samples(out_dir: Path,
                 # The report file does not contain a Pool report.
                 raise TypeError(f"Cannot overwrite {report_file} with "
                                 f"{PoolReport.__name__}: would cause data loss")
-        logger.info(f"Began pooling samples {samples} into {repr(name)} with "
-                    f"reference {repr(ref)} in output directory {out_dir}")
         ended = datetime.now()
         report = PoolReport(sample=name,
                             ref=ref,
@@ -91,12 +87,10 @@ def pool_samples(out_dir: Path,
                             began=began,
                             ended=ended)
         report.save(out_dir, force=True)
-        logger.info(f"Ended pooling samples {samples} into {repr(name)} with "
-                    f"reference {repr(ref)} in output directory {out_dir}")
     return report_file
 
 
-@run_func(logger.critical)
+@run_func(CMD_POOL)
 def run(input_path: tuple[str, ...], *,
         pool: str,
         # Parallelization

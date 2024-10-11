@@ -1,4 +1,3 @@
-from logging import getLogger
 from pathlib import Path
 
 from click import command
@@ -23,10 +22,8 @@ from ..core.arg import (CMD_DEMULT,
                         extra_defaults)
 from ..core.run import run_func
 
-logger = getLogger(__name__)
 
-
-@run_func(logger.critical,
+@run_func(CMD_DEMULT,
           with_tmp=True,
           pass_keep_tmp=True,
           extra_defaults=extra_defaults)

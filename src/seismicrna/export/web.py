@@ -1,6 +1,5 @@
 import json
 from functools import cache, partial
-from logging import getLogger
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +9,7 @@ import pandas as pd
 from .meta import combine_metadata
 from ..core import path
 from ..core.header import format_clust_name
+from ..core.logs import logger
 from ..core.rna import parse_db_strings
 from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
@@ -31,8 +31,6 @@ from ..table.base import (Table,
                           ReadTable,
                           ClustFreqTable)
 
-logger = getLogger(__name__)
-
 META_SYMBOL = '#'
 SAMPLE = "sample"
 REF_SEQ = "sequence"
@@ -40,17 +38,15 @@ REF_NUM_ALIGN = "num_aligned"
 SECT_END5 = "section_start"
 SECT_END3 = "section_end"
 SECT_POS = "positions"
-POS_DATA = {
-    "cov": COVER_REL,
-    "info": UNAMB_REL,
-    "sub_N": SUBST_REL,
-    "sub_A": SUB_A_REL,
-    "sub_C": SUB_C_REL,
-    "sub_G": SUB_G_REL,
-    "sub_T": SUB_T_REL,
-    "del": DELET_REL,
-    "ins": INSRT_REL,
-}
+POS_DATA = {"cov": COVER_REL,
+            "info": UNAMB_REL,
+            "sub_N": SUBST_REL,
+            "sub_A": SUB_A_REL,
+            "sub_C": SUB_C_REL,
+            "sub_G": SUB_G_REL,
+            "sub_T": SUB_T_REL,
+            "del": DELET_REL,
+            "ins": INSRT_REL}
 SUBST_RATE = "sub_rate"
 SUBST_HIST = "sub_hist"
 CLUST_PROP = "proportion"
@@ -132,8 +128,7 @@ def get_db_structs(table: PosTable,
                 # Parse the minimum free energy of folding.
                 energy = parse_energy(header)
             except Exception as error:
-                logger.error("Failed to parse minimum free energy structure "
-                             f"from dot-bracket file {db_file}: {error}")
+                logger.error(error)
             else:
                 structs[profile.data_name] = struct
                 energies[profile.data_name] = energy

@@ -1,7 +1,7 @@
 import unittest as ut
 
 from seismicrna.align.write import calc_flags_sep_strands
-from seismicrna.core.logs import set_config, restore_config
+from seismicrna.core.logs import Level, set_config, restore_config
 from seismicrna.core.ngs import (FLAG_PAIRED,
                                  FLAG_PROPER,
                                  FLAG_FIRST,
@@ -25,7 +25,7 @@ class TestCalcFlags(ut.TestCase):
 
     @restore_config
     def test_f1r2_paired_mixed(self):
-        set_config(verbose=0, quiet=1)
+        set_config(verbosity=Level.ERROR)
         expect = (([FLAG_FIRST | FLAG_PAIRED | FLAG_PROPER,
                     FLAG_SECOND | FLAG_REVERSE | FLAG_PAIRED | FLAG_PROPER],
                    [FLAG_SECOND | FLAG_REVERSE,
@@ -60,7 +60,7 @@ class TestCalcFlags(ut.TestCase):
 
     @restore_config
     def test_f2r1_paired_mixed(self):
-        set_config(verbose=0, quiet=1)
+        set_config(verbosity=Level.ERROR)
         expect = (([FLAG_FIRST | FLAG_REVERSE | FLAG_PAIRED | FLAG_PROPER,
                     FLAG_SECOND | FLAG_PAIRED | FLAG_PROPER],
                    [FLAG_SECOND,

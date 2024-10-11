@@ -1,5 +1,4 @@
 from datetime import datetime
-from logging import getLogger
 from pathlib import Path
 from typing import Iterable
 
@@ -9,13 +8,12 @@ from .report import RelateReport
 from .sam import XamViewer
 from ..core import path
 from ..core.io import RefseqIO
+from ..core.logs import logger
 from ..core.ngs import encode_phred
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import get_release_working_dirs, release_to_out
 from ..core.seq import DNA, get_fasta_seq
 from ..core.write import need_write
-
-logger = getLogger(__name__)
 
 
 def relate_records(records: Iterable[tuple[str, str]], **kwargs):
@@ -23,7 +21,7 @@ def relate_records(records: Iterable[tuple[str, str]], **kwargs):
         try:
             yield find_rels_line(line1, line2, **kwargs)
         except Exception as error:
-            logger.error(f"Failed to compute relationships: {error}")
+            logger.error(error)
 
 
 def generate_batch(batch: int, *,
@@ -35,8 +33,8 @@ def generate_batch(batch: int, *,
     """ Compute relation vectors for every SAM record in one batch,
     write the vectors to a batch file, and return its MD5 checksum
     and the number of vectors. """
-    logger.info("Began computing read-reference relationships "
-                f"for batch {batch} of {xam_view}")
+    logger.routine("Began computing read-reference relationships "
+                   f"for batch {batch} of {xam_view}")
     names, relvecs = from_reads(relate_records(xam_view.iter_records(batch),
                                                ref=xam_view.ref,
                                                refseq=refseq,
@@ -45,8 +43,8 @@ def generate_batch(batch: int, *,
                                 xam_view.ref,
                                 refseq,
                                 batch)
-    logger.info("Ended computing read-reference relationships "
-                f"for batch {batch} of {xam_view}")
+    logger.routine("Ended computing read-reference relationships "
+                   f"for batch {batch} of {xam_view}")
     _, relv_check = relvecs.save(top, brotli_level)
     _, name_check = names.save(top, brotli_level)
     return relvecs.num_reads, relv_check, name_check
@@ -101,7 +99,7 @@ class RelationWriter(object):
         """ Compute a relation vector for every record in a XAM file,
         split among one or more batches. For each batch, write a matrix
         of the vectors to one batch file, and compute its checksum. """
-        logger.info(f"Began {self}")
+        logger.routine(f"Began generating batches for {self}")
         try:
             # Collect the keyword arguments.
             kwargs = dict(xam_view=self._xam,
@@ -133,7 +131,8 @@ class RelationWriter(object):
             n_batches = len(nums_reads)
             checksums = {RelateBatchIO.btype(): relv_checks,
                          QnamesBatchIO.btype(): name_checks}
-            logger.info(f"Ended {self}: {n_reads} reads in {n_batches} batches")
+            logger.routine(f"Ended generating batches for {self}: "
+                           f"{n_reads} reads in {n_batches} batches")
             return n_reads, n_batches, checksums
         finally:
             if not keep_tmp:

@@ -46,7 +46,6 @@ There are two easy solutions to these inequalities:
 """
 
 import re
-from logging import getLogger
 from os import linesep
 from pathlib import Path
 from subprocess import CompletedProcess
@@ -66,6 +65,7 @@ from ..core.extern import (BOWTIE2_CMD,
                            args_to_cmd,
                            cmds_to_pipe,
                            cmds_to_subshell)
+from ..core.logs import logger
 from ..core.ngs import (collate_xam_cmd,
                         run_flagstat,
                         sort_xam_cmd,
@@ -92,8 +92,6 @@ MISMATCH_PENALTY = "1,1"
 N_PENALTY = "0"
 REF_GAP_PENALTY = "1,1"
 READ_GAP_PENALTY = "1,1"
-
-logger = getLogger(__name__)
 
 # Fastp always outputs FASTQ files using Phred+33 encoding.
 FASTP_PHRED_OUT = format_phred_arg(33)
@@ -205,8 +203,8 @@ def get_bowtie2_index_paths(prefix: Path):
 
 def bowtie2_build_cmd(fasta: Path, prefix: Path, *, n_procs: int = 1):
     """ Build a Bowtie2 index of a FASTA file. """
-    # Generate and run the command. Use quiet mode because otherwise,
-    # Bowtie2-Build produces extremely verbose output.
+    # Generate and run the command. Use quiet mode (-q) to suppress the
+    # default output, which is quite verbose.
     args = [BOWTIE2_BUILD_CMD, "-q", "--threads", n_procs, fasta, prefix]
     return args_to_cmd(args)
 

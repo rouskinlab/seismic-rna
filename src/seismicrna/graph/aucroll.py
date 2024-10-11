@@ -1,6 +1,5 @@
 import os
 from functools import cached_property
-from logging import getLogger
 
 import pandas as pd
 from click import command
@@ -13,8 +12,6 @@ from .onestruct import (StructOneTableGraph,
 from .roc import PROFILE_NAME, rename_columns
 from .roll import RollingGraph, RollingRunner
 from .trace import iter_rolling_auc_traces
-
-logger = getLogger(__name__)
 
 COMMAND = __name__.split(os.path.extsep)[-1]
 

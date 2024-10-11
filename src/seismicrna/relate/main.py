@@ -1,13 +1,3 @@
-"""
-Relate -- Main Module
-=====================
-Auth: Matty
-
-Define the command line interface for the 'relate' command, as well as
-its main run function that executes the relate step.
-"""
-
-from logging import getLogger
 from pathlib import Path
 
 from click import command
@@ -39,8 +29,6 @@ from ..core.arg import (CMD_REL,
 from ..core.run import run_func
 from ..core.seq import DNA, parse_fasta, write_fasta
 
-logger = getLogger(__name__)
-
 
 def generate_both_strands(ref: str, seq: DNA, rev_label: str):
     """ Yield both the forward and reverse strand for each sequence. """
@@ -56,7 +44,7 @@ def write_both_strands(fasta_in: Path, fasta_out: Path, rev_label: str):
                  for strand in generate_both_strands(ref, seq, rev_label)))
 
 
-@run_func(logger.critical, with_tmp=True, pass_keep_tmp=True)
+@run_func(CMD_REL, with_tmp=True, pass_keep_tmp=True)
 def run(fasta: str,
         input_path: tuple[str, ...], *,
         out_dir: str,

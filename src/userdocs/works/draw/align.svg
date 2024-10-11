@@ -1,0 +1,2674 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="152.64pt" height="339.84pt" viewBox="0 0 152.64 339.84" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2024-10-10T12:20:42.339666</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.9.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 339.84 
+L 152.64 339.84 
+L 152.64 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="text_1">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(0 11.626667) scale(0.113386 -0.113386)">
+     <defs>
+      <path id="DejaVuSansMono-47" d="M 3450 384 
+Q 3197 150 2880 29 
+Q 2563 -91 2194 -91 
+Q 1306 -91 812 545 
+Q 319 1181 319 2328 
+Q 319 3472 819 4111 
+Q 1319 4750 2209 4750 
+Q 2503 4750 2772 4667 
+Q 3041 4584 3291 4416 
+L 3291 3769 
+Q 3038 4009 2772 4123 
+Q 2506 4238 2209 4238 
+Q 1594 4238 1286 3761 
+Q 978 3284 978 2328 
+Q 978 1356 1276 889 
+Q 1575 422 2194 422 
+Q 2403 422 2561 470 
+Q 2719 519 2847 622 
+L 2847 1875 
+L 2169 1875 
+L 2169 2394 
+L 3450 2394 
+L 3450 384 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_2">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 11.626667) scale(0.113386 -0.113386)">
+     <defs>
+      <path id="DejaVuSansMono-41" d="M 1925 4109 
+L 1259 1722 
+L 2591 1722 
+L 1925 4109 
+z
+M 1544 4666 
+L 2309 4666 
+L 3738 0 
+L 3084 0 
+L 2741 1216 
+L 1106 1216 
+L 769 0 
+L 116 0 
+L 1544 4666 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_3">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 11.626667) scale(0.113386 -0.113386)">
+     <defs>
+      <path id="DejaVuSansMono-43" d="M 3353 166 
+Q 3113 38 2859 -26 
+Q 2606 -91 2322 -91 
+Q 1425 -91 929 543 
+Q 434 1178 434 2328 
+Q 434 3472 932 4111 
+Q 1431 4750 2322 4750 
+Q 2606 4750 2859 4686 
+Q 3113 4622 3353 4494 
+L 3353 3847 
+Q 3122 4038 2856 4138 
+Q 2591 4238 2322 4238 
+Q 1706 4238 1400 3763 
+Q 1094 3288 1094 2328 
+Q 1094 1372 1400 897 
+Q 1706 422 2322 422 
+Q 2597 422 2861 522 
+Q 3125 622 3353 813 
+L 3353 166 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_4">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 11.626667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_5">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 11.626667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_6">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 11.626667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_7">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 11.626667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_8">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 11.626667) scale(0.113386 -0.113386)">
+     <defs>
+      <path id="DejaVuSansMono-54" d="M 147 4666 
+L 3706 4666 
+L 3706 4134 
+L 2247 4134 
+L 2247 0 
+L 1613 0 
+L 1613 4134 
+L 147 4134 
+L 147 4666 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_9">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 11.626667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_10">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(76.32 11.626667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_11">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 11.626667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_12">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 11.626667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_13">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 11.626667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_14">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 11.626667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_15">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 11.626667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_16">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 11.626667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_17">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(0 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_18">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(8.48 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_19">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_20">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_21">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_22">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_23">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_24">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_25">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_26">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_27">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(84.8 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_28">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_29">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_30">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(110.24 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_31">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_32">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 22.933333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_33">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_34">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_35">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(25.44 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_36">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_37">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(42.4 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_38">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_39">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_40">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_41">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_42">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_43">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_44">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_45">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_46">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_47">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 34.24) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_48">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 45.546667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_49">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 45.546667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_50">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 45.546667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_51">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 45.546667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_52">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 45.546667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_53">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 45.546667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_54">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(67.84 45.546667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_55">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 45.546667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_56">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(84.8 45.546667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_57">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 45.546667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_58">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 45.546667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_59">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 45.546667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_60">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 45.546667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_61">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(0 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_62">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_63">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_64">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_65">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_66">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_67">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_68">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_69">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(67.84 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_70">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_71">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_72">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_73">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_74">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 56.853333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_75">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_76">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_77">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_78">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_79">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_80">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_81">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_82">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_83">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_84">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_85">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_86">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_87">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_88">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_89">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_90">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(135.68 68.16) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_91">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_92">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(25.44 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_93">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_94">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_95">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_96">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_97">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_98">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_99">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_100">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_101">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_102">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_103">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(118.72 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_104">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_105">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(135.68 79.466667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_106">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 90.773333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_107">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 90.773333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_108">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 90.773333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_109">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 90.773333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_110">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 90.773333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_111">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 90.773333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_112">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 90.773333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_113">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 90.773333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_114">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 90.773333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_115">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 90.773333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_116">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 90.773333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_117">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 90.773333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_118">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 102.08) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_119">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 102.08) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_120">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 102.08) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_121">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 102.08) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_122">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(42.4 102.08) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_123">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 102.08) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_124">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 102.08) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_125">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 102.08) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_126">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 102.08) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_127">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 102.08) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_128">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 102.08) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_129">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 102.08) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_130">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 102.08) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_131">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_132">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_133">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(25.44 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_134">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_135">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_136">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_137">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_138">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_139">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_140">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_141">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_142">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_143">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_144">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_145">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 113.386667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_146">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 124.693333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_147">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 124.693333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_148">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(25.44 124.693333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_149">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 124.693333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_150">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(42.4 124.693333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_151">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 124.693333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_152">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 124.693333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_153">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 124.693333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_154">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(76.32 124.693333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_155">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 124.693333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_156">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 124.693333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_157">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_158">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_159">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_160">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_161">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_162">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_163">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(67.84 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_164">
+    <!-- - -->
+    <g transform="translate(76.32 136) scale(0.113386 -0.113386)">
+     <defs>
+      <path id="DejaVuSansMono-2d" d="M 1113 2009 
+L 2741 2009 
+L 2741 1497 
+L 1113 1497 
+L 1113 2009 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#DejaVuSansMono-2d"/>
+    </g>
+   </g>
+   <g id="text_165">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_166">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_167">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_168">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_169">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_170">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_171">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(135.68 136) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_172">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 147.306667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_173">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 147.306667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_174">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(25.44 147.306667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_175">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 147.306667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_176">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(42.4 147.306667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_177">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 147.306667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_178">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 147.306667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_179">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 147.306667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_180">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(76.32 147.306667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_181">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 147.306667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_182">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 147.306667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_183">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 158.613333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_184">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 158.613333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_185">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 158.613333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_186">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 158.613333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_187">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 158.613333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_188">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 158.613333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_189">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(76.32 158.613333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_190">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(84.8 158.613333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_191">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 158.613333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_192">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 158.613333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_193">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 158.613333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_194">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 158.613333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_195">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 158.613333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_196">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 169.92) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_197">
+    <!-- - -->
+    <g transform="translate(42.4 169.92) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-2d"/>
+    </g>
+   </g>
+   <g id="text_198">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 169.92) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_199">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 169.92) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_200">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 169.92) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_201">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 169.92) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_202">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 169.92) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_203">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 169.92) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_204">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 169.92) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_205">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 169.92) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_206">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 169.92) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_207">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_208">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_209">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_210">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_211">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_212">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_213">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_214">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_215">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_216">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_217">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_218">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(110.24 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_219">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(118.72 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_220">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_221">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(135.68 181.226667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_222">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 192.533333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_223">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 192.533333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_224">
+    <!-- - -->
+    <g transform="translate(42.4 192.533333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-2d"/>
+    </g>
+   </g>
+   <g id="text_225">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 192.533333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_226">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 192.533333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_227">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 192.533333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_228">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 192.533333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_229">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 192.533333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_230">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 192.533333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_231">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 192.533333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_232">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 192.533333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_233">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 192.533333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_234">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 192.533333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_235">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_236">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_237">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_238">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_239">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_240">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_241">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_242">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_243">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(76.32 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_244">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_245">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_246">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_247">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_248">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_249">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_250">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(135.68 203.84) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_251">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_252">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_253">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_254">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_255">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_256">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(67.84 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_257">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_258">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_259">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_260">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_261">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_262">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_263">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_264">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(135.68 215.146667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_265">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 226.453333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_266">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 226.453333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_267">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 226.453333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_268">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 226.453333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_269">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 226.453333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_270">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 226.453333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_271">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 226.453333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_272">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 226.453333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_273">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 226.453333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_274">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 226.453333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_275">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 226.453333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_276">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 226.453333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_277">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(135.68 226.453333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_278">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_279">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_280">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_281">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_282">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(42.4 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_283">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_284">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_285">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_286">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_287">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_288">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_289">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_290">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_291">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 237.76) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_292">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_293">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_294">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_295">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_296">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_297">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_298">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_299">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_300">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_301">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_302">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_303">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_304">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_305">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_306">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_307">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(135.68 249.066667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_308">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 260.373333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_309">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 260.373333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_310">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 260.373333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_311">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 260.373333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_312">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 260.373333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_313">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 260.373333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_314">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 260.373333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_315">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(76.32 260.373333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_316">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 260.373333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_317">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 260.373333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_318">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 260.373333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_319">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 260.373333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_320">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 260.373333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_321">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_322">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_323">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(25.44 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_324">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_325">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_326">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(50.88 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_327">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_328">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_329">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_330">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(84.8 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_331">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_332">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_333">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_334">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_335">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_336">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(135.68 271.68) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_337">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 282.986667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_338">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 282.986667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_339">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 282.986667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_340">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 282.986667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_341">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 282.986667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_342">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 282.986667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_343">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(76.32 282.986667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_344">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 282.986667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_345">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 282.986667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_346">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 282.986667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_347">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 282.986667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_348">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_349">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(25.44 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_350">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_351">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_352">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_353">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_354">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_355">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_356">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_357">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_358">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_359">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_360">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(118.72 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_361">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_362">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(135.68 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_363">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(144.16 294.293333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_364">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(0 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_365">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_366">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_367">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(25.44 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_368">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_369">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(42.4 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_370">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_371">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_372">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_373">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_374">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_375">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_376">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_377">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_378">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_379">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_380">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(135.68 305.6) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_381">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(0 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_382">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(8.48 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_383">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_384">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_385">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_386">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_387">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_388">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_389">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_390">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(76.32 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_391">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_392">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_393">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_394">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_395">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 316.906667) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_396">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(0 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_397">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(8.48 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_398">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_399">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_400">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_401">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(42.4 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_402">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_403">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(59.36 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_404">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(67.84 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_405">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_406">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(84.8 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_407">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_408">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_409">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_410">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(118.72 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_411">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 328.213333) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_412">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(16.96 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_413">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(25.44 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_414">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(33.92 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_415">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(42.4 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_416">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(50.88 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+   <g id="text_417">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(59.36 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_418">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(67.84 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_419">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(76.32 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_420">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(84.8 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_421">
+    <!-- C -->
+    <g style="fill: #046e8f" transform="translate(93.28 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-43"/>
+    </g>
+   </g>
+   <g id="text_422">
+    <!-- T -->
+    <g style="fill: #96d6d2" transform="translate(101.76 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-54"/>
+    </g>
+   </g>
+   <g id="text_423">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(110.24 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_424">
+    <!-- A -->
+    <g style="fill: #d44d5c" transform="translate(118.72 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-41"/>
+    </g>
+   </g>
+   <g id="text_425">
+    <!-- G -->
+    <g style="fill: #ffaa24" transform="translate(127.2 339.52) scale(0.113386 -0.113386)">
+     <use xlink:href="#DejaVuSansMono-47"/>
+    </g>
+   </g>
+  </g>
+ </g>
+</svg>

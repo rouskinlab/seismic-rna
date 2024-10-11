@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE VARNASession SYSTEM "users.dtd">
+<VARNASession>
+    <RNA drawn="false" mode="2" id="" delta="0.65">
+        <name><![CDATA[User file #3]]></name>
+        <bases>
+            <nt index="0" num="1" custom="true" val="0.0" label="">
+                <base><![CDATA[G]]></base>
+                <p r="pos" x="0.0" y="0.0"/>
+                <p r="center" x="2.786071468060228E-15" y="-45.5"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="1" num="2" custom="true" val="0.0" label="">
+                <base><![CDATA[A]]></base>
+                <p r="pos" x="24.5" y="1.5001923289555077E-15"/>
+                <p r="center" x="24.500000000000004" y="-45.5"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="2" num="3" custom="true" val="0.028" label="">
+                <base><![CDATA[C]]></base>
+                <p r="pos" x="49.0" y="1.6073489238809014E-15"/>
+                <p r="center" x="49.0" y="-45.5"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="3" num="4" custom="true" val="0.046" label="">
+                <base><![CDATA[C]]></base>
+                <p r="pos" x="49.0" y="-28.0"/>
+                <p r="center" x="71.75" y="-27.999999999999993"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="4" num="5" custom="true" val="0.0" label="">
+                <base><![CDATA[G]]></base>
+                <p r="pos" x="49.0" y="-56.0"/>
+                <p r="center" x="71.75" y="-56.0"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="5" num="6" custom="true" val="0.047" label="">
+                <base><![CDATA[A]]></base>
+                <p r="pos" x="48.99999999999997" y="-91.2692030864909"/>
+                <p r="center" x="71.75" y="-73.63460154324547"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="6" num="7" custom="true" val="0.0" label="">
+                <base><![CDATA[G]]></base>
+                <p r="pos" x="49.00000000000003" y="-119.26920308649096"/>
+                <p r="center" x="71.75" y="-119.26920308649098"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="7" num="8" custom="true" val="0.0" label="">
+                <base><![CDATA[U]]></base>
+                <p r="pos" x="44.031771857865316" y="-143.26022562111865"/>
+                <p r="center" x="71.75" y="-136.49037055452578"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="8" num="9" custom="true" val="0.306" label="">
+                <base><![CDATA[C]]></base>
+                <p r="pos" x="59.499974968094456" y="-162.25988734626594"/>
+                <p r="center" x="71.75" y="-136.49037055452578"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="9" num="10" custom="true" val="0.357" label="">
+                <base><![CDATA[A]]></base>
+                <p r="pos" x="84.00002503190643" y="-162.25988734626577"/>
+                <p r="center" x="71.75" y="-136.49037055452578"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="10" num="11" custom="true" val="0.303" label="">
+                <base><![CDATA[C]]></base>
+                <p r="pos" x="99.4682281421348" y="-143.26022562111856"/>
+                <p r="center" x="71.75" y="-136.49037055452578"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="11" num="12" custom="true" val="0.016" label="">
+                <base><![CDATA[C]]></base>
+                <p r="pos" x="94.49999999999868" y="-119.2692030864916"/>
+                <p r="center" x="71.75" y="-119.26920308649098"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="12" num="13" custom="true" val="0.0" label="">
+                <base><![CDATA[U]]></base>
+                <p r="pos" x="94.50000000000004" y="-91.2692030864909"/>
+                <p r="center" x="71.75" y="-73.63460154324547"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="13" num="14" custom="true" val="0.259" label="">
+                <base><![CDATA[A]]></base>
+                <p r="pos" x="105.37208299310397" y="-73.63460154324544"/>
+                <p r="center" x="71.75" y="-73.63460154324547"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="14" num="15" custom="true" val="0.049" label="">
+                <base><![CDATA[C]]></base>
+                <p r="pos" x="94.5" y="-56.0"/>
+                <p r="center" x="71.75" y="-56.0"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="15" num="16" custom="true" val="0.0" label="">
+                <base><![CDATA[G]]></base>
+                <p r="pos" x="94.5" y="-27.99999999999999"/>
+                <p r="center" x="71.75" y="-27.999999999999993"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="16" num="17" custom="true" val="0.0" label="">
+                <base><![CDATA[G]]></base>
+                <p r="pos" x="94.5" y="4.39342039194113E-15"/>
+                <p r="center" x="94.5" y="-45.499999999999986"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+            <nt index="17" num="18" custom="true" val="0.0" label="">
+                <base><![CDATA[A]]></base>
+                <p r="pos" x="118.99999999999999" y="7.286648454926752E-15"/>
+                <p r="center" x="118.99999999999999" y="-45.499999999999986"/>
+                <basestyle outline="#FFFFFF" inner="#F2F2F2" num="#404040" name="#FFFFFF"/>
+            </nt>
+        </bases>
+        <BPs>
+            <bp part5="2" part3="16" edge5="WC" edge3="WC" orient="CIS" secstr="true">
+                <BPstyle custom="false" color="#0000FF" thickness="-1.0" bent="0.0"/>
+            </bp>
+            <bp part5="3" part3="15" edge5="WC" edge3="WC" orient="CIS" secstr="true">
+                <BPstyle custom="false" color="#0000FF" thickness="-1.0" bent="0.0"/>
+            </bp>
+            <bp part5="4" part3="14" edge5="WC" edge3="WC" orient="CIS" secstr="true">
+                <BPstyle custom="false" color="#0000FF" thickness="-1.0" bent="0.0"/>
+            </bp>
+            <bp part5="5" part3="12" edge5="WC" edge3="WC" orient="CIS" secstr="true">
+                <BPstyle custom="false" color="#0000FF" thickness="-1.0" bent="0.0"/>
+            </bp>
+            <bp part5="6" part3="11" edge5="WC" edge3="WC" orient="CIS" secstr="true">
+                <BPstyle custom="false" color="#0000FF" thickness="-1.0" bent="0.0"/>
+            </bp>
+        </BPs>
+        <backbone/>
+        <annotations/>
+    </RNA>
+    <config drawoutline="true" fillbase="true" autofit="true" autocenter="true" modifiable="true" errors="false" specialbases="false" dashbases="false" usebasebps="false" drawnc="true" drawnonplanar="true" warnings="false" comparison="false" flat="true" drawbackground="false" drawcm="true" drawbackbone="true" cmh="30.0" cmw="120.0" cmx="40.0" cmy="0.0" defaultzoom="1.0" zoominc="1.2" bpthick="1.0" basethick="1.5" distnumbers="3.0" spacebetweenbases="0.7" numperiod="18" bpstyle="simple" backbonecol="#5B5B5B" hovercol="#E6E6E6" backgroundcol="#FFFFFF" bondcol="#0000FF" titlecol="#000000" specialco="#00FF00" dashcol="#FFFF00" cm="0.00:#E0E0E0,0.01:#88CCEE,0.13:#7287D9,0.25:#8750D1,0.38:#852075,0.50:#661100,1.00:#661100">
+        <font role="titlefont" name="SansSerif" style="1" size="18.0"/>
+        <font role="numbersfont" name="SansSerif" style="1" size="11.0"/>
+        <font role="basefont" name="SansSerif" style="0" size="11.0"/>
+        <cmcaption/>
+    </config>
+</VARNASession>

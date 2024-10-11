@@ -1,7 +1,6 @@
-from logging import getLogger
 from pathlib import Path
 
-logger = getLogger(__name__)
+from .logs import logger
 
 
 def need_write(query: Path, force: bool = False, warn: bool = True):

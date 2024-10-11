@@ -1,6 +1,5 @@
 from abc import ABC
 from functools import cached_property
-from logging import getLogger
 from pathlib import Path
 from typing import Callable, Iterable
 
@@ -18,9 +17,7 @@ from .base import (Table,
                    ClustFreqTable)
 from ..core import path
 from ..core.header import parse_header
-
-logger = getLogger(__name__)
-
+from ..core.logs import logger
 
 # Table Loader Base Classes ############################################
 

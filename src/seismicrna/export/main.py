@@ -1,5 +1,4 @@
 from collections import defaultdict
-from logging import getLogger
 from pathlib import Path
 
 from click import command
@@ -21,10 +20,8 @@ from ..table.base import (MaskTable,
                           ClustFreqTable)
 from ..table.load import load_all_tables
 
-logger = getLogger(__name__)
 
-
-@run_func(logger.critical)
+@run_func(CMD_EXPORT)
 def run(input_path: tuple[str, ...], *,
         samples_meta: str,
         refs_meta: str,

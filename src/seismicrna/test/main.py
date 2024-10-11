@@ -4,16 +4,18 @@ from os.path import dirname
 from click import command
 
 from seismicrna.core.arg import CMD_TEST, opt_verbose
-from seismicrna.core.logs import get_top_logger, restore_config, set_config
+from seismicrna.core.logs import Level, restore_config, set_config
 from seismicrna.core.run import run_func
 
 
-@run_func(get_top_logger().critical, default=None)
+@run_func(CMD_TEST, default=None)
 @restore_config
 def run(verbose: int):
     """ Run all unit tests. """
-    # Write no log file and halt on errors.
-    set_config(log_file=None, raise_on_error=True)
+    # Write no log file, suppress warnings, and halt on errors.
+    set_config(verbosity=Level.ERROR,
+               log_file_path=None,
+               raise_on_error=True)
     # Discover all unit test modules.
     main_dir = dirname(dirname(__file__))
     # The argument top_level_dir=dirname(main_dir) is needed to make
@@ -33,7 +35,7 @@ params = [opt_verbose]
 
 @command(CMD_TEST, params=params)
 def cli(**kwargs):
-    """ Test if SEISMIC-RNA is working properly. """
+    """ Run all unit tests. """
     return run(**kwargs)
 
 

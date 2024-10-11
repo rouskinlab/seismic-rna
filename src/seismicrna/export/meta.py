@@ -1,10 +1,9 @@
-from logging import getLogger
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
-logger = getLogger(__name__)
+from ..core.logs import logger
 
 SAMPLE_INDEX = "Sample"
 REFERENCE_INDEX = "Reference"
@@ -77,7 +76,7 @@ def combine_metadata(special_metadata: dict[str, Any],
     try:
         item_metadata = parsed_metadata[item]
     except KeyError:
-        logger.debug(f"No metadata were given for {what} {repr(item)}")
+        logger.detail(f"No metadata were given for {what} {repr(item)}")
         return special_metadata
     # Check for any keys in the parsed metadata that match those in the
     # special metadata.

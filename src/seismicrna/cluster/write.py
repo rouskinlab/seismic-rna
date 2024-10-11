@@ -1,5 +1,4 @@
 from datetime import datetime
-from logging import getLogger
 from math import inf
 from pathlib import Path
 from typing import Iterable
@@ -17,15 +16,13 @@ from .uniq import UniqReads
 from ..core import path
 from ..core.header import validate_ks
 from ..core.io import recast_file_path
-from ..core.logs import exc_info
+from ..core.logs import logger
 from ..core.task import dispatch
 from ..core.tmp import release_to_out
 from ..core.types import get_max_uint
 from ..core.write import need_write
 from ..mask.data import load_mask_dataset
 from ..mask.report import MaskReport
-
-logger = getLogger(__name__)
 
 SEED_DTYPE = np.uint32
 
@@ -44,7 +41,6 @@ def run_k(uniq_reads: UniqReads,
         )
         em_runs = 1
     rng = np.random.default_rng()
-    logger.info(f"Began {em_runs} run(s) of EM with {k} cluster(s)")
     # On some but not all platforms, using this central source of seeds
     # is necessary because otherwise the runs would all take identical
     # trajectories, defeating the purpose of replicates.
@@ -92,6 +88,7 @@ def run_ks(uniq_reads: UniqReads,
     for k in ks:
         try:
             # Cluster em_runs times with different starting points.
+            logger.routine(f"Began {em_runs} run(s) of EM with {k} cluster(s)")
             runs = run_k(uniq_reads,
                          k,
                          em_runs=(em_runs if k > 1 else 1),
@@ -101,7 +98,7 @@ def run_ks(uniq_reads: UniqReads,
                          max_jackpot_quotient=max_jackpot_quotient,
                          n_procs=n_procs,
                          **kwargs)
-            logger.info(f"Ended {em_runs} run(s) of EM with {k} cluster(s)")
+            logger.routine(f"Ended {em_runs} run(s) of EM with {k} cluster(s)")
             # Output each run's mutation rates and cluster proportions.
             for rank, run in enumerate(runs):
                 write_mus(run, rank=rank, **path_kwargs)
@@ -114,16 +111,13 @@ def run_ks(uniq_reads: UniqReads,
                                  max_loglike_vs_best=max_loglike_vs_best,
                                  min_pearson_vs_best=min_pearson_vs_best,
                                  max_nrmsd_vs_best=max_nrmsd_vs_best)
-            logger.debug(runs_ks[k].summarize())
+            logger.detail(runs_ks[k].summarize())
             if not (try_all_ks or k == find_best_k(runs_ks.values(),
                                                    allow_underclustered=True)):
                 # The current k is not the best so far.
                 break
         except Exception as error:
-            logger.error(
-                f"Failed to split {uniq_reads} into {k} cluster(s): {error}",
-                exc_info=exc_info()
-            )
+            logger.error(error)
             if not try_all_ks:
                 # Break so that if clustering would fail for every K,
                 # this part will not get stuck in a VERY long loop.
@@ -149,7 +143,6 @@ def cluster(mask_report_file: Path, *,
                                            ClusterReport)
     if need_write(cluster_report_file, force):
         began = datetime.now()
-        logger.info(f"Began clustering {mask_report_file}")
         # Load the unique reads.
         dataset = load_mask_dataset(mask_report_file)
         tmp_clust_dir = path.buildpar(*path.SECT_DIR_SEGS,
@@ -224,7 +217,6 @@ def cluster(mask_report_file: Path, *,
                                              **kwargs)
         report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
-        logger.info(f"Ended clustering {mask_report_file}")
     return cluster_report_file
 
 ########################################################################

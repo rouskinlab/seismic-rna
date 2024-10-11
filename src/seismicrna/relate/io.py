@@ -1,6 +1,5 @@
 from abc import ABC
 from collections import defaultdict
-from logging import getLogger
 from typing import Any, Iterable
 
 import numpy as np
@@ -8,10 +7,9 @@ import numpy as np
 from .batch import QnamesBatch, RelateBatch
 from ..core import path
 from ..core.io import MutsBatchIO, ReadBatchIO, RefIO
+from ..core.logs import logger
 from ..core.seq import DNA, Section
 from ..core.types import fit_uint_type
-
-logger = getLogger(__name__)
 
 
 class RelateIO(RefIO, ABC):

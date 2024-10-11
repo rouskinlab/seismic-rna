@@ -1,6 +1,5 @@
 from abc import ABC
 from functools import cached_property
-from logging import getLogger
 from pathlib import Path
 
 from .base import (Table,
@@ -19,13 +18,12 @@ from .calc import (Tabulator,
                    ClustTabulator,
                    tabulate_loader)
 from ..core.data import LoadFunction
+from ..core.logs import logger
 from ..core.write import need_write
 from ..cluster.data import ClusterMutsDataset, JoinClusterMutsDataset
 from ..mask.data import MaskMutsDataset, JoinMaskMutsDataset
 from ..pool.data import PoolDataset
 from ..relate.data import RelateDataset
-
-logger = getLogger(__name__)
 
 PRECISION = 1
 
@@ -135,7 +133,7 @@ def get_tabulator_writers(tabulator: AvgTabulator | ClustTabulator, *,
                 if type_write:
                     yield writer_type(tabulator)
                 else:
-                    logger.debug(f"Skipped {writer_type} for {tabulator}")
+                    logger.detail(f"Skipped {writer_type} for {tabulator}")
                 break
         else:
             raise TypeError(f"Invalid writer type: {writer_type.__name__}")
