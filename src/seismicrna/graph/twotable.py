@@ -243,8 +243,7 @@ def _iter_table_pairs(table_files: Iterable[Path],
                       table_segs: tuple[path.Segment, ...]):
     """ Yield every pair of files whose reference and section match. """
     logger.detail("Seeking all pairs of table files with identical references "
-                  "and sections matching segments",
-                  list(map(str, table_segs)))
+                  f"and sections for segments {list(map(str, table_segs))}")
     # Determine the reference and section of each table.
     table_fields = defaultdict(set)
     for file in table_files:
