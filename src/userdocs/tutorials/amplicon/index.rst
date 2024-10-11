@@ -18,17 +18,17 @@ TL;DR
 
 #. Process the no-DMS control::
 
-    seismic -v wf -x fq/nodms --keep-gu --mask-polya 0 --min-mut-gap 0 hiv-rre.fa
+    seismic wf -x fq/nodms --keep-gu --mask-polya 0 --min-mut-gap 0 hiv-rre.fa
 
 #. Process the DMS-treated replicates separately::
 
-    seismic -v wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
+    seismic wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
     seismic graph scatter out/dms[12]/table/rre/26-204/mask-per-pos.csv
 
 #. Pool the replicates and process them together::
 
     seismic pool -P dms-pool out/dms[12]
-    seismic -v wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
+    seismic wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
 
 
 Scientific premise
@@ -94,12 +94,10 @@ Run the workflow on the no-DMS control
 
 Process the no-DMS control through the whole workflow with this command::
 
-    seismic -v wf -x fq/nodms --keep-gu --mask-polya 0 --min-mut-gap 0 hiv-rre.fa
+    seismic wf -x fq/nodms --keep-gu --mask-polya 0 --min-mut-gap 0 hiv-rre.fa
 
 This is what each of the arguments does:
 
-- ``-v`` means use "verbose" mode, which prints messages so that you can monitor
-  the progress.
 - ``wf`` means run the entire workflow.
 - ``-x fq/nodms`` means search inside ``fq/nodms`` for pairs of FASTQ files of
   paired-end reads with mate 1 and mate 2 in separate files.
@@ -115,37 +113,34 @@ This is what each of the arguments does:
 After it finishes running (which should take about one minute or less), all
 output files will go into the directory ``out``.
 
-Check the FastQC report files for the no-DMS control
+Check the fastp report files for the no-DMS control
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-First, check the quality of the sequencing data by examining the FastQC reports.
-The reports in ``out/nodms/qc-initial`` and ``out/nodms/qc-trimmed`` show the
-quality of the initial FASTQ files and the FASTQ files after trimming adapters
-and low-quality sequences, respectively.
-In a web browser, open ``out/nodms/qc-initial/nodms_R1_fastqc.html`` and
-``out/nodms/qc-initial/nodms_R2_fastqc.html``.
-The left panel summarizes the results:
+First, check the quality of the sequencing data by examining the fastp report.
+In a web browser, open ``out/nodms/align/fastp.html``.
+The chart at the top summarizes the numbers of reads and bases, and several other
+statistics before and after filtering.
 
-    .. image:: img/nodms_R1_qc-initial_summary.png
+    .. image:: img/nodms_fastp_summary.png
 
-The most important fields are "Per base sequence quality" and "Adapter content".
-Per base sequence quality should be consistently high, ideally with a median
-quality of at least 30 over the entire sequence.
-Low quality tends to appear towards the 3' end of the reads and would appear in
-this report as yellow bars extending down towards lower quality scores.
+The most important fields are "Adapters" and "Quality".
+"Adapters" counts the sequences that were idenfied as adapters and trimmed off.
+Since this sample was an amplicon and longer than the read length, it contains
+very few adapter sequences:
 
-    .. image:: img/nodms_R1_qc-initial_per-base.png
+    .. image:: img/nodms_fastp_adapters.png
 
-Adapter Content should be zero at the beginning and may gradually increase if
-your read length is longer than your amplicon.
-In this case, the amplicon is 167 nt and the read length is 151 nt, so there are
-no adapters.
+"Quality" before and after indicates the average quality of the base calls at
+each position in the reads.
+The quality should be consistently high, ideally at least 30 over the entire
+sequence.
 
-    .. image:: img/nodms_R1_qc-initial_adapter.png
+    .. image:: img/nodms_fastp_quality_before.png
 
-If there are adapters or low-quality bases, then trimming is necessary.
-SEISMIC-RNA trims adapters and low-quality bases by default, but this behavior
-can be disabled using the option ``--no-cut``.
+The quality after trimming low-quality base calls should be similar or higher:
+
+    .. image:: img/nodms_fastp_quality_after.png
+
 
 Check the graphs of coverage and mutation rate for the no-DMS control
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -165,7 +160,7 @@ Open ``out/nodms/graph/rre/full/profile_masked_n-count.html`` in a web broser.
     .. image:: img/nodms_profile_masked_n-count.png
 
 This graph shows that the number of unambiguous base calls at each position is
-fairly even -- around 1,900 -- across all positions amplified by the primers
+fairly even -- around 2,200 -- across all positions amplified by the primers
 (56-222), which is expected for RT-PCR amplicons.
 This graph also shows that each position has enough unambigous base calls
 (>1,000) to obtain a reasonably accurate estimate of the mutation rate.
@@ -189,12 +184,12 @@ has a mutation rate of nearly 50%.
 Because of this one outlier, it is hard to see just how low the mutation rates
 are at the other positions, but because this graph is interactive, you can click
 at the top of the y-axis and enter a new upper limit, such as 0.02.
-You can also mouse over a bar to see its mutation rate (169 is shown here).
+You can also mouse over a bar to see its mutation rate (G31 is shown here).
 
     .. image:: img/nodms_profile_masked_m-ratio-0.02.png
 
-Now it is clear that every position except 176 has a mutation rate below 1%,
-and most are below 0.5%, which is considered normal for non-DMS-modified RNA.
+Now it is clear that every position except 176 has a mutation rate no greater
+than 1%, and most are below 0.5%, which is typical for non-DMS-modified RNA.
 
 To figure out why position 176 has such a high mutation rate, you can check the
 types of mutations that occur at each position, which are in another graph,
@@ -224,12 +219,10 @@ so that it does not skew the results.
 
 Rerun the workflow with the option ``--mask-pos rre 176``::
 
-    seismic -v wf --force --keep-gu --mask-polya 0 --min-mut-gap 0 --mask-pos rre 176 hiv-rre.fa out/nodms/relate/rre
+    seismic wf --force --keep-gu --mask-polya 0 --min-mut-gap 0 --mask-pos rre 176 hiv-rre.fa out/nodms/relate/rre
 
 This is what each of the arguments does:
 
-- ``-v`` means use "verbose" mode, which prints messages so that you can monitor
-  the progress.
 - ``wf`` means run the entire workflow.
 - ``--force`` means overwrite any output files that already exist.
 - ``--keep-gu`` means keep G and U bases (which do not react with DMS and should
@@ -261,12 +254,10 @@ Run the workflow on both DMS-treated replicates
 
 Process the DMS-treated samples through the whole workflow with this command::
 
-    seismic -v wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
+    seismic wf -x fq/dms1 -x fq/dms2 --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC hiv-rre.fa
 
 This is what each of the arguments does:
 
-- ``-v`` means use "verbose" mode, which prints messages so that you can monitor
-  the progress.
 - ``wf`` means run the entire workflow.
 - ``-x fq/dms1`` means search inside ``fq/dms1`` for pairs of FASTQ files of
   paired-end reads with mate 1 and mate 2 in separate files.
@@ -280,31 +271,19 @@ This is what each of the arguments does:
 - ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
   (i.e. mutation-free) sequence for the RNA.
 
-Check the FastQC report files for the DMS-treated replicates
+Check the fastp report files for the DMS-treated replicates
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As with the no-DMS control sample, it is a good idea to open at least some of
-the FastQC reports for the DMS-treated samples as well:
+As with the no-DMS control sample, it is a good idea to open the fastp reports
+for the DMS-treated samples and at least check the quality after trimming:
 
-- ``out/dms1/qc-initial/dms1_R1_fastqc.html``
-- ``out/dms1/qc-initial/dms1_R2_fastqc.html``
-- ``out/dms2/qc-initial/dms2_R1_fastqc.html``
-- ``out/dms2/qc-initial/dms2_R2_fastqc.html``
-- ``out/dms1/qc-trimmed/dms1_R1_fastqc.html``
-- ``out/dms1/qc-trimmed/dms1_R2_fastqc.html``
-- ``out/dms2/qc-trimmed/dms2_R1_fastqc.html``
-- ``out/dms2/qc-trimmed/dms2_R2_fastqc.html``
+- ``out/dms1/align/fastp.html``
 
-On macOS, you can open all of these files in a web browser with one command by::
+.. image:: img/dms1_fastp_quality_after.png
 
-    open out/dms[12]/qc-*/dms[12]_R[12]_fastqc.html
+- ``out/dms2/align/fastp.html``
 
-On Linux, you can open all of these files in your web browser of choice with a
-similar command::
-
-    [browser] out/dms[12]/qc-*/dms[12]_R[12]_fastqc.html
-
-but replacing ``[browser]`` with the command for your web browser.
+.. image:: img/dms2_fastp_quality_after.png
 
 Check the correlation of mutation rates between DMS-treated replicates
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -361,12 +340,10 @@ Now that the replicates are pooled, the overall coverage will be higher, and so
 clustering is more likely to detect true alternative structures.
 Process the pooled sample, including with clustering, by running this command::
 
-    seismic -v wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
+    seismic wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
 
 This is what each of the arguments does:
 
-- ``-v`` means use "verbose" mode, which prints messages so that you can monitor
-  the progress.
 - ``wf`` means run the entire workflow.
 - ``--mask-pos rre 176`` means mask position 176 (because it had a high mutation
   rate in the no-DMS sample).
