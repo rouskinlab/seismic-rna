@@ -113,34 +113,6 @@ This is what each of the arguments does:
 After it finishes running (which should take about one minute or less), all
 output files will go into the directory ``out``.
 
-Check the fastp report files for the no-DMS control
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-First, check the quality of the sequencing data by examining the fastp report.
-In a web browser, open ``out/nodms/align/fastp.html``.
-The chart at the top summarizes the numbers of reads and bases, and several other
-statistics before and after filtering.
-
-    .. image:: img/nodms_fastp_summary.png
-
-The most important fields are "Adapters" and "Quality".
-"Adapters" counts the sequences that were idenfied as adapters and trimmed off.
-Since this sample was an amplicon and longer than the read length, it contains
-very few adapter sequences:
-
-    .. image:: img/nodms_fastp_adapters.png
-
-"Quality" before and after indicates the average quality of the base calls at
-each position in the reads.
-The quality should be consistently high, ideally at least 30 over the entire
-sequence.
-
-    .. image:: img/nodms_fastp_quality_before.png
-
-The quality after trimming low-quality base calls should be similar or higher:
-
-    .. image:: img/nodms_fastp_quality_after.png
-
 
 Check the graphs of coverage and mutation rate for the no-DMS control
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -271,19 +243,6 @@ This is what each of the arguments does:
 - ``hiv-rre.fa`` means use the sequence in this FASTA file as the reference
   (i.e. mutation-free) sequence for the RNA.
 
-Check the fastp report files for the DMS-treated replicates
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-As with the no-DMS control sample, it is a good idea to open the fastp reports
-for the DMS-treated samples and at least check the quality after trimming:
-
-- ``out/dms1/align/fastp.html``
-
-.. image:: img/dms1_fastp_quality_after.png
-
-- ``out/dms2/align/fastp.html``
-
-.. image:: img/dms2_fastp_quality_after.png
 
 Check the correlation of mutation rates between DMS-treated replicates
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -340,10 +299,11 @@ Now that the replicates are pooled, the overall coverage will be higher, and so
 clustering is more likely to detect true alternative structures.
 Process the pooled sample, including with clustering, by running this command::
 
-    seismic wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
+    seismic -v wf --mask-pos rre 176 -p rre GGAGCTTTGTTCCTTGGGTTCTTGG GGAGCTGTTGATCCTTTAGGTATCTTTC --cluster --fold -q 0.95 hiv-rre.fa out/dms-pool/relate
 
 This is what each of the arguments does:
 
+- ``-v`` means use verbose mode (to print more messages to the console).
 - ``wf`` means run the entire workflow.
 - ``--mask-pos rre 176`` means mask position 176 (because it had a high mutation
   rate in the no-DMS sample).
@@ -358,6 +318,132 @@ This is what each of the arguments does:
   (i.e. mutation-free) sequence for the RNA.
 - ``out/dms-pool/relate`` means search inside ``out/dms-pool/relate`` for data
   to feed into the workflow: in this case, a report from the Relate step.
+
+Check whether the RNA forms alternative structures
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To check whether alternative structures were detected, open the cluster report
+in a web browser: ``out/dms-pool/cluster/rre/26-204/cluster-report.json``.
+The contents of the report will resemble this (some fields may differ, such as
+the time and version)::
+
+    {
+        "Sample": "dms-pool",
+        "Reference": "rre",
+        "Section": "26-204",
+        "Number of unique reads": 12383,
+        "Start at this many clusters": 1,
+        "Stop at this many clusters (0 for no limit)": 0,
+        "Try all numbers of clusters (Ks), even after finding the best number": false,
+        "Write all numbers of clusters (Ks), rather than only the best number": false,
+        "Remove runs with two clusters more similar than this correlation": 0.9,
+        "Remove runs with two clusters different by less than this NRMSD": 0.1,
+        "Calculate the jackpotting quotient to find over-represented reads": true,
+        "Confidence level for the jackpotting quotient confidence interval": 0.95,
+        "Remove runs whose jackpotting quotient exceeds this limit": 1.2,
+        "Remove Ks whose 1st/2nd log likelihood difference exceeds this gap": 250.0,
+        "Remove Ks where every run has less than this correlation vs. the best": 0.975,
+        "Remove Ks where every run has more than this NRMSD vs. the best": 0.05,
+        "Run EM this many times for each number of clusters (K)": 12,
+        "Run EM for at least this many iterations (times number of clusters)": 10,
+        "Run EM for at most this many iterations (times number of clusters)": 500,
+        "Stop EM when the log likelihood increases by less than this threshold": 0.37,
+        "Whether each number of clusters (K) passed filters": {
+            "1": true,
+            "2": true,
+            "3": false
+        },
+        "Best number of clusters": 2,
+        "Numbers of clusters written to batches": [
+            2
+        ],
+        "Number of batches": 2,
+        "MD5 checksums of batches": {
+            "cluster": [
+                "8f42feceefca3aba6dfbf2fba8072ecf",
+                "f3bb0d2bdd105ec91c3f84bf3a194bfe"
+            ]
+        },
+        "Branches": [],
+        "Time began": "2024-10-10 at 22:38:40",
+        "Time ended": "2024-10-10 at 22:40:25",
+        "Time taken (minutes)": 1.75,
+        "Version of SEISMIC-RNA": "0.21.0"
+    }
+
+The number of clusters detected is the field ``Best number of clusters``, which
+is 2 in this case, suggesting that the RNA forms 2 alternative structures.
+
+Draw the best-supported structure model for each cluster
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For each cluster, the DMS reactivities are used to model the secondary structure
+of the RNA (with the ``--fold`` option).
+However, the folding algorithm will produce a structure for any DMS reactivties
+-- even pure noise.
+Thus, it is important to verify that the structure models agree with the DMS
+reactivities -- that is, paired bases tend to have low reactivities and unpaired
+bases tend to have high reactivities.
+
+The agreement is measured by computing the receiver operating characteristic
+(ROC) and calculating the area under the curve (AUC).
+If the structure agrees perfectly with the DMS reactivities -- that is, every
+unpaired base has a higher DMS reactivity than every paired base -- then the
+AUC will equal 1.
+If the DMS reactivities were completely random, then the AUC would be 0.5.
+
+Open ``out/dms-pool/graph/rre/full/roc_26-204__clustered-2-x_m-ratio-q0.html``
+in a web browser to check the AUC-ROC for this sample.
+
+    .. image:: img/dms-pool_clustered-roc.png
+
+The ROC curves for structures modeled using the DMS reactivities from cluster 1
+are in the upper graph, and those from cluster 2 in the lower graph.
+For each cluster, multiple structures were modeled: generally, the best model is
+the one with the largest AUC, and if there is a tie for the largest AUC, then
+the model among those with the smallest (most negative) free energy.
+In this case, that is structure ``rre__full #0`` for both clusters.
+
+In a text editor, open the structure models for cluster 1:
+``out/dms-pool/fold/rre/full/26-204__cluster-2-1.db``
+Copy the sequence (second line) as well as the structure on the line below
+``rre__full #0`` into an RNA structure visualization program, such as VARNA.
+Adjust the angles to remove overlaps between different parts of the structure.
+
+    .. image:: img/dms-pool_cluster-1_step-0.png
+
+Color the bases by their DMS reactivities by right-clicking on the VARNA canvas,
+choosing "Color map" then "Load values...", and then typing the VARNA color file
+``out/dms-pool/fold/rre/full/26-204__cluster-2-1__varna-color.txt`` in the box.
+
+    .. image:: img/dms-pool_cluster-1_step-1.png
+
+Specify a color palette by right-clicking on the VARNA canvas, choosing "Color
+map" and then "Style...".
+Bases with no data are set to -1, and bases with data are set to a value between
+0 and 1, so choose a color palette that is consistent with this scheme, such as
+light gray for -1 and a gradient from 0 to 1:
+
+    .. image:: img/dms-pool_cluster-1_step-2.png
+
+Save the VARNA session file by right-clicking on the VARNA canvas, choosing
+"Save...", selecting "VARNA Session File" under "File Format", and entering a
+location and name for the file.
+
+    .. image:: img/dms-pool_cluster-1_step-3.png
+
+To draw the structure for cluster 2, right-click the VARNA canvas, choose
+"New...", open ``out/dms-pool/fold/rre/full/26-204__cluster-2-2.db`` in a text
+editor, and copy-paste the structure below ``rre__full #0`` into the text box
+"Structure."
+
+    .. image:: img/dms-pool_cluster-2_step-0.png
+
+Repeat the steps above to draw and color the structure for cluster 2, except
+using ``out/dms-pool/fold/rre/full/26-204__cluster-2-2__varna-color.txt`` as the
+source of the DMS reactivities for the colors.
+
+    .. image:: img/dms-pool_cluster-2_step-1.png
 
 
 .. _Sherpa et al.: https://doi.org/10.1093/nar/gkv313
