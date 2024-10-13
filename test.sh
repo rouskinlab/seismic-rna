@@ -9,9 +9,11 @@ set -eu -o pipefail
 RESULTS=test-results.txt
 seismic +test 2> $RESULTS
 cat $RESULTS
+echo
 
 # Check whether all the tests succeeded.
-STATUS=$(tail -n 2 $RESULTS | head -n 1)
+STATUS=$(tail -n 3 $RESULTS | head -n 1)
+echo "STATUS=$STATUS"
 if [ "$STATUS" == "OK" ];
 then
 	  EXIT=0
