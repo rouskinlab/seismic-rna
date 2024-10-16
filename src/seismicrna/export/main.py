@@ -5,6 +5,7 @@ from click import command
 
 from .meta import parse_refs_metadata, parse_samples_metadata
 from .web import export_sample
+from ..cluster.table import ClusterPosTableLoader, ClusterAbundanceTableLoader
 from ..core.arg import (CMD_EXPORT,
                         arg_input_path,
                         opt_samples_meta,
@@ -15,10 +16,7 @@ from ..core.arg import (CMD_EXPORT,
                         opt_parallel)
 from ..core.run import run_func
 from ..core.task import dispatch
-from ..table.base import (MaskTable,
-                          ClustTable,
-                          ClustFreqTable)
-from ..table.load import load_all_tables
+from ..mask.table import MaskPosTableLoader, MaskReadTableLoader
 
 
 @run_func(CMD_EXPORT)
@@ -37,8 +35,11 @@ def run(input_path: tuple[str, ...], *,
     refs_metadata = (parse_refs_metadata(Path(refs_meta))
                      if refs_meta
                      else dict())
-    for table in load_all_tables(input_path):
-        if isinstance(table, (MaskTable, ClustTable, ClustFreqTable)):
+    for table_type in [MaskPosTableLoader,
+                       MaskReadTableLoader,
+                       ClusterPosTableLoader,
+                       ClusterAbundanceTableLoader]:
+        for table in table_type.load_tables(input_path):
             tables[(table.top, table.sample)].append(table)
     return list(dispatch(export_sample,
                          max_procs,

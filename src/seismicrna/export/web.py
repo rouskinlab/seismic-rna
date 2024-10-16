@@ -15,9 +15,9 @@ from ..core.write import need_write, write_mode
 from ..fold.rnastructure import parse_energy
 from ..mask.data import MaskMutsDataset
 from ..mask.report import MaskReport
-from ..pool.data import load_relate_dataset
+from ..relate.data import load_relate_dataset
 from ..relate.report import RelateReport
-from ..table.base import (COVER_REL,
+from ..core.table import (COVER_REL,
                           UNAMB_REL,
                           SUBST_REL,
                           SUB_A_REL,
@@ -25,11 +25,11 @@ from ..table.base import (COVER_REL,
                           SUB_G_REL,
                           SUB_T_REL,
                           DELET_REL,
-                          INSRT_REL)
-from ..table.base import (Table,
+                          INSRT_REL,
+                          Table,
                           PosTable,
                           ReadTable,
-                          ClustFreqTable)
+                          AbundanceTable)
 
 META_SYMBOL = '#'
 SAMPLE = "sample"
@@ -188,7 +188,7 @@ def iter_read_table_data(table: ReadTable, k: int, clust: int):
     yield SUBST_HIST, np.bincount(read_counts, minlength=1).tolist()
 
 
-def iter_clust_table_data(table: ClustFreqTable, k: int, clust: int):
+def iter_clust_table_data(table: AbundanceTable, k: int, clust: int):
     clust_count = table.data[table.header.select(k=k,
                                                  clust=clust)].squeeze()
     k_count = table.data[table.header.select(k=k)].sum().squeeze()
@@ -203,7 +203,7 @@ def iter_table_data(table: Table, k: int, clust: int, all_pos: bool):
         yield from iter_pos_table_data(table, k, clust, all_pos)
     elif isinstance(table, ReadTable):
         yield from iter_read_table_data(table, k, clust)
-    elif isinstance(table, ClustFreqTable):
+    elif isinstance(table, AbundanceTable):
         yield from iter_clust_table_data(table, k, clust)
     else:
         raise TypeError(f"Invalid table type: {type(table).__name__}")

@@ -6,6 +6,7 @@ from .io import from_reads, QnamesBatchIO, RelateBatchIO
 from .py.relate import find_rels_line
 from .report import RelateReport
 from .sam import XamViewer
+from .table import tabulate
 from ..core import path
 from ..core.io import RefseqIO
 from ..core.logs import logger
@@ -199,7 +200,8 @@ class RelationWriter(object):
                                               began=began,
                                               ended=ended)
             release_to_out(out_dir, release_dir, report_saved.parent)
-        return report_file
+        tabulate(report_file)
+        return report_file.parent
 
     def __str__(self):
         return f"Relate {self._xam}"

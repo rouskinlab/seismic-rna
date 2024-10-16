@@ -5,9 +5,12 @@ from pathlib import Path
 
 from .io import RelateIO, QnamesBatchIO, RelateBatchIO
 from ..core import path
-from ..core.report import (BatchedRefseqReport,
+from ..core.io import RefIO
+from ..core.report import (Report,
+                           BatchedRefseqReport,
                            RefF,
                            SampleF,
+                           PooledSamplesF,
                            MinMapQualF,
                            MinReadsF,
                            NumReadsXamF,
@@ -51,6 +54,34 @@ class RelateReport(BatchedRefseqReport, RelateIO):
         return refseq_file_path(top,
                                 self.get_field(SampleF),
                                 self.get_field(RefF))
+
+
+class PoolReport(Report, RefIO):
+
+    @classmethod
+    def file_seg_type(cls):
+        return path.RelateRepSeg
+
+    @classmethod
+    def fields(cls):
+        return [
+            # Sample and reference.
+            SampleF,
+            RefF,
+            # Pooled samples.
+            PooledSamplesF,
+        ] + super().fields()
+
+    @classmethod
+    def path_segs(cls):
+        return (path.SampSeg,
+                path.CmdSeg,
+                path.RefSeg,
+                path.RelateRepSeg)
+
+    @classmethod
+    def auto_fields(cls):
+        return {**super().auto_fields(), path.CMD: path.CMD_REL_DIR}
 
 
 @cache

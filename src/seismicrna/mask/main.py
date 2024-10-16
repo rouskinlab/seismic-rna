@@ -40,7 +40,7 @@ from ..core.data import load_datasets
 from ..core.run import run_func
 from ..core.seq import DNA, RefSections
 from ..core.task import dispatch
-from ..pool.data import load_relate_dataset
+from ..relate.data import load_relate_dataset
 
 
 def load_sections(input_path: Iterable[str | Path],

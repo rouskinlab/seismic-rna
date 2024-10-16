@@ -15,8 +15,8 @@ from ..core.run import run_func
 from ..core.seq import FIELD_REF, POS_NAME
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
-from ..table.base import MUTAT_REL, PosTable
-from ..table.load import find_pos_tables, load_pos_table
+from ..core.table import MUTAT_REL, PosTable
+from ..graph.base import load_pos_tables
 
 
 def find_pos(table: PosTable,
@@ -37,9 +37,8 @@ def find_pos(table: PosTable,
     return section.unmasked_int
 
 
-def list_pos(table_file: Path, force: bool, **kwargs):
+def list_pos(table: PosTable, force: bool, **kwargs):
     """ List positions meeting specific criteria from the table. """
-    table = load_pos_table(table_file)
     list_file = get_list_path(table)
     if need_write(list_file, force):
         positions = pd.MultiIndex.from_product(
@@ -59,13 +58,13 @@ def run(input_path: tuple[str, ...], *,
         parallel: bool) -> list[Path]:
     """ List positions meeting specific criteria from each table. """
     # Find the positional table files.
-    pos_table_files = find_pos_tables(input_path)
+    tables = load_pos_tables(input_path)
     # List positions for each table.
     return dispatch(list_pos,
                     max_procs,
                     parallel,
                     pass_n_procs=False,
-                    args=as_list_of_tuples(pos_table_files),
+                    args=as_list_of_tuples(tables),
                     kwargs=dict(max_fmut_pos=max_fmut_pos,
                                 complement=complement,
                                 force=force))

@@ -7,6 +7,7 @@ from click import command
 
 from .report import FoldReport
 from .rnastructure import fold, require_data_path
+from ..cluster.table import ClusterPosTableLoader
 from ..core.arg import (CMD_FOLD,
                         arg_input_path,
                         opt_tmp_pfx,
@@ -35,26 +36,16 @@ from ..core.run import run_func
 from ..core.seq import DNA, RefSections, RefSeqs, Section
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
-from ..table.base import MaskPosTable, ClustPosTable
-from ..table.load import find_pos_tables, load_pos_table
+from ..mask.table import MaskPosTableLoader
 
 DEFAULT_QUANTILE = 0.95
 
 
 def find_foldable_tables(input_path: Iterable[str | Path]):
     """ Find tables that can be folded. """
-    for file in find_pos_tables(input_path):
-        try:
-            logger.detail(f"Loading table from {file}")
-            table = load_pos_table(file)
-        except Exception as error:
-            logger.error(error)
-        else:
-            if isinstance(table, (ClustPosTable, MaskPosTable)):
-                logger.detail(f"Loaded table from {file} for use with fold")
-                yield file, table
-            else:
-                logger.detail(f"Table from {file} cannot be used to fold")
+    paths = list(input_path)
+    for table_type in [MaskPosTableLoader, ClusterPosTableLoader]:
+        yield from table_type.load_tables(paths)
 
 
 def fold_section(rna: RNAProfile, *,
@@ -108,7 +99,7 @@ def fold_section(rna: RNAProfile, *,
     return report_file
 
 
-def fold_profile(table: MaskPosTable | ClustPosTable,
+def fold_profile(table: MaskPosTableLoader | ClusterPosTableLoader,
                  sections: list[Section],
                  quantile: float,
                  n_procs: int,
@@ -158,7 +149,7 @@ def run(input_path: tuple[str, ...], *,
                        f"setting quantile to {DEFAULT_QUANTILE}")
         quantile = DEFAULT_QUANTILE
     # List the tables.
-    tables = [table for _, table in find_foldable_tables(input_path)]
+    tables = list(find_foldable_tables(input_path))
     # Get the sections to fold for every reference sequence.
     ref_seqs = RefSeqs()
     for table in tables:

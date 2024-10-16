@@ -6,20 +6,14 @@ from typing import Any, Generator, Iterable
 import numpy as np
 import pandas as pd
 
-from ..core import path
-from ..core.batch import RB_INDEX_NAMES
-from ..core.header import (REL_NAME,
-                           Header,
-                           RelHeader,
-                           ClustHeader,
-                           RelClustHeader,
-                           format_clust_name,
-                           parse_header)
-from ..core.mu import winsorize
-from ..core.rna import RNAProfile
-from ..core.seq import DNA, SEQ_INDEX_NAMES, Section, index_to_pos, index_to_seq
-from ..pool.data import load_relate_dataset
-from ..relate.report import RelateReport
+from .. import path
+from ..batch import RB_INDEX_NAMES
+from ..header import (REL_NAME,
+                      Header,
+                      parse_header)
+from ..mu import winsorize
+from ..rna import RNAProfile
+from ..seq import DNA, SEQ_INDEX_NAMES, Section, index_to_pos, index_to_seq
 
 # General fields
 READ_TITLE = "Read Name"
@@ -156,23 +150,14 @@ class Table(ABC):
         """ Name of the table's section. """
 
     @cached_property
+    @abstractmethod
     def refseq(self) -> DNA:
         """ Reference sequence. """
-        dataset = load_relate_dataset(RelateReport.build_path(
-            top=self.top, sample=self.sample, ref=self.ref)
-        )
-        return dataset.refseq
 
     @property
+    @abstractmethod
     def path_fields(self) -> dict[str, Any]:
         """ Table's path fields. """
-        return {path.TOP: self.top,
-                path.CMD: path.CMD_TABLE_DIR,
-                path.SAMP: self.sample,
-                path.REF: self.ref,
-                path.SECT: self.sect,
-                path.TABLE: self.kind(),
-                path.EXT: self.ext()}
 
     @cached_property
     def path(self):
@@ -268,42 +253,6 @@ class RelTypeTable(Table, ABC):
                                  squeeze=squeeze)
 
 
-# Table by Source (relate/mask/cluster) ################################
-
-class AvgTable(RelTypeTable, ABC):
-    """ Average over an ensemble of RNA structures. """
-
-    @classmethod
-    def header_type(cls):
-        return RelHeader
-
-
-class RelTable(AvgTable, ABC):
-
-    @classmethod
-    def kind(cls):
-        return path.RELATE_TABLE
-
-
-class MaskTable(AvgTable, ABC):
-
-    @classmethod
-    def kind(cls):
-        return path.MASK_TABLE
-
-
-class ClustTable(RelTypeTable, ABC):
-    """ Cluster for each RNA structure in an ensemble. """
-
-    @classmethod
-    def kind(cls):
-        return path.CLUST_TABLE
-
-    @classmethod
-    def header_type(cls):
-        return RelClustHeader
-
-
 # Table by Index (position/read/frequency) #############################
 
 class PosTable(RelTypeTable, ABC):
@@ -318,10 +267,6 @@ class PosTable(RelTypeTable, ABC):
     @classmethod
     def index_depth(cls):
         return len(SEQ_INDEX_NAMES)
-
-    @classmethod
-    def path_segs(cls):
-        return path.POS_TABLE_SEGS
 
     @cached_property
     def range(self):
@@ -639,10 +584,6 @@ class ReadTable(RelTypeTable, ABC):
     def index_depth(cls):
         return len(RB_INDEX_NAMES)
 
-    @classmethod
-    def path_segs(cls):
-        return path.READ_TABLE_SEGS
-
     @property
     def reads(self):
         return self.data.index.values
@@ -653,8 +594,8 @@ class ReadTable(RelTypeTable, ABC):
         return self.data.loc[:, columns]
 
 
-class FreqTable(Table, ABC):
-    """ Table of frequencies. """
+class AbundanceTable(Table, ABC):
+    """ Table of abundances. """
 
     @classmethod
     def by_read(cls):
@@ -662,90 +603,16 @@ class FreqTable(Table, ABC):
 
     @classmethod
     def path_segs(cls):
-        return path.FREQ_TABLE_SEGS
-
-    @cached_property
-    @abstractmethod
-    def data(self) -> pd.Series:
-        """ Table's data. """
-
-
-# Table by Source and Index ############################################
-
-class RelPosTable(RelTable, PosTable, ABC):
-
-    def _iter_profiles(self, *,
-                       sections: Iterable[Section] | None,
-                       quantile: float,
-                       rel: str,
-                       k: int | None,
-                       clust: int | None):
-        # Relation table loaders have unmasked, unfiltered reads and are
-        # thus unsuitable for making RNA profiles. Yield no profiles.
-        yield from ()
-
-
-class ProfilePosTable(PosTable, ABC):
-
-    def _iter_profiles(self, *,
-                       sections: Iterable[Section] | None,
-                       quantile: float,
-                       rel: str,
-                       k: int | None,
-                       clust: int | None):
-        """ Yield RNA mutational profiles from a table. """
-        if sections is not None:
-            sections = list(sections)
-        else:
-            sections = [self.section]
-        for hk, hc in self.header.clusts:
-            if (k is None or k == hk) and (clust is None or clust == hc):
-                data_name = path.fill_whitespace(format_clust_name(hk, hc),
-                                                 fill="-")
-                for section in sections:
-                    yield RNAProfile(section=section,
-                                     sample=self.sample,
-                                     data_sect=self.sect,
-                                     data_name=data_name,
-                                     data=self.fetch_ratio(quantile=quantile,
-                                                           rel=rel,
-                                                           k=hk,
-                                                           clust=hc,
-                                                           squeeze=True))
-
-
-class MaskPosTable(MaskTable, ProfilePosTable, ABC):
-    pass
-
-
-class ClustPosTable(ClustTable, ProfilePosTable, ABC):
-    pass
-
-
-class RelReadTable(RelTable, ReadTable, ABC):
-    pass
-
-
-class MaskReadTable(MaskTable, ReadTable, ABC):
-    pass
-
-
-class ClustFreqTable(FreqTable, ABC):
-
-    @classmethod
-    def kind(cls):
-        return path.CLUST_TABLE
-
-    @classmethod
-    def header_type(cls):
-        return ClustHeader
+        return path.SECT_DIR_SEGS + (path.AbundanceTableSeg,)
 
     @classmethod
     def index_depth(cls):
         return cls.header_depth()
 
-    def _get_header(self):
-        return parse_header(self.data.index)
+    @cached_property
+    @abstractmethod
+    def data(self) -> pd.Series:
+        """ Table's data. """
 
 ########################################################################
 #                                                                      #

@@ -9,6 +9,7 @@ from click import Argument, Option
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
+from ..cluster.table import ClusterPosTableLoader, ClusterAbundanceTableLoader
 from ..core import path
 from ..core.arg import (NO_GROUP,
                         GROUP_BY_K,
@@ -28,16 +29,10 @@ from ..core.arg import (NO_GROUP,
                         opt_parallel)
 from ..core.header import Header, format_clust_names
 from ..core.seq import DNA
+from ..core.table import Table, PosTable
 from ..core.write import need_write
-from ..table.base import (Table,
-                          PosTable,
-                          RelTable,
-                          MaskTable,
-                          ClustTable)
-from ..table.load import (find_pos_tables,
-                          find_read_tables,
-                          load_pos_table,
-                          load_read_table)
+from ..mask.table import MaskPosTableLoader, MaskReadTableLoader
+from ..relate.table import RelPosTableLoader, RelReadTableLoader
 
 # Define actions.
 ACTION_REL = "all"
@@ -71,11 +66,11 @@ def _track_titles(tracks: list[tuple[int, int]] | None):
 
 
 def get_action_name(table: Table):
-    if isinstance(table, RelTable):
+    if isinstance(table, (RelPosTableLoader, RelReadTableLoader)):
         return ACTION_REL
-    if isinstance(table, MaskTable):
+    if isinstance(table, (MaskPosTableLoader, MaskReadTableLoader)):
         return ACTION_MASK
-    if isinstance(table, ClustTable):
+    if isinstance(table, (ClusterPosTableLoader, ClusterAbundanceTableLoader)):
         return ACTION_CLUST
     raise TypeError(f"Invalid table type: {type(table).__name__}")
 
@@ -454,19 +449,8 @@ class GraphBase(ABC):
 class GraphWriter(ABC):
     """ Write the proper graph(s) for the table(s). """
 
-    @classmethod
-    @abstractmethod
-    def get_table_loader(cls) -> Callable[[Path], Table]:
-        """ Function to load table files. """
-
-    @classmethod
-    def load_table_file(cls, table_file: Path):
-        """ Load one table file. """
-        loader = cls.get_table_loader()
-        return loader(table_file)
-
-    def __init__(self, *table_files: Path):
-        self.table_files = list(table_files)
+    def __init__(self, *tables: Table):
+        self.tables = list(tables)
 
     @abstractmethod
     def iter_graphs(self, *args, **kwargs) -> Generator[GraphBase, None, None]:
@@ -491,18 +475,21 @@ class GraphWriter(ABC):
                           for graph in self.iter_graphs(*args, **kwargs)))
 
 
-class PosGraphWriter(GraphWriter, ABC):
+def load_pos_tables(input_paths: Iterable[str | Path]):
+    """ Load position tables. """
+    paths = list(input_paths)
+    for table_type in [RelPosTableLoader,
+                       MaskPosTableLoader,
+                       ClusterPosTableLoader]:
+        yield from table_type.load_tables(paths)
 
-    @classmethod
-    def get_table_loader(cls):
-        return load_pos_table
 
-
-class ReadGraphWriter(GraphWriter, ABC):
-
-    @classmethod
-    def get_table_loader(cls):
-        return load_read_table
+def load_read_tables(input_paths: Iterable[str | Path]):
+    """ Load read tables. """
+    paths = list(input_paths)
+    for table_type in [RelReadTableLoader,
+                       MaskReadTableLoader]:
+        yield from table_type.load_tables(paths)
 
 
 class GraphRunner(ABC):
@@ -547,13 +534,13 @@ class GraphRunner(ABC):
 
     @classmethod
     @abstractmethod
-    def get_table_finder(cls) -> Callable[[tuple[str, ...]], Generator]:
+    def get_table_loader(cls) -> Callable[[tuple[str, ...]], Generator]:
         """ Function to find and filter table files. """
 
     @classmethod
     def list_table_files(cls, input_path: tuple[str, ...]):
         """ Find, filter, and list all table files from input files. """
-        finder = cls.get_table_finder()
+        finder = cls.get_table_loader()
         return list(finder(input_path))
 
     @classmethod
@@ -579,15 +566,15 @@ class GraphRunner(ABC):
 class PosGraphRunner(GraphRunner, ABC):
 
     @classmethod
-    def get_table_finder(cls):
-        return find_pos_tables
+    def get_table_loader(cls):
+        return load_pos_tables
 
 
 class ReadGraphRunner(GraphRunner, ABC):
 
     @classmethod
-    def get_table_finder(cls):
-        return find_read_tables
+    def get_table_loader(cls):
+        return load_read_tables
 
 ########################################################################
 #                                                                      #

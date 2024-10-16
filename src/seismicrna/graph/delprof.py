@@ -4,7 +4,7 @@ import numpy as np
 from click import command
 from plotly import graph_objects as go
 
-from .base import PosGraphWriter, PosGraphRunner
+from .base import GraphWriter, PosGraphRunner
 from .color import ColorMapGraph, SeqColorMap
 from .trace import iter_seq_base_bar_traces
 from .twotable import TwoTableRunner, TwoTableWriter, TwoTableMergedGraph
@@ -53,7 +53,7 @@ class DeltaProfileGraph(TwoTableMergedGraph, ColorMapGraph):
         fig.update_yaxes(gridcolor="#d0d0d0")
 
 
-class DeltaProfileWriter(TwoTableWriter, PosGraphWriter):
+class DeltaProfileWriter(TwoTableWriter, GraphWriter):
 
     @classmethod
     def get_graph_type(cls):

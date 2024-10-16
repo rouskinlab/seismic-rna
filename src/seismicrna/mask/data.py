@@ -22,8 +22,8 @@ from ..joinbase.data import (BATCH_NUM,
                              MUTS,
                              JoinMutsDataset)
 from ..joinbase.report import JoinMaskReport
-from ..pool.data import load_relate_dataset
 from ..relate.batch import RelateBatch
+from ..relate.data import load_relate_dataset
 
 
 class MaskReadDataset(LoadedDataset, UnbiasDataset):

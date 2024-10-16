@@ -7,7 +7,6 @@ from . import (demult as demultiplex_mod,
                relate as relate_mod,
                mask as mask_mod,
                cluster as cluster_mod,
-               table as table_mod,
                fold as fold_mod,
                export as export_mod)
 from .core.arg import (CMD_WORKFLOW,
@@ -40,12 +39,7 @@ from .core.arg import (CMD_WORKFLOW,
                        extra_defaults)
 from .core.run import run_func
 from .core.seq import DNA
-from .graph.aucroll import RollingAUCRunner
-from .graph.giniroll import RollingGiniRunner
-from .graph.histread import ReadHistogramRunner
-from .graph.profile import ProfileRunner
-from .graph.roc import ROCRunner
-from .table.base import (DELET_REL,
+from .core.table import (DELET_REL,
                          INSRT_REL,
                          MUTAT_REL,
                          REL_NAMES,
@@ -54,6 +48,11 @@ from .table.base import (DELET_REL,
                          SUB_G_REL,
                          SUB_T_REL,
                          UNAMB_REL)
+from .graph.aucroll import RollingAUCRunner
+from .graph.giniroll import RollingGiniRunner
+from .graph.histread import ReadHistogramRunner
+from .graph.profile import ProfileRunner
+from .graph.roc import ROCRunner
 
 MUTAT_RELS = "".join(REL_NAMES[code] for code in [SUB_A_REL,
                                                   SUB_C_REL,
@@ -181,10 +180,6 @@ def run(fasta: str,
         max_nrmsd_vs_best: float,
         try_all_ks: bool,
         write_all_ks: bool,
-        # Table options
-        table_pos: bool,
-        table_read: bool,
-        table_clust: bool,
         # Fold options
         fold: bool,
         fold_coords: tuple[tuple[str, int, int], ...],
@@ -380,16 +375,6 @@ def run(fasta: str,
             parallel=parallel,
             force=force,
         ))
-    # Table
-    input_path += as_tuple_str(table_mod.run(
-        input_path=input_path,
-        table_pos=table_pos,
-        table_read=table_read,
-        table_clust=table_clust,
-        max_procs=max_procs,
-        parallel=parallel,
-        force=force,
-    ))
     # Fold
     if fold:
         fold_mod.run(
@@ -563,7 +548,6 @@ params = merge_params([opt_demultiplex],
                       mask_mod.params,
                       [opt_cluster],
                       cluster_mod.params,
-                      table_mod.params,
                       [opt_fold],
                       fold_mod.params,
                       [opt_export],

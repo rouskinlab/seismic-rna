@@ -2,7 +2,7 @@ from abc import ABC
 from functools import cached_property
 
 from .base import GraphBase
-from ..table.base import get_rel_name
+from ..core.table import get_rel_name
 
 
 class OneRelGraph(GraphBase, ABC):

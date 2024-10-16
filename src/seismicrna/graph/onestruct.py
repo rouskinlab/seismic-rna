@@ -157,12 +157,8 @@ class StructOneTableWriter(OneTableWriter, ABC):
 class StructOneTableRunner(OneTableRunner, ABC):
 
     @classmethod
-    def get_table_finder(cls):
-        def table_finder(*args, **kwargs):
-            for table_file, _ in find_foldable_tables(*args, **kwargs):
-                yield table_file
-
-        return table_finder
+    def get_table_loader(cls):
+        return find_foldable_tables
 
     @classmethod
     def var_params(cls):

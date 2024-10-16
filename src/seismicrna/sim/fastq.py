@@ -41,9 +41,8 @@ from ..core.run import run_func
 from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write, write_mode
-from ..pool.data import load_relate_dataset
 from ..relate.batch import QnamesBatch, RelateBatch
-from ..relate.data import QnamesDataset, RelateDataset
+from ..relate.data import QnamesDataset, RelateDataset, load_relate_dataset
 from ..relate.report import RelateReport
 from ..relate.sim import simulate_batches
 

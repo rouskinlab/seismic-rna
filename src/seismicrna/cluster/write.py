@@ -12,6 +12,7 @@ from .obsexp import write_obs_exp_counts
 from .params import write_mus, write_pis
 from .report import ClusterReport
 from .summary import write_summaries
+from .table import tabulate
 from .uniq import UniqReads
 from ..core import path
 from ..core.header import validate_ks
@@ -217,7 +218,8 @@ def cluster(mask_report_file: Path, *,
                                              **kwargs)
         report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
-    return cluster_report_file
+    tabulate(cluster_report_file)
+    return cluster_report_file.parent
 
 ########################################################################
 #                                                                      #

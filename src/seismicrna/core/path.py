@@ -35,7 +35,6 @@ CMD_ALIGN_DIR = "align"
 CMD_REL_DIR = "relate"
 CMD_MASK_DIR = "mask"
 CMD_CLUST_DIR = "cluster"
-CMD_TABLE_DIR = "table"
 CMD_LIST_DIR = "list"
 CMD_FOLD_DIR = "fold"
 CMD_GRAPH_DIR = "graph"
@@ -72,10 +71,7 @@ CLUST_PARAMS_DIR = "parameters"
 CLUST_STATS_DIR = "statistics"
 CLUST_COUNTS_DIR = "read-counts"
 
-RELATE_TABLE = "relate"
-MASK_TABLE = "mask"
-CLUST_TABLE = "clust"
-TABLES = (RELATE_TABLE, MASK_TABLE, CLUST_TABLE)
+TABLES = (CMD_REL_DIR, CMD_MASK_DIR, CMD_CLUST_DIR)
 
 # File extensions
 
@@ -269,7 +265,6 @@ CmdField = Field(str, [CMD_ALIGN_DIR,
                        CMD_REL_DIR,
                        CMD_MASK_DIR,
                        CMD_CLUST_DIR,
-                       CMD_TABLE_DIR,
                        CMD_LIST_DIR,
                        CMD_FOLD_DIR,
                        CMD_GRAPH_DIR])
@@ -278,7 +273,7 @@ IntField = Field(int)
 ClustRunResultsField = Field(str, CLUST_PARAMS)
 PosTableField = Field(str, TABLES)
 ReadTableField = Field(str, TABLES)
-FreqTableField = Field(str, [CLUST_TABLE])
+AbundanceField = Field(str, [CMD_CLUST_DIR])
 
 # File extensions
 TextExt = Field(str, [TXT_EXT], is_ext=True)
@@ -288,7 +283,7 @@ BatchExt = Field(str, [BROTLI_PICKLE_EXT], is_ext=True)
 ClustTabExt = Field(str, CSV_EXTS, is_ext=True)
 PosTableExt = Field(str, [CSV_EXT], is_ext=True)
 ReadTableExt = Field(str, [CSVZIP_EXT], is_ext=True)
-FreqTableExt = Field(str, [CSV_EXT], is_ext=True)
+AbundanceExt = Field(str, [CSV_EXT], is_ext=True)
 FastaExt = Field(str, FASTA_EXTS, is_ext=True)
 FastaIndexExt = Field(str, BOWTIE2_INDEX_EXTS, is_ext=True)
 FastqExt = Field(str, FQ_EXTS, is_ext=True)
@@ -505,15 +500,15 @@ ClustBatSeg = Segment("clust-bat",
 ClustRepSeg = Segment("clust-rep", {EXT: ReportExt}, frmt="cluster-report{ext}")
 
 # Table
-PosTableSeg = Segment("pos-table",
-                      {TABLE: PosTableField, EXT: PosTableExt},
-                      frmt="{table}-per-pos{ext}")
+PositionTableSeg = Segment("position-table",
+                           {TABLE: PosTableField, EXT: PosTableExt},
+                           frmt="{table}-positions{ext}")
 ReadTableSeg = Segment("read-table",
                        {TABLE: ReadTableField, EXT: ReadTableExt},
-                       frmt="{table}-per-read{ext}")
-FreqTableSeg = Segment("freq-table",
-                       {TABLE: FreqTableField, EXT: FreqTableExt},
-                       frmt="{table}-freq{ext}")
+                       frmt="{table}-reads{ext}")
+AbundanceTableSeg = Segment("abundance-table",
+                            {TABLE: AbundanceField, EXT: AbundanceExt},
+                            frmt="{table}-abundances")
 
 # Fold
 FoldRepSeg = Segment("fold-rep",
@@ -553,9 +548,6 @@ DMFASTQ2_SEGS = SampSeg, DmFastq2Seg
 XAM_SEGS = CMD_DIR_SEGS + (XamSeg,)
 XAM_STAGE_SEGS = STAGE_DIR_SEGS + (XamSeg,)
 CLUST_TAB_SEGS = SECT_DIR_SEGS + (ClustParamsDirSeg, ClustParamsFileSeg)
-POS_TABLE_SEGS = SECT_DIR_SEGS + (PosTableSeg,)
-READ_TABLE_SEGS = SECT_DIR_SEGS + (ReadTableSeg,)
-FREQ_TABLE_SEGS = SECT_DIR_SEGS + (FreqTableSeg,)
 CT_FILE_SEGS = SECT_DIR_SEGS + (ConnectTableSeg,)
 DB_FILE_SEGS = SECT_DIR_SEGS + (DotBracketSeg,)
 

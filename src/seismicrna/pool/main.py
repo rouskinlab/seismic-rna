@@ -5,8 +5,6 @@ from typing import Iterable
 
 from click import command
 
-from .data import PoolDataset, load_relate_dataset
-from .report import PoolReport
 from ..core.arg import (CMD_POOL,
                         arg_input_path,
                         opt_pool,
@@ -18,7 +16,8 @@ from ..core.logs import logger
 from ..core.run import run_func
 from ..core.task import dispatch
 from ..core.write import need_write
-from ..relate.report import RelateReport
+from ..relate.data import PoolDataset, load_relate_dataset
+from ..relate.report import RelateReport, PoolReport
 
 DEFAULT_POOL = "pooled"
 

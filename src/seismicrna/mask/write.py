@@ -13,6 +13,7 @@ import pandas as pd
 from .batch import apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
+from .table import tabulate
 from ..core.arg import docdef
 from ..core.batch import SectionMutsBatch, accum_per_pos
 from ..core.logs import logger
@@ -20,8 +21,7 @@ from ..core.rel import RelPattern
 from ..core.seq import FIELD_REF, POS_NAME, Section, index_to_pos
 from ..core.tmp import release_to_out
 from ..core.write import need_write
-from ..pool.data import PoolDataset
-from ..relate.data import RelateDataset
+from ..relate.data import RelateDataset, PoolDataset
 
 
 class Masker(object):
@@ -427,7 +427,8 @@ def mask_section(dataset: RelateDataset | PoolDataset,
         report = masker.create_report(began, ended)
         report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
-    return report_file
+    tabulate(report_file)
+    return report_file.parent
 
 ########################################################################
 #                                                                      #

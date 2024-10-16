@@ -2,8 +2,8 @@ from pathlib import Path
 
 from click import command
 
+from .strands import write_both_strands
 from .write import write_all
-from ..align.write import format_ref_reverse
 from ..core import path
 from ..core.arg import (CMD_REL,
                         arg_input_path,
@@ -27,21 +27,6 @@ from ..core.arg import (CMD_REL,
                         opt_force,
                         opt_keep_tmp)
 from ..core.run import run_func
-from ..core.seq import DNA, parse_fasta, write_fasta
-
-
-def generate_both_strands(ref: str, seq: DNA, rev_label: str):
-    """ Yield both the forward and reverse strand for each sequence. """
-    yield ref, seq
-    yield format_ref_reverse(ref, rev_label), seq.rc
-
-
-def write_both_strands(fasta_in: Path, fasta_out: Path, rev_label: str):
-    """ Write a FASTA file of both forward and reverse strands. """
-    write_fasta(fasta_out,
-                (strand
-                 for ref, seq in parse_fasta(fasta_in, DNA)
-                 for strand in generate_both_strands(ref, seq, rev_label)))
 
 
 @run_func(CMD_REL, with_tmp=True, pass_keep_tmp=True)

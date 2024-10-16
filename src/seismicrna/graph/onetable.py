@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import chain
-from pathlib import Path
 
 from .base import (GraphBase,
                    GraphRunner,
@@ -11,8 +10,8 @@ from .base import (GraphBase,
                    make_tracks,
                    make_path_subject,
                    make_title_action_sample)
+from ..core.table import Table, PosTable
 from ..core.task import dispatch
-from ..table.base import Table, PosTable
 
 
 class OneTableGraph(GraphBase, ABC):
@@ -72,13 +71,13 @@ class OneTableGraph(GraphBase, ABC):
 
 class OneTableWriter(GraphWriter, ABC):
 
-    def __init__(self, table_file: Path):
-        super().__init__(table_file)
+    def __init__(self, table: Table):
+        super().__init__(table)
 
     @cached_property
     def table(self):
         """ The table providing the data for the graph(s). """
-        return self.load_table_file(self.table_files[0])
+        return self.tables[0]
 
     @abstractmethod
     def get_graph(self, *args, **kwargs) -> OneTableGraph:

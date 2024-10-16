@@ -2,8 +2,11 @@ from functools import cached_property
 
 from .batch import RelateBatch
 from .io import QnamesBatchIO, RelateBatchIO
-from .report import RelateReport
-from ..core.data import LoadedDataset, LoadedMutsDataset
+from .report import RelateReport, PoolReport
+from ..core.data import (LoadedDataset,
+                         LoadedMutsDataset,
+                         LoadFunction,
+                         TallMutsDataset)
 
 
 class QnamesDataset(LoadedDataset):
@@ -52,6 +55,21 @@ class RelateDataset(LoadedMutsDataset):
                            muts=relate_batch.muts,
                            section=self.section,
                            sanitize=False)
+
+
+class PoolDataset(TallMutsDataset):
+    """ Load pooled batches of relationships. """
+
+    @classmethod
+    def get_report_type(cls):
+        return PoolReport
+
+    @classmethod
+    def get_dataset_load_func(cls):
+        return load_relate_dataset
+
+
+load_relate_dataset = LoadFunction(RelateDataset, PoolDataset)
 
 ########################################################################
 #                                                                      #
