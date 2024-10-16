@@ -12,7 +12,7 @@ from seismicrna.sim.ref import run as run_sim_ref
 from seismicrna.sim.total import run as run_sim_total
 from seismicrna.wf import run as wf_run
 
-STEPS = ["align", "relate", "mask", "cluster", "table", "fold", "graph"]
+STEPS = ["align", "relate", "mask", "cluster", "fold", "graph"]
 
 
 class TestWorkflow(ut.TestCase):
