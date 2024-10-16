@@ -9,7 +9,7 @@ from .io import ClusterBatchIO
 from .report import ClusterReport
 from ..core.batch import MutsBatch
 from ..core.data import (ArrowDataset,
-                         Dataset,
+                         ReportDataset,
                          LoadedDataset,
                          LoadFunction,
                          MergedUnbiasDataset,
@@ -32,7 +32,7 @@ from ..mask.batch import MaskMutsBatch
 from ..mask.data import load_mask_dataset
 
 
-class ClusterDataset(Dataset, ABC):
+class ClusterDataset(ReportDataset, ABC):
     """ Dataset for clustered data. """
 
     @cached_property

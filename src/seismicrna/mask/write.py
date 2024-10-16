@@ -1,7 +1,3 @@
-"""
-Mask -- Write Module
-"""
-
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -13,12 +9,14 @@ import pandas as pd
 from .batch import apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
-from .table import tabulate
+from .table import MaskTabulator
 from ..core.arg import docdef
-from ..core.batch import SectionMutsBatch, accum_per_pos
+from ..core.batch import SectionMutsBatch
+from ..core.data import UnbiasIterMutsDataset
 from ..core.logs import logger
 from ..core.rel import RelPattern
 from ..core.seq import FIELD_REF, POS_NAME, Section, index_to_pos
+from ..core.table import MUTAT_REL, UNAMB_REL
 from ..core.tmp import release_to_out
 from ..core.write import need_write
 from ..relate.data import RelateDataset, PoolDataset
@@ -337,17 +335,26 @@ class Masker(object):
             logger.warning(f"No positions remained after excluding with {self}")
         # Filter out reads based on the parameters and count the number
         # of informative and mutated positions remaining.
-        _, muts, info = accum_per_pos(map(self._filter_batch_reads,
-                                          self.dataset.iter_batches()),
-                                      self.dataset.refseq,
-                                      self.pos_kept,
-                                      {self.PATTERN_KEY: self.pattern})
+        tabulator = MaskTabulator(
+            UnbiasIterMutsDataset(batches=map(self._filter_batch_reads,
+                                              self.dataset.iter_batches()),
+                                  pattern=self.pattern,
+                                  top=self.dataset.top,
+                                  sample=self.dataset.sample,
+                                  refseq=self.dataset.refseq,
+                                  section=self.section,
+                                  min_mut_gap=self.min_mut_gap,
+                                  quick_unbias=self.quick_unbias,
+                                  quick_unbias_thresh=self.quick_unbias_thresh)
+        )
+        # Filter out positions based on the parameters.
+        self._filter_positions(tabulator.data_per_pos[UNAMB_REL],
+                               tabulator.data_per_pos[MUTAT_REL])
         if self.n_reads_kept == 0:
             logger.warning(f"No reads remained after filtering with {self}")
-        # Filter out positions based on the parameters.
-        self._filter_positions(info[self.PATTERN_KEY], muts[self.PATTERN_KEY])
         if self.pos_kept.size == 0:
             logger.warning(f"No positions remained after filtering with {self}")
+        return tabulator
 
     def create_report(self, began: datetime, ended: datetime):
         return MaskReport(
@@ -422,12 +429,12 @@ def mask_section(dataset: RelateDataset | PoolDataset,
                         pattern,
                         top=tmp_dir,
                         **kwargs)
-        masker.mask()
+        tabulator = masker.mask()
         ended = datetime.now()
         report = masker.create_report(began, ended)
         report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
-    tabulate(report_file)
+        tabulator.write_tables(force=True)
     return report_file.parent
 
 ########################################################################

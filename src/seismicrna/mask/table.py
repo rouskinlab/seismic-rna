@@ -1,12 +1,10 @@
 from abc import ABC
 from functools import cached_property
-from pathlib import Path
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
-from .data import load_mask_dataset
 from ..core import path
 from ..core.header import NUM_CLUSTS_NAME, format_clust_name, validate_ks
 from ..core.logs import logger
@@ -157,12 +155,6 @@ class MaskTabulator(PartialTabulator, AvgTabulator):
     @classmethod
     def table_types(cls):
         return [MaskPosTableWriter, MaskReadTableWriter]
-
-
-def tabulate(report_file: Path, **kwargs):
-    """ Tabulate a relate/pooled dataset. """
-    tabulator = MaskTabulator(load_mask_dataset(report_file))
-    tabulator.write_tables(**kwargs)
 
 
 def _insert_masked(p_mut: pd.Series | pd.DataFrame,

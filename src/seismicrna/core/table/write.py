@@ -42,8 +42,6 @@ SUBMUTS = [SUBST_REL,
 PRECISION = 1
 
 
-# Tabulator Classes ####################################################
-
 class Tabulator(ABC):
     """ Base class for tabulating data for multiple tables from a report
     loader. """
@@ -206,8 +204,6 @@ class Tabulator(ABC):
             table.write(force)
 
 
-# Table Writer Base Classes ############################################
-
 class TableWriter(Table, ABC):
     """ Write a table to a file. """
 
@@ -242,10 +238,9 @@ class TableWriter(Table, ABC):
         """ Write the table's rounded data to the table's CSV file. """
         if need_write(self.path, force):
             self.data.round(decimals=PRECISION).to_csv(self.path)
+            logger.routine(f"Wrote {self} to {self.path}")
         return self.path
 
-
-# Write by Index (position/read/cluster) ###############################
 
 class PosTableWriter(TableWriter, PosTable, ABC):
 
@@ -267,8 +262,6 @@ class AbundanceTableWriter(TableWriter, AbundanceTable, ABC):
     def data(self):
         return self.tabulator.data_per_clust
 
-
-# Helper functions #####################################################
 
 def _iter_mut_patterns():
     """ Yield a HalfRelPattern for each type of mutation. """
