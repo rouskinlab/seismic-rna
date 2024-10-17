@@ -2,16 +2,17 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
+from .data import RelateDataset
 from .io import from_reads, QnamesBatchIO, RelateBatchIO
 from .py.relate import find_rels_line
 from .report import RelateReport
 from .sam import XamViewer
-from .table import RelatePrecountTabulator
+from .table import RelateCountTabulator, RelateDatasetTabulator
 from ..core import path
 from ..core.io import RefseqIO
 from ..core.logs import logger
 from ..core.ngs import encode_phred
-from ..core.seq import DNA, get_fasta_seq
+from ..core.seq import DNA, Section, get_fasta_seq
 from ..core.table import all_patterns
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import get_release_working_dirs, release_to_out
@@ -181,12 +182,14 @@ class RelationWriter(object):
                                               clip_end3=clip_end3,
                                               **kwargs)
             # Tabulate the data.
-            tabulator = RelatePrecountTabulator(top=release_dir,
-                                                sample=self.sample,
-                                                ref=self.ref,
-                                                refseq=self.refseq,
-                                                batches=batch_counts)
-            tabulator.write_tables(force=True)
+            tabulator = RelateCountTabulator(top=release_dir,
+                                             sample=self.sample,
+                                             refseq=self.refseq,
+                                             section=Section(self.ref,
+                                                             self.refseq),
+                                             pattern=None,
+                                             batches=batch_counts)
+            tabulator.write_tables()
             ended = datetime.now()
             # Write a report of the relation step.
             report_saved = self._write_report(top=release_dir,
@@ -206,6 +209,11 @@ class RelationWriter(object):
                                               began=began,
                                               ended=ended)
             release_to_out(out_dir, release_dir, report_saved.parent)
+        else:
+            # Write the tables if they do not exist.
+            RelateDatasetTabulator(
+                dataset=RelateDataset.load(report_file)
+            ).write_tables()
         return report_file.parent
 
     def __str__(self):

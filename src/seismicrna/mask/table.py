@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from ..core import path
+from ..core.data import UnbiasDataset
 from ..core.header import NUM_CLUSTS_NAME, format_clust_name, validate_ks
 from ..core.logs import logger
 from ..core.rna import RNAProfile
@@ -162,6 +163,16 @@ class PartialTabulator(Tabulator, ABC):
         return n_rels
 
 
+class PartialDatasetTabulator(PartialTabulator, DatasetTabulator, ABC):
+
+    def __init__(self, *, dataset: UnbiasDataset, **kwargs):
+        super().__init__(dataset=dataset,
+                         min_mut_gap=dataset.min_mut_gap,
+                         quick_unbias=dataset.quick_unbias,
+                         quick_unbias_thresh=dataset.quick_unbias_thresh,
+                         **kwargs)
+
+
 class MaskTabulator(PartialTabulator, AvgTabulator, ABC):
 
     @classmethod
@@ -173,7 +184,7 @@ class MaskBatchTabulator(MaskTabulator, BatchTabulator):
     pass
 
 
-class MaskDatasetTabulator(MaskTabulator, DatasetTabulator):
+class MaskDatasetTabulator(MaskTabulator, PartialDatasetTabulator):
     pass
 
 

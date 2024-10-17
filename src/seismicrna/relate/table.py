@@ -1,7 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Literal
 
 import pandas as pd
 
@@ -14,7 +14,7 @@ from ..core.seq import FULL_NAME, DNA, Section
 from ..core.table import (Table,
                           Tabulator,
                           DatasetTabulator,
-                          PrecountTabulator,
+                          CountTabulator,
                           PosTable,
                           PosTableWriter,
                           ReadTable,
@@ -94,12 +94,21 @@ class FullTabulator(Tabulator, ABC):
     def get_null_value(cls):
         return 0
 
-    def __init__(self, *, ref: str, refseq: DNA, **kwargs):
+    def __init__(self, *,
+                 refseq: DNA,
+                 section: Section,
+                 pattern: Literal[None],
+                 **kwargs):
         # For the full dataset, the section must be the full reference
         # sequence, and no pattern is used to filter the data.
+        if pattern is not None:
+            raise TypeError(f"pattern must be None, but got {pattern}")
+        if refseq != section.seq:
+            raise ValueError(f"Got different sequences for refseq ({refseq}) "
+                             f"and section.seq {section.seq}")
         super().__init__(refseq=refseq,
-                         section=Section(ref, refseq),
-                         pattern=None,
+                         section=section,
+                         pattern=pattern,
                          **kwargs)
 
 
@@ -117,7 +126,7 @@ class RelateTabulator(FullTabulator, AvgTabulator, ABC):
         return [RelPosTableWriter, RelReadTableWriter]
 
 
-class RelatePrecountTabulator(PrecountTabulator, RelateTabulator):
+class RelateCountTabulator(CountTabulator, RelateTabulator):
     pass
 
 

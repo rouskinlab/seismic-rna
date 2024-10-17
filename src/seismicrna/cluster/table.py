@@ -3,15 +3,18 @@ from functools import cached_property
 
 import pandas as pd
 
+from .data import ClusterMutsDataset
 from ..core import path
 from ..core.header import ClustHeader, RelClustHeader, make_header, parse_header
 from ..core.table import (AbundanceTable,
                           RelTypeTable,
                           PosTableWriter,
                           AbundanceTableWriter,
-                          DatasetTabulator,
                           BatchTabulator)
-from ..mask.table import PartialTable, PartialPosTable, PartialTabulator
+from ..mask.table import (PartialTable,
+                          PartialPosTable,
+                          PartialTabulator,
+                          PartialDatasetTabulator)
 from ..relate.table import TableLoader, PosTableLoader
 
 
@@ -108,5 +111,7 @@ class ClusterBatchTabulator(ClusterTabulator, BatchTabulator):
     pass
 
 
-class ClusterDatasetTabulator(ClusterTabulator, DatasetTabulator):
-    pass
+class ClusterDatasetTabulator(ClusterTabulator, PartialDatasetTabulator):
+
+    def __init__(self, *, dataset: ClusterMutsDataset, **kwargs):
+        super().__init__(dataset=dataset, ks=dataset.ks, **kwargs)

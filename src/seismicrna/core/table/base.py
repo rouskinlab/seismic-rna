@@ -120,6 +120,11 @@ class Table(ABC):
         """ Table's path segments. """
 
     @classmethod
+    def build_path(cls, **path_fields):
+        """ Build the path of a table's CSV file using the fields. """
+        return path.build(*cls.path_segs(), **path_fields)
+
+    @classmethod
     def gzipped(cls):
         """ Whether the table's file is compressed with gzip. """
         return cls.by_read()
@@ -162,7 +167,7 @@ class Table(ABC):
     @cached_property
     def path(self):
         """ Path of the table's CSV file (possibly gzipped). """
-        return path.buildpar(*self.path_segs(), **self.path_fields)
+        return self.build_path(**self.path_fields)
 
     @abstractmethod
     def _get_header(self) -> Header:

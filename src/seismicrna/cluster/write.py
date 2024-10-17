@@ -5,6 +5,7 @@ from typing import Iterable
 
 import numpy as np
 
+from .data import ClusterMutsDataset
 from .emk import EMRunsK, find_best_k, sort_runs
 from .em import EMRun
 from .io import ClusterBatchWriter
@@ -12,7 +13,7 @@ from .obsexp import write_obs_exp_counts
 from .params import write_mus, write_pis
 from .report import ClusterReport
 from .summary import write_summaries
-from .table import ClusterBatchTabulator
+from .table import ClusterBatchTabulator, ClusterDatasetTabulator
 from .uniq import UniqReads
 from ..core import path
 from ..core.header import validate_ks
@@ -206,7 +207,7 @@ def cluster(mask_report_file: Path, *,
             quick_unbias_thresh=dataset.quick_unbias_thresh,
             batches=batch_writer.iter_batches()
         )
-        tabulator.write_tables(force=True)
+        tabulator.write_tables()
         # Write the observed and expected counts for every best run.
         counts_dir = tmp_clust_dir.joinpath(path.CLUST_COUNTS_DIR)
         counts_dir.mkdir()
@@ -231,6 +232,11 @@ def cluster(mask_report_file: Path, *,
                                              **kwargs)
         report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
+    else:
+        # Write the tables if they do not exist.
+        ClusterDatasetTabulator(
+            dataset=ClusterMutsDataset.load(cluster_report_file)
+        ).write_tables()
     return cluster_report_file.parent
 
 ########################################################################

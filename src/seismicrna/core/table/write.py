@@ -204,7 +204,7 @@ class Tabulator(ABC):
             table.write(force)
 
 
-class PrecountTabulator(Tabulator, ABC):
+class CountTabulator(Tabulator, ABC):
     """ Tabulator that accepts pre-counted data from batches. """
 
     @classmethod
@@ -223,13 +223,14 @@ class BatchTabulator(Tabulator, ABC):
 class DatasetTabulator(BatchTabulator, ABC):
     """ Tabulator made from one dataset. """
 
-    def __init__(self, dataset: MutsDataset):
+    def __init__(self, *, dataset: MutsDataset, **kwargs):
         super().__init__(top=dataset.top,
                          sample=dataset.sample,
                          refseq=dataset.refseq,
                          section=dataset.section,
                          pattern=dataset.pattern,
-                         batches=dataset.iter_batches())
+                         batches=dataset.iter_batches(),
+                         **kwargs)
 
 
 class TableWriter(Table, ABC):

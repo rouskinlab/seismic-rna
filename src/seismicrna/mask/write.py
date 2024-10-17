@@ -7,9 +7,10 @@ import numpy as np
 import pandas as pd
 
 from .batch import apply_mask
+from .data import MaskMutsDataset
 from .io import MaskBatchIO
 from .report import MaskReport
-from .table import MaskBatchTabulator
+from .table import MaskBatchTabulator, MaskDatasetTabulator
 from ..core.arg import docdef
 from ..core.batch import SectionMutsBatch
 from ..core.logs import logger
@@ -302,9 +303,7 @@ class Masker(object):
                                  sect=self.section.name,
                                  batch=batch.batch,
                                  read_nums=batch.read_nums)
-        _, checksum = batch_file.save(self.top,
-                                      brotli_level=self.brotli_level,
-                                      force=True)
+        _, checksum = batch_file.save(self.top, brotli_level=self.brotli_level)
         self.checksums.append(checksum)
         return batch
 
@@ -335,7 +334,7 @@ class Masker(object):
         # Filter out reads based on the parameters and count the number
         # of informative and mutated positions remaining.
         tabulator = MaskBatchTabulator(
-            top=self.dataset.top,
+            top=self.top,
             sample=self.dataset.sample,
             refseq=self.dataset.refseq,
             section=self.section,
@@ -429,11 +428,16 @@ def mask_section(dataset: RelateDataset | PoolDataset,
                         top=tmp_dir,
                         **kwargs)
         tabulator = masker.mask()
+        tabulator.write_tables()
         ended = datetime.now()
         report = masker.create_report(began, ended)
         report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
-        tabulator.write_tables(force=True)
+    else:
+        # Write the tables if they do not exist.
+        MaskDatasetTabulator(
+            dataset=MaskMutsDataset.load(report_file)
+        ).write_tables()
     return report_file.parent
 
 ########################################################################
