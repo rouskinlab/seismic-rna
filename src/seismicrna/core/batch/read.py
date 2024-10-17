@@ -14,6 +14,7 @@ class ReadBatch(ABC):
 
     def __init__(self, *, batch: int):
         self.batch = batch
+        self.masked_read_nums = None
 
     @cached_property
     @abstractmethod
@@ -39,11 +40,6 @@ class ReadBatch(ABC):
     @abstractmethod
     def read_indexes(self) -> np.ndarray:
         """ Map each read number to its index in self.read_nums. """
-
-    @cached_property
-    @abstractmethod
-    def masked_read_nums(self) -> np.ndarray:
-        """ Read numbers to mask """
 
     @cached_property
     def batch_read_index(self):

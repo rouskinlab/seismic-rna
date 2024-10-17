@@ -158,13 +158,13 @@ class MutsBatch(EndCoords, ReadBatch, ABC):
                  section: Section,
                  sanitize: bool = True,
                  muts: dict[int, dict[int, list[int] | np.ndarray]],
-                 masked_read_nums: list[int] | None = None,
+                 masked_read_nums: np.ndarray | list[int] | None = None,
                  **kwargs):
         super().__init__(section=section, sanitize=sanitize, **kwargs)
         # Validate and store the mutations.
         self._muts = sanitize_muts(muts, section, self.read_dtype, sanitize)
         if masked_read_nums is not None:
-            self.masked_read_nums = np.array(masked_read_nums, dtype=int)
+            self.masked_read_nums = np.asarray(masked_read_nums, dtype=int)
 
     @property
     def muts(self):

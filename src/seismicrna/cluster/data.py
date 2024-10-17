@@ -117,10 +117,6 @@ class ClusterMutsDataset(ClusterDataset, ArrowDataset, UnbiasDataset):
     def best_k(self):
         return getattr(self.data2, "best_k")
 
-    @cached_property
-    def masked_read_nums(self):
-        return dict()
-
     def _integrate(self, batch1: MaskMutsBatch, batch2: ClusterBatchIO):
         return ClusterMutsBatch(batch=batch1.batch,
                                 section=batch1.section,
