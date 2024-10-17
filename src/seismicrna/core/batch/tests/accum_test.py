@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from seismicrna.cluster.batch import ClusterMutsBatch
-from seismicrna.core.batch.accum import accumulate
+from seismicrna.core.batch.accum import accumulate_batches
 from seismicrna.core.batch.ends import END5_COORD, END3_COORD
 from seismicrna.core.batch.index import RB_INDEX_NAMES
 from seismicrna.core.header import RelClustHeader
@@ -15,7 +15,7 @@ from seismicrna.mask.batch import MaskMutsBatch
 from seismicrna.relate.batch import RelateBatch
 
 
-class TestAccumulate(ut.TestCase):
+class TestAccumulateBatches(ut.TestCase):
 
     def test_relate_1_batch(self):
         """
@@ -56,11 +56,11 @@ class TestAccumulate(ut.TestCase):
                                             [3],
                                             [3]]))
         ]
-        n, (fpp, ipp), (fpr, ipr), ends = accumulate(
+        n, fpp, fpr, ends = accumulate_batches(
             batches,
             section.seq,
+            section.unmasked_int,
             patterns,
-            pos_nums=section.unmasked_int
         )
         self.assertEqual(n, 5)
         self.assertTrue(fpp.equals(pd.DataFrame(
@@ -71,31 +71,12 @@ class TestAccumulate(ut.TestCase):
             section.range,
             list(patterns)
         )))
-        self.assertTrue(ipp.equals(pd.DataFrame(
-            [[3, 3],
-             [5, 5],
-             [4, 4],
-             [2, 2]],
-            section.range,
-            list(patterns)
-        )))
         self.assertTrue(fpr.equals(pd.DataFrame(
             [[0, 2],
              [3, 1],
              [0, 3],
              [1, 2],
              [2, 0]],
-            pd.MultiIndex.from_arrays([[0, 0, 0, 0, 0],
-                                       [0, 1, 2, 3, 4]],
-                                      names=RB_INDEX_NAMES),
-            list(patterns)
-        )))
-        self.assertTrue(ipr.equals(pd.DataFrame(
-            [[2, 2],
-             [4, 4],
-             [3, 3],
-             [3, 3],
-             [2, 2]],
             pd.MultiIndex.from_arrays([[0, 0, 0, 0, 0],
                                        [0, 1, 2, 3, 4]],
                                       names=RB_INDEX_NAMES),
@@ -155,11 +136,11 @@ class TestAccumulate(ut.TestCase):
                         seg_end3s=np.array([[3],
                                             [3]]))
         ]
-        n, (fpp, ipp), (fpr, ipr), ends = accumulate(
+        n, fpp, fpr, ends = accumulate_batches(
             batches,
             section.seq,
+            section.unmasked_int,
             patterns,
-            pos_nums=section.unmasked_int
         )
         self.assertEqual(n, 5)
         self.assertTrue(fpp.equals(pd.DataFrame(
@@ -170,31 +151,12 @@ class TestAccumulate(ut.TestCase):
             section.range,
             list(patterns)
         )))
-        self.assertTrue(ipp.equals(pd.DataFrame(
-            [[3, 3],
-             [5, 5],
-             [4, 4],
-             [2, 2]],
-            section.range,
-            list(patterns)
-        )))
         self.assertTrue(fpr.equals(pd.DataFrame(
             [[0, 2],
              [3, 1],
              [0, 3],
              [1, 2],
              [2, 0]],
-            pd.MultiIndex.from_arrays([[0, 0, 0, 1, 1],
-                                       [0, 1, 2, 0, 1]],
-                                      names=RB_INDEX_NAMES),
-            list(patterns)
-        )))
-        self.assertTrue(ipr.equals(pd.DataFrame(
-            [[2, 2],
-             [4, 4],
-             [3, 3],
-             [3, 3],
-             [2, 2]],
             pd.MultiIndex.from_arrays([[0, 0, 0, 1, 1],
                                        [0, 1, 2, 0, 1]],
                                       names=RB_INDEX_NAMES),
@@ -257,11 +219,11 @@ class TestAccumulate(ut.TestCase):
                                               [6]]),
                           read_nums=np.array([0, 6]))
         ]
-        n, (fpp, ipp), (fpr, ipr), ends = accumulate(
+        n, fpp, fpr, ends = accumulate_batches(
             batches,
             section.seq,
+            section.unmasked_int,
             patterns,
-            pos_nums=section.unmasked_int
         )
         self.assertEqual(n, 5)
         self.assertTrue(fpp.equals(pd.DataFrame(
@@ -272,31 +234,12 @@ class TestAccumulate(ut.TestCase):
             section.unmasked,
             list(patterns)
         )))
-        self.assertTrue(ipp.equals(pd.DataFrame(
-            [[3, 3],
-             [5, 5],
-             [4, 4],
-             [2, 2]],
-            section.unmasked,
-            list(patterns)
-        )))
         self.assertTrue(fpr.equals(pd.DataFrame(
             [[0, 2],
              [3, 1],
              [0, 3],
              [1, 2],
              [2, 0]],
-            pd.MultiIndex.from_arrays([[0, 0, 0, 1, 1],
-                                       [2, 4, 7, 0, 6]],
-                                      names=RB_INDEX_NAMES),
-            list(patterns)
-        )))
-        self.assertTrue(ipr.equals(pd.DataFrame(
-            [[2, 2],
-             [4, 4],
-             [3, 3],
-             [3, 3],
-             [2, 2]],
             pd.MultiIndex.from_arrays([[0, 0, 0, 1, 1],
                                        [2, 4, 7, 0, 6]],
                                       names=RB_INDEX_NAMES),
@@ -371,12 +314,12 @@ class TestAccumulate(ut.TestCase):
                                                 [0, 6],
                                                 cheader.index))
         ]
-        n, (fpp, ipp), (fpr, ipr), ends = accumulate(
+        n, fpp, fpr, ends = accumulate_batches(
             batches,
             section.seq,
+            section.unmasked_int,
             patterns,
-            ks=ks,
-            pos_nums=section.unmasked_int
+            ks,
         )
         self.assertIsInstance(n, pd.Series)
         self.assertTrue(n.index.equals(cheader.index))
@@ -389,14 +332,6 @@ class TestAccumulate(ut.TestCase):
                                      [1.0, 0.8, 0.2, 4.0, 1.5, 2.5],
                                      [3.0, 1.7, 1.3, 1.0, 0.5, 0.5],
                                      [1.0, 0.3, 0.7, 1.0, 0.1, 0.9]]))
-        self.assertIsInstance(ipp, pd.DataFrame)
-        self.assertTrue(ipp.index.equals(section.unmasked))
-        self.assertTrue(ipp.columns.equals(rcheader.index))
-        self.assertTrue(np.allclose(ipp.values,
-                                    [[3.0, 1.4, 1.6, 3.0, 1.4, 1.6],
-                                     [5.0, 2.3, 2.7, 5.0, 2.3, 2.7],
-                                     [4.0, 2.2, 1.8, 4.0, 2.2, 1.8],
-                                     [2.0, 0.4, 1.6, 2.0, 0.4, 1.6]]))
         read_nums = pd.MultiIndex.from_arrays([[0, 0, 0, 1, 1],
                                                [2, 4, 7, 0, 6]],
                                               names=RB_INDEX_NAMES)
@@ -407,16 +342,6 @@ class TestAccumulate(ut.TestCase):
              [0, 3],
              [1, 2],
              [2, 0]],
-            read_nums,
-            rheader.index
-        )))
-        self.assertIsInstance(ipr, pd.DataFrame)
-        self.assertTrue(ipr.equals(pd.DataFrame(
-            [[2, 2],
-             [4, 4],
-             [3, 3],
-             [3, 3],
-             [2, 2]],
             read_nums,
             rheader.index
         )))

@@ -22,7 +22,7 @@ from .base import (COVER_REL,
                    PosTable,
                    ReadTable,
                    AbundanceTable)
-from ..batch import END5_COORD, END3_COORD, accum_fits
+from ..batch import END5_COORD, END3_COORD, accumulate_batches
 from ..data import MutsDataset
 from ..header import Header, make_header
 from ..logs import logger
@@ -115,11 +115,12 @@ class Tabulator(ABC):
 
     @cached_property
     def _counts(self):
-        return accum_fits(self.dataset.iter_batches(),
-                          self.dataset.refseq,
-                          self.dataset.section.unmasked_int,
-                          all_patterns(self.dataset.pattern),
-                          ks=self.ks)
+        return accumulate_batches(self.dataset.iter_batches(),
+                                  self.dataset.refseq,
+                                  self.dataset.section.unmasked_int,
+                                  all_patterns(self.dataset.pattern),
+                                  ks=self.ks,
+                                  validate=False)
 
     @property
     def _num_reads(self):

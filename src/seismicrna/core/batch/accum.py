@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Any, Iterable
 
 import numpy as np
 import pandas as pd
@@ -6,31 +6,19 @@ import pandas as pd
 from .ends import END_COORDS
 from .muts import SectionMutsBatch
 from ..header import make_header
+from ..logs import logger
 from ..rel import RelPattern
 from ..seq import DNA, seq_pos_to_index
 
 
-def _add_to_rel(added: pd.Series | pd.DataFrame, frame: pd.DataFrame, rel: str):
-    """ Add the values in `added` to the column `rel` of `frame`. """
-    frame_rel = frame[rel]
-    if not frame_rel.index.equals(added.index):
-        raise ValueError(f"Got different indexes for frame {frame_rel.index} "
-                         f"and added values {added.index}")
-    if (isinstance(added, pd.DataFrame)
-            and not frame_rel.columns.equals(added.columns)):
-        raise ValueError(f"Got different columns for frame {frame_rel.columns} "
-                         f"and added values {added.columns}")
-    frame[rel] = (frame_rel + added).values
-
-
-def accumulate(batches: Iterable[SectionMutsBatch],
-               refseq: DNA,
-               patterns: dict[str, RelPattern], *,
-               ks: Iterable[int] | None = None,
-               pos_nums: np.ndarray | None = None,
-               per_read: bool = True,
-               get_info: bool = True,
-               count_ends: bool = True):
+def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
+                      refseq: DNA,
+                      pos_nums: np.ndarray,
+                      patterns: dict[str, RelPattern],
+                      ks: Iterable[int] | None = None,
+                      validate: bool = True):
+    """ """
+    logger.routine(f"Began accumulating patterns {patterns} in {batch_counts}")
     header = make_header(rels=list(patterns), ks=ks)
     end_counts_index = pd.MultiIndex.from_arrays([np.array([], dtype=int)
                                                   for _ in END_COORDS],
@@ -41,121 +29,118 @@ def accumulate(batches: Iterable[SectionMutsBatch],
         rel_header = header.get_rel_header()
         clust_index = header.get_clust_header().index
         num_reads = pd.Series(0, index=clust_index)
-        end_counts = (pd.DataFrame(index=end_counts_index,
-                                   columns=clust_index,
-                                   dtype=dtype)
-                      if count_ends else None)
+        end_counts = pd.DataFrame(index=end_counts_index,
+                                  columns=clust_index,
+                                  dtype=dtype)
     else:
         dtype = int
         rel_header = header
         num_reads = 0
-        end_counts = (pd.Series(index=end_counts_index,
-                                dtype=dtype)
-                      if count_ends else None)
+        end_counts = pd.Series(index=end_counts_index,
+                               dtype=dtype)
     zero = dtype(0)
     # Initialize the counts per position.
-    if pos_nums is not None:
-        index_per_pos = seq_pos_to_index(refseq, pos_nums, 1)
-        fits_per_pos = pd.DataFrame(zero, index_per_pos, header.index)
-        if get_info:
-            info_per_pos = pd.DataFrame(zero, index_per_pos, header.index)
-        else:
-            info_per_pos = None
-    else:
-        fits_per_pos = None
-        info_per_pos = None
+    count_per_pos = pd.DataFrame(zero,
+                                 seq_pos_to_index(refseq, pos_nums, 1),
+                                 header.index)
     # Initialize the counts per read.
-    if per_read:
-        fits_per_read_per_batch = list()
-        if get_info:
-            info_per_read_per_batch = list()
-        else:
-            info_per_read_per_batch = None
-    else:
-        fits_per_read_per_batch = None
-        info_per_read_per_batch = None
+    count_per_batch_read = list()
+    logger.detail(
+        "\n".join(["Initialized accumulated",
+                   f"num_reads = {num_reads}",
+                   f"end_counts = {end_counts}",
+                   f"count_per_pos = {count_per_pos}",
+                   f"count_per_batch_read = {count_per_batch_read}"])
+    )
     # Accumulate the counts from the batches.
-    for batch in batches:
-        if pos_nums is not None and not np.array_equal(batch.pos_nums,
-                                                       pos_nums):
-            raise ValueError(f"Positions of {batch} ({batch.pos_nums}) "
-                             f"differ from pos_nums ({pos_nums})")
-        # Count the total number of reads in the batch.
-        num_reads += batch.num_reads
-        # Count the end coordinates.
-        if end_counts is not None:
-            end_counts = end_counts.add(batch.read_end_counts,
-                                        fill_value=zero).astype(dtype,
-                                                                copy=False)
-        # Count the positions and/or reads matching each pattern.
-        if fits_per_read_per_batch is not None:
-            fits_per_read_per_batch.append(pd.DataFrame(0,
-                                                        batch.batch_read_index,
-                                                        rel_header.index))
-        if info_per_read_per_batch is not None:
-            info_per_read_per_batch.append(pd.DataFrame(0,
-                                                        batch.batch_read_index,
-                                                        rel_header.index))
-        for column, pattern in patterns.items():
-            if fits_per_pos is not None:
-                # Count the matching reads per position.
-                ipp, fpp = batch.count_per_pos(pattern)
-                _add_to_rel(fpp, fits_per_pos, column)
-                if info_per_pos is not None:
-                    _add_to_rel(ipp, info_per_pos, column)
-            if fits_per_read_per_batch is not None:
-                # Count the matching positions per read.
-                ipr, fpr = batch.count_per_read(pattern)
-                fits_per_read_per_batch[-1].loc[:, column] = fpr.values
-                if info_per_read_per_batch is not None:
-                    info_per_read_per_batch[-1].loc[:, column] = ipr.values
+    for (i, (batch_num_reads,
+             batch_end_counts,
+             batch_count_per_pos,
+             batch_count_per_read)) in enumerate(batch_counts):
+        if not isinstance(batch_num_reads, type(num_reads)):
+            raise TypeError(
+                f"batch_num_reads must be {type(num_reads).__name__}, "
+                f"but got {type(batch_num_reads.__name__)}"
+            )
+        if (validate
+                and isinstance(num_reads, pd.Series)
+                and not batch_num_reads.index.equals(num_reads.index)):
+            raise ValueError("Got different indexes for "
+                             f"batch_num_reads ({batch_num_reads.index}) "
+                             f"and num_reads ({num_reads.index})")
+        num_reads += batch_num_reads
+        if not isinstance(batch_end_counts, type(end_counts)):
+            raise TypeError(
+                f"batch_end_counts must be {type(end_counts).__name__}, "
+                f"but got {type(batch_end_counts.__name__)}"
+            )
+        if (validate
+                and isinstance(end_counts, pd.DataFrame)
+                and not batch_end_counts.columns.equals(end_counts.columns)):
+            raise ValueError("Got different columns for "
+                             f"batch_end_counts ({batch_end_counts.columns}) "
+                             f"and end_counts ({end_counts.columns})"
+                             )
+        end_counts = end_counts.add(batch_end_counts,
+                                    fill_value=zero).astype(dtype, copy=False)
+        if not isinstance(batch_count_per_pos, pd.DataFrame):
+            raise TypeError(f"batch_count_per_pos must be DataFrame, "
+                            f"but got {type(batch_count_per_pos.__name__)}")
+        if (validate
+                and not batch_count_per_pos.index.equals(count_per_pos.index)):
+            raise ValueError(
+                "Got different indexes for "
+                f"batch_count_per_pos ({batch_count_per_pos.index}) "
+                f"and count_per_pos ({count_per_pos.index})"
+            )
+        if (validate and
+                not batch_count_per_pos.columns.equals(count_per_pos.columns)):
+            raise ValueError(
+                "Got different columns for "
+                f"batch_count_per_pos ({batch_count_per_pos.columns}) "
+                f"and count_per_pos ({count_per_pos.columns})"
+            )
+        count_per_pos += batch_count_per_pos
+        if not isinstance(batch_count_per_read, pd.DataFrame):
+            raise TypeError(f"batch_count_per_read must be DataFrame, "
+                            f"but got {type(batch_count_per_read.__name__)}")
+        if (validate
+                and not batch_count_per_read.columns.equals(rel_header.index)):
+            raise ValueError(
+                "Got different columns for "
+                f"batch_count_per_read ({batch_count_per_read.columns}) "
+                f"and header ({rel_header.index})"
+            )
+        count_per_batch_read.append(batch_count_per_read)
+        logger.detail(
+            "\n".join([f"After batch {i}, accumulated"
+                       f"num_reads = {num_reads}"
+                       f"end_counts = {end_counts}"
+                       f"count_per_pos = {count_per_pos}",
+                       f"count_per_batch_read = {count_per_batch_read}"])
+        )
+    # Concatenate the per-read counts for the batches.
+    if count_per_batch_read:
+        count_per_read = pd.concat(count_per_batch_read, axis=0)
+    else:
+        count_per_read = pd.DataFrame(columns=rel_header.index, dtype=dtype)
+    logger.routine(f"Ended accumulating patterns {patterns} in {batch_counts}")
+    return num_reads, count_per_pos, count_per_read, end_counts
 
-    def get_data_per_read(data_per_read_per_batch: pd.DataFrame | None):
-        if data_per_read_per_batch is not None:
-            if data_per_read_per_batch:
-                # Concatenate the per-read counts for the batches.
-                return pd.concat(data_per_read_per_batch, axis=0)
-            return pd.DataFrame(columns=rel_header.index, dtype=dtype)
-        return None
 
-    return (num_reads,
-            (fits_per_pos,
-             info_per_pos),
-            (get_data_per_read(fits_per_read_per_batch),
-             get_data_per_read(info_per_read_per_batch)),
-            end_counts)
-
-
-def accum_per_pos(batches: Iterable[SectionMutsBatch],
-                  refseq: DNA,
-                  pos_nums: np.ndarray,
-                  patterns: dict[str, RelPattern],
-                  ks: Iterable[int] | None = None):
-    """ Count reads with each relationship at each position in a section
-    over multiple batches. """
-    num_reads, (fpp, ipp), (_, __), ___ = accumulate(batches,
-                                                     refseq,
-                                                     patterns,
-                                                     ks=ks,
-                                                     pos_nums=pos_nums,
-                                                     per_read=False,
-                                                     count_ends=False)
-    return num_reads, fpp, ipp
-
-
-def accum_fits(batches: Iterable[SectionMutsBatch],
-               refseq: DNA,
-               pos_nums: np.ndarray,
-               patterns: dict[str, RelPattern],
-               ks: Iterable[int] | None = None):
-    """ Count positions and reads fitting each relationship. """
-    num_reads, (fpp, _), (fpr, __), ends = accumulate(batches,
-                                                      refseq,
-                                                      patterns,
-                                                      ks=ks,
-                                                      pos_nums=pos_nums,
-                                                      get_info=False)
-    return num_reads, fpp, fpr, ends
+def accumulate_batches(batches: Iterable[SectionMutsBatch],
+                       refseq: DNA,
+                       pos_nums: np.ndarray,
+                       patterns: dict[str, RelPattern],
+                       ks: Iterable[int] | None = None,
+                       validate: bool = True):
+    return accumulate_counts((batch.calc_all_counts(patterns, ks)
+                              for batch in batches),
+                             refseq,
+                             pos_nums,
+                             patterns,
+                             ks,
+                             validate)
 
 ########################################################################
 #                                                                      #

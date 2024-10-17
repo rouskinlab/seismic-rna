@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import Counter
 from functools import cached_property
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -17,7 +18,7 @@ from .ends import EndCoords, match_reads_segments
 from .index import iter_windows
 from .read import ReadBatch, PartialReadBatch
 from ..array import calc_inverse, find_dims
-from ..header import REL_NAME
+from ..header import REL_NAME, make_header
 from ..rel import MATCH, NOCOV, REL_TYPE, RelPattern
 from ..seq import Section, index_to_pos
 from ..types import fit_uint_type
@@ -188,6 +189,21 @@ class MutsBatch(EndCoords, ReadBatch, ABC):
                                 self.read_weights)
 
 
+def _add_to_column(added: pd.Series | pd.DataFrame,
+                   frame: pd.DataFrame,
+                   column: str):
+    """ Add the values in `added` to the column `column` of `frame`. """
+    frame_col = frame[column]
+    if not frame_col.index.equals(added.index):
+        raise ValueError(f"Got different indexes for frame {frame_col.index} "
+                         f"and added values {added.index}")
+    if (isinstance(added, pd.DataFrame)
+            and not frame_col.columns.equals(added.columns)):
+        raise ValueError(f"Got different columns for frame {frame_col.columns} "
+                         f"and added values {added.columns}")
+    frame[column] = (frame_col + added).values
+
+
 class SectionMutsBatch(MutsBatch, ABC):
     """ Batch of mutational data that knows its section. """
 
@@ -271,6 +287,34 @@ class SectionMutsBatch(MutsBatch, ABC):
         return calc_count_per_read(pattern,
                                    self.cover_per_read,
                                    self.rels_per_read)
+
+    def calc_all_counts(self,
+                        patterns: dict[str, RelPattern],
+                        ks: Iterable[int] | None = None):
+        """ Calculate all counts. """
+        # Initialize the total read counts and end coordinate counts.
+        header = make_header(rels=list(patterns), ks=ks)
+        if header.clustered():
+            dtype = float
+            rel_header = header.get_rel_header()
+        else:
+            dtype = int
+            rel_header = header
+        zero = dtype(0)
+        # Initialize the counts to 0.
+        count_per_pos = pd.DataFrame(zero, self.section.unmasked, header.index)
+        count_per_read = pd.DataFrame(0, self.batch_read_index, rel_header.index)
+        for column, pattern in patterns.items():
+            # Count the matching reads per position.
+            _, count_per_pos_pattern = self.count_per_pos(pattern)
+            _add_to_column(count_per_pos_pattern, count_per_pos, column)
+            # Count the matching positions per read.
+            _, count_per_read_pattern = self.count_per_read(pattern)
+            count_per_read.loc[:, column] = count_per_read_pattern.values
+        return (self.num_reads,
+                self.read_end_counts,
+                count_per_pos,
+                count_per_read)
 
     def reads_noclose_muts(self, pattern: RelPattern, min_gap: int):
         """ List the reads with no two mutations too close. """
