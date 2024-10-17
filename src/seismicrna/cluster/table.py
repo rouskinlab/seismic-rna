@@ -1,16 +1,16 @@
 from abc import ABC
 from functools import cached_property
-from pathlib import Path
 
 import pandas as pd
 
-from .data import load_cluster_dataset
 from ..core import path
 from ..core.header import ClustHeader, RelClustHeader, make_header, parse_header
 from ..core.table import (AbundanceTable,
                           RelTypeTable,
                           PosTableWriter,
-                          AbundanceTableWriter)
+                          AbundanceTableWriter,
+                          DatasetTabulator,
+                          BatchTabulator)
 from ..mask.table import PartialTable, PartialPosTable, PartialTabulator
 from ..relate.table import TableLoader, PosTableLoader
 
@@ -78,18 +78,18 @@ class ClusterAbundanceTableLoader(TableLoader, ClusterAbundanceTable):
         return data
 
 
-class ClusterTabulator(PartialTabulator):
+class ClusterTabulator(PartialTabulator, ABC):
 
     @classmethod
     def table_types(cls):
         return [ClusterPosTableWriter, ClusterAbundanceTableWriter]
 
-    @property
-    def ks(self):
-        ks = getattr(self.dataset, "ks", None)
-        if not ks:
-            raise ValueError(f"Cannot tabulate {self.dataset} with no clusters")
-        return ks
+    def __init__(self, *, ks: list[int], **kwargs):
+        if ks is None:
+            raise ValueError(
+                f"{type(self).__name__} requires clusters, but got ks={ks}"
+            )
+        super().__init__(ks=ks, **kwargs)
 
     @cached_property
     def clust_header(self):
@@ -104,7 +104,9 @@ class ClusterTabulator(PartialTabulator):
         return n_clust
 
 
-def tabulate(report_file: Path, **kwargs):
-    """ Tabulate a relate/pooled dataset. """
-    tabulator = ClusterTabulator(load_cluster_dataset(report_file))
-    tabulator.write_tables(**kwargs)
+class ClusterBatchTabulator(ClusterTabulator, BatchTabulator):
+    pass
+
+
+class ClusterDatasetTabulator(ClusterTabulator, DatasetTabulator):
+    pass

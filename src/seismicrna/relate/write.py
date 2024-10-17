@@ -6,14 +6,15 @@ from .io import from_reads, QnamesBatchIO, RelateBatchIO
 from .py.relate import find_rels_line
 from .report import RelateReport
 from .sam import XamViewer
-from .table import tabulate
+from .table import RelatePrecountTabulator
 from ..core import path
 from ..core.io import RefseqIO
 from ..core.logs import logger
 from ..core.ngs import encode_phred
+from ..core.seq import DNA, get_fasta_seq
+from ..core.table import all_patterns
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import get_release_working_dirs, release_to_out
-from ..core.seq import DNA, get_fasta_seq
 from ..core.write import need_write
 
 
@@ -48,7 +49,7 @@ def generate_batch(batch: int, *,
                    f"for batch {batch} of {xam_view}")
     _, relv_check = relvecs.save(top, brotli_level)
     _, name_check = names.save(top, brotli_level)
-    return relvecs.num_reads, relv_check, name_check
+    return relvecs.calc_all_counts(all_patterns()), relv_check, name_check
 
 
 class RelationWriter(object):
@@ -57,9 +58,9 @@ class RelationWriter(object):
     mapped to one reference sequence.
     """
 
-    def __init__(self, xam_view: XamViewer, seq: DNA):
+    def __init__(self, xam_view: XamViewer, refseq: DNA):
         self._xam = xam_view
-        self.seq = seq
+        self.refseq = refseq
 
     @property
     def sample(self):
@@ -81,7 +82,7 @@ class RelationWriter(object):
         """ Write the reference sequence to a file. """
         refseq_file = RefseqIO(sample=self.sample,
                                ref=self.ref,
-                               refseq=self.seq)
+                               refseq=self.refseq)
         _, checksum = refseq_file.save(top, brotli_level)
         return checksum
 
@@ -105,7 +106,7 @@ class RelationWriter(object):
             # Collect the keyword arguments.
             kwargs = dict(xam_view=self._xam,
                           top=top,
-                          refseq=self.seq,
+                          refseq=self.refseq,
                           min_mapq=min_mapq,
                           min_qual=encode_phred(min_phred, phred_enc),
                           ambindel=ambindel,
@@ -121,20 +122,18 @@ class RelationWriter(object):
                                args=as_list_of_tuples(self._xam.indexes),
                                kwargs=kwargs)
             if results:
-                nums_reads, relv_checks, name_checks = map(list,
-                                                           zip(*results,
-                                                               strict=True))
+                batch_counts, relv_checks, name_checks = map(list,
+                                                             zip(*results,
+                                                                 strict=True))
             else:
-                nums_reads = list()
+                batch_counts = list()
                 relv_checks = list()
                 name_checks = list()
-            n_reads = sum(nums_reads)
-            n_batches = len(nums_reads)
+            n_batches = len(relv_checks)
             checksums = {RelateBatchIO.btype(): relv_checks,
                          QnamesBatchIO.btype(): name_checks}
-            logger.routine(f"Ended generating batches for {self}: "
-                           f"{n_reads} reads in {n_batches} batches")
-            return n_reads, n_batches, checksums
+            logger.routine(f"Ended generating batches {n_batches} for {self}")
+            return batch_counts, n_batches, checksums
         finally:
             if not keep_tmp:
                 # Delete the temporary SAM file before exiting.
@@ -168,9 +167,9 @@ class RelationWriter(object):
                                  f"{self.num_reads} < {min_reads}")
             # Write the reference sequence to a file.
             refseq_checksum = self._write_refseq(release_dir, brotli_level)
-            # Compute relation vectors and time how long it takes.
-            (nreads,
-             nbats,
+            # Compute relationships and time how long it takes.
+            (batch_counts,
+             n_batches,
              checks) = self._generate_batches(top=release_dir,
                                               brotli_level=brotli_level,
                                               min_mapq=min_mapq,
@@ -181,6 +180,13 @@ class RelationWriter(object):
                                               clip_end5=clip_end5,
                                               clip_end3=clip_end3,
                                               **kwargs)
+            # Tabulate the data.
+            tabulator = RelatePrecountTabulator(top=release_dir,
+                                                sample=self.sample,
+                                                ref=self.ref,
+                                                refseq=self.refseq,
+                                                batches=batch_counts)
+            tabulator.write_tables(force=True)
             ended = datetime.now()
             # Write a report of the relation step.
             report_saved = self._write_report(top=release_dir,
@@ -193,14 +199,13 @@ class RelationWriter(object):
                                               clip_end3=clip_end3,
                                               min_reads=min_reads,
                                               n_reads_xam=self.num_reads,
-                                              n_reads_rel=nreads,
-                                              n_batches=nbats,
+                                              n_reads_rel=tabulator.num_reads,
+                                              n_batches=n_batches,
                                               checksums=checks,
                                               refseq_checksum=refseq_checksum,
                                               began=began,
                                               ended=ended)
             release_to_out(out_dir, release_dir, report_saved.parent)
-        tabulate(report_file)
         return report_file.parent
 
     def __str__(self):

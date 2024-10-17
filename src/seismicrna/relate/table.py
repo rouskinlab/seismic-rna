@@ -10,9 +10,11 @@ from .report import RelateReport
 from ..core import path
 from ..core.header import RelHeader, parse_header
 from ..core.logs import logger
-from ..core.seq import FULL_NAME, Section
+from ..core.seq import FULL_NAME, DNA, Section
 from ..core.table import (Table,
                           Tabulator,
+                          DatasetTabulator,
+                          PrecountTabulator,
                           PosTable,
                           PosTableWriter,
                           ReadTable,
@@ -92,25 +94,35 @@ class FullTabulator(Tabulator, ABC):
     def get_null_value(cls):
         return 0
 
+    def __init__(self, *, ref: str, refseq: DNA, **kwargs):
+        # For the full dataset, the section must be the full reference
+        # sequence, and no pattern is used to filter the data.
+        super().__init__(refseq=refseq,
+                         section=Section(ref, refseq),
+                         pattern=None,
+                         **kwargs)
+
 
 class AvgTabulator(Tabulator, ABC):
 
-    @property
-    def ks(self):
-        return None
+    def __init__(self, **kwargs):
+        # An ensemble average tabulator has no clusters (ks=None).
+        super().__init__(ks=None, **kwargs)
 
 
-class RelateTabulator(FullTabulator, AvgTabulator):
+class RelateTabulator(FullTabulator, AvgTabulator, ABC):
 
     @classmethod
     def table_types(cls):
         return [RelPosTableWriter, RelReadTableWriter]
 
 
-def tabulate(report_file: Path, **kwargs):
-    """ Tabulate a relate/pooled dataset. """
-    tabulator = RelateTabulator(load_relate_dataset(report_file))
-    tabulator.write_tables(**kwargs)
+class RelatePrecountTabulator(PrecountTabulator, RelateTabulator):
+    pass
+
+
+class RelateDatasetTabulator(DatasetTabulator, RelateTabulator):
+    pass
 
 
 class TableLoader(Table, ABC):

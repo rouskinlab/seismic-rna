@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Callable, Generator, Iterable
+from typing import Any, Callable, Iterable
 
 from . import path
-from .batch import MutsBatch, ReadBatch, SectionMutsBatch, list_batch_nums
+from .batch import MutsBatch, ReadBatch, list_batch_nums
 from .io import MutsBatchIO, ReadBatchIO, RefseqIO
 from .logs import logger
 from .rel import RelPattern
@@ -26,6 +26,23 @@ from .seq import FULL_NAME, DNA, Section, hyphenate_ends, unite
 
 class Dataset(ABC):
     """ Dataset comprising batches of data. """
+
+    @classmethod
+    @abstractmethod
+    def get_report_type(cls) -> type[Report]:
+        """ Type of report. """
+
+    @classmethod
+    def load_report(cls, report_file: Path):
+        """ Load the report from a file. """
+        report_type = cls.get_report_type()
+        return report_type.load(report_file)
+
+    @classmethod
+    @abstractmethod
+    def load(cls, report_file: Path):
+        """ Load a dataset from a report file. """
+        return cls()
 
     @property
     @abstractmethod
@@ -62,67 +79,6 @@ class Dataset(ABC):
     def pattern(self) -> RelPattern | None:
         """ Pattern of mutations to count. """
 
-    @abstractmethod
-    def iter_batches(self) -> Generator[ReadBatch, Any, None]:
-        """ Yield each batch. """
-
-    def __str__(self):
-        return f"{type(self).__name__} for sample {repr(self.sample)}"
-
-
-class IterDataset(Dataset, ABC):
-    """ Dataset created from a single-use iterable of batches. """
-
-    def __init__(self, *,
-                 top: Path,
-                 sample: str,
-                 pattern: RelPattern | None,
-                 batches: Iterable[ReadBatch]):
-        self._top = top
-        self._sample = sample
-        self._pattern = pattern
-        self._batches = iter(batches)
-        self._iterated = False
-
-    @property
-    def top(self):
-        return self._top
-
-    @property
-    def sample(self):
-        return self._sample
-
-    @property
-    def pattern(self):
-        return self._pattern
-
-    def iter_batches(self):
-        if self._iterated:
-            raise RuntimeError(f"{self}.iter_batches() was already called")
-        self._iterated = True
-        yield from self._batches
-
-
-class ReportDataset(Dataset, ABC):
-    """ Dataset created from a report file. """
-
-    @classmethod
-    @abstractmethod
-    def get_report_type(cls) -> type[Report]:
-        """ Type of report. """
-
-    @classmethod
-    def load_report(cls, report_file: Path):
-        """ Load the report from a file. """
-        report_type = cls.get_report_type()
-        return report_type.load(report_file)
-
-    @classmethod
-    @abstractmethod
-    def load(cls, report_file: Path):
-        """ Load a dataset from a report file. """
-        return cls()
-
     @property
     @abstractmethod
     def num_batches(self) -> int:
@@ -146,6 +102,9 @@ class ReportDataset(Dataset, ABC):
     def num_reads(self):
         """ Number of reads in the dataset. """
         return sum(batch.num_reads for batch in self.iter_batches())
+
+    def __str__(self):
+        return f"{type(self).__name__} for sample {repr(self.sample)}"
 
 
 class UnbiasDataset(Dataset, ABC):
@@ -186,74 +145,8 @@ class MutsDataset(Dataset, ABC):
     def section(self) -> Section:
         """ Section of the dataset. """
 
-    @abstractmethod
-    def iter_batches(self) -> Generator[SectionMutsBatch, Any, None]:
-        """ Yield each batch. """
 
-
-class IterMutsDataset(IterDataset, MutsDataset):
-    """ Dataset from a report with explicit mutational data. """
-
-    def __init__(self, *, refseq: DNA, section: Section, **kwargs):
-        super().__init__(**kwargs)
-        self._refseq = refseq
-        self._section = section
-
-    @property
-    def refseq(self):
-        return self._refseq
-
-    @property
-    def section(self):
-        return self._section
-
-    @property
-    def ref(self):
-        return self.section.ref
-
-    @property
-    def end5(self):
-        return self.section.end5
-
-    @property
-    def end3(self):
-        return self.section.end3
-
-    @property
-    def sect(self):
-        return self.section.name
-
-
-class UnbiasIterMutsDataset(UnbiasDataset, IterMutsDataset):
-    
-    def __init__(self, *,
-                 min_mut_gap: int,
-                 quick_unbias: bool,
-                 quick_unbias_thresh: float,
-                 **kwargs):
-        super().__init__(**kwargs)
-        self._min_mut_gap = min_mut_gap
-        self._quick_unbias = quick_unbias
-        self._quick_unbias_thresh = quick_unbias_thresh
-
-    @property
-    def min_mut_gap(self):
-        return self._min_mut_gap
-
-    @property
-    def quick_unbias(self) -> bool:
-        return self._quick_unbias
-
-    @property
-    def quick_unbias_thresh(self) -> float:
-        return self._quick_unbias_thresh
-
-
-class ReportMutsDataset(ReportDataset, MutsDataset, ABC):
-    """ Dataset from a report with explicit mutational data. """
-
-
-class NarrowDataset(ReportMutsDataset, ABC):
+class NarrowDataset(MutsDataset, ABC):
     """ MutsDataset with one section, in contrast to a WideDataset that
     unites one or more sections. """
 
@@ -269,11 +162,11 @@ class NarrowDataset(ReportMutsDataset, ABC):
 class LoadFunction(object):
     """ Function to load a dataset. """
 
-    def __init__(self, data_type: type[ReportDataset], /, *more_types: type[ReportDataset]):
+    def __init__(self, data_type: type[Dataset], /, *more_types: type[Dataset]):
         self._dataset_types = [data_type] + list(more_types)
 
     def _dataset_type_consensus(self,
-                                method: Callable[[type[ReportDataset]], Any],
+                                method: Callable[[type[Dataset]], Any],
                                 what: str):
         """ Get the consensus value among all types of dataset. """
         value0 = method(self._dataset_types[0])
@@ -304,7 +197,7 @@ class LoadFunction(object):
         """ Types of datasets that this function can load. """
         return self._dataset_types
 
-    def is_dataset_type(self, dataset: ReportDataset):
+    def is_dataset_type(self, dataset: Dataset):
         """ Whether the dataset is one of the loadable types. """
         return any(isinstance(dataset, dataset_type)
                    for dataset_type in self._dataset_types)
@@ -336,7 +229,7 @@ class LoadFunction(object):
         return f"{type(self).__name__}({names})"
 
 
-class LoadedDataset(ReportDataset, ABC):
+class LoadedDataset(Dataset, ABC):
     """ Dataset created by loading directly from a Report. """
 
     @classmethod
@@ -391,7 +284,7 @@ class LoadedDataset(ReportDataset, ABC):
     def sect(self):
         return self.report.get_field(SectF)
 
-    @cached_property
+    @property
     def num_batches(self):
         return self.report.get_field(NumBatchF)
 
@@ -446,7 +339,7 @@ class LoadedMutsDataset(LoadedDataset, NarrowDataset, ABC):
                     else hyphenate_ends(self.end5, self.end3))
 
 
-class MergedDataset(ReportDataset, ABC):
+class MergedDataset(Dataset, ABC):
     """ Dataset made by merging one or more constituent datasets. """
 
     @classmethod
@@ -454,7 +347,7 @@ class MergedDataset(ReportDataset, ABC):
     def get_dataset_load_func(cls) -> LoadFunction:
         """ Function to load one constituent dataset. """
 
-    def __init__(self, datasets: Iterable[ReportDataset]):
+    def __init__(self, datasets: Iterable[Dataset]):
         self._datasets = list(datasets)
         if not self._datasets:
             raise ValueError(f"{type(self).__name__} got no datasets")
@@ -500,7 +393,7 @@ class MergedUnbiasDataset(MergedDataset, UnbiasDataset, ABC):
         return self._get_common_attr("quick_unbias_thresh")
 
 
-class MergedMutsDataset(MergedDataset, ReportMutsDataset, ABC):
+class MergedMutsDataset(MergedDataset, MutsDataset, ABC):
     """ MergedDataset with explicit mutational data. """
 
     @cached_property
@@ -531,7 +424,7 @@ class TallDataset(MergedDataset, NarrowDataset, ABC):
         return cls(sample, map(cls.get_dataset_load_func(),
                                sample_report_files))
 
-    def __init__(self, sample: str, datasets: Iterable[ReportDataset]):
+    def __init__(self, sample: str, datasets: Iterable[Dataset]):
         self._sample = sample
         super().__init__(datasets)
 
@@ -621,7 +514,7 @@ class WideDataset(MergedMutsDataset, ABC):
     def __init__(self,
                  sect: str,
                  clusts: dict | None,
-                 datasets: Iterable[ReportDataset]):
+                 datasets: Iterable[Dataset]):
         self._sect = sect
         self._clusts = clusts
         super().__init__(datasets)
@@ -667,7 +560,7 @@ class WideDataset(MergedMutsDataset, ABC):
                           for dataset in self._datasets)
 
 
-class MultistepDataset(ReportMutsDataset, ABC):
+class MultistepDataset(MutsDataset, ABC):
     """ Dataset made by integrating two datasets from different steps of
     the workflow. """
 
@@ -678,7 +571,7 @@ class MultistepDataset(ReportMutsDataset, ABC):
 
     @classmethod
     @abstractmethod
-    def get_dataset2_type(cls) -> type[ReportDataset]:
+    def get_dataset2_type(cls) -> type[Dataset]:
         """ Type of Dataset 2. """
 
     @classmethod
@@ -720,7 +613,7 @@ class MultistepDataset(ReportMutsDataset, ABC):
         return cls(cls.load_dataset1(dataset2_report_file),
                    cls.load_dataset2(dataset2_report_file))
 
-    def __init__(self, data1: ReportMutsDataset, data2: ReportDataset):
+    def __init__(self, data1: MutsDataset, data2: Dataset):
         if not isinstance(data2, self.get_dataset2_type()):
             raise TypeError(f"{type(self).__name__} expected data2 to be "
                             f"{self.get_dataset2_type().__name__}, "

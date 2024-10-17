@@ -12,8 +12,7 @@ from ..types import fit_uint_type
 class ReadBatch(ABC):
     """ Batch of reads. """
 
-    def __init__(self, *, batch: int, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *, batch: int):
         self.batch = batch
 
     @cached_property

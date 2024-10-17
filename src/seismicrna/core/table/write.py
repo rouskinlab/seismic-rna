@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import cached_property
+from pathlib import Path
+from typing import Callable, Iterable
 
 import numpy as np
 import pandas as pd
@@ -22,11 +24,15 @@ from .base import (COVER_REL,
                    PosTable,
                    ReadTable,
                    AbundanceTable)
-from ..batch import END5_COORD, END3_COORD, accumulate_batches
+from ..batch import (END5_COORD,
+                     END3_COORD,
+                     accumulate_batches,
+                     accumulate_counts)
 from ..data import MutsDataset
 from ..header import Header, make_header
 from ..logs import logger
 from ..rel import RelPattern, HalfRelPattern
+from ..seq import DNA, Section
 from ..unbias import calc_p_ends_observed
 from ..write import need_write
 
@@ -43,13 +49,17 @@ PRECISION = 1
 
 
 class Tabulator(ABC):
-    """ Base class for tabulating data for multiple tables from a report
-    loader. """
+    """ Base class for tabulating data for one or more tables. """
 
     @classmethod
     @abstractmethod
     def table_types(cls) -> list[type[TableWriter]]:
         """ Types of tables that this tabulator can write. """
+
+    @classmethod
+    @abstractmethod
+    def accumulate_func(cls) -> Callable:
+        """ Function to accumulate the batches. """
 
     @classmethod
     @abstractmethod
@@ -70,38 +80,26 @@ class Tabulator(ABC):
                                    table.loc[:, MUTAT_REL].values)
         return table
 
-    def __init__(self, dataset: MutsDataset):
-        self.dataset = dataset
-
-    @property
-    def top(self):
-        """ Top-level directory. """
-        return self.dataset.top
-
-    @property
-    def sample(self):
-        """ Name of the sample. """
-        return self.dataset.sample
+    def __init__(self, *,
+                 top: Path,
+                 sample: str,
+                 refseq: DNA,
+                 section: Section,
+                 pattern: RelPattern | None,
+                 ks: list[int] | None,
+                 batches: Iterable):
+        self.top = top
+        self.sample = sample
+        self.refseq = refseq
+        self.section = section
+        self.pattern = pattern
+        self.ks = ks
+        self._batches = iter(batches)
 
     @property
     def ref(self):
         """ Name of the reference. """
-        return self.dataset.ref
-
-    @property
-    def section(self):
-        """ Section of the dataset. """
-        return self.dataset.section
-
-    @property
-    def refseq(self):
-        """ Reference sequence. """
-        return self.dataset.refseq
-
-    @property
-    @abstractmethod
-    def ks(self) -> list[int] | None:
-        """ Numbers of clusters. """
+        return self.section.ref
 
     @cached_property
     def pos_header(self):
@@ -115,33 +113,34 @@ class Tabulator(ABC):
 
     @cached_property
     def _counts(self):
-        return accumulate_batches(self.dataset.iter_batches(),
-                                  self.dataset.refseq,
-                                  self.dataset.section.unmasked_int,
-                                  all_patterns(self.dataset.pattern),
-                                  ks=self.ks,
-                                  validate=False)
+        """ All counts for all table(s). """
+        return self.accumulate_func()(self._batches,
+                                      self.refseq,
+                                      self.section.unmasked_int,
+                                      all_patterns(self.pattern),
+                                      ks=self.ks,
+                                      validate=False)
 
     @property
-    def _num_reads(self):
+    def num_reads(self):
         """ Raw number of reads. """
         num_reads, per_pos, per_read, end_counts = self._counts
         return num_reads
 
     @property
-    def _counts_per_pos(self):
+    def counts_per_pos(self):
         """ Raw counts per position. """
         num_reads, per_pos, per_read, end_counts = self._counts
         return per_pos
 
     @property
-    def _counts_per_read(self):
+    def counts_per_read(self):
         """ Raw counts per read. """
         num_reads, per_pos, per_read, end_counts = self._counts
         return per_read
 
     @property
-    def _end_counts(self):
+    def end_counts(self):
         """ Raw counts for each pair of end coordinates. """
         num_reads, per_pos, per_read, end_counts = self._counts
         return end_counts
@@ -150,13 +149,13 @@ class Tabulator(ABC):
     def p_ends_given_clust_noclose(self):
         """ Probability of each end coordinate. """
         # Ensure end_counts has 2 dimensions.
-        if self._end_counts.ndim == 1:
-            end_counts = self._end_counts.values[:, np.newaxis]
+        if self.end_counts.ndim == 1:
+            end_counts = self.end_counts.values[:, np.newaxis]
         else:
-            end_counts = self._end_counts.values
-        end5s = (self._end_counts.index.get_level_values(END5_COORD).values
+            end_counts = self.end_counts.values
+        end5s = (self.end_counts.index.get_level_values(END5_COORD).values
                  - self.section.end5)
-        end3s = (self._end_counts.index.get_level_values(END3_COORD).values
+        end3s = (self.end_counts.index.get_level_values(END3_COORD).values
                  - self.section.end5)
         return calc_p_ends_observed(self.section.length,
                                     end5s,
@@ -166,13 +165,13 @@ class Tabulator(ABC):
     @cached_property
     def data_per_pos(self):
         """ DataFrame of per-position data. """
-        return self._format_table(self._counts_per_pos,
+        return self._format_table(self.counts_per_pos,
                                   self.pos_header).reindex(self.section.range)
 
     @cached_property
     def data_per_read(self):
         """ DataFrame of per-read data. """
-        return self._format_table(self._counts_per_read,
+        return self._format_table(self.counts_per_read,
                                   self.read_header)
 
     def generate_tables(self, *,
@@ -203,6 +202,34 @@ class Tabulator(ABC):
     def write_tables(self, *, force: bool = False, **kwargs):
         for table in self.generate_tables(**kwargs):
             table.write(force)
+
+
+class PrecountTabulator(Tabulator, ABC):
+    """ Tabulator that accepts pre-counted data from batches. """
+
+    @classmethod
+    def accumulate_func(cls):
+        return accumulate_counts
+
+
+class BatchTabulator(Tabulator, ABC):
+    """ Tabulator that accepts batches as the input data. """
+
+    @classmethod
+    def accumulate_func(cls):
+        return accumulate_batches
+
+
+class DatasetTabulator(BatchTabulator, ABC):
+    """ Tabulator made from one dataset. """
+
+    def __init__(self, dataset: MutsDataset):
+        super().__init__(top=dataset.top,
+                         sample=dataset.sample,
+                         refseq=dataset.refseq,
+                         section=dataset.section,
+                         pattern=dataset.pattern,
+                         batches=dataset.iter_batches())
 
 
 class TableWriter(Table, ABC):

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .batch import ClusterReadBatch
+from .batch import ClusterReadBatch, ClusterMutsBatch
 from .emk import EMRunsK
 from ..core import path
 from ..core.header import ClustHeader
@@ -25,41 +25,58 @@ class ClusterBatchIO(ReadBatchIO, ClusterIO, ClusterReadBatch):
         return path.ClustBatSeg
 
 
-def write_batches(dataset: MaskMutsDataset,
-                  ks: list[EMRunsK],
-                  brotli_level: int,
-                  top: Path):
-    """ Write the cluster memberships to batch files. """
-    checksums = list()
-    read_nums = dict()
+class ClusterBatchWriter(object):
 
-    def get_read_nums(num: int):
-        if (nums := read_nums.get(num)) is not None:
+    def __init__(self,
+                 dataset: MaskMutsDataset,
+                 ks: list[EMRunsK],
+                 brotli_level: int,
+                 top: Path):
+        self.dataset = dataset
+        # Filter the numbers of clusters, keeping only those with at
+        # least one successful run.
+        self.ks = [runs for runs in ks if runs.best is not None]
+        self.brotli_level = brotli_level
+        self.top = top
+        self.read_nums = dict()
+        self.checksums = list()
+
+    @property
+    def write_ks(self):
+        return [runs.k for runs in self.ks]
+
+    def get_read_nums(self, batch_num: int):
+        """ Get the read numbers for one batch. """
+        if (nums := self.read_nums.get(batch_num)) is not None:
             return nums
-        for batch_ in dataset.iter_batches():
-            read_nums[batch_.batch] = batch_.read_nums
-        return read_nums[num]
+        for batch_ in self.dataset.iter_batches():
+            self.read_nums[batch_.batch] = batch_.read_nums
+        return self.read_nums[batch_num]
 
-    # Filter the numbers of clusters to keep only those with at least
-    # one successful run.
-    ks = [runs for runs in ks if runs.best is not None]
-    # Write each cluster batch.
-    for batch_num in dataset.batch_nums:
-        resps = [runs.best.get_resps(batch_num) for runs in ks]
-        if resps:
-            resps = pd.concat(resps, axis=1)
-        else:
-            resps = pd.DataFrame(index=get_read_nums(batch_num),
-                                 columns=ClustHeader(ks=[]).index)
-        batch = ClusterBatchIO(sample=dataset.sample,
-                               ref=dataset.ref,
-                               sect=dataset.sect,
-                               batch=batch_num,
-                               resps=resps)
-        _, checksum = batch.save(top, brotli_level=brotli_level)
-        checksums.append(checksum)
-    ks_written = [runs.k for runs in ks]
-    return checksums, ks_written
+    def iter_batches(self):
+        """ Iterate through the batches. """
+        for mask_batch in self.dataset.iter_batches():
+            resps = [runs.best.get_resps(mask_batch.batch) for runs in self.ks]
+            if resps:
+                resps = pd.concat(resps, axis=1)
+            else:
+                resps = pd.DataFrame(index=self.get_read_nums(mask_batch.batch),
+                                     columns=ClustHeader(ks=[]).index)
+            batch_file = ClusterBatchIO(sample=self.dataset.sample,
+                                        ref=self.dataset.ref,
+                                        sect=self.dataset.sect,
+                                        batch=mask_batch.batch,
+                                        resps=resps)
+            _, checksum = batch_file.save(self.top,
+                                          brotli_level=self.brotli_level)
+            self.checksums.append(checksum)
+            yield ClusterMutsBatch(batch=mask_batch.batch,
+                                   section=self.dataset.section,
+                                   muts=mask_batch.muts,
+                                   seg_end5s=mask_batch.seg_end5s,
+                                   seg_end3s=mask_batch.seg_end3s,
+                                   resps=resps,
+                                   sanitize=False)
 
 ########################################################################
 #                                                                      #

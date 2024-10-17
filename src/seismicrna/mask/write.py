@@ -9,10 +9,9 @@ import pandas as pd
 from .batch import apply_mask
 from .io import MaskBatchIO
 from .report import MaskReport
-from .table import MaskTabulator
+from .table import MaskBatchTabulator
 from ..core.arg import docdef
 from ..core.batch import SectionMutsBatch
-from ..core.data import UnbiasIterMutsDataset
 from ..core.logs import logger
 from ..core.rel import RelPattern
 from ..core.seq import FIELD_REF, POS_NAME, Section, index_to_pos
@@ -335,17 +334,17 @@ class Masker(object):
             logger.warning(f"No positions remained after excluding with {self}")
         # Filter out reads based on the parameters and count the number
         # of informative and mutated positions remaining.
-        tabulator = MaskTabulator(
-            UnbiasIterMutsDataset(batches=map(self._filter_batch_reads,
-                                              self.dataset.iter_batches()),
-                                  pattern=self.pattern,
-                                  top=self.dataset.top,
-                                  sample=self.dataset.sample,
-                                  refseq=self.dataset.refseq,
-                                  section=self.section,
-                                  min_mut_gap=self.min_mut_gap,
-                                  quick_unbias=self.quick_unbias,
-                                  quick_unbias_thresh=self.quick_unbias_thresh)
+        tabulator = MaskBatchTabulator(
+            top=self.dataset.top,
+            sample=self.dataset.sample,
+            refseq=self.dataset.refseq,
+            section=self.section,
+            pattern=self.pattern,
+            min_mut_gap=self.min_mut_gap,
+            quick_unbias=self.quick_unbias,
+            quick_unbias_thresh=self.quick_unbias_thresh,
+            batches=map(self._filter_batch_reads,
+                        self.dataset.iter_batches())
         )
         # Filter out positions based on the parameters.
         self._filter_positions(tabulator.data_per_pos[UNAMB_REL],

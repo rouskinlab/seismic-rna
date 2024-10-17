@@ -7,12 +7,12 @@ import numpy as np
 
 from .emk import EMRunsK, find_best_k, sort_runs
 from .em import EMRun
-from .io import write_batches
+from .io import ClusterBatchWriter
 from .obsexp import write_obs_exp_counts
 from .params import write_mus, write_pis
 from .report import ClusterReport
 from .summary import write_summaries
-from .table import tabulate
+from .table import ClusterBatchTabulator
 from .uniq import UniqReads
 from ..core import path
 from ..core.header import validate_ks
@@ -190,10 +190,23 @@ def cluster(mask_report_file: Path, *,
         else:
             write_ks = []
         # Output the cluster memberships in batches of reads.
-        checksums, ks_written = write_batches(dataset,
-                                              write_ks,
-                                              brotli_level,
-                                              tmp_dir)
+        batch_writer = ClusterBatchWriter(dataset,
+                                          write_ks,
+                                          brotli_level,
+                                          tmp_dir)
+        tabulator = ClusterBatchTabulator(
+            top=tmp_dir,
+            sample=dataset.sample,
+            refseq=dataset.refseq,
+            section=dataset.section,
+            pattern=dataset.pattern,
+            ks=batch_writer.write_ks,
+            min_mut_gap=dataset.min_mut_gap,
+            quick_unbias=dataset.quick_unbias,
+            quick_unbias_thresh=dataset.quick_unbias_thresh,
+            batches=batch_writer.iter_batches()
+        )
+        tabulator.write_tables(force=True)
         # Write the observed and expected counts for every best run.
         counts_dir = tmp_clust_dir.joinpath(path.CLUST_COUNTS_DIR)
         counts_dir.mkdir()
@@ -210,15 +223,14 @@ def cluster(mask_report_file: Path, *,
                                              max_clusters=max_clusters,
                                              try_all_ks=try_all_ks,
                                              write_all_ks=write_all_ks,
-                                             ks_written=ks_written,
+                                             ks_written=batch_writer.write_ks,
                                              em_runs=em_runs,
-                                             checksums=checksums,
+                                             checksums=batch_writer.checksums,
                                              began=began,
                                              ended=ended,
                                              **kwargs)
         report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
-    tabulate(cluster_report_file)
     return cluster_report_file.parent
 
 ########################################################################

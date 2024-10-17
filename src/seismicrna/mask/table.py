@@ -16,6 +16,8 @@ from ..core.table import (COVER_REL,
                           UNAMB_REL,
                           SUBMUTS,
                           Tabulator,
+                          BatchTabulator,
+                          DatasetTabulator,
                           Table,
                           PosTable,
                           ReadTable,
@@ -120,11 +122,21 @@ class PartialTabulator(Tabulator, ABC):
     def get_null_value(cls):
         return np.nan
 
+    def __init__(self, *,
+                 min_mut_gap: int,
+                 quick_unbias: bool,
+                 quick_unbias_thresh: float,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.min_mut_gap = min_mut_gap
+        self.quick_unbias = quick_unbias
+        self.quick_unbias_thresh = quick_unbias_thresh
+
     @cached_property
     def _adjusted(self):
         table_per_pos = super().data_per_pos
-        if self.dataset.min_mut_gap > 0:
-            if self.section.length > np.sqrt(1.e9):
+        if self.min_mut_gap > 0:
+            if self.section.length > np.sqrt(1_000_000_000):
                 logger.warning("Using bias correction on a section with "
                                f"{self.section.length} positions requires "
                                ">1 GB of memory. If this is impractical, you "
@@ -133,14 +145,14 @@ class PartialTabulator(Tabulator, ABC):
             try:
                 return adjust_counts(table_per_pos,
                                      self.p_ends_given_clust_noclose,
-                                     self._num_reads,
+                                     self.num_reads,
                                      self.section,
-                                     self.dataset.min_mut_gap,
-                                     self.dataset.quick_unbias,
-                                     self.dataset.quick_unbias_thresh)
+                                     self.min_mut_gap,
+                                     self.quick_unbias,
+                                     self.quick_unbias_thresh)
             except Exception as error:
                 logger.warning(error)
-        return table_per_pos, self._num_reads
+        return table_per_pos, self.num_reads
 
     @cached_property
     def data_per_pos(self):
@@ -150,11 +162,19 @@ class PartialTabulator(Tabulator, ABC):
         return n_rels
 
 
-class MaskTabulator(PartialTabulator, AvgTabulator):
+class MaskTabulator(PartialTabulator, AvgTabulator, ABC):
 
     @classmethod
     def table_types(cls):
         return [MaskPosTableWriter, MaskReadTableWriter]
+
+
+class MaskBatchTabulator(MaskTabulator, BatchTabulator):
+    pass
+
+
+class MaskDatasetTabulator(MaskTabulator, DatasetTabulator):
+    pass
 
 
 def _insert_masked(p_mut: pd.Series | pd.DataFrame,
