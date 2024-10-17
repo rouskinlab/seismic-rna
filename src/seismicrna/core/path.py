@@ -508,7 +508,7 @@ ReadTableSeg = Segment("read-table",
                        frmt="{table}-reads{ext}")
 AbundanceTableSeg = Segment("abundance-table",
                             {TABLE: AbundanceField, EXT: AbundanceExt},
-                            frmt="{table}-abundances")
+                            frmt="{table}-abundances{ext}")
 
 # Fold
 FoldRepSeg = Segment("fold-rep",
