@@ -1338,13 +1338,13 @@ opt_fq_gzip = Option(
 opt_verbose = Option(
     ("--verbose", "-v"),
     count=True,
-    help="Log info (-v) or info and debug (-vv) messages on stdout"
+    help="Log more messages (-v, -vv, or -vvv) on stderr"
 )
 
 opt_quiet = Option(
     ("--quiet", "-q"),
     count=True,
-    help="Suppress warnings (-q) or warnings and errors (-qq) on stdout"
+    help="Log fewer messages (-q, -qq, or -qqq) on stderr"
 )
 
 opt_log = Option(
