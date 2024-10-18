@@ -204,8 +204,8 @@ class Masker(object):
         """ Filter out reads with discontiguous mates. """
         if not self.mask_discontig:
             # Keep discontiguous reads.
-            logger.debug(f"{self} skipped filtering reads with "
-                         f"discontiguous mates in {batch}")
+            logger.detail(f"{self} skipped filtering reads with "
+                          f"discontiguous mates in {batch}")
             return batch
         # Find the reads with contiguous mates.
         reads = batch.read_nums[batch.contiguous]
