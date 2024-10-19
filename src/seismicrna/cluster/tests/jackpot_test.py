@@ -310,15 +310,16 @@ class TestBootstrapJackpotScores(ut.TestCase):
                                              min_mut_gap=min_mut_gap,
                                              num_reads=n_reads)
         # Mask the data.
-        mask_report_file, = run_mask((relate_report_file,),
-                                     mask_polya=0,
-                                     mask_del=False,
-                                     mask_ins=False,
-                                     mask_gu=False,
-                                     min_mut_gap=min_mut_gap,
-                                     min_finfo_read=1.,
-                                     min_ninfo_pos=1,
-                                     quick_unbias_thresh=0.)
+        mask_dir, = run_mask((relate_report_file,),
+                             mask_polya=0,
+                             mask_del=False,
+                             mask_ins=False,
+                             mask_gu=False,
+                             min_mut_gap=min_mut_gap,
+                             min_finfo_read=1.,
+                             min_ninfo_pos=1,
+                             quick_unbias_thresh=0.)
+        mask_report_file = mask_dir.joinpath("mask-report.json")
         # Cluster the data and calculate the jackpotting quotient.
         mask_dataset = MaskMutsDataset.load(mask_report_file)
         uniq_reads = UniqReads.from_dataset_contig(mask_dataset)
