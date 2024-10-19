@@ -55,6 +55,7 @@ class Masker(object):
                  max_fmut_pos: float,
                  quick_unbias: bool,
                  quick_unbias_thresh: float,
+                 count_read: bool,
                  brotli_level: int,
                  top: Path):
         # Set the general parameters.
@@ -96,6 +97,7 @@ class Masker(object):
         self.quick_unbias_thresh = quick_unbias_thresh
         # Set the parameters for saving files.
         self.top = top
+        self.count_read = count_read
         self.brotli_level = brotli_level
         self.checksums = list()
 
@@ -202,8 +204,8 @@ class Masker(object):
         """ Filter out reads with discontiguous mates. """
         if not self.mask_discontig:
             # Keep discontiguous reads.
-            logger.debug(f"{self} skipped filtering reads with "
-                         f"discontiguous mates in {batch}")
+            logger.detail(f"{self} skipped filtering reads with "
+                          f"discontiguous mates in {batch}")
             return batch
         # Find the reads with contiguous mates.
         reads = batch.read_nums[batch.contiguous]
@@ -343,7 +345,9 @@ class Masker(object):
             quick_unbias=self.quick_unbias,
             quick_unbias_thresh=self.quick_unbias_thresh,
             batches=map(self._filter_batch_reads,
-                        self.dataset.iter_batches())
+                        self.dataset.iter_batches()),
+            count_pos=True,
+            count_read=self.count_read,
         )
         # Filter out positions based on the parameters.
         self._filter_positions(tabulator.data_per_pos[UNAMB_REL],
@@ -412,6 +416,8 @@ def mask_section(dataset: RelateDataset | PoolDataset,
                  mask_mut: Iterable[str], *,
                  tmp_dir: Path,
                  force: bool,
+                 mask_pos_table: bool,
+                 mask_read_table: bool,
                  **kwargs):
     """ Filter a section of a set of bit vectors. """
     # Check if the report file already exists.
@@ -426,9 +432,10 @@ def mask_section(dataset: RelateDataset | PoolDataset,
                         section,
                         pattern,
                         top=tmp_dir,
+                        count_read=mask_read_table,
                         **kwargs)
         tabulator = masker.mask()
-        tabulator.write_tables()
+        tabulator.write_tables(pos=mask_pos_table, read=mask_read_table)
         ended = datetime.now()
         report = masker.create_report(began, ended)
         report_saved = report.save(tmp_dir)
@@ -436,8 +443,10 @@ def mask_section(dataset: RelateDataset | PoolDataset,
     else:
         # Write the tables if they do not exist.
         MaskDatasetTabulator(
-            dataset=MaskMutsDataset.load(report_file)
-        ).write_tables()
+            dataset=MaskMutsDataset.load(report_file),
+            count_pos=mask_pos_table,
+            count_read=mask_read_table
+        ).write_tables(pos=mask_pos_table, read=mask_read_table)
     return report_file.parent
 
 ########################################################################

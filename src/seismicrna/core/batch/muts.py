@@ -16,7 +16,7 @@ from .count import (calc_count_per_pos,
                     count_end_coords)
 from .ends import EndCoords, match_reads_segments
 from .index import iter_windows
-from .read import ReadBatch, PartialReadBatch
+from .read import ReadBatch
 from ..array import calc_inverse, find_dims
 from ..header import REL_NAME, make_header
 from ..rel import MATCH, NOCOV, REL_TYPE, RelPattern
@@ -288,11 +288,14 @@ class SectionMutsBatch(MutsBatch, ABC):
                                    self.cover_per_read,
                                    self.rels_per_read)
 
-    def calc_all_counts(self,
-                        patterns: dict[str, RelPattern],
-                        ks: Iterable[int] | None = None):
+    def count_all(self,
+                  patterns: dict[str, RelPattern],
+                  ks: Iterable[int] | None = None, *,
+                  count_ends: bool = True,
+                  count_pos: bool = True,
+                  count_read: bool = True):
         """ Calculate all counts. """
-        # Initialize the total read counts and end coordinate counts.
+        # Determine whether the data are clustered.
         header = make_header(rels=list(patterns), ks=ks)
         if header.clustered():
             dtype = float
@@ -302,17 +305,25 @@ class SectionMutsBatch(MutsBatch, ABC):
             rel_header = header
         zero = dtype(0)
         # Initialize the counts to 0.
-        count_per_pos = pd.DataFrame(zero, self.section.unmasked, header.index)
-        count_per_read = pd.DataFrame(0, self.batch_read_index, rel_header.index)
+        count_per_pos = (
+            pd.DataFrame(zero, self.section.unmasked, header.index)
+            if count_pos else None
+        )
+        count_per_read = (
+            pd.DataFrame(0, self.batch_read_index, rel_header.index)
+            if count_read else None
+        )
         for column, pattern in patterns.items():
-            # Count the matching reads per position.
-            _, count_per_pos_pattern = self.count_per_pos(pattern)
-            _add_to_column(count_per_pos_pattern, count_per_pos, column)
-            # Count the matching positions per read.
-            _, count_per_read_pattern = self.count_per_read(pattern)
-            count_per_read.loc[:, column] = count_per_read_pattern.values
+            if count_per_pos is not None:
+                # Count the matching reads per position.
+                _, count_per_pos_pattern = self.count_per_pos(pattern)
+                _add_to_column(count_per_pos_pattern, count_per_pos, column)
+            if count_per_read is not None:
+                # Count the matching positions per read.
+                _, count_per_read_pattern = self.count_per_read(pattern)
+                count_per_read.loc[:, column] = count_per_read_pattern.values
         return (self.num_reads,
-                self.read_end_counts,
+                (self.read_end_counts if count_ends else None),
                 count_per_pos,
                 count_per_read)
 
@@ -388,10 +399,6 @@ class SectionMutsBatch(MutsBatch, ABC):
                                                        mut_counts,
                                                        strict=True):
             yield read_num, ((tuple(end5), tuple(end3)), tuple(muts[:count]))
-
-
-class PartialMutsBatch(MutsBatch, PartialReadBatch, ABC):
-    pass
 
 ########################################################################
 #                                                                      #

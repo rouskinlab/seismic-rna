@@ -2,7 +2,7 @@ from functools import cached_property
 
 import pandas as pd
 
-from ..core.batch import PartialMutsBatch, PartialReadBatch, SectionMutsBatch
+from ..mask.batch import PartialSectionMutsBatch, PartialReadBatch
 
 
 class ClusterReadBatch(PartialReadBatch):
@@ -20,7 +20,7 @@ class ClusterReadBatch(PartialReadBatch):
         return self.resps.index.values
 
 
-class ClusterMutsBatch(ClusterReadBatch, PartialMutsBatch, SectionMutsBatch):
+class ClusterMutsBatch(ClusterReadBatch, PartialSectionMutsBatch):
 
     @property
     def read_weights(self):

@@ -27,7 +27,7 @@ from ..core.table import (COVER_REL,
                           DELET_REL,
                           INSRT_REL,
                           Table,
-                          PosTable,
+                          PositionTable,
                           ReadTable,
                           AbundanceTable)
 
@@ -112,7 +112,7 @@ def conform_series(series: pd.Series | pd.DataFrame):
     return series
 
 
-def get_db_structs(table: PosTable,
+def get_db_structs(table: PositionTable,
                    k: int | None = None,
                    clust: int | None = None):
     structs = dict()
@@ -138,7 +138,7 @@ def get_db_structs(table: PosTable,
     return structs, energies
 
 
-def iter_pos_table_struct(table: PosTable, k: int, clust: int):
+def iter_pos_table_struct(table: PositionTable, k: int, clust: int):
     structs, energies = get_db_structs(table, k, clust)
     keys = list(structs)
     if keys != list(energies):
@@ -152,7 +152,7 @@ def iter_pos_table_struct(table: PosTable, k: int, clust: int):
         yield FREE_ENERGY, energies[key]
 
 
-def iter_pos_table_series(table: PosTable,
+def iter_pos_table_series(table: PositionTable,
                           k: int,
                           clust: int,
                           all_pos: bool):
@@ -173,7 +173,7 @@ def iter_pos_table_series(table: PosTable,
     ).to_list()
 
 
-def iter_pos_table_data(table: PosTable, k: int, clust: int, all_pos: bool):
+def iter_pos_table_data(table: PositionTable, k: int, clust: int, all_pos: bool):
     yield from iter_pos_table_series(table, k, clust, all_pos)
     yield from iter_pos_table_struct(table, k, clust)
 
@@ -199,7 +199,7 @@ def iter_clust_table_data(table: AbundanceTable, k: int, clust: int):
 
 
 def iter_table_data(table: Table, k: int, clust: int, all_pos: bool):
-    if isinstance(table, PosTable):
+    if isinstance(table, PositionTable):
         yield from iter_pos_table_data(table, k, clust, all_pos)
     elif isinstance(table, ReadTable):
         yield from iter_read_table_data(table, k, clust)

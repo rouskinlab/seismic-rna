@@ -8,14 +8,14 @@ from ..core import path
 from ..core.header import ClustHeader, RelClustHeader, make_header, parse_header
 from ..core.table import (AbundanceTable,
                           RelTypeTable,
-                          PosTableWriter,
+                          PositionTableWriter,
                           AbundanceTableWriter,
                           BatchTabulator)
 from ..mask.table import (PartialTable,
-                          PartialPosTable,
+                          PartialPositionTable,
                           PartialTabulator,
                           PartialDatasetTabulator)
-from ..relate.table import TableLoader, PosTableLoader
+from ..relate.table import TableLoader, PositionTableLoader
 
 
 class ClusterTable(RelTypeTable, ABC):
@@ -29,7 +29,7 @@ class ClusterTable(RelTypeTable, ABC):
         return RelClustHeader
 
 
-class ClusterPosTable(ClusterTable, PartialPosTable, ABC):
+class ClusterPosTable(ClusterTable, PartialPositionTable, ABC):
     pass
 
 
@@ -51,7 +51,7 @@ class ClusterAbundanceTable(AbundanceTable, PartialTable, ABC):
         return parse_header(self.data.index)
 
 
-class ClusterPosTableWriter(PosTableWriter, ClusterPosTable):
+class ClusterPosTableWriter(PositionTableWriter, ClusterPosTable):
     pass
 
 
@@ -59,7 +59,7 @@ class ClusterAbundanceTableWriter(AbundanceTableWriter, ClusterAbundanceTable):
     pass
 
 
-class ClusterPosTableLoader(PosTableLoader, ClusterPosTable):
+class ClusterPosTableLoader(PositionTableLoader, ClusterPosTable):
     """ Load cluster data indexed by position. """
 
 
@@ -88,11 +88,12 @@ class ClusterTabulator(PartialTabulator, ABC):
         return [ClusterPosTableWriter, ClusterAbundanceTableWriter]
 
     def __init__(self, *, ks: list[int], **kwargs):
+        super().__init__(**kwargs)
         if ks is None:
             raise ValueError(
                 f"{type(self).__name__} requires clusters, but got ks={ks}"
             )
-        super().__init__(ks=ks, **kwargs)
+        self.ks = ks
 
     @cached_property
     def clust_header(self):

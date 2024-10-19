@@ -29,10 +29,10 @@ from ..core.arg import (NO_GROUP,
                         opt_parallel)
 from ..core.header import Header, format_clust_names
 from ..core.seq import DNA
-from ..core.table import Table, PosTable
+from ..core.table import Table, PositionTable
 from ..core.write import need_write
 from ..mask.table import MaskPosTableLoader, MaskReadTableLoader
-from ..relate.table import RelPosTableLoader, RelReadTableLoader
+from ..relate.table import RelatePositionTableLoader, RelateReadTableLoader
 
 # Define actions.
 ACTION_REL = "all"
@@ -66,7 +66,7 @@ def _track_titles(tracks: list[tuple[int, int]] | None):
 
 
 def get_action_name(table: Table):
-    if isinstance(table, (RelPosTableLoader, RelReadTableLoader)):
+    if isinstance(table, (RelatePositionTableLoader, RelateReadTableLoader)):
         return ACTION_REL
     if isinstance(table, (MaskPosTableLoader, MaskReadTableLoader)):
         return ACTION_MASK
@@ -259,7 +259,7 @@ class GraphBase(ABC):
         """ Keyword arguments for self._fetch_data. """
         return dict(rel=self.rel_names)
 
-    def _fetch_data(self, table: PosTable, **kwargs):
+    def _fetch_data(self, table: PositionTable, **kwargs):
         """ Fetch data from the table. """
         kwargs = self._fetch_kwargs | kwargs
         return (table.fetch_ratio(quantile=self.quantile, **kwargs)
@@ -478,7 +478,7 @@ class GraphWriter(ABC):
 def load_pos_tables(input_paths: Iterable[str | Path]):
     """ Load position tables. """
     paths = list(input_paths)
-    for table_type in [RelPosTableLoader,
+    for table_type in [RelatePositionTableLoader,
                        MaskPosTableLoader,
                        ClusterPosTableLoader]:
         yield from table_type.load_tables(paths)
@@ -487,7 +487,7 @@ def load_pos_tables(input_paths: Iterable[str | Path]):
 def load_read_tables(input_paths: Iterable[str | Path]):
     """ Load read tables. """
     paths = list(input_paths)
-    for table_type in [RelReadTableLoader,
+    for table_type in [RelateReadTableLoader,
                        MaskReadTableLoader]:
         yield from table_type.load_tables(paths)
 

@@ -1,3 +1,4 @@
+from abc import ABC
 from functools import cached_property
 from typing import Callable
 
@@ -5,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from ..core.array import calc_inverse, check_naturals, get_length
-from ..core.batch import (AllReadBatch,
+from ..core.batch import (ReadBatch,
                           SectionMutsBatch,
                           simulate_muts,
                           simulate_segment_ends)
@@ -18,7 +19,26 @@ def format_read_name(batch: int, read: int):
     return f"batch-{batch}_read-{read}"
 
 
-class QnamesBatch(AllReadBatch):
+class FullReadBatch(ReadBatch, ABC):
+
+    @cached_property
+    def read_nums(self):
+        return np.arange(self.num_reads, dtype=self.read_dtype)
+
+    @cached_property
+    def max_read(self):
+        return self.num_reads - 1
+
+    @cached_property
+    def read_indexes(self):
+        return self.read_nums
+
+
+class FullSectionMutsBatch(FullReadBatch, SectionMutsBatch, ABC):
+    pass
+
+
+class QnamesBatch(FullReadBatch):
 
     @classmethod
     def simulate(cls,
@@ -51,7 +71,7 @@ class QnamesBatch(AllReadBatch):
         return get_length(self.names, "read names")
 
 
-class RelateBatch(SectionMutsBatch, AllReadBatch):
+class RelateBatch(FullSectionMutsBatch):
 
     @classmethod
     def simulate(cls,

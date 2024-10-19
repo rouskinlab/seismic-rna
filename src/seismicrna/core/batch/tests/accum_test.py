@@ -56,7 +56,7 @@ class TestAccumulateBatches(ut.TestCase):
                                             [3],
                                             [3]]))
         ]
-        n, fpp, fpr, ends = accumulate_batches(
+        n, ends, fpp, fpr = accumulate_batches(
             batches,
             section.seq,
             section.unmasked_int,
@@ -136,7 +136,7 @@ class TestAccumulateBatches(ut.TestCase):
                         seg_end3s=np.array([[3],
                                             [3]]))
         ]
-        n, fpp, fpr, ends = accumulate_batches(
+        n, ends, fpp, fpr = accumulate_batches(
             batches,
             section.seq,
             section.unmasked_int,
@@ -219,7 +219,7 @@ class TestAccumulateBatches(ut.TestCase):
                                               [6]]),
                           read_nums=np.array([0, 6]))
         ]
-        n, fpp, fpr, ends = accumulate_batches(
+        n, ends, fpp, fpr = accumulate_batches(
             batches,
             section.seq,
             section.unmasked_int,
@@ -314,7 +314,7 @@ class TestAccumulateBatches(ut.TestCase):
                                                 [0, 6],
                                                 cheader.index))
         ]
-        n, fpp, fpr, ends = accumulate_batches(
+        n, ends, fpp, fpr = accumulate_batches(
             batches,
             section.seq,
             section.unmasked_int,

@@ -12,7 +12,7 @@ from ..core import path
 from ..core.io import RefseqIO
 from ..core.logs import logger
 from ..core.ngs import encode_phred
-from ..core.seq import DNA, Section, get_fasta_seq
+from ..core.seq import DNA, get_fasta_seq
 from ..core.table import all_patterns
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.tmp import get_release_working_dirs, release_to_out
@@ -32,6 +32,8 @@ def generate_batch(batch: int, *,
                    top: Path,
                    refseq: DNA,
                    brotli_level: int,
+                   count_pos: bool,
+                   count_read: bool,
                    **kwargs):
     """ Compute relation vectors for every SAM record in one batch,
     write the vectors to a batch file, and return its MD5 checksum
@@ -50,14 +52,17 @@ def generate_batch(batch: int, *,
                    f"for batch {batch} of {xam_view}")
     _, relv_check = relvecs.save(top, brotli_level)
     _, name_check = names.save(top, brotli_level)
-    return relvecs.calc_all_counts(all_patterns()), relv_check, name_check
+    return (relvecs.count_all(all_patterns(),
+                              count_pos=count_pos,
+                              count_read=count_read,
+                              count_ends=False),
+            relv_check,
+            name_check)
 
 
 class RelationWriter(object):
-    """
-    Compute and write relation vectors for all reads from one sample
-    mapped to one reference sequence.
-    """
+    """ Compute and write relationships for all reads from one sample
+    aligned to one reference sequence. """
 
     def __init__(self, xam_view: XamViewer, refseq: DNA):
         self._xam = xam_view
@@ -90,15 +95,10 @@ class RelationWriter(object):
     def _generate_batches(self, *,
                           top: Path,
                           keep_tmp: bool,
-                          min_mapq: int,
                           phred_enc: int,
                           min_phred: int,
-                          ambindel: bool,
-                          overhangs: bool,
-                          clip_end5: int,
-                          clip_end3: int,
-                          brotli_level: int,
-                          n_procs: int):
+                          n_procs: int,
+                          **kwargs):
         """ Compute a relation vector for every record in a XAM file,
         split among one or more batches. For each batch, write a matrix
         of the vectors to one batch file, and compute its checksum. """
@@ -108,13 +108,8 @@ class RelationWriter(object):
             kwargs = dict(xam_view=self._xam,
                           top=top,
                           refseq=self.refseq,
-                          min_mapq=min_mapq,
                           min_qual=encode_phred(min_phred, phred_enc),
-                          ambindel=ambindel,
-                          overhangs=overhangs,
-                          clip_end5=clip_end5,
-                          clip_end3=clip_end3,
-                          brotli_level=brotli_level)
+                          **kwargs)
             # Generate and write relation vectors for each batch.
             results = dispatch(generate_batch,
                                n_procs,
@@ -153,6 +148,8 @@ class RelationWriter(object):
               ambindel: bool,
               clip_end5: int,
               clip_end3: int,
+              relate_pos_table: bool,
+              relate_read_table: bool,
               **kwargs):
         """ Compute a relation vector for every record in a BAM file,
         write the vectors into one or more batch files, compute their
@@ -180,16 +177,19 @@ class RelationWriter(object):
                                               ambindel=ambindel,
                                               clip_end5=clip_end5,
                                               clip_end3=clip_end3,
+                                              count_pos=relate_pos_table,
+                                              count_read=relate_read_table,
                                               **kwargs)
             # Tabulate the data.
             tabulator = RelateCountTabulator(top=release_dir,
                                              sample=self.sample,
+                                             ref=self.ref,
                                              refseq=self.refseq,
-                                             section=Section(self.ref,
-                                                             self.refseq),
-                                             pattern=None,
-                                             batches=batch_counts)
-            tabulator.write_tables()
+                                             batches=batch_counts,
+                                             count_pos=relate_pos_table,
+                                             count_read=relate_read_table,
+                                             validate=True)
+            tabulator.write_tables(pos=relate_pos_table, read=relate_read_table)
             ended = datetime.now()
             # Write a report of the relation step.
             report_saved = self._write_report(top=release_dir,
@@ -212,8 +212,10 @@ class RelationWriter(object):
         else:
             # Write the tables if they do not exist.
             RelateDatasetTabulator(
-                dataset=RelateDataset.load(report_file)
-            ).write_tables()
+                dataset=RelateDataset.load(report_file),
+                count_pos=relate_pos_table,
+                count_read=relate_read_table
+            ).write_tables(pos=relate_pos_table, read=relate_read_table)
         return report_file.parent
 
     def __str__(self):

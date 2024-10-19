@@ -1,16 +1,17 @@
 from abc import ABC
-from functools import cached_property
+from functools import cache, cached_property
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
 from ..core import path
-from ..core.data import UnbiasDataset
+from ..core.batch import END5_COORD, END3_COORD
 from ..core.header import NUM_CLUSTS_NAME, format_clust_name, validate_ks
 from ..core.logs import logger
+from ..core.rel import RelPattern
 from ..core.rna import RNAProfile
-from ..core.seq import Section
+from ..core.seq import DNA, Section
 from ..core.table import (COVER_REL,
                           MATCH_REL,
                           MUTAT_REL,
@@ -20,16 +21,17 @@ from ..core.table import (COVER_REL,
                           BatchTabulator,
                           DatasetTabulator,
                           Table,
-                          PosTable,
+                          PositionTable,
                           ReadTable,
-                          PosTableWriter,
+                          PositionTableWriter,
                           ReadTableWriter)
-from ..core.unbias import (calc_p_noclose_given_clust,
+from ..core.unbias import (calc_p_ends_observed,
+                           calc_p_noclose_given_clust,
                            calc_p_noclose_given_ends_auto,
                            calc_params)
 from ..relate.table import (AvgTable,
-                            AvgTabulator,
-                            PosTableLoader,
+                            AverageTabulator,
+                            PositionTableLoader,
                             ReadTableLoader)
 
 
@@ -46,7 +48,7 @@ class PartialTable(Table, ABC):
                 path.EXT: self.ext()}
 
 
-class PartialPosTable(PartialTable, PosTable, ABC):
+class PartialPositionTable(PartialTable, PositionTable, ABC):
 
     @classmethod
     def path_segs(cls):
@@ -93,7 +95,7 @@ class MaskTable(AvgTable, ABC):
         return path.CMD_MASK_DIR
 
 
-class MaskPosTable(MaskTable, PartialPosTable, ABC):
+class MaskPosTable(MaskTable, PartialPositionTable, ABC):
     pass
 
 
@@ -101,7 +103,7 @@ class MaskReadTable(MaskTable, PartialReadTable, ABC):
     pass
 
 
-class MaskPosTableWriter(PosTableWriter, MaskPosTable):
+class MaskPosTableWriter(PositionTableWriter, MaskPosTable):
     pass
 
 
@@ -109,7 +111,7 @@ class MaskReadTableWriter(ReadTableWriter, MaskReadTable):
     pass
 
 
-class MaskPosTableLoader(PosTableLoader, MaskPosTable):
+class MaskPosTableLoader(PositionTableLoader, MaskPosTable):
     pass
 
 
@@ -124,14 +126,39 @@ class PartialTabulator(Tabulator, ABC):
         return np.nan
 
     def __init__(self, *,
+                 refseq: DNA,
+                 section: Section,
+                 pattern: RelPattern,
                  min_mut_gap: int,
                  quick_unbias: bool,
                  quick_unbias_thresh: float,
                  **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(section=section, **kwargs)
+        self.refseq = refseq
+        self.pattern = pattern
         self.min_mut_gap = min_mut_gap
         self.quick_unbias = quick_unbias
         self.quick_unbias_thresh = quick_unbias_thresh
+        # Partial tabulators must count 5'/3' ends or else calculating
+        # self.p_ends_given_clust_noclose will fail.
+        self.count_ends = True
+
+    @cached_property
+    def p_ends_given_clust_noclose(self):
+        """ Probability of each end coordinate. """
+        # Ensure end_counts has 2 dimensions.
+        if self.end_counts.ndim == 1:
+            end_counts = self.end_counts.values[:, np.newaxis]
+        else:
+            end_counts = self.end_counts.values
+        end5s = (self.end_counts.index.get_level_values(END5_COORD).values
+                 - self.section.end5)
+        end3s = (self.end_counts.index.get_level_values(END3_COORD).values
+                 - self.section.end5)
+        return calc_p_ends_observed(self.section.length,
+                                    end5s,
+                                    end3s,
+                                    end_counts)
 
     @cached_property
     def _adjusted(self):
@@ -163,17 +190,15 @@ class PartialTabulator(Tabulator, ABC):
         return n_rels
 
 
-class PartialDatasetTabulator(PartialTabulator, DatasetTabulator, ABC):
+class PartialDatasetTabulator(DatasetTabulator, PartialTabulator, ABC):
 
-    def __init__(self, *, dataset: UnbiasDataset, **kwargs):
-        super().__init__(dataset=dataset,
-                         min_mut_gap=dataset.min_mut_gap,
-                         quick_unbias=dataset.quick_unbias,
-                         quick_unbias_thresh=dataset.quick_unbias_thresh,
-                         **kwargs)
+    @classmethod
+    @cache
+    def _init_data(cls):
+        return super()._init_data() + cls._list_args(PartialTabulator.__init__)
 
 
-class MaskTabulator(PartialTabulator, AvgTabulator, ABC):
+class MaskTabulator(PartialTabulator, AverageTabulator, ABC):
 
     @classmethod
     def table_types(cls):

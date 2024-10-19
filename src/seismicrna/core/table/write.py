@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from functools import cached_property
+from functools import cache, cached_property
+from inspect import Parameter, signature
 from pathlib import Path
 from typing import Callable, Iterable
 
-import numpy as np
 import pandas as pd
 
 from .base import (COVER_REL,
@@ -21,19 +21,15 @@ from .base import (COVER_REL,
                    UNAMB_REL,
                    TABLE_RELS,
                    Table,
-                   PosTable,
+                   PositionTable,
                    ReadTable,
                    AbundanceTable)
-from ..batch import (END5_COORD,
-                     END3_COORD,
-                     accumulate_batches,
-                     accumulate_counts)
+from ..batch import accumulate_batches, accumulate_counts
 from ..data import MutsDataset
 from ..header import Header, make_header
 from ..logs import logger
 from ..rel import RelPattern, HalfRelPattern
-from ..seq import DNA, Section
-from ..unbias import calc_p_ends_observed
+from ..seq import Section
 from ..write import need_write
 
 # These relationships are of all subtypes of mutations.
@@ -83,18 +79,22 @@ class Tabulator(ABC):
     def __init__(self, *,
                  top: Path,
                  sample: str,
-                 refseq: DNA,
                  section: Section,
-                 pattern: RelPattern | None,
-                 ks: list[int] | None,
-                 batches: Iterable):
+                 batches: Iterable,
+                 count_pos: bool,
+                 count_read: bool,
+                 validate: bool = True):
         self.top = top
         self.sample = sample
-        self.refseq = refseq
+        self.refseq = section.seq
         self.section = section
-        self.pattern = pattern
-        self.ks = ks
+        self.pattern = None
+        self.ks = None
         self._batches = iter(batches)
+        self.count_ends = False
+        self.count_pos = count_pos
+        self.count_read = count_read
+        self.validate = validate
 
     @property
     def ref(self):
@@ -119,48 +119,34 @@ class Tabulator(ABC):
                                       self.section.unmasked_int,
                                       all_patterns(self.pattern),
                                       ks=self.ks,
-                                      validate=False)
+                                      count_ends=self.count_ends,
+                                      count_pos=self.count_pos,
+                                      count_read=self.count_read,
+                                      validate=self.validate)
 
     @property
     def num_reads(self):
         """ Raw number of reads. """
-        num_reads, per_pos, per_read, end_counts = self._counts
+        num_reads, end_counts, per_pos, per_read = self._counts
         return num_reads
 
     @property
     def counts_per_pos(self):
         """ Raw counts per position. """
-        num_reads, per_pos, per_read, end_counts = self._counts
+        num_reads, end_counts, per_pos, per_read = self._counts
         return per_pos
 
     @property
     def counts_per_read(self):
         """ Raw counts per read. """
-        num_reads, per_pos, per_read, end_counts = self._counts
+        num_reads, end_counts, per_pos, per_read = self._counts
         return per_read
 
     @property
     def end_counts(self):
         """ Raw counts for each pair of end coordinates. """
-        num_reads, per_pos, per_read, end_counts = self._counts
+        num_reads, end_counts, per_pos, per_read = self._counts
         return end_counts
-
-    @cached_property
-    def p_ends_given_clust_noclose(self):
-        """ Probability of each end coordinate. """
-        # Ensure end_counts has 2 dimensions.
-        if self.end_counts.ndim == 1:
-            end_counts = self.end_counts.values[:, np.newaxis]
-        else:
-            end_counts = self.end_counts.values
-        end5s = (self.end_counts.index.get_level_values(END5_COORD).values
-                 - self.section.end5)
-        end3s = (self.end_counts.index.get_level_values(END3_COORD).values
-                 - self.section.end5)
-        return calc_p_ends_observed(self.section.length,
-                                    end5s,
-                                    end3s,
-                                    end_counts)
 
     @cached_property
     def data_per_pos(self):
@@ -174,24 +160,29 @@ class Tabulator(ABC):
         return self._format_table(self.counts_per_read,
                                   self.read_header)
 
+    @cached_property
+    @abstractmethod
+    def data_per_clust(self) -> pd.Series | None:
+        """ Series of per-cluster data (or None if no clusters). """
+
     def generate_tables(self, *,
-                        table_pos: bool = True,
-                        table_read: bool = True,
-                        table_clust: bool = True):
+                        pos: bool = True,
+                        read: bool = True,
+                        clust: bool = True):
         """ Generate the tables from this data. """
         for table_type in self.table_types():
-            if issubclass(table_type, PosTableWriter):
-                if table_pos:
+            if issubclass(table_type, PositionTableWriter):
+                if pos:
                     yield table_type(self)
                 else:
                     logger.detail(f"Skipped {table_type} for {self}")
             elif issubclass(table_type, ReadTableWriter):
-                if table_read:
+                if read:
                     yield table_type(self)
                 else:
                     logger.detail(f"Skipped {table_type} for {self}")
             elif issubclass(table_type, AbundanceTableWriter):
-                if table_clust:
+                if clust:
                     yield table_type(self)
                 else:
                     logger.detail(f"Skipped {table_type} for {self}")
@@ -223,13 +214,29 @@ class BatchTabulator(Tabulator, ABC):
 class DatasetTabulator(BatchTabulator, ABC):
     """ Tabulator made from one dataset. """
 
-    def __init__(self, *, dataset: MutsDataset, **kwargs):
-        super().__init__(top=dataset.top,
-                         sample=dataset.sample,
-                         refseq=dataset.refseq,
-                         section=dataset.section,
-                         pattern=dataset.pattern,
-                         batches=dataset.iter_batches(),
+    @classmethod
+    def _list_args(cls, func: Callable):
+        """ List the positional arguments of a function. """
+        return [name for name, param in signature(func).parameters.items()
+                if param.kind is Parameter.KEYWORD_ONLY]
+
+    @classmethod
+    @cache
+    def _init_data(cls):
+        """ Attributes of the dataset to use as keyword arguments in
+        super().__init__(). """
+        return ["top", "sample"]
+
+    def __init__(self, *,
+                 dataset: MutsDataset,
+                 validate: bool = False,
+                 **kwargs):
+        # Since the batches come from a Dataset, they do not need to be
+        # validated, so make validate False by default.
+        super().__init__(batches=dataset.iter_batches(),
+                         **{attr: getattr(dataset, attr)
+                            for attr in self._init_data()},
+                         validate=validate,
                          **kwargs)
 
 
@@ -271,7 +278,7 @@ class TableWriter(Table, ABC):
         return self.path
 
 
-class PosTableWriter(TableWriter, PosTable, ABC):
+class PositionTableWriter(TableWriter, PositionTable, ABC):
 
     @cached_property
     def data(self):

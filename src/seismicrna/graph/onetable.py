@@ -10,7 +10,7 @@ from .base import (GraphBase,
                    make_tracks,
                    make_path_subject,
                    make_title_action_sample)
-from ..core.table import Table, PosTable
+from ..core.table import Table, PositionTable
 from ..core.task import dispatch
 
 
@@ -18,7 +18,7 @@ class OneTableGraph(GraphBase, ABC):
     """ Graph of data from one Table. """
 
     def __init__(self, *,
-                 table: Table | PosTable,
+                 table: Table | PositionTable,
                  k: int | None,
                  clust: int | None,
                  **kwargs):

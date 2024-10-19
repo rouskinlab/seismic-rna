@@ -20,7 +20,7 @@ from .rel import OneRelGraph
 from ..cluster.table import ClusterTable
 from ..core.arg import opt_comppair, opt_compself, opt_out_dir
 from ..core.logs import logger
-from ..core.table import PosTable, Table
+from ..core.table import PositionTable, Table
 from ..core.task import dispatch
 
 # Index level names.
@@ -34,10 +34,10 @@ class TwoTableGraph(OneRelGraph, ABC):
 
     def __init__(self, *,
                  out_dir: str | Path,
-                 table1: Table | PosTable,
+                 table1: Table | PositionTable,
                  k1: int | None,
                  clust1: int | None,
-                 table2: Table | PosTable,
+                 table2: Table | PositionTable,
                  k2: int | None,
                  clust2: int | None,
                  **kwargs):

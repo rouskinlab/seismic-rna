@@ -1,7 +1,7 @@
 from abc import ABC
-from functools import cached_property
+from functools import cache, cached_property
 from pathlib import Path
-from typing import Iterable, Literal
+from typing import Iterable
 
 import pandas as pd
 
@@ -15,8 +15,8 @@ from ..core.table import (Table,
                           Tabulator,
                           DatasetTabulator,
                           CountTabulator,
-                          PosTable,
-                          PosTableWriter,
+                          PositionTable,
+                          PositionTableWriter,
                           ReadTable,
                           ReadTableWriter,
                           RelTypeTable)
@@ -42,7 +42,7 @@ class FullTable(Table, ABC):
                 path.EXT: self.ext()}
 
 
-class FullPosTable(FullTable, PosTable, ABC):
+class FullPositionTable(FullTable, PositionTable, ABC):
 
     @classmethod
     def path_segs(cls):
@@ -56,14 +56,14 @@ class FullReadTable(FullTable, ReadTable, ABC):
         return path.REF_DIR_SEGS + (path.ReadTableSeg,)
 
 
-class RelTable(AvgTable, ABC):
+class RelateTable(AvgTable, ABC):
 
     @classmethod
     def kind(cls):
         return path.CMD_REL_DIR
 
 
-class RelPosTable(RelTable, FullPosTable, ABC):
+class RelatePosTable(RelateTable, FullPositionTable, ABC):
 
     def _iter_profiles(self, *,
                        sections: Iterable[Section] | None,
@@ -76,15 +76,15 @@ class RelPosTable(RelTable, FullPosTable, ABC):
         yield from ()
 
 
-class RelReadTable(RelTable, FullReadTable, ABC):
+class RelateReadTable(RelateTable, FullReadTable, ABC):
     pass
 
 
-class RelPosTableWriter(PosTableWriter, RelPosTable):
+class RelatePosTableWriter(PositionTableWriter, RelatePosTable):
     pass
 
 
-class RelReadTableWriter(ReadTableWriter, RelReadTable):
+class RelateReadTableWriter(ReadTableWriter, RelateReadTable):
     pass
 
 
@@ -94,36 +94,25 @@ class FullTabulator(Tabulator, ABC):
     def get_null_value(cls):
         return 0
 
-    def __init__(self, *,
-                 refseq: DNA,
-                 section: Section,
-                 pattern: Literal[None],
-                 **kwargs):
-        # For the full dataset, the section must be the full reference
-        # sequence, and no pattern is used to filter the data.
-        if pattern is not None:
-            raise TypeError(f"pattern must be None, but got {pattern}")
-        if refseq != section.seq:
-            raise ValueError(f"Got different sequences for refseq ({refseq}) "
-                             f"and section.seq {section.seq}")
-        super().__init__(refseq=refseq,
-                         section=section,
-                         pattern=pattern,
-                         **kwargs)
+    def __init__(self, *, ref: str, refseq: DNA, **kwargs):
+        # For a full tabulator, the full reference sequence must be used
+        # as the section.
+        super().__init__(section=Section(ref, refseq), **kwargs)
 
 
-class AvgTabulator(Tabulator, ABC):
+class AverageTabulator(Tabulator, ABC):
 
-    def __init__(self, **kwargs):
-        # An ensemble average tabulator has no clusters (ks=None).
-        super().__init__(ks=None, **kwargs)
+    @cached_property
+    def data_per_clust(self):
+        # An ensemble average tabulator has no per-cluster data.
+        return None
 
 
-class RelateTabulator(FullTabulator, AvgTabulator, ABC):
+class RelateTabulator(FullTabulator, AverageTabulator, ABC):
 
     @classmethod
     def table_types(cls):
-        return [RelPosTableWriter, RelReadTableWriter]
+        return [RelatePosTableWriter, RelateReadTableWriter]
 
 
 class RelateCountTabulator(CountTabulator, RelateTabulator):
@@ -131,7 +120,11 @@ class RelateCountTabulator(CountTabulator, RelateTabulator):
 
 
 class RelateDatasetTabulator(DatasetTabulator, RelateTabulator):
-    pass
+
+    @classmethod
+    @cache
+    def _init_data(cls):
+        return super()._init_data() + cls._list_args(FullTabulator.__init__)
 
 
 class TableLoader(Table, ABC):
@@ -204,7 +197,7 @@ class RelTypeTableLoader(TableLoader, RelTypeTable, ABC):
         return data
 
 
-class PosTableLoader(RelTypeTableLoader, PosTable, ABC):
+class PositionTableLoader(RelTypeTableLoader, PositionTable, ABC):
     """ Load data indexed by position. """
 
 
@@ -212,9 +205,9 @@ class ReadTableLoader(RelTypeTableLoader, ReadTable, ABC):
     """ Load data indexed by read. """
 
 
-class RelPosTableLoader(PosTableLoader, RelPosTable):
+class RelatePositionTableLoader(PositionTableLoader, RelatePosTable):
     """ Load relate data indexed by position. """
 
 
-class RelReadTableLoader(ReadTableLoader, RelReadTable):
+class RelateReadTableLoader(ReadTableLoader, RelateReadTable):
     """ Load relate data indexed by read. """

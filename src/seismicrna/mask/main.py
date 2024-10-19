@@ -30,6 +30,8 @@ from ..core.arg import (CMD_MASK,
                         opt_max_fmut_pos,
                         opt_quick_unbias,
                         opt_quick_unbias_thresh,
+                        opt_mask_pos_table,
+                        opt_mask_read_table,
                         opt_brotli_level,
                         opt_max_procs,
                         opt_parallel,
@@ -91,6 +93,9 @@ def run(input_path: tuple[str, ...], *,
         # Observer bias correction
         quick_unbias: bool,
         quick_unbias_thresh: float,
+        # Table options
+        mask_pos_table: bool,
+        mask_read_table: bool,
         # Compression
         brotli_level: int,
         # Parallelization
@@ -129,6 +134,8 @@ def run(input_path: tuple[str, ...], *,
                   max_fmut_pos=max_fmut_pos,
                   quick_unbias=quick_unbias,
                   quick_unbias_thresh=quick_unbias_thresh,
+                  mask_pos_table=mask_pos_table,
+                  mask_read_table=mask_read_table,
                   brotli_level=brotli_level,
                   force=force)
     # Call the mutations and filter the relation vectors.
@@ -169,6 +176,9 @@ params = [
     # Observer bias correction
     opt_quick_unbias,
     opt_quick_unbias_thresh,
+    # Table options
+    opt_mask_pos_table,
+    opt_mask_read_table,
     # Compression
     opt_brotli_level,
     # Parallelization

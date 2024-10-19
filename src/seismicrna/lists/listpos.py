@@ -15,11 +15,11 @@ from ..core.run import run_func
 from ..core.seq import FIELD_REF, POS_NAME
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
-from ..core.table import MUTAT_REL, PosTable
+from ..core.table import MUTAT_REL, PositionTable
 from ..graph.base import load_pos_tables
 
 
-def find_pos(table: PosTable,
+def find_pos(table: PositionTable,
              max_fmut_pos: float,
              complement: bool):
     # Initially select all unmasked positions.
@@ -37,7 +37,7 @@ def find_pos(table: PosTable,
     return section.unmasked_int
 
 
-def list_pos(table: PosTable, force: bool, **kwargs):
+def list_pos(table: PositionTable, force: bool, **kwargs):
     """ List positions meeting specific criteria from the table. """
     list_file = get_list_path(table)
     if need_write(list_file, force):

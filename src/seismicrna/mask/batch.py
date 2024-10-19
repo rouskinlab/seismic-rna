@@ -1,13 +1,27 @@
+from abc import ABC
 from functools import cached_property
 
 import numpy as np
 import pandas as pd
 
-from ..core.array import get_length
-from ..core.batch import (SectionMutsBatch,
-                          PartialMutsBatch,
-                          PartialReadBatch)
+from ..core.array import calc_inverse, get_length
+from ..core.batch import ReadBatch, SectionMutsBatch
 from ..core.seq import Section
+
+
+class PartialReadBatch(ReadBatch, ABC):
+
+    @cached_property
+    def max_read(self):
+        return self.read_nums.max(initial=0)
+
+    @cached_property
+    def read_indexes(self):
+        return calc_inverse(self.read_nums, what="read_nums", verify=False)
+
+
+class PartialSectionMutsBatch(PartialReadBatch, SectionMutsBatch, ABC):
+    pass
 
 
 class MaskReadBatch(PartialReadBatch):
@@ -29,7 +43,7 @@ class MaskReadBatch(PartialReadBatch):
         return get_length(self.read_nums, "read_nums")
 
 
-class MaskMutsBatch(MaskReadBatch, SectionMutsBatch, PartialMutsBatch):
+class MaskMutsBatch(MaskReadBatch, PartialSectionMutsBatch):
 
     @property
     def read_weights(self):

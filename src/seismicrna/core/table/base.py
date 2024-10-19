@@ -80,8 +80,6 @@ def _get_denom_cols(numer_cols: pd.Index):
                     name=numer_cols.name)
 
 
-# Table Base Classes ###################################################
-
 class Table(ABC):
     """ Table base class. """
 
@@ -258,9 +256,7 @@ class RelTypeTable(Table, ABC):
                                  squeeze=squeeze)
 
 
-# Table by Index (position/read/frequency) #############################
-
-class PosTable(RelTypeTable, ABC):
+class PositionTable(RelTypeTable, ABC):
     """ Table indexed by position. """
 
     MASK = "pos-mask"

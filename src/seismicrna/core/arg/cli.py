@@ -555,6 +555,20 @@ opt_f1r2_fwd = Option(
           "to be forward-stranded")
 )
 
+opt_relate_pos_table = Option(
+    ("--relate-pos-table/--no-relate-pos-table",),
+    type=bool,
+    default=True,
+    help="Tabulate relationships per position for relate data"
+)
+
+opt_relate_read_table = Option(
+    ("--relate-read-table/--no-relate-read-table",),
+    type=bool,
+    default=True,
+    help="Tabulate relationships per read for relate data"
+)
+
 # Pool
 
 opt_pool = Option(
@@ -708,6 +722,20 @@ opt_quick_unbias_thresh = Option(
     help="Treat mutated fractions under this threshold as 0 with --quick-unbias"
 )
 
+opt_mask_pos_table = Option(
+    ("--mask-pos-table/--no-mask-pos-table",),
+    type=bool,
+    default=True,
+    help="Tabulate relationships per position for mask data"
+)
+
+opt_mask_read_table = Option(
+    ("--mask-read-table/--no-mask-read-table",),
+    type=bool,
+    default=True,
+    help="Tabulate relationships per read for mask data"
+)
+
 # Cluster options
 
 opt_cluster = Option(
@@ -829,6 +857,20 @@ opt_em_thresh = Option(
     help="Stop EM when the log likelihood increases by less than this threshold"
 )
 
+opt_cluster_pos_table = Option(
+    ("--cluster-pos-table/--no-cluster-pos-table",),
+    type=bool,
+    default=True,
+    help="Tabulate relationships per position for cluster data"
+)
+
+opt_cluster_abundance_table = Option(
+    ("--cluster-abundance-table/--no-cluster-abundance-table",),
+    type=bool,
+    default=True,
+    help="Tabulate number of reads per cluster for cluster data"
+)
+
 # Join options
 
 opt_joined = Option(
@@ -842,29 +884,6 @@ opt_join_clusts = Option(
     ("--join-clusts", "-j"),
     type=Path(dir_okay=False, exists=True),
     help="Join clusters from this CSV file"
-)
-
-# Table options
-
-opt_table_pos = Option(
-    ("--table-pos/--no-table-pos",),
-    type=bool,
-    default=True,
-    help="Make a table counting relationships per position"
-)
-
-opt_table_read = Option(
-    ("--table-read/--no-table-read",),
-    type=bool,
-    default=True,
-    help="Make a table counting relationships per read"
-)
-
-opt_table_clust = Option(
-    ("--table-clust/--no-table-clust",),
-    type=bool,
-    default=True,
-    help="Make a table counting reads per cluster (only for cluster reports)"
 )
 
 # List options
@@ -1338,13 +1357,13 @@ opt_fq_gzip = Option(
 opt_verbose = Option(
     ("--verbose", "-v"),
     count=True,
-    help="Log info (-v) or info and debug (-vv) messages on stdout"
+    help="Log more messages (-v, -vv, or -vvv) on stderr"
 )
 
 opt_quiet = Option(
     ("--quiet", "-q"),
     count=True,
-    help="Suppress warnings (-q) or warnings and errors (-qq) on stdout"
+    help="Log fewer messages (-q, -qq, or -qqq) on stderr"
 )
 
 opt_log = Option(

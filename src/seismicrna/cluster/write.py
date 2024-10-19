@@ -128,6 +128,7 @@ def run_ks(uniq_reads: UniqReads,
 
 
 def cluster(mask_report_file: Path, *,
+            tmp_dir: Path,
             min_clusters: int,
             max_clusters: int,
             try_all_ks: bool,
@@ -136,7 +137,8 @@ def cluster(mask_report_file: Path, *,
             n_procs: int,
             brotli_level: int,
             force: bool,
-            tmp_dir: Path,
+            cluster_pos_table: bool,
+            cluster_abundance_table: bool,
             **kwargs):
     """ Cluster unique reads from one mask dataset. """
     # Check if the cluster report file already exists.
@@ -205,9 +207,12 @@ def cluster(mask_report_file: Path, *,
             min_mut_gap=dataset.min_mut_gap,
             quick_unbias=dataset.quick_unbias,
             quick_unbias_thresh=dataset.quick_unbias_thresh,
-            batches=batch_writer.iter_batches()
+            batches=batch_writer.iter_batches(),
+            count_pos=cluster_pos_table,
+            count_read=False
         )
-        tabulator.write_tables()
+        tabulator.write_tables(pos=cluster_pos_table,
+                               clust=cluster_abundance_table)
         # Write the observed and expected counts for every best run.
         counts_dir = tmp_clust_dir.joinpath(path.CLUST_COUNTS_DIR)
         counts_dir.mkdir()
@@ -235,8 +240,10 @@ def cluster(mask_report_file: Path, *,
     else:
         # Write the tables if they do not exist.
         ClusterDatasetTabulator(
-            dataset=ClusterMutsDataset.load(cluster_report_file)
-        ).write_tables()
+            dataset=ClusterMutsDataset.load(cluster_report_file),
+            count_pos=cluster_pos_table,
+            count_read=False
+        ).write_tables(pos=cluster_pos_table, clust=cluster_abundance_table)
     return cluster_report_file.parent
 
 ########################################################################
