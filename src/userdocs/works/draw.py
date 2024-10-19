@@ -16,7 +16,7 @@ from seismicrna.core.rel import NOCOV, MATCH, DELET, SUB_A, SUB_C, SUB_G, SUB_T
 from seismicrna.core.rna import RNAStructure, parse_db_structure
 from seismicrna.core.seq import DNA, Section, BASEA, BASEC, BASEG, BASET
 from seismicrna.graph.color import get_cmap, RelColorMap, SeqColorMap
-from seismicrna.table.base import (COVER_REL,
+from seismicrna.core.table import (COVER_REL,
                                    MATCH_REL,
                                    MUTAT_REL,
                                    DELET_REL,
