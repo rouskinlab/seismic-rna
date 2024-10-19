@@ -209,7 +209,8 @@ def cluster(mask_report_file: Path, *,
             quick_unbias_thresh=dataset.quick_unbias_thresh,
             batches=batch_writer.iter_batches(),
             count_pos=cluster_pos_table,
-            count_read=False
+            count_read=False,
+            validate=False,
         )
         tabulator.write_tables(pos=cluster_pos_table,
                                clust=cluster_abundance_table)

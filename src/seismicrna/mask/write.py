@@ -348,6 +348,7 @@ class Masker(object):
                         self.dataset.iter_batches()),
             count_pos=True,
             count_read=self.count_read,
+            validate=False,
         )
         # Filter out positions based on the parameters.
         self._filter_positions(tabulator.data_per_pos[UNAMB_REL],
