@@ -97,12 +97,6 @@ opt_keep_tmp = Option(
 )
 
 # Resource usage options
-opt_parallel = Option(
-    ("--parallel/--serial",),
-    type=bool,
-    default=True,
-    help="Run tasks in parallel or in series"
-)
 
 opt_max_procs = Option(
     ("--max-procs",),

@@ -282,7 +282,6 @@ class TwoTableRunner(GraphRunner, ABC):
             compself: bool,
             comppair: bool,
             max_procs: int,
-            parallel: bool,
             **kwargs):
         # List all table files.
         tables = load_pos_tables(input_path)
@@ -299,7 +298,6 @@ class TwoTableRunner(GraphRunner, ABC):
                    for table1, table2 in table_pairs]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,
-                                    parallel,
                                     pass_n_procs=False,
                                     kwargs=kwargs)))
 

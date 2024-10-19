@@ -25,8 +25,7 @@ from ..core.arg import (NO_GROUP,
                         opt_pdf,
                         opt_png,
                         opt_force,
-                        opt_max_procs,
-                        opt_parallel)
+                        opt_max_procs)
 from ..core.header import Header, format_clust_names
 from ..core.seq import DNA
 from ..core.table import Table, PositionTable
@@ -517,8 +516,7 @@ class GraphRunner(ABC):
                 opt_pdf,
                 opt_png,
                 opt_force,
-                opt_max_procs,
-                opt_parallel]
+                opt_max_procs]
 
     @classmethod
     def var_params(cls) -> list[Argument | Option]:
@@ -558,7 +556,6 @@ class GraphRunner(ABC):
             png: bool,
             force: bool,
             max_procs: int,
-            parallel: bool,
             **kwargs) -> list[Path]:
         """ Run graphing. """
 

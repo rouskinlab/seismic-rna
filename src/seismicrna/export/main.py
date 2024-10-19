@@ -12,8 +12,7 @@ from ..core.arg import (CMD_EXPORT,
                         opt_refs_meta,
                         opt_all_pos,
                         opt_force,
-                        opt_max_procs,
-                        opt_parallel)
+                        opt_max_procs)
 from ..core.run import run_func
 from ..core.task import dispatch
 from ..mask.table import MaskPosTableLoader, MaskReadTableLoader
@@ -25,8 +24,7 @@ def run(input_path: tuple[str, ...], *,
         refs_meta: str,
         all_pos: bool,
         force: bool,
-        max_procs: int,
-        parallel: bool) -> list[Path]:
+        max_procs: int) -> list[Path]:
     """ Export a file of each sample for the seismic-graph web app. """
     tables = defaultdict(list)
     samples_metadata = (parse_samples_metadata(Path(samples_meta))
@@ -43,7 +41,6 @@ def run(input_path: tuple[str, ...], *,
             tables[(table.top, table.sample)].append(table)
     return list(dispatch(export_sample,
                          max_procs,
-                         parallel,
                          pass_n_procs=False,
                          args=list(tables.items()),
                          kwargs=dict(samples_metadata=samples_metadata,
@@ -59,7 +56,6 @@ params = [
     opt_all_pos,
     opt_force,
     opt_max_procs,
-    opt_parallel,
 ]
 
 

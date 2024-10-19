@@ -9,8 +9,7 @@ from ..core.arg import (CMD_LISTPOS,
                         opt_complement,
                         opt_max_fmut_pos,
                         opt_force,
-                        opt_max_procs,
-                        opt_parallel)
+                        opt_max_procs)
 from ..core.run import run_func
 from ..core.seq import FIELD_REF, POS_NAME
 from ..core.task import as_list_of_tuples, dispatch
@@ -54,15 +53,13 @@ def run(input_path: tuple[str, ...], *,
         max_fmut_pos,
         complement: bool,
         force: bool,
-        max_procs: int,
-        parallel: bool) -> list[Path]:
+        max_procs: int) -> list[Path]:
     """ List positions meeting specific criteria from each table. """
     # Find the positional table files.
     tables = load_pos_tables(input_path)
     # List positions for each table.
     return dispatch(list_pos,
                     max_procs,
-                    parallel,
                     pass_n_procs=False,
                     args=as_list_of_tuples(tables),
                     kwargs=dict(max_fmut_pos=max_fmut_pos,
@@ -80,7 +77,6 @@ params = [
     opt_force,
     # Parallelization
     opt_max_procs,
-    opt_parallel,
 ]
 
 

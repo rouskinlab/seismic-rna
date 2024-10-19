@@ -18,7 +18,6 @@ from ..core.arg import (opt_param_dir,
                         opt_batch_size,
                         opt_brotli_level,
                         opt_force,
-                        opt_parallel,
                         opt_max_procs)
 from ..core.rna import find_ct_section
 from ..core.run import run_func
@@ -82,12 +81,10 @@ def run(*,
         brotli_level: int,
         tmp_dir: Path,
         force: bool,
-        parallel: bool,
         max_procs: int):
     """ Simulate a Relate dataset. """
     return dispatch(from_param_dir,
                     max_procs=max_procs,
-                    parallel=parallel,
                     pass_n_procs=False,
                     args=as_list_of_tuples(map(Path, param_dir)),
                     kwargs=dict(sample=sample,
@@ -115,7 +112,6 @@ params = [
     opt_batch_size,
     opt_brotli_level,
     opt_force,
-    opt_parallel,
     opt_max_procs
 ]
 

@@ -34,7 +34,6 @@ from ..core.arg import (CMD_MASK,
                         opt_mask_read_table,
                         opt_brotli_level,
                         opt_max_procs,
-                        opt_parallel,
                         opt_force,
                         optional_path,
                         extra_defaults)
@@ -100,7 +99,6 @@ def run(input_path: tuple[str, ...], *,
         brotli_level: int,
         # Parallelization
         max_procs: int,
-        parallel: bool,
         # Effort
         force: bool) -> list[Path]:
     """ Define mutations and sections to filter reads and positions. """
@@ -141,8 +139,6 @@ def run(input_path: tuple[str, ...], *,
     # Call the mutations and filter the relation vectors.
     return dispatch(mask_section,
                     max_procs=max_procs,
-                    parallel=parallel,
-                    pass_n_procs=False,
                     args=args,
                     kwargs=kwargs)
 
@@ -183,7 +179,6 @@ params = [
     opt_brotli_level,
     # Parallelization
     opt_max_procs,
-    opt_parallel,
     # Effort
     opt_force,
 ]

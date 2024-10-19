@@ -113,7 +113,6 @@ class RelationWriter(object):
             # Generate and write relation vectors for each batch.
             results = dispatch(generate_batch,
                                n_procs,
-                               parallel=True,
                                pass_n_procs=False,
                                args=as_list_of_tuples(self._xam.indexes),
                                kwargs=kwargs)
@@ -150,6 +149,7 @@ class RelationWriter(object):
               clip_end3: int,
               relate_pos_table: bool,
               relate_read_table: bool,
+              n_procs: int,
               **kwargs):
         """ Compute a relation vector for every record in a BAM file,
         write the vectors into one or more batch files, compute their
@@ -179,16 +179,17 @@ class RelationWriter(object):
                                               clip_end3=clip_end3,
                                               count_pos=relate_pos_table,
                                               count_read=relate_read_table,
+                                              n_procs=n_procs,
                                               **kwargs)
             # Tabulate the data.
-            tabulator = RelateCountTabulator(top=release_dir,
+            tabulator = RelateCountTabulator(batch_counts=batch_counts,
+                                             top=release_dir,
                                              sample=self.sample,
                                              ref=self.ref,
                                              refseq=self.refseq,
-                                             batches=batch_counts,
                                              count_pos=relate_pos_table,
                                              count_read=relate_read_table,
-                                             validate=True)
+                                             validate=False)
             tabulator.write_tables(pos=relate_pos_table, read=relate_read_table)
             ended = datetime.now()
             # Write a report of the relation step.
@@ -214,7 +215,8 @@ class RelationWriter(object):
             RelateDatasetTabulator(
                 dataset=RelateDataset.load(report_file),
                 count_pos=relate_pos_table,
-                count_read=relate_read_table
+                count_read=relate_read_table,
+                max_procs=n_procs,
             ).write_tables(pos=relate_pos_table, read=relate_read_table)
         return report_file.parent
 
@@ -228,7 +230,7 @@ def write_one(xam_file: Path, *,
               batch_size: int,
               n_procs: int,
               **kwargs):
-    """ Write the batches of relation vectors for one XAM file. """
+    """ Write the batches of relationships for one XAM file. """
     release_dir, working_dir = get_release_working_dirs(tmp_dir)
     ref = path.parse(xam_file, *path.XAM_SEGS)[path.REF]
     writer = RelationWriter(XamViewer(xam_file,
@@ -241,12 +243,10 @@ def write_one(xam_file: Path, *,
 
 def write_all(xam_files: Iterable[Path],
               max_procs: int,
-              parallel: bool,
               **kwargs):
-    """  """
+    """ Write the batches of relationships for all XAM files. """
     return dispatch(write_one,
                     max_procs,
-                    parallel,
                     args=as_list_of_tuples(path.deduplicate(xam_files)),
                     kwargs=kwargs)
 

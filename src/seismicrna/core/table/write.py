@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from functools import cache, cached_property
 from inspect import Parameter, signature
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable
 
 import pandas as pd
 
@@ -54,11 +54,6 @@ class Tabulator(ABC):
 
     @classmethod
     @abstractmethod
-    def accumulate_func(cls) -> Callable:
-        """ Function to accumulate the batches. """
-
-    @classmethod
-    @abstractmethod
     def get_null_value(cls) -> int | float:
         """ The null value for a count: either 0 or NaN. """
 
@@ -80,7 +75,6 @@ class Tabulator(ABC):
                  top: Path,
                  sample: str,
                  section: Section,
-                 batches: Iterable,
                  count_pos: bool,
                  count_read: bool,
                  validate: bool = True):
@@ -90,7 +84,6 @@ class Tabulator(ABC):
         self.section = section
         self.pattern = None
         self.ks = None
-        self._batches = iter(batches)
         self.count_ends = False
         self.count_pos = count_pos
         self.count_read = count_read
@@ -112,17 +105,21 @@ class Tabulator(ABC):
         return make_header(rels=TABLE_RELS, ks=self.ks)
 
     @cached_property
+    def _accum_kwargs(self):
+        """ Keyword arguments for the accumulate function. """
+        return dict(refseq=self.refseq,
+                    pos_nums=self.section.unmasked_int,
+                    patterns=all_patterns(self.pattern),
+                    ks=self.ks,
+                    count_ends=self.count_ends,
+                    count_pos=self.count_pos,
+                    count_read=self.count_read,
+                    validate=self.validate)
+
+    @cached_property
+    @abstractmethod
     def _counts(self):
         """ All counts for all table(s). """
-        return self.accumulate_func()(self._batches,
-                                      self.refseq,
-                                      self.section.unmasked_int,
-                                      all_patterns(self.pattern),
-                                      ks=self.ks,
-                                      count_ends=self.count_ends,
-                                      count_pos=self.count_pos,
-                                      count_read=self.count_read,
-                                      validate=self.validate)
 
     @property
     def num_reads(self):
@@ -198,17 +195,36 @@ class Tabulator(ABC):
 class CountTabulator(Tabulator, ABC):
     """ Tabulator that accepts pre-counted data from batches. """
 
-    @classmethod
-    def accumulate_func(cls):
-        return accumulate_counts
+    def __init__(self, *,
+                 batch_counts: Iterable[tuple[Any, Any, Any, Any]],
+                 **kwargs):
+        super().__init__(**kwargs)
+        self._batch_counts = iter(batch_counts)
+
+    @cached_property
+    def _counts(self):
+        return accumulate_counts(self._batch_counts, **self._accum_kwargs)
 
 
 class BatchTabulator(Tabulator, ABC):
     """ Tabulator that accepts batches as the input data. """
 
-    @classmethod
-    def accumulate_func(cls):
-        return accumulate_batches
+    def __init__(self, *,
+                 get_batch_count_all: Callable,
+                 num_batches: int,
+                 max_procs: int = 1,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self._get_batch_count_all = get_batch_count_all
+        self.num_batches = num_batches
+        self.max_procs = max_procs
+
+    @cached_property
+    def _counts(self):
+        return accumulate_batches(self._get_batch_count_all,
+                                  self.num_batches,
+                                  max_procs=self.max_procs,
+                                  **self._accum_kwargs)
 
 
 class DatasetTabulator(BatchTabulator, ABC):
@@ -225,7 +241,7 @@ class DatasetTabulator(BatchTabulator, ABC):
     def _init_data(cls):
         """ Attributes of the dataset to use as keyword arguments in
         super().__init__(). """
-        return ["top", "sample"]
+        return ["top", "sample", "get_batch_count_all", "num_batches"]
 
     def __init__(self, *,
                  dataset: MutsDataset,
@@ -233,8 +249,7 @@ class DatasetTabulator(BatchTabulator, ABC):
                  **kwargs):
         # Since the batches come from a Dataset, they do not need to be
         # validated, so make validate False by default.
-        super().__init__(batches=dataset.iter_batches(),
-                         **{attr: getattr(dataset, attr)
+        super().__init__(**{attr: getattr(dataset, attr)
                             for attr in self._init_data()},
                          validate=validate,
                          **kwargs)

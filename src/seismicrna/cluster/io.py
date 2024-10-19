@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .batch import ClusterReadBatch, ClusterMutsBatch
+from .batch import ClusterReadBatch
 from .emk import EMRunsK
 from ..core import path
 from ..core.header import ClustHeader
@@ -42,19 +42,19 @@ class ClusterBatchWriter(object):
         self.checksums = list()
 
     @property
-    def write_ks(self):
+    def ks_written(self):
         return [runs.k for runs in self.ks]
 
     def get_read_nums(self, batch_num: int):
         """ Get the read numbers for one batch. """
         if (nums := self.read_nums.get(batch_num)) is not None:
             return nums
-        for batch_ in self.dataset.iter_batches():
-            self.read_nums[batch_.batch] = batch_.read_nums
-        return self.read_nums[batch_num]
+        nums = self.dataset.get_batch(batch_num).read_nums
+        self.read_nums[batch_num] = nums
+        return nums
 
-    def iter_batches(self):
-        """ Iterate through the batches. """
+    def write_batches(self):
+        """ Save the batches. """
         for mask_batch in self.dataset.iter_batches():
             resps = [runs.best.get_resps(mask_batch.batch) for runs in self.ks]
             if resps:
@@ -70,13 +70,6 @@ class ClusterBatchWriter(object):
             _, checksum = batch_file.save(self.top,
                                           brotli_level=self.brotli_level)
             self.checksums.append(checksum)
-            yield ClusterMutsBatch(batch=mask_batch.batch,
-                                   section=self.dataset.section,
-                                   muts=mask_batch.muts,
-                                   seg_end5s=mask_batch.seg_end5s,
-                                   seg_end3s=mask_batch.seg_end3s,
-                                   resps=resps,
-                                   sanitize=False)
 
 ########################################################################
 #                                                                      #

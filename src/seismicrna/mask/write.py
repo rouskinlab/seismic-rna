@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -11,6 +12,7 @@ from .data import MaskMutsDataset
 from .io import MaskBatchIO
 from .report import MaskReport
 from .table import MaskBatchTabulator, MaskDatasetTabulator
+from ..core import path
 from ..core.arg import docdef
 from ..core.batch import SectionMutsBatch
 from ..core.logs import logger
@@ -57,7 +59,8 @@ class Masker(object):
                  quick_unbias_thresh: float,
                  count_read: bool,
                  brotli_level: int,
-                 top: Path):
+                 top: Path,
+                 max_procs: int = 1):
         # Set the general parameters.
         self.dataset = dataset
         self.section = Section(dataset.ref,
@@ -99,7 +102,9 @@ class Masker(object):
         self.top = top
         self.count_read = count_read
         self.brotli_level = brotli_level
-        self.checksums = list()
+        self.checksums = [""] * self.dataset.num_batches
+        # Parallelization
+        self.max_procs = max_procs
 
     @property
     def n_reads_premask(self):
@@ -161,11 +166,6 @@ class Masker(object):
     def pos_kept(self):
         """ Positions kept. """
         return self.section.unmasked_int
-
-    @property
-    def n_batches(self):
-        """ Number of batches of reads. """
-        return len(self.checksums)
 
     def _get_mask_pos(self,
                       mask_pos: list[tuple[str, int]],
@@ -275,30 +275,54 @@ class Masker(object):
             self.section.mask_gu()
         self.section.mask_list(self.mask_pos)
 
-    def _filter_batch_reads(self, batch: SectionMutsBatch):
+    def _get_n_reads_path(self, batch_num: int):
+        """ Get the path to the file of the number of reads masked out
+        for a batch. """
+        return MaskBatchIO.build_path(
+            top=self.top,
+            sample=self.dataset.sample,
+            ref=self.dataset.ref,
+            sect=self.section.name,
+            batch=batch_num
+        ).with_suffix(path.JSON_EXT)
+
+    def _get_checksum_path(self, batch_num: int):
+        """ Get the path to the file of the checksum for a batch. """
+        return MaskBatchIO.build_path(
+            top=self.top,
+            sample=self.dataset.sample,
+            ref=self.dataset.ref,
+            sect=self.section.name,
+            batch=batch_num
+        ).with_suffix(path.TXT_EXT)
+
+    def _filter_batch_reads(self, batch_num: int, **kwargs):
         """ Remove the reads in the batch that do not pass the filters
         and return a new batch without those reads. """
+        n_reads = dict()
+        # Load the batch.
+        batch = self.dataset.get_batch(batch_num)
         # Determine the initial number of reads in the batch.
-        self._n_reads[self.MASK_READ_INIT] += (n := batch.num_reads)
+        n_reads[self.MASK_READ_INIT] = (n := batch.num_reads)
         # Keep only the unmasked positions.
         batch = apply_mask(batch, section=self.section)
         # Remove reads with too few covered positions.
         batch = self._filter_min_ncov_read(batch)
-        self._n_reads[self.MASK_READ_NCOV] += (n - (n := batch.num_reads))
+        n_reads[self.MASK_READ_NCOV] = (n - (n := batch.num_reads))
         # Remove reads with discontiguous mates.
         batch = self._filter_discontig(batch)
-        self._n_reads[self.MASK_READ_DISCONTIG] += (n - (n := batch.num_reads))
+        n_reads[self.MASK_READ_DISCONTIG] = (n - (n := batch.num_reads))
         # Remove reads with too few informative positions.
         batch = self._filter_min_finfo_read(batch)
-        self._n_reads[self.MASK_READ_FINFO] += (n - (n := batch.num_reads))
+        n_reads[self.MASK_READ_FINFO] = (n - (n := batch.num_reads))
         # Remove reads with too many mutations.
         batch = self._filter_max_fmut_read(batch)
-        self._n_reads[self.MASK_READ_FMUT] += (n - (n := batch.num_reads))
+        n_reads[self.MASK_READ_FMUT] = (n - (n := batch.num_reads))
         # Remove reads with mutations too close together.
         batch = self._mask_min_mut_gap(batch)
-        self._n_reads[self.MASK_READ_GAP] += (n - (n := batch.num_reads))
+        n_reads[self.MASK_READ_GAP] = (n - (n := batch.num_reads))
         # Record the number of reads remaining after filtering.
-        self._n_reads[self.MASK_READ_KEPT] += n
+        n_reads[self.MASK_READ_KEPT] = n
         # Save the batch.
         batch_file = MaskBatchIO(sample=self.dataset.sample,
                                  ref=self.dataset.ref,
@@ -306,8 +330,17 @@ class Masker(object):
                                  batch=batch.batch,
                                  read_nums=batch.read_nums)
         _, checksum = batch_file.save(self.top, brotli_level=self.brotli_level)
-        self.checksums.append(checksum)
-        return batch
+        # Save the checksum.
+        checksum_file = self._get_checksum_path(batch_num)
+        with open(checksum_file, "x") as f:
+            f.write(checksum)
+            logger.detail(f"Wrote checksum {repr(checksum)} to {checksum_file}")
+        # Save the read counts.
+        n_reads_file = self._get_n_reads_path(batch_num)
+        with open(n_reads_file, "x") as f:
+            json.dump(n_reads, f)
+            logger.detail(f"Wrote number of reads {n_reads} to {n_reads_file}")
+        return batch.count_all(**kwargs)
 
     def _filter_positions(self, info: pd.Series, muts: pd.Series):
         """ Remove the positions that do not pass the filters. """
@@ -333,9 +366,11 @@ class Masker(object):
         self._exclude_positions()
         if self.pos_kept.size == 0:
             logger.warning(f"No positions remained after excluding with {self}")
-        # Filter out reads based on the parameters and count the number
-        # of informative and mutated positions remaining.
+        # Filter out reads based on the parameters and count the numbers
+        # of informative and mutated bases.
         tabulator = MaskBatchTabulator(
+            get_batch_count_all=self._filter_batch_reads,
+            num_batches=self.dataset.num_batches,
             top=self.top,
             sample=self.dataset.sample,
             refseq=self.dataset.refseq,
@@ -344,15 +379,26 @@ class Masker(object):
             min_mut_gap=self.min_mut_gap,
             quick_unbias=self.quick_unbias,
             quick_unbias_thresh=self.quick_unbias_thresh,
-            batches=map(self._filter_batch_reads,
-                        self.dataset.iter_batches()),
             count_pos=True,
             count_read=self.count_read,
             validate=False,
+            max_procs=self.max_procs,
         )
+        info = tabulator.data_per_pos[UNAMB_REL]
+        muts = tabulator.data_per_pos[MUTAT_REL]
+        # Load the checksums and the number of reads.
+        for batch_num in range(self.dataset.num_batches):
+            checksum_file = self._get_checksum_path(batch_num)
+            with open(checksum_file) as f:
+                self.checksums[batch_num] = f.read()
+            checksum_file.unlink()
+            n_reads_file = self._get_n_reads_path(batch_num)
+            with open(n_reads_file) as f:
+                for category, n_reads in json.load(f).items():
+                    self._n_reads[category] += n_reads
+            n_reads_file.unlink()
         # Filter out positions based on the parameters.
-        self._filter_positions(tabulator.data_per_pos[UNAMB_REL],
-                               tabulator.data_per_pos[MUTAT_REL])
+        self._filter_positions(info, muts)
         if self.n_reads_kept == 0:
             logger.warning(f"No reads remained after filtering with {self}")
         if self.pos_kept.size == 0:
@@ -367,7 +413,7 @@ class Masker(object):
             end5=self.section.end5,
             end3=self.section.end3,
             checksums={self.CHECKSUM_KEY: self.checksums},
-            n_batches=self.n_batches,
+            n_batches=self.dataset.num_batches,
             count_refs=self.pattern.nos,
             count_muts=self.pattern.yes,
             mask_gu=self.mask_gu,
@@ -419,6 +465,7 @@ def mask_section(dataset: RelateDataset | PoolDataset,
                  force: bool,
                  mask_pos_table: bool,
                  mask_read_table: bool,
+                 n_procs: int,
                  **kwargs):
     """ Filter a section of a set of bit vectors. """
     # Check if the report file already exists.
@@ -434,6 +481,7 @@ def mask_section(dataset: RelateDataset | PoolDataset,
                         pattern,
                         top=tmp_dir,
                         count_read=mask_read_table,
+                        max_procs=n_procs,
                         **kwargs)
         tabulator = masker.mask()
         tabulator.write_tables(pos=mask_pos_table, read=mask_read_table)
@@ -446,7 +494,8 @@ def mask_section(dataset: RelateDataset | PoolDataset,
         MaskDatasetTabulator(
             dataset=MaskMutsDataset.load(report_file),
             count_pos=mask_pos_table,
-            count_read=mask_read_table
+            count_read=mask_read_table,
+            max_procs=n_procs,
         ).write_tables(pos=mask_pos_table, read=mask_read_table)
     return report_file.parent
 

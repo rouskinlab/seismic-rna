@@ -24,7 +24,6 @@ from ..core.arg import (CMD_FOLD,
                         opt_fold_max,
                         opt_fold_percent,
                         opt_max_procs,
-                        opt_parallel,
                         opt_force,
                         optional_path,
                         extra_defaults)
@@ -107,7 +106,6 @@ def fold_profile(table: MaskPosTableLoader | ClusterPosTableLoader,
     """ Fold an RNA molecule from one table of reactivities. """
     return dispatch(fold_section,
                     n_procs,
-                    parallel=True,
                     pass_n_procs=True,
                     args=as_list_of_tuples(table.iter_profiles(
                         sections=sections, quantile=quantile)
@@ -136,7 +134,6 @@ def run(input_path: tuple[str, ...], *,
         tmp_dir: Path,
         keep_tmp: bool,
         max_procs: int,
-        parallel: bool,
         force: bool):
     """ Predict RNA secondary structures using mutation rates. """
     # Check for the dependencies and the DATAPATH environment variable.
@@ -169,7 +166,6 @@ def run(input_path: tuple[str, ...], *,
     return list(chain(*dispatch(
         fold_profile,
         max_procs,
-        parallel,
         pass_n_procs=True,
         args=args,
         kwargs=dict(tmp_dir=tmp_dir,
@@ -201,7 +197,6 @@ params = [
     opt_tmp_pfx,
     opt_keep_tmp,
     opt_max_procs,
-    opt_parallel,
     opt_force,
 ]
 

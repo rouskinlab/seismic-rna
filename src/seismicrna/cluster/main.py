@@ -27,7 +27,6 @@ from ..core.arg import (CMD_CLUSTER,
                         opt_cluster_pos_table,
                         opt_cluster_abundance_table,
                         opt_brotli_level,
-                        opt_parallel,
                         opt_max_procs,
                         opt_force)
 from ..core.run import run_func
@@ -57,7 +56,6 @@ def run(input_path: tuple[str, ...], *,
         cluster_abundance_table: bool,
         brotli_level: int,
         max_procs: int,
-        parallel: bool,
         force: bool,
         tmp_dir: Path) -> list[Path]:
     """ Infer alternative structures by clustering reads' mutations. """
@@ -68,7 +66,6 @@ def run(input_path: tuple[str, ...], *,
     # Cluster each mask dataset.
     return dispatch(cluster,
                     max_procs,
-                    parallel,
                     pass_n_procs=True,
                     args=as_list_of_tuples(report_files),
                     kwargs=dict(min_clusters=min_clusters,
@@ -121,7 +118,6 @@ params = [
     opt_brotli_level,
     # Parallelization
     opt_max_procs,
-    opt_parallel,
     # Effort
     opt_force,
     opt_tmp_pfx,

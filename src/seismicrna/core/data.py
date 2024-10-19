@@ -145,6 +145,10 @@ class MutsDataset(Dataset, ABC):
     def section(self) -> Section:
         """ Section of the dataset. """
 
+    def get_batch_count_all(self, batch_num: int, **kwargs):
+        """ Calculate the counts for a specific batch of data. """
+        return self.get_batch(batch_num).count_all(**kwargs)
+
 
 class NarrowDataset(MutsDataset, ABC):
     """ MutsDataset with one section, in contrast to a WideDataset that

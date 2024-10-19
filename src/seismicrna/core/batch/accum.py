@@ -1,14 +1,14 @@
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 import numpy as np
 import pandas as pd
 
 from .ends import END_COORDS
-from .muts import SectionMutsBatch
 from ..header import make_header
 from ..logs import logger
 from ..rel import RelPattern
 from ..seq import DNA, seq_pos_to_index
+from ..task import as_list_of_tuples, dispatch
 
 
 def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
@@ -121,9 +121,9 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
                 )
             count_per_batch_read.append(count_per_read_i)
         logger.detail(
-            "\n".join([f"After batch {i}, accumulated"
-                       f"num_reads = {num_reads}"
-                       f"end_counts = {end_counts}"
+            "\n".join([f"After batch {i}, accumulated",
+                       f"num_reads = {num_reads}",
+                       f"end_counts = {end_counts}",
                        f"count_per_pos = {count_per_pos}",
                        f"count_per_batch_read = {count_per_batch_read}"])
         )
@@ -138,21 +138,32 @@ def accumulate_counts(batch_counts: Iterable[tuple[Any, Any, Any, Any]],
     return num_reads, end_counts, count_per_pos, count_per_read
 
 
-def accumulate_batches(batches: Iterable[SectionMutsBatch],
-                       refseq: DNA,
-                       pos_nums: np.ndarray,
-                       patterns: dict[str, RelPattern],
-                       ks: Iterable[int] | None = None, *,
-                       count_ends: bool = True,
-                       count_pos: bool = True,
-                       count_read: bool = True,
-                       validate: bool = True):
-    return accumulate_counts((batch.count_all(patterns,
-                                              ks,
-                                              count_ends=count_ends,
-                                              count_pos=count_pos,
-                                              count_read=count_read)
-                              for batch in batches),
+def accumulate_batches(
+        get_batch_count_all: Callable[[int], tuple[Any, Any, Any, Any]],
+        num_batches: int,
+        refseq: DNA,
+        pos_nums: np.ndarray,
+        patterns: dict[str, RelPattern],
+        ks: Iterable[int] | None = None, *,
+        count_ends: bool = True,
+        count_pos: bool = True,
+        count_read: bool = True,
+        validate: bool = True,
+        max_procs: int = 1
+):
+    # Generate the counts for the batches in parallel.
+    batch_counts = dispatch(get_batch_count_all,
+                            max_procs=max_procs,
+                            pass_n_procs=False,
+                            raise_on_error=True,
+                            args=as_list_of_tuples(range(num_batches)),
+                            kwargs=dict(patterns=patterns,
+                                        ks=ks,
+                                        count_ends=count_ends,
+                                        count_pos=count_pos,
+                                        count_read=count_read))
+    # Accumulate the counts for all batches.
+    return accumulate_counts(batch_counts,
                              refseq,
                              pos_nums,
                              patterns,

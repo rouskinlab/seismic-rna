@@ -12,7 +12,6 @@ from .core.arg import (CMD_JOIN,
                        opt_joined,
                        opt_join_clusts,
                        opt_max_procs,
-                       opt_parallel,
                        opt_force)
 from .core.data import load_datasets
 from .core.logs import logger
@@ -124,7 +123,6 @@ def run(input_path: tuple[str, ...], *,
         join_clusts: str | None,
         # Parallelization
         max_procs: int,
-        parallel: bool,
         # Effort
         force: bool) -> list[Path]:
     """ Merge sections (horizontally) from the Mask or Cluster step. """
@@ -169,7 +167,6 @@ def run(input_path: tuple[str, ...], *,
     # Make each joined section.
     return dispatch(join_sections,
                     max_procs=max_procs,
-                    parallel=parallel,
                     pass_n_procs=False,
                     args=[(out_dir, joined, sample, ref, sects, clustered)
                           for (out_dir, sample, ref, clustered), sects
@@ -184,7 +181,6 @@ params = [
     opt_join_clusts,
     # Parallelization
     opt_max_procs,
-    opt_parallel,
     # Effort
     opt_force,
 ]

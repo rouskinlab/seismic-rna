@@ -13,7 +13,7 @@ from .obsexp import write_obs_exp_counts
 from .params import write_mus, write_pis
 from .report import ClusterReport
 from .summary import write_summaries
-from .table import ClusterBatchTabulator, ClusterDatasetTabulator
+from .table import ClusterDatasetTabulator
 from .uniq import UniqReads
 from ..core import path
 from ..core.header import validate_ks
@@ -52,7 +52,6 @@ def run_k(uniq_reads: UniqReads,
     args = [(uniq_reads, k, seed) for seed in seeds]
     runs = list(dispatch([EMRun for _ in range(em_runs)],
                          n_procs,
-                         parallel=True,
                          pass_n_procs=False,
                          args=args,
                          kwargs=kwargs))
@@ -197,23 +196,7 @@ def cluster(mask_report_file: Path, *,
                                           write_ks,
                                           brotli_level,
                                           tmp_dir)
-        tabulator = ClusterBatchTabulator(
-            top=tmp_dir,
-            sample=dataset.sample,
-            refseq=dataset.refseq,
-            section=dataset.section,
-            pattern=dataset.pattern,
-            ks=batch_writer.write_ks,
-            min_mut_gap=dataset.min_mut_gap,
-            quick_unbias=dataset.quick_unbias,
-            quick_unbias_thresh=dataset.quick_unbias_thresh,
-            batches=batch_writer.iter_batches(),
-            count_pos=cluster_pos_table,
-            count_read=False,
-            validate=False,
-        )
-        tabulator.write_tables(pos=cluster_pos_table,
-                               clust=cluster_abundance_table)
+        batch_writer.write_batches()
         # Write the observed and expected counts for every best run.
         counts_dir = tmp_clust_dir.joinpath(path.CLUST_COUNTS_DIR)
         counts_dir.mkdir()
@@ -230,7 +213,7 @@ def cluster(mask_report_file: Path, *,
                                              max_clusters=max_clusters,
                                              try_all_ks=try_all_ks,
                                              write_all_ks=write_all_ks,
-                                             ks_written=batch_writer.write_ks,
+                                             ks_written=batch_writer.ks_written,
                                              em_runs=em_runs,
                                              checksums=batch_writer.checksums,
                                              began=began,
@@ -238,13 +221,13 @@ def cluster(mask_report_file: Path, *,
                                              **kwargs)
         report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
-    else:
-        # Write the tables if they do not exist.
-        ClusterDatasetTabulator(
-            dataset=ClusterMutsDataset.load(cluster_report_file),
-            count_pos=cluster_pos_table,
-            count_read=False
-        ).write_tables(pos=cluster_pos_table, clust=cluster_abundance_table)
+    # Write the tables if they do not exist.
+    ClusterDatasetTabulator(
+        dataset=ClusterMutsDataset.load(cluster_report_file),
+        count_pos=cluster_pos_table,
+        count_read=False,
+        max_procs=n_procs,
+    ).write_tables(pos=cluster_pos_table, clust=cluster_abundance_table)
     return cluster_report_file.parent
 
 ########################################################################

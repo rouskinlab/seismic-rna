@@ -9,8 +9,7 @@ from ..core.arg import (CMD_RENUMCT,
                         opt_inplace,
                         opt_out_dir,
                         opt_force,
-                        opt_max_procs,
-                        opt_parallel)
+                        opt_max_procs)
 from ..core.logs import logger
 from ..core.rna import renumber_ct as renumber_ct
 from ..core.run import run_func
@@ -23,8 +22,7 @@ def run(*,
         inplace: bool,
         out_dir: str,
         force: bool,
-        max_procs: int,
-        parallel: bool):
+        max_procs: int):
     """ Renumber connectivity table (CT) files given a 5' position. """
     # For each start position, find all files to renumber.
     start_files = {start: list(path.find_files(Path(files),
@@ -58,7 +56,6 @@ def run(*,
     # Renumber the files; if modifying in-place, force must be True.
     return dispatch(renumber_ct,
                     max_procs,
-                    parallel,
                     args=args,
                     kwargs=dict(force=force or inplace),
                     pass_n_procs=False)
@@ -70,7 +67,6 @@ params = [
     opt_out_dir,
     opt_force,
     opt_max_procs,
-    opt_parallel
 ]
 
 

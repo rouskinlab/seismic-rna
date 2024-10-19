@@ -21,7 +21,6 @@ from ..core.arg import (arg_fasta,
                         opt_keep_tmp,
                         opt_force,
                         opt_max_procs,
-                        opt_parallel,
                         optional_path,
                         extra_defaults)
 from ..core.extern import (RNASTRUCTURE_FOLD_CMD,
@@ -116,8 +115,7 @@ def run(fasta: str, *,
         keep_tmp: bool,
         tmp_dir: Path,
         force: bool,
-        max_procs: int,
-        parallel: bool):
+        max_procs: int):
     # Check for the dependencies and the DATAPATH environment variable.
     require_dependency(RNASTRUCTURE_FOLD_CMD, __name__)
     require_data_path()
@@ -130,7 +128,6 @@ def run(fasta: str, *,
                            primers=fold_primers)
     return dispatch(fold_section,
                     max_procs=max_procs,
-                    parallel=parallel,
                     pass_n_procs=True,
                     args=as_list_of_tuples(sections.sections),
                     kwargs=dict(sim_dir=Path(sim_dir),
@@ -161,8 +158,7 @@ params = [arg_fasta,
           opt_fold_percent,
           opt_keep_tmp,
           opt_force,
-          opt_max_procs,
-          opt_parallel]
+          opt_max_procs]
 
 
 @command(COMMAND, params=params)

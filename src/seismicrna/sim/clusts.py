@@ -9,7 +9,6 @@ from ..core import path
 from ..core.arg import (opt_ct_file,
                         opt_clust_conc,
                         opt_force,
-                        opt_parallel,
                         opt_max_procs)
 from ..core.header import ClustHeader
 from ..core.rna import from_ct
@@ -83,12 +82,10 @@ def run(*,
         ct_file: tuple[str, ...],
         clust_conc: float,
         force: bool,
-        parallel: bool,
         max_procs: int):
     """ Simulate the rate of each kind of mutation at each position. """
     return dispatch(sim_pclust_ct,
                     max_procs=max_procs,
-                    parallel=parallel,
                     pass_n_procs=False,
                     args=as_list_of_tuples(map(Path, ct_file)),
                     kwargs=dict(concentration=(clust_conc if clust_conc
@@ -100,7 +97,6 @@ params = [
     opt_ct_file,
     opt_clust_conc,
     opt_force,
-    opt_parallel,
     opt_max_procs
 ]
 

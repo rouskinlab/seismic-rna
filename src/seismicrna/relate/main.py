@@ -24,7 +24,6 @@ from ..core.arg import (CMD_REL,
                         opt_rev_label,
                         opt_relate_pos_table,
                         opt_relate_read_table,
-                        opt_parallel,
                         opt_max_procs,
                         opt_force,
                         opt_keep_tmp)
@@ -50,7 +49,6 @@ def run(fasta: str,
         relate_pos_table: bool,
         relate_read_table: bool,
         max_procs: int,
-        parallel: bool,
         brotli_level: int,
         force: bool,
         keep_tmp: bool):
@@ -81,7 +79,6 @@ def run(fasta: str,
                      relate_pos_table=relate_pos_table,
                      relate_read_table=relate_read_table,
                      max_procs=max_procs,
-                     parallel=parallel,
                      brotli_level=brotli_level,
                      force=force,
                      keep_tmp=keep_tmp)
@@ -114,7 +111,6 @@ params = [
     opt_relate_read_table,
     # Parallelization
     opt_max_procs,
-    opt_parallel,
     # File generation
     opt_force,
     opt_keep_tmp,

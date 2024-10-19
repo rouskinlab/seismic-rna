@@ -9,7 +9,6 @@ from ..core.arg import (CMD_POOL,
                         arg_input_path,
                         opt_pool,
                         opt_max_procs,
-                        opt_parallel,
                         opt_force)
 from ..core.data import load_datasets
 from ..core.logs import logger
@@ -94,7 +93,6 @@ def run(input_path: tuple[str, ...], *,
         pool: str,
         # Parallelization
         max_procs: int,
-        parallel: bool,
         # Effort
         force: bool) -> list[Path]:
     """ Merge samples (vertically) from the Relate step. """
@@ -115,7 +113,6 @@ def run(input_path: tuple[str, ...], *,
     # Make each pool of samples.
     return dispatch(pool_samples,
                     max_procs=max_procs,
-                    parallel=parallel,
                     pass_n_procs=False,
                     args=[(out_dir, pool, ref, samples)
                           for (out_dir, ref), samples in pools.items()],
@@ -128,7 +125,6 @@ params = [
     opt_pool,
     # Parallelization
     opt_max_procs,
-    opt_parallel,
     # Effort
     opt_force,
 ]

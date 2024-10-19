@@ -11,7 +11,6 @@ from ..core.arg import (opt_ct_file,
                         opt_insert_fmean,
                         opt_ends_var,
                         opt_force,
-                        opt_parallel,
                         opt_max_procs)
 from ..core.batch import END5_COORD, END3_COORD
 from ..core.random import stochastic_round
@@ -185,12 +184,10 @@ def run(*,
         insert_fmean: float,
         ends_var: float,
         force: bool,
-        parallel: bool,
         max_procs: int):
     """ Simulate the rate of each kind of mutation at each position. """
     return dispatch(sim_pends_ct,
                     max_procs=max_procs,
-                    parallel=parallel,
                     pass_n_procs=False,
                     args=as_list_of_tuples(map(Path, ct_file)),
                     kwargs=dict(end3_fmean=end3_fmean,
@@ -205,7 +202,6 @@ params = [
     opt_insert_fmean,
     opt_ends_var,
     opt_force,
-    opt_parallel,
     opt_max_procs
 ]
 

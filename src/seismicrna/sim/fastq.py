@@ -24,7 +24,6 @@ from ..core.arg import (ILLUMINA_TRUSEQ_ADAPTER_R1,
                         opt_num_reads,
                         opt_batch_size,
                         opt_max_procs,
-                        opt_parallel,
                         opt_force)
 from ..core.array import get_length
 from ..core.logs import logger
@@ -323,7 +322,6 @@ def run(*,
         fq_gzip: bool,
         num_reads: int,
         max_procs: int,
-        parallel: bool,
         force: bool):
     report_files = as_list_of_tuples(path.find_files_chain(
         input_path,
@@ -334,7 +332,6 @@ def run(*,
     if report_files:
         fastqs.extend(chain(*dispatch(from_report,
                                       max_procs=max_procs,
-                                      parallel=parallel,
                                       pass_n_procs=False,
                                       args=report_files,
                                       kwargs=dict(read_length=read_length,
@@ -344,7 +341,6 @@ def run(*,
     if param_dirs:
         fastqs.extend(chain(*dispatch(from_param_dir,
                                       max_procs=max_procs,
-                                      parallel=parallel,
                                       pass_n_procs=False,
                                       args=param_dirs,
                                       kwargs=dict(sample=sample,
@@ -372,7 +368,6 @@ params = [arg_input_path,
           opt_fq_gzip,
           opt_num_reads,
           opt_max_procs,
-          opt_parallel,
           opt_force]
 
 

@@ -78,7 +78,6 @@ def run(fasta: str,
         brotli_level: int,
         force: bool,
         max_procs: int,
-        parallel: bool,
         # FASTQ options
         fastqz: tuple[str, ...],
         fastqy: tuple[str, ...],
@@ -254,7 +253,6 @@ def run(fasta: str,
         keep_tmp=keep_tmp,
         force=force,
         max_procs=max_procs,
-        parallel=parallel,
         fasta=fasta,
         fastqz=fastqz,
         fastqy=fastqy,
@@ -321,7 +319,6 @@ def run(fasta: str,
         relate_pos_table=relate_pos_table,
         relate_read_table=relate_read_table,
         max_procs=max_procs,
-        parallel=parallel,
         brotli_level=brotli_level,
         force=force,
         keep_tmp=keep_tmp,
@@ -354,7 +351,6 @@ def run(fasta: str,
         mask_read_table=mask_read_table,
         brotli_level=brotli_level,
         max_procs=max_procs,
-        parallel=parallel,
         force=force,
     ))
     # Cluster
@@ -384,7 +380,6 @@ def run(fasta: str,
             cluster_abundance_table=cluster_abundance_table,
             brotli_level=brotli_level,
             max_procs=max_procs,
-            parallel=parallel,
             force=force,
         ))
     # Fold
@@ -405,7 +400,6 @@ def run(fasta: str,
             tmp_pfx=tmp_pfx,
             keep_tmp=keep_tmp,
             max_procs=max_procs,
-            parallel=parallel,
             force=force,
         )
     if graph_mprof or graph_tmprof:
@@ -426,7 +420,6 @@ def run(fasta: str,
                           pdf=pdf,
                           png=png,
                           max_procs=max_procs,
-                          parallel=parallel,
                           force=force)
     if graph_ncov:
         # Graph information per position.
@@ -441,7 +434,6 @@ def run(fasta: str,
                           pdf=pdf,
                           png=png,
                           max_procs=max_procs,
-                          parallel=parallel,
                           force=force)
     if graph_mhist:
         # Graph mutations per read.
@@ -458,7 +450,6 @@ def run(fasta: str,
                                 pdf=pdf,
                                 png=png,
                                 max_procs=max_procs,
-                                parallel=parallel,
                                 force=force)
     if graph_giniroll:
         # Graph Gini coefficient.
@@ -475,7 +466,6 @@ def run(fasta: str,
                               pdf=pdf,
                               png=png,
                               max_procs=max_procs,
-                              parallel=parallel,
                               force=force)
     if fold:
         if graph_roc:
@@ -496,7 +486,6 @@ def run(fasta: str,
                           pdf=pdf,
                           png=png,
                           max_procs=max_procs,
-                          parallel=parallel,
                           force=force)
         if graph_aucroll:
             # Graph rolling AUC-ROC.
@@ -518,7 +507,6 @@ def run(fasta: str,
                                  pdf=pdf,
                                  png=png,
                                  max_procs=max_procs,
-                                 parallel=parallel,
                                  force=force)
     # Export
     if export:
@@ -528,7 +516,6 @@ def run(fasta: str,
             refs_meta=refs_meta,
             all_pos=all_pos,
             max_procs=max_procs,
-            parallel=parallel,
             force=force,
         )
 

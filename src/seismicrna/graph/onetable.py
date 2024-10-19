@@ -98,7 +98,6 @@ class OneTableRunner(GraphRunner, ABC):
     def run(cls,
             input_path: tuple[str, ...], *,
             max_procs: int,
-            parallel: bool,
             **kwargs):
         # Generate a table writer for each table.
         writer_type = cls.get_writer_type()
@@ -106,7 +105,6 @@ class OneTableRunner(GraphRunner, ABC):
                    for table_file in cls.list_table_files(input_path)]
         return list(chain(*dispatch([writer.write for writer in writers],
                                     max_procs,
-                                    parallel,
                                     pass_n_procs=False,
                                     kwargs=kwargs)))
 

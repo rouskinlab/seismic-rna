@@ -9,8 +9,7 @@ from ..core.header import ClustHeader, RelClustHeader, make_header, parse_header
 from ..core.table import (AbundanceTable,
                           RelTypeTable,
                           PositionTableWriter,
-                          AbundanceTableWriter,
-                          BatchTabulator)
+                          AbundanceTableWriter)
 from ..mask.table import (PartialTable,
                           PartialPositionTable,
                           PartialTabulator,
@@ -106,10 +105,6 @@ class ClusterTabulator(PartialTabulator, ABC):
         n_rels, n_clust = self._adjusted
         n_clust.name = "Number of Reads"
         return n_clust
-
-
-class ClusterBatchTabulator(ClusterTabulator, BatchTabulator):
-    pass
 
 
 class ClusterDatasetTabulator(ClusterTabulator, PartialDatasetTabulator):

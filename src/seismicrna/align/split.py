@@ -13,7 +13,6 @@ from ..core.arg import (CMD_SPLITBAM,
                         opt_tmp_pfx,
                         opt_force,
                         opt_keep_tmp,
-                        opt_parallel,
                         opt_max_procs,
                         opt_bt2_local,
                         opt_bt2_discordant,
@@ -129,7 +128,6 @@ def run(fasta: str, *,
         rev_label: str,
         # Parallelization
         max_procs: int,
-        parallel: bool,
         force: bool) -> list[Path]:
     """ Trim FASTQ files and align them to reference sequences. """
     # Check for external dependencies.
@@ -139,7 +137,6 @@ def run(fasta: str, *,
     # Split each input XAM file.
     return dispatch(split_xam_file,
                     max_procs=max_procs,
-                    parallel=parallel,
                     pass_n_procs=True,
                     args=as_list_of_tuples(map(Path, input_path)),
                     kwargs=dict(fasta=Path(fasta),
@@ -206,7 +203,6 @@ params = [
     opt_f1r2_fwd,
     opt_rev_label,
     # Parallelization
-    opt_parallel,
     opt_max_procs,
     opt_force,
 ]
