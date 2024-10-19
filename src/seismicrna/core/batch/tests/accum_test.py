@@ -7,12 +7,21 @@ from seismicrna.cluster.batch import ClusterMutsBatch
 from seismicrna.core.batch.accum import accumulate_batches
 from seismicrna.core.batch.ends import END5_COORD, END3_COORD
 from seismicrna.core.batch.index import RB_INDEX_NAMES
+from seismicrna.core.batch.muts import SectionMutsBatch
 from seismicrna.core.header import RelClustHeader
 from seismicrna.core.rel import RelPattern
 from seismicrna.core.seq.section import Section
 from seismicrna.core.seq.xna import DNA
 from seismicrna.mask.batch import MaskMutsBatch
 from seismicrna.relate.batch import RelateBatch
+
+
+def get_batch_count_all_func(batches: list[SectionMutsBatch]):
+
+    def get_batch_count_all(batch_num: int, **kwargs):
+        return batches[batch_num].count_all(**kwargs)
+
+    return get_batch_count_all
 
 
 class TestAccumulateBatches(ut.TestCase):
@@ -57,7 +66,8 @@ class TestAccumulateBatches(ut.TestCase):
                                             [3]]))
         ]
         n, ends, fpp, fpr = accumulate_batches(
-            batches,
+            get_batch_count_all_func(batches),
+            len(batches),
             section.seq,
             section.unmasked_int,
             patterns,
@@ -137,7 +147,8 @@ class TestAccumulateBatches(ut.TestCase):
                                             [3]]))
         ]
         n, ends, fpp, fpr = accumulate_batches(
-            batches,
+            get_batch_count_all_func(batches),
+            len(batches),
             section.seq,
             section.unmasked_int,
             patterns,
@@ -220,7 +231,8 @@ class TestAccumulateBatches(ut.TestCase):
                           read_nums=np.array([0, 6]))
         ]
         n, ends, fpp, fpr = accumulate_batches(
-            batches,
+            get_batch_count_all_func(batches),
+            len(batches),
             section.seq,
             section.unmasked_int,
             patterns,
@@ -315,7 +327,8 @@ class TestAccumulateBatches(ut.TestCase):
                                                 cheader.index))
         ]
         n, ends, fpp, fpr = accumulate_batches(
-            batches,
+            get_batch_count_all_func(batches),
+            len(batches),
             section.seq,
             section.unmasked_int,
             patterns,
