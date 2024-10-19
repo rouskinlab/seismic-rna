@@ -123,7 +123,7 @@ def sim_pends(end5: int,
         5' and 3' coordinates and their probabilities.
     """
     if num_reads is None:
-        num_reads = 1_000_000
+        num_reads = 10_000_000
     elif num_reads < 1:
         raise ValueError(f"num_reads must be ≥ 1, but got {num_reads}")
     end5s, end3s = _sim_ends(end5,
