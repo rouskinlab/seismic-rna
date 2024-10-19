@@ -14,13 +14,13 @@ from .core.arg import (CMD_JOIN,
                        opt_max_procs,
                        opt_force)
 from .core.data import load_datasets
+from .core.join.cluster import parse_join_clusts_file
+from .core.join.data import JoinMutsDataset
+from .core.join.report import JoinMaskReport, JoinClusterReport
 from .core.logs import logger
 from .core.run import run_func
 from .core.task import dispatch
 from .core.write import need_write
-from .joinbase.cluster import parse_join_clusts_file
-from .joinbase.data import JoinMutsDataset
-from .joinbase.report import JoinMaskReport, JoinClusterReport
 from .mask.data import load_mask_dataset
 from .mask.report import MaskReport
 

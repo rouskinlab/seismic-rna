@@ -1,11 +1,11 @@
-from ..core import path
-from ..core.io import SectIO
-from ..core.report import (Report,
-                           SampleF,
-                           RefF,
-                           SectF,
-                           JoinedSectionsF,
-                           JoinedClustersF)
+from .. import path
+from ..io import SectIO
+from ..report import (Report,
+                      SampleF,
+                      RefF,
+                      SectF,
+                      JoinedSectionsF,
+                      JoinedClustersF)
 
 
 class JoinMaskReport(Report, SectIO):

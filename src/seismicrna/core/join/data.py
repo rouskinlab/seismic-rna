@@ -4,10 +4,10 @@ from typing import Any, Iterable
 
 import numpy as np
 
-from ..core.array import locate_elements
-from ..core.batch import MutsBatch, match_reads_segments
-from ..core.data import WideDataset
-from ..core.seq import Section
+from ..array import locate_elements
+from ..batch import MutsBatch, match_reads_segments
+from ..data import WideDataset
+from ..seq import Section
 
 BATCH_NUM = "batch"
 READ_NUMS = "read_nums"

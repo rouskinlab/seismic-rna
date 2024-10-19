@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from ..core.header import ClustHeader, parse_header
+from ..header import ClustHeader, parse_header
 
 
 def parse_join_clusts_file(file: str | Path):
