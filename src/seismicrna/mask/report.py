@@ -63,8 +63,6 @@ class MaskReport(BatchedReport, MaskIO):
             SectF,
             End5F,
             End3F,
-            # Iteration parameters.
-            MaxMaskIterF,
             # Types of mutations and matches to count.
             CountMutsF,
             CountRefsF,
@@ -102,7 +100,8 @@ class MaskReport(BatchedReport, MaskIO):
             NumReadsHiMutF,
             NumReadsCloseMutF,
             NumReadsKeptF,
-            # Iteration results.
+            # Iterations.
+            MaxMaskIterF,
             NumMaskIterF,
             # Observer bias correction.
             QuickUnbiasF,
