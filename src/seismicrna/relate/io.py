@@ -83,14 +83,12 @@ def from_reads(reads: Iterable[tuple[str, tuple[list[int], [list[int]]], dict[in
                                ref=ref,
                                batch=batch,
                                names=names)
-    rel_batch = RelateBatchIO(
-        sample=sample,
-        batch=batch,
-        section=Section(ref, refseq),
-        seg_end5s=seg_end5s,
-        seg_end3s=seg_end3s,
-        muts=muts
-    )
+    rel_batch = RelateBatchIO(sample=sample,
+                              batch=batch,
+                              section=Section(ref, refseq),
+                              seg_end5s=seg_end5s,
+                              seg_end3s=seg_end3s,
+                              muts=muts)
     return name_batch, rel_batch
 
 ########################################################################

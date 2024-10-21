@@ -23,8 +23,8 @@ SAM_DATA_SINGLE = [
     ("@SQ", f"SN:{REF}", f"LN:{len(REF_SEQ)}"),
     ("Read1", 0, REF, 1, 6, "2M1D1M", "*", 0, 0, "CGC", "III"),
     ("Read2", 0, REF, 4, 5, "2M2D2M", "*", 0, 0, "CATC", "IIII"),
-    ("Read3", 0, REF, 3, 9, "4M", "*", 0, 0, "GCAT", "5I5I"),
-    ("Read4", 0, REF, 4, 7, "4M", "*", 0, 0, "CGTA", "I5I5"),
+    ("Read3", 0, REF, 3, 9, "4M", "*", 0, 0, "GCAT", "HIHI"),
+    ("Read4", 0, REF, 4, 7, "4M", "*", 0, 0, "CGTA", "IHIH"),
 ]
 
 
@@ -79,7 +79,7 @@ class TestRelate(ut.TestCase, ABC):
         self._tmp_dir = path.randdir(prefix="tmp-")
         self._fasta_file = write_fasta_file(self._tmp_dir)
         self._sam_file = write_sam_file(self._tmp_dir, self.get_sam_data())
-        set_config(verbosity=Level.ERROR, raise_on_error=True)
+        set_config(verbosity=Level.SEVERE, raise_on_error=True)
 
     def tearDown(self):
         rmtree(self._tmp_dir)
@@ -152,6 +152,52 @@ class TestRelateSingle(TestRelate):
                                "Insufficient reads in alignment map",
                                self.batches,
                                min_reads=5)
+
+    def test_min_mapq(self):
+        self.assertRaisesRegex(ValueError,
+                               "Read 'Read1' mapped with quality score 6, "
+                               "less than the minimum of 7",
+                               self.batches,
+                               min_mapq=7)
+
+    def test_min_phred(self):
+        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches(
+            min_phred=40
+        ))
+        self.assertEqual(len(read_nums), 1)
+        self.assertListEqual(read_nums[0], [0, 1, 2, 3])
+        self.assertListEqual(seg_end5s[0], [[1], [4], [3], [4]])
+        self.assertListEqual(seg_end3s[0], [[4], [9], [6], [7]])
+        self.assertDictEqual(muts[0],
+                             {1: {},
+                              2: {3: [0]},
+                              3: {3: [0], 177: [2]},
+                              4: {},
+                              5: {3: [1], 225: [2, 3]},
+                              6: {3: [1]},
+                              7: {3: [1], 225: [3]},
+                              8: {3: [1]},
+                              9: {}})
+
+    def test_clip(self):
+        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches(
+            clip_end5=1,
+            clip_end3=1,
+        ))
+        self.assertEqual(len(read_nums), 1)
+        self.assertListEqual(read_nums[0], [0, 1, 2, 3])
+        self.assertListEqual(seg_end5s[0], [[2], [5], [4], [5]])
+        self.assertListEqual(seg_end3s[0], [[3], [8], [5], [6]])
+        self.assertDictEqual(muts[0],
+                             {1: {},
+                              2: {3: [0]},
+                              3: {3: [0]},
+                              4: {},
+                              5: {3: [1], 64: [3]},
+                              6: {3: [1]},
+                              7: {3: [1]},
+                              8: {3: [1]},
+                              9: {}})
 
 
 if __name__ == "__main__":
