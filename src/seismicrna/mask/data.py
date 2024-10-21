@@ -1,3 +1,4 @@
+import numpy as np
 from functools import cached_property
 
 from .batch import MaskMutsBatch, apply_mask
@@ -63,6 +64,9 @@ class MaskReadDataset(LoadedDataset, UnbiasDataset):
 class MaskMutsDataset(ArrowDataset, UnbiasDataset):
     """ Chain mutation data with masked reads. """
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     MASK_NAME = "mask"
 
     @classmethod
@@ -99,8 +103,14 @@ class MaskMutsDataset(ArrowDataset, UnbiasDataset):
         return section
 
     def _integrate(self, batch1: RelateBatch, batch2: MaskBatchIO):
+        if self.masked_read_nums is not None:
+            read_nums = np.setdiff1d(batch2.read_nums,
+                                     self.masked_read_nums.get(batch2.batch),
+                                     assume_unique=True)
+        else:
+            read_nums = batch2.read_nums
         return apply_mask(batch1,
-                          batch2.read_nums,
+                          read_nums,
                           self.section,
                           sanitize=False)
 

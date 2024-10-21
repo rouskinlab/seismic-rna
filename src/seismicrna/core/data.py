@@ -118,6 +118,12 @@ class Dataset(ABC):
 class UnbiasDataset(Dataset, ABC):
     """ Dataset with attributes for correcting observer bias. """
 
+    def __init__(self, *,
+                 masked_read_nums: dict[int:list] | None = None,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.masked_read_nums = masked_read_nums
+
     @property
     @abstractmethod
     def min_mut_gap(self) -> int:
@@ -636,10 +642,11 @@ class MultistepDataset(MutsDataset, ABC):
 
     @classmethod
     def load(cls, dataset2_report_file: Path):
-        return cls(cls.load_dataset1(dataset2_report_file),
-                   cls.load_dataset2(dataset2_report_file))
+        return cls(data1=cls.load_dataset1(dataset2_report_file),
+                   data2=cls.load_dataset2(dataset2_report_file))
 
-    def __init__(self, data1: MutsDataset, data2: Dataset):
+    def __init__(self, *, data1: MutsDataset, data2: Dataset, **kwargs):
+        super().__init__(**kwargs)
         if not isinstance(data2, self.get_dataset2_type()):
             raise TypeError(f"{type(self).__name__} expected data2 to be "
                             f"{self.get_dataset2_type().__name__}, "
