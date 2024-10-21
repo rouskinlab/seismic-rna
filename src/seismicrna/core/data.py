@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -8,11 +9,13 @@ from .batch import MutsBatch, ReadBatch, list_batch_nums
 from .io import MutsBatchIO, ReadBatchIO, RefseqIO
 from .logs import logger
 from .rel import RelPattern
-from .report import (SampleF,
+from .report import (DATETIME_FORMAT,
+                     SampleF,
                      RefF,
                      SectF,
                      End5F,
                      End3F,
+TimeEndedF,
                      NumBatchF,
                      ChecksumsF,
                      RefseqChecksumF,
@@ -73,6 +76,11 @@ class Dataset(ABC):
     @abstractmethod
     def sect(self) -> str:
         """ Name of the section. """
+
+    @property
+    @abstractmethod
+    def timestamp(self) -> datetime:
+        """ Time at which the data were written. """
 
     @property
     @abstractmethod
@@ -289,6 +297,10 @@ class LoadedDataset(Dataset, ABC):
         return self.report.get_field(SectF)
 
     @property
+    def timestamp(self):
+        return self.report.get_field(TimeEndedF)
+
+    @property
     def num_batches(self):
         return self.report.get_field(NumBatchF)
 
@@ -384,6 +396,11 @@ class MergedDataset(Dataset, ABC):
     @cached_property
     def pattern(self):
         return self._get_common_attr("pattern")
+
+    @cached_property
+    def timestamp(self):
+        # Use the time of the most recent constituent dataset.
+        return max(dataset.timestamp for dataset in self._datasets)
 
 
 class MergedUnbiasDataset(MergedDataset, UnbiasDataset, ABC):
@@ -627,6 +644,14 @@ class MultistepDataset(MutsDataset, ABC):
             raise TypeError(f"{type(self).__name__} expected data2 to be "
                             f"{self.get_dataset2_type().__name__}, "
                             f"but got {type(data2).__name__}")
+        if data1.timestamp > data2.timestamp:
+            raise ValueError(f"To make a {type(self).__name__}, "
+                             f"the {type(data1).__name__} must have been "
+                             f"written before the {type(data2).__name__}, "
+                             f"but the timestamps in their report files are "
+                             f"{data1.timestamp.strftime(DATETIME_FORMAT)} and "
+                             f"{data2.timestamp.strftime(DATETIME_FORMAT)}, "
+                             f"respectively")
         self.data1 = data1
         self.data2 = data2
 
@@ -665,6 +690,10 @@ class MultistepDataset(MutsDataset, ABC):
     @property
     def sect(self):
         return self.data2.sect
+
+    @property
+    def timestamp(self):
+        return self.data2.timestamp
 
     @abstractmethod
     def _integrate(self, batch1: MutsBatch, batch2: ReadBatch) -> MutsBatch:
