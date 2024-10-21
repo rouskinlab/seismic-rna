@@ -19,7 +19,7 @@ from ..core.logs import logger
 from ..core.rel import RelPattern
 from ..core.report import mask_iter_no_convergence
 from ..core.seq import FIELD_REF, POS_NAME, Section, index_to_pos
-from ..core.table import MUTAT_REL, UNAMB_REL
+from ..core.table import MUTAT_REL, INFOR_REL
 from ..core.tmp import release_to_out
 from ..core.write import need_write
 from ..relate.data import RelateDataset, PoolDataset
@@ -394,7 +394,7 @@ class Masker(object):
             max_procs=self.max_procs,
         )
         # Count the informative and mutated bases.
-        info = tabulator.data_per_pos[UNAMB_REL]
+        info = tabulator.data_per_pos[INFOR_REL]
         muts = tabulator.data_per_pos[MUTAT_REL]
         # Load the checksums and the number of reads.
         self._n_reads[self.MASK_READ_KEPT] = 0

@@ -18,7 +18,7 @@ from .base import (COVER_REL,
                    SUB_C_REL,
                    SUB_G_REL,
                    SUB_T_REL,
-                   UNAMB_REL,
+                   INFOR_REL,
                    TABLE_RELS,
                    Table,
                    PositionTable,
@@ -66,7 +66,7 @@ class Tabulator(ABC):
         for rel, rel_counts in counts.items():
             table.loc[:, rel] = rel_counts
         # Add a column for informative relationships.
-        table.loc[:, UNAMB_REL] = (table.loc[:, MATCH_REL].values
+        table.loc[:, INFOR_REL] = (table.loc[:, MATCH_REL].values
                                    +
                                    table.loc[:, MUTAT_REL].values)
         return table

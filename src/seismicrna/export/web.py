@@ -18,7 +18,7 @@ from ..mask.report import MaskReport
 from ..relate.data import load_relate_dataset
 from ..relate.report import RelateReport
 from ..core.table import (COVER_REL,
-                          UNAMB_REL,
+                          INFOR_REL,
                           SUBST_REL,
                           SUB_A_REL,
                           SUB_C_REL,
@@ -39,7 +39,7 @@ SECT_END5 = "section_start"
 SECT_END3 = "section_end"
 SECT_POS = "positions"
 POS_DATA = {"cov": COVER_REL,
-            "info": UNAMB_REL,
+            "info": INFOR_REL,
             "sub_N": SUBST_REL,
             "sub_A": SUB_A_REL,
             "sub_C": SUB_C_REL,

@@ -47,7 +47,7 @@ from .core.table import (DELET_REL,
                          SUB_C_REL,
                          SUB_G_REL,
                          SUB_T_REL,
-                         UNAMB_REL)
+                         INFOR_REL)
 from .graph.aucroll import RollingAUCRunner
 from .graph.giniroll import RollingGiniRunner
 from .graph.histread import ReadHistogramRunner
@@ -426,7 +426,7 @@ def run(fasta: str,
     if graph_ncov:
         # Graph information per position.
         ProfileRunner.run(input_path=input_path,
-                          rels=(REL_NAMES[UNAMB_REL],),
+                          rels=(REL_NAMES[INFOR_REL],),
                           use_ratio=False,
                           quantile=0.,
                           cgroup=cgroup,
