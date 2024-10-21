@@ -530,8 +530,6 @@ class Section(object):
         complement: bool = False
             If True, then leave only positions in `positions` unmasked.
         """
-        if name in self._masks:
-            raise ValueError(f"Mask {repr(name)} was already set")
         # Convert positions to a NumPy integer array.
         p = np.unique(np.asarray(list(positions), dtype=int))
         # Check for positions outside the section.
@@ -542,11 +540,16 @@ class Section(object):
             # Mask all positions except those listed.
             p = np.setdiff1d(self.range_int, p, assume_unique=True)
         # Record the positions that have not already been masked.
-        self._masks[name] = np.setdiff1d(p, self.masked_int, assume_unique=True)
+        p = np.setdiff1d(p, self.masked_int, assume_unique=True)
+        # Combine the positions with any existing positions.
+        existing = self._masks.get(name)
+        if existing is not None:
+            p = np.union1d(p, existing)
+        self._masks[name] = p
         # Do not log self._masks[name] due to memory leak.
         logger.detail(f"Added mask {repr(name)} to {self}")
         # Return self to allow chaining repeated calls to add_mask(),
-        # i.e. section.add_mask("a", [1]).add_mask("b", [2], True).
+        # e.g. section.add_mask("a", [1]).add_mask("b", [2], True).
         return self
 
     def remove_mask(self, name: str, missing_ok: bool = False):

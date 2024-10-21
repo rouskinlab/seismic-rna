@@ -708,7 +708,7 @@ class TestSectionAddMask(ut.TestCase):
         self.assertTrue(np.array_equal(section._masks["mymask"],
                                        np.array([18, 20, 25])))
 
-    def test_add_mask_invert(self):
+    def test_add_mask_complement(self):
         seq = DNA("GAACCGTGACGGATCTCGCAATGT")
         seq5 = 8
         end5 = 17
@@ -732,6 +732,37 @@ class TestSectionAddMask(ut.TestCase):
                                        np.array([18, 20, 25])))
         self.assertTrue(np.array_equal(section._masks["mymask2"],
                                        np.array([22])))
+
+    def test_update_mask(self):
+        seq = DNA("GAACCGTGACGGATCTCGCAATGT")
+        seq5 = 8
+        end5 = 17
+        end3 = 26
+        section = Section("myref", seq, seq5=seq5, end5=end5, end3=end3)
+        self.assertEqual(list(section._masks.keys()), list())
+        section.add_mask("mymask", [18, 20, 25])
+        section.add_mask("mymask", [18, 22])
+        self.assertEqual(list(section._masks.keys()), ["mymask"])
+        mymask = section._masks["mymask"]
+        self.assertIsInstance(mymask, np.ndarray)
+        self.assertIs(mymask.dtype, np.dtype('int64'))
+        self.assertTrue(np.array_equal(mymask, np.array([18, 20, 22, 25])))
+
+    def test_update_mask_complement(self):
+        seq = DNA("GAACCGTGACGGATCTCGCAATGT")
+        seq5 = 8
+        end5 = 17
+        end3 = 26
+        section = Section("myref", seq, seq5=seq5, end5=end5, end3=end3)
+        self.assertEqual(list(section._masks.keys()), list())
+        section.add_mask("mymask", [18, 20, 25])
+        section.add_mask("mymask", [17, 18, 20, 21, 22, 24], complement=True)
+        self.assertEqual(list(section._masks.keys()), ["mymask"])
+        mymask = section._masks["mymask"]
+        self.assertIsInstance(mymask, np.ndarray)
+        self.assertIs(mymask.dtype, np.dtype('int64'))
+        self.assertTrue(np.array_equal(mymask,
+                                       np.array([18, 19, 20, 23, 25, 26])))
 
     def test_add_mask_invalid(self):
         seq = DNA("GAACCGTGACGGATCTCGCAATGT")

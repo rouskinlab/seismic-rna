@@ -292,6 +292,11 @@ class LoadedDataset(Dataset, ABC):
     def num_batches(self):
         return self.report.get_field(NumBatchF)
 
+    @cached_property
+    def path(self):
+        """ Directory containing the dataset. """
+        return self.report.get_path(self.top).parent
+
     def get_batch_path(self, batch: int):
         """ Get the path to a batch of a specific number. """
         fields = self.report.path_field_values(self.top,

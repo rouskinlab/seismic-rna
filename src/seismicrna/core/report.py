@@ -48,7 +48,7 @@ from .arg import (opt_phred_enc,
                   opt_rev_label,
                   opt_min_reads,
                   opt_min_mapq,
-                  opt_min_ncov_read,
+                  opt_ambindel,
                   opt_overhangs,
                   opt_clip_end5,
                   opt_clip_end3,
@@ -60,11 +60,12 @@ from .arg import (opt_phred_enc,
                   opt_quantile,
                   opt_quick_unbias,
                   opt_quick_unbias_thresh,
+                  opt_min_ncov_read,
                   opt_min_finfo_read,
                   opt_min_mut_gap,
                   opt_min_ninfo_pos,
                   opt_max_fmut_pos,
-                  opt_ambindel,
+                  opt_max_mask_iter,
                   opt_em_runs,
                   opt_em_thresh,
                   opt_min_em_iter,
@@ -359,6 +360,7 @@ ClipEnd3F = OptionField(opt_clip_end3)
 PooledSamplesF = Field("pooled_samples", "Pooled samples", list)
 
 # Mask fields
+mask_iter_no_convergence = 0
 CountMutsF = Field("count_muts",
                    "Count as mutations",
                    HalfRelPattern,
@@ -385,6 +387,7 @@ QuickUnbiasF = OptionField(opt_quick_unbias)
 QuickUnbiasThreshF = OptionField(opt_quick_unbias_thresh)
 MinFInfoReadF = OptionField(opt_min_finfo_read)
 MaxFMutReadF = OptionField(opt_max_fmut_read)
+MaxMaskIterF = OptionField(opt_max_mask_iter)
 PosCutPolyAF = Field("pos_polya",
                      "Positions in stretches of consecutive A bases",
                      np.ndarray,
@@ -460,6 +463,10 @@ NumReadsCloseMutF = Field("n_reads_min_gap",
 NumReadsKeptF = Field("n_reads_kept",
                       "Number of reads kept after masking",
                       int)
+NumMaskIterF = Field("n_mask_iter",
+                     f"Number of iterations until convergence "
+                     f"({mask_iter_no_convergence} if not converged)",
+                     int)
 
 # Cluster fields
 

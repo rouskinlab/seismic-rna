@@ -716,6 +716,13 @@ opt_quick_unbias_thresh = Option(
     help="Treat mutated fractions under this threshold as 0 with --quick-unbias"
 )
 
+opt_max_mask_iter = Option(
+    ("--max-mask-iter",),
+    type=int,
+    default=0,
+    help="Maximum number of iterations for masking (0 for no limit)"
+)
+
 opt_mask_pos_table = Option(
     ("--mask-pos-table/--no-mask-pos-table",),
     type=bool,

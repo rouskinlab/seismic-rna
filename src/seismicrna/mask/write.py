@@ -17,6 +17,7 @@ from ..core.arg import docdef
 from ..core.batch import SectionMutsBatch
 from ..core.logs import logger
 from ..core.rel import RelPattern
+from ..core.report import mask_iter_no_convergence
 from ..core.seq import FIELD_REF, POS_NAME, Section, index_to_pos
 from ..core.table import MUTAT_REL, UNAMB_REL
 from ..core.tmp import release_to_out
@@ -44,6 +45,7 @@ class Masker(object):
                  dataset: RelateDataset | PoolDataset,
                  section: Section,
                  pattern: RelPattern, *,
+                 max_mask_iter: int,
                  mask_polya: int,
                  mask_gu: bool,
                  mask_pos: list[tuple[str, int]],
@@ -62,6 +64,7 @@ class Masker(object):
                  top: Path,
                  max_procs: int = 1):
         # Set the general parameters.
+        self._began = datetime.now()
         self.dataset = dataset
         self.section = Section(dataset.ref,
                                dataset.refseq,
@@ -69,6 +72,9 @@ class Masker(object):
                                end3=section.end3,
                                name=section.name)
         self.pattern = pattern
+        self.max_iter = max_mask_iter
+        self._iter = 0
+        self._converged = False
         # Set the parameters for excluding positions from the section.
         if not 0 < mask_polya <= 5:
             logger.warning("It is not recommended to keep sequences of 5 or "
@@ -166,6 +172,11 @@ class Masker(object):
     def pos_kept(self):
         """ Positions kept. """
         return self.section.unmasked_int
+
+    @property
+    def _force_write(self):
+        """ Whether to force-write each file. """
+        return self._iter > 1
 
     def _get_mask_pos(self,
                       mask_pos: list[tuple[str, int]],
@@ -329,7 +340,9 @@ class Masker(object):
                                  sect=self.section.name,
                                  batch=batch.batch,
                                  read_nums=batch.read_nums)
-        _, checksum = batch_file.save(self.top, brotli_level=self.brotli_level)
+        _, checksum = batch_file.save(self.top,
+                                      brotli_level=self.brotli_level,
+                                      force=self._force_write)
         # Save the checksum.
         checksum_file = self._get_checksum_path(batch_num)
         with open(checksum_file, "x") as f:
@@ -361,13 +374,9 @@ class Masker(object):
             index_to_pos(info.index[(muts / info) > self.max_fmut_pos])
         )
 
-    def mask(self):
-        # Exclude positions based on the parameters.
-        self._exclude_positions()
-        if self.pos_kept.size == 0:
-            logger.warning(f"No positions remained after excluding with {self}")
-        # Filter out reads based on the parameters and count the numbers
-        # of informative and mutated bases.
+    def _mask_iteration(self):
+        """ Run an iteration of masking. """
+        # Mask out reads that fail to pass the filter parameters.
         tabulator = MaskBatchTabulator(
             get_batch_count_all=self._filter_batch_reads,
             num_batches=self.dataset.num_batches,
@@ -384,28 +393,93 @@ class Masker(object):
             validate=False,
             max_procs=self.max_procs,
         )
+        # Count the informative and mutated bases.
         info = tabulator.data_per_pos[UNAMB_REL]
         muts = tabulator.data_per_pos[MUTAT_REL]
         # Load the checksums and the number of reads.
+        self._n_reads[self.MASK_READ_KEPT] = 0
         for batch_num in range(self.dataset.num_batches):
+            # Checksums
             checksum_file = self._get_checksum_path(batch_num)
             with open(checksum_file) as f:
                 self.checksums[batch_num] = f.read()
             checksum_file.unlink()
+            # Number of reads
             n_reads_file = self._get_n_reads_path(batch_num)
             with open(n_reads_file) as f:
                 for category, n_reads in json.load(f).items():
-                    self._n_reads[category] += n_reads
+                    if self._iter == 1 or category != self.MASK_READ_INIT:
+                        self._n_reads[category] += n_reads
+                        logger.detail(
+                            f"{self} batch {batch_num} had {n_reads} "
+                            f"{repr(category)} on iteration {self._iter}"
+                        )
             n_reads_file.unlink()
+        logger.detail(f"{self} on iteration {self._iter} counted "
+                      + "\n".join(f"{category}: {n_reads}"
+                                  for category, n_reads
+                                  in self._n_reads.items()))
+        if self.n_reads_kept == 0:
+            logger.warning(f"No reads remained for {self}")
         # Filter out positions based on the parameters.
         self._filter_positions(info, muts)
-        if self.n_reads_kept == 0:
-            logger.warning(f"No reads remained after filtering with {self}")
         if self.pos_kept.size == 0:
-            logger.warning(f"No positions remained after filtering with {self}")
+            logger.warning(f"No positions remained for {self}")
         return tabulator
 
-    def create_report(self, began: datetime, ended: datetime):
+    def mask(self):
+        if self._iter > 0:
+            raise ValueError(f"{self} already masked the data")
+        out_dir = self.dataset.top
+        relate_data_dir = self.dataset.path
+        # Exclude positions based on the parameters.
+        self._exclude_positions()
+        unmasked_curr = self.pos_kept
+        self._iter = 1
+        while True:
+            logger.routine(f"Began {self} iteration {self._iter}")
+            unmasked_prev = unmasked_curr
+            tabulator = self._mask_iteration()
+            unmasked_curr = self.pos_kept
+            logger.detail(f"{self} kept {unmasked_curr.size} position(s): "
+                          f"{unmasked_curr}")
+            logger.routine(f"Ended {self} iteration {self._iter}")
+            # Masking has converged if either the same positions were
+            # masked before and after this iteration or no positions
+            # remain unmasked after this iteration.
+            if unmasked_curr.size == 0 or np.array_equal(unmasked_prev,
+                                                         unmasked_curr):
+                self._converged = True
+                logger.routine(f"{self} converged on iteration {self._iter}")
+            # Create and save the report after the opportunity to set
+            # self._converged to True (so that the report will contain
+            # the correct value) and before returning.
+            report = self.create_report()
+            report_saved = report.save(self.top, force=self._force_write)
+            if self._converged or self._iter >= self.max_iter > 0:
+                if not self._converged:
+                    logger.warning(f"{self} did not converge "
+                                   f"within {self.max_iter} iteration(s)")
+                return tabulator, report_saved
+            # The first iteration uses the dataset from the relate step.
+            # Each subsequent iteration uses the nascent mask dataset
+            # in order to resume where the previous iteration ended.
+            if self._iter == 1:
+                # To be able to load, the nascent mask dataset must have
+                # access to the original relate dataset, which is done
+                # by creating a symbolic link to the relate dataset in
+                # the temporary directory.
+                tmp_data_dir = path.transpath(self.top,
+                                              out_dir,
+                                              relate_data_dir,
+                                              strict=True)
+                tmp_data_dir.parent.mkdir(parents=True, exist_ok=True)
+                tmp_data_dir.symlink_to(relate_data_dir)
+                logger.detail(f"Linked {tmp_data_dir} to {relate_data_dir}")
+            self.dataset = MaskMutsDataset.load(report_saved)
+            self._iter += 1
+
+    def create_report(self):
         return MaskReport(
             sample=self.dataset.sample,
             ref=self.dataset.ref,
@@ -421,6 +495,7 @@ class Masker(object):
             mask_pos=self.mask_pos,
             min_ninfo_pos=self.min_ninfo_pos,
             max_fmut_pos=self.max_fmut_pos,
+            max_mask_iter=self.max_iter,
             n_pos_init=self.section.length,
             n_pos_gu=self.pos_gu.size,
             n_pos_polya=self.pos_polya.size,
@@ -448,12 +523,15 @@ class Masker(object):
             n_reads_kept=self.n_reads_kept,
             quick_unbias=self.quick_unbias,
             quick_unbias_thresh=self.quick_unbias_thresh,
-            began=began,
-            ended=ended,
+            n_mask_iter=(self._iter
+                         if self._converged
+                         else mask_iter_no_convergence),
+            began=self._began,
+            ended=datetime.now(),
         )
 
     def __str__(self):
-        return f"Mask {self.dataset} over {self.section} with {self.pattern}"
+        return f"Mask {self.dataset} over {self.section}"
 
 
 def mask_section(dataset: RelateDataset | PoolDataset,
@@ -474,7 +552,6 @@ def mask_section(dataset: RelateDataset | PoolDataset,
                                         ref=dataset.ref,
                                         sect=section.name)
     if need_write(report_file, force):
-        began = datetime.now()
         pattern = RelPattern.from_counts(not mask_del, not mask_ins, mask_mut)
         masker = Masker(dataset,
                         section,
@@ -483,11 +560,8 @@ def mask_section(dataset: RelateDataset | PoolDataset,
                         count_read=mask_read_table,
                         max_procs=n_procs,
                         **kwargs)
-        tabulator = masker.mask()
+        tabulator, report_saved = masker.mask()
         tabulator.write_tables(pos=mask_pos_table, read=mask_read_table)
-        ended = datetime.now()
-        report = masker.create_report(began, ended)
-        report_saved = report.save(tmp_dir)
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
     else:
         # Write the tables if they do not exist.

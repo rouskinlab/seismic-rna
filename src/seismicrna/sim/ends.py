@@ -115,7 +115,8 @@ def sim_pends(end5: int,
     variance: float
         Variance as a fraction of its supremum; must be ≥ 0 and < 1.
     num_reads: int | None = None
-        Number of reads to use for simulation; if omitted, will
+        Number of reads to use for simulation; if omitted, will default
+        to 10,000,000.
 
     Returns
     -------

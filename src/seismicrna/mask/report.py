@@ -39,7 +39,9 @@ from ..core.report import (BatchedReport,
                            NumReadsCloseMutF,
                            NumReadsKeptF,
                            QuickUnbiasF,
-                           QuickUnbiasThreshF)
+                           QuickUnbiasThreshF,
+                           MaxMaskIterF,
+                           NumMaskIterF)
 
 
 class MaskReport(BatchedReport, MaskIO):
@@ -61,6 +63,8 @@ class MaskReport(BatchedReport, MaskIO):
             SectF,
             End5F,
             End3F,
+            # Iteration parameters.
+            MaxMaskIterF,
             # Types of mutations and matches to count.
             CountMutsF,
             CountRefsF,
@@ -98,6 +102,8 @@ class MaskReport(BatchedReport, MaskIO):
             NumReadsHiMutF,
             NumReadsCloseMutF,
             NumReadsKeptF,
+            # Iteration results.
+            NumMaskIterF,
             # Observer bias correction.
             QuickUnbiasF,
             QuickUnbiasThreshF,

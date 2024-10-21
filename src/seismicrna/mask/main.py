@@ -14,6 +14,7 @@ from ..core.arg import (CMD_MASK,
                         opt_mask_primers,
                         opt_primer_gap,
                         opt_mask_sections_file,
+                        opt_max_mask_iter,
                         opt_mask_del,
                         opt_mask_ins,
                         opt_mask_mut,
@@ -92,6 +93,8 @@ def run(input_path: tuple[str, ...], *,
         # Observer bias correction
         quick_unbias: bool,
         quick_unbias_thresh: float,
+        # Iteration
+        max_mask_iter: int,
         # Table options
         mask_pos_table: bool,
         mask_read_table: bool,
@@ -132,6 +135,7 @@ def run(input_path: tuple[str, ...], *,
                   max_fmut_pos=max_fmut_pos,
                   quick_unbias=quick_unbias,
                   quick_unbias_thresh=quick_unbias_thresh,
+                  max_mask_iter=max_mask_iter,
                   mask_pos_table=mask_pos_table,
                   mask_read_table=mask_read_table,
                   brotli_level=brotli_level,
@@ -172,6 +176,8 @@ params = [
     # Observer bias correction
     opt_quick_unbias,
     opt_quick_unbias_thresh,
+    # Iteration
+    opt_max_mask_iter,
     # Table options
     opt_mask_pos_table,
     opt_mask_read_table,
