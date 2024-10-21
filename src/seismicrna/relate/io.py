@@ -74,10 +74,10 @@ def from_reads(reads: Iterable[tuple[str, tuple[list[int], [list[int]]], dict[in
     pos_dtype = fit_uint_type(max(muts))
     seg_end5s = np.array(seg_end5s, dtype=pos_dtype)
     if seg_end5s.ndim < 2:
-        seg_end5s = seg_end5s.reshape((-1, 1))
+        seg_end5s = seg_end5s[:, np.newaxis]
     seg_end3s = np.array(seg_end3s, dtype=pos_dtype)
     if seg_end3s.ndim < 2:
-        seg_end3s = seg_end3s.reshape((-1, 1))
+        seg_end3s = seg_end3s[:, np.newaxis]
     # Assemble and return the batches.
     name_batch = QnamesBatchIO(sample=sample,
                                ref=ref,
