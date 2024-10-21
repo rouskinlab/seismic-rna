@@ -69,18 +69,28 @@ def from_reads(reads: Iterable[tuple[str, tuple[list[int], [list[int]]], dict[in
             seg_end3s.append(end3s)
             for pos, rel in poss.items():
                 muts[pos][rel].append(read)
-    # Assemble and return the batches.
+    # Make sure seg_end5s and seg_end3s have two dimensions and at least
+    # one column each.
     pos_dtype = fit_uint_type(max(muts))
+    seg_end5s = np.array(seg_end5s, dtype=pos_dtype)
+    if seg_end5s.ndim < 2:
+        seg_end5s = seg_end5s.reshape((-1, 1))
+    seg_end3s = np.array(seg_end3s, dtype=pos_dtype)
+    if seg_end3s.ndim < 2:
+        seg_end3s = seg_end3s.reshape((-1, 1))
+    # Assemble and return the batches.
     name_batch = QnamesBatchIO(sample=sample,
                                ref=ref,
                                batch=batch,
                                names=names)
-    rel_batch = RelateBatchIO(sample=sample,
-                              batch=batch,
-                              section=Section(ref, refseq),
-                              seg_end5s=np.array(seg_end5s, dtype=pos_dtype),
-                              seg_end3s=np.array(seg_end3s, dtype=pos_dtype),
-                              muts=muts)
+    rel_batch = RelateBatchIO(
+        sample=sample,
+        batch=batch,
+        section=Section(ref, refseq),
+        seg_end5s=seg_end5s,
+        seg_end3s=seg_end3s,
+        muts=muts
+    )
     return name_batch, rel_batch
 
 ########################################################################
