@@ -73,9 +73,6 @@ class ClusterReadDataset(ClusterDataset, LoadedDataset):
 class ClusterMutsDataset(ClusterDataset, ArrowDataset, UnbiasDataset):
     """ Merge cluster responsibilities with mutation data. """
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     @classmethod
     def get_dataset1_load_func(cls):
         return load_mask_dataset
