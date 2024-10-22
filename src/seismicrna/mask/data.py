@@ -64,9 +64,6 @@ class MaskReadDataset(LoadedDataset, UnbiasDataset):
 class MaskMutsDataset(ArrowDataset, UnbiasDataset):
     """ Chain mutation data with masked reads. """
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     MASK_NAME = "mask"
 
     @classmethod
