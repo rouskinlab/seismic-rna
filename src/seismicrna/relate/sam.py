@@ -56,30 +56,30 @@ def _iter_batch_indexes(sam_file: Path, batch_size: int, paired: bool):
             # Files of paired-end reads require an extra step.
             if paired and line:
                 # Check if the current and next lines are mates.
-                name, paired, proper = line_attrs(line)
-                (next_name,
-                 next_paired,
-                 next_proper) = line_attrs(f.readline())
-                if not (paired and next_paired):
-                    raise ValueError(f"{sam_file} does not have only "
-                                     "paired-end reads")
-                names_match = name == next_name
-                if names_match and proper != next_proper:
-                    raise ValueError(
-                        f"Read {repr(name)} has only one properly paired "
-                        f"mate, which indicates a bug"
-                    )
-                if names_match and proper:
-                    # If the read names match, then the lines are
-                    # mates and should be in the same batch. Advance
-                    # the variable position to point to the end of
-                    # the next read.
-                    position = f.tell()
-                else:
-                    # Otherwise, they are not mates. Backtrack to
-                    # the end of the current read, to which the
-                    # variable position points.
-                    f.seek(position)
+                read_name, read_paired, read_proper = line_attrs(line)
+                if line := f.readline():
+                    # The next line exists.
+                    next_name, next_paired, next_proper = line_attrs(line)
+                    if not (read_paired and next_paired):
+                        raise ValueError(f"{sam_file} does not have only "
+                                         "paired-end reads")
+                    names_match = read_name == next_name
+                    if names_match and read_proper != next_proper:
+                        raise ValueError(
+                            f"Read {repr(read_name)} has only one properly "
+                            f"paired mate, which indicates a bug"
+                        )
+                    if names_match and read_proper:
+                        # If the read names match, then the lines are
+                        # mates and should be in the same batch. Advance
+                        # the variable position to point to the end of
+                        # the next read.
+                        position = f.tell()
+                    else:
+                        # Otherwise, they are not mates. Backtrack to
+                        # the end of the current read, to which the
+                        # variable position points.
+                        f.seek(position)
             # Yield the number and positions of the batch.
             logger.detail(
                 f"Batch {batch} of {sam_file}: {batch_start} - {position}"
