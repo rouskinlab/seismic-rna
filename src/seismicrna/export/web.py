@@ -89,10 +89,10 @@ def get_sect_metadata(top: Path,
                       ref: str,
                       sect: str,
                       all_pos: bool):
-    dataset = MaskMutsDataset.load(MaskReport.build_path(top=top,
-                                                         sample=sample,
-                                                         ref=ref,
-                                                         sect=sect))
+    dataset = MaskMutsDataset(MaskReport.build_path(top=top,
+                                                    sample=sample,
+                                                    ref=ref,
+                                                    sect=sect))
     positions = (dataset.section.range_int if all_pos
                  else dataset.section.unmasked_int)
     sect_metadata = {SECT_END5: dataset.end5,

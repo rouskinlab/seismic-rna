@@ -213,7 +213,7 @@ class RelationWriter(object):
         else:
             # Write the tables if they do not exist.
             RelateDatasetTabulator(
-                dataset=RelateDataset.load(report_file),
+                dataset=RelateDataset(report_file),
                 count_pos=relate_pos_table,
                 count_read=relate_read_table,
                 max_procs=n_procs,

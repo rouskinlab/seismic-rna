@@ -84,7 +84,7 @@ def load_batches(tmp_dir: Path):
                                    path.CMD_REL_DIR,
                                    REF,
                                    "relate-report.json")
-    dataset = RelateDataset.load(report_file)
+    dataset = RelateDataset(report_file)
     return list(dataset.iter_batches())
 
 

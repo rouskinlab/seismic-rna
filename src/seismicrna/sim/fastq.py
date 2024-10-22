@@ -256,8 +256,8 @@ def from_report(report_file: Path, *,
     """ Simulate a FASTQ file from a Relate report. """
     report = RelateReport.load(report_file)
     sample = report.get_field(SampleF)
-    rdata = RelateDataset.load(report_file)
-    ndata = QnamesDataset.load(report_file)
+    rdata = RelateDataset(report_file)
+    ndata = QnamesDataset(report_file)
     sim_dir = _get_common_attr(rdata, ndata, "top")
     section = rdata.section
     batches = zip(rdata.iter_batches(), ndata.iter_batches())

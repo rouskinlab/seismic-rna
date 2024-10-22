@@ -431,7 +431,7 @@ class Masker(object):
         if self._iter > 0:
             raise ValueError(f"{self} already masked the data")
         out_dir = self.dataset.top
-        relate_data_dir = self.dataset.path
+        relate_data_dirs = self.dataset.data_dirs
         # Exclude positions based on the parameters.
         self._exclude_positions()
         unmasked_curr = self.pos_kept
@@ -467,16 +467,17 @@ class Masker(object):
             if self._iter == 1:
                 # To be able to load, the nascent mask dataset must have
                 # access to the original relate dataset, which is done
-                # by creating a symbolic link to the relate dataset in
+                # by creating symbolic links to the relate dataset in
                 # the temporary directory.
-                tmp_data_dir = path.transpath(self.top,
-                                              out_dir,
-                                              relate_data_dir,
-                                              strict=True)
-                tmp_data_dir.parent.mkdir(parents=True, exist_ok=True)
-                tmp_data_dir.symlink_to(relate_data_dir)
-                logger.detail(f"Linked {tmp_data_dir} to {relate_data_dir}")
-            self.dataset = MaskMutsDataset.load(report_saved)
+                for relate_data_dir in relate_data_dirs:
+                    tmp_data_dir = path.transpath(self.top,
+                                                  out_dir,
+                                                  relate_data_dir,
+                                                  strict=True)
+                    tmp_data_dir.parent.mkdir(parents=True, exist_ok=True)
+                    tmp_data_dir.symlink_to(relate_data_dir)
+                    logger.detail(f"Linked {tmp_data_dir} to {relate_data_dir}")
+            self.dataset = MaskMutsDataset(report_saved)
             self._iter += 1
 
     def create_report(self):
@@ -566,7 +567,7 @@ def mask_section(dataset: RelateDataset | PoolDataset,
     else:
         # Write the tables if they do not exist.
         MaskDatasetTabulator(
-            dataset=MaskMutsDataset.load(report_file),
+            dataset=MaskMutsDataset(report_file),
             count_pos=mask_pos_table,
             count_read=mask_read_table,
             max_procs=n_procs,

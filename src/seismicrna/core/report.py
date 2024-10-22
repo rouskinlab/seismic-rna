@@ -600,6 +600,7 @@ class Report(FileIO, ABC):
         """ Convert a dict of raw values (keyed by the titles of their
         fields) into a dict of encoded values (keyed by the keys of
         their fields), from which a new Report is instantiated. """
+        logger.routine(f"Began parsing data for {cls.__name__}")
         if not isinstance(odata, dict):
             raise TypeError(f"Expected dict, but got {type(odata).__name__}")
         # Read every raw value, keyed by the title of its field.
@@ -612,12 +613,16 @@ class Report(FileIO, ABC):
                 logger.warning(error)
             else:
                 # Cast the value to the input type; key it by the field.
+                key = field.key
                 idata[field.key] = field.iconv(value)
+                logger.detail(f"Parsed field {repr(key)}: {repr(idata[key])}")
+        logger.routine(f"Ended parsing data for {cls.__name__}")
         # Instantiate and return a new Report from the values.
         return cls(**idata)
 
     @classmethod
     def load(cls, file: Path) -> Report:
+        logger.routine(f"Began loading {cls.__name__} from {file}")
         with open(file) as f:
             report = cls.from_dict(json.load(f))
         # Ensure that the path-related fields in the JSON data match the
@@ -628,6 +633,7 @@ class Report(FileIO, ABC):
                 raise ValueError(f"Got different values for {repr(key)} "
                                  f"in path ({repr(path_fields.get(key))}) "
                                  f"and contents ({repr(value)}) of {file}")
+        logger.routine(f"Ended loading {cls.__name__} from {file}")
         return report
 
     @classmethod

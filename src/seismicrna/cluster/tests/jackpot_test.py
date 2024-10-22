@@ -321,7 +321,7 @@ class TestBootstrapJackpotScores(ut.TestCase):
                              quick_unbias_thresh=0.)
         mask_report_file = mask_dir.joinpath("mask-report.json")
         # Cluster the data and calculate the jackpotting quotient.
-        mask_dataset = MaskMutsDataset.load(mask_report_file)
+        mask_dataset = MaskMutsDataset(mask_report_file)
         uniq_reads = UniqReads.from_dataset_contig(mask_dataset)
         em_run = EMRun(uniq_reads,
                        k=n_clusts,

@@ -223,7 +223,7 @@ def cluster(mask_report_file: Path, *,
         release_to_out(dataset.top, tmp_dir, report_saved.parent)
     # Write the tables if they do not exist.
     ClusterDatasetTabulator(
-        dataset=ClusterMutsDataset.load(cluster_report_file),
+        dataset=ClusterMutsDataset(cluster_report_file),
         count_pos=cluster_pos_table,
         count_read=False,
         max_procs=n_procs,
