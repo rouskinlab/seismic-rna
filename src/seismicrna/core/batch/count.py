@@ -303,22 +303,25 @@ def calc_rels_per_read(mutations: dict[int, dict[int, np.ndarray]],
                        cover_per_read: pd.DataFrame,
                        read_indexes: np.ndarray):
     """ For each relationship, the number of positions in each read. """
-    bases = list(cover_per_read.columns)
     counts = defaultdict(partial(pd.DataFrame,
                                  0,
                                  index=cover_per_read.index,
                                  columns=cover_per_read.columns))
     counts[NOCOV] = count_base_types(pos_index) - cover_per_read
-    counts[MATCH] = cover_per_read.copy()
+    match = cover_per_read.copy()
+    counts[MATCH] = match
     for pos, base in pos_index:
-        column = bases.index(base)
         for mut, reads in mutations[pos].items():
-            rows = read_indexes[reads]
-            counts[MATCH].values[rows, column] -= 1
-            if counts[MATCH].values[rows, column].min(initial=0) < 0:
-                raise ValueError("Number of matches must be ≥ 0, but got "
-                                 f"{counts[MATCH].values[rows, column]}")
-            counts[mut].values[rows, column] += 1
+            if reads.size > 0:
+                rows = read_indexes[reads]
+                match[base].values[rows] -= 1
+                counts[mut][base].values[rows] += 1
+    errors = [(f"Number of matches for base {repr(base)} must be ≥ 0 "
+               f"for every read, but got\n{values[values < 0]}")
+              for base, values in match.items()
+              if values.min() < 0]
+    if errors:
+        raise ValueError("\n".join(errors))
     return dict(counts)
 
 
