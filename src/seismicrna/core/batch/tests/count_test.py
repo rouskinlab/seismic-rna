@@ -981,14 +981,14 @@ class TestCalcRelsPerRead(ut.TestCase):
                         [0, 0, 0, 0],
                         [0, 0, 0, 0],
                         [1, 1, 0, 0]]}
-        rels_per_pos = calc_rels_per_read(mutations,
-                                          positions,
-                                          cover_per_read,
-                                          read_indexes)
-        self.assertIsInstance(rels_per_pos, dict)
-        self.assertSetEqual(set(rels_per_pos), set(expect))
+        rels_per_read = calc_rels_per_read(mutations,
+                                           positions,
+                                           cover_per_read,
+                                           read_indexes)
+        self.assertIsInstance(rels_per_read, dict)
+        self.assertSetEqual(set(rels_per_read), set(expect))
         for rel, rexp in expect.items():
-            rres = rels_per_pos[rel]
+            rres = rels_per_read[rel]
             self.assertIsInstance(rres, pd.DataFrame)
             self.assertTrue(rres.equals(
                 pd.DataFrame(rexp, read_nums, ["A", "C", "G", "T"])
