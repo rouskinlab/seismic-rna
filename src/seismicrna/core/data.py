@@ -21,7 +21,6 @@ from .report import (DATETIME_FORMAT,
                      RefseqChecksumF,
                      PooledSamplesF,
                      JoinedSectionsF,
-                     JoinedClustersF,
                      Report,
                      BatchedReport)
 from .seq import FULL_NAME, DNA, Section, hyphenate_ends, unite
@@ -151,8 +150,8 @@ class UnbiasDataset(Dataset, ABC):
         to be 0 when using the quick heuristic for unbiasing. """
 
 
-class MutsDataset(Dataset, ABC):
-    """ Dataset with explicit mutational data. """
+class SectionDataset(Dataset, ABC):
+    """ Dataset with a known reference sequence and section. """
 
     @property
     @abstractmethod
@@ -169,6 +168,10 @@ class MutsDataset(Dataset, ABC):
     def section(self) -> Section:
         """ Section of the dataset. """
 
+
+class MutsDataset(SectionDataset, ABC):
+    """ Dataset with a known section and explicit mutational data. """
+
     @abstractmethod
     def get_batch(self, batch_num: int) -> SectionMutsBatch:
         """ Get a specific batch of data. """
@@ -178,9 +181,9 @@ class MutsDataset(Dataset, ABC):
         return self.get_batch(batch_num).count_all(**kwargs)
 
 
-class NarrowDataset(MutsDataset, ABC):
-    """ MutsDataset with one section, in contrast to a WideDataset that
-    unites one or more sections. """
+class NarrowDataset(SectionDataset, ABC):
+    """ Dataset with one section, in contrast to a WideDataset that
+    combines one or more sections. """
 
     @cached_property
     def section(self):
@@ -279,15 +282,15 @@ class LoadedDataset(Dataset, ABC):
         """ Name of the type of batch. """
         return cls.get_batch_type().btype()
 
-    @property
+    @cached_property
     def end5(self):
         return self.report.get_field(End5F)
 
-    @property
+    @cached_property
     def end3(self):
         return self.report.get_field(End3F)
 
-    @property
+    @cached_property
     def sect(self):
         return self.report.get_field(SectF)
 
@@ -322,7 +325,7 @@ class LoadedDataset(Dataset, ABC):
         return batch
 
 
-class LoadedMutsDataset(LoadedDataset, NarrowDataset, ABC):
+class LoadedMutsDataset(LoadedDataset, MutsDataset, NarrowDataset, ABC):
 
     @cached_property
     def refseq(self):
@@ -331,23 +334,26 @@ class LoadedMutsDataset(LoadedDataset, NarrowDataset, ABC):
                                                  ref=self.ref),
                              self.report.get_field(RefseqChecksumF)).refseq
 
-    @property
+    @cached_property
     def end5(self):
         try:
+            # Find the 5' end in the report, if it has this field.
             return super().end5
         except AttributeError:
             return 1
 
-    @property
+    @cached_property
     def end3(self):
         try:
+            # Find the 3' end in the report, if it has this field.
             return super().end3
         except AttributeError:
             return self.reflen
 
-    @property
+    @cached_property
     def sect(self):
         try:
+            # Find the section name in the report, if it has this field.
             return super().sect
         except AttributeError:
             return (FULL_NAME if self.end5 == 1 and self.end3 == self.reflen
@@ -395,6 +401,13 @@ class MergedDataset(Dataset, ABC):
         return max(dataset.timestamp for dataset in self.datasets)
 
 
+class MergedSectionDataset(MergedDataset, SectionDataset, ABC):
+
+    @cached_property
+    def refseq(self):
+        return self._get_common_attr("refseq")
+
+
 class MergedUnbiasDataset(MergedDataset, UnbiasDataset, ABC):
     """ MergedDataset with attributes for correcting observer bias. """
 
@@ -411,15 +424,7 @@ class MergedUnbiasDataset(MergedDataset, UnbiasDataset, ABC):
         return self._get_common_attr("quick_unbias_thresh")
 
 
-class MergedMutsDataset(MergedDataset, MutsDataset, ABC):
-    """ MergedDataset with explicit mutational data. """
-
-    @cached_property
-    def refseq(self):
-        return self._get_common_attr("refseq")
-
-
-class TallDataset(MergedDataset, NarrowDataset, ABC):
+class TallDataset(MergedDataset, ABC):
     """ Dataset made by vertically pooling other datasets from one or
     more samples aligned to the same reference sequence. """
 
@@ -491,11 +496,15 @@ class TallDataset(MergedDataset, NarrowDataset, ABC):
         return batch
 
 
-class TallMutsDataset(TallDataset, MergedMutsDataset, ABC):
+class TallMutsDataset(TallDataset,
+                      MutsDataset,
+                      MergedSectionDataset,
+                      NarrowDataset,
+                      ABC):
     """ TallDataset with mutational data. """
 
 
-class WideDataset(MergedMutsDataset, ABC):
+class WideDataset(MergedSectionDataset, ABC):
     """ Dataset made by horizontally joining other datasets from one or
     more sections of the same reference sequence. """
 
@@ -545,10 +554,6 @@ class WideDataset(MergedMutsDataset, ABC):
     def end3(self):
         return self.section.end3
 
-    @cached_property
-    def clusts(self):
-        return self.report.get_field(JoinedClustersF, missing_ok=True)
-
     @abstractmethod
     def _join(self, batches: Iterable[tuple[str, ReadBatch]]) -> ReadBatch:
         """ Join corresponding batches of data. """
@@ -557,6 +562,10 @@ class WideDataset(MergedMutsDataset, ABC):
         # Join the batch with that number from every dataset.
         return self._join((dataset.sect, dataset.get_batch(batch_num))
                           for dataset in self.datasets)
+
+
+class WideMutsDataset(WideDataset, MutsDataset, ABC):
+    """ WideDataset with mutation data. """
 
 
 class MultistepDataset(MutsDataset, ABC):
@@ -570,7 +579,7 @@ class MultistepDataset(MutsDataset, ABC):
 
     @classmethod
     @abstractmethod
-    def get_dataset2_type(cls) -> type[Dataset]:
+    def get_dataset2_type(cls) -> type[SectionDataset]:
         """ Type of Dataset 2. """
 
     @classmethod

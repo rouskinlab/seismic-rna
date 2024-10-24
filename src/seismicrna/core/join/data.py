@@ -6,7 +6,7 @@ import numpy as np
 
 from ..array import locate_elements
 from ..batch import MutsBatch, match_reads_segments
-from ..data import WideDataset
+from ..data import WideMutsDataset
 from ..seq import Section
 
 BATCH_NUM = "batch"
@@ -93,7 +93,7 @@ def _join_attrs(attrs: dict[str, Any],
                    for pos in section.unmasked_int}
 
 
-class JoinMutsDataset(WideDataset, ABC):
+class JoinMutsDataset(WideMutsDataset, ABC):
 
     @classmethod
     @abstractmethod

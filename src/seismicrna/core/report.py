@@ -373,7 +373,7 @@ CountRefsF = Field("count_refs",
                    oconv=HalfRelPattern.to_report_format)
 ExclPolyAF = OptionField(opt_mask_polya)
 ExclGUF = OptionField(opt_mask_gu)
-ExclUserPosF = Field("mask_pos",
+ExclListPosF = Field("mask_pos",
                      "Mask additional positions from a list",
                      np.ndarray,
                      iconv=iconv_array_int,
@@ -428,7 +428,7 @@ NumPosCutPolyAF = Field("n_pos_polya",
 NumPosCutGUF = Field("n_pos_gu",
                      "Number of positions with G or U bases",
                      int)
-NumPosCutListF = Field("n_pos_user",
+NumPosCutListF = Field("n_pos_list",
                        "Number of positions masked from a list",
                        int)
 NumPosCutLoInfoF = Field("n_pos_min_ninfo",
@@ -441,9 +441,12 @@ NumPosCutHiMutF = Field("n_pos_max_fmut",
 NumPosKeptF = Field("n_pos_kept",
                     "Number of positions kept after masking",
                     int)
-NumReadsInitF = Field("n_reads_premask",
+NumReadsInitF = Field("n_reads_init",
                       "Total number of reads before masking",
                       int)
+NumReadCutListF = Field("n_reads_list",
+                        "Number of reads masked from a list",
+                        int)
 NumReadsLoNCovF = Field("n_reads_min_ncov",
                         "Number of reads with too few bases covering the "
                         "section",

@@ -16,7 +16,6 @@ from ..core.data import (ArrowDataset,
                          UnbiasDataset)
 from ..core.header import (NUM_CLUSTS_NAME,
                            ClustHeader,
-                           list_clusts,
                            list_ks_clusts,
                            validate_ks)
 from ..core.join.data import (BATCH_NUM,
@@ -27,7 +26,7 @@ from ..core.join.data import (BATCH_NUM,
                               RESPS,
                               JoinMutsDataset)
 from ..core.join.report import JoinClusterReport
-from ..core.report import KsWrittenF, BestKF
+from ..core.report import KsWrittenF, BestKF, JoinedClustersF
 from ..mask.batch import MaskMutsBatch
 from ..mask.data import load_mask_dataset
 
@@ -149,13 +148,12 @@ class JoinClusterMutsDataset(ClusterDataset,
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not self._clusts:
-            self._clusts = {sect: {k: {clust: clust for clust in list_clusts(k)}
-                                   for k in self.ks}
-                            for sect in self.sects}
-        if sorted(self._clusts) != sorted(self.sects):
+        self._joined_clusts = self.report.get_field(JoinedClustersF)
+        if self._joined_clusts is None:
+            raise TypeError(f"{self} requires clusters, but got None")
+        if sorted(self._joined_clusts) != sorted(self.sects):
             raise ValueError(f"{self} expected clusters for {self.sects}, "
-                             f"but got {self._clusts}")
+                             f"but got {self._joined_clusts}")
 
     @cached_property
     def ks(self):
@@ -172,7 +170,7 @@ class JoinClusterMutsDataset(ClusterDataset,
 
     def _sect_cols(self, sect: str):
         """ Get the columns for a section's responsibilities. """
-        clusts = self._clusts[sect]
+        clusts = self._joined_clusts[sect]
         return pd.MultiIndex.from_tuples(
             [(k, clusts[k][clust]) for k, clust in self.clusts],
             names=ClustHeader.level_names()

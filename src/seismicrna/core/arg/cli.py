@@ -653,6 +653,20 @@ opt_mask_pos_file = Option(
     help="Mask positions in references from a file"
 )
 
+opt_mask_read = Option(
+    ("--mask-read",),
+    type=str,
+    multiple=True,
+    default=(),
+    help="Mask the read with this name"
+)
+
+opt_mask_read_file = Option(
+    ("--mask-read-file",),
+    type=Path(dir_okay=False, exists=True),
+    help="Mask the reads with names in this file"
+)
+
 opt_mask_discontig = Option(
     ("--mask-discontig/--keep-discontig",),
     type=bool,

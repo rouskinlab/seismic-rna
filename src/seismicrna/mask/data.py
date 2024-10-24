@@ -9,20 +9,21 @@ from ..core.data import (ArrowDataset,
                          LoadFunction,
                          MergedUnbiasDataset,
                          UnbiasDataset)
-from ..core.join.data import (BATCH_NUM,
-                              READ_NUMS,
-                              SEG_END5S,
-                              SEG_END3S,
-                              MUTS,
-                              JoinMutsDataset)
-from ..core.join.report import JoinMaskReport
+from ..core.join import (BATCH_NUM,
+                         READ_NUMS,
+                         SEG_END5S,
+                         SEG_END3S,
+                         MUTS,
+                         JoinMutsDataset,
+                         JoinMaskReport)
 from ..core.rel import RelPattern
 from ..core.report import (CountMutsF,
                            CountRefsF,
                            MinMutGapF,
                            PosKeptF,
                            QuickUnbiasF,
-                           QuickUnbiasThreshF)
+                           QuickUnbiasThreshF,
+                           JoinedClustersF)
 from ..relate.batch import RelateBatch
 from ..relate.data import load_relate_dataset
 
@@ -132,8 +133,9 @@ class JoinMaskMutsDataset(JoinMutsDataset, MergedUnbiasDataset):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self._clusts is not None:
-            raise TypeError(f"{self} has no clusters, but got {self._clusts}")
+        clusts = self.report.get_field(JoinedClustersF, missing_ok=True)
+        if clusts is not None:
+            raise TypeError(f"{self} has no clusters, but got {clusts}")
 
 
 load_mask_dataset = LoadFunction(MaskMutsDataset, JoinMaskMutsDataset)

@@ -10,26 +10,6 @@ from ..core.data import (LoadedDataset,
                          TallMutsDataset)
 
 
-class ReadNamesDataset(LoadedDataset):
-    """ Dataset of read names from the Relate step. """
-
-    @classmethod
-    def get_batch_type(cls):
-        return ReadNamesBatchIO
-
-    @classmethod
-    def get_report_type(cls):
-        return RelateReport
-
-    @property
-    def pattern(self):
-        return None
-
-
-class PoolReadNamesDataset(ReadNamesDataset, TallDataset):
-    """ """
-
-
 class RelateDataset(LoadedMutsDataset):
     """ Dataset of mutations from the Relate step. """
 
@@ -74,7 +54,36 @@ class PoolDataset(TallMutsDataset):
         return load_relate_dataset
 
 
+class ReadNamesDataset(LoadedDataset):
+    """ Dataset of read names from the Relate step. """
+
+    @classmethod
+    def get_batch_type(cls):
+        return ReadNamesBatchIO
+
+    @classmethod
+    def get_report_type(cls):
+        return RelateReport
+
+    @property
+    def pattern(self):
+        return None
+
+
+class PoolReadNamesDataset(TallDataset):
+    """ Pooled Dataset of read names. """
+
+    @classmethod
+    def get_report_type(cls):
+        return PoolReport
+
+    @classmethod
+    def get_dataset_load_func(cls):
+        return load_read_names_dataset
+
+
 load_relate_dataset = LoadFunction(RelateDataset, PoolDataset)
+load_read_names_dataset = LoadFunction(ReadNamesDataset, PoolReadNamesDataset)
 
 ########################################################################
 #                                                                      #
