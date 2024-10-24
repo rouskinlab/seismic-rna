@@ -1,20 +1,21 @@
 from functools import cached_property
 
 from .batch import RelateBatch
-from .io import QnamesBatchIO, RelateBatchIO
+from .io import ReadNamesBatchIO, RelateBatchIO
 from .report import RelateReport, PoolReport
 from ..core.data import (LoadedDataset,
                          LoadedMutsDataset,
                          LoadFunction,
+                         TallDataset,
                          TallMutsDataset)
 
 
-class QnamesDataset(LoadedDataset):
+class ReadNamesDataset(LoadedDataset):
     """ Dataset of read names from the Relate step. """
 
     @classmethod
     def get_batch_type(cls):
-        return QnamesBatchIO
+        return ReadNamesBatchIO
 
     @classmethod
     def get_report_type(cls):
@@ -23,6 +24,10 @@ class QnamesDataset(LoadedDataset):
     @property
     def pattern(self):
         return None
+
+
+class PoolReadNamesDataset(ReadNamesDataset, TallDataset):
+    """ """
 
 
 class RelateDataset(LoadedMutsDataset):

@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import cache
 from pathlib import Path
 
-from .io import RelateIO, QnamesBatchIO, RelateBatchIO
+from .io import RelateIO, ReadNamesBatchIO, RelateBatchIO
 from ..core import path
 from ..core.io import RefIO
 from ..core.report import (Report,
@@ -48,7 +48,7 @@ class RelateReport(BatchedRefseqReport, RelateIO):
 
     @classmethod
     def _batch_types(cls):
-        return QnamesBatchIO, RelateBatchIO
+        return ReadNamesBatchIO, RelateBatchIO
 
     def refseq_file(self, top: Path):
         return refseq_file_path(top,

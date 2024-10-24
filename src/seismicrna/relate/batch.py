@@ -38,7 +38,7 @@ class FullSectionMutsBatch(FullReadBatch, SectionMutsBatch, ABC):
     pass
 
 
-class QnamesBatch(FullReadBatch):
+class ReadNamesBatch(FullReadBatch):
 
     @classmethod
     def simulate(cls,

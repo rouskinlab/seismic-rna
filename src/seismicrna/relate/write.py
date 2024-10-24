@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Iterable
 
 from .data import RelateDataset
-from .io import from_reads, QnamesBatchIO, RelateBatchIO
+from .io import from_reads, ReadNamesBatchIO, RelateBatchIO
 from .py.relate import find_rels_line
 from .report import RelateReport
 from .sam import XamViewer
@@ -111,6 +111,7 @@ class RelationWriter(object):
                           min_qual=encode_phred(min_phred, phred_enc),
                           **kwargs)
             # Generate and write relation vectors for each batch.
+            num_batches = len(self._xam.indexes)
             results = dispatch(generate_batch,
                                n_procs,
                                pass_n_procs=False,
@@ -124,11 +125,13 @@ class RelationWriter(object):
                 batch_counts = list()
                 relv_checks = list()
                 name_checks = list()
-            n_batches = len(relv_checks)
+            if len(batch_counts) != num_batches:
+                raise ValueError(f"Expected {num_batches} batch(es), "
+                                 f"but generated {len(batch_counts)}")
             checksums = {RelateBatchIO.btype(): relv_checks,
-                         QnamesBatchIO.btype(): name_checks}
-            logger.routine(f"Ended generating batches {n_batches} for {self}")
-            return batch_counts, n_batches, checksums
+                         ReadNamesBatchIO.btype(): name_checks}
+            logger.routine(f"Ended generating batches {num_batches} for {self}")
+            return batch_counts, num_batches, checksums
         finally:
             if not keep_tmp:
                 # Delete the temporary SAM file before exiting.

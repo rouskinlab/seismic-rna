@@ -40,8 +40,8 @@ from ..core.run import run_func
 from ..core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write, write_mode
-from ..relate.batch import QnamesBatch, RelateBatch
-from ..relate.data import QnamesDataset, RelateDataset, load_relate_dataset
+from ..relate.batch import ReadNamesBatch, RelateBatch
+from ..relate.data import ReadNamesDataset, RelateDataset, load_relate_dataset
 from ..relate.report import RelateReport
 from ..relate.sim import simulate_batches
 
@@ -170,7 +170,7 @@ def generate_fastq(top: Path,
                    refseq: DNA,
                    paired: bool,
                    read_length: int,
-                   batches: Iterable[tuple[RelateBatch, QnamesBatch]],
+                   batches: Iterable[tuple[RelateBatch, ReadNamesBatch]],
                    p_rev: float = 0.5,
                    fq_gzip: bool = True,
                    force: bool = False):
@@ -257,7 +257,7 @@ def from_report(report_file: Path, *,
     report = RelateReport.load(report_file)
     sample = report.get_field(SampleF)
     rdata = RelateDataset(report_file)
-    ndata = QnamesDataset(report_file)
+    ndata = ReadNamesDataset(report_file)
     sim_dir = _get_common_attr(rdata, ndata, "top")
     section = rdata.section
     batches = zip(rdata.iter_batches(), ndata.iter_batches())

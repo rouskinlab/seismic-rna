@@ -4,7 +4,7 @@ from typing import Any, Iterable
 
 import numpy as np
 
-from .batch import QnamesBatch, RelateBatch
+from .batch import ReadNamesBatch, RelateBatch
 from ..core import path
 from ..core.io import MutsBatchIO, ReadBatchIO, RefIO
 from ..core.logs import logger
@@ -19,11 +19,11 @@ class RelateIO(RefIO, ABC):
         return super().auto_fields() | {path.CMD: path.CMD_REL_DIR}
 
 
-class QnamesBatchIO(ReadBatchIO, RelateIO, QnamesBatch):
+class ReadNamesBatchIO(ReadBatchIO, RelateIO, ReadNamesBatch):
 
     @classmethod
     def file_seg_type(cls):
-        return path.QnamesBatSeg
+        return path.ReadNamesBatSeg
 
     def __getstate__(self):
         state = super().__getstate__()
@@ -79,10 +79,10 @@ def from_reads(reads: Iterable[tuple[str, tuple[list[int], [list[int]]], dict[in
     if seg_end3s.ndim < 2:
         seg_end3s = seg_end3s[:, np.newaxis]
     # Assemble and return the batches.
-    name_batch = QnamesBatchIO(sample=sample,
-                               ref=ref,
-                               batch=batch,
-                               names=names)
+    name_batch = ReadNamesBatchIO(sample=sample,
+                                  ref=ref,
+                                  batch=batch,
+                                  names=names)
     rel_batch = RelateBatchIO(sample=sample,
                               batch=batch,
                               section=Section(ref, refseq),
