@@ -317,8 +317,10 @@ class LoadedDataset(Dataset, ABC):
         return self.report.get_field(ChecksumsF)[self.get_btype_name()][batch]
 
     def get_batch(self, batch_num: int) -> ReadBatchIO | MutsBatchIO:
-        batch = self.get_batch_type().load(self.get_batch_path(batch_num),
-                                           self.get_batch_checksum(batch_num))
+        batch = self.get_batch_type().load(
+            self.get_batch_path(batch_num),
+            checksum=self.get_batch_checksum(batch_num)
+        )
         if batch.batch != batch_num:
             raise ValueError(f"Expected batch to have number {batch_num}, "
                              f"but got {batch.batch}")
@@ -329,10 +331,12 @@ class LoadedMutsDataset(LoadedDataset, MutsDataset, NarrowDataset, ABC):
 
     @cached_property
     def refseq(self):
-        return RefseqIO.load(RefseqIO.build_path(top=self.top,
-                                                 sample=self.sample,
-                                                 ref=self.ref),
-                             self.report.get_field(RefseqChecksumF)).refseq
+        return RefseqIO.load(
+            RefseqIO.build_path(top=self.top,
+                                sample=self.sample,
+                                ref=self.ref),
+            checksum=self.report.get_field(RefseqChecksumF)
+        ).refseq
 
     @cached_property
     def end5(self):

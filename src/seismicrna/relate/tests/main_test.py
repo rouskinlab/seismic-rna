@@ -5,6 +5,7 @@ from shutil import rmtree
 
 from seismicrna.core import path
 from seismicrna.core.batch.muts import SectionMutsBatch
+from seismicrna.core.io.seq import RefseqIO
 from seismicrna.core.logs import Level, set_config
 from seismicrna.core.ngs.xam import SAM_DELIM
 from seismicrna.core.seq.fasta import write_fasta
@@ -64,8 +65,8 @@ SAM_DATA_PAIRED = [
 ]
 
 
-def write_sam_file(tmp_dir: Path, data: list[list]):
-    sam_dir = tmp_dir.joinpath(SAMPLE, path.CMD_ALIGN_DIR)
+def write_sam_file(out_dir: Path, data: list[list]):
+    sam_dir = out_dir.joinpath(SAMPLE, path.CMD_ALIGN_DIR)
     sam_dir.mkdir(parents=True)
     sam_file = sam_dir.joinpath(f"{REF}.sam")
     with open(sam_file, "x") as f:
@@ -73,14 +74,14 @@ def write_sam_file(tmp_dir: Path, data: list[list]):
     return sam_file
 
 
-def write_fasta_file(tmp_dir: Path):
-    fasta_file = tmp_dir.joinpath(f"{REFS}.fa")
+def write_fasta_file(out_dir: Path):
+    fasta_file = out_dir.joinpath(f"{REFS}.fa")
     write_fasta(fasta_file, [(REF, REF_SEQ)])
     return fasta_file
 
 
-def load_batches(tmp_dir: Path):
-    report_file = tmp_dir.joinpath(SAMPLE,
+def load_batches(out_dir: Path):
+    report_file = out_dir.joinpath(SAMPLE,
                                    path.CMD_REL_DIR,
                                    REF,
                                    "relate-report.json")
@@ -96,6 +97,14 @@ def extract_batches(batches: list[SectionMutsBatch]):
              for pos, muts in batch.muts.items()}
             for batch in batches]
     return read_nums, seg_end5s, seg_end3s, muts
+
+
+def load_refseq(out_dir: Path):
+    return RefseqIO.load(RefseqIO.build_path(top=out_dir,
+                                             sample=SAMPLE,
+                                             cmd=path.CMD_REL_DIR,
+                                             ref=REF),
+                         checksum="").refseq
 
 
 class TestRelate(ut.TestCase, ABC):
@@ -150,8 +159,9 @@ class TestRelateEmpty(TestRelate):
         return SAM_DATA_EMPTY
 
     def test_noargs(self):
-        read_nums, seg_end5s, seg_end3s, muts = self.batches()
-        self.assertEqual(len(read_nums), 0)
+        batches = self.batches()
+        self.assertEqual(len(batches), 0)
+        self.assertEqual(load_refseq(self._out_dir), REF_SEQ)
 
     def test_min_reads(self):
         self.assertRaisesRegex(ValueError,
@@ -168,6 +178,7 @@ class TestRelateSingle(TestRelate):
 
     def test_noargs(self):
         read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches())
+        self.assertEqual(load_refseq(self._out_dir), REF_SEQ)
         self.assertListEqual(read_nums, [[0, 1, 2, 3]])
         self.assertListEqual(seg_end5s, [[[1], [4], [3], [4]]])
         self.assertListEqual(seg_end3s, [[[4], [9], [6], [7]]])
@@ -313,6 +324,7 @@ class TestRelatePaired(TestRelate):
 
     def test_noargs(self):
         read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches())
+        self.assertEqual(load_refseq(self._out_dir), REF_SEQ)
         self.assertListEqual(read_nums, [[0, 1, 2, 3, 4, 5]])
         self.assertListEqual(seg_end5s,
                              [[[2, 1], [3, 4], [2, 4], [6, 1], [5, 5], [1, 1]]])

@@ -113,9 +113,9 @@ class BrickleIO(FileIO, ABC):
     """ Brotli-compressed file of a Pickled object (Brickle). """
 
     @classmethod
-    def load(cls, file: Path, checksum: str = ""):
+    def load(cls, file: Path, **kwargs):
         """ Load from a compressed pickle file. """
-        return load_brickle(file, checksum=checksum, check_type=cls)
+        return load_brickle(file, check_type=cls, **kwargs)
 
     def save(self, top: Path, *args, **kwargs):
         """ Save to a pickle file compressed with Brotli. """

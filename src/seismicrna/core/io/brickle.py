@@ -42,10 +42,11 @@ def load_brickle(file: Path,
     logger.routine(f"Began loading {file}")
     with open(file, "rb") as f:
         data = f.read()
-    if checksum != (digest := digest_data(data)):
-        raise ValueError(
-            f"Expected checksum of {file} to be {checksum}, but got {digest}"
-        )
+    if checksum:
+        digest = digest_data(data)
+        if digest != checksum:
+            raise ValueError(f"Expected checksum of {file} to be {checksum}, "
+                             f"but got {digest}")
     item = pickle.loads(brotli.decompress(data))
     if check_type is not None and not isinstance(item, check_type):
         raise TypeError(f"Expected to unpickle {check_type}, "
