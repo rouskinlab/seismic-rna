@@ -96,7 +96,7 @@ def run(input_path: tuple[str, ...], *,
         max_fmut_pos: float,
         min_ncov_read: int,
         min_finfo_read: float,
-        max_fmut_read: int,
+        max_fmut_read: float,
         min_mut_gap: int,
         # Observer bias correction
         quick_unbias: bool,

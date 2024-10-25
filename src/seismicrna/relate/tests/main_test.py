@@ -2,6 +2,7 @@ import unittest as ut
 from abc import ABC, abstractmethod
 from pathlib import Path
 from shutil import rmtree
+from typing import Iterable
 
 from seismicrna.core import path
 from seismicrna.core.batch.muts import SectionMutsBatch
@@ -80,16 +81,8 @@ def write_fasta_file(out_dir: Path):
     return fasta_file
 
 
-def load_batches(out_dir: Path):
-    report_file = out_dir.joinpath(SAMPLE,
-                                   path.CMD_REL_DIR,
-                                   REF,
-                                   "relate-report.json")
-    dataset = RelateDataset(report_file)
-    return list(dataset.iter_batches())
-
-
-def extract_batches(batches: list[SectionMutsBatch]):
+def extract_batches(batches: Iterable[SectionMutsBatch]):
+    batches = list(batches)
     read_nums = [list(batch.read_nums) for batch in batches]
     seg_end5s = [batch.seg_end5s.tolist() for batch in batches]
     seg_end3s = [batch.seg_end3s.tolist() for batch in batches]
@@ -140,16 +133,16 @@ class TestRelate(ut.TestCase, ABC):
                 clip_end5: int = 0,
                 clip_end3: int = 0,
                 **kwargs):
-        run(str(self._fasta_file),
-            (str(self._sam_file),),
-            out_dir=str(self._out_dir),
-            min_reads=min_reads,
-            min_mapq=min_mapq,
-            min_phred=min_phred,
-            clip_end5=clip_end5,
-            clip_end3=clip_end3,
-            **kwargs)
-        return load_batches(self._out_dir)
+        relate_report_file, = run(str(self._fasta_file),
+                                  (str(self._sam_file),),
+                                  out_dir=str(self._out_dir),
+                                  min_reads=min_reads,
+                                  min_mapq=min_mapq,
+                                  min_phred=min_phred,
+                                  clip_end5=clip_end5,
+                                  clip_end3=clip_end3,
+                                  **kwargs)
+        return extract_batches(RelateDataset(relate_report_file).iter_batches())
 
 
 class TestRelateEmpty(TestRelate):
@@ -177,7 +170,7 @@ class TestRelateSingle(TestRelate):
         return SAM_DATA_SINGLE
 
     def test_noargs(self):
-        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches())
+        read_nums, seg_end5s, seg_end3s, muts = self.batches()
         self.assertEqual(load_refseq(self._out_dir), REF_SEQ)
         self.assertListEqual(read_nums, [[0, 1, 2, 3]])
         self.assertListEqual(seg_end5s, [[[1], [4], [3], [4]]])
@@ -207,9 +200,7 @@ class TestRelateSingle(TestRelate):
                                min_mapq=7)
 
     def test_min_phred(self):
-        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches(
-            min_phred=40
-        ))
+        read_nums, seg_end5s, seg_end3s, muts = self.batches(min_phred=40)
         self.assertListEqual(read_nums, [[0, 1, 2, 3]])
         self.assertListEqual(seg_end5s, [[[1], [4], [3], [4]]])
         self.assertListEqual(seg_end3s, [[[4], [9], [6], [7]]])
@@ -225,10 +216,8 @@ class TestRelateSingle(TestRelate):
                                9: {}}])
 
     def test_clip(self):
-        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches(
-            clip_end5=1,
-            clip_end3=1,
-        ))
+        read_nums, seg_end5s, seg_end3s, muts = self.batches(clip_end5=1,
+                                                             clip_end3=1)
         self.assertListEqual(read_nums, [[0, 1, 2, 3]])
         self.assertListEqual(seg_end5s, [[[2], [5], [4], [5]]])
         self.assertListEqual(seg_end3s, [[[3], [8], [5], [6]]])
@@ -244,9 +233,7 @@ class TestRelateSingle(TestRelate):
                                9: {}}])
 
     def test_batch_size_1(self):
-        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches(
-            batch_size=1
-        ))
+        read_nums, seg_end5s, seg_end3s, muts = self.batches(batch_size=1)
         self.assertListEqual(read_nums, [[0], [0], [0], [0]])
         self.assertListEqual(seg_end5s, [[[1]], [[4]], [[3]], [[4]]])
         self.assertListEqual(seg_end3s, [[[4]], [[9]], [[6]], [[7]]])
@@ -289,9 +276,7 @@ class TestRelateSingle(TestRelate):
                                9: {}}])
 
     def test_batch_size_3(self):
-        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches(
-            batch_size=3
-        ))
+        read_nums, seg_end5s, seg_end3s, muts = self.batches(batch_size=3)
         self.assertListEqual(read_nums, [[0, 1, 2], [0]])
         self.assertListEqual(seg_end5s, [[[1], [4], [3]], [[4]]])
         self.assertListEqual(seg_end3s, [[[4], [9], [6]], [[7]]])
@@ -323,7 +308,7 @@ class TestRelatePaired(TestRelate):
         return SAM_DATA_PAIRED
 
     def test_noargs(self):
-        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches())
+        read_nums, seg_end5s, seg_end3s, muts = self.batches()
         self.assertEqual(load_refseq(self._out_dir), REF_SEQ)
         self.assertListEqual(read_nums, [[0, 1, 2, 3, 4, 5]])
         self.assertListEqual(seg_end5s,
@@ -355,9 +340,7 @@ class TestRelatePaired(TestRelate):
                                min_mapq=6)
 
     def test_min_phred(self):
-        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches(
-            min_phred=40
-        ))
+        read_nums, seg_end5s, seg_end3s, muts = self.batches(min_phred=40)
         self.assertListEqual(read_nums, [[0, 1, 2, 3, 4, 5]])
         self.assertListEqual(seg_end5s,
                              [[[2, 1], [3, 4], [2, 4], [6, 1], [5, 5], [1, 1]]])
@@ -375,10 +358,8 @@ class TestRelatePaired(TestRelate):
                                9: {64: [3]}}])
 
     def test_clip(self):
-        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches(
-            clip_end5=1,
-            clip_end3=1,
-        ))
+        read_nums, seg_end5s, seg_end3s, muts = self.batches(clip_end5=1,
+                                                             clip_end3=1)
         self.assertListEqual(read_nums, [[0, 1, 2, 3, 4, 5]])
         self.assertListEqual(seg_end5s,
                              [[[3, 2], [4, 5], [3, 5], [7, 2], [6, 6], [2, 2]]])
@@ -396,9 +377,7 @@ class TestRelatePaired(TestRelate):
                                9: {}}])
 
     def test_batch_size_1(self):
-        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches(
-            batch_size=1
-        ))
+        read_nums, seg_end5s, seg_end3s, muts = self.batches(batch_size=1)
         self.assertListEqual(read_nums, [[0], [0], [0], [0], [0], [0]])
         self.assertListEqual(
             seg_end5s,
@@ -465,9 +444,7 @@ class TestRelatePaired(TestRelate):
                                9: {}}])
 
     def test_batch_size_4(self):
-        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches(
-            batch_size=4
-        ))
+        read_nums, seg_end5s, seg_end3s, muts = self.batches(batch_size=4)
         self.assertListEqual(read_nums, [[0, 1, 2, 3], [0, 1]])
         self.assertListEqual(
             seg_end5s,
@@ -498,9 +475,7 @@ class TestRelatePaired(TestRelate):
                                9: {}}])
 
     def test_batch_size_5(self):
-        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches(
-            batch_size=5
-        ))
+        read_nums, seg_end5s, seg_end3s, muts = self.batches(batch_size=5)
         self.assertListEqual(read_nums, [[0, 1, 2, 3, 4], [0]])
         self.assertListEqual(
             seg_end5s,
@@ -531,9 +506,7 @@ class TestRelatePaired(TestRelate):
                                9: {}}])
 
     def test_batch_size_6(self):
-        read_nums, seg_end5s, seg_end3s, muts = extract_batches(self.batches(
-            batch_size=6
-        ))
+        read_nums, seg_end5s, seg_end3s, muts = self.batches(batch_size=6)
         self.assertListEqual(read_nums, [[0, 1, 2, 3, 4, 5]])
         self.assertListEqual(seg_end5s,
                              [[[2, 1], [3, 4], [2, 4], [6, 1], [5, 5], [1, 1]]])
