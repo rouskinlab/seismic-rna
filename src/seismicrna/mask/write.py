@@ -1,6 +1,7 @@
 import json
 from collections import defaultdict
 from datetime import datetime
+from itertools import chain
 from pathlib import Path
 from typing import Iterable
 
@@ -23,8 +24,6 @@ from ..core.table import MUTAT_REL, INFOR_REL
 from ..core.tmp import release_to_out
 from ..core.write import need_write
 from ..relate.data import RelateDataset, PoolDataset, load_read_names_dataset
-
-READ_NAME = "Read"
 
 
 class Masker(object):
@@ -200,7 +199,8 @@ class Masker(object):
         # Collect the positions to mask from the list.
         dataset_ref = self.dataset.ref
         mask_pos = np.array([pos for ref, pos in mask_pos
-                             if ref == dataset_ref])
+                             if ref == dataset_ref],
+                            dtype=int)
         # Read positions to exclude from a file.
         if mask_pos_file is not None:
             mask_pos = np.concatenate([mask_pos,
@@ -215,20 +215,20 @@ class Masker(object):
                                        mask_pos <= self.section.end3)]
 
     @staticmethod
-    def _get_mask_read(mask_read: list[str],
+    def _get_mask_read(mask_read: Iterable[str],
                        mask_read_file: Path | None):
         """ List all reads to pre-exclude. """
-        # Collect the reads to mask from the list.
-        mask_read = np.asarray(mask_read)
-        # Get reads to exclude from a file.
+        # Ensure that the given read names are all strings.
+        mask_read = map(str, mask_read)
+        # List reads to exclude from a file.
         if mask_read_file is not None:
-            mask_read = np.concatenate([
-                mask_read,
-                pd.read_csv(mask_read_file, index_col=READ_NAME)
-            ])
-        # Drop redundant reads and sort the remaining ones.
-        mask_read = np.unique(np.asarray(mask_read))
-        return mask_read
+            with open(mask_read_file) as f:
+                # Ensure every read name is unique.
+                mask_read_combined = set(chain(mask_read, map(str.rstrip, f)))
+        else:
+            # Ensure every read name is unique.
+            mask_read_combined = set(mask_read)
+        return np.asarray(list(mask_read_combined), dtype=str)
 
     def _filter_exclude_read(self, batch: SectionMutsBatch):
         """ Filter out reads in the list of pre-excluded read. """
