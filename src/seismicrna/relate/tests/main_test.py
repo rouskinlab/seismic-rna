@@ -39,16 +39,16 @@ SAM_DATA_SINGLE = [
 
 # Read CGGCATATC Qual
 # -------------------
-#  1-1 CG-C         6
-#  1-2  gtCATG      6
-#  2-2     At-TC    7
-#  3-1    CAT--C    5
-#  3-2   GCat       5
-#  4-1  GGCTT       9
-#  4-2    CaTATC    9
-#  5-1 cGGC         7
-#  6-1      TATG    8
-#  6-2 cGGC         8
+#  1R1 CG-C         6
+#  1R2  gtCATG      6
+#  2R2     At-TC    7
+#  3R1    CAT--C    5
+#  3R2   GCat       5
+#  4R1  GGCTT       9
+#  4R2    CaTATC    9
+#  5R1 cGGC         7
+#  6R1      TATG    8
+#  6R2 cGGC         8
 # (Lower quality bases in lowercase.)
 SAM_DATA_PAIRED = [
     ["@SQ", f"SN:{REF}", f"LN:{len(REF_SEQ)}"],
