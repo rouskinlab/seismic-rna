@@ -163,7 +163,7 @@ LEVEL_COLORS = {
                            AnsiCode.format(AnsiCode.BOLD)]),
     Level.ERROR: AnsiCode.format_color(160),
     Level.WARNING: AnsiCode.format_color(214),
-    Level.COMMAND: AnsiCode.format_color(42),
+    Level.COMMAND: AnsiCode.format_color(28),
     Level.TASK: AnsiCode.format_color(33),
     Level.ROUTINE: AnsiCode.format_color(55),
     Level.DETAIL: AnsiCode.format_color(240),
