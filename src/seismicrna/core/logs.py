@@ -239,6 +239,13 @@ FILE_VERBOSITY = Level.DETAIL
 EXC_INFO_VERBOSITY = Level.TASK
 
 
+LoggerConfig = namedtuple("LoggerConfig",
+                          ["verbosity",
+                           "log_file_path",
+                           "log_color",
+                           "raise_on_error"])
+
+
 def erase_config():
     """ Erase the existing logger configuration. """
     logger.console_stream = None
@@ -263,13 +270,6 @@ def set_config(verbosity: int = 0,
                                         Filterer(FILE_VERBOSITY),
                                         Formatter(format_logfile))
     logger.raise_on_error = raise_on_error
-
-
-LoggerConfig = namedtuple("LoggerConfig",
-                          ["verbosity",
-                           "log_file_path",
-                           "log_color",
-                           "raise_on_error"])
 
 
 def get_config():
@@ -327,6 +327,10 @@ def restore_config(func: Callable):
             set_config(**config._asdict())
 
     return wrapper
+
+
+# Initialize logging so that it will run by default if using the API.
+set_config()
 
 ########################################################################
 #                                                                      #
