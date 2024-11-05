@@ -7,16 +7,16 @@ from click import command
 
 from ..core import path
 from ..core.arg import (opt_ct_file,
-                        opt_end3_fmean,
-                        opt_insert_fmean,
-                        opt_ends_var,
+                        opt_center_fmean,
+                        opt_center_fvar,
+                        opt_length_fmean,
+                        opt_length_fvar,
                         opt_force,
                         opt_max_procs)
 from ..core.batch import END5_COORD, END3_COORD
-from ..core.random import stochastic_round
 from ..core.rna import find_ct_section
 from ..core.run import run_func
-from ..core.stats import calc_dirichlet_params
+from ..core.stats import calc_beta_params
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
 
@@ -27,79 +27,84 @@ rng = np.random.default_rng()
 PROPORTION = "Proportion"
 
 
-def _sim_ends(end5: int,
-              end3: int,
-              end3_mean: float,
-              read_mean: float,
-              variance: float,
-              num_reads: int):
-    """ Simulate segment end coordinates using a Dirichlet distribution.
+def _validate_int(n: int,
+                  what: str,
+                  minimum: int | None = None,
+                  maximum: int | None = None):
+    if not isinstance(n, int):
+        raise ValueError(f"{what} must be int, but got {type(n).__name__}")
+    if minimum is not None:
+        _validate_int(minimum, "minimum")
+        if n < minimum:
+            raise ValueError(f"{what} must be ≥ {minimum}, but got {n}")
+    if maximum is not None:
+        _validate_int(maximum, "maximum")
+        if n > maximum:
+            raise ValueError(f"{what} must be ≤ {maximum}, but got {n}")
+
+
+def _validate_fraction(f: float | int, what: str):
+    if not isinstance(f, (float, int)):
+        raise TypeError(f"{what} must be float/int, but got {type(f).__name__}")
+    if not 0. <= f <= 1.:
+        raise ValueError(f"{what} must be ≥ 0 and ≤ 1, but got {f}")
+
+
+def _calc_p_bins(nbins: int, mean: float, fvar: float):
+    """ Calculate the probability of each bin.
 
     Parameters
     ----------
-    end5: int
-        5' end of the section (minimum allowed 5' end coordinate).
-    end3: int
-        3' end of the section (maximum allowed 5' end coordinate).
-    end3_mean: float
-        Mean 3' end coordinate; must be ≥ `end5` and ≤ `end3`.
-    read_mean: float
-        Mean read length.
-    variance: float
-        Variance as a fraction of its supremum; must be ≥ 0 and < 1.
-    num_reads: int
-        Number of reads to simulate.
-
-    Returns
-    -------
-    tuple[np.ndarray, np.ndarray]
-        5' and 3' end coordinates of each read.
+    nbins: int
+        Number of bins to calculate the probability of; must be ≥ 1.
+    mean: float
+        Mean value; must be ≥ 0 and ≤ nbins - 1.
+    fvar: float
+        Variance as a fraction of its maximum, from 0 to 1.
     """
-    if not 1 <= end5 <= end3_mean <= end3:
-        raise ValueError("Must have 1 ≤ end5 ≤ end3_mean ≤ end3, but got "
-                         f"end5={end5}, end3_mean={end3_mean}, end3={end3}")
-    gap3_mean = end3 - end3_mean
-    if not 0 <= read_mean <= end3_mean - (end5 - 1):
-        raise ValueError("Must have 1 ≤ read_mean ≤ (end3_mean - (end5 - 1)), "
-                         f"but got read_mean={read_mean}")
-    gap5_mean = end3_mean - (end5 - 1) - read_mean
-    interval = end3 - (end5 - 1)
-    means = np.array([gap5_mean, read_mean, gap3_mean]) / interval
-    variances = variance * (means * (1. - means))
-    is_nonzero = variances != 0.
-    if is_nonzero.any():
-        alpha = calc_dirichlet_params(means[is_nonzero],
-                                      variances[is_nonzero])
-        sample = rng.dirichlet(alpha, size=num_reads).T * interval
-        if is_nonzero.all():
-            gap5s, _, gap3s = sample
-        elif not is_nonzero[0]:
-            diffs, gap3s = sample
-            gap5s = np.zeros(num_reads)
-        elif not is_nonzero[1]:
-            gap5s, gap3s = sample
-        elif not is_nonzero[2]:
-            gap5s, diffs = sample
-            gap3s = np.full(num_reads, gap3_mean)
+    _validate_int(nbins, "nbins", minimum=1)
+    if nbins == 1:
+        # There is only one bin, which must have probability 1.
+        return np.ones(1)
+    # Calculate the mean as a fraction of the degrees of freedom.
+    dof = nbins - 1
+    if not 0. <= mean <= dof:
+        raise ValueError(f"mean must be ≥ 0 and ≤ {dof}, but got {mean}")
+    fmean = mean / dof
+    _validate_fraction(fvar, "fvar")
+    if fvar < 1.:
+        # Calculate the variance.
+        var = fvar * fmean * (1. - fmean)
+        if var > 0.:
+            # If the variance is > 0, then use a beta distribution
+            # (which is continuous) and then integrate over each window
+            # between consecutive integers to calculate the probability
+            # of each bin.
+            from scipy.stats import beta
+            pbins = np.diff(beta.cdf(np.linspace(0., 1., nbins + 1),
+                                     *calc_beta_params(fmean, var)))
         else:
-            # This error should be impossible; checking just in case.
-            raise ValueError(f"Invalid variances: {variances}")
-        # Convert the fractional gaps into integers using stochastic
-        # rounding; then ensure the 5' and 3' ends are in bounds.
-        end3s = np.maximum(end3 - stochastic_round(gap3s), end5)
-        end5s = np.minimum(stochastic_round(gap5s) + end5, end3s)
+            # If the variance is 0, all reads must have the same length:
+            # namely, mean read length (rounded to the nearest integer).
+            # Find the bin in which the mean read length will occur.
+            pbins = np.zeros(nbins)
+            mean_bin = min(int(fmean * nbins), nbins - 1)
+            pbins[mean_bin] = 1.
     else:
-        end5s = np.full(num_reads, end3_mean - (read_mean - 1))
-        end3s = np.full(num_reads, end3_mean)
-    return end5s, end3s
+        # The variance is maximal, so only the lowest and highest bins
+        # can have non-zero probability.
+        pbins = np.zeros(nbins)
+        pbins[0] = 1. - fmean
+        pbins[-1] = fmean
+    return pbins
 
 
 def sim_pends(end5: int,
               end3: int,
-              end3_mean: float,
-              read_mean: float,
-              variance: float,
-              num_reads: int | None = None):
+              center_fmean: float,
+              center_fvar: float,
+              length_fmean: float,
+              length_fvar: float):
     """ Simulate segment end coordinate probabilities.
 
     Parameters
@@ -108,53 +113,82 @@ def sim_pends(end5: int,
         5' end of the section (minimum allowed 5' end coordinate).
     end3: int
         3' end of the section (maximum allowed 5' end coordinate).
-    end3_mean: float
-        Mean 3' end coordinate; must be ≥ `end5` and ≤ `end3`.
-    read_mean: float
-        Mean read length.
-    variance: float
-        Variance as a fraction of its supremum; must be ≥ 0 and < 1.
-    num_reads: int | None = None
-        Number of reads to use for simulation; if omitted, will default
-        to 10,000,000.
+    center_fmean: float
+        Mean read center, as a fraction of the reference length.
+    center_fvar: float
+        Variance of the read center, as a fraction of its maximum.
+    length_fmean: float
+        Mean read length, as a fraction of the available length.
+    length_fvar: float
+        Variance of the read length, as a fraction of its maximum.
 
     Returns
     -------
     tuple[np.ndarray, np.ndarray, np.ndarray]
         5' and 3' coordinates and their probabilities.
     """
-    if num_reads is None:
-        num_reads = 10_000_000
-    elif num_reads < 1:
-        raise ValueError(f"num_reads must be ≥ 1, but got {num_reads}")
-    end5s, end3s = _sim_ends(end5,
-                             end3,
-                             end3_mean,
-                             read_mean,
-                             variance,
-                             num_reads)
-    ends = np.stack([end5s, end3s], axis=1)
-    uniq_ends, counts = np.unique(ends, return_counts=True, axis=0)
-    uniq_end5s, uniq_end3s = uniq_ends.T
-    pends = counts / num_reads
-    return uniq_end5s, uniq_end3s, pends
+    # Length of the section.
+    _validate_int(end5, "end5", minimum=1)
+    _validate_int(end3, "end3", minimum=0)
+    difference = end3 - end5
+    section_length = difference + 1
+    if section_length < 0:
+        raise ValueError("Length of the section must be ≥ 0, but got "
+                         f"{section_length} (end5={end5}, end3={end3})")
+    # Mean center (average of 5' and 3' ends) among all reads.
+    _validate_fraction(center_fmean, "center_fmean")
+    mean_read_center = center_fmean * difference + end5
+    # Central position of the section (can be a half-integer).
+    section_center = (end5 + end3) / 2
+    # Maximum possible mean read length given the mean read center.
+    max_mean_read_length = section_length - 2 * abs(mean_read_center
+                                                    - section_center)
+    # Mean length among all reads.
+    _validate_fraction(length_fmean, "length_fmean")
+    mean_read_length = length_fmean * max_mean_read_length
+    # Calculate the probability of each read length.
+    _validate_fraction(length_fvar, "length_fvar")
+    p_read_length = _calc_p_bins(section_length + 1,
+                                 mean_read_length,
+                                 length_fvar)
+    # For each read length, calculate the probability of each pair of
+    # 5' and 3' ends.
+    _validate_fraction(center_fvar, "center_fvar")
+    end5s = list()
+    end3s = list()
+    pends = list()
+    for read_length in map(int, np.flatnonzero(p_read_length)):
+        # Number of positions at which the read can start.
+        n_position_options = section_length - read_length + 1
+        # Mean 5' end of reads with this length.
+        end5_mean = mean_read_center - (read_length - 1) / 2
+        # Calculate the probability of each 5'/3' end position.
+        p_bins = _calc_p_bins(n_position_options,
+                              end5_mean - end5,
+                              center_fvar) * p_read_length[read_length]
+        # Use the positions with non-zero probabilities.
+        select = np.flatnonzero(p_bins)
+        pends.append(p_bins[select])
+        end5s.append(np.arange(end5, end5 + n_position_options)[select])
+        end3s.append(end5s[-1] + (read_length - 1))
+    return np.concatenate(end5s), np.concatenate(end3s), np.concatenate(pends)
 
 
 def sim_pends_ct(ct_file: Path, *,
-                 end3_fmean: float,
-                 insert_fmean: float,
-                 ends_var: float,
+                 center_fmean: float,
+                 center_fvar: float,
+                 length_fmean: float,
+                 length_fvar: float,
                  force: bool):
     pends_file = ct_file.with_suffix(path.PARAM_ENDS_EXT)
     if need_write(pends_file, force):
         section = find_ct_section(ct_file)
-        end3_mean = end3_fmean * (section.length - 1) + section.end5
-        read_mean = insert_fmean * section.length
         uniq_end5s, uniq_end3s, pends = sim_pends(section.end5,
                                                   section.end3,
-                                                  end3_mean,
-                                                  read_mean,
-                                                  ends_var)
+                                                  center_fmean,
+                                                  center_fvar,
+                                                  length_fmean,
+                                                  length_fvar)
         uniq_ends = {END5_COORD: uniq_end5s, END3_COORD: uniq_end3s}
         pends = pd.Series(pends,
                           pd.MultiIndex.from_arrays(list(uniq_ends.values()),
@@ -181,9 +215,10 @@ def load_pends(pends_file: Path):
 @run_func(COMMAND)
 def run(*,
         ct_file: tuple[str, ...],
-        end3_fmean: float,
-        insert_fmean: float,
-        ends_var: float,
+        center_fmean: float,
+        center_fvar: float,
+        length_fmean: float,
+        length_fvar: float,
         force: bool,
         max_procs: int):
     """ Simulate the rate of each kind of mutation at each position. """
@@ -191,17 +226,19 @@ def run(*,
                     max_procs=max_procs,
                     pass_n_procs=False,
                     args=as_list_of_tuples(map(Path, ct_file)),
-                    kwargs=dict(end3_fmean=end3_fmean,
-                                insert_fmean=insert_fmean,
-                                ends_var=ends_var,
+                    kwargs=dict(center_fmean=center_fmean,
+                                center_fvar=center_fvar,
+                                length_fmean=length_fmean,
+                                length_fvar=length_fvar,
                                 force=force))
 
 
 params = [
     opt_ct_file,
-    opt_end3_fmean,
-    opt_insert_fmean,
-    opt_ends_var,
+    opt_center_fmean,
+    opt_center_fvar,
+    opt_length_fmean,
+    opt_length_fvar,
     opt_force,
     opt_max_procs
 ]

@@ -499,6 +499,13 @@ opt_ambindel = Option(
     help="Mark all ambiguous insertions and deletions"
 )
 
+opt_insert3 = Option(
+    ("--insert3/--insert5",),
+    type=bool,
+    default=True,
+    help="Mark each insertion on the base to its 3' (True) or 5' (False) side"
+)
+
 opt_brotli_level = Option(
     ("--brotli-level",),
     type=int,
@@ -805,7 +812,7 @@ opt_jackpot_conf_level = Option(
 opt_max_jackpot_quotient = Option(
     ("--max-jackpot-quotient",),
     type=float,
-    default=1.2,
+    default=1.1,
     help="Remove runs whose jackpotting quotient exceeds this limit"
 )
 
@@ -1297,25 +1304,32 @@ opt_vmut_unpaired = Option(
     help="Set the relative variance of mutation rates of unpaired bases"
 )
 
-opt_end3_fmean = Option(
-    ("--end3-fmean", "-3"),
+opt_center_fmean = Option(
+    ("--center-fmean",),
     type=float,
-    default=0.75,
-    help="Set the mean 3' end as a fraction of the section length"
+    default=0.5,
+    help="Set the mean read center as a fraction of the section length"
 )
 
-opt_insert_fmean = Option(
-    ("--insert-fmean", "-l"),
+opt_center_fvar = Option(
+    ("--center-fvar",),
+    type=float,
+    default=1/3,
+    help="Set the variance of the read center as a fraction of its maximum"
+)
+
+opt_length_fmean = Option(
+    ("--length-fmean",),
     type=float,
     default=0.5,
     help="Set the mean read length as a fraction of the section length"
 )
 
-opt_ends_var = Option(
-    ("--ends-var", "-e"),
+opt_length_fvar = Option(
+    ("--length-fvar",),
     type=float,
-    default=0.25,
-    help="Set the variance of end coordinates as a fraction of its supremum"
+    default=1/81,
+    help="Set the variance of the read length as a fraction of its maximum"
 )
 
 opt_clust_conc = Option(

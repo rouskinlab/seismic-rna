@@ -73,7 +73,7 @@ def verify_proportions(p: Any):
 
 
 def make_pmut_means(*,
-                    ploq: float = 0.04,
+                    ploq: float = 0.02,
                     pam: float,
                     pac: float = 0.30,
                     pag: float = 0.16,
@@ -275,7 +275,8 @@ def sim_pmut(positions: pd.Index,
         mean_nonzero = mean.loc[mean[base] != 0., base]
         var_nonzero = relative_variance * (mean_nonzero * (1. - mean_nonzero))
         # Simulate the mutation rates.
-        if (num_nonzero := np.count_nonzero(mean_nonzero)) > 1:
+        num_nonzero = np.count_nonzero(mean_nonzero)
+        if num_nonzero > 1:
             pmut_base = rng.dirichlet(calc_dirichlet_params(mean_nonzero.values,
                                                             var_nonzero.values),
                                       size=base_pos.size)
