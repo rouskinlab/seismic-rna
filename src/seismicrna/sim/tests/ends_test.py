@@ -16,18 +16,20 @@ class TestSimPEnds(ut.TestCase):
                length_fvar: float,
                end5s: np.ndarray,
                end3s: np.ndarray,
-               pends: np.ndarray):
+               pends: np.ndarray,
+               **kwargs):
         for result, expect in zip(sim_pends(end5,
                                             end3,
                                             center_fmean,
                                             center_fvar,
                                             length_fmean,
-                                            length_fvar),
+                                            length_fvar,
+                                            **kwargs),
                                   [end5s, end3s, pends],
                                   strict=True):
             self.assertTrue(np.array_equal(result, expect))
 
-    def test_zero_length_1_to_0(self):
+    def test_zero_length_1_to_0_keep(self):
         self.equate(end5=1,
                     end3=0,
                     center_fmean=0.5,
@@ -38,7 +40,7 @@ class TestSimPEnds(ut.TestCase):
                     end3s=np.array([0]),
                     pends=np.array([1.]))
 
-    def test_zero_length_9_to_8(self):
+    def test_zero_length_9_to_8_keep(self):
         self.equate(end5=9,
                     end3=8,
                     center_fmean=0.5,
@@ -48,6 +50,18 @@ class TestSimPEnds(ut.TestCase):
                     end5s=np.array([9]),
                     end3s=np.array([8]),
                     pends=np.array([1.]))
+
+    def test_zero_length_9_to_8_drop(self):
+        self.equate(end5=9,
+                    end3=8,
+                    center_fmean=0.5,
+                    center_fvar=0.5,
+                    length_fmean=0.5,
+                    length_fvar=0.5,
+                    end5s=np.array([]),
+                    end3s=np.array([]),
+                    pends=np.array([]),
+                    keep_empty_reads=False)
 
     def test_center_fvar_0_length_fvar_0(self):
         self.equate(end5=11,

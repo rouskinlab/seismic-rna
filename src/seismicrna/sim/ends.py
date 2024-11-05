@@ -104,7 +104,8 @@ def sim_pends(end5: int,
               center_fmean: float,
               center_fvar: float,
               length_fmean: float,
-              length_fvar: float):
+              length_fvar: float,
+              keep_empty_reads: bool = True):
     """ Simulate segment end coordinate probabilities.
 
     Parameters
@@ -121,6 +122,8 @@ def sim_pends(end5: int,
         Mean read length, as a fraction of the available length.
     length_fvar: float
         Variance of the read length, as a fraction of its maximum.
+    keep_empty_reads: bool
+        Whether to keep reads whose lengths are 0.
 
     Returns
     -------
@@ -158,20 +161,29 @@ def sim_pends(end5: int,
     end3s = list()
     pends = list()
     for read_length in map(int, np.flatnonzero(p_read_length)):
-        # Number of positions at which the read can start.
-        n_position_options = section_length - read_length + 1
-        # Mean 5' end of reads with this length.
-        end5_mean = mean_read_center - (read_length - 1) / 2
-        # Calculate the probability of each 5'/3' end position.
-        p_bins = _calc_p_bins(n_position_options,
-                              end5_mean - end5,
-                              center_fvar) * p_read_length[read_length]
-        # Use the positions with non-zero probabilities.
-        select = np.flatnonzero(p_bins)
-        pends.append(p_bins[select])
-        end5s.append(np.arange(end5, end5 + n_position_options)[select])
-        end3s.append(end5s[-1] + (read_length - 1))
-    return np.concatenate(end5s), np.concatenate(end3s), np.concatenate(pends)
+        if keep_empty_reads or read_length >= 1:
+            # Number of positions at which the read can start.
+            n_position_options = section_length - read_length + 1
+            # Mean 5' end of reads with this length.
+            end5_mean = mean_read_center - (read_length - 1) / 2
+            # Calculate the probability of each 5'/3' end position.
+            p_bins = _calc_p_bins(n_position_options,
+                                  end5_mean - end5,
+                                  center_fvar) * p_read_length[read_length]
+            # Use the positions with non-zero probabilities.
+            select = np.flatnonzero(p_bins)
+            pends.append(p_bins[select])
+            end5s.append(np.arange(end5, end5 + n_position_options)[select])
+            end3s.append(end5s[-1] + (read_length - 1))
+    if pends:
+        end5s = np.concatenate(end5s)
+        end3s = np.concatenate(end3s)
+        pends = np.concatenate(pends)
+    else:
+        end5s = np.array([], dtype=int)
+        end3s = np.array([], dtype=int)
+        pends = np.array([], dtype=float)
+    return end5s, end3s, pends
 
 
 def sim_pends_ct(ct_file: Path, *,
@@ -188,7 +200,8 @@ def sim_pends_ct(ct_file: Path, *,
                                                   center_fmean,
                                                   center_fvar,
                                                   length_fmean,
-                                                  length_fvar)
+                                                  length_fvar,
+                                                  keep_empty_reads=False)
         uniq_ends = {END5_COORD: uniq_end5s, END3_COORD: uniq_end3s}
         pends = pd.Series(pends,
                           pd.MultiIndex.from_arrays(list(uniq_ends.values()),
