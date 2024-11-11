@@ -239,8 +239,8 @@ class TwoTableWriter(GraphWriter, ABC):
                                  **kwargs)
 
 
-def _iter_table_pairs(tables: Iterable[Table]):
-    """ Yield every pair of files whose reference and section match. """
+def iter_table_pairs(tables: Iterable[Table]):
+    """ Yield every pair of tables whose reference and section match. """
     tables = list(tables)
     # Group the tables by reference and section.
     table_groups = defaultdict(list)
@@ -250,19 +250,13 @@ def _iter_table_pairs(tables: Iterable[Table]):
             logger.warning(f"Duplicate table: {table}")
         else:
             table_groups[key].append(table)
-    # Yield every pair of table files from each group.
+    # Yield every pair of tables from each group.
     for (ref, sect), tables in table_groups.items():
         n_files = len(tables)
         n_pairs = n_files * (n_files - 1) // 2
         logger.detail(f"Found {n_files} table files ({n_pairs} pairs) "
                       f"with reference {repr(ref)} and section {repr(sect)}")
-        yield from combinations(sorted(tables), 2)
-
-
-def iter_table_pairs(tables: Iterable[Table]):
-    """ Yield every pair of files of positional tables whose reference
-    and section match. """
-    yield from _iter_table_pairs(tables)
+        yield from combinations(tables, 2)
 
 
 class TwoTableRunner(GraphRunner, ABC):
@@ -289,7 +283,7 @@ class TwoTableRunner(GraphRunner, ABC):
         table_pairs = list()
         if compself:
             # Compare every table with itself.
-            table_pairs.extend((file, file) for file in tables)
+            table_pairs.extend((table, table) for table in tables)
         if comppair:
             # Compare every pair of two different tables.
             table_pairs.extend(iter_table_pairs(tables))
