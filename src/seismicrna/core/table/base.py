@@ -118,9 +118,17 @@ class Table(ABC):
         """ Table's path segments. """
 
     @classmethod
+    def default_path_fields(cls):
+        """ Default values of the path fields. """
+        return {path.CMD: cls.kind(),
+                path.TABLE: cls.kind(),
+                path.EXT: cls.ext()}
+
+    @classmethod
     def build_path(cls, **path_fields):
         """ Build the path of a table's CSV file using the fields. """
-        return path.build(*cls.path_segs(), **path_fields)
+        return path.build(*cls.path_segs(),
+                          **(cls.default_path_fields() | path_fields))
 
     @classmethod
     def gzipped(cls):

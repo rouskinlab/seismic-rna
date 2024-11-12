@@ -35,11 +35,8 @@ class FullTable(Table, ABC):
     @property
     def path_fields(self):
         return {path.TOP: self.top,
-                path.CMD: self.kind(),
                 path.SAMP: self.sample,
-                path.REF: self.ref,
-                path.TABLE: self.kind(),
-                path.EXT: self.ext()}
+                path.REF: self.ref}
 
 
 class FullPositionTable(FullTable, PositionTable, ABC):
@@ -63,7 +60,7 @@ class RelateTable(AvgTable, ABC):
         return path.CMD_REL_DIR
 
 
-class RelatePosTable(RelateTable, FullPositionTable, ABC):
+class RelatePositionTable(RelateTable, FullPositionTable, ABC):
 
     def _iter_profiles(self, *,
                        sections: Iterable[Section] | None,
@@ -80,7 +77,7 @@ class RelateReadTable(RelateTable, FullReadTable, ABC):
     pass
 
 
-class RelatePosTableWriter(PositionTableWriter, RelatePosTable):
+class RelatePositionTableWriter(PositionTableWriter, RelatePositionTable):
     pass
 
 
@@ -112,7 +109,7 @@ class RelateTabulator(FullTabulator, AverageTabulator, ABC):
 
     @classmethod
     def table_types(cls):
-        return [RelatePosTableWriter, RelateReadTableWriter]
+        return [RelatePositionTableWriter, RelateReadTableWriter]
 
 
 class RelateCountTabulator(CountTabulator, RelateTabulator):
@@ -205,7 +202,7 @@ class ReadTableLoader(RelTypeTableLoader, ReadTable, ABC):
     """ Load data indexed by read. """
 
 
-class RelatePositionTableLoader(PositionTableLoader, RelatePosTable):
+class RelatePositionTableLoader(PositionTableLoader, RelatePositionTable):
     """ Load relate data indexed by position. """
 
 
