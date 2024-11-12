@@ -28,7 +28,7 @@ class ClusterTable(RelTypeTable, ABC):
         return RelClustHeader
 
 
-class ClusterPosTable(ClusterTable, PartialPositionTable, ABC):
+class ClusterPositionTable(ClusterTable, PartialPositionTable, ABC):
     pass
 
 
@@ -50,7 +50,7 @@ class ClusterAbundanceTable(AbundanceTable, PartialTable, ABC):
         return parse_header(self.data.index)
 
 
-class ClusterPosTableWriter(PositionTableWriter, ClusterPosTable):
+class ClusterPositionTableWriter(PositionTableWriter, ClusterPositionTable):
     pass
 
 
@@ -58,7 +58,7 @@ class ClusterAbundanceTableWriter(AbundanceTableWriter, ClusterAbundanceTable):
     pass
 
 
-class ClusterPosTableLoader(PositionTableLoader, ClusterPosTable):
+class ClusterPositionTableLoader(PositionTableLoader, ClusterPositionTable):
     """ Load cluster data indexed by position. """
 
 
@@ -84,7 +84,7 @@ class ClusterTabulator(PartialTabulator, ABC):
 
     @classmethod
     def table_types(cls):
-        return [ClusterPosTableWriter, ClusterAbundanceTableWriter]
+        return [ClusterPositionTableWriter, ClusterAbundanceTableWriter]
 
     def __init__(self, *, ks: list[int], **kwargs):
         super().__init__(**kwargs)
