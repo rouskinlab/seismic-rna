@@ -5,7 +5,7 @@ from click import command
 
 from .meta import parse_refs_metadata, parse_samples_metadata
 from .web import export_sample
-from ..cluster.table import ClusterPosTableLoader, ClusterAbundanceTableLoader
+from ..cluster.table import ClusterPositionTableLoader, ClusterAbundanceTableLoader
 from ..core.arg import (CMD_EXPORT,
                         arg_input_path,
                         opt_samples_meta,
@@ -15,7 +15,7 @@ from ..core.arg import (CMD_EXPORT,
                         opt_max_procs)
 from ..core.run import run_func
 from ..core.task import dispatch
-from ..mask.table import MaskPosTableLoader, MaskReadTableLoader
+from ..mask.table import MaskPositionTableLoader, MaskReadTableLoader
 
 
 @run_func(CMD_EXPORT)
@@ -33,9 +33,9 @@ def run(input_path: tuple[str, ...], *,
     refs_metadata = (parse_refs_metadata(Path(refs_meta))
                      if refs_meta
                      else dict())
-    for table_type in [MaskPosTableLoader,
+    for table_type in [MaskPositionTableLoader,
                        MaskReadTableLoader,
-                       ClusterPosTableLoader,
+                       ClusterPositionTableLoader,
                        ClusterAbundanceTableLoader]:
         for table in table_type.load_tables(input_path):
             tables[(table.top, table.sample)].append(table)

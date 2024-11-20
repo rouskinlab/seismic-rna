@@ -1175,6 +1175,17 @@ opt_graph_aucroll = Option(
     help="Graph rolling areas under receiver operating characteristic curves"
 )
 
+# Draw
+
+opt_struct_num = Option(
+    ("--struct-num",),
+    type=int,
+    multiple=True,
+    default=(0,),
+    help="Draw the specified structure (zero-indexed) or -1 for all structures"
+)
+
+
 # CT renumbering
 
 opt_ct_pos_5 = Option(

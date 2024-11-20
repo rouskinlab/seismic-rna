@@ -30,6 +30,7 @@ dependencies = [
     "plotly >=5.23",
     "pyyaml >=6.0",
     "scipy >=1.13",
+    "jinja2 >=3.0"
 ]
 dynamic = ["version"]
 
