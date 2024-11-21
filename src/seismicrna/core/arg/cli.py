@@ -1185,6 +1185,12 @@ opt_struct_num = Option(
     help="Draw the specified structure (zero-indexed) or -1 for all structures"
 )
 
+opt_color = Option(
+    ("--color/--no-color",),
+    type=bool,
+    default=True,
+    help="Color bases by their reactivity"
+)
 
 # CT renumbering
 

@@ -24,39 +24,41 @@ rnartist {
             name = "{{ name }}"
         }
     }
-    data{
-    {% for key, val in color_dict.items() %}
+    {% if color_dict %}
+    data {
+        {% for key, val in color_dict.items() %}
         {{ key }} to {{ val }}
-    {% endfor %}
+        {% endfor %}
     }
-
+    {% endif %}
     theme {
         details {
             value = {{ details_value }}
         }
-
         {% for block in color_blocks %}
+        {% if color_dict or not block.color_to %}
         color {
             type = "{{ block.color_type }}"
             value = "{{ block.color_value }}"
             {% if block.color_to %}
-                to = "{{ block.color_to }}"
+            to = "{{ block.color_to }}"
             {% endif %}
             {% if block.color_filter %}
-                {% for filter_type, filter_value in block.color_filter.items() %}
-                    {% if filter_type == 'between' %}
-                        data between {{ filter_value[0] }}..{{ filter_value[1] }}
-                    {% else %}
-                        data {{filter_type}} {{ filter_value }}
-                    {% endif %}
-                {% endfor %}
+            {% for filter_type, filter_value in block.color_filter.items() %}
+            {% if filter_type == 'between' %}
+            data between {{ filter_value[0] }}..{{ filter_value[1] }}
+            {% else %}
+            data {{filter_type}} {{ filter_value }}
+            {% endif %}
+            {% endfor %}
             {% endif %}
             {% if block.location %}
-                location {
-                    {{ block.location[0] }} to {{ block.location[1] }}
-                }
+            location {
+                {{ block.location[0] }} to {{ block.location[1] }}
+            }
             {% endif %}
         }
+        {% endif %}
         {% endfor %}
     }
 }
@@ -142,7 +144,7 @@ def parse_db_file(file_path, struct_nums):
     return entries
 
 def parse_color_file(file_path):
-    color_dict = {}
+    color_dict = dict()
     with open(file_path, 'r') as file:
         lines = file.readlines()
         for line_num, line in enumerate(lines, start=1):
@@ -156,23 +158,20 @@ def build_jinja_data(struct: str,
                      name: str,
                      out_dir: Path,
                      highlight_pos: Iterable[int] = None):
-    color_blocks = list()
 
-    block1 = ColorBlock("N", "#caccce")
-    block2 = ColorBlock("n", "black")
-    block3 = ColorBlock("N", "#88CCEE", "#7287D9", {"between": (0.0, 0.2)})
-    block4 = ColorBlock("N", "#7287D9", "#8750D1", {"between": (0.2, 0.4)})
-    block5 = ColorBlock("N", "#8750D1", "#852075", {"between": (0.4, 0.8)})
-    block6 = ColorBlock("N", "#852075", "#661100", {"between": (0.8, 1.0)})
-    block7 = ColorBlock("G", "#caccce")
-    block8 = ColorBlock("U", "#caccce")
-    block9 = ColorBlock("n", "white", "white", {"between": (0.2, 1.0)})
-    block10 = ColorBlock("n", "black", "black", {"between": (0.0, 0.2)})
-    block11 = ColorBlock("g", "black")
-    block12 = ColorBlock("u", "black")
+    color_blocks = [ColorBlock("N", "#caccce"),
+                    ColorBlock("n", "black"),
+                    ColorBlock("N", "#88CCEE", "#7287D9",
+                               {"between": (0.0, 0.2)}),
+                    ColorBlock("N", "#7287D9", "#8750D1",
+                               {"between": (0.2, 0.4)}),
+                    ColorBlock("N", "#8750D1", "#852075",
+                               {"between": (0.4, 0.8)}),
+                    ColorBlock("N", "#852075", "#661100",
+                               {"between": (0.8, 1.0)}),
+                    ColorBlock("n", "white", "white", {"between": (0.2, 1.0)}),
+                    ColorBlock("n", "black", "black", {"between": (0.0, 0.2)})]
 
-    color_blocks = [block1, block2, block3, block4, block5, block6,
-                    block7, block8, block9, block10, block11, block12]
 
     if highlight_pos:
         for pos in highlight_pos:
@@ -197,11 +196,13 @@ class RNArtistRun(object):
                  report: Path,
                  tmp_dir: Path,
                  struct_nums: Iterable[int],
+                 color: bool,
                  n_procs: int):
         self.top, self.fields = FoldReport.parse_path(report)
         self.report = FoldReport.load(report)
         self.tmp_dir = tmp_dir
         self.struct_nums = struct_nums
+        self.color = color
         self.n_procs = n_procs
 
     @property
@@ -272,7 +273,6 @@ class RNArtistRun(object):
             Path of the file.
         """
         return self._get_dir(top).joinpath(file_seg.build(**file_fields))
-
 
     def get_db_file(self, top: Path):
         """ Get the path to the dot-bracket (DB) file.
@@ -360,7 +360,10 @@ class RNArtistRun(object):
 
     @cached_property
     def color_dict(self):
-        return parse_color_file(self.get_varna_color_file(self.top))
+        if self.color:
+            return parse_color_file(self.get_varna_color_file(self.top))
+        else:
+            return dict()
 
     def process_struct(self,
                        struct_name: str,
@@ -408,6 +411,7 @@ class RNArtistRun(object):
 
 def draw(report_path: Path, *,
          struct_nums: Iterable[int],
+         color: bool,
          tmp_dir: Path,
          keep_tmp: bool,
          n_procs: int,
@@ -416,6 +420,7 @@ def draw(report_path: Path, *,
     rnartist = RNArtistRun(report_path,
                            tmp_dir,
                            struct_nums,
+                           color,
                            n_procs)
     # By convention, a function must return a Path for dispatch to deem
     # that it has completed successfully.

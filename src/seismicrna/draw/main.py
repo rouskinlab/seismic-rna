@@ -7,6 +7,7 @@ from ..core.arg import (CMD_DRAW,
                         opt_force,
                         opt_keep_tmp,
                         opt_struct_num,
+                        opt_color,
                         opt_max_procs)
 from ..core.run import run_func
 from ..core.task import dispatch, as_list_of_tuples
@@ -17,6 +18,7 @@ from ..core.extern import require_env_var
 @run_func(CMD_DRAW, with_tmp=True, pass_keep_tmp=True)
 def run(input_path: tuple[str, ...], *,
         struct_num: Iterable[int],
+        color: bool,
         force: bool,
         max_procs: int,
         tmp_dir: Path,
@@ -31,6 +33,7 @@ def run(input_path: tuple[str, ...], *,
                     args=args,
                     pass_n_procs=True,
                     kwargs=dict(struct_nums=struct_num,
+                                color=color,
                                 tmp_dir=tmp_dir,
                                 keep_tmp=keep_tmp,
                                 force=force,))
@@ -39,6 +42,7 @@ def run(input_path: tuple[str, ...], *,
 params = [
     arg_input_path,
     opt_struct_num,
+    opt_color,
     opt_force,
     opt_keep_tmp,
     opt_max_procs
