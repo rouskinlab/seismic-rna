@@ -5,10 +5,17 @@ from typing import Iterable
 from pathlib import Path
 
 from ..core import path
-from ..core.extern.shell import args_to_cmd, run_cmd, JAVA_CMD, JAR_CMD
+from ..core.logs import logger
 from ..core.task import dispatch
-from ..fold.report import FoldReport
 from ..core.write import need_write
+from ..core.extern.shell import args_to_cmd, run_cmd, JAVA_CMD, JAR_CMD
+from ..core.rna.io import from_ct
+from ..core.rna.state import RNAState
+from ..fold.report import FoldReport
+
+from ..relate.table import RelatePositionTable, RelatePositionTableLoader
+from ..mask.table import MaskPositionTable, MaskPositionTableLoader
+from ..cluster.table import ClusterPositionTable, ClusterPositionTableLoader
 
 from jinja2 import Template
 
@@ -67,6 +74,13 @@ rnartist {
 TEMPLATE = Template(TEMPLATE_STRING)
 RNARTIST_PATH = os.environ["RNARTISTCORE"]
 
+TABLES = {path.CMD_REL_DIR:(RelatePositionTable,
+                            RelatePositionTableLoader),
+          path.CMD_MASK_DIR:(MaskPositionTable,
+                             MaskPositionTableLoader),
+          path.CMD_CLUST_DIR:(ClusterPositionTable,
+                              ClusterPositionTableLoader)}
+
 class ColorBlock:
     def __init__(self,
                  color_type: str,
@@ -117,32 +131,6 @@ class JinjaData:
             'color_blocks': [block.to_dict() if hasattr(block, 'to_dict') else block for block in self.color_blocks]
         }
 
-def parse_db_file(file_path, struct_nums):
-    # List to hold all dictionaries
-    entries = dict()
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-        # The sequence line is after the first energy line
-        seq_line = lines[1].strip()
-        # Start reading structures from the second line (0-based index 2)
-        struct_num = 0
-        for i in range(2, len(lines)):
-            line = lines[i].strip()
-            # Check if line starts with '>', if so, skip
-            if line.startswith(">"):
-                continue
-            # The lines that remain are structure lines
-            structure_line = line
-            # Create dictionary for this block
-            entry = {
-                'seq': seq_line,
-                'value': structure_line
-            }
-            if struct_num in struct_nums or -1 in struct_nums:
-                entries[struct_num] = entry
-            struct_num += 1
-    return entries
-
 def parse_color_file(file_path):
     color_dict = dict()
     with open(file_path, 'r') as file:
@@ -192,34 +180,30 @@ def build_jinja_data(struct: str,
 
 class RNArtistRun(object):
 
+    def _parse_profile(self):
+        match = re.search(r'(.+?)__(.+?)-', self.profile)
+        self.data_sect = match.group(1) if match else None
+        self.table_type = match.group(2) if match else None
+        if not match:
+            logger.warning("Could not parse profile: {self.profile}.")
+
     def __init__(self,
                  report: Path,
                  tmp_dir: Path,
-                 struct_nums: Iterable[int],
+                 struct_nums: Iterable[int] | None,
                  color: bool,
                  n_procs: int):
         self.top, self.fields = FoldReport.parse_path(report)
+        self.sample = self.fields.get(path.SAMP)
+        self.ref = self.fields.get(path.REF)
+        self.sect = self.fields.get(path.SECT)
+        self.profile = self.fields.get(path.PROFILE)
         self.report = FoldReport.load(report)
         self.tmp_dir = tmp_dir
         self.struct_nums = struct_nums
         self.color = color
         self.n_procs = n_procs
-
-    @property
-    def sample(self):
-        return self.fields.get(path.SAMP)
-
-    @property
-    def ref(self):
-        return self.fields.get(path.REF)
-
-    @property
-    def sect(self):
-        return self.fields.get(path.SECT)
-
-    @property
-    def profile(self):
-        return self.fields.get(path.PROFILE)
+        self._parse_profile()
 
     def _get_dir_fields(self, top: Path):
         """ Get the path fields for the directory of this RNA.
@@ -273,6 +257,53 @@ class RNArtistRun(object):
             Path of the file.
         """
         return self._get_dir(top).joinpath(file_seg.build(**file_fields))
+
+    @cached_property
+    def table_classes(self):
+        if self.table_type and self.table_type in TABLES:
+            return TABLES.get(self.table_type)
+        else:
+            logger.warning(f"Cannot use table of type {self.table_type} to "
+                           "calculate AUROC.")
+        return (None, None)
+
+    @property
+    def table_class(self):
+        return self.table_classes[0]
+
+    @property
+    def table_loader(self):
+        return self.table_classes[1]
+
+    @property
+    def table_file(self):
+        return (self.table_class.build_path(top=self.top,
+                                          sample=self.sample,
+                                          ref=self.ref,
+                                          sect=self.data_sect)
+                if self.table_class else None)
+    @cached_property
+    def table(self):
+        return (self.table_loader(self.table_file)
+                if self.table_loader else None)
+
+    def get_ct_file(self, top: Path):
+        """ Get the path to the connectivity table (CT) file.
+
+        Parameters
+        ----------
+        top: pathlib.Path
+            Top-level directory.
+
+        Returns
+        -------
+        pathlib.Path
+            Path of the file.
+        """
+        return self._get_file(top,
+                              path.ConnectTableSeg,
+                              profile=self.profile,
+                              ext=path.CT_EXT)
 
     def get_db_file(self, top: Path):
         """ Get the path to the dot-bracket (DB) file.
@@ -349,6 +380,23 @@ class RNArtistRun(object):
                               ext=path.KTS_EXT)
 
     @cached_property
+    def best_struct(self):
+        if not self.table:
+            logger.warning(f"Could not find best structure for {self.profile}. "
+                           f"Drawing the MFE structure by default.")
+            return 0
+        max_auc = 0
+        best_auc = 0
+        for i, profile in enumerate(self.table.iter_profiles()):
+            if self.profile == profile.profile:
+                for struct in from_ct(self.get_ct_file(self.top)):
+                    state = RNAState.from_struct_profile(struct, profile)
+                    if state.auc > max_auc:
+                        max_auc = state.auc
+                        best_auc = i
+        return best_auc
+
+    @cached_property
     def edited_numbers(self):
         edited_pattern = re.compile(r'edited_(\d+(?:_\d+)*)')
         edited_numbers = list()
@@ -392,8 +440,14 @@ class RNArtistRun(object):
         return out_path
 
     def run(self, keep_tmp: bool, force: bool):
-        db_file = self.get_db_file(self.top)
-        structs = parse_db_file(db_file, struct_nums=self.struct_nums)
+        structs = dict()
+        if not self.struct_nums:
+            self.struct_nums = (self.best_struct,)
+        for struct_num, struct in enumerate(
+                from_ct(self.get_ct_file(self.top))):
+            if struct_num in self.struct_nums:
+                structs[struct_num] = dict(seq=struct.seq,
+                                           value=struct.db_structure)
         args = [
                 (f"{self.profile}-{struct_num}",
                  struct,
