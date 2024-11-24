@@ -387,13 +387,13 @@ class RNArtistRun(object):
             return 0
         max_auc = 0
         best_auc = 0
-        for i, profile in enumerate(self.table.iter_profiles()):
+        for profile in self.table.iter_profiles():
             if self.profile == profile.profile:
-                for struct in from_ct(self.get_ct_file(self.top)):
+                for struct_num, struct in enumerate(from_ct(self.get_ct_file(self.top))):
                     state = RNAState.from_struct_profile(struct, profile)
                     if state.auc > max_auc:
                         max_auc = state.auc
-                        best_auc = i
+                        best_auc = struct_num
         return best_auc
 
     @cached_property
