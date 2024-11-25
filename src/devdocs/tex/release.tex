@@ -134,7 +134,7 @@ git checkout master
 git pull upstream master
 git push origin master
         \end{verbatim}
-    \item Create a new branch for the new version, e.g. called \verb|seismic-rna_v2.7.18|, by typing \verb|conda checkout -b seismic-rna_v2.7.18|.
+    \item Create a new branch for the new version, e.g. called \verb|seismic-rna_v2.7.18|, by typing \verb|git checkout -b seismic-rna_v2.7.18|.
     \item Copy \verb|build.sh| and \verb|meta.yaml| from \verb|seismic-rna/conda| (in your SEISMIC-RNA repository) to \verb|recipes/seismic-rna| (in your Bioconda Recipes repository).
     \item Activate your \verb|bioconda| environment by typing \verb|conda activate bioconda|.
     \item Lint your updates by typing \verb|bioconda-utils lint --packages seismic-rna| and confirm that it prints an OK message, not ``Errors were found".
