@@ -72,7 +72,7 @@ rnartist {
 """
 
 TEMPLATE = Template(TEMPLATE_STRING)
-RNARTIST_PATH = os.environ["RNARTISTCORE"]
+RNARTIST_PATH = os.environ.get("RNARTISTCORE")
 
 TABLES = {path.CMD_REL_DIR:(RelatePositionTable,
                             RelatePositionTableLoader),

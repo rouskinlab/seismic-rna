@@ -24,7 +24,7 @@ def run(input_path: tuple[str, ...], *,
         tmp_dir: Path,
         keep_tmp: bool) -> list[Path]:
     """ Draw RNA structure diagrams with reactivities using RNArtistCore. """
-    require_env_var("RNARTISTCORE", "draw")
+    require_env_var("RNARTISTCORE", "+draw")
     # Generate the positional arguments for draw.
     args = as_list_of_tuples(path.find_files_chain(input_path, [path.FoldRepSeg]))
     # Draw the files.
