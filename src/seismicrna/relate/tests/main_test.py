@@ -133,15 +133,16 @@ class TestRelate(ut.TestCase, ABC):
                 clip_end5: int = 0,
                 clip_end3: int = 0,
                 **kwargs):
-        relate_report_file, = run(str(self._fasta_file),
-                                  (str(self._sam_file),),
-                                  out_dir=str(self._out_dir),
-                                  min_reads=min_reads,
-                                  min_mapq=min_mapq,
-                                  min_phred=min_phred,
-                                  clip_end5=clip_end5,
-                                  clip_end3=clip_end3,
-                                  **kwargs)
+        relate_dir, = run(str(self._fasta_file),
+                          (str(self._sam_file),),
+                          out_dir=str(self._out_dir),
+                          min_reads=min_reads,
+                          min_mapq=min_mapq,
+                          min_phred=min_phred,
+                          clip_end5=clip_end5,
+                          clip_end3=clip_end3,
+                          **kwargs)
+        relate_report_file = relate_dir.joinpath("relate-report.json")
         return extract_batches(RelateDataset(relate_report_file).iter_batches())
 
 
@@ -152,8 +153,8 @@ class TestRelateEmpty(TestRelate):
         return SAM_DATA_EMPTY
 
     def test_noargs(self):
-        batches = self.batches()
-        self.assertEqual(len(batches), 0)
+        read_nums, _, _, _ = self.batches()
+        self.assertEqual(len(read_nums), 0)
         self.assertEqual(load_refseq(self._out_dir), REF_SEQ)
 
     def test_min_reads(self):

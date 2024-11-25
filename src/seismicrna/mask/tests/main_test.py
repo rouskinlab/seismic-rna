@@ -27,23 +27,23 @@ SECTION = Section(REF, REF_SEQ)
 #    0 ========
 #    1 ?=======
 #    2 ==?=?===
-#    3 ==D=====
-#    4 ====II==
-#    5 ..===G=G
-#    6 .===C===
-#    7 =A==T==.
-#    8 .===.===
+#    3 ==/=====
+#    4 ====I===
+#    5   ===G=G
+#    6  ===C===
+#    7 =/==T==
+#    8  ===.===
 READ_NAMES = [f"Read{i}" for i in range(9)]
-S5 = [[1], [1], [1], [1], [1], [3], [2], [1], [2]]
-S3 = [[8], [8], [8], [8], [8], [8], [8], [7], [8]]
-P5 = [[1, 2], [3, 1], [1, 4], [5, 1], [1, 8], [3, 6], [7, 2], [1, 1], [6, 2]]
-P3 = [[1, 8], [8, 2], [3, 8], [8, 4], [7, 8], [5, 8], [8, 6], [7, 7], [8, 4]]
+SE5 = [[1], [1], [1], [1], [1], [3], [2], [1], [2]]
+SE3 = [[8], [8], [8], [8], [8], [8], [8], [7], [8]]
+PE5 = [[1, 2], [3, 1], [1, 4], [5, 1], [1, 8], [3, 6], [7, 2], [1, 1], [6, 2]]
+PE3 = [[1, 8], [8, 2], [3, 8], [8, 4], [7, 8], [5, 8], [8, 6], [7, 7], [8, 4]]
 MUTS = {1: {209: [1]},
-        2: {16: [7]},
+        2: {2: [7]},
         3: {2: [3], 177: [2]},
         4: {},
-        5: {5: [4], 32: [6], 128: [7], 225: [2]},
-        6: {9: [4], 64: [5]},
+        5: {8: [4], 32: [6], 128: [7], 225: [2]},
+        6: {64: [5]},
         7: {},
         8: {64: [5]}}
 
@@ -115,6 +115,7 @@ def write_datasets(out_dir: Path,
                               min_phred=0,
                               phred_enc=33,
                               overhangs=True,
+                              insert3=True,
                               ambindel=False,
                               clip_end5=0,
                               clip_end3=0,
@@ -220,22 +221,22 @@ class TestMaskSingle(TestMask, ABC):
 
     @classmethod
     def end5s(cls):
-        return S5
+        return SE5
 
     @classmethod
     def end3s(cls):
-        return S3
+        return SE3
 
 
 class TestMaskPaired(TestMask, ABC):
 
     @classmethod
     def end5s(cls):
-        return P5
+        return PE5
 
     @classmethod
     def end3s(cls):
-        return P3
+        return PE3
 
 
 class TestMask1Sample(TestMask, ABC):
@@ -420,7 +421,6 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
     def test_mask_gu_min_ncov_read_6(self):
         dataset = self.dataset(mask_gu=True,
                                min_ncov_read=6)
-        print(dataset.get_batch(0).matrix)
         self.assertListEqual(extract_positions(dataset),
                              [1, 3, 4, 5, 6, 8])
         self.assertListEqual(extract_read_nums(dataset),
@@ -441,6 +441,26 @@ class TestMaskSingle1Sample1Batch(TestMaskSingle,
                              [1, 2, 3, 5, 6, 7])
         self.assertListEqual(extract_read_nums(dataset),
                              [[0, 1, 2, 3, 4, 7]])
+
+    def test_mask_all_muts_min_ncov_read_7(self):
+        dataset = self.dataset(mask_del=True,
+                               mask_ins=True,
+                               mask_mut=["ac", "ag", "at",
+                                         "ca", "cg", "ct",
+                                         "ga", "gc", "gt",
+                                         "ta", "tc", "tg"],
+                               min_ncov_read=7)
+        self.assertListEqual(extract_positions(dataset),
+                             [1, 2, 3, 4, 5, 6, 7, 8])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 1, 2, 3, 4, 6, 7, 8]])
+
+    def test_min_finfo_read_1(self):
+        dataset = self.dataset(min_finfo_read=1.)
+        self.assertListEqual(extract_positions(dataset),
+                             [1, 2, 3, 4, 5, 6, 7, 8])
+        self.assertListEqual(extract_read_nums(dataset),
+                             [[0, 3, 4, 5, 6, 7, 8]])
 
 
 if __name__ == "__main__":

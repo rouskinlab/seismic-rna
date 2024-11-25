@@ -9,7 +9,7 @@ from click import Argument, Option
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
-from ..cluster.table import ClusterPosTableLoader, ClusterAbundanceTableLoader
+from ..cluster.table import ClusterTable, ClusterPositionTableLoader
 from ..core import path
 from ..core.arg import (NO_GROUP,
                         GROUP_BY_K,
@@ -30,8 +30,12 @@ from ..core.header import Header, format_clust_names
 from ..core.seq import DNA
 from ..core.table import Table, PositionTable
 from ..core.write import need_write
-from ..mask.table import MaskPosTableLoader, MaskReadTableLoader
-from ..relate.table import RelatePositionTableLoader, RelateReadTableLoader
+from ..mask.table import (MaskTable,
+                          MaskPositionTableLoader,
+                          MaskReadTableLoader)
+from ..relate.table import (RelateTable,
+                            RelatePositionTableLoader,
+                            RelateReadTableLoader)
 
 # Define actions.
 ACTION_REL = "all"
@@ -65,11 +69,11 @@ def _track_titles(tracks: list[tuple[int, int]] | None):
 
 
 def get_action_name(table: Table):
-    if isinstance(table, (RelatePositionTableLoader, RelateReadTableLoader)):
+    if isinstance(table, RelateTable):
         return ACTION_REL
-    if isinstance(table, (MaskPosTableLoader, MaskReadTableLoader)):
+    if isinstance(table, MaskTable):
         return ACTION_MASK
-    if isinstance(table, (ClusterPosTableLoader, ClusterAbundanceTableLoader)):
+    if isinstance(table, ClusterTable):
         return ACTION_CLUST
     raise TypeError(f"Invalid table type: {type(table).__name__}")
 
@@ -478,8 +482,8 @@ def load_pos_tables(input_paths: Iterable[str | Path]):
     """ Load position tables. """
     paths = list(input_paths)
     for table_type in [RelatePositionTableLoader,
-                       MaskPosTableLoader,
-                       ClusterPosTableLoader]:
+                       MaskPositionTableLoader,
+                       ClusterPositionTableLoader]:
         yield from table_type.load_tables(paths)
 
 

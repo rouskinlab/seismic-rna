@@ -1,8 +1,4 @@
-from __future__ import annotations
-
-from collections import defaultdict
-
-from .ambindel import Deletion, Insertion, find_ambindels
+from .ambindel import Deletion, Insertion, find_ambindels, get_ins_rel
 from .cigar import (CIG_ALIGN,
                     CIG_MATCH,
                     CIG_SUBST,
@@ -12,16 +8,16 @@ from .cigar import (CIG_ALIGN,
                     parse_cigar)
 from .encode import encode_match, encode_relate
 from .error import RelateValueError
-from ...core.rel import MATCH, DELET, NOCOV
-from ...core.seq import DNA
 from ...core.ngs import MAX_FLAG
+from ...core.rel import MATCH, DELET, NOCOV, IRREC
+from ...core.seq import DNA
 
 
 class SamFlag(object):
     """ Represents the set of 12 boolean flags for a SAM record. """
 
     # Define __slots__ to improve speed and memory performance.
-    __slots__ = "flag", "paired", "rev", "first", "second"
+    __slots__ = ["flag", "paired", "rev", "first", "second"]
 
     def __init__(self, flag: int):
         """
@@ -50,7 +46,7 @@ class SamRead(object):
     """ One read in a SAM file. """
 
     # Define __slots__ to improve speed and memory performance.
-    __slots__ = "qname", "flag", "rname", "pos", "mapq", "cigar", "seq", "qual"
+    __slots__ = ["name", "flag", "ref", "pos", "mapq", "cigar", "seq", "qual"]
 
     # Minimum number of fields in a valid SAM record
     MIN_FIELDS = 11
@@ -58,10 +54,13 @@ class SamRead(object):
     def __init__(self, line: str):
         fields = line.rstrip().split('\t')
         if len(fields) < self.MIN_FIELDS:
-            raise RelateValueError(f"Invalid SAM line:\n{line}")
-        self.qname = fields[0]
+            raise RelateValueError(
+                f"Each line in the SAM file must have ≥ {self.MIN_FIELDS} "
+                f"fields, but got {len(fields)} in\n{line}"
+            )
+        self.name = fields[0]
         self.flag = SamFlag(int(fields[1]))
-        self.rname = fields[2]
+        self.ref = fields[2]
         self.pos = int(fields[3])
         if self.pos < 1:
             raise ValueError(f"Position must be ≥ 1, but got {self.pos}")
@@ -75,13 +74,14 @@ class SamRead(object):
 
     def __str__(self):
         attrs = {attr: getattr(self, attr) for attr in self.__slots__[1:]}
-        return f"Read {repr(self.qname)} {attrs}"
+        return f"Read {repr(self.name)} {attrs}"
 
 
 def _find_rels_read(read: SamRead,
-                    refseq: DNA,
+                    ref_seq: DNA,
                     min_qual: str,
                     ambindel: bool,
+                    insert3: bool,
                     clip_end5: int,
                     clip_end3: int):
     """
@@ -91,12 +91,15 @@ def _find_rels_read(read: SamRead,
     ----------
     read: SamRead
         Read from SAM file to be related
-    refseq: str
+    ref_seq: str
         Reference sequence; refseq and muts must have the same length.
     min_qual: int
         ASCII encoding of the minimum Phred score to accept a base call
     ambindel: bool
         Whether to find and label all ambiguous insertions and deletions
+    insert3: bool
+        Whether to mark an insertion on the base immediately 3' (True)
+        or 5' (False) of the insertion.
     clip_end5: int
         Number of bases to clip from the 5' end of the read.
     clip_end3: int
@@ -109,30 +112,30 @@ def _find_rels_read(read: SamRead,
         - the 3' coordinate of the read
         - the relationship code for each mutation in the read
     """
-    readlen = len(read.seq)
-    reflen = len(refseq)
-    if not 1 <= read.pos <= reflen:
+    read_length = len(read.seq)
+    ref_length = len(ref_seq)
+    if not 1 <= read.pos <= ref_length:
         raise ValueError(f"Mapping position must be ≥ 1 and ≤ reference length "
-                         f"({reflen}), but got {read.pos}")
+                         f"({ref_length}), but got {read.pos}")
     # Position in the reference: can be 0- or 1-indexed (initially 0).
     ref_pos = read.pos - 1
     # Position in the read: can be 0- or 1-indexed (initially 0).
     read_pos = 0
     # Ends of the read, in the read coordinates (1-indexed).
-    end5_read = 1
-    end3_read = readlen
+    read_end5 = 1
+    read_end3 = read_length
     # Record the relationship for each mutated position.
-    rels: dict[int, int] = defaultdict(lambda: MATCH)
-    # Record all deletions and insertions.
-    dels: list[Deletion] = list()
-    inns: list[Insertion] = list()
+    rels: dict[int, int] = dict()
+    # Record the positions of deletions and insertions.
+    dels = list()
+    inns = list()
     # Read the CIGAR string one operation at a time.
     for cigar_op, op_length in parse_cigar(read.cigar):
         # Act based on the CIGAR operation and its length.
         if cigar_op == CIG_MATCH:
             # The read and reference sequences match over the entire
             # CIGAR operation.
-            if ref_pos + op_length > reflen:
+            if ref_pos + op_length > ref_length:
                 raise ValueError("CIGAR operation overshot the reference")
             if read_pos + op_length > len(read.seq):
                 raise ValueError("CIGAR operation overshot the read")
@@ -147,12 +150,12 @@ def _find_rels_read(read: SamRead,
         elif cigar_op == CIG_ALIGN or cigar_op == CIG_SUBST:
             # There are only matches or substitutions over the entire
             # CIGAR operation.
-            if ref_pos + op_length > reflen:
+            if ref_pos + op_length > ref_length:
                 raise ValueError("CIGAR operation overshot the reference")
             if read_pos + op_length > len(read.seq):
                 raise ValueError("CIGAR operation overshot the read")
             for _ in range(op_length):
-                rel = encode_relate(refseq[ref_pos],
+                rel = encode_relate(ref_seq[ref_pos],
                                     read.seq[read_pos],
                                     read.qual[read_pos],
                                     min_qual)
@@ -165,17 +168,17 @@ def _find_rels_read(read: SamRead,
             # CIGAR operation is deleted from the read. Make a Deletion
             # object for each base in the reference sequence that has
             # been deleted from the read.
-            if ref_pos + op_length > reflen:
+            if ref_pos + op_length > ref_length:
                 raise ValueError("CIGAR operation overshot the reference")
             read_pos += 1  # 1-indexed now until explicitly reset
             if not 1 < read_pos <= len(read.seq):
                 raise ValueError(f"Deletion in {read}, pos {read_pos}")
             for _ in range(op_length):
                 ref_pos += 1  # 1-indexed now until this iteration ends
-                if not 1 < ref_pos < reflen:
+                if not 1 < ref_pos < ref_length:
                     raise ValueError(f"Deletion in {read}, ref {ref_pos}")
-                dels.append(Deletion(ref_pos, read_pos))
                 rels[ref_pos] = DELET
+                dels.append(Deletion(ref_pos, read_pos))
             read_pos -= 1  # 0-indexed now
         elif cigar_op == CIG_INSRT:
             # The read contains an insertion of one or more bases that
@@ -197,16 +200,15 @@ def _find_rels_read(read: SamRead,
             if read_pos + op_length > len(read.seq):
                 raise ValueError("CIGAR operation overshot the read")
             ref_pos += 1  # 1-indexed now until explicitly reset
-            if not 1 < ref_pos <= reflen:
+            if not 1 < ref_pos <= ref_length:
                 raise ValueError(f"Insertion in {read}, ref {ref_pos}")
             for _ in range(op_length):
                 read_pos += 1  # 1-indexed now until this iteration ends
                 if not 1 < read_pos < len(read.seq):
                     raise ValueError(f"Insertion in {read}, pos {read_pos}")
                 inns.append(Insertion(read_pos, ref_pos))
-            # Insertions do not consume the reference, so do not add
-            # any information to rels yet; it will be added later via
-            # the method Insertion.stamp().
+            # Insertions can lie on top of other relationships, so do
+            # not the information to rels yet; it will be added later.
             ref_pos -= 1  # 0-indexed now
         elif cigar_op == CIG_SCLIP:
             # Bases were soft-clipped from the 5' or 3' end of the
@@ -218,14 +220,14 @@ def _find_rels_read(read: SamRead,
                 raise ValueError("CIGAR operation overshot the read")
             if read_pos == 0:
                 # This is the soft clip from the 5' end of the read.
-                if end5_read != 1:
+                if read_end5 != 1:
                     raise ValueError(f"{repr(read.cigar)} has >1 5' soft clip")
-                end5_read += op_length
+                read_end5 += op_length
             else:
                 # This is the soft clip from the 3' end of the read.
-                if end3_read != readlen:
+                if read_end3 != read_length:
                     raise ValueError(f"{repr(read.cigar)} has >1 3' soft clip")
-                end3_read -= op_length
+                read_end3 -= op_length
             read_pos += op_length
         else:
             raise RelateValueError(
@@ -240,64 +242,70 @@ def _find_rels_read(read: SamRead,
             f"CIGAR string {repr(read.cigar)} consumed {read_pos} bases "
             f"from read, but read is {len(read.seq)} bases long."
         )
-    # Clip bases from the 5' end.
+    # Add insertions to rels.
+    ins_rel = get_ins_rel(insert3)
+    for ins in inns:
+        ins_pos = ins.get_lateral(insert3)
+        if 1 <= ins_pos <= ref_length:
+            # The position at which the insertion is located may have
+            # already been assigned another type of mutation; if so,
+            # then add the insertion on top.
+            rels[ins_pos] = rels.get(ins_pos, IRREC) | ins_rel
+    # Find and label all relationships that are ambiguous due to indels.
+    if ambindel:
+        find_ambindels(rels=rels,
+                       dels=dels,
+                       inns=inns,
+                       insert3=insert3,
+                       ref_seq=ref_seq,
+                       read_seq=read.seq,
+                       read_qual=read.qual,
+                       min_qual=min_qual,
+                       ref_end5=read.pos,
+                       ref_end3=ref_pos,
+                       read_end5=read_end5,
+                       read_end3=read_end3)
+    # Clip bases from the 5' and 3' ends of the read.
     if clip_end5 < 0:
         raise ValueError(f"clip_end5 must be ≥ 0, but got {clip_end5}")
     if clip_end3 < 0:
         raise ValueError(f"clip_end3 must be ≥ 0, but got {clip_end3}")
-    # Add insertions to rels.
-    for ins in inns:
-        ins.stamp(rels, len(refseq))
-    # Find and label all relationships that are ambiguous due to indels.
-    if ambindel and (dels or inns):
-        find_ambindels(rels,
-                       read.pos,
-                       ref_pos,
-                       end5_read,
-                       end3_read,
-                       refseq,
-                       read.seq,
-                       read.qual,
-                       min_qual,
-                       dels,
-                       inns)
-    # Ends of the read, in the reference coordinates (1-indexed).
-    end5_ref = min(read.pos + clip_end5, reflen + 1)
-    end3_ref = max(ref_pos - clip_end3, 0)
+    ref_end5 = min(read.pos + clip_end5, ref_length + 1)
+    ref_end3 = max(ref_pos - clip_end3, 0)
     # Convert rels to a non-default dict and select only the positions
-    # between end5_ref and end3_ref.
+    # between ref_end5 and ref_end3.
     rels = {pos: rel for pos, rel in rels.items()
-            if end5_ref <= pos <= end3_ref}
-    return end5_ref, end3_ref, rels
+            if ref_end5 <= pos <= ref_end3}
+    return ref_end5, ref_end3, rels
 
 
 def _validate_read(read: SamRead, ref: str, min_mapq: int):
-    if read.rname != ref:
-        raise ValueError(f"Read {repr(read.qname)} mapped to a reference named "
-                         f"{repr(read.rname)} but is in an alignment map file "
+    if read.ref != ref:
+        raise ValueError(f"Read {repr(read.name)} mapped to a reference named "
+                         f"{repr(read.ref)} but is in an alignment map file "
                          f"for a reference named {repr(ref)}")
     if read.mapq < min_mapq:
-        raise ValueError(f"Read {repr(read.qname)} mapped with quality score "
+        raise ValueError(f"Read {repr(read.name)} mapped with quality score "
                          f"{read.mapq}, less than the minimum of {min_mapq}")
 
 
 def _validate_pair(read1: SamRead, read2: SamRead):
     """ Ensure that reads 1 and 2 are compatible mates. """
     if not read1.flag.paired:
-        raise RelateValueError(f"Read 1 ({read1.qname}) was not paired, "
-                               f"but read 2 ({read2.qname}) was given")
+        raise RelateValueError(f"Read 1 ({read1.name}) was not paired, "
+                               f"but read 2 ({read2.name}) was given")
     if not read2.flag.paired:
-        raise RelateValueError(f"Read 2 ({read2.qname}) was not paired, "
-                               f"but read 1 ({read1.qname}) was given")
-    if read1.qname != read2.qname:
+        raise RelateValueError(f"Read 2 ({read2.name}) was not paired, "
+                               f"but read 1 ({read1.name}) was given")
+    if read1.name != read2.name:
         raise RelateValueError(f"Got different names for reads "
-                               f"1 ({read1.qname}) and 2 ({read2.qname})")
+                               f"1 ({read1.name}) and 2 ({read2.name})")
     if not (read1.flag.first and read2.flag.second):
-        raise RelateValueError(f"Read {repr(read1.qname)} had mate 1 "
+        raise RelateValueError(f"Read {repr(read1.name)} had mate 1 "
                                f"labeled {2 - read1.flag.first} and mate 2 "
                                f"labeled {1 + read2.flag.second}")
     if read1.flag.rev == read2.flag.rev:
-        raise RelateValueError(f"Read {repr(read1.qname)} had "
+        raise RelateValueError(f"Read {repr(read1.name)} had "
                                "mates 1 and 2 facing the same way")
 
 
@@ -348,6 +356,7 @@ def find_rels_line(line1: str,
                    min_mapq: int,
                    min_qual: str,
                    ambindel: bool,
+                   insert3: bool,
                    overhangs: bool,
                    clip_end5: int = 0,
                    clip_end3: int = 0):
@@ -358,6 +367,7 @@ def find_rels_line(line1: str,
                                           refseq,
                                           min_qual,
                                           ambindel,
+                                          insert3,
                                           clip_end5,
                                           clip_end3)
     if line2:
@@ -375,6 +385,7 @@ def find_rels_line(line1: str,
                                                   refseq,
                                                   min_qual,
                                                   ambindel,
+                                                  insert3,
                                                   clip_end5,
                                                   clip_end3)
             # Determine which read (1 or 2) faces forward and reverse.
@@ -392,7 +403,7 @@ def find_rels_line(line1: str,
         # The read is single-ended.
         ends = [end51], [end31]
         rels = rels1
-    return read1.qname, ends, rels
+    return read1.name, ends, rels
 
 ########################################################################
 #                                                                      #

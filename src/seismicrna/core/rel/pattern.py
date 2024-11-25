@@ -7,8 +7,7 @@ from typing import Iterable
 
 from .code import (MATCH,
                    DELET,
-                   INS_5,
-                   INS_3,
+                   INSRT,
                    SUB_A,
                    SUB_C,
                    SUB_G,
@@ -27,7 +26,7 @@ class HalfRelPattern(object):
 
     ref_bases = "".join(DNA.four())
     read_bases = "".join((ref_bases, READ_DEL, READ_INS))
-    mut_bits = bytes([SUB_A, SUB_C, SUB_G, SUB_T, DELET, INS_5 | INS_3])
+    mut_bits = bytes([SUB_A, SUB_C, SUB_G, SUB_T, DELET, INSRT])
     fmt_plain = "{}{}"
     fmt_fancy = "{} -> {}"
     ptrn_plain = re.compile(f"([{ref_bases.lower()}])([{read_bases.lower()}])")
@@ -317,7 +316,7 @@ class RelPattern(object):
         return self.__class__(self.nos, self.yes)
 
     def __str__(self):
-        return f"{type(self).__name__}  +[{self.yes}]  -[{self.nos}]"
+        return f"{type(self).__name__} + [{self.yes}] - [{self.nos}]"
 
     def __hash__(self):
         return hash(tuple(getattr(self, x) for x in self.__slots__))

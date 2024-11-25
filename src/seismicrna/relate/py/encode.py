@@ -1,17 +1,3 @@
-"""
-
-Relate Code Module
-
-========================================================================
-
-Convert the relationships between reads and a reference from SAM format
-(which encodes relationships implicitly as CIGAR strings) to vectorized
-format (which encodes relationships explicitly as elements of arrays).
-
-------------------------------------------------------------------------
-
-"""
-
 from ...core.rel import MATCH, SUB_A, SUB_C, SUB_G, SUB_T, ANY_N, IRREC
 from ...core.seq import DNA, BASEA, BASEC, BASEG, BASET, BASEN
 
@@ -24,15 +10,8 @@ BASE_DECODINGS = {code: base for base, code in BASE_ENCODINGS.items()
 
 
 def encode_relate(ref_base: str, read_base: str, read_qual: str, min_qual: str):
-    """
-    Encode the relation between a base in the read and a base in the
-    reference sequence. If the read quality is sufficient, then return
-    the match encoding if the read and reference bases match, otherwise
-    the encoding of the substitution for the base in the read.
-    If the read quality is insufficient, then return the fully ambiguous
-    base encoding, that is a match or substitution to any base except
-    the reference base, since a "substitution to the reference base"
-    would be a match, not a substitution.
+    """ Encode the relationship between a base in the read and a base in
+    the reference sequence.
 
     Parameters
     ----------
@@ -45,25 +24,23 @@ def encode_relate(ref_base: str, read_base: str, read_qual: str, min_qual: str):
     min_qual: str
         Minimum value of `read_qual` to not call the relation ambiguous.
     """
-    return ((MATCH if ref_base == read_base
-             else BASE_ENCODINGS[read_base])
-            if (read_qual >= min_qual
-                and read_base != BASEN
-                and ref_base != BASEN)
-            else ANY_N ^ BASE_ENCODINGS[ref_base])
+    if read_qual >= min_qual and read_base != BASEN and ref_base != BASEN:
+        # The base call is unambiguous.
+        if ref_base == read_base:
+            # The read base matches the reference base.
+            return MATCH
+        # The read base differs from the reference base.
+        return BASE_ENCODINGS[read_base]
+    # The base call is ambiguous due to low quality or an N.
+    return ANY_N ^ BASE_ENCODINGS[ref_base]
 
 
 def encode_match(read_base: str, read_qual: str, min_qual: str):
-    """
-    A more efficient version of `encode_compare` given prior knowledge
-    from the CIGAR string that the read and reference match at this
-    position. Note that there is no analagous version when there is a
-    known substitution because substitutions are relatively infrequent,
-    so optimizing their processing would speed the program only slightly
-    while making the source code more complex and harder to maintain.
-    """
-    return (MATCH if (read_qual >= min_qual and read_base != BASEN)
-            else ANY_N ^ BASE_ENCODINGS[read_base])
+    """ A more efficient version of `encode_relate` given that the read
+    and reference match at this position. """
+    if read_qual >= min_qual and read_base != BASEN:
+        return MATCH
+    return ANY_N ^ BASE_ENCODINGS[read_base]
 
 ########################################################################
 #                                                                      #

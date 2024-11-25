@@ -49,6 +49,7 @@ from .arg import (opt_phred_enc,
                   opt_min_reads,
                   opt_min_mapq,
                   opt_ambindel,
+                  opt_insert3,
                   opt_overhangs,
                   opt_clip_end5,
                   opt_clip_end3,
@@ -351,6 +352,7 @@ RefseqChecksumF = Field("refseq_checksum",
                         "MD5 checksum of reference sequence",
                         str)
 AmbindelF = OptionField(opt_ambindel)
+Insert3F = OptionField(opt_insert3)
 OverhangsF = OptionField(opt_overhangs)
 MinPhredF = OptionField(opt_min_phred)
 ClipEnd5F = OptionField(opt_clip_end5)

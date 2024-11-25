@@ -17,7 +17,7 @@ from ..code import (IRREC,
                     DELET,
                     INS_5,
                     INS_3,
-                    INS_8,
+                    INSRT,
                     MINS5,
                     MINS3,
                     ANY_8,
@@ -51,7 +51,7 @@ class TestConstants(ut.TestCase):
         self.assertEqual(IRREC, 0)
         self.assertEqual(MINS5, 5)
         self.assertEqual(MINS3, 9)
-        self.assertEqual(INS_8, 12)
+        self.assertEqual(INSRT, 12)
         self.assertEqual(ANY_8, 13)
         self.assertEqual(INDEL, 14)
         self.assertEqual(SUB_N, 240)

@@ -1,571 +1,458 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from itertools import chain
 
 from .encode import encode_relate
-from .error import RelateValueError
-from ...core.rel import DELET, INS_5, INS_3, SUB_N
+from ...core.rel import DELET, INS_5, INS_3, MATCH, SUB_N
 from ...core.seq import DNA
 
-# Minimum distance between an insertion and a deletion
-MIN_INDEL_DIST = 2
+
+def get_ins_rel(insert3: bool):
+    return INS_3 if insert3 else INS_5
+
+
+def calc_lateral5(lateral3: int):
+    return lateral3 - 1
+
+
+def get_lateral(lateral3: int, insert3: int):
+    return lateral3 if insert3 else calc_lateral5(lateral3)
+
+
+def _check_out_of_bounds(next_opposite: int, end5: int, end3: int):
+    """ Check if the position to move the indel is out of bounds. """
+    return next_opposite <= end5 or next_opposite >= end3
+
+
+def _check_collisions(diffs: list[Indel], next_lateral3: int):
+    """ Check if moving the indel will make it collide with another
+    indel of the opposite kind. """
+    return (_get_indel_by_opp(diffs, next_lateral3) or
+            _get_indel_by_opp(diffs, calc_lateral5(next_lateral3)))
 
 
 class Indel(ABC):
-    """
-    Base class for an Insertion or Deletion (collectively, "indel")
-    It is used to find alternative positions for indels by keeping track
-    of an indel's current coordinates (as it is moved) and determining
-    whether a specific move is valid.
+    """ Insertion or deletion. """
 
-    Parameters
-    ----------
+    __slots__ = ["opposite", "lateral3"]
 
-    rel_ins_pos: int
-        The 0-indexed position of the indel with respect to the sequence
-        (ref or read) with the relative insertion. This position points
-        to one specific base. If the mutation is labeled an insertion,
-        then the read is the sequence with the relative insertion (since
-        it has a base that is not in the reference), and rel_ins_pos is
-        the 0-based index of the inserted base in the coordinates of the
-        read sequence. If the mutation is labeled a deletion, then the
-        reference is the sequence with the relative insertion (since it
-        has a base that is not in the read), and rel_ins_pos is the
-        0-based index of the deleted base in the coordinates of the
-        reference sequence.
-    rel_del_pos (int):
-        The opposite of rel_ins_pos: the 0-indexed position of the indel
-        with respect to the sequence with a relative deletion (that is,
-        the read if the mutation is denoted a deletion, and the ref if
-        an insertion). Because the deleted base does not actually exist
-        in the sequence whose coordinates it is based on, rel_del_pos
-        does not refer to a specific position in the sequence, rather to
-        the two extant positions in the sequence that flank the deleted
-        position. It is most convenient for the algorithm to have this
-        argument refer to the position 3' of the deleted base and define
-        the 5' position as a property.
-
-    """
-
-    __slots__ = "_ins_pos", "_ins_init", "_del_pos", "_del_init", "_tunneled"
-
-    def __init__(self, rel_ins_pos: int, rel_del_pos: int):
-        self._ins_pos = rel_ins_pos
-        self._ins_init = rel_ins_pos
-        self._del_pos = rel_del_pos
-        self._del_init = rel_del_pos
-        self._tunneled = False
+    def __init__(self, opposite: int, lateral3: int):
+        self.opposite = opposite
+        self.lateral3 = lateral3
 
     @property
-    def ins_pos(self):
-        return self._ins_pos
+    def lateral5(self):
+        return calc_lateral5(self.lateral3)
 
-    @property
-    def del_pos5(self):
-        return self._del_pos - 1
+    def get_lateral(self, insert3: bool):
+        return get_lateral(self.lateral3, insert3)
 
-    @property
-    def del_pos3(self):
-        return self._del_pos
+    def _get_positions(self, sames: list[Indel], from5to3: bool):
+        # Find the position within the indel's own sequence with which
+        # to try to swap the indel.
+        if from5to3:
+            increment = 1
+            swap_lateral = self.lateral3
+        else:
+            increment = -1
+            swap_lateral = self.lateral5
+        # If the indel moves, then its position within its own sequence
+        # will change.
+        next_lateral3 = self.lateral3 + increment
+        # Find the position within the opposite sequence to which to try
+        # to move the indel.
+        next_opposite = self.opposite + increment
+        # Keep incrementing until the position does not coincide with
+        # any other indel of the same kind.
+        while _get_indel_by_opp(sames, next_opposite):
+            next_opposite += increment
+        return swap_lateral, next_lateral3, next_opposite
 
-    @property
-    def tunneled(self):
-        return self._tunneled
+    def move(self, opposite: int, lateral3: int):
+        self.opposite = opposite
+        self.lateral3 = lateral3
 
-    @property
-    @abstractmethod
-    def rank(self) -> int:
-        """ Rank of the indel. """
+    def __str__(self):
+        return (f"{type(self).__name__} at {self.opposite} "
+                f"{self.lateral5, self.lateral3}")
 
-    def reset(self):
-        """ Reset the indel to its initial position, and erase its
-        history of tunneling. """
-        self._ins_pos = self._ins_init
-        self._del_pos = self._del_init
-        self._tunneled = False
-
-    @staticmethod
-    def _get_indel_by_pos(indels: list[Indel], ins_pos: int):
-        for indel in indels:
-            if indel.ins_pos == ins_pos:
-                return indel
-
-    def _peek_out_of_indel(self, indels: list[Indel], from3to5: bool):
-        increment = -1 if from3to5 else 1
-        ins_pos = self.ins_pos + increment
-        tunneled_indels: list[Indel] = list()
-        while indel := (self._get_indel_by_pos(indels, ins_pos)):
-            ins_pos += increment
-            tunneled_indels.append(indel)
-        self._tunneled = bool(tunneled_indels)
-        return ins_pos, tunneled_indels
-
-    @staticmethod
-    def _collision(other: Indel, swap_pos: int):
-        return MIN_INDEL_DIST > (min(abs(swap_pos - other.del_pos5),
-                                     abs(swap_pos - other.del_pos3)))
-
-    @classmethod
-    def _collisions(cls, indels: list[Indel], swap_pos: int):
-        return any(cls._collision(indel, swap_pos) for indel in indels)
-
-    def step_del_pos(self, swap_pos: int):
-        # Move the indel's position (self._ins_pos) to swap_pos.
-        # Move self._del_pos one step in the same direction.
-        if swap_pos == self.ins_pos:
-            raise RelateValueError(f"swap ({swap_pos}) = ins ({self.ins_pos})")
-        self._del_pos += 1 if swap_pos > self.ins_pos else -1
-
-    def _step(self, swap_pos: int):
-        self.step_del_pos(swap_pos)
-        self._ins_pos = swap_pos
-
-    @staticmethod
-    def _consistent_rels(curr_rel: int, swap_rel: int):
-        if curr_rel & swap_rel or (curr_rel & SUB_N and swap_rel & SUB_N):
-            # Relationship of the reference and read base (curr_rel) and
-            # relationship of the reference and swap base (swap_rel) are
-            # consistent, meaning one of the following is true:
-            # - both match the reference
-            # - one matches and the other maybe matches (i.e. low qual)
-            # - one is a substitution and the other could also be
-            # - both are substitutions
-            return curr_rel
-        # Otherwise, e.g. if one base matches and the other is a
-        # substitution, then the relationships are not consistent.
-        return 0
-
-    @classmethod
-    @abstractmethod
-    def _encode_swap(cls, *args, **kwargs) -> bool:
-        """ Encode a swap. """
+    def __bool__(self):
+        return True
 
     @abstractmethod
-    def _try_swap(self, *args, **kwargs) -> bool:
-        """ Perform a swap if possible. """
+    def _calc_rels(self,
+                   ref_seq: DNA,
+                   read_seq: DNA,
+                   read_qual: str,
+                   min_qual: str,
+                   swap_lateral: int,
+                   next_opposite: int) -> tuple[int, int]:
+        """ Calculate the relationships of the swapping base with the
+        current opposite and next opposite bases. """
 
     @abstractmethod
-    def sweep(self,
-              muts: dict[int, int],
-              end5_ref: int,
-              end3_ref: int,
-              end5_read: int,
-              end3_read: int,
-              ref: DNA,
-              read: DNA,
-              qual: str,
-              min_qual: str,
-              dels: list[Deletion],
-              inns: list[Insertion],
-              from3to5: bool,
-              tunnel: bool):
-        """ Move the indel as far as possible in one direction. """
+    def try_move(self,
+                 rels: dict[int, int],
+                 dels: list[Deletion],
+                 inns: list[Insertion],
+                 insert3: bool,
+                 ref_seq: DNA,
+                 read_seq: DNA,
+                 read_qual: str,
+                 min_qual: str,
+                 ref_end5: int,
+                 ref_end3: int,
+                 read_end5: int,
+                 read_end3: int,
+                 from5to3: bool) -> bool:
+        """ Try to move the indel a step in one direction. """
 
 
 class Deletion(Indel):
-    @property
-    def rank(self):
-        return self._ins_pos
 
-    @classmethod
-    def _encode_swap(cls,
-                     ref_base: str,
-                     swap_base: str,
-                     read_base: str,
-                     read_qual: str,
-                     min_qual: str):
-        curr_rel = encode_relate(ref_base, read_base, read_qual, min_qual)
-        swap_rel = encode_relate(swap_base, read_base, read_qual, min_qual)
-        return cls._consistent_rels(curr_rel, swap_rel)
+    def _calc_rels(self,
+                   ref_seq: DNA,
+                   read_seq: DNA,
+                   read_qual: str,
+                   min_qual: str,
+                   swap_lateral: int,
+                   next_opposite: int):
+        # Read base with which the deletion will swap.
+        read_base = read_seq[swap_lateral - 1]
+        read_qual = read_qual[swap_lateral - 1]
+        # Reference base that is currently deleted from the read; will
+        # move opposite that read base.
+        ref_base_del = ref_seq[self.opposite - 1]
+        # Reference base that is currently opposite that read base; will
+        # become a deletion after the move.
+        ref_base_opp = ref_seq[next_opposite - 1]
+        rel_del = encode_relate(ref_base_del,
+                                read_base,
+                                read_qual,
+                                min_qual)
+        rel_opp = encode_relate(ref_base_opp,
+                                read_base,
+                                read_qual,
+                                min_qual)
+        return rel_del, rel_opp
 
-    def _swap(self, muts: dict[int, int], swap_pos: int, relation: int):
-        """
-        Parameters
-        ----------
-        muts: dict
-            Mutation vector
-        swap_pos: int
-            Position in the reference to which the deletion moves during
-            this swap
-        relation: int
-            Relationship (match, sub, etc.) between the base located at
-            swap_pos and the base in the read
-
-        """
-        # The base at swap_pos moves to self.ins_pos, so after the swap,
-        # the relationship between self.ins_pos and the read base will
-        # be relation.
-        muts[self.ins_pos] |= relation
-        # The base at self.ref_pos is a deletion (by definition), so
-        # mark the position it moves to (swap_pos) as a deletion, too.
-        muts[swap_pos] |= DELET
-        self._step(swap_pos)
-
-    def _try_swap(self,
-                  muts: dict[int, int],
-                  end5_ref: int,
-                  end3_ref: int,
-                  refseq: DNA,
-                  read: DNA,
-                  qual: str,
-                  min_qual: str,
-                  dels: list[Deletion],
-                  inns: list[Insertion],
-                  from3to5: bool,
-                  tunnel: bool):
-        swap_pos, tunneled_indels = self._peek_out_of_indel(dels, from3to5)
-        read_pos = self.del_pos5 if from3to5 else self.del_pos3
-        if (end5_ref < swap_pos < end3_ref
-                and 1 < read_pos < len(read)
-                and (tunnel or not self.tunneled)
-                and not self._collisions(inns, swap_pos)):
-            relation = self._encode_swap(refseq[self.ins_pos - 1],
-                                         refseq[swap_pos - 1],
-                                         read[read_pos - 1],
-                                         qual[read_pos - 1],
-                                         min_qual)
-            if relation:
-                self._swap(muts, swap_pos, relation)
-                for indel in tunneled_indels:
-                    indel.step_del_pos(swap_pos)
-                return True
-        return False
-
-    def sweep(self,
-              muts: dict[int, int],
-              end5_ref: int,
-              end3_ref: int,
-              end5_read: int,
-              end3_read: int,
-              ref: DNA,
-              read: DNA,
-              qual: str,
-              min_qual: str,
-              dels: list[Deletion],
-              inns: list[Insertion],
-              from3to5: bool,
-              tunnel: bool):
-        """ Move the indel as far as possible in one direction. """
-        while self._try_swap(muts,
-                             end5_ref,
-                             end3_ref,
-                             ref,
-                             read,
-                             qual,
-                             min_qual,
-                             dels,
-                             inns,
-                             from3to5,
-                             tunnel):
-            # All actions happen in _try_swap, so loop body is empty.
-            pass
+    def try_move(self,
+                 rels: dict[int, int],
+                 dels: list[Deletion],
+                 inns: list[Insertion],
+                 insert3: bool,
+                 ref_seq: DNA,
+                 read_seq: DNA,
+                 read_qual: str,
+                 min_qual: str,
+                 ref_end5: int,
+                 ref_end3: int,
+                 read_end5: int,
+                 read_end3: int,
+                 from5to3: bool):
+        (swap_lateral,
+         next_lateral3,
+         next_opposite) = self._get_positions(dels, from5to3)
+        if _check_out_of_bounds(next_opposite, ref_end5, ref_end3):
+            return False
+        if _check_collisions(inns, next_lateral3):
+            return False
+        rel_del, rel_opp = self._calc_rels(ref_seq,
+                                           read_seq,
+                                           read_qual,
+                                           min_qual,
+                                           swap_lateral,
+                                           next_opposite)
+        # Determine if the relationships before and after moving the
+        # deletion are consistent with each other.
+        if not _consistent_rels(rel_del, rel_opp):
+            return False
+        # When the deletion moves, the position from which it moves
+        # gains the relationship (rel_indel) between the read base and
+        # the reference base that was originally deleted from the read.
+        rels[self.opposite] = rels.get(self.opposite, MATCH) | rel_del
+        # Move the deletion.
+        _move_indels(self, dels, next_opposite, next_lateral3)
+        # Mark the position to which the deletion moves.
+        rels[self.opposite] = rels.get(self.opposite, MATCH) | DELET
+        return True
 
 
 class Insertion(Indel):
-    @property
-    def rank(self):
-        return self._del_pos
 
-    def stamp(self, muts: dict[int, int], reflen: int):
-        """ Stamp the relation vector with a 5' and a 3' insertion. """
-        if 1 <= self.del_pos5 <= reflen:
-            muts[self.del_pos5] |= INS_5
-        if 1 <= self.del_pos3 <= reflen:
-            muts[self.del_pos3] |= INS_3
+    def _calc_rels(self,
+                   ref_seq: DNA,
+                   read_seq: DNA,
+                   read_qual: str,
+                   min_qual: str,
+                   swap_lateral: int,
+                   next_opposite: int):
+        # Reference base to whose position the insertion will move.
+        ref_base = ref_seq[swap_lateral - 1]
+        # Read base that is currently inserted into the reference; will
+        # move opposite that reference base.
+        read_base_ins = read_seq[self.opposite - 1]
+        read_qual_ins = read_qual[self.opposite - 1]
+        # Read base that is currently opposite that reference base; will
+        # become an insertion after the move.
+        read_base_opp = read_seq[next_opposite - 1]
+        read_qual_opp = read_qual[next_opposite - 1]
+        # Calculate the relationship between the reference base and each
+        # base in the read.
+        rel_ins = encode_relate(ref_base,
+                                read_base_ins,
+                                read_qual_ins,
+                                min_qual)
+        rel_opp = encode_relate(ref_base,
+                                read_base_opp,
+                                read_qual_opp,
+                                min_qual)
+        return rel_ins, rel_opp
 
-    @classmethod
-    def _encode_swap(cls,
-                     ref_base: str,
-                     read_base: str,
-                     read_qual: str,
-                     swap_base: str,
-                     swap_qual: str,
-                     min_qual: str):
-        curr_rel = encode_relate(ref_base, read_base, read_qual, min_qual)
-        swap_rel = encode_relate(ref_base, swap_base, swap_qual, min_qual)
-        return cls._consistent_rels(curr_rel, swap_rel)
-
-    def _swap(self,
-              muts: dict[int, int],
-              ref_pos: int,
-              swap_pos: int,
-              relation: int,
-              reflen: int):
-        """
-        Parameters
-        ----------
-        muts: dict
-            Mutations
-        swap_pos: int
-            Position in the read to which the deletion is swapped
-        relation: int
-            Relationship (match, sub, etc.) between the base located at
-            swap_pos and the base in the ref
-        reflen: int
-            Length of the reference sequence.
-
-        """
-        # The base at ref_pos moves to swap_pos, so after the swap, the
-        # relationship between ref_pos and the read base is relation.
-        muts[ref_pos] |= relation
-        self._step(swap_pos)
-        # Mark the new positions of the insertion.
-        self.stamp(muts, reflen)
-
-    def _try_swap(self,
-                  muts: dict[int, int],
-                  end5_read: int,
-                  end3_read: int,
-                  refseq: DNA,
-                  read: DNA,
-                  qual: str,
-                  min_qual: str,
-                  dels: list[Deletion],
-                  inns: list[Insertion],
-                  from3to5: bool,
-                  tunnel: bool):
-        swap_pos, tunneled_indels = self._peek_out_of_indel(inns, from3to5)
-        ref_pos = self.del_pos5 if from3to5 else self.del_pos3
-        if (end5_read < swap_pos < end3_read
-                and 1 < ref_pos < len(refseq)
-                and (tunnel or not self.tunneled)
-                and not self._collisions(dels, swap_pos)):
-            relation = self._encode_swap(refseq[ref_pos - 1],
-                                         read[self.ins_pos - 1],
-                                         qual[self.ins_pos - 1],
-                                         read[swap_pos - 1],
-                                         qual[swap_pos - 1],
-                                         min_qual)
-            if relation:
-                self._swap(muts, ref_pos, swap_pos, relation, len(refseq))
-                for indel in tunneled_indels:
-                    indel.step_del_pos(swap_pos)
-                return True
-        return False
-
-    def sweep(self,
-              muts: dict[int, int],
-              end5_ref: int,
-              end3_ref: int,
-              end5_read: int,
-              end3_read: int,
-              ref: DNA,
-              read: DNA,
-              qual: str,
-              min_qual: str,
-              dels: list[Deletion],
-              inns: list[Insertion],
-              from3to5: bool,
-              tunnel: bool):
-        """ Move the indel as far as possible in one direction. """
-        while self._try_swap(muts,
-                             end5_read,
-                             end3_read,
-                             ref,
-                             read,
-                             qual,
-                             min_qual,
-                             dels,
-                             inns,
-                             from3to5,
-                             tunnel):
-            # All actions happen in _try_swap, so loop body is empty.
-            pass
-
-
-def sweep_indels(muts: dict[int, int],
-                 end5_ref: int,
-                 end3_ref: int,
-                 end5_read: int,
-                 end3_read: int,
-                 refseq: DNA,
-                 read: DNA,
-                 qual: str,
-                 min_qual: str,
+    def try_move(self,
+                 rels: dict[int, int],
                  dels: list[Deletion],
                  inns: list[Insertion],
-                 from3to5: bool,
-                 tunnel: bool):
-    """
-    For every insertion and deletion,
-
-    Parameters
-    ----------
-    muts: dict
-        Mutations
-    end5_ref: int
-        5' most position of the read that is not soft-clipped, using
-        reference coordinates.
-    end3_ref: int
-        3' most position of the read that is not soft-clipped, using
-        reference coordinates.
-    end5_read: int
-        5' most position of the read that is not soft-clipped, using
-        read coordinates.
-    end3_read: int
-        3' most position of the read that is not soft-clipped, using
-        read coordinates.
-    refseq: DNA
-        Reference sequence
-    read: DNA
-        Sequence of the read
-    qual: str
-        Phred quality scores of the read, encoded as ASCII characters
-    min_qual: int
-        The minimum Phred quality score needed to consider a base call
-        informative: integer value of the ASCII character
-    dels: list[Deletion]
-        List of deletions.
-    inns: list[Insertion]
-        List of insertions.
-    from3to5: bool
-        Whether to move indels in the 3' -> 5' direction (True) or the
-        5' -> 3' direction (False)
-    tunnel: bool
-        Whether to allow tunneling
-
-    """
-    # Collect all indels into one list.
-    indels: list[Indel] = list()
-    indels.extend(dels)
-    indels.extend(inns)
-    # Reset each indel to its initial state. This operation does nothing
-    # the first time sweep_indels is called because all indels start in
-    # their initial state (by definition). But the indels may move when
-    # this function runs, so resetting is necessary at the beginning of
-    # the second and subsequent calls to sweep_indels to ensure that the
-    # algorithm starts from the initial state every time.
-    for indel in indels:
-        indel.reset()
-    # Sort the indels by their rank.
-    sort_rev = from3to5 != tunnel
-    indels.sort(key=lambda idl: idl.rank, reverse=sort_rev)
-    while indels:
-        indel = indels.pop()
-        indel.sweep(muts,
-                    end5_ref,
-                    end3_ref,
-                    end5_read,
-                    end3_read,
-                    refseq,
-                    read,
-                    qual,
-                    min_qual,
-                    dels,
-                    inns,
-                    from3to5,
-                    tunnel)
-        idx = len(indels)
-        if sort_rev:
-            while idx > 0 and indel.rank > indels[idx - 1].rank:
-                idx -= 1
+                 insert3: bool,
+                 ref_seq: DNA,
+                 read_seq: DNA,
+                 read_qual: str,
+                 min_qual: str,
+                 ref_end5: int,
+                 ref_end3: int,
+                 read_end5: int,
+                 read_end3: int,
+                 from5to3: bool):
+        (swap_lateral,
+         next_lateral3,
+         next_opposite) = self._get_positions(inns, from5to3)
+        if _check_out_of_bounds(next_opposite, read_end5, read_end3):
+            return False
+        if _check_collisions(dels, next_lateral3):
+            return False
+        rel_ins, rel_opp = self._calc_rels(ref_seq,
+                                           read_seq,
+                                           read_qual,
+                                           min_qual,
+                                           swap_lateral,
+                                           next_opposite)
+        # Determine if the relationships before and after moving the
+        # insertion are consistent with each other.
+        if not _consistent_rels(rel_ins, rel_opp):
+            return False
+        init_lateral = self.get_lateral(insert3)
+        if from5to3 == insert3:
+            # The insertion moves to the same side as it is marked.
+            # Move the indels.
+            _move_indels(self, inns, next_opposite, next_lateral3)
+            # Check after the move.
+            if rel_ins != MATCH or all(ins.get_lateral(insert3) != init_lateral
+                                       for ins in inns):
+                # If there is another insertion next to the base that just
+                # took the place of the insertion that moved, then do not
+                # mark the position of that base as a possible match.
+                rels[self.get_lateral(not insert3)] = (
+                        rels.get(self.get_lateral(not insert3), MATCH)
+                        | rel_ins
+                )
+            rels[self.get_lateral(insert3)] = (
+                    rels.get(self.get_lateral(insert3), MATCH)
+                    | get_ins_rel(insert3)
+            )
         else:
-            while idx > 0 and indel.rank < indels[idx - 1].rank:
-                idx -= 1
-        if idx < len(indels):
-            indels.insert(idx, indel)
+            # The insertion moves to the opposite side as it is marked.
+            (swap_lateral_,
+             next_lateral3_,
+             next_opposite_) = self._get_positions(inns, insert3)
+            rel_ins_, rel_opp_ = self._calc_rels(ref_seq,
+                                                 read_seq,
+                                                 read_qual,
+                                                 min_qual,
+                                                 swap_lateral_,
+                                                 next_opposite_)
+            # Move the indels.
+            _move_indels(self, inns, next_opposite, next_lateral3)
+            # Check after the move.
+            if rel_opp_ != MATCH or all(ins.get_lateral(insert3) != init_lateral
+                                        for ins in inns):
+                # If there is another insertion next to the base that just
+                # took the place of the insertion that moved, then do not
+                # mark the position of that base as a possible match.
+                rels[init_lateral] = rels.get(init_lateral, MATCH) | rel_opp_
+            rels[self.get_lateral(insert3)] = (
+                    rels.get(self.get_lateral(insert3), MATCH)
+                    | get_ins_rel(insert3)
+                    | (rel_ins if rel_ins != MATCH else 0)
+            )
+        return True
 
 
-def find_ambindels(muts: dict[int, int],
-                   end5_ref: int,
-                   end3_ref: int,
-                   end5_read: int,
-                   end3_read: int,
-                   refseq: DNA,
-                   read: DNA,
-                   qual: str,
-                   min_qual: str,
+def _get_indel_by_opp(indels: list[Indel], opposite: int):
+    """ Return the indel that lies opposite the given position (opposite),
+    or None if such an indel does not exist. """
+    matches = [indel for indel in indels if indel.opposite == opposite]
+    if matches:
+        if len(matches) > 1:
+            raise ValueError(f"{len(matches)} indels have opposite == {opposite}: "
+                             f"{list(map(str, matches))}")
+        return matches[0]
+    return None
+
+
+def _consistent_rels(rel1: int, rel2: int):
+    """ Whether the relationships are consistent. """
+    # The relationships are consistent if one of the following is true:
+    # - There is at least one type of primary relationship (i.e. match,
+    #   substitution to each base) that both of them could both be.
+    # - Both could be substitutions to any base.
+    return bool((rel1 & rel2) or (rel1 & SUB_N and rel2 & SUB_N))
+
+
+def _move_indels(indel: Indel, sames: list[Indel], opposite: int, lateral3: int):
+    """ Move an indel while adjusting the positions of any other indels
+    through which the moving indel tunnels. """
+    # Move any indels through which this insertion will tunnel.
+    for same in sames:
+        if (indel.opposite < same.opposite < opposite
+                or opposite < same.opposite < indel.opposite):
+            same.move(same.opposite, lateral3)
+    # Move the indel.
+    indel.move(opposite, lateral3)
+
+
+def _count_muts(ref_seq: DNA,
+                read_seq: DNA,
+                read_qual: str,
+                min_qual: str,
+                ref_end5: int,
+                ref_end3: int,
+                read_end5: int,
+                read_end3: int,
+                dels: list[Deletion],
+                inns: list[Insertion]):
+    """ Count the mutations given the positions of the indels. """
+    num_muts = 0
+    # Positions in reference and read are initially 0-indexed.
+    ref_pos = ref_end5 - 1
+    read_pos = read_end5 - 1
+    while ref_pos < ref_end3 and read_pos < read_end3:
+        # Get the sequence information.
+        ref_base = ref_seq[ref_pos]
+        read_base = read_seq[read_pos]
+        qual = read_qual[read_pos]
+        # Make the positions 1-indexed.
+        ref_pos += 1
+        read_pos += 1
+        # Check if this position has an indel.
+        has_del = _get_indel_by_opp(dels, ref_pos)
+        has_ins = _get_indel_by_opp(inns, read_pos)
+        if has_del:
+            if has_ins:
+                raise ValueError(f"Position {ref_pos, read_pos} has both a "
+                                 f"deletion and an insertion")
+            # Deletion: move back the read position.
+            read_pos -= 1
+            num_muts += 1
+        elif has_ins:
+            # Insertion: move back the reference position.
+            ref_pos -= 1
+            num_muts += 1
+        else:
+            # Match or substitution: determine which.
+            if qual >= min_qual and read_base != ref_base:
+                num_muts += 1
+    if ref_pos != ref_end3:
+        raise ValueError(
+            f"Reached only position {ref_pos} of {ref_end3} in the reference"
+        )
+    if read_pos != read_end3:
+        raise ValueError(
+            f"Reached only position {read_pos} of {read_end3} in the read"
+        )
+    return num_muts
+
+
+def _find_ambindels(rels: dict[int, int],
+                    dels: list[Deletion],
+                    inns: list[Insertion],
+                    insert3: bool,
+                    ref_seq: DNA,
+                    read_seq: DNA,
+                    read_qual: str,
+                    min_qual: str,
+                    ref_end5: int,
+                    ref_end3: int,
+                    read_end5: int,
+                    read_end3: int,
+                    from5to3: bool,
+                    restore: bool):
+    for indel in chain(dels, inns):
+        init_opp = indel.opposite
+        init_lateral3 = indel.lateral3
+        if indel.try_move(rels=rels,
+                          dels=dels,
+                          inns=inns,
+                          insert3=insert3,
+                          ref_seq=ref_seq,
+                          read_seq=read_seq,
+                          read_qual=read_qual,
+                          min_qual=min_qual,
+                          ref_end5=ref_end5,
+                          ref_end3=ref_end3,
+                          read_end5=read_end5,
+                          read_end3=read_end3,
+                          from5to3=from5to3):
+            # Try to move the other indels if moving this one succeeded.
+            _find_ambindels(rels=rels,
+                            dels=dels,
+                            inns=inns,
+                            insert3=insert3,
+                            ref_seq=ref_seq,
+                            read_seq=read_seq,
+                            read_qual=read_qual,
+                            min_qual=min_qual,
+                            ref_end5=ref_end5,
+                            ref_end3=ref_end3,
+                            read_end5=read_end5,
+                            read_end3=read_end3,
+                            from5to3=from5to3,
+                            restore=restore)
+            if restore:
+                if isinstance(indel, Deletion):
+                    sames = dels
+                elif isinstance(indel, Insertion):
+                    sames = inns
+                else:
+                    raise TypeError(indel)
+                # Move the indel(s) back to the original position(s).
+                _move_indels(indel, sames, init_opp, init_lateral3)
+
+
+def find_ambindels(rels: dict[int, int],
                    dels: list[Deletion],
-                   inns: list[Insertion]):
-    """
-    Find and label all positions in the vector that are ambiguous due to
-    insertions and deletions.
-
-    Parameters
-    ----------
-    muts: dict
-        Mutations
-    end5_ref: int
-        5' most position of the read that is not soft-clipped, using
-        reference coordinates.
-    end3_ref: int
-        3' most position of the read that is not soft-clipped, using
-        reference coordinates.
-    end5_read: int
-        5' most position of the read that is not soft-clipped, using
-        read coordinates.
-    end3_read: int
-        3' most position of the read that is not soft-clipped, using
-        read coordinates.
-    refseq: DNA
-        Reference sequence
-    read: DNA
-        Sequence of the read
-    qual: str
-        Phred quality scores of the read, encoded as ASCII characters
-    min_qual: str
-        The minimum Phred quality score needed to consider a base call
-        informative: integer value of the ASCII character
-    dels: list[Deletion]
-        List of deletions.
-    inns: list[Insertion]
-        List of insertions.
-
-    """
-    # Each indel might be able to be moved in the 5' -> 3' direction
-    # (from3to5 is False) or 3' -> 5' direction (from3to5 is True).
-    # Test both directions.
-    for from3to5 in (False, True):
-        # For each indel, try to move it as far as it can go in the
-        # direction indicated by from3to5. Allow tunneling so that any
-        # runs of consecutive insertions or consecutive deletions can
-        # effectively move together.
-        sweep_indels(muts,
-                     end5_ref,
-                     end3_ref,
-                     end5_read,
-                     end3_read,
-                     refseq,
-                     read,
-                     qual,
-                     min_qual,
-                     dels,
-                     inns,
-                     from3to5,
-                     tunnel=True)
-        if any(d.tunneled for d in dels) or any(i.tunneled for i in inns):
-            # If any indel tunneled,
-            sweep_indels(muts,
-                         end5_ref,
-                         end3_ref,
-                         end5_read,
-                         end3_read,
-                         refseq,
-                         read,
-                         qual,
-                         min_qual,
-                         dels,
-                         inns,
-                         from3to5,
-                         tunnel=False)
-
-########################################################################
-#                                                                      #
-# © Copyright 2024, the Rouskin Lab.                                   #
-#                                                                      #
-# This file is part of SEISMIC-RNA.                                    #
-#                                                                      #
-# SEISMIC-RNA is free software; you can redistribute it and/or modify  #
-# it under the terms of the GNU General Public License as published by #
-# the Free Software Foundation; either version 3 of the License, or    #
-# (at your option) any later version.                                  #
-#                                                                      #
-# SEISMIC-RNA is distributed in the hope that it will be useful, but   #
-# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANT- #
-# ABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General     #
-# Public License for more details.                                     #
-#                                                                      #
-# You should have received a copy of the GNU General Public License    #
-# along with SEISMIC-RNA; if not, see <https://www.gnu.org/licenses>.  #
-#                                                                      #
-########################################################################
+                   inns: list[Insertion],
+                   insert3: bool,
+                   ref_seq: DNA,
+                   read_seq: DNA,
+                   read_qual: str,
+                   min_qual: str,
+                   ref_end5: int,
+                   ref_end3: int,
+                   read_end5: int,
+                   read_end3: int):
+    for mode in [False, True]:
+        _find_ambindels(rels=rels,
+                        dels=dels,
+                        inns=inns,
+                        insert3=insert3,
+                        ref_seq=ref_seq,
+                        read_seq=read_seq,
+                        read_qual=read_qual,
+                        min_qual=min_qual,
+                        ref_end5=ref_end5,
+                        ref_end3=ref_end3,
+                        read_end5=read_end5,
+                        read_end3=read_end3,
+                        from5to3=mode,
+                        restore=mode)

@@ -24,6 +24,7 @@ dependencies = [
     "click >=8.1",
     "fastqsplitter >=1.2",
     "kaleido >=0.2.1",
+    "networkx >=3.4",
     "numpy >=1.26,<1.27",
     "numba >=0.60",
     "pandas >=2.2",

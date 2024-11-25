@@ -15,7 +15,7 @@ POSITIONS = "positions"
 READS = "reads"
 CLUSTERS = "clusters"
 SEGMENTS = "segments"
-PRECISION = 6
+PRECISION = 3
 
 
 def _count_end_coords(end5s: np.ndarray,

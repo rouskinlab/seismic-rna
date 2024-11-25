@@ -7,7 +7,7 @@ from click import command
 
 from .report import FoldReport
 from .rnastructure import fold, require_data_path
-from ..cluster.table import ClusterPosTableLoader
+from ..cluster.table import ClusterPositionTableLoader
 from ..core.arg import (CMD_FOLD,
                         arg_input_path,
                         opt_tmp_pfx,
@@ -35,7 +35,7 @@ from ..core.run import run_func
 from ..core.seq import DNA, RefSections, RefSeqs, Section
 from ..core.task import as_list_of_tuples, dispatch
 from ..core.write import need_write
-from ..mask.table import MaskPosTableLoader
+from ..mask.table import MaskPositionTableLoader
 
 DEFAULT_QUANTILE = 0.95
 
@@ -43,7 +43,7 @@ DEFAULT_QUANTILE = 0.95
 def find_foldable_tables(input_path: Iterable[str | Path]):
     """ Find tables that can be folded. """
     paths = list(input_path)
-    for table_type in [MaskPosTableLoader, ClusterPosTableLoader]:
+    for table_type in [MaskPositionTableLoader, ClusterPositionTableLoader]:
         yield from table_type.load_tables(paths)
 
 
@@ -98,7 +98,7 @@ def fold_section(rna: RNAProfile, *,
     return report_file
 
 
-def fold_profile(table: MaskPosTableLoader | ClusterPosTableLoader,
+def fold_profile(table: MaskPositionTableLoader | ClusterPositionTableLoader,
                  sections: list[Section],
                  quantile: float,
                  n_procs: int,

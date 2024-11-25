@@ -1,11 +1,3 @@
-"""
-
-Tests for Alignment XAM Generation Module
-
-========================================================================
-
-"""
-
 import unittest as ut
 
 from ..xamops import (MATCH_BONUS, MISMATCH_PENALTY, N_PENALTY,
