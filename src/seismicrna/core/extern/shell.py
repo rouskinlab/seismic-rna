@@ -16,7 +16,8 @@ BOWTIE2_BUILD_CMD = "bowtie2-build"
 SAMTOOLS_CMD = "samtools"
 RNASTRUCTURE_FOLD_CMD = "Fold"
 RNASTRUCTURE_FOLD_SMP_CMD = "Fold-smp"
-
+JAVA_CMD = "java"
+JAR_CMD = "-jar"
 
 def args_to_cmd(args: list[Any]):
     """ Join a list of arguments into a command with shlex. """

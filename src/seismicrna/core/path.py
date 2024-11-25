@@ -113,6 +113,7 @@ DBN_EXT = ".dbn"
 DOT_EXT = ".dot"
 DOT_EXTS = DB_EXT, DBN_EXT, DOT_EXT
 DMS_EXT = ".dms"
+KTS_EXT = ".kts"
 HTML_EXT = ".html"
 SVG_EXT = ".svg"
 PDF_EXT = ".pdf"
@@ -292,7 +293,8 @@ DotBracketExt = Field(str, DOT_EXTS, is_ext=True)
 DmsReactsExt = Field(str, [DMS_EXT], is_ext=True)
 GraphExt = Field(str, GRAPH_EXTS, is_ext=True)
 WebAppFileExt = Field(str, [JSON_EXT], is_ext=True)
-
+SvgExt = Field(str, [SVG_EXT], is_ext=True)
+KtsExt = Field(str, [KTS_EXT], is_ext=True)
 
 # Path Segments ########################################################
 
@@ -422,6 +424,7 @@ RUN = "run"
 PROFILE = "profile"
 GRAPH = "graph"
 EXT = "ext"
+STRUCT = "struct"
 
 # Directory segments
 
@@ -513,6 +516,12 @@ DmsReactsSeg = Segment("dms-reacts",
 VarnaColorSeg = Segment("varna-color",
                         {PROFILE: NameField, EXT: TextExt},
                         frmt="{profile}__varna-color{ext}")
+
+# Draw
+SvgSeg = Segment("svg", {PROFILE: NameField, STRUCT:IntField, EXT: SvgExt},
+                 frmt="{profile}-{struct}{ext}")
+KtsSeg = Segment("kts", {PROFILE: NameField, STRUCT:IntField, EXT: KtsExt},
+                 frmt="{profile}-{struct}{ext}")
 
 # Graphs
 GraphSeg = Segment("graph", {GRAPH: NameField, EXT: GraphExt})
