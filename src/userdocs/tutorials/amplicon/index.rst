@@ -46,7 +46,7 @@ the RRE, perform two DMS-MaPseq experiments on it (along with a no-DMS control),
 amplify a section using RT-PCR, and sequence the amplicons using paired-end 150
 x 150 nt read lengths.
 
-*The FASTQ files in this tutorial were actually generated using ``seismic +sim``
+*The FASTQ files in this tutorial were actually generated using ``seismic sim``
 and don't resemble the authentic DMS mutational patterns.
 
 

@@ -92,7 +92,7 @@ pip install -U build
 pip install -U twine
         \end{verbatim}
     \item Make sure the code, including the version in \verb|src/seismicrna/core/version.py|, is correct. You CANNOT edit a PyPI release after it has been uploaded, nor can you delete it and upload a revision with the same version number.
-    \item Ensure that all unit tests succeed by running \verb|seismic +test|. Do not release the code if any tests fail.
+    \item Ensure that all unit tests succeed by running \verb|seismic test|. Do not release the code if any tests fail.
     \item Navigate to the main directory \verb|seismic-rna|; if it already contains a directory called \verb|dist|, then delete \verb|dist|.
     \item Build the package:
         \begin{verbatim}

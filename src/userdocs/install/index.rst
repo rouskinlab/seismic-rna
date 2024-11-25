@@ -298,7 +298,7 @@ To suppress this warning, you can create an environment variable called
 ``DATAPATH`` on your system.
 To find the location of the data tables for RNAstructure, type ::
 
-    seismic -q +datapath
+    seismic -q datapath
 
 This command should print a message that begins with ``DATAPATH=``.
 Add this entire line (including ``DATAPATH=``) to the end of your shell RC file:
@@ -327,18 +327,18 @@ Step 1: Run SEISMIC-RNA's testing suite
 
 To run all the tests, type this::
 
-    seismic +test
+    seismic test
 
 To monitor the tests as they run, you can use verbose mode (option ``-v``).
 In verbose mode, as each test finishes, it will print ``.`` if it succeeds,
 ``F`` if it fails, ``E`` if it errs, and ``s`` if it was skipped::
 
-    seismic +test -v
+    seismic test -v
 
 To print out the name of each test as it runs and check which tests succeed and
 fail, you can use double-verbose mode::
 
-    seismic +test -vv
+    seismic test -vv
 
 Step 2: Interpret the test results
 --------------------------------------------------------------------------------

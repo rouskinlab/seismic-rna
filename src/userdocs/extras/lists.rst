@@ -5,7 +5,7 @@ List Positions Matching Criteria
 Background about lists
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can use ``+listpos`` to list positions meeting specific criteria in tables.
+You can use ``listpos`` to list positions meeting specific criteria in tables.
 
 Purpose of listing positions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -27,7 +27,7 @@ Suppose you have already run ``seismic table``::
 
 You can list the positions meeting certain criteria with ::
 
-    seismic +listpos out/sample/table/ref/sect
+    seismic listpos out/sample/table/ref/sect
 
 This command will output one list file for each table file, with the same path
 except ``table/`` is replaced by ``list/``.

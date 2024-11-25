@@ -64,13 +64,13 @@ CT as input file
 Structures for these commands must be input as CT files:
 
 - ``seismic graph roc``
-- ``seismic +renumct``
+- ``seismic renumct``
 
 CT as output file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 - The ``fold`` command outputs a CT file for each predicted structure.
-- The ``+renumct`` command outputs a renumbered CT file for each input
+- The ``renumct`` command outputs a renumbered CT file for each input
   CT file.
 
 CT as temporary file

@@ -7,7 +7,7 @@ set -eu -o pipefail
 
 # Run the tests and capture the results.
 RESULTS=test-results.txt
-seismic +test 2> $RESULTS
+seismic test 2> $RESULTS
 cat $RESULTS
 echo
 
