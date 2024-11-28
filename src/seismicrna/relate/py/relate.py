@@ -77,11 +77,11 @@ class SamRead(object):
         return f"Read {repr(self.name)} {attrs}"
 
 
-def _find_rels_read(read: SamRead,
+def _calc_rels_read(read: SamRead,
                     ref_seq: DNA,
                     min_qual: str,
-                    ambindel: bool,
                     insert3: bool,
+                    ambindel: bool,
                     clip_end5: int,
                     clip_end3: int):
     """
@@ -112,6 +112,7 @@ def _find_rels_read(read: SamRead,
         - the 3' coordinate of the read
         - the relationship code for each mutation in the read
     """
+    print(read.cigar)
     read_length = len(read.seq)
     ref_length = len(ref_seq)
     if not 1 <= read.pos <= ref_length:
@@ -252,7 +253,7 @@ def _find_rels_read(read: SamRead,
             # then add the insertion on top.
             rels[ins_pos] = rels.get(ins_pos, IRREC) | ins_rel
     # Find and label all relationships that are ambiguous due to indels.
-    if ambindel:
+    if ambindel and (dels or inns):
         find_ambindels(rels=rels,
                        dels=dels,
                        inns=inns,
@@ -349,25 +350,25 @@ def _merge_mates(end5f: int,
     return ([end5f, end5r], [end3f, end3r]), rels
 
 
-def find_rels_line(line1: str,
+def calc_rels_line(line1: str,
                    line2: str,
                    ref: str,
                    refseq: DNA,
                    min_mapq: int,
                    min_qual: str,
-                   ambindel: bool,
                    insert3: bool,
+                   ambindel: bool,
                    overhangs: bool,
                    clip_end5: int = 0,
                    clip_end3: int = 0):
     # Generate the relationships for read 1.
     read1 = SamRead(line1)
     _validate_read(read1, ref, min_mapq)
-    end51, end31, rels1 = _find_rels_read(read1,
+    end51, end31, rels1 = _calc_rels_read(read1,
                                           refseq,
                                           min_qual,
-                                          ambindel,
                                           insert3,
+                                          ambindel,
                                           clip_end5,
                                           clip_end3)
     if line2:
@@ -381,11 +382,11 @@ def find_rels_line(line1: str,
             read2 = SamRead(line2)
             _validate_read(read2, ref, min_mapq)
             _validate_pair(read1, read2)
-            end52, end32, rels2 = _find_rels_read(read2,
+            end52, end32, rels2 = _calc_rels_read(read2,
                                                   refseq,
                                                   min_qual,
-                                                  ambindel,
                                                   insert3,
+                                                  ambindel,
                                                   clip_end5,
                                                   clip_end3)
             # Determine which read (1 or 2) faces forward and reverse.

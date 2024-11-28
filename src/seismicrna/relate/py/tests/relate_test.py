@@ -7,7 +7,7 @@ from seismicrna.core.rel import DELET, IRREC, MATCH, NOCOV, SUB_G
 from seismicrna.core.seq import DNA
 from seismicrna.relate.py.cigar import CIG_ALIGN, CIG_DELET, CIG_SCLIP
 from seismicrna.relate.py.encode import encode_relate
-from seismicrna.relate.py.relate import _find_rels_read, _merge_mates, SamRead
+from seismicrna.relate.py.relate import _calc_rels_read, _merge_mates, SamRead
 from seismicrna.relate.aux.iterread import iter_alignments
 
 
@@ -76,8 +76,7 @@ def as_sam(name: str,
                                     pnext, tlen, read, f"{qual}\n")))
 
 
-class TestFindRelsLine(ut.TestCase):
-    """ Test function `relate.relate_line`. """
+class TestCalcRelsRead(ut.TestCase):
 
     @staticmethod
     def relate(ref: str,
@@ -103,11 +102,11 @@ class TestFindRelsLine(ut.TestCase):
                                   len(read),
                                   read,
                                   qual))
-        return _find_rels_read(sam_read,
+        return _calc_rels_read(sam_read,
                                refseq,
                                OK_QUAL,
-                               ambindel,
                                insert3,
+                               ambindel,
                                clip_end5,
                                clip_end3)
 

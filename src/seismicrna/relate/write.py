@@ -4,7 +4,7 @@ from typing import Iterable
 
 from .data import RelateDataset
 from .io import from_reads, ReadNamesBatchIO, RelateBatchIO
-from .py.relate import find_rels_line
+from .py.relate import calc_rels_line
 from .report import RelateReport
 from .sam import XamViewer
 from .table import RelateCountTabulator, RelateDatasetTabulator
@@ -22,7 +22,7 @@ from ..core.write import need_write
 def relate_records(records: Iterable[tuple[str, str]], **kwargs):
     for line1, line2 in records:
         try:
-            yield find_rels_line(line1, line2, **kwargs)
+            yield calc_rels_line(line1, line2, **kwargs)
         except Exception as error:
             logger.error(error)
 
@@ -142,17 +142,17 @@ class RelationWriter(object):
               release_dir: Path,
               min_mapq: int,
               min_reads: int,
-              brotli_level: int,
-              force: bool,
-              overhangs: bool,
               min_phred: int,
               phred_enc: int,
-              ambindel: bool,
               insert3: bool,
+              ambindel: bool,
+              overhangs: bool,
               clip_end5: int,
               clip_end3: int,
               relate_pos_table: bool,
               relate_read_table: bool,
+              brotli_level: int,
+              force: bool,
               n_procs: int,
               **kwargs):
         """ Compute a relation vector for every record in a BAM file,
@@ -172,20 +172,22 @@ class RelationWriter(object):
             # Compute relationships and time how long it takes.
             (batch_counts,
              n_batches,
-             checks) = self._generate_batches(top=release_dir,
-                                              brotli_level=brotli_level,
-                                              min_mapq=min_mapq,
-                                              overhangs=overhangs,
-                                              min_phred=min_phred,
-                                              phred_enc=phred_enc,
-                                              ambindel=ambindel,
-                                              insert3=insert3,
-                                              clip_end5=clip_end5,
-                                              clip_end3=clip_end3,
-                                              count_pos=relate_pos_table,
-                                              count_read=relate_read_table,
-                                              n_procs=n_procs,
-                                              **kwargs)
+             checks) = self._generate_batches(
+                top=release_dir,
+                brotli_level=brotli_level,
+                min_mapq=min_mapq,
+                min_phred=min_phred,
+                phred_enc=phred_enc,
+                insert3=insert3,
+                ambindel=ambindel,
+                overhangs=overhangs,
+                clip_end5=clip_end5,
+                clip_end3=clip_end3,
+                count_pos=relate_pos_table,
+                count_read=relate_read_table,
+                n_procs=n_procs,
+                **kwargs
+            )
             # Tabulate the data.
             tabulator = RelateCountTabulator(batch_counts=batch_counts,
                                              top=release_dir,
@@ -198,23 +200,25 @@ class RelationWriter(object):
             tabulator.write_tables(pos=relate_pos_table, read=relate_read_table)
             ended = datetime.now()
             # Write a report of the relation step.
-            report_saved = self._write_report(top=release_dir,
-                                              min_mapq=min_mapq,
-                                              min_phred=min_phred,
-                                              phred_enc=phred_enc,
-                                              overhangs=overhangs,
-                                              ambindel=ambindel,
-                                              insert3=insert3,
-                                              clip_end5=clip_end5,
-                                              clip_end3=clip_end3,
-                                              min_reads=min_reads,
-                                              n_reads_xam=self.num_reads,
-                                              n_reads_rel=tabulator.num_reads,
-                                              n_batches=n_batches,
-                                              checksums=checks,
-                                              refseq_checksum=refseq_checksum,
-                                              began=began,
-                                              ended=ended)
+            report_saved = self._write_report(
+                top=release_dir,
+                min_mapq=min_mapq,
+                min_phred=min_phred,
+                phred_enc=phred_enc,
+                insert3=insert3,
+                ambindel=ambindel,
+                overhangs=overhangs,
+                clip_end5=clip_end5,
+                clip_end3=clip_end3,
+                min_reads=min_reads,
+                n_reads_xam=self.num_reads,
+                n_reads_rel=tabulator.num_reads,
+                n_batches=n_batches,
+                checksums=checks,
+                refseq_checksum=refseq_checksum,
+                began=began,
+                ended=ended
+            )
             release_to_out(out_dir, release_dir, report_saved.parent)
         else:
             # Write the tables if they do not exist.

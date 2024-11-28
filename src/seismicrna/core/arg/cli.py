@@ -496,7 +496,7 @@ opt_ambindel = Option(
     ("--ambindel/--no-ambindel",),
     type=bool,
     default=True,
-    help="Mark all ambiguous insertions and deletions"
+    help="Mark all ambiguous insertions and deletions (indels)"
 )
 
 opt_insert3 = Option(
