@@ -1,4 +1,8 @@
-from .ambindel import Deletion, Insertion, find_ambindels, get_ins_rel
+from .ambindel import (IndelPod,
+                       DeletionPod,
+                       InsertionPod,
+                       find_ambindels,
+                       get_ins_rel)
 from .cigar import (CIG_ALIGN,
                     CIG_MATCH,
                     CIG_SUBST,
@@ -77,6 +81,17 @@ class SamRead(object):
         return f"Read {repr(self.name)} {attrs}"
 
 
+def _add_indel(pods: list[IndelPod],
+               pod_type: type[IndelPod],
+               opposite: int,
+               lateral3: int):
+    if not pods or not isinstance(pods[-1], pod_type):
+        pods.append(pod_type(len(pods)))
+    pod = pods[-1]
+    indel_type = pod.indel_type()
+    return indel_type(opposite, lateral3, pod)
+
+
 def _calc_rels_read(read: SamRead,
                     ref_seq: DNA,
                     min_qual: str,
@@ -112,7 +127,7 @@ def _calc_rels_read(read: SamRead,
         - the 3' coordinate of the read
         - the relationship code for each mutation in the read
     """
-    print(read.cigar)
+    # print(read.cigar)
     read_length = len(read.seq)
     ref_length = len(ref_seq)
     if not 1 <= read.pos <= ref_length:
@@ -128,8 +143,7 @@ def _calc_rels_read(read: SamRead,
     # Record the relationship for each mutated position.
     rels: dict[int, int] = dict()
     # Record the positions of deletions and insertions.
-    dels = list()
-    inns = list()
+    pods: list[IndelPod] = list()
     # Read the CIGAR string one operation at a time.
     for cigar_op, op_length in parse_cigar(read.cigar):
         # Act based on the CIGAR operation and its length.
@@ -179,7 +193,7 @@ def _calc_rels_read(read: SamRead,
                 if not 1 < ref_pos < ref_length:
                     raise ValueError(f"Deletion in {read}, ref {ref_pos}")
                 rels[ref_pos] = DELET
-                dels.append(Deletion(ref_pos, read_pos))
+                _add_indel(pods, DeletionPod, ref_pos, read_pos)
             read_pos -= 1  # 0-indexed now
         elif cigar_op == CIG_INSRT:
             # The read contains an insertion of one or more bases that
@@ -207,7 +221,7 @@ def _calc_rels_read(read: SamRead,
                 read_pos += 1  # 1-indexed now until this iteration ends
                 if not 1 < read_pos < len(read.seq):
                     raise ValueError(f"Insertion in {read}, pos {read_pos}")
-                inns.append(Insertion(read_pos, ref_pos))
+                _add_indel(pods, InsertionPod, read_pos, ref_pos)
             # Insertions can lie on top of other relationships, so do
             # not the information to rels yet; it will be added later.
             ref_pos -= 1  # 0-indexed now
@@ -245,18 +259,19 @@ def _calc_rels_read(read: SamRead,
         )
     # Add insertions to rels.
     ins_rel = get_ins_rel(insert3)
-    for ins in inns:
-        ins_pos = ins.get_lateral(insert3)
-        if 1 <= ins_pos <= ref_length:
-            # The position at which the insertion is located may have
-            # already been assigned another type of mutation; if so,
-            # then add the insertion on top.
-            rels[ins_pos] = rels.get(ins_pos, IRREC) | ins_rel
+    for pod in pods:
+        if isinstance(pod, InsertionPod):
+            for ins in pod.indels:
+                ins_pos = ins.get_lateral(insert3)
+                if 1 <= ins_pos <= ref_length:
+                    # The position at which the insertion is located may
+                    # have already been assigned another mutation;
+                    # if so, then add the insertion on top.
+                    rels[ins_pos] = rels.get(ins_pos, IRREC) | ins_rel
     # Find and label all relationships that are ambiguous due to indels.
-    if ambindel and (dels or inns):
+    if ambindel and pods:
         find_ambindels(rels=rels,
-                       dels=dels,
-                       inns=inns,
+                       pods=pods,
                        insert3=insert3,
                        ref_seq=ref_seq,
                        read_seq=read.seq,
