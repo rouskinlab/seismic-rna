@@ -119,7 +119,6 @@ class TestCalcRelsRead(ut.TestCase):
                 max_ins_len=max_ins,
                 max_ins_bases=max_ins
         ):
-            print(read, qual, cigar)
             with self.subTest(refseq=refseq,
                               read=read,
                               qual=qual,
@@ -142,18 +141,15 @@ class TestCalcRelsRead(ut.TestCase):
 
     def iter_cases(self, refseq: DNA, max_ins: int):
         self.iter_cases_insert3(refseq, max_ins, False)
-        # if max_ins > 0:
-        #    self.iter_cases_insert3(refseq, max_ins, True)
+        if max_ins > 0:
+            self.iter_cases_insert3(refseq, max_ins, True)
 
-    @ut.skip
     def test_4nt_2ins(self):
         self.iter_cases(DNA("AGCT"), 2)
 
-    # @ut.skip
     def test_5nt_2ins(self):
         self.iter_cases(DNA("CAAAT"), 2)
 
-    @ut.skip
     def test_6nt_2ins(self):
         self.iter_cases(DNA("GTATAC"), 2)
 

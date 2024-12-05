@@ -127,7 +127,6 @@ def _calc_rels_read(read: SamRead,
         - the 3' coordinate of the read
         - the relationship code for each mutation in the read
     """
-    # print(read.cigar)
     read_length = len(read.seq)
     ref_length = len(ref_seq)
     if not 1 <= read.pos <= ref_length:
