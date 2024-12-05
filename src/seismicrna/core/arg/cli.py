@@ -409,14 +409,14 @@ opt_bt2_x = Option(
 opt_bt2_score_min_e2e = Option(
     ("--bt2-score-min-e2e",),
     type=str,
-    default="L,-1,-0.5",
+    default="L,-1,-0.8",
     help="Discard alignments that score below this threshold in end-to-end mode"
 )
 
 opt_bt2_score_min_loc = Option(
     ("--bt2-score-min-loc",),
     type=str,
-    default="L,1,0.5",
+    default="L,1,0.8",
     help="Discard alignments that score below this threshold in local mode"
 )
 
