@@ -47,7 +47,8 @@ class TestWorkflow(ut.TestCase):
                                refs=self.REFS,
                                fold_max=2,
                                num_reads=20000,
-                               ends_var=0.001)
+                               center_fvar=0.001,
+                               length_fvar=0.001)
         sample_dir = self.SIM_DIR.joinpath("samples", self.SAMPLE)
         for fastq, mate in zip(fastqs, [1, 2], strict=True):
             self.assertEqual(fastq,

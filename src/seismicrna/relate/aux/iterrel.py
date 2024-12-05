@@ -93,7 +93,7 @@ def iter_relvecs_q53(refseq: DNA,
 
 
 def iter_relvecs_all(refseq: DNA,
-                     insert3: bool,
+                     insert3: bool = True,
                      max_ins: int | None = None):
     """
     For a given reference sequence, yield every possible unambiguous

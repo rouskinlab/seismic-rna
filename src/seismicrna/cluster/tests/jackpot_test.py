@@ -302,8 +302,8 @@ class TestBootstrapJackpotScores(ut.TestCase):
         run_sim_params(ct_file=(ct_file,),
                        pmut_paired=pmut_paired,
                        pmut_unpaired=pmut_unpaired,
-                       insert_fmean=0.5,
-                       end3_fmean=0.75,
+                       center_fmean=0.5,
+                       length_fmean=0.5,
                        clust_conc=2.)
         relate_report_file, = run_sim_relate(param_dir=(param_dir,),
                                              sample=self.SAMPLE,

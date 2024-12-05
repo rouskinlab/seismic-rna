@@ -1706,68 +1706,70 @@ class TestIterRelvecsQ53(ut.TestCase):
 
 
 class TestIterRelvecsAll(ut.TestCase):
-    """ Test function `iter_relvecs_all`. """
 
-    def assert_equal(self, ref: DNA, expects: list):
+    def assert_equal(self, ref: DNA, expects: list, insert3: bool):
         """ Check that the expected and actual results match. """
         for exp, res in zip(chain(*expects),
-                            iter_relvecs_all(ref),
+                            iter_relvecs_all(ref, insert3),
                             strict=True):
             with self.subTest(exp=exp, res=res):
                 self.assertTrue(np.all(exp == res))
 
     def test_length_1(self):
         """ Test with all length-1 DNA sequences. """
-        for ref in expand_degenerate_seq(DNA("N")):
-            expects = [
-                iter_relvecs_q53(ref, [], 1, 1),
-                iter_relvecs_q53(ref, [1], 1, 1),
-            ]
-            self.assert_equal(ref, expects)
+        for insert3 in [False, True]:
+            for ref in expand_degenerate_seq(DNA("N")):
+                expects = [
+                    iter_relvecs_q53(ref, [], 1, 1, insert3),
+                    iter_relvecs_q53(ref, [1], 1, 1, insert3),
+                ]
+                self.assert_equal(ref, expects, insert3)
 
     def test_length_2(self):
         """ Test with all length-2 DNA sequences. """
-        for ref in expand_degenerate_seq(DNA("NN")):
-            expects = [
-                iter_relvecs_q53(ref, [], 1, 1),
-                iter_relvecs_q53(ref, [1], 1, 1),
-                iter_relvecs_q53(ref, [], 1, 2),
-                iter_relvecs_q53(ref, [1], 1, 2),
-                iter_relvecs_q53(ref, [2], 1, 2),
-                iter_relvecs_q53(ref, [1, 2], 1, 2),
-                iter_relvecs_q53(ref, [], 2, 2),
-                iter_relvecs_q53(ref, [2], 2, 2),
-            ]
-            self.assert_equal(ref, expects)
+        for insert3 in [False, True]:
+            for ref in expand_degenerate_seq(DNA("NN")):
+                expects = [
+                    iter_relvecs_q53(ref, [], 1, 1, insert3),
+                    iter_relvecs_q53(ref, [1], 1, 1, insert3),
+                    iter_relvecs_q53(ref, [], 1, 2, insert3),
+                    iter_relvecs_q53(ref, [1], 1, 2, insert3),
+                    iter_relvecs_q53(ref, [2], 1, 2, insert3),
+                    iter_relvecs_q53(ref, [1, 2], 1, 2, insert3),
+                    iter_relvecs_q53(ref, [], 2, 2, insert3),
+                    iter_relvecs_q53(ref, [2], 2, 2, insert3),
+                ]
+                self.assert_equal(ref, expects, insert3)
 
     def test_length_3(self):
         """ Test with all length-3 DNA sequences. """
-        for ref in expand_degenerate_seq(DNA("NNN")):
-            expects = [
-                iter_relvecs_q53(ref, [], 1, 1),
-                iter_relvecs_q53(ref, [1], 1, 1),
-                iter_relvecs_q53(ref, [], 1, 2),
-                iter_relvecs_q53(ref, [1], 1, 2),
-                iter_relvecs_q53(ref, [2], 1, 2),
-                iter_relvecs_q53(ref, [1, 2], 1, 2),
-                iter_relvecs_q53(ref, [], 1, 3),
-                iter_relvecs_q53(ref, [1], 1, 3),
-                iter_relvecs_q53(ref, [2], 1, 3),
-                iter_relvecs_q53(ref, [3], 1, 3),
-                iter_relvecs_q53(ref, [1, 2], 1, 3),
-                iter_relvecs_q53(ref, [1, 3], 1, 3),
-                iter_relvecs_q53(ref, [2, 3], 1, 3),
-                iter_relvecs_q53(ref, [1, 2, 3], 1, 3),
-                iter_relvecs_q53(ref, [], 2, 2),
-                iter_relvecs_q53(ref, [2], 2, 2),
-                iter_relvecs_q53(ref, [], 2, 3),
-                iter_relvecs_q53(ref, [2], 2, 3),
-                iter_relvecs_q53(ref, [3], 2, 3),
-                iter_relvecs_q53(ref, [2, 3], 2, 3),
-                iter_relvecs_q53(ref, [], 3, 3),
-                iter_relvecs_q53(ref, [3], 3, 3),
-            ]
-            self.assert_equal(ref, expects)
+        for insert3 in [False, True]:
+            for ref in expand_degenerate_seq(DNA("NNN")):
+                expects = [
+                    iter_relvecs_q53(ref, [], 1, 1, insert3),
+                    iter_relvecs_q53(ref, [1], 1, 1, insert3),
+                    iter_relvecs_q53(ref, [], 1, 2, insert3),
+                    iter_relvecs_q53(ref, [1], 1, 2, insert3),
+                    iter_relvecs_q53(ref, [2], 1, 2, insert3),
+                    iter_relvecs_q53(ref, [1, 2], 1, 2, insert3),
+                    iter_relvecs_q53(ref, [], 1, 3, insert3),
+                    iter_relvecs_q53(ref, [1], 1, 3, insert3),
+                    iter_relvecs_q53(ref, [2], 1, 3, insert3),
+                    iter_relvecs_q53(ref, [3], 1, 3, insert3),
+                    iter_relvecs_q53(ref, [1, 2], 1, 3, insert3),
+                    iter_relvecs_q53(ref, [1, 3], 1, 3, insert3),
+                    iter_relvecs_q53(ref, [2, 3], 1, 3, insert3),
+                    iter_relvecs_q53(ref, [1, 2, 3], 1, 3, insert3),
+                    iter_relvecs_q53(ref, [], 2, 2, insert3),
+                    iter_relvecs_q53(ref, [2], 2, 2, insert3),
+                    iter_relvecs_q53(ref, [], 2, 3, insert3),
+                    iter_relvecs_q53(ref, [2], 2, 3, insert3),
+                    iter_relvecs_q53(ref, [3], 2, 3, insert3),
+                    iter_relvecs_q53(ref, [2, 3], 2, 3, insert3),
+                    iter_relvecs_q53(ref, [], 3, 3, insert3),
+                    iter_relvecs_q53(ref, [3], 3, 3, insert3),
+                ]
+                self.assert_equal(ref, expects, insert3)
 
 
 if __name__ == "__main__":
